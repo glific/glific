@@ -584,7 +584,8 @@ defmodule Glific.MessagesTest do
       parameters = ["param1"]
 
       {:error, error_message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
 
       assert error_message == "You need to provide correct number of parameters for hsm template"
 
@@ -592,7 +593,8 @@ defmodule Glific.MessagesTest do
       parameters = ["param1", "param2", "param3"]
 
       {:ok, message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
@@ -623,7 +625,8 @@ defmodule Glific.MessagesTest do
 
       # send media hsm without media should return error
       {:error, error_message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
 
       assert error_message == "You need to provide media for media hsm template"
 

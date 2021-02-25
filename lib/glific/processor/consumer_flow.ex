@@ -191,6 +191,10 @@ defmodule Glific.Processor.ConsumerFlow do
       else: !is_nil(contact.optout_time)
   end
 
+  defp should_start_optin_flow?(contact, nil, _body) do
+    if is_nil(contact.optout_time), do: true, else: false
+  end
+
   defp start_optin_flow(message, state) do
     FlowContext.mark_flows_complete(message.contact_id)
 

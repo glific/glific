@@ -4,7 +4,7 @@ defmodule Glific.Flows.ContactAction do
   centralizing it here
   """
 
-  alias Glific.{Contacts, Messages, Messages.Message, Templates.SessionTemplate}
+  alias Glific.{Contacts, Messages, Messages.Message, Repo, Templates.SessionTemplate}
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
 
   require Logger
@@ -216,6 +216,10 @@ defmodule Glific.Flows.ContactAction do
        ) do
     organization_id = context.organization_id
 
+    # context =
+    # context
+    # |> Repo.preload([:flow])
+
     attachments = Localization.get_translation(context, action, :attachments)
     {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
 
@@ -228,7 +232,7 @@ defmodule Glific.Flows.ContactAction do
       organization_id: organization_id,
       flow_id: context.flow_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
-      is_optin_flow: Enum.member?(context.flow.keywords, "optin")
+      is_optin_flow: false
     }
 
     attrs

@@ -149,7 +149,7 @@ defmodule Glific.Flows.ActionTest do
 
     # preload contact
     {:ok, context} = FlowContext.create_flow_context(attrs)
-    context = Repo.preload(context, :contact)
+    context = Repo.preload(context, [:contact])
 
     action = %Action{type: "send_msg", text: "This is a test message"}
 
