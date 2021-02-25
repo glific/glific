@@ -4,21 +4,11 @@ defmodule Glific.Repo.Seeds.OptinOptoutFlows do
   envs([:dev])
 
   alias Glific.{
-    Contacts.Contact,
-    Contacts.ContactsField,
     Flows.Flow,
     Flows.FlowLabel,
-    Jobs.BigqueryJob,
     Partners,
-    Partners.Organization,
-    Partners.Provider,
     Repo,
-    Searches.SavedSearch,
-    Seeds.SeedsDev,
-    Seeds.SeedsSim,
-    Settings.Language,
-    Tags.Tag,
-    Users
+    Seeds.SeedsDev
   }
 
   def up(_repo) do
