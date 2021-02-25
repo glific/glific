@@ -1,8 +1,6 @@
 defmodule Glific.Repo.Migrations.OptinFields do
   use Ecto.Migration
 
-  alias Glific.{Contacts.Contact, Repo}
-
   def change do
     optin()
   end
