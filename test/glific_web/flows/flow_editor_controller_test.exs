@@ -41,7 +41,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     test "groups_post", %{conn: conn} do
       conn = post(conn, "/flow-editor/groups", %{"name" => "test group"})
-      assert json_response(conn, 200)["name"] == "test group"
+
+      assert json_response(conn, 200)["name"] ==
+               "ALERT: PLEASE CREATE NEW GROUP FROM THE ORGANIZATION SETTINGS"
     end
 
     test "fields", %{conn: conn} do
