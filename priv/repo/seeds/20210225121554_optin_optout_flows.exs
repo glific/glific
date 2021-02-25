@@ -16,11 +16,13 @@ defmodule Glific.Repo.Seeds.OptinOptoutFlows do
     |> Enum.each(fn organization ->
       Repo.put_organization_id(organization.id)
 
-      with {:error, _} <- Repo.fetch_by(Flow, %{name: "Optin Workflow", organization_id: organization.id}) do
+      with {:error, _} <-
+             Repo.fetch_by(Flow, %{name: "Optin Workflow", organization_id: organization.id}) do
         add_optin_flow(organization)
       end
 
-      with {:error, _} <- Repo.fetch_by(Flow, %{name: "Optout Workflow", organization_id: organization.id}) do
+      with {:error, _} <-
+             Repo.fetch_by(Flow, %{name: "Optout Workflow", organization_id: organization.id}) do
         add_optout_flow(organization)
       end
     end)
