@@ -55,6 +55,7 @@ defmodule Glific.Flows.FlowCount do
     flow_revision
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:uuid, :flow_id, :type])
   end
 
   @doc """

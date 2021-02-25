@@ -24,7 +24,7 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_group(Flow.t(), Group.t()) :: nil
+  @spec broadcast_group(Flow.t(), Group.t()) :: map()
   def broadcast_group(flow, group) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
@@ -38,6 +38,8 @@ defmodule Glific.Flows.Broadcast do
       })
 
     do_broadcast(flow, group, opts(group.organization_id))
+
+    flow
   end
 
   # function to build the opts values to process a list of contacts
@@ -54,9 +56,8 @@ defmodule Glific.Flows.Broadcast do
 
     [
       bsp_limit: bsp_limit,
-      limit: 1000,
+      limit: 500,
       offset: 0,
-      size: 1000,
       delay: 0
     ]
   end
@@ -85,8 +86,8 @@ defmodule Glific.Flows.Broadcast do
       # slide the window of contacts to the next set
       opts =
         opts
-        |> Keyword.replace!(:offset, opts[:offset] + opts[:size])
-        |> Keyword.replace!(:delay, opts[:delay] + ceil(opts[:size] / opts[:bsp_limit]))
+        |> Keyword.replace!(:offset, opts[:offset] + opts[:limit])
+        |> Keyword.replace!(:delay, opts[:delay] + ceil(opts[:limit] / opts[:bsp_limit]))
 
       do_broadcast(
         flow,
@@ -122,6 +123,7 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
+
           if Contacts.can_send_message_to?(contact),
             do: FlowContext.init_context(flow, contact, @status, opts)
         end,
