@@ -739,7 +739,6 @@ if Code.ensure_loaded?(Faker) do
         {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
          "out_of_office.json"},
-        {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
       ]
 

@@ -209,9 +209,16 @@ defmodule Glific.Groups do
   @spec create_contact_group(map()) :: {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_group(attrs \\ %{}) do
     # Merge default values if not present in attributes
-    %ContactGroup{}
-    |> ContactGroup.changeset(attrs)
-    |> Repo.insert()
+    # we allow errors here in case the contact already exists in the group
+    result =
+      %ContactGroup{}
+      |> ContactGroup.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, cg} -> {:ok, cg}
+      {:error, _} -> Repo.fetch_by(ContactGroup, attrs)
+    end
   end
 
   @doc """

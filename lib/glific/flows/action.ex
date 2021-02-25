@@ -397,9 +397,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_contact_groups"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
-    Logger.info(
-      "Adding contact to group with action: #{inspect(action)}, messages: #{inspect(messages)}"
-    )
+    Logger.info("Adding contact to group in action")
 
     _list =
       Enum.reduce(
