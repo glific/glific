@@ -233,11 +233,19 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
-  @spec check_entity_exists(non_neg_integer, Keyword.t(), atom()) :: Keyword.t()
-  defp check_entity_exists(entity_id, errors, object) do
-    case Repo.fetch_by(object, %{id: entity_id}) do
+  @spec get_name(atom()) :: String.t()
+  defp get_name(module) do
+    module
+    |> Atom.to_string()
+    |> String.split(".")
+    |> List.last()
+  end
+
+  @spec check_entity_exists(map(), Keyword.t(), atom()) :: Keyword.t()
+  defp check_entity_exists(entity, errors, object) do
+    case Repo.fetch_by(object, %{id: entity["uuid"]}) do
       {:ok, _} -> errors
-      _ -> [{object, "Could not find #{object} object"}] ++ errors
+      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}"}] ++ errors
     end
   end
 
@@ -261,12 +269,12 @@ defmodule Glific.Flows.Action do
       errors,
       fn entity, errors ->
         case Glific.parse_maybe_integer(entity["uuid"]) do
-          {:ok, entity_id} ->
+          {:ok, _entity_id} ->
             # ensure entity_id exists
-            check_entity_exists(entity_id, errors, object)
+            check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{object} object"}] ++ errors
+            [{object, "Could not parse #{get_name(object)} object"}] ++ errors
         end
       end
     )
