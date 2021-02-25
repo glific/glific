@@ -40,6 +40,7 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       name: Person.name(),
       optin_time: DateTime.backward(1),
+      optin_status: true,
       last_message_at: DateTime.backward(0),
       phone: Phone.EnUs.phone(),
       status: :valid,

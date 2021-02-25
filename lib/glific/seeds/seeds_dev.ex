@@ -70,6 +70,8 @@ if Code.ensure_loaded?(Faker) do
           name: "Default receiver",
           language_id: hi_in.id,
           optin_time: utc_now,
+          optin_status: true,
+          optin_method: "URL",
           bsp_status: :session_and_hsm
         },
         %{
@@ -99,6 +101,7 @@ if Code.ensure_loaded?(Faker) do
             organization_id: organization.id,
             last_message_at: utc_now,
             last_communication_at: utc_now,
+            optin_status: false,
             bsp_status: :session
           }
           |> Map.merge(contact_entry)
@@ -338,6 +341,8 @@ if Code.ensure_loaded?(Faker) do
           name: name,
           language_id: en_us.id,
           optin_time: utc_now,
+          optin_status: true,
+          optin_method: "URL",
           last_message_at: utc_now,
           last_communication_at: utc_now,
           organization_id: organization.id
@@ -734,9 +739,6 @@ if Code.ensure_loaded?(Faker) do
         {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
          "out_of_office.json"},
-        {"Activity", ["activity"], uuid_map.activity, false, "activity.json"},
-        {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"},
-        {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
       ]
 

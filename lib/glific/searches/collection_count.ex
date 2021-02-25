@@ -20,7 +20,15 @@ defmodule Glific.Searches.CollectionCount do
     |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
   end
 
-  defp org_id_list(list, _recent), do: list
+  defp org_id_list(list, _recent) do
+    Enum.map(
+      list,
+      fn l ->
+        {:ok, int_l} = Glific.parse_maybe_integer(l)
+        int_l
+      end
+    )
+  end
 
   @spec publish_data(map()) :: map()
   defp publish_data(results) do
@@ -43,35 +51,53 @@ defmodule Glific.Searches.CollectionCount do
   @spec collection_stats(list, boolean) :: map()
   def collection_stats(list \\ [], recent \\ true) do
     org_id_list = org_id_list(list, recent)
+
+    # org_id_list can be empty here, if so we return an empty map
+    if org_id_list == [],
+      do: %{},
+      else: do_collection_stats(org_id_list)
+  end
+
+  @spec do_collection_stats(list()) :: map()
+  defp do_collection_stats(org_id_list) do
     query = query(org_id_list)
 
-    %{}
+    org_id_list
+    # create the empty results array for each org in list
+    |> empty_results()
     |> all(query)
     |> unread(query)
     |> not_replied(query)
     |> not_responded(query)
+    |> optin(org_id_list)
     |> optout(org_id_list)
     |> publish_data()
   end
+
+  @spec empty_results(list()) :: map()
+  defp empty_results(org_id_list),
+    do:
+      Enum.reduce(
+        org_id_list,
+        %{},
+        fn id, acc -> Map.put(acc, id, empty_result()) end
+      )
 
   @spec empty_result :: map()
   defp empty_result,
     do: %{
       "All" => 0,
-      "Unread" => 0,
       "Not replied" => 0,
       "Not Responded" => 0,
-      "Optout" => 0
+      "Optin" => 0,
+      "Optout" => 0,
+      "Unread" => 0
     }
 
   @spec add(map(), non_neg_integer, String.t(), non_neg_integer) :: map()
   defp add(result, org_id, key, value) do
-    org_values =
-      if Map.has_key?(result, org_id),
-        do: result[org_id],
-        else: empty_result()
-
-    Map.put(result, org_id, Map.put(org_values, key, value))
+    result
+    |> Map.put(org_id, Map.put(result[org_id], key, value))
   end
 
   @spec add_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
@@ -79,7 +105,7 @@ defmodule Glific.Searches.CollectionCount do
 
   defp add_orgs(query, org_id_list) do
     query
-    |> where([m], m.organization_id in ^org_id_list)
+    |> where([o], o.organization_id in ^org_id_list)
   end
 
   @spec query(list()) :: Ecto.Query.t()
@@ -133,13 +159,26 @@ defmodule Glific.Searches.CollectionCount do
     |> make_result(result, "Not Responded")
   end
 
-  @spec optout(map(), list()) :: map()
-  defp optout(result, org_id_list) do
+  @spec contact_query(list()) :: Ecto.Query.t()
+  defp contact_query(org_id_list) do
     Contact
-    |> where([c], c.status != :blocked and not is_nil(c.optout_time))
-    |> add_orgs(org_id_list)
+    |> where([c], c.status != :blocked)
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
+    |> add_orgs(org_id_list)
+  end
+
+  @spec optin(map(), list()) :: map()
+  defp optin(result, org_id_list) do
+    contact_query(org_id_list)
+    |> where([c], c.optin_status == true)
+    |> make_result(result, "Optin")
+  end
+
+  @spec optout(map(), list()) :: map()
+  defp optout(result, org_id_list) do
+    contact_query(org_id_list)
+    |> where([c], not is_nil(c.optout_time))
     |> make_result(result, "Optout")
   end
 end

@@ -69,22 +69,26 @@ defmodule Glific.Providers.GupshupContacts do
   @spec update_contacts(list() | nil, Organization.t() | nil) :: :ok | any()
   defp update_contacts(users, organization) do
     Enum.each(users, fn user ->
-      # handle scenario when contact has not sent a message yet
-      last_message_at = last_message_at(user["lastMessageTimeStamp"])
+      if user["optinStatus"] == "OPT_IN" do
+        # handle scenario when contact has not sent a message yet
+        last_message_at = last_message_at(user["lastMessageTimeStamp"])
 
-      {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
+        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
 
-      phone = user["countryCode"] <> user["phoneCode"]
+        phone = user["countryCode"] <> user["phoneCode"]
 
-      Contacts.upsert(%{
-        phone: phone,
-        last_message_at: last_message_at,
-        optin_time: optin_time |> DateTime.truncate(:second),
-        bsp_status: check_bsp_status(last_message_at),
-        organization_id: organization.id,
-        language_id: organization.default_language_id,
-        last_communication_at: last_message_at
-      })
+        Contacts.upsert(%{
+          phone: phone,
+          last_message_at: last_message_at,
+          optin_time: optin_time |> DateTime.truncate(:second),
+          optin_status: true,
+          optin_method: user["optinSource"],
+          bsp_status: check_bsp_status(last_message_at),
+          organization_id: organization.id,
+          language_id: organization.default_language_id,
+          last_communication_at: last_message_at
+        })
+      end
     end)
   end
 

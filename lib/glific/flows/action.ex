@@ -58,6 +58,7 @@ defmodule Glific.Flows.Action do
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
+          enter_flow_name: String.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
@@ -104,6 +105,8 @@ defmodule Glific.Flows.Action do
     embeds_one :templating, Templating
 
     field :enter_flow_uuid, Ecto.UUID
+    field :enter_flow_name, :string
+
     embeds_one :enter_flow, Flow
   end
 
@@ -128,7 +131,10 @@ defmodule Glific.Flows.Action do
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
-    process(json, uuid_map, node, %{enter_flow_uuid: json["flow"]["uuid"]})
+    process(json, uuid_map, node,
+      %{enter_flow_uuid: json["flow"]["uuid"],
+        enter_flow_name: json["flow"]["name"],
+      })
   end
 
   def process(%{"type" => "set_contact_language"} = json, uuid_map, node) do
@@ -189,6 +195,8 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    attrs = Map.put(attrs, :templating, templating)
     process(json, uuid_map, node, attrs)
   end
 
@@ -231,11 +239,19 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
-  @spec check_entity_exists(non_neg_integer, Keyword.t(), atom()) :: Keyword.t()
-  defp check_entity_exists(entity_id, errors, object) do
-    case Repo.fetch_by(object, %{id: entity_id}) do
+  @spec get_name(atom()) :: String.t()
+  defp get_name(module) do
+    module
+    |> Atom.to_string()
+    |> String.split(".")
+    |> List.last()
+  end
+
+  @spec check_entity_exists(map(), Keyword.t(), atom()) :: Keyword.t()
+  defp check_entity_exists(entity, errors, object) do
+    case Repo.fetch_by(object, %{id: entity["uuid"]}) do
       {:ok, _} -> errors
-      _ -> [{object, "Could not find #{object} object"}] ++ errors
+      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}"}] ++ errors
     end
   end
 
@@ -259,12 +275,12 @@ defmodule Glific.Flows.Action do
       errors,
       fn entity, errors ->
         case Glific.parse_maybe_integer(entity["uuid"]) do
-          {:ok, entity_id} ->
+          {:ok, _entity_id} ->
             # ensure entity_id exists
-            check_entity_exists(entity_id, errors, object)
+            check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{object} object"}] ++ errors
+            [{object, "Could not parse #{get_name(object)} object"}] ++ errors
         end
       end
     )
@@ -274,7 +290,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Flow object"}] ++ errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}"}] ++ errors
     end
   end
 
@@ -341,16 +357,9 @@ defmodule Glific.Flows.Action do
     value = FlowContext.get_result_value(context, action.value)
 
     context =
-      cond do
-        key == "settings" and value == "optout" ->
-          ContactAction.optout(context)
-
-        key == "settings" ->
-          ContactSetting.set_contact_preference(context, value)
-
-        true ->
-          ContactField.add_contact_field(context, key, name, value, "string")
-      end
+      if key == "settings",
+        do: settings(context, value),
+        else: ContactField.add_contact_field(context, key, name, value, "string")
 
     {:ok, context, messages}
   end
@@ -395,26 +404,13 @@ defmodule Glific.Flows.Action do
       |> Enum.map(fn label -> label["name"] end)
       |> Enum.join(", ")
 
-    # there is a chance that:
-    # when we send a fake temp message (like No Response)
-    # or when a flow is resumed, there is no last_message
-    # hence check for the existence of one
-    if context.last_message != nil do
-      {:ok, _} =
-        Repo.get(Message, context.last_message.id)
-        |> Message.changeset(%{flow_label: flow_label})
-        |> Repo.update()
-    end
+    add_flow_label(context, flow_label)
 
     {:ok, context, messages}
   end
 
   def execute(%{type: "add_contact_groups"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
-    Logger.info(
-      "Adding contact to group with action: #{inspect(action)}, messages: #{inspect(messages)}"
-    )
-
     _list =
       Enum.reduce(
         action.groups,
@@ -481,6 +477,41 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+
+  @spec add_flow_label(FlowContext.t(), String.t()) :: nil
+  defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
+
+  defp add_flow_label(%{last_message: last_message}, flow_label) do
+    # there is a chance that:
+    # when we send a fake temp message (like No Response)
+    # or when a flow is resumed, there is no last_message
+    # hence we check for the existence of one in these functions
+    {:ok, _} =
+      Repo.get(Message, last_message.id)
+      |> Message.changeset(%{flow_label: flow_label})
+      |> Repo.update()
+
+    nil
+  end
+
+  @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()
+  defp settings(context, value) do
+    case String.downcase(value) do
+      "optout" ->
+        ContactAction.optout(context)
+
+      "optin" ->
+        ContactAction.optin(
+          context,
+          method: "WA",
+          message_id: context.last_message.bsp_message_id,
+          bsp_status: :session_and_hsm
+        )
+
+      _ ->
+        ContactSetting.set_contact_preference(context, value)
+    end
+  end
 
   # let's format attachment and add as a map
   @spec process_attachments(list()) :: map()

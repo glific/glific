@@ -10,14 +10,12 @@ defmodule Glific.Flows do
     Caches,
     Contacts,
     Contacts.Contact,
-    Flows.Flow,
-    Flows.FlowContext,
-    Flows.FlowRevision,
     Groups.Group,
-    Messages,
     Partners,
     Repo
   }
+
+  alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
 
   @doc """
   Returns the list of flows.
@@ -350,7 +348,8 @@ defmodule Glific.Flows do
   A helper function to interact with the Caching API and get the cached flow.
   It will also set the loaded flow to cache in case it does not exists.
   """
-  @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) :: {atom, any} | atom()
+  @spec get_cached_flow(non_neg_integer, {atom(), any(), String.t()}) ::
+          {atom, any} | {atom(), String.t()}
   def get_cached_flow(nil, _key), do: {:ok, nil}
 
   def get_cached_flow(organization_id, key) do
@@ -397,15 +396,23 @@ defmodule Glific.Flows do
   Update latest flow revision status as published and increment the version
   Update cached flow definition
   """
-  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    do_publish_flow(flow)
 
+    if errors == [],
+      do: {:ok, flow},
+      else: {:errors, format_flow_errors(errors)}
+  end
+
+  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
-
+    ## if invalid flow then return the {:error, array} otherwise move forword
     with {:ok, latest_revision} <-
-           FlowRevision
-           |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0}) do
+           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
       {:ok, _} =
         latest_revision
         |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
@@ -416,6 +423,14 @@ defmodule Glific.Flows do
     end
 
     {:ok, flow}
+  end
+
+  @spec format_flow_errors(list()) :: list()
+  defp format_flow_errors(errors) when is_list(errors) do
+    ## we can think about the warning based on keys
+    Enum.reduce(errors, [], fn error, acc ->
+      [%{key: elem(error, 0), message: elem(error, 1)} | acc]
+    end)
   end
 
   # Get version of last published flow revision
@@ -451,19 +466,19 @@ defmodule Glific.Flows do
     |> Repo.delete_all()
   end
 
+  @status "published"
+
   @doc """
   Start flow for a contact
   """
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    status = "published"
-
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, status})
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, @status})
 
     # Why are we doing this test? We can potentially have flows that
     # do not send a message
     if Contacts.can_send_message_to?(contact),
-      do: process_contact_flow([contact], flow, status),
+      do: process_contact_flow([contact], flow, @status),
       else: {:error, ["contact", "Cannot send the message to the contact."]}
   end
 
@@ -472,19 +487,9 @@ defmodule Glific.Flows do
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(flow, group) do
-    status = "published"
-
-    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, status})
-
-    {:ok, _group_message} =
-      Messages.create_group_message(%{
-        body: "Starting flow: #{flow.name} for group: #{group.label}",
-        type: :text,
-        group_id: group.id
-      })
-
-    group = group |> Repo.preload([:contacts])
-    process_contact_flow(group.contacts, flow, status)
+    # the flow returned is the expanded version
+    flow = Broadcast.broadcast_group(flow, group)
+    {:ok, flow}
   end
 
   @doc """
@@ -529,33 +534,8 @@ defmodule Glific.Flows do
   end
 
   @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, status) do
-    organization = Partners.organization(flow.organization_id)
-    # lets do 90% of organization bsp limit to allow replies to come in and be processed
-    org_limit = organization.services["bsp"].keys["bsp_limit"]
-    org_limit = if is_nil(org_limit), do: 30, else: org_limit
-    limit = div(org_limit * 90, 100)
-
-    _ignore =
-      Enum.reduce(
-        contacts,
-        0,
-        fn contact, count ->
-          if Contacts.can_send_message_to?(contact) do
-            FlowContext.init_context(flow, contact, status)
-
-            if count + 1 == limit do
-              Process.sleep(1000)
-              0
-            else
-              count + 1
-            end
-          else
-            count
-          end
-        end
-      )
-
+  defp process_contact_flow(contacts, flow, _status) do
+    Broadcast.broadcast_contacts(flow, contacts)
     {:ok, flow}
   end
 

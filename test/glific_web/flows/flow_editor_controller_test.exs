@@ -1,9 +1,31 @@
 defmodule GlificWeb.Flows.FlowEditorControllerTest do
   use GlificWeb.ConnCase
 
-  alias Glific.Flows
-  alias Glific.Flows.FlowLabel
-  alias Glific.Groups
+  alias Glific.{
+    Flows,
+    Flows.FlowLabel,
+    Groups,
+    Settings,
+    Templates
+  }
+
+  alias GlificWeb.Flows.FlowEditorController
+
+  @valid_language_attrs %{
+    label: "English (United States)",
+    label_locale: "English",
+    locale: "en_US",
+    is_active: true
+  }
+
+  @valid_attrs %{
+    label: "some label",
+    body: "some body",
+    type: :text,
+    is_active: true,
+    is_reserved: true,
+    status: "APPROVED"
+  }
 
   describe "flow_editor_routes" do
     test "globals", %{conn: conn} do
@@ -19,7 +41,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     test "groups_post", %{conn: conn} do
       conn = post(conn, "/flow-editor/groups", %{"name" => "test group"})
-      assert json_response(conn, 200)["name"] == "test group"
+
+      assert json_response(conn, 200)["name"] ==
+               "ALERT: PLEASE CREATE NEW GROUP FROM THE ORGANIZATION SETTINGS"
     end
 
     test "fields", %{conn: conn} do
@@ -84,6 +108,15 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
                length(templates)
     end
 
+    def language_fixture(attrs \\ %{}) do
+      {:ok, language} =
+        attrs
+        |> Enum.into(@valid_language_attrs)
+        |> Settings.language_upsert()
+
+      language
+    end
+
     test "languages", %{conn: conn} do
       conn = get(conn, "/flow-editor/languages", %{})
       languages = json_response(conn, 200)["results"]
@@ -119,6 +152,27 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       response = json_response(conn, 200)
       assert Map.has_key?(response, "nodes")
       assert Map.has_key?(response, "segments")
+    end
+
+    test "listing templates in Flow should return the list of approved templates",
+         %{conn: conn} = attrs do
+      language = language_fixture()
+
+      attrs =
+        attrs
+        |> Map.merge(@valid_attrs)
+        |> Map.merge(%{language_id: language.id})
+
+      Templates.create_session_template(attrs)
+
+      {:ok, results} = FlowEditorController.templates(conn, %{}).resp_body |> Jason.decode()
+
+      approved_templates =
+        Templates.list_session_templates(%{
+          filter: %{organization_id: conn.assigns[:organization_id], status: "APPROVED"}
+        })
+
+      assert length(results["results"]) == length(approved_templates)
     end
 
     test "get all the flows", %{conn: conn} do

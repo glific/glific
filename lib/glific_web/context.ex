@@ -25,10 +25,8 @@ defmodule GlificWeb.Context do
     # Add the current_user to the Process memory
     Glific.Repo.put_current_user(current_user)
 
-    if current_user != nil do
-      %{current_user: current_user}
-    else
-      %{}
-    end
+    if current_user != nil,
+      do: %{current_user: current_user},
+      else: %{}
   end
 end

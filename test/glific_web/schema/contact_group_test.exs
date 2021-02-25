@@ -175,7 +175,8 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert contact_group["contact"]["id"] |> String.to_integer() == contact.id
     assert contact_group["group"]["id"] |> String.to_integer() == group.id
 
-    # try creating the same contact group entry twice
+    first_id = contact_group["id"]
+    # try creating the same contact group entry twice and ensure we get the same id
     result =
       auth_query_gql_by(:create, user_auth,
         variables: %{"input" => %{"contact_id" => contact.id, "group_id" => group.id}}
@@ -183,8 +184,8 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "createContactGroup", "errors", Access.at(0), "message"])
-    assert contact == "has already been taken"
+    second_id = get_in(query_data, [:data, "createContactGroup", "contact_group", "id"])
+    assert first_id == second_id
   end
 
   test "info on groups 1 and 2 return some data", %{staff: user_auth} do

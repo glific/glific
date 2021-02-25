@@ -172,7 +172,11 @@ defmodule Glific.Searches do
     |> order_by([c], desc: c.last_communication_at)
   end
 
-  defp add_contact_opts(query, _opts), do: query
+  defp add_contact_opts(query, _opts) do
+    # always order in descending order of most recent communications
+    query
+    |> order_by([c], desc: c.last_communication_at)
+  end
 
   @spec direction(String.t()) :: atom()
   defp direction("Not replied"), do: :inbound
@@ -192,6 +196,12 @@ defmodule Glific.Searches do
     status_query(opts)
     |> where([c], c.status != :blocked)
     |> where([c], not is_nil(c.optout_time))
+  end
+
+  defp filter_status_contacts_of_organization("Optin", opts) do
+    status_query(opts)
+    |> where([c], c.status != :blocked)
+    |> where([c], c.optin_status == true)
   end
 
   defp filter_status_contacts_of_organization(status, opts)
@@ -377,7 +387,7 @@ defmodule Glific.Searches do
     args
     |> basic_query()
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
-    |> where([c: c], c.status != ^:blocked)
+    |> where([c: c], c.status != :blocked)
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
