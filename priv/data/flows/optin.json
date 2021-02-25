@@ -1,0 +1,292 @@
+{
+    "_ui": {
+        "nodes": {
+            "23f2b1f5-85fc-4a60-bb0f-6df4f351366e": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 0,
+                    "left": 0
+                }
+            },
+            "7119aae0-7ef9-493f-a1bc-e25774b5ef63": {
+                "type": "wait_for_response",
+                "config": {
+                    "cases": {}
+                },
+                "position": {
+                    "top": 140,
+                    "left": 440
+                }
+            },
+            "79085dfe-093c-4e86-a400-40788e46cd7c": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 440,
+                    "left": 320
+                }
+            },
+            "9067ee29-7657-4e6a-a6e2-9ddd453c8893": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 300,
+                    "left": 580
+                }
+            },
+            "d02ddf61-d3a4-4b90-a995-d3a03924e0e8": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 320,
+                    "left": 320
+                }
+            },
+            "f4cc5a88-99f9-4922-8254-ff7fa4dce05f": {
+                "type": "execute_actions",
+                "position": {
+                    "top": 400,
+                    "left": 580
+                }
+            }
+        }
+    },
+    "name": "Optin",
+    "type": "messaging",
+    "uuid": "1a859ab1-6d6a-44bd-852f-78a8cebc7a5e",
+    "vars": [
+        "1a859ab1-6d6a-44bd-852f-78a8cebc7a5e"
+    ],
+    "nodes": [
+        {
+            "uuid": "23f2b1f5-85fc-4a60-bb0f-6df4f351366e",
+            "exits": [
+                {
+                    "uuid": "de2cdf08-754f-4a53-8a84-f1e2fdf06769",
+                    "destination_uuid": "7119aae0-7ef9-493f-a1bc-e25774b5ef63"
+                }
+            ],
+            "actions": [
+                {
+                    "text": "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-\n\n*Type 1️⃣* to give us permission. We promise to send you amazing content.\n*Type 2️⃣* if you'd rather message us only when you need information.",
+                    "type": "send_msg",
+                    "uuid": "c16c30c0-6d70-4aff-94f3-6b019e6a3915",
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "7119aae0-7ef9-493f-a1bc-e25774b5ef63",
+            "exits": [
+                {
+                    "uuid": "48e1a7e7-b328-4a6d-ab22-255369af02e8",
+                    "destination_uuid": "d02ddf61-d3a4-4b90-a995-d3a03924e0e8"
+                },
+                {
+                    "uuid": "c7a00112-2c62-49ee-9c93-a7202e0de37b",
+                    "destination_uuid": "9067ee29-7657-4e6a-a6e2-9ddd453c8893"
+                },
+                {
+                    "uuid": "5c86812d-e66a-452c-ba08-bf5585a19952",
+                    "destination_uuid": "23f2b1f5-85fc-4a60-bb0f-6df4f351366e"
+                },
+                {
+                    "uuid": "cf7b6a38-4a0c-424e-b4f9-acfe63845d9f",
+                    "destination_uuid": "23f2b1f5-85fc-4a60-bb0f-6df4f351366e"
+                }
+            ],
+            "router": {
+                "type": "switch",
+                "wait": {
+                    "type": "msg",
+                    "timeout": {
+                        "seconds": 240,
+                        "category_uuid": "b1509fd7-1f9a-4803-b53f-665ad3a7028d"
+                    }
+                },
+                "cases": [
+                    {
+                        "type": "has_only_phrase",
+                        "uuid": "697c2d14-78e5-4f77-b04d-db4afbb280e2",
+                        "arguments": [
+                            "1"
+                        ],
+                        "category_uuid": "64843fe9-76b9-4a64-98ee-c16862b51cdd"
+                    },
+                    {
+                        "type": "has_number_eq",
+                        "uuid": "9f5fb037-ffa3-4f35-af9b-201bab9cb43e",
+                        "arguments": [
+                            "2"
+                        ],
+                        "category_uuid": "a87f24c8-c450-484e-a158-9ab426d6936a"
+                    }
+                ],
+                "operand": "@input.text",
+                "categories": [
+                    {
+                        "name": "optin",
+                        "uuid": "64843fe9-76b9-4a64-98ee-c16862b51cdd",
+                        "exit_uuid": "48e1a7e7-b328-4a6d-ab22-255369af02e8"
+                    },
+                    {
+                        "name": "optout",
+                        "uuid": "a87f24c8-c450-484e-a158-9ab426d6936a",
+                        "exit_uuid": "c7a00112-2c62-49ee-9c93-a7202e0de37b"
+                    },
+                    {
+                        "name": "Other",
+                        "uuid": "6ebc8507-06ba-40db-b7ff-ac86f5d09e27",
+                        "exit_uuid": "5c86812d-e66a-452c-ba08-bf5585a19952"
+                    },
+                    {
+                        "name": "No Response",
+                        "uuid": "b1509fd7-1f9a-4803-b53f-665ad3a7028d",
+                        "exit_uuid": "cf7b6a38-4a0c-424e-b4f9-acfe63845d9f"
+                    }
+                ],
+                "result_name": "optin",
+                "default_category_uuid": "6ebc8507-06ba-40db-b7ff-ac86f5d09e27"
+            },
+            "actions": []
+        },
+        {
+            "uuid": "9067ee29-7657-4e6a-a6e2-9ddd453c8893",
+            "exits": [
+                {
+                    "uuid": "c8a6a58c-15ce-4483-9d12-ee568be9edd3",
+                    "destination_uuid": "f4cc5a88-99f9-4922-8254-ff7fa4dce05f"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "add_contact_groups",
+                    "uuid": "d45cbec8-b5ba-4a00-8776-04a7cf03b324",
+                    "groups": [
+                        {
+                            "name": "Optout contacts",
+                            "type": "group",
+                            "uuid": "107"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "uuid": "d02ddf61-d3a4-4b90-a995-d3a03924e0e8",
+            "exits": [
+                {
+                    "uuid": "2b8a42e1-7025-4af3-ba95-e69aa2a7880f",
+                    "destination_uuid": "79085dfe-093c-4e86-a400-40788e46cd7c"
+                }
+            ],
+            "actions": [
+                {
+                    "type": "add_contact_groups",
+                    "uuid": "4ff40ec4-cc22-44ec-9df5-a0a5f30d2109",
+                    "groups": [
+                        {
+                            "name": "Optin contacts",
+                            "type": "group",
+                            "uuid": "106"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "uuid": "f4cc5a88-99f9-4922-8254-ff7fa4dce05f",
+            "exits": [
+                {
+                    "uuid": "114cdaf1-a2dd-4fd7-93b0-6752f55606b5",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_field",
+                    "uuid": "e0ed9f0e-0306-45e9-b86d-ad920400a69f",
+                    "field": {
+                        "key": "settings",
+                        "name": "Settings"
+                    },
+                    "value": "optout"
+                },
+                {
+                    "text": "No worries. You can always change that by going into the help menu. You can also still message us anytime. ",
+                    "type": "send_msg",
+                    "uuid": "a97c9741-7007-4052-9eeb-0783bfc14d0f",
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        },
+        {
+            "uuid": "79085dfe-093c-4e86-a400-40788e46cd7c",
+            "exits": [
+                {
+                    "uuid": "de490b9d-792b-4b03-8bda-cce6afaba8a6",
+                    "destination_uuid": null
+                }
+            ],
+            "actions": [
+                {
+                    "type": "set_contact_field",
+                    "uuid": "619a3205-b552-45e7-9d80-948aabb93f01",
+                    "field": {
+                        "key": "settings",
+                        "name": "Settings"
+                    },
+                    "value": "optin"
+                },
+                {
+                    "text": "Thank you for giving us the permission. We really appreciate it.",
+                    "type": "send_msg",
+                    "uuid": "d8c98741-b9a6-41bf-b91d-984465ccd3b9",
+                    "attachments": [],
+                    "quick_replies": []
+                }
+            ]
+        }
+    ],
+    "language": "base",
+    "localization": {
+        "hi": {
+            "64843fe9-76b9-4a64-98ee-c16862b51cdd": {
+                "name": [
+                    "स्वीकार"
+                ]
+            },
+            "6ebc8507-06ba-40db-b7ff-ac86f5d09e27": {
+                "name": [
+                    "अन्य"
+                ]
+            },
+            "a87f24c8-c450-484e-a158-9ab426d6936a": {
+                "name": [
+                    "इनकार"
+                ]
+            },
+            "b1509fd7-1f9a-4803-b53f-665ad3a7028d": {
+                "name": [
+                    "कोई जवाब नहीं"
+                ]
+            },
+            "c16c30c0-6d70-4aff-94f3-6b019e6a3915": {
+                "text": [
+                    "हमारे NGO बॉट में आपका स्वागत है। हमसे संपर्क करने के लिए धन्यवाद। हमारे साथ जुड़े रहने के लिए, कृपया हमें आपको संदेश भेजने की अनुमति प्रदान करें-\n\n*1 टाइप करें* हमें अनुमति देने के लिए। हम आपको अद्भुत सामग्री भेजने का वादा करते हैं।\n*2 टाइप करें* यदि आप हमें केवल तभी संदेश देंगे जब आपको जानकारी की आवश्यकता होगी।"
+                ]
+            },
+            "d8c98741-b9a6-41bf-b91d-984465ccd3b9": {
+                "text": [
+                    "हमें अनुमति देने के लिए धन्यवाद। हम वास्तव में इसकी बहुत सराहना करते हैं।"
+                ]
+            },
+            "e146a3df-8dbb-4d20-b8f8-19a47ece951c": {
+                "text": [
+                    "चिंता न करें। आप हमेशा मदद मेनू में जाकर उसे बदल सकते हैं। आप अभी भी हमें कभी भी मैसेज कर सकते हैं।"
+                ]
+            }
+        }
+    },
+    "spec_version": "13.1.0",
+    "expire_after_minutes": 10080
+}
