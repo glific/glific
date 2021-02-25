@@ -4,6 +4,7 @@ defmodule Glific.Flows.PeriodicTest do
   alias Glific.{
     Fixtures,
     Flows.Periodic,
+    Partners,
     Seeds.SeedsDev
   }
 
@@ -37,17 +38,25 @@ defmodule Glific.Flows.PeriodicTest do
     assert Periodic.compute_time(DateTime.add(thursday, 73 * 6 * 60), "daily") == thursday
   end
 
-  test "map flow ids" do
-    filled_map = Periodic.map_flow_ids(%{organization_id: Fixtures.get_org_id()})
+  test "map flow ids", %{organization_id: organization_id} do
+    filled_map = Periodic.map_flow_ids(%{organization_id: organization_id})
 
     # we know that outofoffice is a default seeded flow
     assert !is_nil(get_in(filled_map, [:flows, "published", "outofoffice"]))
   end
 
   # @tag :pending
-  test "run flows and we know the outofoffice flow should get going", attrs do
+  test "run flows and we know the outofoffice flow should get going", %{organization_id: organization_id} = attrs do
     FunWithFlags.enable(:enable_out_of_office)
     FunWithFlags.enable(:out_of_office_active)
+
+    # first delete the cached organization
+    # since we reload the outofoffice flow on every test
+    # we have no idea what id the org has cached, hence the forced
+    # reload of org cache
+    organization = Partners.get_organization!(organization_id)
+    Partners.remove_organization_cache(organization.id, organization.shortcode)
+    Glific.Caches.remove(organization_id, ["flow_keywords_map"])
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
     state = Periodic.run_flows(%{}, message)

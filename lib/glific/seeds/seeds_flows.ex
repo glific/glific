@@ -78,7 +78,7 @@ defmodule Glific.Seeds.SeedsFlows do
         "uuid" => f.uuid
       })
 
-    Repo.insert(%FlowRevision{
+    Repo.insert!(%FlowRevision{
       definition: definition,
       flow_id: f.id,
       status: "published",

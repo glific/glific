@@ -711,7 +711,7 @@ if Code.ensure_loaded?(Faker) do
         )
 
       # seed multiple flow labels
-      Repo.insert_all(FlowLabel, flow_labels)
+      Repo.insert_all(FlowLabel, flow_labels, on_conflict: :raise)
     end
 
     @doc false
