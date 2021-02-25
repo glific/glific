@@ -58,6 +58,7 @@ defmodule Glific.Flows.Action do
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
+          enter_flow_name: String.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
@@ -104,6 +105,8 @@ defmodule Glific.Flows.Action do
     embeds_one :templating, Templating
 
     field :enter_flow_uuid, Ecto.UUID
+    field :enter_flow_name, :string
+
     embeds_one :enter_flow, Flow
   end
 
@@ -128,7 +131,10 @@ defmodule Glific.Flows.Action do
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
-    process(json, uuid_map, node, %{enter_flow_uuid: json["flow"]["uuid"]})
+    process(json, uuid_map, node,
+      %{enter_flow_uuid: json["flow"]["uuid"],
+        enter_flow_name: json["flow"]["name"],
+      })
   end
 
   def process(%{"type" => "set_contact_language"} = json, uuid_map, node) do
@@ -233,11 +239,19 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
-  @spec check_entity_exists(non_neg_integer, Keyword.t(), atom()) :: Keyword.t()
-  defp check_entity_exists(entity_id, errors, object) do
-    case Repo.fetch_by(object, %{id: entity_id}) do
+  @spec get_name(atom()) :: String.t()
+  defp get_name(module) do
+    module
+    |> Atom.to_string()
+    |> String.split(".")
+    |> List.last()
+  end
+
+  @spec check_entity_exists(map(), Keyword.t(), atom()) :: Keyword.t()
+  defp check_entity_exists(entity, errors, object) do
+    case Repo.fetch_by(object, %{id: entity["uuid"]}) do
       {:ok, _} -> errors
-      _ -> [{object, "Could not find #{object} object"}] ++ errors
+      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}"}] ++ errors
     end
   end
 
@@ -261,12 +275,12 @@ defmodule Glific.Flows.Action do
       errors,
       fn entity, errors ->
         case Glific.parse_maybe_integer(entity["uuid"]) do
-          {:ok, entity_id} ->
+          {:ok, _entity_id} ->
             # ensure entity_id exists
-            check_entity_exists(entity_id, errors, object)
+            check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{object} object"}] ++ errors
+            [{object, "Could not parse #{get_name(object)} object"}] ++ errors
         end
       end
     )
@@ -276,7 +290,7 @@ defmodule Glific.Flows.Action do
     # ensure that the flow exists
     case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
       {:ok, _} -> errors
-      _ -> [{Flow, "Could not find Flow object"}] ++ errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}"}] ++ errors
     end
   end
 
@@ -397,9 +411,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "add_contact_groups"} = action, context, messages) do
     ## We will soon figure out how we will manage the UUID with tags
-    Logger.info(
-      "Adding contact to group with action: #{inspect(action)}, messages: #{inspect(messages)}"
-    )
+    Logger.info("Adding contact to group in action")
 
     _list =
       Enum.reduce(
