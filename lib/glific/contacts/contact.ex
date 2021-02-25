@@ -12,7 +12,8 @@ defmodule Glific.Contacts.Contact do
     Groups.Group,
     Partners.Organization,
     Settings.Language,
-    Tags.Tag
+    Tags.Tag,
+    Users.User
   }
 
   @required_fields [
@@ -43,6 +44,7 @@ defmodule Glific.Contacts.Contact do
           masked_phone: String.t() | nil,
           status: ContactStatus | nil,
           bsp_status: ContactProviderStatus | nil,
+          user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -70,6 +72,7 @@ defmodule Glific.Contacts.Contact do
 
     belongs_to :language, Language
     belongs_to :organization, Organization
+    has_one :user, User
 
     field :optin_time, :utc_datetime
     field :optin_status, :boolean, default: false
