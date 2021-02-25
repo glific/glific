@@ -6,6 +6,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   alias Plug.Conn.Query
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
+  # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
