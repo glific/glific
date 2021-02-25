@@ -15,15 +15,11 @@ defmodule Glific.Repo.Seeds.DisableChatbase do
   defp update_existing_credentials() do
     credentials = Repo.all(Credential, skip_organization_id: true) |> Repo.preload(:provider)
 
-    credentials|> Enum.each(fn credential ->
+    credentials
+    |> Enum.each(fn credential ->
       if Enum.member?(["chatbase"], credential.provider.shortcode) do
         Repo.update!(Ecto.Changeset.change(credential, %{is_active: false, is_valid: false}))
       end
     end)
   end
-
-  defp update_status(credential) do
-    Repo.update!(Ecto.Changeset.change(credential, %{is_active: false, is_valid: false}))
-  end
-
 end
