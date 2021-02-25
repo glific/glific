@@ -46,11 +46,10 @@ defmodule Glific.Processor.ConsumerFlow do
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
     # context is not nil
-    cond do
-      should_start_optin_flow?(message.contact, context, body) ->
+    if should_start_optin_flow?(message.contact, context, body) do
         start_optin_flow(message, state)
 
-      true ->
+    else
         with false <- is_nil(context),
              {:ok, flow} <-
                Flows.get_cached_flow(
