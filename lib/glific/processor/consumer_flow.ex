@@ -7,6 +7,7 @@ defmodule Glific.Processor.ConsumerFlow do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
     Flows.FlowContext,
     Flows.Periodic,
@@ -183,6 +184,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @optin_flow_keyword "optin"
   ## check if contact is not in the optin flow and has optout time
+  @spec should_start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
   defp should_start_optin_flow?(contact, nil, _body),
   do: !is_nil(contact.optout_time)
 
@@ -192,6 +194,7 @@ defmodule Glific.Processor.ConsumerFlow do
       else: should_start_optin_flow?(contact, nil, body)
 
 
+  @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
   defp start_optin_flow(message, state) do
     ## remove all the previous flow context
     FlowContext.mark_flows_complete(message.contact_id)
