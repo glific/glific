@@ -222,6 +222,7 @@ defmodule Glific.Flows.ContactAction do
       |> Enum.member?("optin")
 
     attachments = Localization.get_translation(context, action, :attachments)
+
     {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
 
     attrs = %{
