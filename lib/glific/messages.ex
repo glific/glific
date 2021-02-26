@@ -900,7 +900,10 @@ defmodule Glific.Messages do
       "sticker" => 100
     }
 
-    case Tesla.get(url) do
+    # we first decode the string since we have no idea if it was encoded or not
+    # if the string was not encoded, decode should not really matter
+    # once decoded we encode the string
+    case Tesla.get(url |> URI.decode() |> URI.encode()) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
         headers
         |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
@@ -916,7 +919,7 @@ defmodule Glific.Messages do
   @spec do_validate_media(map(), String.t(), String.t(), integer()) :: map()
   defp do_validate_media(headers, type, url, size_limit) do
     cond do
-      do_validate_headers(headers, type, url) == false ->
+      do_validate_headers(headers, type, url) |> IO.inspect(label: headers["content-type"]) == false ->
         %{is_valid: false, message: "Media url is not valid."}
 
       do_validate_size(size_limit, headers["content-length"]) == false ->
