@@ -236,11 +236,11 @@ defmodule Glific.Seeds.SeedsSim do
     |> update([c], set: [optin_status: false])
     |> Repo.update_all([], skip_organization_id: true)
 
-    # Set true status where we have an option_date,
-    # also set method as URL since they opted in via Gupshup
+    # Set true status where we have an optin_date,
+    # also set method as BSP since they opted in via Gupshup
     Contact
     |> where([c], not is_nil(c.optin_time))
-    |> update([c], set: [optin_status: true, optin_method: "URL"])
+    |> update([c], set: [optin_status: true, optin_method: "BSP"])
     |> Repo.update_all([], skip_organization_id: true)
 
     :ok

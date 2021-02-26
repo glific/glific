@@ -42,7 +42,7 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
+    if Contacts.can_send_message_to?(message.receiver, message.is_hsm, attrs) do
       {:ok, _} =
         apply(
           Communications.provider_handler(message.organization_id),
