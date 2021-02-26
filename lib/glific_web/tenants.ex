@@ -72,10 +72,10 @@ defmodule GlificWeb.Tenants do
 
   def organization_handler(shortcode) do
     case Partners.organization(shortcode) do
-      nil -> 0 # lets stop resolving nil to glific to avoid any potential security issues
-
-      {:error, _error} -> 0 # we assume 0 is the error for now
-
+      # lets stop resolving nil to glific to avoid any potential security issues
+      nil -> 0
+      # we assume 0 is the error for now
+      {:error, _error} -> 0
       organization -> organization.id
     end
   end
