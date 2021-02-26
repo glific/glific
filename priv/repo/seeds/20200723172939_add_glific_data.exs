@@ -7,7 +7,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactsField,
-    Flows.Flow,
     Flows.FlowLabel,
     Jobs.BigqueryJob,
     Partners,
@@ -15,7 +14,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Partners.Provider,
     Repo,
     Searches.SavedSearch,
-    Seeds.SeedsDev,
+    Seeds.SeedsFlows,
     Seeds.SeedsSim,
     Settings.Language,
     Tags.Tag,
@@ -525,17 +524,15 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
+      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
+      optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e")
     }
-
-    flow_labels_id_map =
-      FlowLabel.get_all_flowlabel(organization.id)
-      |> Enum.reduce(%{}, fn flow_label, acc ->
-        acc |> Map.merge(%{flow_label.name => flow_label.uuid})
-      end)
 
     data = [
       {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
+      {"Optin Workflow", ["optin"], uuid_map.optin, true, "optin.json"},
+      {"Optout Workflow", ["optout", "stop"], uuid_map.optout, true, "optout.json"},
       {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
       {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
@@ -544,21 +541,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
        "registration.json"}
     ]
 
-    Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
-  end
-
-  defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
-    f =
-      Repo.insert!(%Flow{
-        name: name,
-        keywords: keywords,
-        ignore_keywords: ignore_keywords,
-        version_number: "13.1.0",
-        uuid: uuid,
-        organization_id: organization.id
-      })
-
-    SeedsDev.flow_revision(f, organization, file, uuid_map, id_map)
+    SeedsFlows.add_flow(organization, data, uuid_map)
   end
 
   def contacts_field(organization) do

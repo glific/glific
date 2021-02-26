@@ -93,9 +93,7 @@ defmodule Glific.Flows.Exit do
   end
 
   # get most recent message
-
   @spec get_recent_messages(list()) :: map()
-  defp get_recent_messages(nil), do: %{}
-  defp get_recent_messages([]), do: %{}
+  defp get_recent_messages(x) when x in [nil, []], do: %{}
   defp get_recent_messages(recent_inbound), do: hd(recent_inbound)
 end
