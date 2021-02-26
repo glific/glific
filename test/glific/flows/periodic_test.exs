@@ -8,7 +8,19 @@ defmodule Glific.Flows.PeriodicTest do
     Seeds.SeedsDev
   }
 
-  setup do
+  defp reset_cache(organization_id) do
+    # first delete the cached organization
+    # since we reload the outofoffice flow on every test
+    # we have no idea what id the org has cached, hence the forced
+    # reload of org cache
+    organization = Partners.get_organization!(organization_id)
+    Partners.remove_organization_cache(organization.id, organization.shortcode)
+    Glific.Caches.remove(organization_id, ["flow_keywords_map"])
+  end
+
+  setup %{organization_id: organization_id} do
+    reset_cache(organization_id)
+
     SeedsDev.seed_flow_labels()
     SeedsDev.seed_flows()
     :ok
@@ -38,31 +50,18 @@ defmodule Glific.Flows.PeriodicTest do
     assert Periodic.compute_time(DateTime.add(thursday, 73 * 6 * 60), "daily") == thursday
   end
 
-  defp reset_cache(organization_id) do
-    # first delete the cached organization
-    # since we reload the outofoffice flow on every test
-    # we have no idea what id the org has cached, hence the forced
-    # reload of org cache
-    organization = Partners.get_organization!(organization_id)
-    Partners.remove_organization_cache(organization.id, organization.shortcode)
-    Glific.Caches.remove(organization_id, ["flow_keywords_map"])
-  end
-
   test "map flow ids", %{organization_id: organization_id} do
-    reset_cache(organization_id)
     filled_map = Periodic.map_flow_ids(%{organization_id: organization_id})
 
     # we know that outofoffice is a default seeded flow
     assert !is_nil(get_in(filled_map, [:flows, "published", "outofoffice"]))
   end
 
-  # @tag :pending
+  @tag :pending
   test "run flows and we know the outofoffice flow should get going",
        %{organization_id: organization_id} = attrs do
-    reset_cache(organization_id)
-
-    FunWithFlags.enable(:enable_out_of_office)
-    FunWithFlags.enable(:out_of_office_active)
+    FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
+    FunWithFlags.enable(:out_of_office_active, for_actor: %{organization_id: organization_id})
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
     state = Periodic.run_flows(%{}, message)
@@ -78,8 +77,10 @@ defmodule Glific.Flows.PeriodicTest do
     assert length(rows) == 1
   end
 
-  test "call the periodic flow function with non-existent flows" do
-    state = Periodic.map_flow_ids(%{organization_id: Fixtures.get_org_id()})
+  test "call the periodic flow function with non-existent flows", %{
+    organization_id: organization_id
+  } do
+    state = Periodic.map_flow_ids(%{organization_id: organization_id})
 
     assert {state, false} ==
              Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
