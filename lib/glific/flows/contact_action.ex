@@ -216,7 +216,8 @@ defmodule Glific.Flows.ContactAction do
        ) do
     organization_id = context.organization_id
 
-    context_2 = Repo.preload(context, [:flow])
+    ## we can not just preload the flow in the same url
+    current_context = Repo.preload(context, [:flow])
 
     attachments = Localization.get_translation(context, action, :attachments)
     {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
@@ -230,7 +231,8 @@ defmodule Glific.Flows.ContactAction do
       organization_id: organization_id,
       flow_id: context.flow_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
-      is_optin_flow: false
+      is_optin_flow: current_context.flow.keywords
+      |> Enum.member?("optin")
     }
 
     attrs
