@@ -88,7 +88,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   end
 
   @doc """
-  Sending HSM template to contact
+  Sending message to contact
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do

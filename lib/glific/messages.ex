@@ -912,7 +912,7 @@ defmodule Glific.Messages do
         |> do_validate_media(type, url, size_limit[type])
 
       _ ->
-        %{is_valid: false, message: "Somthing is not right."}
+        %{is_valid: false, message: "Media URL is not valid"}
     end
   end
 

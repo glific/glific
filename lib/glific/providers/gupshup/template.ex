@@ -7,6 +7,7 @@ defmodule Glific.Providers.Gupshup.Template do
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
+    Templates,
     Templates.SessionTemplate
   }
 
@@ -36,7 +37,7 @@ defmodule Glific.Providers.Gupshup.Template do
             else: false
           )
       })
-      |> Glific.Templates.do_create_session_template()
+      |> Templates.do_create_session_template()
     else
       {status, response} ->
         # structure of response body can be different for different errors
@@ -58,7 +59,7 @@ defmodule Glific.Providers.Gupshup.Template do
            ApiClient.get_templates(organization_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      Glific.Templates.do_update_hsms(response_data["templates"], organization)
+      Templates.do_update_hsms(response_data["templates"], organization)
       :ok
     else
       _ ->
