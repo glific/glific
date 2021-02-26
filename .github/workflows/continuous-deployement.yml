@@ -1,16 +1,15 @@
 name: Continuous Deployment
 
-
 on:
   push:
-    branches: [ master]
+    branches: [feature/remove-unattended-upgrades]
 
 jobs:
   deploy:
     # only run this job if the verify job succeeds
 
     # only run this job if the workflow is running on the feature/master branch
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 
@@ -23,8 +22,8 @@ jobs:
       # setup the python
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.8.1'
-              
+          python-version: "3.8.1"
+
       # configure the gigalixir-actions with our credentials and app name
       - uses: mhanberg/gigalixir-action@v0.4.3
         with:
@@ -33,3 +32,7 @@ jobs:
           GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           MIGRATIONS: false
+      
+      # Remove unattended-upgrades
+      - name: remove unattended-upgrades
+        run: apt-get -y remove unattended-upgrades
