@@ -354,7 +354,7 @@ defmodule Glific.Contacts do
       phone: phone,
       optin_time: utc_time,
       optin_status: true,
-      optin_method: Keyword.get(opts, :method, "URL"),
+      optin_method: Keyword.get(opts, :method, "BSP"),
       optin_message_id: Keyword.get(opts, :message_id),
       last_message_at: DateTime.utc_now(),
       optout_time: nil,
@@ -369,11 +369,23 @@ defmodule Glific.Contacts do
         create_contact(attrs)
 
       contact ->
-        if contact.status == :blocked,
+        # we ignore the optin from the BSP if we are already opted in
+        if ignore_optin?(contact, opts),
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
     |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
+  end
+
+  @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
+  defp ignore_optin?(contact, opts) do
+    cond do
+      # if we are already opted in and we get the optin request from
+      # BSP, we ignore it
+      contact.optin_status and opts[:method] == "BSP" -> true
+      contact.status == :blocked -> true
+      true -> false
+    end
   end
 
   @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::
@@ -445,6 +457,22 @@ defmodule Glific.Contacts do
        do: true,
        else: false
   end
+
+  @doc """
+  Check if we can send a session message to the contact with some extra perameters
+  """
+
+  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: boolean()
+  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
+    if is_hsm do
+      contact.bsp_status in [:session_and_hsm, :hsm]
+    else
+      contact.bsp_status in [:session_and_hsm, :session] &&
+        Glific.in_past_time(contact.last_message_at, :hours, 24)
+    end
+  end
+
+  def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
 
   @doc """
   Get contact's current location

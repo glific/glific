@@ -403,13 +403,12 @@ defmodule Glific.Partners do
   @doc """
   Cache the entire organization structure.
   """
-  @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
+  @spec organization(non_neg_integer | String.t()) ::
+          Organization.t() | nil | {:error, String.t()}
   def organization(cache_key) do
     case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
       {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve organization, #{inspect(cache_key)}, #{error}"
-        )
+        {:error, error}
 
       {_, organization} ->
         Glific.Repo.put_organization_id(organization.id)

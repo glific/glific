@@ -19,7 +19,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
     |> Glific.Contacts.contact_opted_in(
       conn.assigns[:organization_id],
       timestamp,
-      method: "URL"
+      method: "BSP"
     )
 
     handler(conn, params, "Opted in handler")
