@@ -50,8 +50,10 @@ defmodule Glific.Processor.ConsumerFlow do
     if should_start_optin_flow?(message.contact, context, body),
     do: start_optin_flow(message, state),
     else: move_forward({message, state}, body, context, is_beta: is_beta)
+
   end
 
+  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) :: {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
 
      with  false <- is_nil(context),
