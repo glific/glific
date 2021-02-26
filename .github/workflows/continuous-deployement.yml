@@ -35,4 +35,4 @@ jobs:
       
       # Remove unattended-upgrades
       - name: remove unattended-upgrades
-        run: apt-get -y remove unattended-upgrades
+        run: sudo apt-get -y remove unattended-upgrades
