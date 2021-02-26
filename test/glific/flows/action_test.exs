@@ -46,7 +46,7 @@ defmodule Glific.Flows.ActionTest do
 
   test "process extracts the right values from json for set_contact_language action" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "type" => "set_contact_language", "language" => "Hindi", }
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_language", "language" => "Hindi"}
 
     {action, uuid_map} = Action.process(json, %{}, node)
 

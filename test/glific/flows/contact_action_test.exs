@@ -45,7 +45,7 @@ defmodule Glific.Flows.ContactActionTest do
       flow_id: 1,
       flow_uuid: Ecto.UUID.generate(),
       contact_id: contact.id,
-      organization_id: attrs.organization_id,
+      organization_id: attrs.organization_id
     }
 
     # preload contact

@@ -4,7 +4,7 @@ defmodule Glific.Flows.ContactAction do
   centralizing it here
   """
 
-  alias Glific.{Contacts, Flows, Messages, Messages.Message, Repo, Templates.SessionTemplate}
+  alias Glific.{Contacts, Flows, Messages, Messages.Message, Templates.SessionTemplate}
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
 
   require Logger
