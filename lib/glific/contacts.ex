@@ -354,7 +354,7 @@ defmodule Glific.Contacts do
       phone: phone,
       optin_time: utc_time,
       optin_status: true,
-      optin_method: Keyword.get(opts, :method, "URL"),
+      optin_method: Keyword.get(opts, :method, "BSP"),
       optin_message_id: Keyword.get(opts, :message_id),
       last_message_at: DateTime.utc_now(),
       optout_time: nil,
@@ -369,11 +369,23 @@ defmodule Glific.Contacts do
         create_contact(attrs)
 
       contact ->
-        if contact.status == :blocked,
+        # we ignore the optin from the BSP if we are already opted in
+        if ignore_optin?(contact, opts),
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
     |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
+  end
+
+  @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
+  defp ignore_optin?(contact, opts) do
+    cond do
+      # if we are already opted in and we get the optin request from
+      # BSP, we ignore it
+      contact.optin_status and opts[:method] == "BSP" -> true
+      contact.status == :blocked -> true
+      true -> false
+    end
   end
 
   @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::

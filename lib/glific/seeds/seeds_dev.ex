@@ -71,7 +71,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: hi_in.id,
           optin_time: utc_now,
           optin_status: true,
-          optin_method: "URL",
+          optin_method: "BSP",
           bsp_status: :session_and_hsm
         },
         %{
@@ -342,7 +342,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: en_us.id,
           optin_time: utc_now,
           optin_status: true,
-          optin_method: "URL",
+          optin_method: "BSP",
           last_message_at: utc_now,
           last_communication_at: utc_now,
           organization_id: organization.id
