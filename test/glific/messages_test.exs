@@ -633,7 +633,8 @@ defmodule Glific.MessagesTest do
       media = Fixtures.message_media_fixture(attrs)
 
       {:ok, message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters, media.id)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters, media_id: media.id}
+        |> Messages.create_and_send_hsm_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)

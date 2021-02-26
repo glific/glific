@@ -128,6 +128,7 @@ defmodule Glific.Flows.FlowContextTest do
   test "active_context/1 will return the current context for contact" do
     flow_context = flow_context_fixture()
     flow_context_2 = FlowContext.active_context(flow_context.contact_id)
+    IO.inspect flow_context_2
     assert flow_context.id == flow_context_2.id
   end
 

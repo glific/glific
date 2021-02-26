@@ -181,6 +181,10 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @optin_flow_keyword "optin"
   ## check if contact is not in the optin flow and has optout time
+  defp should_start_optin_flow?(contact, nil, _body) do
+    if is_nil(contact.optout_time), do: true, else: false
+  end
+
   defp should_start_optin_flow?(contact, active_context, _body) do
     is_optin_flow =
       active_context.flow.keywords
@@ -191,9 +195,7 @@ defmodule Glific.Processor.ConsumerFlow do
       else: !is_nil(contact.optout_time)
   end
 
-  defp should_start_optin_flow?(contact, nil, _body) do
-    if is_nil(contact.optout_time), do: true, else: false
-  end
+
 
   defp start_optin_flow(message, state) do
     FlowContext.mark_flows_complete(message.contact_id)
