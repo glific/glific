@@ -87,7 +87,7 @@ defmodule Glific.Flows.Flow do
       flow
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
-      |> unique_constraint([:name, :organization_id])
+      |> unique_constraint([:name, :organization_id], message: "Sorry, the flow name already exists.")
       |> update_change(:keywords, &update_keywords(&1))
 
     validate_keywords(changeset, get_change(changeset, :keywords))
