@@ -54,6 +54,9 @@ defmodule Glific.Processor.ConsumerFlow do
 
   end
 
+  @doc """
+    In case contact is not in optin flow let's move ahead with the regualr processing.
+  """
   @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) :: {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
 
