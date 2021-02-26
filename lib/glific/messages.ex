@@ -215,8 +215,6 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
-    IO.inspect "debug 1"
-    IO.inspect attrs
     check_for_hsm_message(attrs, contact)
   end
 
@@ -226,7 +224,6 @@ defmodule Glific.Messages do
   defp check_for_hsm_message(attrs, contact) do
     with true <- Map.has_key?(attrs, :template_id),
          true <- Map.get(attrs, :is_hsm) do
-        IO.inspect "debug 2"
       attrs
       |> Map.merge(%{
         template_id: attrs.template_id,
@@ -234,11 +231,9 @@ defmodule Glific.Messages do
         parameters: attrs.params,
         media_id: attrs.media_id
       })
-      |> IO.inspect
       |> create_and_send_hsm_message()
     else
       _ ->
-        IO.inspect "debug 3"
         Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
         |> create_and_send_message(attrs)
     end
