@@ -416,9 +416,10 @@ defmodule Glific.Flows.FlowContext do
         do: query |> where([fc], fc.id == ^parent_id),
         else: query
 
+      #There are lot of test cases failing becuase of this change. Will come back to it end of this PR.
       query
-      |> Repo.preload([:contact, :flow])
       |> Repo.one()
+      |> Repo.preload([:contact, :flow])
   end
 
   @doc """
