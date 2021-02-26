@@ -129,7 +129,7 @@ defmodule Glific.Flows.NodeTest do
         organization_id: attrs.organization_id
       })
 
-    context = Repo.preload(context, :contact)
+    context = Repo.preload(context, [:contact, :flow])
 
     message_stream = []
 

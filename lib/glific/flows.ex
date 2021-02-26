@@ -633,9 +633,5 @@ defmodule Glific.Flows do
   """
   @spec is_optin_flow?(Flow.t()) :: boolean()
   def is_optin_flow?(nil), do: false
-
-  def is_optin_flow?(flow),
-  do: flow.keywords
-      |> Enum.member?(@optin_flow_keyword)
-
+  def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 end

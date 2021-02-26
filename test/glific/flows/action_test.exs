@@ -46,7 +46,7 @@ defmodule Glific.Flows.ActionTest do
 
   test "process extracts the right values from json for set_contact_language action" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "type" => "set_contact_language", "language" => "Hindi"}
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_language", "language" => "Hindi", }
 
     {action, uuid_map} = Action.process(json, %{}, node)
 
@@ -149,7 +149,7 @@ defmodule Glific.Flows.ActionTest do
 
     # preload contact
     {:ok, context} = FlowContext.create_flow_context(attrs)
-    context = Repo.preload(context, [:contact])
+    context = Repo.preload(context, [:flow, :contact])
 
     action = %Action{type: "send_msg", text: "This is a test message"}
 

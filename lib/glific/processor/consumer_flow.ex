@@ -25,7 +25,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if should_skip_message?(message, state),
+    if skip_message?(message, state),
       do: {message, state},
       else: do_process_message({message, state}, body)
   end
@@ -48,41 +48,43 @@ defmodule Glific.Processor.ConsumerFlow do
     # then send control to the flow directly
     # context is not nil
 
-    if should_start_optin_flow?(message.contact, context, body),
-    do: start_optin_flow(message, state),
-    else: move_forward({message, state}, body, context, is_beta: is_beta)
-
+    if start_optin_flow?(message.contact, context, body),
+      do: start_optin_flow(message, state),
+      else: move_forward({message, state}, body, context, is_beta: is_beta)
   end
 
   @doc """
-    In case contact is not in optin flow let's move ahead with the regualr processing.
+  In case contact is not in optin flow let's move ahead with the regualr processing.
   """
-  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) :: {Message.t(), map()}
+  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
+          {Message.t(), map()}
   def move_forward({message, state}, body, context, opts) do
+    with false <- is_nil(context),
+         {:ok, flow} <-
+           Flows.get_cached_flow(
+             message.organization_id,
+             {:flow_uuid, context.flow_uuid, context.status}
+           ),
+         true <- flow.ignore_keywords do
+      check_contexts(context, message, body, state)
+    else
+      _ ->
+        cond do
+          Map.get(state, :newcontact, false) &&
+              Map.has_key?(state.flow_keywords["published"], "newcontact") ->
+            # delay new contact flows by 2 minutes to allow user to deal with signon link
+            check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
 
-     with  false <- is_nil(context),
-           {:ok, flow} <- Flows.get_cached_flow( message.organization_id, {:flow_uuid, context.flow_uuid, context.status}),
-           true <- flow.ignore_keywords do
-           check_contexts(context, message, body, state)
-      else
-        _ ->
-          cond do
-            Map.get(state, :newcontact, false) &&
-                Map.has_key?(state.flow_keywords["published"], "newcontact") ->
-              # delay new contact flows by 2 minutes to allow user to deal with signon link
-              check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
+          Map.has_key?(state.flow_keywords["published"], body) ->
+            check_flows(message, body, state, is_beta: false)
 
-            Map.has_key?(state.flow_keywords["published"], body) ->
-              check_flows(message, body, state, is_beta: false)
+          Keyword.get(opts, :is_beta, false) ->
+            check_flows(message, message.body, state, is_beta: true)
 
-            Keyword.get(opts, :is_beta, false) ->
-              check_flows(message, message.body, state, is_beta: true)
-
-            true ->
-              check_contexts(context, message, body, state)
-          end
-      end
-
+          true ->
+            check_contexts(context, message, body, state)
+        end
+    end
   end
 
   @beta_phrase "draft"
@@ -178,24 +180,26 @@ defmodule Glific.Processor.ConsumerFlow do
   # if this is a new contact then we will allow to
   # process the message other wise system will check if
   # they opted in again and skip the flow
-  @spec should_skip_message?(Message.t(), map()) :: boolean()
-  defp should_skip_message?(message, state) do
+  @spec skip_message?(Message.t(), map()) :: boolean()
+  defp skip_message?(message, state) do
     if Map.get(state, :newcontact, false) || is_nil(message.body),
       do: false,
       else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end
 
   @optin_flow_keyword "optin"
+
   ## check if contact is not in the optin flow and has optout time
-  @spec should_start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
-  defp should_start_optin_flow?(contact, nil, _body),
-  do: !is_nil(contact.optout_time)
+  @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
+  defp start_optin_flow?(contact, nil, _body),
+    do: !is_nil(contact.optout_time)
 
-  defp should_start_optin_flow?(contact, active_context, body),
-  do: if Flows.is_optin_flow?(active_context.flow),
-      do: false,
-      else: should_start_optin_flow?(contact, nil, body)
-
+  defp start_optin_flow?(contact, active_context, body),
+    do:
+      if(Flows.is_optin_flow?(active_context.flow),
+        do: false,
+        else: start_optin_flow?(contact, nil, body)
+      )
 
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
   defp start_optin_flow(message, state) do
