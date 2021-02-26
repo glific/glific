@@ -98,19 +98,20 @@ defmodule Glific.Flows.FlowCount do
   def upsert_flow_count(%{flow_uuid: nil} = _attrs), do: :error
 
   def upsert_flow_count(attrs) do
-    case Repo.fetch_by(FlowCount, %{uuid: attrs.uuid}) do
+    case Repo.fetch_by(FlowCount, %{uuid: attrs.uuid, flow_id: attrs.flow_id, type: attrs.type}) do
       {:ok, flowcount} ->
-        recent_message = update_recent_messages(flowcount, attrs)
-
         update_flow_count(
           flowcount,
-          Map.merge(attrs, %{count: flowcount.count + 1, recent_messages: recent_message})
+          Map.merge(attrs, %{
+            count: flowcount.count + 1,
+            recent_messages: update_recent_messages(flowcount, attrs)
+          })
         )
 
       {:error, _} ->
         attrs =
           if Map.has_key?(attrs, :recent_message),
-            do: Map.merge(attrs, %{recent_messages: [attrs.recent_message]}),
+            do: Map.put(attrs, :recent_messages, [attrs.recent_message]),
             else: attrs
 
         create_flow_count(attrs)
@@ -119,10 +120,9 @@ defmodule Glific.Flows.FlowCount do
 
   @spec update_recent_messages(FlowCount.t(), map()) :: [any()]
   defp update_recent_messages(flow_count, %{recent_message: recent_message})
-       when recent_message != %{} do
-    [recent_message | flow_count.recent_messages]
-    |> Enum.take(5)
-  end
+       when recent_message != %{},
+       # we only store the first 5 recent messages
+       do: Enum.take([recent_message | flow_count.recent_messages], 5)
 
   defp update_recent_messages(_, _), do: []
 end
