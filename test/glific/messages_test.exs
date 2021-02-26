@@ -633,7 +633,12 @@ defmodule Glific.MessagesTest do
       media = Fixtures.message_media_fixture(attrs)
 
       {:ok, message} =
-        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters, media_id: media.id}
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters,
+          media_id: media.id
+        }
         |> Messages.create_and_send_hsm_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)

@@ -216,9 +216,7 @@ defmodule Glific.Flows.ContactAction do
        ) do
     organization_id = context.organization_id
 
-    # context =
-    # context
-    # |> Repo.preload([:flow])
+    context_2 = Repo.preload(context, [:flow])
 
     attachments = Localization.get_translation(context, action, :attachments)
     {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
