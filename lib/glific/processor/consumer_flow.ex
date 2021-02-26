@@ -46,7 +46,13 @@ defmodule Glific.Processor.ConsumerFlow do
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
     # context is not nil
+    IO.inspect "checking for optin"
+    IO.inspect message.contact.optout_time
+    IO.inspect context
+
     if should_start_optin_flow?(message.contact, context, body) do
+      IO.inspect "checking for optin true"
+
       start_optin_flow(message, state)
     else
       with false <- is_nil(context),
@@ -181,7 +187,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @optin_flow_keyword "optin"
   ## check if contact is not in the optin flow and has optout time
   defp should_start_optin_flow?(contact, nil, _body) do
-    if is_nil(contact.optout_time), do: true, else: false
+    if is_nil(contact.optout_time), do: false, else: true
   end
 
   defp should_start_optin_flow?(contact, active_context, _body) do
