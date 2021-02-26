@@ -46,17 +46,20 @@ defmodule Glific.Processor.ConsumerFlow do
     # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
     # context is not nil
-    if should_start_optin_flow?(message.contact, context, body) do
-      start_optin_flow(message, state)
-    else
-      with false <- is_nil(context),
-           {:ok, flow} <-
-             Flows.get_cached_flow(
-               message.organization_id,
-               {:flow_uuid, context.flow_uuid, context.status}
-             ),
+
+    if should_start_optin_flow?(message.contact, context, body),
+    do: start_optin_flow(message, state),
+    else: move_forward({message, state}, body, context, is_beta: is_beta)
+
+  end
+
+  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) :: {Message.t(), map()}
+  def move_forward({message, state}, body, context, opts) do
+
+     with  false <- is_nil(context),
+           {:ok, flow} <- Flows.get_cached_flow( message.organization_id, {:flow_uuid, context.flow_uuid, context.status}),
            true <- flow.ignore_keywords do
-        check_contexts(context, message, body, state)
+           check_contexts(context, message, body, state)
       else
         _ ->
           cond do
@@ -68,14 +71,14 @@ defmodule Glific.Processor.ConsumerFlow do
             Map.has_key?(state.flow_keywords["published"], body) ->
               check_flows(message, body, state, is_beta: false)
 
-            is_beta ->
+            Keyword.get(opts, :is_beta, false) ->
               check_flows(message, message.body, state, is_beta: true)
 
             true ->
               check_contexts(context, message, body, state)
           end
       end
-    end
+
   end
 
   @beta_phrase "draft"
@@ -180,21 +183,17 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @optin_flow_keyword "optin"
   ## check if contact is not in the optin flow and has optout time
-  defp should_start_optin_flow?(contact, nil, _body) do
-    if is_nil(contact.optout_time), do: false, else: true
-  end
+  defp should_start_optin_flow?(contact, nil, _body),
+  do: !is_nil(contact.optout_time)
 
-  defp should_start_optin_flow?(contact, active_context, _body) do
-    is_optin_flow =
-      active_context.flow.keywords
-      |> Enum.member?(@optin_flow_keyword)
-
-    if is_optin_flow,
+  defp should_start_optin_flow?(contact, active_context, body),
+  do: if Flows.is_optin_flow?(active_context.flow),
       do: false,
-      else: !is_nil(contact.optout_time)
-  end
+      else: should_start_optin_flow?(contact, nil, body)
+
 
   defp start_optin_flow(message, state) do
+    ## remove all the previous flow context
     FlowContext.mark_flows_complete(message.contact_id)
 
     Flows.get_cached_flow(

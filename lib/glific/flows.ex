@@ -624,4 +624,18 @@ defmodule Glific.Flows do
     do: Enum.map(keywords, &Glific.string_clean(&1))
 
   defp sanitize_flow_keywords(keywords), do: keywords
+
+  @optin_flow_keyword "optin"
+
+  @doc """
+  Check if the flow is optin flow. Currently we are
+  checking based on the optin keyword only.
+  """
+  @spec is_optin_flow?(Flow.t()) :: boolean()
+  def is_optin_flow?(nil), do: false
+
+  def is_optin_flow?(flow),
+  do: flow.keywords
+      |> Enum.member?(@optin_flow_keyword)
+
 end
