@@ -59,7 +59,7 @@ defmodule Glific.Flows.PeriodicTest do
 
   @tag :pending
   test "run flows and we know the outofoffice flow should get going",
-    %{organization_id: organization_id} = attrs do
+       %{organization_id: organization_id} = attrs do
     FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
     FunWithFlags.enable(:out_of_office_active, for_actor: %{organization_id: organization_id})
 
@@ -77,11 +77,13 @@ defmodule Glific.Flows.PeriodicTest do
     assert length(rows) == 1
   end
 
-  test "call the periodic flow function with non-existent flows", %{organization_id: organization_id} do
+  test "call the periodic flow function with non-existent flows", %{
+    organization_id: organization_id
+  } do
     state = Periodic.map_flow_ids(%{organization_id: organization_id})
 
     assert {state, false} ==
-      Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
+             Periodic.periodic_flow(state, "doesnotexist", nil, DateTime.utc_now())
 
     assert {state, false} == Periodic.periodic_flow(state, "daily", nil, DateTime.utc_now())
 
