@@ -9,7 +9,7 @@ defmodule Glific.FLowsTest do
     Groups,
     Messages.Message,
     Repo,
-    Seeds.SeedsDev,
+    Seeds.SeedsDev
   }
 
   describe "flows" do

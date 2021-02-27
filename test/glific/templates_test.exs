@@ -599,7 +599,7 @@ defmodule Glific.TemplatesTest do
       Templates.update_hsms(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = updated_hsm} =
-        Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+               Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
 
       assert updated_hsm.status == "APPROVED"
       assert updated_hsm.is_active == true
