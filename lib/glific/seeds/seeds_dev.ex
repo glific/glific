@@ -71,7 +71,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: hi_in.id,
           optin_time: utc_now,
           optin_status: true,
-          optin_method: "URL",
+          optin_method: "BSP",
           bsp_status: :session_and_hsm
         },
         %{
@@ -342,7 +342,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: en_us.id,
           optin_time: utc_now,
           optin_status: true,
-          optin_method: "URL",
+          optin_method: "BSP",
           last_message_at: utc_now,
           last_communication_at: utc_now,
           organization_id: organization.id
@@ -671,8 +671,12 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "test.json"))
+        |> Jason.decode!()
+
       Repo.insert!(%FlowRevision{
-        definition: FlowRevision.default_definition(test_flow),
+        definition: definition,
         flow_id: test_flow.id,
         status: "published",
         organization_id: organization.id

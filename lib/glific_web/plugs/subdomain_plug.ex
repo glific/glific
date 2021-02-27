@@ -22,13 +22,6 @@ if Code.ensure_loaded?(Plug) do
     @spec init(any) :: %{:__struct__ => atom, optional(atom) => any}
     def init(opts), do: struct(SubdomainPlugConfig, opts)
 
-    defp send_error(conn) do
-      conn
-      |> Conn.put_status(403)
-      |> Conn.send_resp(403, "Unauthorized")
-      |> Conn.halt()
-    end
-
     @doc false
     @spec call(Conn.t(), map()) :: Conn.t()
     def call(conn, config) do
@@ -36,7 +29,7 @@ if Code.ensure_loaded?(Plug) do
 
       # we allow nil subdom,ains while testing for now
       if is_nil(subdomain) && Application.get_env(:glific, :environment) != :test,
-        do: send_error(conn),
+        do: Plug.send_error(conn),
         else: Plug.put_organization(conn, subdomain, config)
     end
 

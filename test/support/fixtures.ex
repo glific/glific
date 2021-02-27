@@ -328,7 +328,7 @@ defmodule Glific.Fixtures do
   @doc false
   @spec group_contacts_fixture(map()) :: [Groups.ContactGroup.t(), ...]
   def group_contacts_fixture(attrs) do
-    attrs = %{filter: attrs}
+    attrs = %{filter: attrs, opts: %{order: :asc}}
 
     group_fixture(attrs)
 
@@ -364,9 +364,9 @@ defmodule Glific.Fixtures do
   def contact_tags_fixture(attrs) do
     tag_fixture(attrs)
 
-    attrs = %{filter: attrs}
+    attrs = %{filter: attrs, opts: %{order: :asc}}
 
-    [c1, c2 | _] = Contacts.list_contacts(attrs)
+    [_glific_admin, c1, c2 | _] = Contacts.list_contacts(attrs)
     [t1, t2 | _] = Tags.list_tags(attrs)
 
     {:ok, ct1} =

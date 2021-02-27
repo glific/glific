@@ -1,12 +1,10 @@
 defmodule GlificWeb.Resolvers.Triggers do
   @moduledoc """
-  Trigger Resolver which sits between the GraphQL schema and Glific Trigger Context API. This layer basically stiches together
-  one or more calls to resolve the incoming queries.
+  Trigger Resolver which sits between the GraphQL schema and Glific Trigger Context API.
+  This layer basically stiches together one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Repo
-
-  alias Glific.Triggers.Trigger
+  alias Glific.{Repo, Triggers.Trigger}
 
   @doc false
   @spec trigger(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

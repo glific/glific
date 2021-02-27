@@ -7,6 +7,7 @@ defmodule Glific.Processor.ConsumerFlow do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
     Flows.FlowContext,
     Flows.Periodic,
@@ -24,7 +25,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if should_skip_message?(message, state),
+    if skip_message?(message, state),
       do: {message, state},
       else: do_process_message({message, state}, body)
   end
@@ -42,9 +43,22 @@ defmodule Glific.Processor.ConsumerFlow do
       do: FlowContext.mark_flows_complete(message.contact_id)
 
     context = FlowContext.active_context(message.contact_id)
-    # if we are in a flow and the flow is set to ignore keywords
+
+    # if contact is not optout if we are in a flow and the flow is set to ignore keywords
     # then send control to the flow directly
     # context is not nil
+
+    if start_optin_flow?(message.contact, context, body),
+      do: start_optin_flow(message, state),
+      else: move_forward({message, state}, body, context, is_beta: is_beta)
+  end
+
+  @doc """
+  In case contact is not in optin flow let's move ahead with the regualr processing.
+  """
+  @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
+          {Message.t(), map()}
+  def move_forward({message, state}, body, context, opts) do
     with false <- is_nil(context),
          {:ok, flow} <-
            Flows.get_cached_flow(
@@ -64,7 +78,7 @@ defmodule Glific.Processor.ConsumerFlow do
           Map.has_key?(state.flow_keywords["published"], body) ->
             check_flows(message, body, state, is_beta: false)
 
-          is_beta ->
+          Keyword.get(opts, :is_beta, false) ->
             check_flows(message, message.body, state, is_beta: true)
 
           true ->
@@ -166,10 +180,44 @@ defmodule Glific.Processor.ConsumerFlow do
   # if this is a new contact then we will allow to
   # process the message other wise system will check if
   # they opted in again and skip the flow
-  @spec should_skip_message?(Message.t(), map()) :: boolean()
-  defp should_skip_message?(message, state) do
+  @spec skip_message?(Message.t(), map()) :: boolean()
+  defp skip_message?(message, state) do
     if Map.get(state, :newcontact, false) || is_nil(message.body),
       do: false,
       else: String.contains?(message.body, "Hi, I would like to receive notifications.")
+  end
+
+  @optin_flow_keyword "optin"
+
+  ## check if contact is not in the optin flow and has optout time
+  @spec start_optin_flow?(Contact.t(), FlowContext.t() | nil, String.t()) :: boolean()
+  defp start_optin_flow?(contact, nil, _body),
+    do: !is_nil(contact.optout_time)
+
+  defp start_optin_flow?(contact, active_context, body),
+    do:
+      if(Flows.is_optin_flow?(active_context.flow),
+        do: false,
+        else: start_optin_flow?(contact, nil, body)
+      )
+
+  @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
+  defp start_optin_flow(message, state) do
+    ## remove all the previous flow context
+    FlowContext.mark_flows_complete(message.contact_id)
+
+    Flows.get_cached_flow(
+      message.organization_id,
+      {:flow_keyword, @optin_flow_keyword, @final_phrase}
+    )
+    |> case do
+      {:ok, flow} ->
+        FlowContext.init_context(flow, message.contact, @final_phrase, is_beta: false)
+
+      {:error, _} ->
+        nil
+    end
+
+    {message, state}
   end
 end

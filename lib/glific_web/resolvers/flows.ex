@@ -78,6 +78,9 @@ defmodule GlificWeb.Resolvers.Flows do
       {:errors, errors} ->
         {:ok, %{success: true, errors: errors}}
 
+      {:error, errors} ->
+        {:ok, %{success: true, errors: %{key: hd(errors), message: hd(tl(errors))}}}
+
       _ ->
         {:error, "Something went wrong."}
     end

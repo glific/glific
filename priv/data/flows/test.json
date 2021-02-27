@@ -1,0 +1,50 @@
+{
+    "type" : "messaging",
+    "spec_version" : "13.1.0",
+    "nodes" : [
+        {
+            "uuid" : "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc",
+            "exits" : [
+                {
+                    "uuid" : "07de70d4-a403-4e52-86d0-ffc61a20bc49",
+                    "destination_uuid" : null
+                }
+            ],
+            "actions" : [
+                {
+                    "quick_replies" : [
+
+                    ],
+                    "attachments" : [
+
+                    ],
+                    "text" : "This is a test message",
+                    "type" : "send_msg",
+                    "uuid" : "01d37be5-50d3-44f3-a4e1-2306de6959bd"
+                }
+            ]
+        }
+    ],
+    "revision" : 1,
+    "uuid" : "defda715-c520-499d-851e-4428be87def6",
+    "name" : "Test Workflow",
+    "localization" : {
+
+    },
+    "vars" : [
+        "defda715-c520-499d-851e-4428be87def6"
+    ],
+    "language" : "base",
+    "expire_after_minutes" : 10080,
+    "_ui" : {
+        "nodes" : {
+            "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc" : {
+                "type" : "execute_actions",
+                "position" : {
+                    "top" : 0,
+                    "left" : 0
+                }
+            }
+        }
+    }
+}

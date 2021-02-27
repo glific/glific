@@ -23,7 +23,20 @@ if Code.ensure_loaded?(Plug) do
 
     alias Plug.Conn
 
+    require Logger
+
     @raw_organization_assign :raw_organization_name
+
+    @doc """
+    Global unauthorized error handler
+    """
+    @spec send_error(Conn.t()) :: Conn.t()
+    def send_error(conn) do
+      conn
+      |> Conn.put_status(403)
+      |> Conn.send_resp(403, "Unauthorized")
+      |> Conn.halt()
+    end
 
     @doc """
     Puts the given `organization` as an assign on the given `conn`, but only if the
@@ -43,11 +56,17 @@ if Code.ensure_loaded?(Plug) do
         conn = Conn.assign(conn, @raw_organization_assign, organization)
         organization_id = organization_handler(organization, config.organization_handler)
 
-        if GlificWeb.Tenants.reserved_organization?(organization) do
-          conn
-        else
-          Glific.Repo.put_organization_id(organization_id)
-          Conn.assign(conn, config.assign, organization_id)
+        cond do
+          GlificWeb.Tenants.reserved_organization?(organization) ->
+            conn
+
+          organization_id == 0 ->
+            Logger.info("Halting on failure to retrive #{organization}")
+            send_error(conn)
+
+          true ->
+            Glific.Repo.put_organization_id(organization_id)
+            Conn.assign(conn, config.assign, organization_id)
         end
       end
     end
@@ -66,7 +85,7 @@ if Code.ensure_loaded?(Plug) do
       else
         conn
         |> callback(conn.assigns[@raw_organization_assign], config.failure_callback)
-        |> Conn.halt()
+        |> send_error()
       end
     end
 

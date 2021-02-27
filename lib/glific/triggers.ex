@@ -62,7 +62,7 @@ defmodule Glific.Triggers do
     next_trigger_at = Helper.compute_next(trigger)
 
     {next_trigger_at, is_active} =
-      if DateTime.compare(next_trigger_at, trigger.end_at) == :gt,
+      if Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :gt,
         do: {nil, false},
         else: {next_trigger_at, true}
 

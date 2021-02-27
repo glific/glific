@@ -491,8 +491,8 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Partners.Organization{}} =
                Caches.get(global_organization_id, {:organization, organization.shortcode})
 
-      #  with wrong shortcode it raises an exceptin
-      assert_raise ArgumentError, fn -> Partners.organization("wrong_shortcode") end
+      #  with wrong shortcode it returns an error
+      assert {:error, _} = Partners.organization("wrong_shortcode")
     end
 
     test "organization/1 should return cached active languages" do

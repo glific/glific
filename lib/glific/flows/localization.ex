@@ -98,7 +98,7 @@ defmodule Glific.Flows.Localization do
 
     localization =
       if Ecto.assoc_loaded?(context.flow) and
-           Ecto.assoc_loaded?(context.flow.localization),
+           context.flow.localization != nil,
          do: context.flow.localization.localizations,
          else: %{}
 
