@@ -2,38 +2,239 @@
   "_ui": {
     "nodes": {
       "414f029b-aab4-44ed-92e9-df979a01d647": {
+        "type": "split_by_subflow",
         "config": {},
         "position": {
-          "left": 460,
-          "top": 200
-        },
-        "type": "split_by_subflow"
+          "top": 200,
+          "left": 460
+        }
       },
       "455a2d75-c198-4285-ba4f-c07cb526d090": {
+        "type": "execute_actions",
         "position": {
-          "left": 460,
-          "top": 560
-        },
-        "type": "execute_actions"
+          "top": 560,
+          "left": 460
+        }
       },
-      "cb270a96-40c5-486b-9560-954a8c1ebdc2": {
+      "c8ed6282-f8eb-40e3-90a3-87d9ef79656a": {
+        "type": "split_by_subflow",
         "config": {},
         "position": {
-          "left": 460,
-          "top": 380
-        },
-        "type": "split_by_subflow"
+          "top": 20,
+          "left": 460
+        }
       },
-      "d398401d-9d74-4a66-8c4c-289775625cb3": {
+      "cb270a96-40c5-486b-9560-954a8c1ebdc2": {
+        "type": "split_by_subflow",
+        "config": {},
         "position": {
-          "left": 460,
-          "top": 20
-        },
-        "type": "execute_actions"
+          "top": 380,
+          "left": 460
+        }
       }
     }
   },
-  "expire_after_minutes": 10080,
+  "name": "New Contact Workflow",
+  "type": "messaging",
+  "uuid": "NEWCONTACT_UUID",
+  "vars": [
+    "NEWCONTACT_UUID"
+  ],
+  "nodes": [
+    {
+      "uuid": "c8ed6282-f8eb-40e3-90a3-87d9ef79656a",
+      "exits": [
+        {
+          "uuid": "60a1242d-695f-4556-8c3e-21c320f24e50",
+          "destination_uuid": "414f029b-aab4-44ed-92e9-df979a01d647"
+        },
+        {
+          "uuid": "81262039-dd46-4056-abe9-154385d7ca0a",
+          "destination_uuid": null
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "38f53297-74b4-4111-9d9a-c19ae2380987",
+            "arguments": [
+              "completed"
+            ],
+            "category_uuid": "808d2713-447e-43ef-918a-5599cd164794"
+          },
+          {
+            "type": "has_only_text",
+            "uuid": "d6cbb575-8f19-405a-89f9-4660099e01e8",
+            "arguments": [
+              "expired"
+            ],
+            "category_uuid": "cf9dd556-1c18-4eb9-b88c-10f3ca510b14"
+          }
+        ],
+        "operand": "@child.run.status",
+        "categories": [
+          {
+            "name": "Complete",
+            "uuid": "808d2713-447e-43ef-918a-5599cd164794",
+            "exit_uuid": "60a1242d-695f-4556-8c3e-21c320f24e50"
+          },
+          {
+            "name": "Expired",
+            "uuid": "cf9dd556-1c18-4eb9-b88c-10f3ca510b14",
+            "exit_uuid": "81262039-dd46-4056-abe9-154385d7ca0a"
+          }
+        ],
+        "default_category_uuid": "cf9dd556-1c18-4eb9-b88c-10f3ca510b14"
+      },
+      "actions": [
+        {
+          "flow": {
+            "name": "Optin workflow",
+            "uuid": "OPTIN_UUID"
+          },
+          "type": "enter_flow",
+          "uuid": "9747b1fd-474c-48e1-a376-f80b19e5e6bf"
+        }
+      ]
+    },
+    {
+      "uuid": "414f029b-aab4-44ed-92e9-df979a01d647",
+      "exits": [
+        {
+          "uuid": "2924e58f-c2ff-4dad-8a53-dddd162fe595",
+          "destination_uuid": "cb270a96-40c5-486b-9560-954a8c1ebdc2"
+        },
+        {
+          "uuid": "1d0e055e-72de-4502-8a68-e68c4e9197e2",
+          "destination_uuid": "cb270a96-40c5-486b-9560-954a8c1ebdc2"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "8787c571-0031-466f-918b-40788841af85",
+            "arguments": [
+              "completed"
+            ],
+            "category_uuid": "baabce97-ef19-4134-839b-38e91f7be74a"
+          },
+          {
+            "type": "has_only_text",
+            "uuid": "183968ec-d281-4895-a58a-25438c7bfbc2",
+            "arguments": [
+              "expired"
+            ],
+            "category_uuid": "684a62a2-7252-4bd2-a674-e198d150e821"
+          }
+        ],
+        "operand": "@child.run.status",
+        "categories": [
+          {
+            "name": "Complete",
+            "uuid": "baabce97-ef19-4134-839b-38e91f7be74a",
+            "exit_uuid": "2924e58f-c2ff-4dad-8a53-dddd162fe595"
+          },
+          {
+            "name": "Expired",
+            "uuid": "684a62a2-7252-4bd2-a674-e198d150e821",
+            "exit_uuid": "1d0e055e-72de-4502-8a68-e68c4e9197e2"
+          }
+        ],
+        "default_category_uuid": "684a62a2-7252-4bd2-a674-e198d150e821"
+      },
+      "actions": [
+        {
+          "flow": {
+            "name": "Language Workflow",
+            "uuid": "LANGUAGE_UUID"
+          },
+          "type": "enter_flow",
+          "uuid": "320ab9ec-67d1-4550-9bce-11ef3848897f"
+        }
+      ]
+    },
+    {
+      "uuid": "cb270a96-40c5-486b-9560-954a8c1ebdc2",
+      "exits": [
+        {
+          "uuid": "3b97607a-8e72-4115-b685-afe86fcebfbd",
+          "destination_uuid": "455a2d75-c198-4285-ba4f-c07cb526d090"
+        },
+        {
+          "uuid": "68bbfed8-86d0-428c-8e5b-adbc73a8688c",
+          "destination_uuid": "455a2d75-c198-4285-ba4f-c07cb526d090"
+        }
+      ],
+      "router": {
+        "type": "switch",
+        "cases": [
+          {
+            "type": "has_only_text",
+            "uuid": "5a67c2d8-b6f4-403e-ba3c-677cc539ecb7",
+            "arguments": [
+              "completed"
+            ],
+            "category_uuid": "6eaa5137-4b63-4c61-81c0-0233bcc431cb"
+          },
+          {
+            "type": "has_only_text",
+            "uuid": "22152ca3-bad9-4b6a-a82e-2821564c8acb",
+            "arguments": [
+              "expired"
+            ],
+            "category_uuid": "47666e92-0d37-4a72-8272-cbda8be7c318"
+          }
+        ],
+        "operand": "@child.run.status",
+        "categories": [
+          {
+            "name": "Complete",
+            "uuid": "6eaa5137-4b63-4c61-81c0-0233bcc431cb",
+            "exit_uuid": "3b97607a-8e72-4115-b685-afe86fcebfbd"
+          },
+          {
+            "name": "Expired",
+            "uuid": "47666e92-0d37-4a72-8272-cbda8be7c318",
+            "exit_uuid": "68bbfed8-86d0-428c-8e5b-adbc73a8688c"
+          }
+        ],
+        "default_category_uuid": "47666e92-0d37-4a72-8272-cbda8be7c318"
+      },
+      "actions": [
+        {
+          "flow": {
+            "name": "Registration Workflow",
+            "uuid": "REGISTRATION_UUID"
+          },
+          "type": "enter_flow",
+          "uuid": "9bce0e17-1d51-4f44-a6f7-37427894dd8f"
+        }
+      ]
+    },
+    {
+      "uuid": "455a2d75-c198-4285-ba4f-c07cb526d090",
+      "exits": [
+        {
+          "uuid": "2090ed34-b413-4c53-a352-f64ad7285637",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "Continue building the flow however you'd like.",
+          "type": "send_msg",
+          "uuid": "b1db51b1-fc55-45e0-a153-e050dd73e112",
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
   "language": "base",
   "localization": {
     "hi": {
@@ -182,166 +383,6 @@
       "f011e71c-5801-4fbb-9c2f-5373470c76ef": {}
     }
   },
-  "name": "New Contact Workflow",
-  "nodes": [
-    {
-      "actions": [
-        {
-          "attachments": [],
-          "quick_replies": [],
-          "text": "This is your first message to the new contact.\n",
-          "type": "send_msg",
-          "uuid": "9747b1fd-474c-48e1-a376-f80b19e5e6bf"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "414f029b-aab4-44ed-92e9-df979a01d647",
-          "uuid": "ff63bb34-4d7b-4cf4-b58f-77f5889ff91c"
-        }
-      ],
-      "uuid": "d398401d-9d74-4a66-8c4c-289775625cb3"
-    },
-    {
-      "actions": [
-        {
-          "flow": {
-            "name": "Language Workflow",
-            "uuid": "LANGUAGE_UUID"
-          },
-          "type": "enter_flow",
-          "uuid": "320ab9ec-67d1-4550-9bce-11ef3848897f"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "cb270a96-40c5-486b-9560-954a8c1ebdc2",
-          "uuid": "2924e58f-c2ff-4dad-8a53-dddd162fe595"
-        },
-        {
-          "destination_uuid": "cb270a96-40c5-486b-9560-954a8c1ebdc2",
-          "uuid": "1d0e055e-72de-4502-8a68-e68c4e9197e2"
-        }
-      ],
-      "router": {
-        "cases": [
-          {
-            "arguments": [
-              "completed"
-            ],
-            "category_uuid": "baabce97-ef19-4134-839b-38e91f7be74a",
-            "type": "has_only_text",
-            "uuid": "8787c571-0031-466f-918b-40788841af85"
-          },
-          {
-            "arguments": [
-              "expired"
-            ],
-            "category_uuid": "684a62a2-7252-4bd2-a674-e198d150e821",
-            "type": "has_only_text",
-            "uuid": "183968ec-d281-4895-a58a-25438c7bfbc2"
-          }
-        ],
-        "categories": [
-          {
-            "exit_uuid": "2924e58f-c2ff-4dad-8a53-dddd162fe595",
-            "name": "Complete",
-            "uuid": "baabce97-ef19-4134-839b-38e91f7be74a"
-          },
-          {
-            "exit_uuid": "1d0e055e-72de-4502-8a68-e68c4e9197e2",
-            "name": "Expired",
-            "uuid": "684a62a2-7252-4bd2-a674-e198d150e821"
-          }
-        ],
-        "default_category_uuid": "684a62a2-7252-4bd2-a674-e198d150e821",
-        "operand": "@child.run.status",
-        "type": "switch"
-      },
-      "uuid": "414f029b-aab4-44ed-92e9-df979a01d647"
-    },
-    {
-      "actions": [
-        {
-          "flow": {
-            "name": "Registration Workflow",
-            "uuid": "REGISTRATION_UUID"
-          },
-          "type": "enter_flow",
-          "uuid": "9bce0e17-1d51-4f44-a6f7-37427894dd8f"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": "455a2d75-c198-4285-ba4f-c07cb526d090",
-          "uuid": "3b97607a-8e72-4115-b685-afe86fcebfbd"
-        },
-        {
-          "destination_uuid": "455a2d75-c198-4285-ba4f-c07cb526d090",
-          "uuid": "68bbfed8-86d0-428c-8e5b-adbc73a8688c"
-        }
-      ],
-      "router": {
-        "cases": [
-          {
-            "arguments": [
-              "completed"
-            ],
-            "category_uuid": "6eaa5137-4b63-4c61-81c0-0233bcc431cb",
-            "type": "has_only_text",
-            "uuid": "5a67c2d8-b6f4-403e-ba3c-677cc539ecb7"
-          },
-          {
-            "arguments": [
-              "expired"
-            ],
-            "category_uuid": "47666e92-0d37-4a72-8272-cbda8be7c318",
-            "type": "has_only_text",
-            "uuid": "22152ca3-bad9-4b6a-a82e-2821564c8acb"
-          }
-        ],
-        "categories": [
-          {
-            "exit_uuid": "3b97607a-8e72-4115-b685-afe86fcebfbd",
-            "name": "Complete",
-            "uuid": "6eaa5137-4b63-4c61-81c0-0233bcc431cb"
-          },
-          {
-            "exit_uuid": "68bbfed8-86d0-428c-8e5b-adbc73a8688c",
-            "name": "Expired",
-            "uuid": "47666e92-0d37-4a72-8272-cbda8be7c318"
-          }
-        ],
-        "default_category_uuid": "47666e92-0d37-4a72-8272-cbda8be7c318",
-        "operand": "@child.run.status",
-        "type": "switch"
-      },
-      "uuid": "cb270a96-40c5-486b-9560-954a8c1ebdc2"
-    },
-    {
-      "actions": [
-        {
-          "all_urns": false,
-          "attachments": [],
-          "quick_replies": [],
-          "text": "Continue building the flow however you'd like.",
-          "type": "send_msg",
-          "uuid": "b1db51b1-fc55-45e0-a153-e050dd73e112"
-        }
-      ],
-      "exits": [
-        {
-          "destination_uuid": null,
-          "uuid": "2090ed34-b413-4c53-a352-f64ad7285637"
-        }
-      ],
-      "uuid": "455a2d75-c198-4285-ba4f-c07cb526d090"
-    }
-  ],
   "spec_version": "13.1.0",
-  "type": "messaging",
-  "uuid": "NEWCONTACT_UUID",
-  "vars": [
-    "NEWCONTACT_UUID"
-  ]
+  "expire_after_minutes": 10080
 }
