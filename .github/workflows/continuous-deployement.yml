@@ -33,3 +33,7 @@ jobs:
           GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           MIGRATIONS: false
+
+      # Remove unattended-upgrades
+      - name: remove unattended-upgrades
+        run: sudo apt-get -y remove unattended-upgrades
