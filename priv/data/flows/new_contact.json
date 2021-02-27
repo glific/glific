@@ -92,7 +92,7 @@
         {
           "flow": {
             "name": "Optin workflow",
-            "uuid": "6d89c2f7-1c01-41aa-82a9-21b1fddedfef"
+            "uuid": "OPTIN_UUID"
           },
           "type": "enter_flow",
           "uuid": "9747b1fd-474c-48e1-a376-f80b19e5e6bf"
@@ -150,7 +150,7 @@
         {
           "flow": {
             "name": "Language Workflow",
-            "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"
+            "uuid": "LANGUAGE_UUID"
           },
           "type": "enter_flow",
           "uuid": "320ab9ec-67d1-4550-9bce-11ef3848897f"
@@ -208,7 +208,7 @@
         {
           "flow": {
             "name": "Registration Workflow",
-            "uuid": "f4f38e00-3a50-4892-99ce-a281fe24d040"
+            "uuid": "REGISTRATION_UUID"
           },
           "type": "enter_flow",
           "uuid": "9bce0e17-1d51-4f44-a6f7-37427894dd8f"
