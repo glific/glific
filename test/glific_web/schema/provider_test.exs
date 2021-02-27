@@ -35,7 +35,6 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert res == "Gupshup"
   end
 
-  # @tag :pending
   test "count returns the number of providers", %{user: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countProviders"]) > 1

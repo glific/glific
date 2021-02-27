@@ -671,8 +671,12 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "test.json"))
+        |> Jason.decode!()
+
       Repo.insert!(%FlowRevision{
-        definition: FlowRevision.default_definition(test_flow),
+        definition: definition,
         flow_id: test_flow.id,
         status: "published",
         organization_id: organization.id

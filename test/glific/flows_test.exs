@@ -7,7 +7,9 @@ defmodule Glific.FLowsTest do
     Flows.Flow,
     Flows.FlowRevision,
     Groups,
-    Messages.Message
+    Messages.Message,
+    Repo,
+    Seeds.SeedsDev
   }
 
   describe "flows" do
@@ -122,7 +124,7 @@ defmodule Glific.FLowsTest do
 
     test "create_flow/1 will have a default revision" do
       flow = flow_fixture(@valid_attrs)
-      flow = Glific.Repo.preload(flow, [:revisions])
+      flow = Repo.preload(flow, [:revisions])
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
       assert [revision] = flow.revisions
@@ -174,7 +176,7 @@ defmodule Glific.FLowsTest do
     test "get_flow_revision_list/1 returns a formatted list of flow revisions" do
       flow =
         flow_fixture()
-        |> Glific.Repo.preload([:revisions])
+        |> Repo.preload([:revisions])
 
       revisions = Flows.get_flow_revision_list(flow.uuid).results
       assert length(flow.revisions) == length(revisions)
@@ -183,7 +185,7 @@ defmodule Glific.FLowsTest do
     test "get_flow_revision/2 returns a specific revision" do
       flow =
         flow_fixture()
-        |> Glific.Repo.preload([:revisions])
+        |> Repo.preload([:revisions])
 
       [revision] = flow.revisions
       assert Flows.get_flow_revision(flow.uuid, revision.id).definition == revision.definition
@@ -192,7 +194,7 @@ defmodule Glific.FLowsTest do
     test "create_flow_revision/1 create a specific revision for the flow" do
       flow =
         flow_fixture()
-        |> Glific.Repo.preload([:revisions])
+        |> Repo.preload([:revisions])
 
       [revision] = flow.revisions
 
@@ -203,7 +205,7 @@ defmodule Glific.FLowsTest do
 
     test "check_required_fields/1 check the required field in the json file", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
-      flow = Glific.Repo.preload(flow, [:revisions])
+      flow = Repo.preload(flow, [:revisions])
       [revision | _tail] = flow.revisions
       assert Flows.check_required_fields(revision.definition, [:name]) == true
       definition = Map.delete(revision.definition, "name")
@@ -245,10 +247,13 @@ defmodule Glific.FLowsTest do
       assert loaded_flow_new.keywords != loaded_flow.keywords
     end
 
-    @tag :pending
     test "publish_flow/1 updates the latest flow revision status",
          %{organization_id: organization_id} = _attrs do
-      flow = flow_fixture() |> Repo.preload([:revisions])
+      SeedsDev.seed_test_flows()
+
+      name = "Test Workflow"
+      {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
+      flow = Repo.preload(flow, [:revisions])
 
       # should set status of recent flow revision as "published"
       assert {:ok, %Flow{}} = Flows.publish_flow(flow)

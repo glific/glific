@@ -310,10 +310,8 @@ defmodule GlificWeb.Schema.ContactTest do
     assert length(get_in(query_data, [:data, "contacts"])) == 2
   end
 
-  @tag :pending
-  # this test is a bit flaky, hence pending it for now
   test "search contacts field obeys tag filters", %{staff: user} do
-    [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
+    [ct1, _ct2, _ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:list, user,
@@ -334,7 +332,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:list, user,
         variables: %{
           "filter" => %{
-            "includeTags" => ["#{ct1.tag_id}", "#{ct3.tag_id}"],
+            "includeTags" => ["#{ct1.tag_id}"],
             "includeGroups" => ["#{cg3.group_id}"]
           }
         }
