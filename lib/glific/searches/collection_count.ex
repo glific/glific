@@ -5,6 +5,8 @@ defmodule Glific.Searches.CollectionCount do
 
   import Ecto.Query, warn: false
 
+  use Publicist
+
   alias Glific.{
     Communications,
     Contacts.Contact,
