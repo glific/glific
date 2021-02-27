@@ -570,14 +570,13 @@ defmodule Glific.TemplatesTest do
       assert {:error, _message} = Templates.update_hsms(attrs.organization_id)
     end
 
-    @tag :pending
     test "update_hsms/1 should update status of already existing HSM", attrs do
       [hsm | _] =
         Templates.list_session_templates(%{
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      # shouldn't update if BSP hasn't updated it since last update in the db
+      # shouldn update irrespective of the last modified time on BSP
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -600,10 +599,10 @@ defmodule Glific.TemplatesTest do
       Templates.update_hsms(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = updated_hsm} =
-               Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
+        Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
 
-      assert updated_hsm.status == hsm.status
-      assert updated_hsm.is_active == hsm.is_active
+      assert updated_hsm.status == "APPROVED"
+      assert updated_hsm.is_active == true
 
       # should update the existing hsm if it is modified by BSP since last update in the db
       Tesla.Mock.mock(fn
@@ -695,7 +694,6 @@ defmodule Glific.TemplatesTest do
       })
     end
 
-    @tag :pending
     test "update_hsms/1 should update the hsm as approved if no other translation is approved yet",
          attrs do
       otp_hsm_1 = otp_hsm_fixture(1, "PENDING")
