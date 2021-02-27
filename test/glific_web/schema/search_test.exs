@@ -583,7 +583,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
   end
 
-  @tag :pending
+  # @tag :pending
   test "search with the user filters will return the conversation", %{staff: user} do
     _message = Fixtures.message_fixture(%{user_id: user.id})
 
