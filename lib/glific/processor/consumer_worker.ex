@@ -6,6 +6,7 @@ defmodule Glific.Processor.ConsumerWorker do
   """
 
   use GenServer
+  use Publicist
 
   alias Glific.{
     Caches,

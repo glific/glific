@@ -103,8 +103,6 @@ defmodule Glific.Searches.CollectionCount do
   end
 
   @spec add_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp add_orgs(query, []), do: query
-
   defp add_orgs(query, org_id_list) do
     query
     |> where([o], o.organization_id in ^org_id_list)
