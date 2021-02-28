@@ -375,9 +375,11 @@ defmodule Glific.FLowsTest do
 
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
     assert is_list(errors)
-    Enum.each(errors,
-      fn e -> assert expected_error(elem(e, 1))
-    end)
+
+    Enum.each(
+      errors,
+      fn e -> assert expected_error(elem(e, 1)) end
+    )
   end
 
   defp expected_error(str) do

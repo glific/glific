@@ -26,7 +26,8 @@ defmodule Glific.Processor.ConsumerWorkerTest do
     GenServer.call(worker, {message, {organization_id, user}, self()})
 
     GenServer.cast(worker, {message, {organization_id, user}, self()})
-    _ = :sys.get_state(worker) # this waits for the cast to complete before returning
+    # this waits for the cast to complete before returning
+    _ = :sys.get_state(worker)
   end
 
   test "start the genserver mock", %{organization_id: organization_id} do
@@ -38,6 +39,7 @@ defmodule Glific.Processor.ConsumerWorkerTest do
     GenServer.call(worker, {message, {organization_id, user}, self()})
 
     GenServer.cast(worker, {message, {organization_id, user}, self()})
-    _ = :sys.get_state(worker) # this waits for the cast to complete before returning
+    # this waits for the cast to complete before returning
+    _ = :sys.get_state(worker)
   end
 end

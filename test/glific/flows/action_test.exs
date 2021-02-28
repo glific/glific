@@ -149,15 +149,18 @@ defmodule Glific.Flows.ActionTest do
 
   test "process extracts the right values from json for webhook" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "type" => "call_webhook",
-             "url" => "URL",
-             "method" => "METHOD",
-             "result_name" => "RESULT_NAME",
-             "headers" => %{
-               "Accept": "application/json",
-               "Content-Type": "application/json"
-             },
-            }
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "call_webhook",
+      "url" => "URL",
+      "method" => "METHOD",
+      "result_name" => "RESULT_NAME",
+      "headers" => %{
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      }
+    }
 
     {action, uuid_map} = Action.process(json, %{}, node)
 
@@ -173,15 +176,21 @@ defmodule Glific.Flows.ActionTest do
       "type" => "call_webhook",
       "url" => "URL",
       "method" => "METHOD",
-      "result_name" => "RESULT_NAME",
+      "result_name" => "RESULT_NAME"
     }
+
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
   test "process extracts the right values from json for send_broadcast" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text",
-             "contacts" => ["23", "45"]}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "send_broadcast",
+      "text" => "Test Text",
+      "contacts" => ["23", "45"]
+    }
 
     {action, uuid_map} = Action.process(json, %{}, node)
 
@@ -199,8 +208,7 @@ defmodule Glific.Flows.ActionTest do
 
   test "process extracts the right values from json for add_contact_groups" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "type" => "add_contact_groups",
-             "groups" => ["23", "45"]}
+    json = %{"uuid" => "UUID 1", "type" => "add_contact_groups", "groups" => ["23", "45"]}
 
     {action, uuid_map} = Action.process(json, %{}, node)
 
@@ -217,8 +225,7 @@ defmodule Glific.Flows.ActionTest do
 
   test "process extracts the right values from json for remove_contact_groups" do
     node = %Node{uuid: "Test UUID"}
-    json = %{"uuid" => "UUID 1", "type" => "remove_contact_groups",
-             "groups" => ["23", "45"]}
+    json = %{"uuid" => "UUID 1", "type" => "remove_contact_groups", "groups" => ["23", "45"]}
 
     {action, uuid_map} = Action.process(json, %{}, node)
 
@@ -228,8 +235,12 @@ defmodule Glific.Flows.ActionTest do
     assert action.groups == ["23", "45"]
     assert uuid_map[action.uuid] == {:action, action}
 
-    json = %{"uuid" => "UUID 1", "type" => "remove_contact_groups",
-             "all_groups" => true, "groups" => ["23", "45"]}
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "remove_contact_groups",
+      "all_groups" => true,
+      "groups" => ["23", "45"]
+    }
 
     {action, uuid_map} = Action.process(json, %{}, node)
 
