@@ -317,8 +317,7 @@ defmodule Glific.Flows.Action do
     [exit | _] = node.exits
     {:node, dest_node} = flow.uuid_map[exit.destination_node_uuid]
     [action | _] = dest_node.actions
-
-    if is_nil(action.templates),
+    if is_nil(action.templating),
       do: :session,
       else: :hsm
   rescue
