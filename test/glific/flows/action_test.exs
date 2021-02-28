@@ -178,7 +178,6 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
-
   test "process extracts the right values from json for send_broadcast" do
     node = %Node{uuid: "Test UUID"}
     json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text",
@@ -261,7 +260,6 @@ defmodule Glific.Flows.ActionTest do
     json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
-
 
   test "process extracts the right values from json for other actions" do
     node = %Node{uuid: "Test UUID"}
