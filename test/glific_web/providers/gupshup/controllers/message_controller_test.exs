@@ -2,6 +2,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.{
+    Contacts,
     Contacts.Location,
     Messages.Message,
     Repo,
@@ -93,32 +94,21 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       bsp_message_id = Ecto.UUID.generate()
 
+      [conatct | _tail ] = Contacts.list_contacts(%{})
+
+      {:ok, conatct} = Contacts.update_contact(conatct, %{status: :blocked})
+
       message_params = put_in(message_params, ["payload", "id"], bsp_message_id)
+      message_params = put_in(message_params, ["payload", "sender", "phone"], conatct.phone)
 
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
 
-      {:ok, message} =
+      {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
         Repo.fetch_by(Message, %{
           bsp_message_id: bsp_message_id,
           organization_id: conn.assigns[:organization_id]
         })
-
-      # message = Repo.preload(message, [:receiver, :sender, :media])
-
-      # # Provider message id should be updated
-      # assert message.bsp_status == :delivered
-      # assert message.flow == :inbound
-
-      # # ensure the message has been received by the mock
-      # assert_receive :received_message_to_process
-
-      # assert message.sender.last_message_at != nil
-      # assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
-
-      # # Sender should be stored into the db
-      # assert message.sender.phone ==
-      #          get_in(message_params, ["payload", "sender", "phone"])
     end
   end
 
