@@ -166,7 +166,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "Publish flow", %{manager: user} do
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
 
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
     assert {:ok, query_data} = result

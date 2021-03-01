@@ -251,7 +251,7 @@ defmodule Glific.FLowsTest do
          %{organization_id: organization_id} = _attrs do
       SeedsDev.seed_test_flows()
 
-      name = "Test Workflow"
+      name = "Language Workflow"
       {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
       flow = Repo.preload(flow, [:revisions])
 
@@ -366,5 +366,30 @@ defmodule Glific.FLowsTest do
                  keyword != Glific.string_clean(keyword)
                end)
     end
+  end
+
+  test "test validate on help workflow" do
+    SeedsDev.seed_test_flows()
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    assert is_list(errors)
+
+    Enum.each(
+      errors,
+      fn e -> assert expected_error(elem(e, 1)) end
+    )
+  end
+
+  defp expected_error(str) do
+    errors = [
+      "Your flow has dangling nodes",
+      "Could not find Contact:",
+      "Could not find Group:",
+      "The next message after a long wait for time should be an HSM template"
+    ]
+
+    Enum.any?(errors, &String.contains?(str, &1))
   end
 end
