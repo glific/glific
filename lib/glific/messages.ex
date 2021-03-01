@@ -932,7 +932,7 @@ defmodule Glific.Messages do
       !do_validate_size(size_limit, headers["content-length"]) ->
         %{
           is_valid: false,
-          message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB"
+          message: "Size is too big for the #{type}. Maximum size limit is #{size_limit}KB."
         }
 
       true ->
