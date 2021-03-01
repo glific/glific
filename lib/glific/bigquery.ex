@@ -395,14 +395,17 @@ defmodule Glific.Bigquery do
     :ok
   end
 
+  @spec do_make_insert_query(tuple(), non_neg_integer, list(), Keyword.t()) :: {:ok, any()} | {:error, any()}
   defp do_make_insert_query({:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}, organization_id, data, opts) do
     Logger.info("inserting data to bigquery for org_id: #{organization_id}, table: #{opts.table}, rows_count: #{ Enum.count(data)}")
     Tabledata.bigquery_tabledata_insert_all(conn, project_id, dataset_id, opts.table, [body: %{rows: data}], [])
   end
 
+  @spec handle_insert_query_response(tuple(),  non_neg_integer, Keyword.t()) :: :ok
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
     Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{opts.table}, res: #{inspect(res)}")
     Jobs.update_bigquery_job(organization_id, opts.table , %{table_id: opts.max_id})
+    :ok
   end
 
   defp handle_insert_query_response({:error, response}, organization_id, opts) do
@@ -416,7 +419,7 @@ defmodule Glific.Bigquery do
         Partners.disable_credential(organization_id, "bigquery")
 
       _ ->
-        raise("Bigquery Insert Error for table #{table}  #{response}")
+        raise("Bigquery Insert Error for table #{opts.table}  #{response}")
     end
   end
 
