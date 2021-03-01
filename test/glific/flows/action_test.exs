@@ -3,6 +3,7 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Partners,
     Seeds.SeedsDev,
     Settings
@@ -11,7 +12,8 @@ defmodule Glific.Flows.ActionTest do
   alias Glific.Flows.{
     Action,
     FlowContext,
-    Node
+    Node,
+    WebhookLog,
   }
 
   setup do
@@ -298,8 +300,7 @@ defmodule Glific.Flows.ActionTest do
   test "execute an action when type is send_msg", attrs do
     Partners.organization(attrs.organization_id)
 
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
     attrs = %{
@@ -313,7 +314,7 @@ defmodule Glific.Flows.ActionTest do
     {:ok, context} = FlowContext.create_flow_context(attrs)
     context = Repo.preload(context, [:flow, :contact])
 
-    action = %Action{type: "send_msg", text: "This is a test message"}
+    action = %Action{type: "send_msg", text: "This is a test send_msg"}
 
     message_stream = []
 
@@ -327,7 +328,46 @@ defmodule Glific.Flows.ActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    assert message.body == "This is a test message"
+    assert message.body == "This is a test send_msg"
+  end
+
+  test "execute an action when type is send_broadcast", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    staff = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
+    # preload contact
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "send_broadcast",
+      text: "This is a send_broadcast message",
+      contacts: [%{"uuid" => staff.id, "name" => staff.name}]
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, updated_context, updated_message_stream} = result
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^staff.id)
+    |> Ecto.Query.last()
+    |> Repo.one()
+
+    assert message.body == "This is a send_broadcast message"
   end
 
   test "execute an action when type is set_contact_language", attrs do
@@ -387,6 +427,19 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, updated_context, updated_message_stream} = result
     assert updated_context.contact.settings["preferences"]["preference1"] == true
+
+    # now set an action without the name field
+    action = %Action{
+      type: "set_contact_field",
+      value: "@results.test_result",
+      field: %{key: "settings"}
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+    assert {:ok, updated_context, _updated_message_stream} = result
+    assert updated_context == context
   end
 
   test "execute an action when type is set_contact_field to add contact field", attrs do
@@ -440,6 +493,47 @@ defmodule Glific.Flows.ActionTest do
     assert {:ok, updated_context, updated_message_stream} = result
 
     assert Map.delete(updated_context, :delay) == Map.delete(context, :delay)
+  end
+
+  test "execute an action when type is call_webhook", attrs do
+    Partners.organization(attrs.organization_id)
+
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    url = "https://yahoo.com"
+
+    # using uuid of language flow
+    action = %Action{
+      type: "call_webhook",
+      uuid: "UUID 1",
+      url: url,
+      method: "POST",
+      headers: %{
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      result_name: "test_webhook",
+      node_uuid: "Test UUID"
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:wait, updated_context, updated_message_stream} = result
+
+    assert updated_context == context
+
+    # ensure we have an entry in the webhook log
+    # webhooks are tested in a complete manner in webhook_test, so skipping here
+    log = Repo.get_by(WebhookLog, %{url: url})
+    assert String.contains?(log.error, "Error in decoding webhook body")
   end
 
   test "execute an action when type is not supported" do
