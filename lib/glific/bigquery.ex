@@ -423,7 +423,7 @@ defmodule Glific.Bigquery do
         Partners.disable_credential(organization_id, "bigquery")
 
       _ ->
-        raise("Bigquery Insert Error for table #{opts.table}  #{response}")
+        raise("Bigquery Insert Error for table #{table}  #{response}")
     end
   end
 
