@@ -8,7 +8,6 @@ defmodule Glific.BigqueryTest do
     Fixtures,
     Jobs.BigQueryWorker,
     Messages,
-    Messages.Message,
     Seeds.SeedsDev
   }
 
@@ -23,15 +22,20 @@ defmodule Glific.BigqueryTest do
   @max_id 100
   @min_id 0
 
-  test "queue_table_data/4 should create job for messages", attrs do
+  defp get_max_id(table, attrs) do
     data =
-      Message
+      Bigquery.get_table_struct(table)
       |> select([m], m.id)
       |> where([m], m.organization_id == ^attrs.organization_id)
       |> order_by([m], asc: m.id)
+      |> limit(100)
       |> Repo.all()
 
-    max_id = if is_list(data), do: List.last(data), else: @max_id
+    if is_list(data), do: List.last(data), else: @max_id
+  end
+
+  test "queue_table_data/4 should create job for messages", attrs do
+    max_id = get_max_id("messages", attrs)
 
     BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
@@ -41,25 +45,20 @@ defmodule Glific.BigqueryTest do
     message = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
     Messages.update_message(message, %{body: "hello"})
 
-    data =
-      Message
-      |> select([m], m.id)
-      |> where([m], m.organization_id == ^attrs.organization_id)
-      |> order_by([m], asc: m.id)
-      |> Repo.all()
-
-    max_id = if is_list(data), do: List.last(data), else: @max_id
+    max_id = get_max_id("messages", attrs)
     BigQueryWorker.queue_table_data("messages_delta", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
   test "queue_table_data/4 should create job for contacts", attrs do
-    BigQueryWorker.queue_table_data("contacts", attrs.organization_id, @min_id, @max_id)
+    max_id = get_max_id("contacts", attrs)
+    BigQueryWorker.queue_table_data("contacts", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
   test "queue_table_data/4 should create job for flows", attrs do
-    BigQueryWorker.queue_table_data("flows", attrs.organization_id, @min_id, @max_id)
+    max_id = get_max_id("flows", attrs)
+    BigQueryWorker.queue_table_data("flows", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
