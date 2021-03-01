@@ -35,12 +35,7 @@ defmodule Glific.Communications.Message do
   @spec send_message(Message.t(), map()) :: {:ok, Message.t()} | {:error, String.t()}
   def send_message(message, attrs \\ %{}) do
     message = Repo.preload(message, [:receiver, :sender, :media])
-
-    Logger.info(
-      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{
-        message.id
-      }'"
-    )
+    Logger.info( "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'")
 
     if Contacts.can_send_message_to?(message.receiver, message.is_hsm, attrs) do
       {:ok, _} =
