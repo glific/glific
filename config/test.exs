@@ -27,6 +27,8 @@ config :glific, GlificWeb.Endpoint,
 config :logger,
   level: :emergency
 
+# level: :debug
+
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
