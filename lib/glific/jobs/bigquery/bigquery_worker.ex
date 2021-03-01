@@ -10,6 +10,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   import Ecto.Query
 
   require Logger
+  use Publicist
 
   use Oban.Worker,
     queue: :bigquery,
