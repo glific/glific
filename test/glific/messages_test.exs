@@ -765,18 +765,18 @@ defmodule Glific.MessagesTest do
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
     end
 
-    test "validate media", _attrs do
+    test "validate media/2 check for nil or empty media url", _attrs do
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
             headers: [
               {"content-type", "image/png"},
-              {"content-length", "3209581"},
+              {"content-length", "3209581"}
             ],
             method: :get,
             opts: [],
             query: [],
-            status: 200,
+            status: 200
           }
       end)
 
@@ -785,10 +785,38 @@ defmodule Glific.MessagesTest do
                  "",
                  nil
                )
+
       assert %{is_valid: false, message: "Media URL is not valid"} ==
                Messages.validate_media(
                  nil,
                  nil
+               )
+    end
+
+    @valid_media_url @valid_media_url
+
+    test "validate media/2 check for size error", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581222"}
+            ],
+            method: :get,
+            opts: [],
+            query: [],
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Size is too big for the image. Maximum size limit is 5120KB"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
                )
     end
 
