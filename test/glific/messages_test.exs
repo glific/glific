@@ -765,6 +765,53 @@ defmodule Glific.MessagesTest do
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
     end
 
+    test "validate media", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"x-guploader-uploadid",
+               "ABg5-UyxW1Joby9JlTGlty2tkj9GVZmy3MXnCvMNRavaFOi0NfUWxxIRUcW98rzMJ2rmsrowGMjMbfQlreVr21llavE"},
+              {"expires", "Mon, 01 Mar 2021 08:32:57 GMT"},
+              {"date", "Mon, 01 Mar 2021 07:32:57 GMT"},
+              {"last-modified", "Sun, 25 Oct 2020 06:12:23 GMT"},
+              {"etag", "\"04a8c6cd148124eba4ea97cec565581d\""},
+              {"x-goog-generation", "1603606343831686"},
+              {"x-goog-metageneration", "1"},
+              {"x-goog-stored-content-encoding", "identity"},
+              {"x-goog-stored-content-length", "3209581"},
+              {"content-type", "image/png"},
+              {"x-goog-hash", "crc32c=DRlW1A=="},
+              {"x-goog-hash", "md5=BKjGzRSBJOuk6pfOxWVYHQ=="},
+              {"x-goog-storage-class", "STANDARD"},
+              {"accept-ranges", "bytes"},
+              {"content-length", "3209581"},
+              {"server", "UploadServer"},
+              {"age", "39"},
+              {"cache-control", "public, max-age=3600"},
+              {"alt-svc",
+               "h3-29=\":443\"; ma=2592000,h3-T051=\":443\"; ma=2592000,h3-Q050=\":443\"; ma=2592000,h3-Q046=\":443\"; ma=2592000,h3-Q043=\":443\"; ma=2592000,quic=\":443\"; ma=2592000; v=\"46,43\""}
+            ],
+            method: :get,
+            opts: [],
+            query: [],
+            status: 200,
+            url: "https://storage.googleapis.com/grasshopper/Guardian.png"
+          }
+      end)
+
+      assert %{is_valid: false, message: "Media URL is not valid"} ==
+               Messages.validate_media(
+                 "",
+                 nil
+               )
+      assert %{is_valid: false, message: "Media URL is not valid"} ==
+               Messages.validate_media(
+                 nil,
+                 nil
+               )
+    end
+
     test "change_message_media/1 returns a message_media changeset", attrs do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
