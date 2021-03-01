@@ -5,6 +5,7 @@ defmodule Glific.BigqueryTest do
 
   alias Glific.{
     Bigquery,
+    Contacts,
     Fixtures,
     Jobs.BigQueryWorker,
     Messages,
@@ -55,6 +56,20 @@ defmodule Glific.BigqueryTest do
 
   test "queue_table_data/4 should create job for contacts",
        %{global_schema: global_schema} = attrs do
+    max_id = get_max_id("contacts", attrs)
+    BigQueryWorker.queue_table_data("contacts", attrs.organization_id, @min_id, max_id)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
+  end
+
+  test "queue_table_data/4 should create job for contacts_delta",
+       %{global_schema: global_schema} = attrs do
+    contact = Fixtures.contact_fixture()
+
+    Contacts.update_contact(contact, %{
+      name: "some updated name"
+    })
+
     max_id = get_max_id("contacts", attrs)
     BigQueryWorker.queue_table_data("contacts", attrs.organization_id, @min_id, max_id)
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
