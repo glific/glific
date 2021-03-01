@@ -1,4 +1,59 @@
 defmodule Glific.BigqueryTest do
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
   use ExUnit.Case
@@ -6,6 +61,7 @@ defmodule Glific.BigqueryTest do
   alias Glific.{
     Bigquery,
     Jobs.BigQueryWorker,
+    Messages.Message,
     Seeds.SeedsDev
   }
 
@@ -18,7 +74,15 @@ defmodule Glific.BigqueryTest do
   end
 
   test "queue_table_data/4 should create job for messages", attrs do
-    BigQueryWorker.queue_table_data("messages", attrs.organization_id, 0, 10)
+    data =
+      Message
+      |> select([m], m.id)
+      |> where([m], m.organization_id == ^attrs.organization_id)
+      |> order_by([m], asc: m.id)
+      |> limit(100)
+      |> Repo.all()
+      max_id = if is_list(data), do: List.last(data), else: 100
+    BigQueryWorker.queue_table_data("messages", attrs.organization_id, 0, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
