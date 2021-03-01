@@ -6,7 +6,6 @@ defmodule Glific.Processor.Helper do
 
   alias Glific.{
     Messages.Message,
-    Repo,
     Tags
   }
 
