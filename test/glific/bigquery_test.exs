@@ -8,6 +8,7 @@ defmodule Glific.BigqueryTest do
     Fixtures,
     Jobs.BigQueryWorker,
     Messages,
+    Messages.Message,
     Seeds.SeedsDev
   }
 
@@ -23,14 +24,32 @@ defmodule Glific.BigqueryTest do
   @min_id 0
 
   test "queue_table_data/4 should create job for messages", attrs do
-    BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, @max_id)
+    data =
+      Message
+      |> select([m], m.id)
+      |> where([m], m.organization_id == ^attrs.organization_id)
+      |> order_by([m], asc: m.id)
+      |> Repo.all()
+
+    max_id = if is_list(data), do: List.last(data), else: @max_id
+
+    BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
   test "queue_table_data/4 should create job for messages_delta", attrs do
     message = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
-    Messages.update_message(message, %{body: "hello"})|>IO.inspect()
-    BigQueryWorker.queue_table_data("messages_delta", attrs.organization_id, @min_id, @max_id)
+    Messages.update_message(message, %{body: "hello"})
+
+    data =
+      Message
+      |> select([m], m.id)
+      |> where([m], m.organization_id == ^attrs.organization_id)
+      |> order_by([m], asc: m.id)
+      |> Repo.all()
+
+    max_id = if is_list(data), do: List.last(data), else: @max_id
+    BigQueryWorker.queue_table_data("messages_delta", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
@@ -50,7 +69,8 @@ defmodule Glific.BigqueryTest do
     {:ok, datetime} = DateTime.from_unix(@unix_time)
     assert nil == Bigquery.format_date(nil, attrs.organization_id)
     assert @formated_time == Bigquery.format_date(datetime, attrs.organization_id)
-    assert @formated_time == Bigquery.format_date(DateTime.to_string(datetime), attrs.organization_id)
-  end
 
+    assert @formated_time ==
+             Bigquery.format_date(DateTime.to_string(datetime), attrs.organization_id)
+  end
 end
