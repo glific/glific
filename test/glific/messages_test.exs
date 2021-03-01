@@ -836,7 +836,7 @@ defmodule Glific.MessagesTest do
 
       assert %{
                is_valid: false,
-               message: "Media URL is not valid"
+               message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
                  @valid_media_url,

@@ -927,7 +927,7 @@ defmodule Glific.Messages do
   defp do_validate_media(headers, type, url, size_limit) do
     cond do
       !do_validate_headers(headers, type, url) ->
-        %{is_valid: false, message: "Media URL is not valid"}
+        %{is_valid: false, message: "Media content-type is not valid"}
 
       !do_validate_size(size_limit, headers["content-length"]) ->
         %{
