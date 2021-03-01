@@ -896,7 +896,7 @@ defmodule Glific.Messages do
   @doc false
   @spec validate_media(String.t(), String.t()) :: map()
   def validate_media(url, _type) when url in ["", nil],
-    do: %{is_valid: false, message: "Media URL is not valid"}
+    do: %{is_valid: false, message: "Please provide a media URL"}
 
   def validate_media(url, type) do
     size_limit = %{
@@ -919,7 +919,7 @@ defmodule Glific.Messages do
         |> do_validate_media(type, url, size_limit[type])
 
       _ ->
-        %{is_valid: false, message: "Media URL is not valid"}
+        %{is_valid: false, message: "This media URL is invalid"}
     end
   end
 

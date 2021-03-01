@@ -780,20 +780,20 @@ defmodule Glific.MessagesTest do
           }
       end)
 
-      assert %{is_valid: false, message: "Media URL is not valid"} ==
+      assert %{is_valid: false, message: "Please provide a media URL"} ==
                Messages.validate_media(
                  "",
                  nil
                )
 
-      assert %{is_valid: false, message: "Media URL is not valid"} ==
+      assert %{is_valid: false, message: "Please provide a media URL"} ==
                Messages.validate_media(
                  nil,
                  nil
                )
     end
 
-    @valid_media_url @valid_media_url
+    @valid_media_url "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
 
     test "validate media/2 check for size error", _attrs do
       Tesla.Mock.mock(fn
@@ -835,7 +835,7 @@ defmodule Glific.MessagesTest do
           }
       end)
 
-      assert %{is_valid: false, message: "Media URL is not valid"} ==
+      assert %{is_valid: true, message: "success"} ==
                Messages.validate_media(
                  @valid_media_url,
                  "image"
