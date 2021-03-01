@@ -15,6 +15,19 @@ defmodule Glific.Processor.ConsumerFlowTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "name" => "Opted In Contact",
+              "phone" => "A phone number"
+            })
+        }
+    end)
+
     :ok
   end
 
@@ -54,5 +67,68 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count
+  end
+
+  test "test draft flows" do
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+
+    # keep track of current messages
+    message_count = Repo.aggregate(Message, :count)
+
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
+    message =
+      Fixtures.message_fixture(%{body: "draft:help", sender_id: sender.id})
+      |> Repo.preload([:contact])
+
+    ConsumerFlow.process_message({message, state}, "drafthelp")
+
+    new_message_count = Repo.aggregate(Message, :count)
+    assert new_message_count > message_count
+  end
+
+  @checks_1 [
+    "optin",
+    "1",
+    "optout",
+    "1"
+  ]
+
+  defp send_messages(list, sender, receiver) do
+    state = ConsumerFlow.load_state(Fixtures.get_org_id())
+
+    Enum.map(
+      list,
+      fn c ->
+        message =
+          Fixtures.message_fixture(%{
+            body: c,
+            sender_id: sender.id,
+            receiver_id: receiver.id
+          })
+          |> Map.put(:contact_id, sender.id)
+          |> Map.put(:contact, sender)
+
+        ConsumerFlow.process_message({message, state}, message.body)
+      end
+    )
+  end
+
+  test "check optin/optout sequence" do
+    # keep track of current messages
+    message_count = Repo.aggregate(Message, :count)
+
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+    receiver = Repo.get_by(Contact, %{name: "NGO Main Account"})
+
+    send_messages(@checks_1, sender, receiver)
+
+    # We should add check that there is a set of optin and optout message here
+    new_message_count = Repo.aggregate(Message, :count)
+    assert new_message_count > message_count
+
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+    assert sender.optin_status == false
+    assert ! is_nil(sender.optout_time)
   end
 end

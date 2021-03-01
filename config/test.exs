@@ -26,8 +26,7 @@ config :glific, GlificWeb.Endpoint,
 # Print only warnings and errors during test
 config :logger,
   level: :emergency
-
-# level: :debug
+  # level: :debug
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
