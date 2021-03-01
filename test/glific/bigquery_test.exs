@@ -36,7 +36,7 @@ defmodule Glific.BigqueryTest do
 
   test "queue_table_data/4 should create job for messages", attrs do
     max_id = get_max_id("messages", attrs)
-
+IO.inspect("debug001#{max_id}")
     BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
@@ -46,6 +46,7 @@ defmodule Glific.BigqueryTest do
     Messages.update_message(message, %{body: "hello"})
 
     max_id = get_max_id("messages", attrs)
+    IO.inspect("debug001#{max_id}")
     BigQueryWorker.queue_table_data("messages_delta", attrs.organization_id, @min_id, max_id)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
