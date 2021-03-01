@@ -445,7 +445,7 @@ defmodule Glific.Bigquery do
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
           body: %{query: sql, useLegacySql: false}
         )
-        |> handle_update_response(table, credentials, organization_id)
+        |> handle_merge_job_error(table, credentials, organization_id)
 
       _ ->
         :ok
@@ -523,12 +523,14 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec handle_update_response(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
-  defp handle_update_response({:ok, response}, table, credentials, organization_id) do
+  @spec handle_merge_job_error(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
+  defp handle_merge_job_error({:ok, response}, table, credentials, organization_id) do
     Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
     clean_delta_tables(table, credentials, organization_id)
   end
 
-  defp handle_update_response({:error, error}, table, _, _),
-    do: Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
+  defp handle_merge_job_error({:error, error}, table, _, _) do
+    Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
+    raise ("Error while merging table #{table} on bigquery. #{inspect(error)}")
+  end
 end
