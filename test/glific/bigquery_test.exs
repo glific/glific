@@ -34,33 +34,35 @@ defmodule Glific.BigqueryTest do
     if is_list(data), do: List.last(data), else: @max_id
   end
 
-  test "queue_table_data/4 should create job for messages", attrs do
+  test "queue_table_data/4 should create job for messages", %{global_schema: global_schema} = attrs do
     max_id = get_max_id("messages", attrs)
-IO.inspect("debug001#{max_id}")
     BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, max_id)
-    assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
   end
 
-  test "queue_table_data/4 should create job for messages_delta", attrs do
+  test "queue_table_data/4 should create job for messages_delta", %{global_schema: global_schema} = attrs do
     message = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
     Messages.update_message(message, %{body: "hello"})
 
     max_id = get_max_id("messages", attrs)
-    IO.inspect("debug001#{max_id}")
     BigQueryWorker.queue_table_data("messages_delta", attrs.organization_id, @min_id, max_id)
-    assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
   end
 
-  test "queue_table_data/4 should create job for contacts", attrs do
+  test "queue_table_data/4 should create job for contacts", %{global_schema: global_schema} = attrs do
     max_id = get_max_id("contacts", attrs)
     BigQueryWorker.queue_table_data("contacts", attrs.organization_id, @min_id, max_id)
-    assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
   end
 
-  test "queue_table_data/4 should create job for flows", attrs do
+  test "queue_table_data/4 should create job for flows", %{global_schema: global_schema} = attrs do
     max_id = get_max_id("flows", attrs)
     BigQueryWorker.queue_table_data("flows", attrs.organization_id, @min_id, max_id)
-    assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
   end
 
   @unix_time 1_464_096_368

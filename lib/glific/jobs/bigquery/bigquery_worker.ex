@@ -118,7 +118,6 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> order_by([m], [m.inserted_at, m.id])
     |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
     |> Repo.all()
-    |> IO.inspect()
     |> Enum.reduce([], fn row, acc ->
       if Contacts.is_simulator_contact?(row.contact.phone),
         do: acc,
