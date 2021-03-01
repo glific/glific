@@ -382,7 +382,7 @@ defmodule Glific.Bigquery do
   @doc """
     Insert rows in the biqquery
   """
-  @spec make_insert_query(list(), String.t(), non_neg_integer, non_neg_integer) :: :ok
+  @spec make_insert_query(map()|list, String.t(), non_neg_integer, non_neg_integer) :: :ok
   def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
       when data in [[], nil, %{}],
       do: :ok
@@ -397,19 +397,23 @@ defmodule Glific.Bigquery do
 
   @spec do_make_insert_query(tuple(), non_neg_integer, list(), Keyword.t()) :: {:ok, any()} | {:error, any()}
   defp do_make_insert_query({:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}, organization_id, data, opts) do
-    Logger.info("inserting data to bigquery for org_id: #{organization_id}, table: #{opts.table}, rows_count: #{ Enum.count(data)}")
-    Tabledata.bigquery_tabledata_insert_all(conn, project_id, dataset_id, opts.table, [body: %{rows: data}], [])
+    table  = Keyword.get(opts, :table)
+    Logger.info("inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{ Enum.count(data)}")
+    Tabledata.bigquery_tabledata_insert_all(conn, project_id, dataset_id, table, [body: %{rows: data}], [])
   end
 
   @spec handle_insert_query_response(tuple(),  non_neg_integer, Keyword.t()) :: :ok
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
-    Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{opts.table}, res: #{inspect(res)}")
-    Jobs.update_bigquery_job(organization_id, opts.table , %{table_id: opts.max_id})
+    table = Keyword.get(opts, :table)
+    max_id = Keyword.get(opts, :max_id)
+    Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}")
+    Jobs.update_bigquery_job(organization_id, table , %{table_id: max_id})
     :ok
   end
 
   defp handle_insert_query_response({:error, response}, organization_id, opts) do
-    Logger.info("Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{opts.table}, response: #{inspect(response)}")
+    table = Keyword.get(opts, :table)
+    Logger.info("Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect(response)}")
     bigquery_error_status(response)
     |> case do
       "NOT_FOUND" ->
