@@ -820,6 +820,28 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    test "validate media/2 return valid as true", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            opts: [],
+            query: [],
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: false, message: "Media URL is not valid"} ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
     test "change_message_media/1 returns a message_media changeset", attrs do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
