@@ -9,6 +9,7 @@
         "lib/glific/appsignal.ex",
         "lib/glific/bigquery.ex",
         "lib/glific/bigquery/bigquery_schema.ex",
+        "lib/glific/gcs.ex",
         "lib/glific/clients/stir.ex",
         "lib/glific/csv",
         "lib/glific/dialogflow",
