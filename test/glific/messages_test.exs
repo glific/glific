@@ -820,6 +820,30 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    test "validate media/2 check for invalid header", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            opts: [],
+            query: [],
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media URL is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
     test "validate media/2 return valid as true", _attrs do
       Tesla.Mock.mock(fn
         %{method: :get} ->
