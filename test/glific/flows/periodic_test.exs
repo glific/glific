@@ -57,10 +57,35 @@ defmodule Glific.Flows.PeriodicTest do
     assert !is_nil(get_in(filled_map, [:flows, "published", "outofoffice"]))
   end
 
+  @start_time elem(Time.new(0, 0, 0, 0), 1)
+  @end_time elem(Time.new(0, 0, 0, 1), 1)
+
+  @organization_settings %{
+    out_of_office: %{
+      enabled: true,
+      start_time: @start_time,
+      end_time: @end_time,
+      enabled_days: [
+        %{id: 1, enabled: true},
+        %{id: 2, enabled: true},
+        %{id: 3, enabled: true},
+        %{id: 4, enabled: true},
+        %{id: 5, enabled: true},
+        %{id: 6, enabled: true},
+        %{id: 7, enabled: true}
+      ]
+    }
+  }
+
   test "run flows and we know the outofoffice flow should get going",
        %{organization_id: organization_id} = attrs do
     FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
-    FunWithFlags.enable(:out_of_office_active, for_actor: %{organization_id: organization_id})
+
+    organization = Partners.organization(organization_id)
+
+    # when office hours includes whole day of seven days
+    {:ok, _} = Partners.update_organization(organization, @organization_settings)
+    _organization = Partners.organization(organization.id)
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
     state = Periodic.run_flows(%{}, message)

@@ -12,22 +12,16 @@ defmodule Glific.Flags do
   }
 
   @doc false
-  @spec init(Organization.t()) :: {:ok, boolean()}
+  @spec init(Organization.t()) :: nil
   def init(organization) do
     FunWithFlags.enable(
       :enable_out_of_office,
       for_actor: %{organization_id: organization.id}
     )
 
-    # Not a great thing to do, but a workaroudn for now. tests should control
-    # what happens here and figure out how to handle timezones
-    if Application.get_env(:glific, :environment) != :test do
-      out_of_office_update(organization)
+    out_of_office_update(organization)
 
-      dialogflow(organization)
-    else
-      {:ok, false}
-    end
+    # dialogflow(organization)
   end
 
   @spec business_day?(DateTime.t(), [integer]) :: boolean
@@ -121,6 +115,7 @@ defmodule Glific.Flags do
     )
   end
 
+  _ = '''
   @doc """
   See if we have valid dialogflow credentials, if so, enable dialogflow
   else disable it
@@ -142,4 +137,5 @@ defmodule Glific.Flags do
         )
     end
   end
+  '''
 end
