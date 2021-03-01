@@ -774,8 +774,6 @@ defmodule Glific.MessagesTest do
               {"content-length", "3209581"}
             ],
             method: :get,
-            opts: [],
-            query: [],
             status: 200
           }
       end)
@@ -804,8 +802,6 @@ defmodule Glific.MessagesTest do
               {"content-length", "3209581222"}
             ],
             method: :get,
-            opts: [],
-            query: [],
             status: 200
           }
       end)
@@ -828,8 +824,6 @@ defmodule Glific.MessagesTest do
               {"content-length", "3209581"}
             ],
             method: :get,
-            opts: [],
-            query: [],
             status: 200
           }
       end)
@@ -844,6 +838,52 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    test "validate media/2 when media type and url are different", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "video"
+               )
+    end
+
+    test "validate media/2 check for type other than defined default types", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "text"
+               )
+    end
+
     test "validate media/2 return valid as true", _attrs do
       Tesla.Mock.mock(fn
         %{method: :get} ->
@@ -853,8 +893,6 @@ defmodule Glific.MessagesTest do
               {"content-length", "3209581"}
             ],
             method: :get,
-            opts: [],
-            query: [],
             status: 200
           }
       end)
