@@ -31,7 +31,7 @@ defmodule Glific.FlagsTest do
     organization = Partners.organization(Fixtures.get_org_id())
 
     status = Flags.init(organization)
-    assert status == {:ok, false}
+    assert status == nil
 
     assert FunWithFlags.enabled?(
              :enable_out_of_office,
