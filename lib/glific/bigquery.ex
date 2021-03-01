@@ -48,7 +48,7 @@ defmodule Glific.Bigquery do
             do_refresh_the_schema(organization_id, %{conn: conn, dataset_id: dataset_id, project_id: project_id})
 
           {:error, response} ->
-            handle_sync_errors(response, conn, dataset_id, project_id, organization_id)
+            handle_sync_errors(response, organization_id, %{conn: conn, dataset_id: dataset_id, project_id: project_id})
         end
 
       _ ->
@@ -134,16 +134,15 @@ defmodule Glific.Bigquery do
     :ok
   end
 
-  @spec handle_sync_errors(map(), Tesla.Client.t(), String.t(), String.t(), non_neg_integer) ::
-          :ok
-  defp handle_sync_errors(response, conn, dataset_id, project_id, organization_id) do
+  @spec handle_sync_errors(map(), non_neg_integer, map()) ::  :ok
+  defp handle_sync_errors(response, organization_id, attrs) do
     Jason.decode(response.body)
     |> case do
       {:ok, data} ->
         error = data["error"]
 
         if error["status"] == "ALREADY_EXISTS" do
-          do_refresh_the_schema(organization_id, %{conn: conn, dataset_id: dataset_id, project_id: project_id})
+          do_refresh_the_schema(organization_id, attrs)
         end
 
       _ ->
@@ -383,12 +382,12 @@ defmodule Glific.Bigquery do
   @doc """
     Insert rows in the biqquery
   """
-  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) :: :ok
-  def make_insert_query(%{json: data}, _table, _organization_id, _job, _max_id)
+  @spec make_insert_query(list(), String.t(), non_neg_integer, non_neg_integer) :: :ok
+  def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
       when data in [[], nil, %{}],
       do: :ok
 
-  def make_insert_query(data, table, organization_id, _job, max_id) do
+  def make_insert_query(data, table, organization_id, max_id) do
     Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{ Enum.count(data)}")
     fetch_bigquery_credentials(organization_id)
     |> do_make_insert_query(organization_id, data, table: table, max_id: max_id)
@@ -505,31 +504,22 @@ defmodule Glific.Bigquery do
   @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
   defp clean_delta_tables(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
-    ## remove all the data for last 30 minutes
-
+    ## remove all the data for last 90 minutes
     sql = """
-    DELETE FROM `#{credentials.dataset_id}.#{table}_delta`
-    WHERE EXISTS(SELECT * FROM  (
-      SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num
-      FROM `#{credentials.dataset_id}.#{table}_delta` delta )
-      WHERE row_num > 0 AND
-        updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 60 MINUTE), '#{
-      timezone
-    }')
-      )
+    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` WHERE EXISTS(SELECT * FROM  ( SELECT updated_at,
+    ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{credentials.dataset_id}.#{table}_delta` delta )
+    WHERE row_num > 0 AND updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{timezone}'))
     """
 
-    GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
-      body: %{query: sql, useLegacySql: false}
-    )
+    query_body = %{query: sql, useLegacySql: false}
+
+    GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id, body: query_body)
     |> case do
       {:ok, response} ->
-        Logger.info("#{table}_delta has been cleaned on bigquery. #{inspect(response)}")
-
+         Logger.info("#{table}_delta has been cleaned on bigquery. #{inspect(response)}")
       error ->
-        Logger.info("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
+        raise("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
     end
-
     :ok
   end
 

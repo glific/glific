@@ -495,5 +495,5 @@ defmodule Glific.Jobs.BigQueryWorker do
           }
         } = job
       ),
-      do: Bigquery.make_insert_query(data, table, organization_id, job, max_id)
+      do: Bigquery.make_insert_query(data, table, organization_id, max_id)
 end
