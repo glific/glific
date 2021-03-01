@@ -1,50 +1,353 @@
 {
-    "type" : "messaging",
-    "spec_version" : "13.1.0",
-    "nodes" : [
-        {
-            "uuid" : "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc",
-            "exits" : [
-                {
-                    "uuid" : "07de70d4-a403-4e52-86d0-ffc61a20bc49",
-                    "destination_uuid" : null
-                }
+  "language" : "base",
+  "type" : "messaging",
+  "nodes" : [
+    {
+      "router" : {
+        "type" : "switch",
+        "operand" : "@input.text",
+        "result_name" : "Result 1",
+        "wait" : {
+          "type" : "msg"
+        },
+        "categories" : [
+          {
+            "uuid" : "7b6ac2eb-7605-48e7-ab4e-97356e5da6cc",
+            "name" : "1",
+            "exit_uuid" : "59807f76-a427-4ae9-b59a-150f6dbfe66b"
+          },
+          {
+            "uuid" : "b8847dc0-b3fc-4560-b919-84b055f2e3b4",
+            "name" : "2",
+            "exit_uuid" : "cb3fbe88-5e6b-4e7d-8374-225eca6b1ea6"
+          },
+          {
+            "uuid" : "0b8c1825-0dd7-45d8-ab50-df1be11534f7",
+            "name" : "3",
+            "exit_uuid" : "31fe1720-cf5b-4862-a98b-8096d1f01469"
+          },
+          {
+            "uuid" : "7f3392b1-5acb-4f9c-be03-3379ea7345c3",
+            "name" : "Other",
+            "exit_uuid" : "754a48fe-47c2-482e-b6a2-b1c65d5321a4"
+          }
+        ],
+        "default_category_uuid" : "7f3392b1-5acb-4f9c-be03-3379ea7345c3",
+        "cases" : [
+          {
+            "uuid" : "5d5b8be6-22f7-4d0c-ab3d-689f3b7806b2",
+            "arguments" : [
+              "1"
             ],
-            "actions" : [
-                {
-                    "quick_replies" : [
-
-                    ],
-                    "attachments" : [
-
-                    ],
-                    "text" : "This is a test message",
-                    "type" : "send_msg",
-                    "uuid" : "01d37be5-50d3-44f3-a4e1-2306de6959bd"
-                }
-            ]
+            "type" : "has_any_word",
+            "category_uuid" : "7b6ac2eb-7605-48e7-ab4e-97356e5da6cc"
+          },
+          {
+            "uuid" : "75ee6b84-ee9d-44f3-a11f-7e67fc6b6be5",
+            "arguments" : [
+              "2"
+            ],
+            "type" : "has_any_word",
+            "category_uuid" : "b8847dc0-b3fc-4560-b919-84b055f2e3b4"
+          },
+          {
+            "uuid" : "fc05a8cf-f9eb-4b41-816a-647a9de7e4ad",
+            "arguments" : [
+              "3"
+            ],
+            "type" : "has_any_word",
+            "category_uuid" : "0b8c1825-0dd7-45d8-ab50-df1be11534f7"
+          }
+        ]
+      },
+      "uuid" : "4c93f93c-0677-42c1-ab8f-fda7023bc0e8",
+      "exits" : [
+        {
+          "uuid" : "59807f76-a427-4ae9-b59a-150f6dbfe66b",
+          "destination_uuid" : "8966125b-6dd9-4b9a-b540-9d796e22f65b"
+        },
+        {
+          "uuid" : "cb3fbe88-5e6b-4e7d-8374-225eca6b1ea6",
+          "destination_uuid" : "667bff37-fb11-4ce6-a196-fa11b286233c"
+        },
+        {
+          "uuid" : "31fe1720-cf5b-4862-a98b-8096d1f01469"
+        },
+        {
+          "uuid" : "754a48fe-47c2-482e-b6a2-b1c65d5321a4",
+          "destination_uuid" : null
         }
-    ],
-    "revision" : 1,
-    "uuid" : "defda715-c520-499d-851e-4428be87def6",
-    "name" : "Test Workflow",
-    "localization" : {
+      ],
+      "actions" : [
 
+      ]
     },
-    "vars" : [
-        "defda715-c520-499d-851e-4428be87def6"
-    ],
-    "language" : "base",
-    "expire_after_minutes" : 10080,
-    "_ui" : {
-        "nodes" : {
-            "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc" : {
-                "type" : "execute_actions",
-                "position" : {
-                    "top" : 0,
-                    "left" : 0
-                }
-            }
+    {
+      "uuid" : "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc",
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "uuid" : "fb500222-04db-4c0f-9781-36bf081e4926",
+          "text" : "hello",
+          "attachments" : [
+
+          ],
+          "quick_replies" : [
+
+          ],
+          "all_urns" : false
         }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "4c93f93c-0677-42c1-ab8f-fda7023bc0e8",
+          "uuid" : "07de70d4-a403-4e52-86d0-ffc61a20bc49"
+        }
+      ]
+    },
+    {
+      "uuid" : "8966125b-6dd9-4b9a-b540-9d796e22f65b",
+      "actions" : [
+        {
+          "uuid" : "3f3ca5ae-0455-459f-bd31-cf0dadb10c7f",
+          "type" : "wait_for_time",
+          "delay" : "1800"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "3b6f1dbd-c023-4ec8-b47d-6e9b2496d78d",
+          "destination_uuid" : "3b15e405-8863-452a-9d96-d9609986bc66"
+        }
+      ]
+    },
+    {
+      "uuid" : "667bff37-fb11-4ce6-a196-fa11b286233c",
+      "actions" : [
+        {
+          "delay" : "129600",
+          "type" : "wait_for_time",
+          "uuid" : "a5888f28-89e2-4efb-b80c-960111e1c417"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "1cede315-fcef-4edf-a38a-125f2223b66d",
+          "uuid" : "02f4d2ce-6f54-4e44-9a3b-9c229549036c"
+        }
+      ]
+    },
+    {
+      "uuid" : "3b15e405-8863-452a-9d96-d9609986bc66",
+      "actions" : [
+        {
+          "uuid" : "e9c56804-db4d-4624-a47f-ab53b477ed00",
+          "text" : "Not an HSM, but ok\n",
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "all_urns" : false,
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "bad0ec50-b3a8-4a48-a869-12f0a786c953",
+          "destination_uuid" : "1de225f7-d863-4a84-a393-c2e3a3f43dee"
+        }
+      ]
+    },
+    {
+      "uuid" : "1cede315-fcef-4edf-a38a-125f2223b66d",
+      "actions" : [
+        {
+          "contacts" : [
+            {
+              "uuid" : "7",
+              "name" : "SaaS Admin"
+            }
+          ],
+          "groups" : [
+
+          ],
+          "attachments" : [
+
+          ],
+          "legacy_vars" : [
+
+          ],
+          "text" : "Not an HSM message",
+          "uuid" : "e57d70d7-2da3-45bd-a147-953b491fce1d",
+          "type" : "send_broadcast"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "2ca6bcb7-efd2-4fef-b0ce-101a40435db3",
+          "destination_uuid" : null
+        }
+      ]
+    },
+    {
+      "uuid" : "f8407d51-749a-4686-906e-b8a96ff1a0f7",
+      "actions" : [
+        {
+          "text" : "Lets dangle this node",
+          "all_urns" : false,
+          "attachments" : [
+
+          ],
+          "uuid" : "7113b243-562e-42b8-9af7-d5413b658352",
+          "quick_replies" : [
+
+          ],
+          "type" : "send_msg"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "125f5608-ec2d-4e57-beff-01397827afc5",
+          "destination_uuid" : null
+        }
+      ]
+    },
+    {
+      "uuid" : "1de225f7-d863-4a84-a393-c2e3a3f43dee",
+      "actions" : [
+        {
+          "type" : "add_contact_groups",
+          "groups" : [
+            {
+              "uuid" : "1",
+              "type" : "group",
+              "name" : "Default Group"
+            }
+          ],
+          "uuid" : "f29028db-1320-4832-b0ac-4a438f26ffbf"
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "a01ab1d6-49b8-4d88-90f2-0cb6cff26a93",
+          "uuid" : "8d232c28-cca8-4aef-9ed0-31ddab1636c9"
+        }
+      ]
+    },
+    {
+      "uuid" : "a01ab1d6-49b8-4d88-90f2-0cb6cff26a93",
+      "actions" : [
+        {
+          "uuid" : "7c3a2b24-2893-4a27-8f58-f1a9d94ed107",
+          "groups" : [
+
+          ],
+          "legacy_vars" : [
+
+          ],
+          "type" : "send_broadcast",
+          "contacts" : [
+            {
+              "uuid" : "12",
+              "name" : "NGO Staff"
+            }
+          ],
+          "text" : "hello, is it me you are looking for\n",
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "d59264b9-baad-4e3b-bffb-775a5cc1f039",
+          "destination_uuid" : null
+        }
+      ]
     }
+  ],
+  "expire_after_minutes" : 10080,
+  "spec_version" : "13.1.0",
+  "name" : "Test Workflow",
+  "uuid" : "defda715-c520-499d-851e-4428be87def6",
+  "localization" : {
+
+  },
+  "_ui" : {
+    "nodes" : {
+      "a01ab1d6-49b8-4d88-90f2-0cb6cff26a93" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 520,
+          "left" : 80
+        }
+      },
+      "8966125b-6dd9-4b9a-b540-9d796e22f65b" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 200,
+          "left" : 200
+        }
+      },
+      "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 60,
+          "left" : 180
+        }
+      },
+      "3b15e405-8863-452a-9d96-d9609986bc66" : {
+        "type" : "execute_actions",
+        "position" : {
+          "top" : 300,
+          "left" : 20
+        }
+      },
+      "1cede315-fcef-4edf-a38a-125f2223b66d" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 420,
+          "top" : 400
+        }
+      },
+      "f8407d51-749a-4686-906e-b8a96ff1a0f7" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 940,
+          "top" : 400
+        }
+      },
+      "1de225f7-d863-4a84-a393-c2e3a3f43dee" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 100,
+          "top" : 420
+        }
+      },
+      "667bff37-fb11-4ce6-a196-fa11b286233c" : {
+        "type" : "execute_actions",
+        "position" : {
+          "left" : 420,
+          "top" : 280
+        }
+      },
+      "4c93f93c-0677-42c1-ab8f-fda7023bc0e8" : {
+        "config" : {
+          "cases" : {
+
+          }
+        },
+        "type" : "wait_for_response",
+        "position" : {
+          "left" : 600,
+          "top" : 40
+        }
+      }
+    }
+  },
+  "vars" : [
+    "defda715-c520-499d-851e-4428be87def6"
+  ]
 }

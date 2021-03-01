@@ -66,6 +66,28 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
+  test "process extracts the right values from json for set_contact_name action" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_name", "name" => "Contact Name"}
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_contact_name"
+    assert action.node_uuid == node.uuid
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_name"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{"uuid" => "UUID 1", "name" => "Contact Name"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
   test "process extracts the right values from json for set_contact_field action" do
     node = %Node{uuid: "Test UUID"}
 
@@ -76,7 +98,7 @@ defmodule Glific.Flows.ActionTest do
       "field" => %{"name" => "Test Name", "key" => "Test Key"}
     }
 
-    {action, uuid_map} = Action.process(json, %{}, node)
+    {action, _uuid_map} = Action.process(json, %{}, node)
 
     assert action.uuid == "UUID 1"
     assert action.type == "set_contact_field"
@@ -84,7 +106,22 @@ defmodule Glific.Flows.ActionTest do
     assert action.value == "Test Value"
     assert action.field.name == "Test Name"
     assert action.field.key == "Test Key"
-    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure we can send key instead of name
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_field",
+      "value" => "Test Value",
+      "field" => %{"key" => "Test Key"}
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_contact_field"
+    assert action.node_uuid == node.uuid
+    assert action.field.name == "Test Key"
+    assert action.field.key == "Test Key"
 
     # ensure that not sending either of the required fields, raises an error
     json = %{"uuid" => "UUID 1", "type" => "set_contact_field", "value" => "Test Value"}
@@ -107,6 +144,131 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
 
     json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for webhook" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "call_webhook",
+      "url" => "URL",
+      "method" => "METHOD",
+      "result_name" => "RESULT_NAME",
+      "headers" => %{
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      }
+    }
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "call_webhook"
+    assert action.node_uuid == node.uuid
+    assert action.url == "URL"
+    assert is_map(action.headers)
+    assert uuid_map[action.uuid] == {:action, action}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "call_webhook",
+      "url" => "URL",
+      "method" => "METHOD",
+      "result_name" => "RESULT_NAME"
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for send_broadcast" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "send_broadcast",
+      "text" => "Test Text",
+      "contacts" => ["23", "45"]
+    }
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "send_broadcast"
+    assert action.node_uuid == node.uuid
+    assert action.text == "Test Text"
+    assert action.contacts == ["23", "45"]
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for add_contact_groups" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "type" => "add_contact_groups", "groups" => ["23", "45"]}
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "add_contact_groups"
+    assert action.node_uuid == node.uuid
+    assert action.groups == ["23", "45"]
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for remove_contact_groups" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "type" => "remove_contact_groups", "groups" => ["23", "45"]}
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "remove_contact_groups"
+    assert action.node_uuid == node.uuid
+    assert action.groups == ["23", "45"]
+    assert uuid_map[action.uuid] == {:action, action}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "remove_contact_groups",
+      "all_groups" => true,
+      "groups" => ["23", "45"]
+    }
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "remove_contact_groups"
+    assert action.node_uuid == node.uuid
+    assert action.groups == ["all_groups"]
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for wait_for_time" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_time", "delay" => "23"}
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "wait_for_time"
+    assert action.node_uuid == node.uuid
+    assert action.wait_time == 23
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
