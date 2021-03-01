@@ -181,7 +181,7 @@ defmodule Glific.Bigquery do
     @bigquery_tables
     |> Enum.each(fn {table_id, _schema} ->
       apply(BigquerySchema, @bigquery_tables[table_id], [])
-      |> create_table(conn, dataset_id, project_id, table_id)
+      |> create_table(%{conn: conn, dataset_id: dataset_id, project_id: project_id, table_id: table_id})
     end)
   end
 
@@ -196,7 +196,7 @@ defmodule Glific.Bigquery do
         @bigquery_tables
         |> Enum.each(fn {table_id, _schema} ->
           apply(BigquerySchema, @bigquery_tables[table_id], [])
-          |> alter_table(conn, dataset_id, project_id, table_id)
+          |> alter_table(%{conn: conn, dataset_id: dataset_id, project_id: project_id, table_id: table_id})
         end)
 
       {:error, _} ->
@@ -268,9 +268,9 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec create_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
+  @spec create_table(list(), map()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
-  defp create_table(schema, conn, dataset_id, project_id, table_id) do
+  defp create_table(schema, %{conn: conn, dataset_id: dataset_id, project_id: project_id, table_id: table_id} = _cred) do
     Tables.bigquery_tables_insert(
       conn,
       project_id,
@@ -291,9 +291,9 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec alter_table(list(), Tesla.Client.t(), binary(), binary(), String.t()) ::
+  @spec alter_table(list(), map()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
-  defp alter_table(schema, conn, dataset_id, project_id, table_id) do
+  defp alter_table(schema, %{conn: conn, dataset_id: dataset_id, project_id: project_id, table_id: table_id} = _cred) do
     Tables.bigquery_tables_update(
       conn,
       project_id,
