@@ -36,8 +36,8 @@ defmodule Glific.BigqueryTest do
 
   test "queue_table_data/4 should create job for messages",
        %{global_schema: global_schema} = attrs do
-    # max_id = get_max_id("messages", attrs)
-    BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, 0)
+    max_id = get_max_id("messages", attrs)
+    BigQueryWorker.queue_table_data("messages", attrs.organization_id, @min_id, max_id)
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
   end
