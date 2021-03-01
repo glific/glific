@@ -13,6 +13,7 @@ defmodule Glific.BigqueryTest do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_messages()
+    SeedsDev.seed_flows()
     :ok
   end
 
@@ -23,6 +24,11 @@ defmodule Glific.BigqueryTest do
 
   test "queue_table_data/4 should create job for contacts", attrs do
     BigQueryWorker.queue_table_data("contacts", attrs.organization_id, 0, 10)
+    assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
+  end
+
+  test "queue_table_data/4 should create job for flows", attrs do
+    BigQueryWorker.queue_table_data("flows", attrs.organization_id, 0, 10)
     assert %{success: 1, failure: 0} = Oban.drain_queue(queue: :bigquery)
   end
 
