@@ -78,7 +78,7 @@ defmodule Glific.Flows.PeriodicTest do
   }
 
   test "run flows and we know the outofoffice flow should get going",
-    %{organization_id: organization_id} = attrs do
+       %{organization_id: organization_id} = attrs do
     FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
 
     organization = Partners.organization(organization_id)
