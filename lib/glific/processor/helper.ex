@@ -26,6 +26,9 @@ defmodule Glific.Processor.Helper do
     message
   end
 
+  _ = '''
+  Commenting out the next few functions as we eliminate work that we are not using
+
   @doc """
   Helper function to add tag
   """
@@ -63,4 +66,6 @@ defmodule Glific.Processor.Helper do
       organization_id: message.organization_id
     })
   end
+
+  '''
 end
