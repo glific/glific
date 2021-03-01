@@ -45,7 +45,7 @@ defmodule Glific.Bigquery do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
         case create_dataset(conn, project_id, dataset_id) do
           {:ok, _} ->
-            do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
+            do_refresh_the_schema(organization_id, %{conn: conn, dataset_id: dataset_id, project_id: project_id})
 
           {:error, response} ->
             handle_sync_errors(response, conn, dataset_id, project_id, organization_id)
@@ -96,9 +96,9 @@ defmodule Glific.Bigquery do
   @doc """
   Refresh the biquery schema and update all the older versions.
   """
-  @spec do_refresh_the_schema(Tesla.Client.t(), binary, binary, non_neg_integer) ::
+  @spec do_refresh_the_schema(non_neg_integer, map()) ::
           {:error, Tesla.Env.t()} | {:ok, Tesla.Env.t()}
-  def do_refresh_the_schema(conn, dataset_id, project_id, organization_id) do
+  def do_refresh_the_schema(organization_id, %{conn: conn, dataset_id: dataset_id, project_id: project_id} = _cred ) do
     Logger.info("refresh Bigquery schema for org_id: #{organization_id}")
     insert_bigquery_jobs(organization_id)
     create_tables(conn, dataset_id, project_id)
@@ -143,7 +143,7 @@ defmodule Glific.Bigquery do
         error = data["error"]
 
         if error["status"] == "ALREADY_EXISTS" do
-          do_refresh_the_schema(conn, dataset_id, project_id, organization_id)
+          do_refresh_the_schema(organization_id, %{conn: conn, dataset_id: dataset_id, project_id: project_id})
         end
 
       _ ->
