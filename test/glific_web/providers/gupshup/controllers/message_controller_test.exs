@@ -89,12 +89,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
                get_in(message_params, ["payload", "sender", "phone"])
     end
 
-  test "Incoming text for bloked contact will not be store in the database",
+    test "Incoming text for bloked contact will not be store in the database",
          %{conn: conn, message_params: message_params} do
-
       bsp_message_id = Ecto.UUID.generate()
 
-      [conatct | _tail ] = Contacts.list_contacts(%{})
+      [conatct | _tail] = Contacts.list_contacts(%{})
 
       {:ok, conatct} = Contacts.update_contact(conatct, %{status: :blocked})
 
@@ -111,7 +110,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         })
     end
   end
-
 
   describe "media" do
     setup do
