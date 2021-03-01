@@ -383,61 +383,31 @@ defmodule Glific.Bigquery do
   @doc """
     Insert rows in the biqquery
   """
-  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) ::
-          :ok
-
+  @spec make_insert_query(list(), String.t(), non_neg_integer, Oban.Job.t(), non_neg_integer) :: :ok
   def make_insert_query(%{json: data}, _table, _organization_id, _job, _max_id)
       when data in [[], nil, %{}],
       do: :ok
 
-  def make_insert_query(data, table, organization_id, job, max_id) do
-    Logger.info(
-      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
-        Enum.count(data)
-      }"
-    )
-
+  def make_insert_query(data, table, organization_id, _job, max_id) do
+    Logger.info("insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{ Enum.count(data)}")
     fetch_bigquery_credentials(organization_id)
-    |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
-        Tabledata.bigquery_tabledata_insert_all(
-          conn,
-          project_id,
-          dataset_id,
-          table,
-          [body: %{rows: data}],
-          []
-        )
-        |> case do
-          {:ok, res} ->
-            Logger.info(
-              "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
-                table
-              }, res: #{inspect(res)}"
-            )
-
-            Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
-            :ok
-
-          {:error, response} ->
-            handle_insert_error(table, dataset_id, organization_id, response, job)
-        end
-
-      _ ->
-        %{url: nil, id: nil, email: nil}
-    end
-
+    |> do_make_insert_query(organization_id, data, table: table, max_id: max_id)
+    |> handle_insert_query_response(organization_id, table: table, max_id: max_id)
     :ok
   end
 
-  @spec handle_insert_error(String.t(), String.t(), non_neg_integer, map(), Oban.Job.t()) :: :ok
-  defp handle_insert_error(table, _dataset_id, organization_id, response, _job) do
-    Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
-        inspect(response)
-      }"
-    )
+  defp do_make_insert_query({:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}, organization_id, data, opts) do
+    Logger.info("inserting data to bigquery for org_id: #{organization_id}, table: #{opts.table}, rows_count: #{ Enum.count(data)}")
+    Tabledata.bigquery_tabledata_insert_all(conn, project_id, dataset_id, opts.table, [body: %{rows: data}], [])
+  end
 
+  defp handle_insert_query_response({:ok, res}, organization_id, opts) do
+    Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{opts.table}, res: #{inspect(res)}")
+    Jobs.update_bigquery_job(organization_id, opts.table , %{table_id: opts.max_id})
+  end
+
+  defp handle_insert_query_response({:error, response}, organization_id, opts) do
+    Logger.info("Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{opts.table}, response: #{inspect(response)}")
     bigquery_error_status(response)
     |> case do
       "NOT_FOUND" ->
@@ -449,9 +419,8 @@ defmodule Glific.Bigquery do
       _ ->
         raise("Bigquery Insert Error for table #{table}  #{response}")
     end
-
-    :ok
   end
+
 
   @spec bigquery_error_status(map()) :: String.t() | atom()
   defp bigquery_error_status(response) do
