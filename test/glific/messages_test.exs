@@ -765,6 +765,145 @@ defmodule Glific.MessagesTest do
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
     end
 
+    test "validate media/2 check for nil or empty media url", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: false, message: "Please provide a media URL"} ==
+               Messages.validate_media(
+                 "",
+                 nil
+               )
+
+      assert %{is_valid: false, message: "Please provide a media URL"} ==
+               Messages.validate_media(
+                 nil,
+                 nil
+               )
+    end
+
+    @valid_media_url "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
+
+    test "validate media/2 check for size error", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581222"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Size is too big for the image. Maximum size limit is 5120KB"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
+    test "validate media/2 check for invalid header", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
+    test "validate media/2 when media type and url are different", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "video"
+               )
+    end
+
+    test "validate media/2 check for type other than defined default types", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "text"
+               )
+    end
+
+    test "validate media/2 return valid as true", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: true, message: "success"} ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
     test "change_message_media/1 returns a message_media changeset", attrs do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
