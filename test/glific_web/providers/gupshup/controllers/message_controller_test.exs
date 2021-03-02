@@ -97,8 +97,10 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
       {:ok, conatct} = Contacts.update_contact(conatct, %{status: :blocked})
 
-      message_params = put_in(message_params, ["payload", "id"], bsp_message_id)
-      message_params = put_in(message_params, ["payload", "sender", "phone"], conatct.phone)
+      message_params =
+        message_params
+        |> put_in(["payload", "id"], bsp_message_id)
+        |> put_in(["payload", "sender", "phone"], conatct.phone)
 
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
