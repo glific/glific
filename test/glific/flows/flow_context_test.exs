@@ -190,4 +190,23 @@ defmodule Glific.Flows.FlowContextTest do
 
     assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
   end
+
+  test "reset_all_contexts/1 will resets all the context for the contact",
+  %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+    flow_context = flow_context_fixture(%{node_uuid: node.uuid})
+
+    #check for the contact
+    assert not is_nil(FlowContext.active_context(flow_context.contact_id))
+    FlowContext.reset_all_contexts(flow_context)
+    assert is_nil(FlowContext.active_context(flow_context.contact_id))
+
+    #check for the context
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert is_nil(flow_context.node)
+    assert is_nil(flow_context.node_uuid)
+    assert not is_nil(flow_context.completed_at)
+  end
+
 end
