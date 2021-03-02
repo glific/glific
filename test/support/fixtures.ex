@@ -60,8 +60,15 @@ defmodule Glific.Fixtures do
   @doc false
   @spec message_fixture(map()) :: Messages.Message.t()
   def message_fixture(attrs \\ %{}) do
-    sender = contact_fixture(attrs)
-    receiver = contact_fixture(attrs)
+    sender_id =
+      if attrs[:sender_id],
+        do: attrs.sender_id,
+        else: contact_fixture(attrs).id
+
+    receiver_id =
+      if attrs[:receiver_id],
+        do: attrs.receiver_id,
+        else: contact_fixture(attrs).id
 
     valid_attrs = %{
       body: Faker.Lorem.sentence(),
@@ -69,9 +76,9 @@ defmodule Glific.Fixtures do
       type: :text,
       bsp_message_id: Faker.String.base64(10),
       bsp_status: :enqueued,
-      sender_id: sender.id,
-      receiver_id: receiver.id,
-      contact_id: receiver.id,
+      sender_id: sender_id,
+      receiver_id: receiver_id,
+      contact_id: receiver_id,
       organization_id: get_org_id()
     }
 

@@ -446,7 +446,7 @@ defmodule Glific.Flows.Action do
           end
         )
 
-      Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
+      Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
     end
 
     {:ok, context, messages}

@@ -37,9 +37,9 @@ defmodule Glific.Processor.ConsumerFlow do
   defp do_process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
-    is_beta = is_beta_keyword?(state, body)
+    is_draft = is_draft_keyword?(state, body)
 
-    if is_beta,
+    if is_draft,
       do: FlowContext.mark_flows_complete(message.contact_id)
 
     context = FlowContext.active_context(message.contact_id)
@@ -50,7 +50,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
     if start_optin_flow?(message.contact, context, body),
       do: start_optin_flow(message, state),
-      else: move_forward({message, state}, body, context, is_beta: is_beta)
+      else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
 
   @doc """
@@ -73,13 +73,13 @@ defmodule Glific.Processor.ConsumerFlow do
           Map.get(state, :newcontact, false) &&
               Map.has_key?(state.flow_keywords["published"], "newcontact") ->
             # delay new contact flows by 2 minutes to allow user to deal with signon link
-            check_flows(message, "newcontact", state, is_beta: false, delay: @delay_time)
+            check_flows(message, "newcontact", state, is_draft: false, delay: @delay_time)
 
           Map.has_key?(state.flow_keywords["published"], body) ->
-            check_flows(message, body, state, is_beta: false)
+            check_flows(message, body, state, is_draft: false)
 
-          Keyword.get(opts, :is_beta, false) ->
-            check_flows(message, message.body, state, is_beta: true)
+          Keyword.get(opts, :is_draft, false) ->
+            check_flows(message, message.body, state, is_draft: true)
 
           true ->
             check_contexts(context, message, body, state)
@@ -87,17 +87,17 @@ defmodule Glific.Processor.ConsumerFlow do
     end
   end
 
-  @beta_phrase "draft"
+  @draft_phrase "draft"
   @final_phrase "published"
 
-  @spec is_beta_keyword?(map(), String.t()) :: boolean()
-  defp is_beta_keyword?(_state, nil), do: false
+  @spec is_draft_keyword?(map(), String.t()) :: boolean()
+  defp is_draft_keyword?(_state, nil), do: false
 
-  defp is_beta_keyword?(state, body) do
-    if String.starts_with?(body, @beta_phrase) and
+  defp is_draft_keyword?(state, body) do
+    if String.starts_with?(body, @draft_phrase) and
          Map.has_key?(
            state.flow_keywords["draft"],
-           String.replace_leading(body, @beta_phrase, "")
+           String.replace_leading(body, @draft_phrase, "")
          ),
        do: true,
        else: false
@@ -109,12 +109,12 @@ defmodule Glific.Processor.ConsumerFlow do
   """
   @spec check_flows(atom() | Message.t(), String.t(), map(), Keyword.t()) :: {Message.t(), map()}
   def check_flows(message, body, state, opts \\ []) do
-    is_beta = Keyword.get(opts, :is_beta, false)
+    is_draft = Keyword.get(opts, :is_draft, false)
 
     {status, body} =
-      if is_beta do
+      if is_draft do
         # lets complete all existing flows for this contact
-        {@beta_phrase, String.replace_leading(body, @beta_phrase <> ":", "")}
+        {@draft_phrase, String.replace_leading(body, @draft_phrase <> ":", "")}
       else
         {@final_phrase, body}
       end
@@ -212,7 +212,7 @@ defmodule Glific.Processor.ConsumerFlow do
     )
     |> case do
       {:ok, flow} ->
-        FlowContext.init_context(flow, message.contact, @final_phrase, is_beta: false)
+        FlowContext.init_context(flow, message.contact, @final_phrase, is_draft: false)
 
       {:error, _} ->
         nil
