@@ -333,10 +333,11 @@ defmodule Glific.Contacts do
   @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_or_update_contact(contact_data) do
     case Repo.get_by(Contact, %{phone: contact_data.phone}) do
-      
-      nil -> create_contact(contact_data) 
+      nil ->
+        create_contact(contact_data)
+
       contact ->
-          update_contact(contact, contact_data)
+        update_contact(contact, contact_data)
     end
   end
 
