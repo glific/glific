@@ -417,15 +417,21 @@ defmodule Glific.Flows.Action do
         action.groups,
         [],
         fn group, _acc ->
-          {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+          case Glific.parse_maybe_integer(group["uuid"]) do
+            {:ok, group_id} ->
+              Glific.parse_maybe_integer(group["uuid"])
 
-          Groups.create_contact_group(%{
-            contact_id: context.contact_id,
-            group_id: group_id,
-            organization_id: context.organization_id
-          })
+              Groups.create_contact_group(%{
+                    contact_id: context.contact_id,
+                    group_id: group_id,
+                    organization_id: context.organization_id
+                                          })
 
-          {:ok, group_id}
+            _ ->
+              Logger.error("Could not parse action groups: #{inspect(action)}")
+          end
+
+          []
         end
       )
 
