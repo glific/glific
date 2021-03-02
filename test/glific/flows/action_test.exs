@@ -15,7 +15,7 @@ defmodule Glific.Flows.ActionTest do
     Flow,
     FlowContext,
     Node,
-    WebhookLog,
+    WebhookLog
   }
 
   setup do
@@ -366,8 +366,8 @@ defmodule Glific.Flows.ActionTest do
     message =
       Glific.Messages.Message
       |> where([m], m.contact_id == ^staff.id)
-    |> Ecto.Query.last()
-    |> Repo.one()
+      |> Ecto.Query.last()
+      |> Repo.one()
 
     assert message.body == "This is a send_broadcast message"
   end
@@ -534,7 +534,7 @@ defmodule Glific.Flows.ActionTest do
     assert elem(result, 0) == :wait
 
     context = Repo.get(FlowContext, context.id)
-    assert ! is_nil(context.wakeup_at)
+    assert !is_nil(context.wakeup_at)
     assert context.wait_for_time == true
   end
 
@@ -579,16 +579,18 @@ defmodule Glific.Flows.ActionTest do
   end
 
   defp add_contact_group(contact, organization_id) do
-    {:ok, group} = Groups.create_group(%{
-          label: Faker.String.base64(10),
-          organization_id: organization_id})
+    {:ok, group} =
+      Groups.create_group(%{
+        label: Faker.String.base64(10),
+        organization_id: organization_id
+      })
 
     {:ok, _contact_group} =
       Groups.create_contact_group(%{
-            contact_id: contact.id,
-            group_id: group.id,
-            organization_id: organization_id
-                                  })
+        contact_id: contact.id,
+        group_id: group.id,
+        organization_id: organization_id
+      })
 
     group
   end
@@ -620,7 +622,7 @@ defmodule Glific.Flows.ActionTest do
       type: "remove_contact_groups",
       groups: [%{"uuid" => "#{g1.id}"}],
       node_uuid: "Test UUID",
-      uuid: "UUID 1",
+      uuid: "UUID 1"
     }
 
     message_stream = []
@@ -632,8 +634,9 @@ defmodule Glific.Flows.ActionTest do
       type: "remove_contact_groups",
       groups: ["all_groups"],
       node_uuid: "Test UUID",
-      uuid: "UUID 1",
+      uuid: "UUID 1"
     }
+
     _result = Action.execute(action, context, message_stream)
     assert count_groups(contact) == 0
   end
