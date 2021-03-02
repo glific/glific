@@ -211,7 +211,7 @@ defmodule Glific.Flows.FlowContextTest do
 
   test "wakeup_one/1 will process all the context for the contact", %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
-    [_node | [node | _tail] ] = flow.nodes
+    [node | _tail ] = flow.nodes
 
     message  = Messages.create_temp_message(organization_id, "1")
     wakeup_at = Timex.shift(Timex.now(), minutes: -3)
