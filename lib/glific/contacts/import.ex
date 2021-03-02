@@ -19,5 +19,15 @@ defmodule Glific.Contacts.Import do
             language_id: String.to_integer(language_id),
             optin_time: opt_in
           }) end)
+        |> Enum.reduce(
+            [],
+            fn {_,contact}, acc ->
+              [
+                %{contact_id: contact.id, group_id: group.id, organization_id: organization_id}
+                | acc
+              ]
+            end
+          )
+        |> Enum.map(&Groups.create_contact_group/1)
     end
 end
