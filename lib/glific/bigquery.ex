@@ -4,6 +4,7 @@ defmodule Glific.Bigquery do
   """
 
   require Logger
+  use Publicist
 
   alias Glific.{
     BigquerySchema,
@@ -500,19 +501,19 @@ defmodule Glific.Bigquery do
         "groups",
         "tags"
       ]
-      |> format_update_fileds
+      |> format_update_fields
       |> do_generate_merge_query("contacts_delta", "contacts", credentials)
 
   defp generate_merge_query("messages", credentials),
     do:
       ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
-      |> format_update_fileds
+      |> format_update_fields
       |> do_generate_merge_query("messages_delta", "messages", credentials)
 
   defp generate_merge_query("flow_results", credentials),
     do:
       ["results"]
-      |> format_update_fileds
+      |> format_update_fields
       |> do_generate_merge_query("flow_results_delta", "flow_results", credentials)
 
   defp generate_merge_query(_, _), do: :ok
@@ -526,8 +527,8 @@ defmodule Glific.Bigquery do
     };"
   end
 
-  @spec format_update_fileds(list()) :: String.t()
-  defp format_update_fileds(list) do
+  @spec format_update_fields(list()) :: String.t()
+  defp format_update_fields(list) do
     list
     |> Enum.map(fn field -> "target.#{field} = source.#{field}" end)
     |> Enum.join(",")

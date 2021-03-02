@@ -103,4 +103,15 @@ defmodule Glific.BigqueryTest do
     assert @formated_time ==
              Bigquery.format_date(DateTime.to_string(datetime), attrs.organization_id)
   end
+
+  test "format_update_fields/1 should string for preparing query" do
+    assert "" ==
+             Bigquery.format_update_fields([])
+
+    assert "target.groups = source.groups" ==
+             Bigquery.format_update_fields(["groups"])
+
+    assert "target.groups = source.groups,target.tags = source.tags" ==
+             Bigquery.format_update_fields(["groups", "tags"])
+  end
 end
