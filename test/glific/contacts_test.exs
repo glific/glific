@@ -531,5 +531,10 @@ defmodule Glific.ContactsTest do
       Contacts.update_contact(contact, %{status: :valid})
       assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == false
     end
+
+    test "getting saas variables" do
+      Application.put_env(:glific, :saas_phone, "9997887776")
+      assert "9997887776" == Contacts.saas_phone
+    end
   end
 end
