@@ -357,9 +357,24 @@ defmodule Glific.ContactsTest do
           )
         )
 
+      opted_out_contact =
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              bsp_status: :hsm,
+              optout_time: DateTime.utc_now(),
+              last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+            }
+          )
+        )
+
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
+      assert true == Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
+      assert false == Contacts.can_send_message_to?(opted_out_contact, false, %{is_optin_flow: true})
     end
 
     test "ensure that contact returns the valid state for sending the hsm message",
@@ -466,6 +481,18 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
+
+      assert_raise RuntimeError, "Contact does not exist with phone: 8910928313", fn ->
+        Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now())
+      end
+    end
+
+    test "maybe_create_contact/1 will update contact name", %{organization_id: organization_id} do
+      contact = contact_fixture(%{organization_id: organization_id, status: :valid})
+      sender = %{name: "demo phone 2", organization_id: 1, phone: contact.phone}
+      Contacts.maybe_create_contact(sender)
+      contact = Contacts.get_contact!(contact.id)
+      assert "demo phone 2" == contact.name
     end
 
     test "set_session_status/2 will return :ok if contact list is empty" do
@@ -530,6 +557,11 @@ defmodule Glific.ContactsTest do
       assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == true
       Contacts.update_contact(contact, %{status: :valid})
       assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == false
+    end
+
+    test "getting saas variables" do
+      Application.put_env(:glific, :saas_phone, "9997887776")
+      assert "9997887776" == Contacts.saas_phone()
     end
   end
 end
