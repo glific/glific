@@ -368,6 +368,7 @@ defmodule Glific.ContactsTest do
             }
           )
         )
+
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
@@ -481,6 +482,10 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
+
+      assert_raise RuntimeError,
+                   "Contact does not exist with phone: 8910928313" ==
+                     Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now())
     end
 
     test "set_session_status/2 will return :ok if contact list is empty" do
