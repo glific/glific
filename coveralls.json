@@ -7,7 +7,6 @@
         "lib/glific.ex",
         "lib/glific/application.ex",
         "lib/glific/appsignal.ex",
-        "lib/glific/bigquery.ex",
         "lib/glific/bigquery/bigquery_schema.ex",
         "lib/glific/gcs.ex",
         "lib/glific/clients/stir.ex",
