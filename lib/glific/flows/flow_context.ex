@@ -132,7 +132,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Resets all the context for ma user when we hit an error. This can potentially
+  Resets all the context for the user when we hit an error. This can potentially
   prevent an infinite loop from happening if flows are connected in a cycle
   """
   @spec reset_all_contexts(FlowContext.t()) :: FlowContext.t() | nil
