@@ -1,5 +1,5 @@
 defmodule Glific.Flows.FlowContextTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase, async: false
 
   alias Glific.{
     Fixtures,
@@ -208,5 +208,18 @@ defmodule Glific.Flows.FlowContextTest do
     assert is_nil(flow_context.node_uuid)
     assert not is_nil(flow_context.completed_at)
   end
+
+  test "wakeup_one/1 will process all the context for the contact",
+  %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+    wakeup_at = Timex.shift(Timex.now(), minutes: -3)
+    flow_context_fixture(%{node_uuid: node.uuid, wakeup_at: wakeup_at, wait_for_time: true})
+    FlowContext.wakeup_flows(organization_id)
+
+  end
+
+
+
 
 end
