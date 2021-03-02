@@ -2,7 +2,9 @@ defmodule Glific.Flows.ActionTest do
   use Glific.DataCase
 
   alias Glific.{
-    Contacts,
+    Contacts.Contact,
+    Groups,
+    Groups.ContactGroup,
     Partners,
     Seeds.SeedsDev,
     Settings
@@ -10,8 +12,10 @@ defmodule Glific.Flows.ActionTest do
 
   alias Glific.Flows.{
     Action,
+    Flow,
     FlowContext,
-    Node
+    Node,
+    WebhookLog,
   }
 
   setup do
@@ -298,8 +302,7 @@ defmodule Glific.Flows.ActionTest do
   test "execute an action when type is send_msg", attrs do
     Partners.organization(attrs.organization_id)
 
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
     attrs = %{
@@ -313,7 +316,7 @@ defmodule Glific.Flows.ActionTest do
     {:ok, context} = FlowContext.create_flow_context(attrs)
     context = Repo.preload(context, [:flow, :contact])
 
-    action = %Action{type: "send_msg", text: "This is a test message"}
+    action = %Action{type: "send_msg", text: "This is a test send_msg"}
 
     message_stream = []
 
@@ -327,15 +330,53 @@ defmodule Glific.Flows.ActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    assert message.body == "This is a test message"
+    assert message.body == "This is a test send_msg"
   end
 
-  test "execute an action when type is set_contact_language", attrs do
+  test "execute an action when type is send_broadcast", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    staff = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+
+    # preload contact
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    action = %Action{
+      type: "send_broadcast",
+      text: "This is a send_broadcast message",
+      contacts: [%{"uuid" => staff.id, "name" => staff.name}]
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, updated_context, updated_message_stream} = result
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^staff.id)
+    |> Ecto.Query.last()
+    |> Repo.one()
+
+    assert message.body == "This is a send_broadcast message"
+  end
+
+  test "execute an action when type is set_contact_language", _attrs do
     language_label = "English (United States)"
     [language | _] = Settings.list_languages(%{filter: %{label: language_label}})
 
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -350,9 +391,8 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.language_id == language.id
   end
 
-  test "execute an action when type is set_contact_name", attrs do
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+  test "execute an action when type is set_contact_name", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
@@ -367,9 +407,8 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.name == action.value
   end
 
-  test "execute an action when type is set_contact_field to set contact preferences", attrs do
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+  test "execute an action when type is set_contact_field to set contact preferences", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
       %FlowContext{contact_id: contact.id, results: %{"test_result" => "preference1"}}
@@ -387,11 +426,23 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, updated_context, updated_message_stream} = result
     assert updated_context.contact.settings["preferences"]["preference1"] == true
+
+    # now set an action without the name field
+    action = %Action{
+      type: "set_contact_field",
+      value: "@results.test_result",
+      field: %{key: "settings"}
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+    assert {:ok, updated_context, _updated_message_stream} = result
+    assert updated_context == context
   end
 
-  test "execute an action when type is set_contact_field to add contact field", attrs do
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+  test "execute an action when type is set_contact_field to add contact field", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
       %FlowContext{contact_id: contact.id, results: %{"test_result" => "field1"}}
@@ -417,8 +468,7 @@ defmodule Glific.Flows.ActionTest do
   test "execute an action when type is enter_flow", attrs do
     Partners.organization(attrs.organization_id)
 
-    [contact | _] =
-      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
     context =
@@ -440,6 +490,152 @@ defmodule Glific.Flows.ActionTest do
     assert {:ok, updated_context, updated_message_stream} = result
 
     assert Map.delete(updated_context, :delay) == Map.delete(context, :delay)
+  end
+
+  test "execute an action when type is wait_for_time", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    # using uuid of language flow
+    action = %Action{
+      type: "wait_for_time",
+      uuid: "UUID 1",
+      wait_time: 0,
+      node_uuid: "Test UUID"
+    }
+
+    # bad message
+    assert_raise ArgumentError, fn -> Action.execute(action, context, [%{body: "FooBar"}]) end
+
+    # good message, proceed ahead
+    result = Action.execute(action, context, [%{body: "No Response"}])
+    assert elem(result, 1) == context
+
+    # delay is 0
+    result = Action.execute(action, context, [])
+    assert elem(result, 1) == context
+
+    # here we need a real context
+    flow =
+      Repo.get(Flow, 1)
+      |> Map.put(:nodes, [%{uuid: Ecto.UUID.generate()}])
+      |> Map.put(:uuid_map, %{})
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
+    # delay > 0
+    result = Action.execute(Map.put(action, :wait_time, 30), context, [])
+    assert elem(result, 0) == :wait
+
+    context = Repo.get(FlowContext, context.id)
+    assert ! is_nil(context.wakeup_at)
+    assert context.wait_for_time == true
+  end
+
+  test "execute an action when type is call_webhook", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    url = "https://yahoo.com"
+
+    # using uuid of language flow
+    action = %Action{
+      type: "call_webhook",
+      uuid: "UUID 1",
+      url: url,
+      method: "POST",
+      headers: %{
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      result_name: "test_webhook",
+      node_uuid: "Test UUID"
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:wait, updated_context, updated_message_stream} = result
+
+    assert updated_context == context
+
+    # ensure we have an entry in the webhook log
+    # webhooks are tested in a complete manner in webhook_test, so skipping here
+    log = Repo.get_by(WebhookLog, %{url: url})
+    assert String.contains?(log.error, "Error in decoding webhook body")
+  end
+
+  defp add_contact_group(contact, organization_id) do
+    {:ok, group} = Groups.create_group(%{
+          label: Faker.String.base64(10),
+          organization_id: organization_id})
+
+    {:ok, _contact_group} =
+      Groups.create_contact_group(%{
+            contact_id: contact.id,
+            group_id: group.id,
+            organization_id: organization_id
+                                  })
+
+    group
+  end
+
+  defp count_groups(contact) do
+    ContactGroup
+    |> where([cg], cg.contact_id == ^contact.id)
+    |> Repo.aggregate(:count)
+  end
+
+  test "execute the action when type is remove_contact_groups", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    assert count_groups(contact) == 0
+
+    g1 = add_contact_group(contact, attrs.organization_id)
+    _g2 = add_contact_group(contact, attrs.organization_id)
+    _g3 = add_contact_group(contact, attrs.organization_id)
+    assert count_groups(contact) == 3
+
+    # preload contact
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
+      |> Repo.preload([:contact, :flow])
+
+    # using uuid of language flow
+    action = %Action{
+      type: "remove_contact_groups",
+      groups: [%{"uuid" => "#{g1.id}"}],
+      node_uuid: "Test UUID",
+      uuid: "UUID 1",
+    }
+
+    message_stream = []
+
+    _result = Action.execute(action, context, message_stream)
+    assert count_groups(contact) == 2
+
+    action = %Action{
+      type: "remove_contact_groups",
+      groups: ["all_groups"],
+      node_uuid: "Test UUID",
+      uuid: "UUID 1",
+    }
+    _result = Action.execute(action, context, message_stream)
+    assert count_groups(contact) == 0
   end
 
   test "execute an action when type is not supported" do

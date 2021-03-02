@@ -387,7 +387,9 @@ defmodule Glific.FLowsTest do
       "Your flow has dangling nodes",
       "Could not find Contact:",
       "Could not find Group:",
-      "The next message after a long wait for time should be an HSM template"
+      "The next message after a long wait for time should be an HSM template",
+      "Could not find Sub Flow:",
+      "Could not parse",
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))

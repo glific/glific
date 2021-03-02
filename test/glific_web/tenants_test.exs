@@ -19,6 +19,9 @@ defmodule GlificWeb.TenantsTest do
 
       # for incorrect shortcode it should return organization id of default organization
       assert Tenants.organization_handler("wrong_shortcode") == 0
+
+      assert Tenants.organization_handler("api") == Tenants.organization_handler()
+      assert Tenants.organization_handler() > 0
     end
   end
 end
