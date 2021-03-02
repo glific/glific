@@ -8,6 +8,7 @@ if Code.ensure_loaded?(Faker) do
       Contacts.Contact,
       Flows.Flow,
       Flows.FlowLabel,
+      Flows.FlowResult,
       Flows.FlowRevision,
       Groups,
       Groups.Group,
@@ -111,6 +112,51 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert_all(Contact, contact_entries)
     end
 
+    @doc false
+    @spec seed_flow_results(Organization.t() | nil) :: :ok
+    def seed_flow_results(organization \\ nil) do
+      {:ok, contact1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Adelle Cavin", organization_id: organization.id}
+        )
+
+      {:ok, contact2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Margarita Quinteros", organization_id: organization.id}
+        )
+
+      {:ok, contact3} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Chrissy Cron", organization_id: organization.id}
+        )
+
+      {:ok, flow1} =
+        Repo.fetch_by(
+          Flow,
+          %{name: "Survey Workflow", organization_id: organization.id}
+        )
+
+      {:ok, flow2} =
+        Repo.fetch_by(
+          Flow,
+          %{name: "Preference Workflow", organization_id: organization.id}
+        )
+    end
+
+    defp get_results do
+      Enum.random([
+        %{Language: %{input: Enum.random(0..10), category: "EngLish"}},
+        %{Language: %{input: Enum.random(0..10), category: "Hindi"}},
+        %{optin: %{input: Enum.random(0..10), category: "Optin"}},
+        %{help: %{input: Enum.random(0..10), category: "Optin"}},
+        %{preference: %{input: Enum.random(0..10), category: "Video"}},
+        %{preference: %{input: Enum.random(0..10), category: "Image"}},
+        %{preference: %{input: Enum.random(0..10), category: "Audio"}},
+      ])
+    end
     @doc false
     @spec seed_providers :: Provider.t()
     def seed_providers do
@@ -859,9 +905,12 @@ if Code.ensure_loaded?(Faker) do
       seed_tag(organization)
 
       seed_session_templates(organization)
+
       seed_flow_labels(organization)
 
       seed_flows(organization)
+
+      seed_flow_results(organization)
 
       seed_groups(organization)
 
