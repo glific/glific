@@ -357,13 +357,14 @@ defmodule Glific.ContactsTest do
           )
         )
 
-      contact4 =
+      opted_out_contact =
         contact_fixture(
           Map.merge(
             attrs,
             %{
               phone: Phone.EnUs.phone(),
               bsp_status: :hsm,
+              optout_time: DateTime.utc_now()
               last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
             }
           )
@@ -372,10 +373,10 @@ defmodule Glific.ContactsTest do
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
-      assert true == Contacts.can_send_message_to?(contact, true, %{is_optin_flow: true})
-      assert true == Contacts.can_send_message_to?(contact, false, %{is_optin_flow: true})
-      assert false == Contacts.can_send_message_to?(contact2, true, %{is_optin_flow: true})
-      assert true == Contacts.can_send_message_to?(contact4, true, %{is_optin_flow: true})
+      assert true == Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
+      assert true == Contacts.can_send_message_to?(opted_out_contact, false, %{is_optin_flow: true})
+      assert false == Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
+      assert true == Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
     end
 
     test "ensure that contact returns the valid state for sending the hsm message",
