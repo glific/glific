@@ -745,7 +745,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_flow_results(atom() | %{:id => _, _ => _}) :: :ok
+    @spec seed_flow_results(Organization.t() | nil) :: :ok
     def seed_flow_results(organization \\ nil) do
       {:ok, contact1} =
         Repo.fetch_by(
