@@ -357,9 +357,24 @@ defmodule Glific.ContactsTest do
           )
         )
 
+      contact4 =
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              bsp_status: :hsm,
+              last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+            }
+          )
+        )
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
+      assert true == Contacts.can_send_message_to?(contact, true, %{is_optin_flow: true})
+      assert true == Contacts.can_send_message_to?(contact, false, %{is_optin_flow: true})
+      assert false == Contacts.can_send_message_to?(contact2, true, %{is_optin_flow: true})
+      assert true == Contacts.can_send_message_to?(contact4, true, %{is_optin_flow: true})
     end
 
     test "ensure that contact returns the valid state for sending the hsm message",
@@ -534,7 +549,7 @@ defmodule Glific.ContactsTest do
 
     test "getting saas variables" do
       Application.put_env(:glific, :saas_phone, "9997887776")
-      assert "9997887776" == Contacts.saas_phone
+      assert "9997887776" == Contacts.saas_phone()
     end
   end
 end
