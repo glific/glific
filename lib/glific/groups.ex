@@ -105,9 +105,9 @@ defmodule Glific.Groups do
   @spec get_group!(integer) :: Group.t()
   def get_group!(id) do
     Group
-    |> Ecto.Queryable.to_query()
+    |> where([g], g.id == ^id)
     |> Repo.add_permission(&Groups.add_permission/2)
-    |> Repo.get!(id)
+    |> Repo.one!()
   end
 
   @doc """

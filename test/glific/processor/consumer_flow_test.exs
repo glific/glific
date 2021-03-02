@@ -129,6 +129,6 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
     sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
     assert sender.optin_status == false
-    assert ! is_nil(sender.optout_time)
+    assert !is_nil(sender.optout_time)
   end
 end

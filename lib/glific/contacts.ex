@@ -172,9 +172,9 @@ defmodule Glific.Contacts do
   @spec get_contact!(integer) :: Contact.t()
   def get_contact!(id) do
     Contact
-    |> Ecto.Queryable.to_query()
+    |> where([c], c.id == ^id)
     |> Repo.add_permission(&Contacts.add_permission/2)
-    |> Repo.get!(id)
+    |> Repo.one!()
   end
 
   @doc """
