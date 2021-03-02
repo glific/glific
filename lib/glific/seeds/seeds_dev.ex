@@ -7,8 +7,8 @@ if Code.ensure_loaded?(Faker) do
       Contacts,
       Contacts.Contact,
       Flows.Flow,
-      Flows.FlowResult,
       Flows.FlowLabel,
+      Flows.FlowResult,
       Flows.FlowRevision,
       Groups,
       Groups.Group,
@@ -745,7 +745,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_flow_results(Organization.t() | nil) :: nil
+    @spec seed_flow_results(atom() | %{:id => _, _ => _}) :: :ok
     def seed_flow_results(organization \\ nil) do
       {:ok, contact1} =
         Repo.fetch_by(
