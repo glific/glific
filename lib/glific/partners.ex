@@ -286,7 +286,7 @@ defmodule Glific.Partners do
 
     ## in case user updates the out of office flow it should udate the flow keyword map as well.
     ## We need to think about a better approch to handle this one.
-    Caches.remove(organization_id, ["flow_keywords_map"])
+    Caches.remove(organization.id, ["flow_keywords_map"])
 
     organization
     |> Organization.changeset(attrs)
