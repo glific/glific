@@ -199,7 +199,7 @@ defmodule Glific.Flows.FlowContextTest do
 
     #check for the contact
     assert not is_nil(FlowContext.active_context(flow_context.contact_id))
-    Glific.Flows.FlowContext.reset_all_contexts(flow_context)
+    FlowContext.reset_all_contexts(flow_context)
     assert is_nil(FlowContext.active_context(flow_context.contact_id))
 
     #check for the context
