@@ -488,6 +488,14 @@ defmodule Glific.ContactsTest do
                      Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now())
     end
 
+    test "maybe_create_contact/1 will update contact name", %{organization_id: organization_id} do
+      contact = contact_fixture(%{organization_id: organization_id, status: :valid})
+      sender = %{name: "demo phone 2", organization_id: 1, phone: contact.phone}
+      Contacts.maybe_create_contact(sender)
+      contact = Contacts.get_contact!(contact.id)
+      assert "demo phone 2" == contact.name
+    end
+
     test "set_session_status/2 will return :ok if contact list is empty" do
       assert :ok == Contacts.set_session_status([], :none)
     end
