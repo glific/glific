@@ -364,7 +364,7 @@ defmodule Glific.ContactsTest do
             %{
               phone: Phone.EnUs.phone(),
               bsp_status: :hsm,
-              optout_time: DateTime.utc_now()
+              optout_time: DateTime.utc_now(),
               last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
             }
           )
