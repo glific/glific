@@ -17,6 +17,7 @@ defmodule Glific.BigqueryTest do
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_messages()
     SeedsDev.seed_flows()
+    SeedsDev.seed_flow_results(organization)
     :ok
   end
 
@@ -80,6 +81,14 @@ defmodule Glific.BigqueryTest do
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("flows", attrs)
     BigQueryWorker.queue_table_data("flows", attrs.organization_id, @min_id, max_id)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
+  end
+
+  test "queue_table_data/4 should create job for flow_results",
+       %{global_schema: global_schema} = attrs do
+    max_id = get_max_id("flow_results", attrs)
+    BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, @min_id, max_id)
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
   end
