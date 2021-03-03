@@ -132,7 +132,20 @@ defmodule Glific.BigqueryTest do
     assert @flow_results_query == Bigquery.generate_merge_query("flow_results", credentials)
   end
 
-  test "clean_delta_tables/2 should delete delta tables", attrs do
+  test "handle_merge_job_error/2 should raise error", attrs do
+    credentials = %{dataset_id: "test_dataset"}
+
+    assert_raise RuntimeError, fn ->
+      Bigquery.handle_merge_job_error(
+        {:error, "error"},
+        "messages",
+        credentials,
+        attrs.organization_id
+      )
+    end
+  end
+
+  test "clean_delta_tables/2 should raise error", attrs do
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
