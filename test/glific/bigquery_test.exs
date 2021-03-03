@@ -182,6 +182,16 @@ defmodule Glific.BigqueryTest do
     end
   end
 
+  test "handle_sync_errors/2 should raise error", attrs do
+    assert_raise ArgumentError, fn ->
+      Bigquery.handle_sync_errors(
+        {:error, "error"},
+        attrs.organization_id,
+        attrs
+      )
+    end
+  end
+
   test "clean_delta_tables/2 should raise error", attrs do
     Tesla.Mock.mock(fn
       %{method: :post} ->
