@@ -222,12 +222,12 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  test "clean_delta_tables/2 should raise error11" do
+  test "create_tables/3 should create tables" do
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
-          status: 404,
-          body: "{\"error\":{\"code\":404,\"status\":\"NOT_FOUND\"}}"
+          status: 200,
+          body: "{\"clear\":{\"code\":200,\"status\":\"TABLE_CREATED\"}}"
         }
     end)
 
@@ -246,6 +246,43 @@ defmodule Glific.BigqueryTest do
     }
 
     assert :ok == Bigquery.create_tables(conn, "test_dataset", "test_table")
+  end
+
+  test "alter_tables/3 should create tables" do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          __client__: %Tesla.Client{
+            post: [],
+            pre: [
+              {Tesla.Middleware.Headers, :call,
+               [[{"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}]]}
+            ]
+          },
+          headers: [
+            {"x-goog-api-client", "gl-elixir/1.10.4 gax/0.4.0 gdcl/0.47.0"},
+            {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+          ],
+          method: :get,
+          url: "https://bigquery.googleapis.com/bigquery/v2/projects/test_table/datasets/test_dataset"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    assert :ok == Bigquery.alter_tables(conn, "test_dataset", "test_table")
   end
 
   @unix_time 1_464_096_368
