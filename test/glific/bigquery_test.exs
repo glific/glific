@@ -192,6 +192,15 @@ defmodule Glific.BigqueryTest do
     end
   end
 
+  test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
+    assert :ok ==
+             Bigquery.handle_sync_errors(
+               %{body: "{\"error\":{\"code\":404,\"status\":\"NOT_FOUND\"}}"},
+               attrs.organization_id,
+               attrs
+             )
+  end
+
   test "clean_delta_tables/2 should raise error", attrs do
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -257,7 +266,8 @@ defmodule Glific.BigqueryTest do
             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
           ],
           method: :get,
-          url: "https://bigquery.googleapis.com/bigquery/v2/projects/test_table/datasets/test_dataset"
+          url:
+            "https://bigquery.googleapis.com/bigquery/v2/projects/test_table/datasets/test_dataset"
         }
     end)
 
