@@ -17,8 +17,8 @@ defmodule Glific.Clients.Stir do
     pattern = :binary.compile_pattern(["91", "1"])
 
     if String.starts_with?(phone, pattern),
-      do: true,
-      else: false
+      do: false,
+      else: true
   end
 
   @spec get_value(String.t(), map()) :: integer()

@@ -7,6 +7,8 @@ defmodule Glific.Clients do
   At some point we will move this to a more extensible scheme, which is as yet undetermined
   """
 
+  use Publicist
+
   @tap %{
     id: 12,
     name: "The Apprentice Project",
@@ -25,9 +27,14 @@ defmodule Glific.Clients do
     @stir[:id] => @stir
   }
 
-  @spec plugins() :: map()
-  defp plugins do
-    if Application.get_env(:glific, :environment) == :prod,
+  @spec plugins(atom() | nil) :: map()
+  defp plugins(env \\ nil) do
+    env =
+    if is_nil(env),
+      do: Application.get_env(:glific, :environment) == :prod,
+      else: env
+
+    if env == :prod,
       do: @plugins,
       # for testing and development we'll use org id 1
       else: %{1 => Map.merge(@tap, @stir)}
@@ -51,7 +58,7 @@ defmodule Glific.Clients do
   """
   @spec blocked?(String.t(), non_neg_integer) :: boolean
   def blocked?(phone, organization_id) do
-    module_name = get_in(plugins(), [organization_id, :blocked])
+    module_name = get_in(plugins(), [organization_id, :blocked?])
 
     if module_name,
       do: apply(module_name, :blocked?, [phone]),
