@@ -41,7 +41,6 @@
         "lib/glific_web/misc",
         "lib/glific/providers/balance_worker.ex",
         "lib/glific_web/plugs/plug.ex",
-        "lib/glific/bigquery.ex",
         "lib/glific_web/plugs/absinthe_plug.ex",
         "lib/glific_web/plugs/ensure_plug_config.ex",
         "lib/glific_web/plugs/subdomain_plug_config.ex",
