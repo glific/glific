@@ -286,7 +286,7 @@ defmodule Glific.Bigquery do
         }
       ],
       []
-    )
+    )|>IO.inspect()
   end
 
   @spec create_table(list(), map()) ::

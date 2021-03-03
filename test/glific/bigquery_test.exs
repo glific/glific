@@ -93,6 +93,12 @@ defmodule Glific.BigqueryTest do
     Oban.drain_queue(queue: :bigquery)
   end
 
+  @messages_query "MERGE `credit.messages` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `credit.messages_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.type = source.type,target.status = source.status,target.sent_at = source.sent_at,target.tags_label = source.tags_label,target.flow_label = source.flow_label,target.flow_name = source.flow_name,target.flow_uuid = source.flow_uuid;"
+  test "generate_merge_query/2 create merge query for messages" do
+    credentials = %{dataset_id: "credit"}
+    assert @messages_query == Bigquery.generate_merge_query("messages", credentials)
+  end
+
   @unix_time 1_464_096_368
   @formated_time "2016-05-24 18:56:08"
   test "format_date/2 should create job for contacts", attrs do
