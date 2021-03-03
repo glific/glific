@@ -15,6 +15,7 @@ defmodule Glific.BigqueryTest do
 
   setup do
     organization = SeedsDev.seed_organizations()
+
     default_goth_json = """
     {
     "project_id": "DEFAULT PROJECT ID",
@@ -129,6 +130,36 @@ defmodule Glific.BigqueryTest do
   test "generate_merge_query/2 create merge query for flow_results" do
     credentials = %{dataset_id: "test_dataset"}
     assert @flow_results_query == Bigquery.generate_merge_query("flow_results", credentials)
+  end
+
+  test "clean_delta_tables/2 should delete delta tables", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 404,
+          body: "{\"error\":{\"code\":404,\"status\":\"NOT_FOUND\"}}"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    credentials = %{dataset_id: "test_dataset", conn: conn, project_id: "test_project"}
+
+    assert_raise RuntimeError, fn ->
+      Bigquery.clean_delta_tables("demo_table", credentials, attrs.organization_id)
+    end
   end
 
   @unix_time 1_464_096_368
