@@ -563,12 +563,12 @@ defmodule Glific.Contacts do
   @doc """
   check if contact is blocked or not
   """
-  @spec is_contact_blocked?(String.t(), non_neg_integer) :: boolean()
-  def is_contact_blocked?(phone, _organization_id) do
-    case Repo.fetch_by(Contact, %{phone: phone}) do
-      {:ok, contact} -> contact.status == :blocked
-      _ -> false
-    end
+  @spec is_contact_blocked?(Contact.t()) :: boolean()
+  def is_contact_blocked?(contact) do
+    if contact.status == :blocked ||
+         Glific.Clients.blocked?(contact.phone, contact.organization_id),
+       do: true,
+       else: false
   end
 
   @doc """

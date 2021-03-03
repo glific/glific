@@ -826,7 +826,7 @@ defmodule Glific.Messages do
   @doc """
   Delete all messages of a contact
   """
-  @spec clear_messages(Contact.t()) :: {:ok}
+  @spec clear_messages(Contact.t()) :: :ok
   def clear_messages(%Contact{} = contact) do
     # add messages to bigquery oban jobs worker
     BigQueryWorker.perform_periodic(contact.organization_id)
@@ -855,7 +855,7 @@ defmodule Glific.Messages do
 
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
-    {:ok}
+    :ok
   end
 
   @spec check_simulator(Ecto.Query.t(), Contact.t(), String.t()) :: Ecto.Query.t()

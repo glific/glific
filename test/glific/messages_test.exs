@@ -361,7 +361,7 @@ defmodule Glific.MessagesTest do
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
-      assert {:ok} = Messages.clear_messages(message.contact)
+      assert :ok = Messages.clear_messages(message.contact)
 
       assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
                Repo.fetch_by(Message, %{
@@ -383,7 +383,7 @@ defmodule Glific.MessagesTest do
           organization_id: message.organization_id
         })
 
-      assert {:ok} = Messages.clear_messages(contact)
+      assert :ok = Messages.clear_messages(contact)
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
