@@ -248,17 +248,10 @@ defmodule Glific.BigqueryTest do
     assert :ok == Bigquery.create_tables(conn, "test_dataset", "test_table")
   end
 
-  test "alter_tables/3 should create tables" do
+  test "alter_tables/3 should throw error tables" do
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
-          __client__: %Tesla.Client{
-            post: [],
-            pre: [
-              {Tesla.Middleware.Headers, :call,
-               [[{"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}]]}
-            ]
-          },
           headers: [
             {"x-goog-api-client", "gl-elixir/1.10.4 gax/0.4.0 gdcl/0.47.0"},
             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
