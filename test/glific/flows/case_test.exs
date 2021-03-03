@@ -64,6 +64,43 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "1") == false
   end
 
+  test "test the execute function for has_number" do
+    c = %Case{type: "has_number"}
+
+    assert wrap_execute(c, nil, "1221") == true
+    assert wrap_execute(c, nil, "second") == false
+    assert wrap_execute(c, nil, "4") == true
+    assert wrap_execute(c, nil, "") == false
+  end
+
+  test "test the execute function for has_all_words" do
+    c = %Case{type: "has_all_words", arguments: ["one", "two"]}
+
+    assert wrap_execute(c, nil, "one1") == false
+    assert wrap_execute(c, nil, "onethresstwo") == true
+    assert wrap_execute(c, nil, "ONETHREETWO") == true
+    assert wrap_execute(c, nil, "") == false
+  end
+
+  test "test the execute function for has_location" do
+    c = %Case{type: "has_location"}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == true
+  end
+
+  test "test the execute function for has_phone" do
+    c = %Case{type: "has_phone"}
+    assert wrap_execute(c, nil, nil, [{:body, "919417443994"}]) == true
+    assert wrap_execute(c, nil, nil, [{:body, "917443994"}]) == false
+    assert wrap_execute(c, nil, nil, [{:body, "invalid_phone"}]) == false
+  end
+
+  test "test the execute function for has_email" do
+    c = %Case{type: "has_email"}
+    assert wrap_execute(c, nil, nil, [{:body, "abc@glific.com"}]) == true
+    assert wrap_execute(c, nil, nil, [{:body, "acs.@ge.123"}]) == false
+    assert wrap_execute(c, nil, nil, [{:body, "invalid_email"}]) == false
+  end
+
   defp wrap_execute(c, context, body) do
     message = Messages.create_temp_message(Fixtures.get_org_id(), body)
     Case.execute(c, context, message)
