@@ -9,11 +9,28 @@ defmodule Glific.BigqueryTest do
     Fixtures,
     Jobs.BigQueryWorker,
     Messages,
+    Partners,
     Seeds.SeedsDev
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
+    default_goth_json = """
+    {
+    "project_id": "DEFAULT PROJECT ID",
+    "private_key_id": "DEFAULT API KEY",
+    "private_key": "DEFAULT PRIVATE KEY"
+    }
+    """
+
+    valid_attrs = %{
+      secrets: %{"service_account" => default_goth_json},
+      is_active: true,
+      shortcode: "bigquery",
+      organization_id: organization.id
+    }
+
+    {:ok, _credential} = Partners.create_credential(valid_attrs)
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_messages()
     SeedsDev.seed_flows()
