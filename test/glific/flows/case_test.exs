@@ -89,16 +89,16 @@ defmodule Glific.Flows.CaseTest do
 
   test "test the execute function for has_phone" do
     c = %Case{type: "has_phone"}
-    assert wrap_execute(c, nil, nil, [{ :body, "919417443994"}]) == true
-    assert wrap_execute(c, nil, nil, [{ :body, "917443994"}]) == false
-    assert wrap_execute(c, nil, nil, [{ :body, "invalid_phone"}]) == false
+    assert wrap_execute(c, nil, nil, [{:body, "919417443994"}]) == true
+    assert wrap_execute(c, nil, nil, [{:body, "917443994"}]) == false
+    assert wrap_execute(c, nil, nil, [{:body, "invalid_phone"}]) == false
   end
 
   test "test the execute function for has_email" do
     c = %Case{type: "has_email"}
-    assert wrap_execute(c, nil, nil, [{ :body, "abc@glific.com"}]) == true
-    assert wrap_execute(c, nil, nil, [{ :body, "acs.@ge.123"}]) == false
-     assert wrap_execute(c, nil, nil, [{ :body, "invalid_email"}]) == false
+    assert wrap_execute(c, nil, nil, [{:body, "abc@glific.com"}]) == true
+    assert wrap_execute(c, nil, nil, [{:body, "acs.@ge.123"}]) == false
+    assert wrap_execute(c, nil, nil, [{:body, "invalid_email"}]) == false
   end
 
   defp wrap_execute(c, context, body) do
