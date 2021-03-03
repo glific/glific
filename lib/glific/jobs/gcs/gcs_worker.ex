@@ -89,14 +89,14 @@ defmodule Glific.Jobs.GcsWorker do
       [],
       fn row, _acc ->
         row
-        |> make_media()
-        |> make_job(organization_id)
+        |> make_media(organization_id)
+        |> make_job()
       end
     )
   end
 
-  @spec make_media(list()) :: map()
-  defp make_media(row) do
+  @spec make_media(list(), non_neg_integer) :: map()
+  defp make_media(row, organization_id) do
     [id, url, type, contact_id, flow_id] = row
 
     %{
@@ -104,14 +104,15 @@ defmodule Glific.Jobs.GcsWorker do
       id: id,
       type: type,
       contact_id: contact_id,
-      flow_id: if(is_nil(flow_id), do: 0, else: flow_id)
+      flow_id: if(is_nil(flow_id), do: 0, else: flow_id),
+      organization_id: organization_id
     }
   end
 
-  @spec make_job(map(), non_neg_integer) :: :ok
-  defp make_job(media, organization_id) do
+  @spec make_job(map()) :: :ok
+  defp make_job(media) do
     {:ok, _} =
-      __MODULE__.new(%{organization_id: organization_id, media: media})
+      __MODULE__.new(%{media: media})
       |> Oban.insert()
 
     :ok
@@ -133,7 +134,7 @@ defmodule Glific.Jobs.GcsWorker do
   """
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
-  def perform(%Oban.Job{args: %{"media" => media, "organization_id" => organization_id}}) do
+  def perform(%Oban.Job{args: %{"media" => media}}) do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
 
@@ -142,10 +143,15 @@ defmodule Glific.Jobs.GcsWorker do
 
     path = "#{System.tmp_dir!()}/#{file_name}"
 
-    download_file_to_temp(media["url"], path, organization_id)
+    media =
+      media
+      |> Map.put(:file_name, file_name)
+      |> Map.put(:path, path)
+
+    download_file_to_temp(media["url"], path, media["organization_id"])
     |> case do
       {:ok, _} ->
-        {:ok, response} = upload_file_on_gcs(path, organization_id, file_name)
+        {:ok, response} = upload_file_on_gcs(media)
 
         get_public_link(response)
         |> update_gcs_url(media["id"])
@@ -154,11 +160,12 @@ defmodule Glific.Jobs.GcsWorker do
         :ok
 
       {:error, :timeout} ->
-        {:error, "GCS Download timeout for org_id: #{organization_id}, media_id: #{media["id"]}"}
+        {:error,
+         "GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"}
 
       {:error, error} ->
         {:discard,
-         "GCS Upload failed for org_id: #{organization_id}, media_id: #{media["id"]}, error #{
+         "GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error #{
            inspect(error)
          }"}
     end
@@ -172,16 +179,42 @@ defmodule Glific.Jobs.GcsWorker do
     |> String.replace("/#{response.generation}", "")
   end
 
-  @spec upload_file_on_gcs(String.t(), non_neg_integer, String.t()) ::
+  @spec upload_file_on_gcs(map()) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
-  defp upload_file_on_gcs(path, org_id, file_name) do
-    Logger.info("Uploading to GCS, org_id: #{org_id}, file_name: #{file_name}")
+  defp upload_file_on_gcs(
+         %{
+           path: path,
+           file_name: file_name
+         } = media
+       ) do
+    Logger.info("Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{file_name}")
+
+    bucket = bucket(media)
 
     CloudStorage.put(
       Glific.Media,
       :original,
-      {%Waffle.File{path: path, file_name: file_name}, Integer.to_string(org_id)}
+      {%Waffle.File{path: path, file_name: file_name}, bucket}
     )
+  end
+
+  # get the bucket name, we call our pseudo-plugin architecture
+  # to allow NGOs to overwrite bucket names
+  @spec bucket(map()) :: String.t()
+  defp bucket(media) do
+    organization =
+      String.to_integer(media["organization_id"])
+      |> Partners.organization()
+
+    bucket_name =
+      organization.services["google_cloud_storage"]
+      |> case do
+        nil -> "custom_bucket_name"
+        credentials -> credentials.secrets["bucket"]
+      end
+
+    # allow end users to override bucket_name
+    Glific.Clients.gcs_bucket(media, bucket_name)
   end
 
   @spec update_gcs_url(String.t(), integer()) ::
