@@ -97,6 +97,8 @@ defmodule Glific.BigqueryTest do
 
   @contact_query "MERGE `credit.contacts` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `credit.contacts_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.provider_status = source.provider_status,target.status = source.status,target.language = source.language,target.optin_time = source.optin_time,target.optout_time = source.optout_time,target.last_message_at = source.last_message_at,target.updated_at = source.updated_at,target.fields = source.fields,target.settings = source.settings,target.groups = source.groups,target.tags = source.tags;"
 
+  @flow_results_query "MERGE `credit.flow_results` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `credit.flow_results_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.results = source.results;"
+
   test "generate_merge_query/2 create merge query for messages" do
     credentials = %{dataset_id: "credit"}
     assert @messages_query == Bigquery.generate_merge_query("messages", credentials)
@@ -105,6 +107,11 @@ defmodule Glific.BigqueryTest do
   test "generate_merge_query/2 create merge query for contacts" do
     credentials = %{dataset_id: "credit"}
     assert @contact_query == Bigquery.generate_merge_query("contacts", credentials)
+  end
+
+  test "generate_merge_query/2 create merge query for flow_results" do
+    credentials = %{dataset_id: "credit"}
+    assert @flow_results_query == Bigquery.generate_merge_query("flow_results", credentials)
   end
 
   @unix_time 1_464_096_368
