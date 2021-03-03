@@ -142,6 +142,16 @@ defmodule Glific.BigqueryTest do
     assert false == credential.is_active
   end
 
+  test "handle_insert_query_response/3 should raise error", attrs do
+    assert_raise Protocol.UndefinedError, fn ->
+      Bigquery.handle_insert_query_response(
+        {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
+        attrs.organization_id,
+        [table: "messages", max_id: 10]
+      )
+    end
+  end
+
   test "handle_merge_job_error/2 should raise error", attrs do
     credentials = %{dataset_id: "test_dataset"}
 
