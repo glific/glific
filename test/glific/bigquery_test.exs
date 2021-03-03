@@ -133,11 +133,13 @@ defmodule Glific.BigqueryTest do
   end
 
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
-      Bigquery.handle_insert_query_response(
-        {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
-        attrs.organization_id,
-        [table: "messages", max_id: 10]
-      )
+    Bigquery.handle_insert_query_response(
+      {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
+      attrs.organization_id,
+      table: "messages",
+      max_id: 10
+    )
+
     {:ok, credential} = Partners.get_credential(%{organization_id: 1, shortcode: "bigquery"})
     assert false == credential.is_active
   end
@@ -147,9 +149,24 @@ defmodule Glific.BigqueryTest do
       Bigquery.handle_insert_query_response(
         {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
         attrs.organization_id,
-        [table: "messages", max_id: 10]
+        table: "messages",
+        max_id: 10
       )
     end
+  end
+
+  test "handle_insert_query_response/3 should update table", attrs do
+    job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+
+    Bigquery.handle_insert_query_response(
+      {:ok, "updated"},
+      attrs.organization_id,
+      table: "messages",
+      max_id: 10
+    )
+
+    job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+    assert job_table2.table_id > job_table1.table_id
   end
 
   test "handle_merge_job_error/2 should raise error", attrs do
