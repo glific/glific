@@ -9,11 +9,29 @@ defmodule Glific.BigqueryTest do
     Fixtures,
     Jobs.BigQueryWorker,
     Messages,
+    Partners,
     Seeds.SeedsDev
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
+
+    default_goth_json = """
+    {
+    "project_id": "DEFAULT PROJECT ID",
+    "private_key_id": "DEFAULT API KEY",
+    "private_key": "DEFAULT PRIVATE KEY"
+    }
+    """
+
+    valid_attrs = %{
+      secrets: %{"service_account" => default_goth_json},
+      is_active: true,
+      shortcode: "bigquery",
+      organization_id: organization.id
+    }
+
+    {:ok, _credential} = Partners.create_credential(valid_attrs)
     SeedsDev.seed_contacts(organization)
     SeedsDev.seed_messages()
     SeedsDev.seed_flows()
@@ -91,6 +109,183 @@ defmodule Glific.BigqueryTest do
     BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, @min_id, max_id)
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
+  end
+
+  @messages_query "MERGE `test_dataset.messages` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `test_dataset.messages_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.type = source.type,target.status = source.status,target.sent_at = source.sent_at,target.tags_label = source.tags_label,target.flow_label = source.flow_label,target.flow_name = source.flow_name,target.flow_uuid = source.flow_uuid;"
+
+  @contact_query "MERGE `test_dataset.contacts` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `test_dataset.contacts_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.provider_status = source.provider_status,target.status = source.status,target.language = source.language,target.optin_time = source.optin_time,target.optout_time = source.optout_time,target.last_message_at = source.last_message_at,target.updated_at = source.updated_at,target.fields = source.fields,target.settings = source.settings,target.groups = source.groups,target.tags = source.tags;"
+
+  @flow_results_query "MERGE `test_dataset.flow_results` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `test_dataset.flow_results_delta` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.results = source.results;"
+
+  test "generate_merge_query/2 create merge query for messages" do
+    credentials = %{dataset_id: "test_dataset"}
+    assert @messages_query == Bigquery.generate_merge_query("messages", credentials)
+  end
+
+  test "generate_merge_query/2 create merge query for contacts" do
+    credentials = %{dataset_id: "test_dataset"}
+    assert @contact_query == Bigquery.generate_merge_query("contacts", credentials)
+  end
+
+  test "generate_merge_query/2 create merge query for flow_results" do
+    credentials = %{dataset_id: "test_dataset"}
+    assert @flow_results_query == Bigquery.generate_merge_query("flow_results", credentials)
+  end
+
+  test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
+    Bigquery.handle_insert_query_response(
+      {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
+      attrs.organization_id,
+      table: "messages",
+      max_id: 10
+    )
+
+    {:ok, credential} = Partners.get_credential(%{organization_id: 1, shortcode: "bigquery"})
+    assert false == credential.is_active
+  end
+
+  test "handle_insert_query_response/3 should raise error", attrs do
+    assert_raise Protocol.UndefinedError, fn ->
+      Bigquery.handle_insert_query_response(
+        {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
+        attrs.organization_id,
+        table: "messages",
+        max_id: 10
+      )
+    end
+  end
+
+  test "handle_insert_query_response/3 should update table", attrs do
+    job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+
+    Bigquery.handle_insert_query_response(
+      {:ok, "updated"},
+      attrs.organization_id,
+      table: "messages",
+      max_id: 10
+    )
+
+    job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
+    assert job_table2.table_id > job_table1.table_id
+  end
+
+  test "handle_merge_job_error/2 should raise error", attrs do
+    credentials = %{dataset_id: "test_dataset"}
+
+    assert_raise RuntimeError, fn ->
+      Bigquery.handle_merge_job_error(
+        {:error, "error"},
+        "messages",
+        credentials,
+        attrs.organization_id
+      )
+    end
+  end
+
+  test "handle_sync_errors/2 should raise error", attrs do
+    assert_raise ArgumentError, fn ->
+      Bigquery.handle_sync_errors(
+        {:error, "error"},
+        attrs.organization_id,
+        attrs
+      )
+    end
+  end
+
+  test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
+    assert :ok ==
+             Bigquery.handle_sync_errors(
+               %{body: "{\"error\":{\"code\":404,\"status\":\"NOT_FOUND\"}}"},
+               attrs.organization_id,
+               attrs
+             )
+  end
+
+  test "clean_delta_tables/2 should raise error", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 404,
+          body: "{\"error\":{\"code\":404,\"status\":\"NOT_FOUND\"}}"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    credentials = %{dataset_id: "test_dataset", conn: conn, project_id: "test_project"}
+
+    assert_raise RuntimeError, fn ->
+      Bigquery.clean_delta_tables("demo_table", credentials, attrs.organization_id)
+    end
+  end
+
+  test "create_tables/3 should create tables" do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: "{\"clear\":{\"code\":200,\"status\":\"TABLE_CREATED\"}}"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    assert :ok == Bigquery.create_tables(conn, "test_dataset", "test_table")
+  end
+
+  test "alter_tables/3 should throw error tables" do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          headers: [
+            {"x-goog-api-client", "gl-elixir/1.10.4 gax/0.4.0 gdcl/0.47.0"},
+            {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+          ],
+          method: :get,
+          url:
+            "https://bigquery.googleapis.com/bigquery/v2/projects/test_table/datasets/test_dataset"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    assert :ok == Bigquery.alter_tables(conn, "test_dataset", "test_table")
   end
 
   @unix_time 1_464_096_368
