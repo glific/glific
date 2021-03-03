@@ -1,5 +1,5 @@
 defmodule Glific.Flows.FlowContextTest do
-  use Glific.DataCase, async: true
+  use Glific.DataCase, async: false
 
   alias Glific.{
     Fixtures,
@@ -192,21 +192,34 @@ defmodule Glific.Flows.FlowContextTest do
   end
 
   test "reset_all_contexts/1 will resets all the context for the contact",
-  %{organization_id: organization_id} = _attrs do
+       %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
     flow_context = flow_context_fixture(%{node_uuid: node.uuid})
 
-    #check for the contact
+    # check for the contact
     assert not is_nil(FlowContext.active_context(flow_context.contact_id))
     FlowContext.reset_all_contexts(flow_context)
     assert is_nil(FlowContext.active_context(flow_context.contact_id))
 
-    #check for the context
+    # check for the context
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert is_nil(flow_context.node)
     assert is_nil(flow_context.node_uuid)
     assert not is_nil(flow_context.completed_at)
   end
 
+  test "wakeup_one/1 will process all the context for the contact", %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail ] = flow.nodes
+
+    message  = Messages.create_temp_message(organization_id, "1")
+    wakeup_at = Timex.shift(Timex.now(), minutes: -3)
+    flow_context = flow_context_fixture(%{node_uuid: node.uuid, wakeup_at: wakeup_at, wait_for_time: true, flow_uuid: flow.uuid, flow_id: flow.id })
+    assert {:ok, _context, []} = FlowContext.wakeup_one(flow_context, message)
+
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert flow_context.wakeup_at == nil
+    assert flow_context.wait_for_time == false
+  end
 end

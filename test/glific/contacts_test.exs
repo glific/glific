@@ -373,8 +373,12 @@ defmodule Glific.ContactsTest do
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
-      assert true == Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
-      assert false == Contacts.can_send_message_to?(opted_out_contact, false, %{is_optin_flow: true})
+
+      assert true ==
+               Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
+
+      assert false ==
+               Contacts.can_send_message_to?(opted_out_contact, false, %{is_optin_flow: true})
     end
 
     test "ensure that contact returns the valid state for sending the hsm message",
