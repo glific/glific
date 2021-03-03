@@ -26,7 +26,7 @@ defmodule Glific.Clients do
     module_name = get_in(@plugins, [media["organization_id"], :gcs_bucket])
 
     if module_name do
-      apply(@plugins[media["organization_id"][:gcs_bucket]], :gcs_bucket, [media])
+      apply(@plugins[media["organization_id"]][:gcs_bucket], :gcs_bucket, [media, default])
     else
       default
     end

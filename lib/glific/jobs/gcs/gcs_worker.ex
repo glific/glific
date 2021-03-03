@@ -189,22 +189,18 @@ defmodule Glific.Jobs.GcsWorker do
        ) do
     Logger.info("Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{file_name}")
 
-    bucket = bucket(media)
-
     CloudStorage.put(
       Glific.Media,
       :original,
-      {%Waffle.File{path: path, file_name: file_name}, bucket}
+      {%Waffle.File{path: path, file_name: file_name}, bucket(media)}
     )
   end
 
   # get the bucket name, we call our pseudo-plugin architecture
   # to allow NGOs to overwrite bucket names
   @spec bucket(map()) :: String.t()
-  defp bucket(media) do
-    organization =
-      String.to_integer(media["organization_id"])
-      |> Partners.organization()
+  def bucket(media) do
+    organization = Partners.organization(media["organization_id"])
 
     bucket_name =
       organization.services["google_cloud_storage"]

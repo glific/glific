@@ -5,7 +5,7 @@ defmodule Glific.Clients.Tap do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{ContactGroup, Contacts.Contact, Group, Repo}
+  alias Glific.{Contacts.Contact, Groups.ContactGroup, Groups.Group, Repo}
 
   @doc false
   @spec gcs_bucket(map(), String.t()) :: String.t()
