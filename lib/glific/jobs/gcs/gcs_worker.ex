@@ -199,7 +199,7 @@ defmodule Glific.Jobs.GcsWorker do
   # get the bucket name, we call our pseudo-plugin architecture
   # to allow NGOs to overwrite bucket names
   @spec bucket(map()) :: String.t()
-  def bucket(media) do
+  defp bucket(media) do
     organization = Partners.organization(media["organization_id"])
 
     bucket_name =
