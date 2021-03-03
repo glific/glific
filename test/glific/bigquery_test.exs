@@ -132,6 +132,16 @@ defmodule Glific.BigqueryTest do
     assert @flow_results_query == Bigquery.generate_merge_query("flow_results", credentials)
   end
 
+  test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
+      Bigquery.handle_insert_query_response(
+        {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
+        attrs.organization_id,
+        [table: "messages", max_id: 10]
+      )
+    {:ok, credential} = Partners.get_credential(%{organization_id: 1, shortcode: "bigquery"})
+    assert false == credential.is_active
+  end
+
   test "handle_merge_job_error/2 should raise error", attrs do
     credentials = %{dataset_id: "test_dataset"}
 
