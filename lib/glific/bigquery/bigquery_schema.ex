@@ -194,7 +194,6 @@ defmodule Glific.BigquerySchema do
   end
 
   @doc false
-  # codebeat:disable[LOC]
   @spec contact_delta_schema :: list()
   def contact_delta_schema do
     [
@@ -372,7 +371,6 @@ defmodule Glific.BigquerySchema do
   @doc """
   Schema for messages table
   """
-  # codebeat:disable[LOC]
   @spec message_schema :: list()
   def message_schema do
     [
