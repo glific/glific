@@ -2,6 +2,8 @@ defmodule Glific.RepoTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
+    Partners,
+    Partners.Organization,
     Repo,
     Settings,
     Settings.Language
@@ -40,10 +42,24 @@ defmodule Glific.RepoTest do
       assert :error == elem(Repo.fetch(Language, 123), 0)
     end
 
-    test "fetch returns the skip_permission" do
+    test "skip_permission should raise error when there is no current user" do
       Process.delete({Repo, :user})
+
       assert_raise RuntimeError, fn ->
-        Repo.skip_permission?
+        Repo.skip_permission?()
+      end
+    end
+
+    test "prepare_query should raise error when user is not admin", attrs do
+      organization = Partners.organization(attrs.organization_id)
+
+      query =
+        Organization
+        |> where([o], o.shortcode == ^organization.shortcode)
+        |> select([o], o.id)
+
+      assert_raise RuntimeError, fn ->
+        Repo.prepare_query("hello", query, [])
       end
     end
 
