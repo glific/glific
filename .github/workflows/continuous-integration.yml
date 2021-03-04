@@ -55,6 +55,7 @@ jobs:
         run: |
           mix local.rebar --force
           mix local.hex --force
+          mix hex.organization auth oban --key ${{ secrets.OBAN_PRO_KEY }}
           mix deps.get
 
       - name: Retrieve PLT Cache
