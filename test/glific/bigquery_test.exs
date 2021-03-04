@@ -254,7 +254,7 @@ defmodule Glific.BigqueryTest do
       ]
     }
 
-    assert :ok == Bigquery.create_tables(conn, "test_dataset", "test_table")
+    assert :ok == Bigquery.create_tables(%{conn: conn, dataset_id: "test_dataset", project_id: "test_table"})
   end
 
   test "alter_tables/3 should throw error tables" do
