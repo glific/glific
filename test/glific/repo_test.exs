@@ -52,8 +52,6 @@ defmodule Glific.RepoTest do
     end
 
     test "prepare_query should raise error when user is not admin", attrs do
-      organization = Partners.organization(attrs.organization_id)
-
       query = get_query(attrs)
 
       assert_raise RuntimeError, fn ->
@@ -62,16 +60,12 @@ defmodule Glific.RepoTest do
     end
 
     test "opts_with_nil should return query", attrs do
-      organization = Partners.organization(attrs.organization_id)
-
       query = get_query(attrs)
 
       assert query == Repo.opts_with_nil(query, [])
     end
 
     test "make_like should return query", attrs do
-      organization = Partners.organization(attrs.organization_id)
-
       query = get_query(attrs)
 
       assert query == Repo.make_like(query, :test, "")
@@ -79,14 +73,14 @@ defmodule Glific.RepoTest do
     end
 
     test "add_opts should return query when opts_with_fn is nil", attrs do
-      organization = Partners.organization(attrs.organization_id)
-
       query = get_query(attrs)
 
       assert query == Repo.add_opts(query, nil, [])
     end
 
     defp get_query(attrs) do
+      organization = Partners.organization(attrs.organization_id)
+
       Organization
       |> where([o], o.shortcode == ^organization.shortcode)
       |> select([o], o.id)
