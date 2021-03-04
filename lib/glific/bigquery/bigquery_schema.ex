@@ -6,6 +6,7 @@ defmodule Glific.BigquerySchema do
   @doc """
   Schema for contacts table
   """
+  # codebeat:disable[LOC]
   @spec contact_schema :: list()
   def contact_schema do
     [
@@ -122,7 +123,7 @@ defmodule Glific.BigquerySchema do
         ]
       },
       %{
-        description: "Store the settings of the user as a map (which is a jsonb object in psql). 
+        description: "Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
       the user with messages based on their preferences",
         name: "settings",
@@ -193,6 +194,7 @@ defmodule Glific.BigquerySchema do
   end
 
   @doc false
+  # codebeat:disable[LOC]
   @spec contact_delta_schema :: list()
   def contact_delta_schema do
     [
@@ -297,7 +299,7 @@ defmodule Glific.BigquerySchema do
         ]
       },
       %{
-        description: "Store the settings of the user as a map (which is a jsonb object in psql). 
+        description: "Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
       the user with messages based on their preferences",
         name: "settings",
@@ -370,6 +372,7 @@ defmodule Glific.BigquerySchema do
   @doc """
   Schema for messages table
   """
+  # codebeat:disable[LOC]
   @spec message_schema :: list()
   def message_schema do
     [
