@@ -38,8 +38,8 @@ defmodule Glific.Jobs.GcsJob do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(GcsJob.t(), map()) :: Ecto.Changeset.t()
-  def changeset(search, attrs) do
-    search
+  def changeset(gcs_job, attrs) do
+    gcs_job
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint(:organization_id)
