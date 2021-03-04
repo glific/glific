@@ -109,11 +109,11 @@ defmodule Glific.Bigquery do
           {:error, Tesla.Env.t()} | {:ok, Tesla.Env.t()}
   def do_refresh_the_schema(
         organization_id,
-        %{conn: conn, dataset_id: dataset_id, project_id: project_id} = _cred
+        %{conn: conn, dataset_id: dataset_id, project_id: project_id} = attrs
       ) do
     Logger.info("refresh Bigquery schema for org_id: #{organization_id}")
     insert_bigquery_jobs(organization_id)
-    create_tables(conn, dataset_id, project_id)
+    create_tables(attrs)
     alter_tables(conn, dataset_id, project_id)
     contacts_messages_view(conn, dataset_id, project_id)
     alter_contacts_messages_view(conn, dataset_id, project_id)
@@ -187,17 +187,12 @@ defmodule Glific.Bigquery do
     )
   end
 
-  @spec create_tables(Tesla.Client.t(), binary, binary) :: :ok
-  defp create_tables(conn, dataset_id, project_id) do
+  @spec create_tables(map()) :: :ok
+  defp create_tables(attrs) do
     @bigquery_tables
     |> Enum.each(fn {table_id, _schema} ->
       apply(BigquerySchema, @bigquery_tables[table_id], [])
-      |> create_table(%{
-        conn: conn,
-        dataset_id: dataset_id,
-        project_id: project_id,
-        table_id: table_id
-      })
+      |> create_table(Map.merge(%{table_id: table_id}, attrs))
     end)
   end
 
@@ -574,22 +569,11 @@ defmodule Glific.Bigquery do
 
   @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
   defp clean_delta_tables(table, credentials, organization_id) do
-    timezone = Partners.organization(organization_id).timezone
     ## remove all the data for last 90 minutes
-    sql = """
-    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` WHERE EXISTS(SELECT * FROM  ( SELECT updated_at,
-    ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
-      credentials.dataset_id
-    }.#{table}_delta` delta )
-    WHERE row_num > 0 AND updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{
-      timezone
-    }'))
-    """
-
-    query_body = %{query: sql, useLegacySql: false}
+    sql = get_clean_delta_tables_query(table, credentials)
 
     GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
-      body: query_body
+      body: %{query: sql, useLegacySqlcredentials: false}
     )
     |> case do
       {:ok, response} ->
@@ -600,6 +584,20 @@ defmodule Glific.Bigquery do
     end
 
     :ok
+  end
+
+  @spec get_clean_delta_tables_query(String.t(), map(), non_neg_integer) :: String.t()
+  defp get_clean_delta_tables_query(table, credentials, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+    """
+    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` WHERE EXISTS(SELECT * FROM  ( SELECT updated_at,
+    ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
+      credentials.dataset_id
+    }.#{table}_delta` delta )
+    WHERE row_num > 0 AND updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{
+      timezone
+    }'))
+    """
   end
 
   @spec handle_merge_job_error(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
