@@ -13,8 +13,8 @@ defmodule GlificWeb.Schema.SearchTest do
     Messages.Message,
     Repo,
     Searches,
-    Searches.Search,
     Searches.SavedSearch,
+    Searches.Search,
     Seeds.SeedsDev
   }
 
