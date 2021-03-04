@@ -1,5 +1,6 @@
 defmodule Glific.RepoTest do
   use Glific.DataCase, async: true
+  use ExUnit.Case
 
   alias Glific.{
     Partners,
@@ -72,6 +73,18 @@ defmodule Glific.RepoTest do
         |> select([o], o.id)
 
       assert query == Repo.opts_with_nil(query, [])
+    end
+
+    test "make_like should return query", attrs do
+      organization = Partners.organization(attrs.organization_id)
+
+      query =
+        Organization
+        |> where([o], o.shortcode == ^organization.shortcode)
+        |> select([o], o.id)
+
+      assert query == Repo.make_like(query, :test, "")
+      assert query == Repo.make_like(query, :test, nil)
     end
 
     test "fetch_by returns the right language" do

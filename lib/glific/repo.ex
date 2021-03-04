@@ -9,6 +9,7 @@ defmodule Glific.Repo do
   alias __MODULE__
 
   alias Glific.{Partners, Users.User}
+  use Publicist
 
   import Ecto.Query
   require Logger
