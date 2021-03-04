@@ -63,6 +63,17 @@ defmodule Glific.RepoTest do
       end
     end
 
+    test "opts_with_nil should return query", attrs do
+      organization = Partners.organization(attrs.organization_id)
+
+      query =
+        Organization
+        |> where([o], o.shortcode == ^organization.shortcode)
+        |> select([o], o.id)
+
+      assert query == Repo.opts_with_nil(query, [])
+    end
+
     test "fetch_by returns the right language" do
       en = language_fixture()
       hi = language_fixture(@valid_hindi_attrs)
