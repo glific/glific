@@ -78,6 +78,14 @@ defmodule Glific.RepoTest do
       assert query == Repo.make_like(query, :test, nil)
     end
 
+    test "add_opts should return query when opts_with_fn is nil", attrs do
+      organization = Partners.organization(attrs.organization_id)
+
+      query = get_query(attrs)
+
+      assert query == Repo.add_opts(query, nil, [])
+    end
+
     defp get_query(attrs) do
       Organization
       |> where([o], o.shortcode == ^organization.shortcode)
