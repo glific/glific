@@ -3,15 +3,17 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
-    Fixtures,
+    Fixtures
   }
 
   test "plugins returns the right value for test vs prod" do
     map = Clients.plugins()
-    assert Enum.count(map) == 1 # only the main organization is returned
+    # only the main organization is returned
+    assert Enum.count(map) == 1
 
     map = Clients.plugins(:prod)
-    assert Enum.count(map) > 1 # we at least have STiR and TAP
+    # we at least have STiR and TAP
+    assert Enum.count(map) > 1
   end
 
   test "gcs_bucket with contact id" do
@@ -22,7 +24,10 @@ defmodule Glific.ClientsTest do
     assert bucket == "default"
 
     cg = Fixtures.contact_group_fixture(%{organization_id: 1})
-    bucket = Clients.gcs_bucket(%{"organization_id" => 1, "contact_id" => cg.contact_id}, "default")
+
+    bucket =
+      Clients.gcs_bucket(%{"organization_id" => 1, "contact_id" => cg.contact_id}, "default")
+
     assert bucket != "default"
   end
 
