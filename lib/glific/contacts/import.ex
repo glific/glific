@@ -16,7 +16,7 @@ defmodule Glific.Contacts.Import do
   end
 
   defp insert_or_update_contact_data(contact, group_id) do
-    {_,contact} = Contacts.create_or_update_contact(contact)
+    {_, contact} = Contacts.create_or_update_contact(contact)
 
     Groups.create_contact_group(%{
       contact_id: contact.id,
@@ -31,14 +31,12 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(String.t(), Integer.t(), Integer.t()) :: :ok
+  @spec import_contacts(String.t(), integer, integer) :: :ok
   def import_contacts(file_path, organization_id, group_id) do
     File.stream!(file_path)
     |> CSV.decode(headers: true, strip_fields: true)
     |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id) end)
     |> Enum.map(fn contact -> insert_or_update_contact_data(contact, group_id) end)
-    |> IO.inspect
 
-    :ok
   end
 end
