@@ -54,10 +54,7 @@ defmodule Glific.RepoTest do
     test "prepare_query should raise error when user is not admin", attrs do
       organization = Partners.organization(attrs.organization_id)
 
-      query =
-        Organization
-        |> where([o], o.shortcode == ^organization.shortcode)
-        |> select([o], o.id)
+      query = get_query(attrs)
 
       assert_raise RuntimeError, fn ->
         Repo.prepare_query("hello", query, [])
@@ -67,10 +64,7 @@ defmodule Glific.RepoTest do
     test "opts_with_nil should return query", attrs do
       organization = Partners.organization(attrs.organization_id)
 
-      query =
-        Organization
-        |> where([o], o.shortcode == ^organization.shortcode)
-        |> select([o], o.id)
+      query = get_query(attrs)
 
       assert query == Repo.opts_with_nil(query, [])
     end
@@ -78,13 +72,16 @@ defmodule Glific.RepoTest do
     test "make_like should return query", attrs do
       organization = Partners.organization(attrs.organization_id)
 
-      query =
-        Organization
-        |> where([o], o.shortcode == ^organization.shortcode)
-        |> select([o], o.id)
+      query = get_query(attrs)
 
       assert query == Repo.make_like(query, :test, "")
       assert query == Repo.make_like(query, :test, nil)
+    end
+
+    defp get_query(attrs) do
+      Organization
+      |> where([o], o.shortcode == ^organization.shortcode)
+      |> select([o], o.id)
     end
 
     test "fetch_by returns the right language" do
