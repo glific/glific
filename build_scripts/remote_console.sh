@@ -1,0 +1,1 @@
+Glific.Release.migrate
