@@ -31,7 +31,7 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(String.t(), integer, integer) :: :ok
+  @spec import_contacts(String.t(), integer, integer) :: list()
   def import_contacts(file_path, organization_id, group_id) do
     File.stream!(file_path)
     |> CSV.decode(headers: true, strip_fields: true)
