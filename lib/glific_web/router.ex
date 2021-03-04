@@ -36,6 +36,10 @@ defmodule GlificWeb.Router do
     plug GlificWeb.Context
   end
 
+  pipeline :auth_protected do
+    plug :auth
+  end
+
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through :api
 
@@ -47,13 +51,13 @@ defmodule GlificWeb.Router do
   end
 
   scope "/", GlificWeb do
-    pipe_through :browser
+    pipe_through [:browser, :auth]
 
     live "/", PageLive, :index
   end
 
   scope "/" do
-    pipe_through :browser
+    pipe_through [:browser, :auth]
 
     oban_dashboard("/oban")
   end
@@ -69,7 +73,7 @@ defmodule GlificWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/" do
-      pipe_through :browser
+      pipe_through [:browser, :auth]
       live_dashboard "/dashboard", metrics: GlificWeb.Telemetry
     end
   end
@@ -149,6 +153,13 @@ defmodule GlificWeb.Router do
 
   scope "/webhook", GlificWeb.Flows do
     post "/stir/survey", WebhookController, :stir_survey
+  end
+
+  # implement basic authentication for live dashboard and oban pro
+  defp auth(conn, _opts) do
+    username = Application.fetch_env!(:glific, :auth_username)
+    password = Application.fetch_env!(:glific, :auth_password)
+    Plug.BasicAuth.basic_auth(conn, username: username, password: password)
   end
 
   # defp debug_response(conn, _) do
