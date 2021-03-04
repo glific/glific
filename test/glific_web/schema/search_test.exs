@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Repo,
     Searches,
     Searches.SavedSearch,
+    Searches.Search,
     Seeds.SeedsDev
   }
 
@@ -159,6 +160,14 @@ defmodule GlificWeb.Schema.SearchTest do
 
     message = get_in(query_data, [:data, "deleteSavedSearch", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "conversation struct will be generate via embedded schema for the two", _attrs do
+    contacts = Contacts.list_contacts(%{})
+    messages = Messages.list_messages(%{})
+    search = %Search{contacts: contacts, messages: messages}
+    assert search.contacts == contacts
+    assert search.messages == messages
   end
 
   test "search for conversations", %{staff: user} do
