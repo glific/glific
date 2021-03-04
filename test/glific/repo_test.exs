@@ -2,6 +2,7 @@ defmodule Glific.RepoTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
+    Repo,
     Settings,
     Settings.Language
   }
@@ -37,6 +38,13 @@ defmodule Glific.RepoTest do
       assert {:ok, hi} == Repo.fetch(Language, hi.id)
       assert {:ok, en} == Repo.fetch(Language, en.id)
       assert :error == elem(Repo.fetch(Language, 123), 0)
+    end
+
+    test "fetch returns the skip_permission" do
+      Process.delete({Repo, :user})
+      assert_raise RuntimeError, fn ->
+        Repo.skip_permission?
+      end
     end
 
     test "fetch_by returns the right language" do

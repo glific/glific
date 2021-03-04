@@ -283,7 +283,7 @@ defmodule Glific.Repo do
   """
   @spec skip_permission? :: User.t() | true
   def skip_permission? do
-    user = Glific.Repo.get_current_user()
+    user = get_current_user()
 
     cond do
       is_nil(user) -> raise(RuntimeError, message: "Invalid user")
