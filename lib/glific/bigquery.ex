@@ -570,7 +570,7 @@ defmodule Glific.Bigquery do
   @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
   defp clean_delta_tables(table, credentials, organization_id) do
     ## remove all the data for last 90 minutes
-    sql = get_clean_delta_tables_query(table, credentials)
+    sql = get_clean_delta_tables_query(table, credentials, organization_id)
 
     GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
       body: %{query: sql, useLegacySqlcredentials: false}
