@@ -88,7 +88,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def languages(0 = _count_organizations) do
     en_us =
       Repo.insert!(%Language{
-        label: "English (United States)",
+        label: "English",
         label_locale: "English",
         locale: "en_US"
       })
