@@ -60,7 +60,7 @@ defmodule Glific.MixProject do
   def application do
     [
       mod: {Glific.Application, []},
-      extra_applications: [:logger, :runtime_tools, :mnesia]
+      extra_applications: [:logger, :runtime_tools, :mnesia, :os_mon]
     ]
   end
 
