@@ -419,8 +419,6 @@ defmodule Glific.Flows.Action do
         fn group, _acc ->
           case Glific.parse_maybe_integer(group["uuid"]) do
             {:ok, group_id} ->
-              Glific.parse_maybe_integer(group["uuid"])
-
               Groups.create_contact_group(%{
                 contact_id: context.contact_id,
                 group_id: group_id,
