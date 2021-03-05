@@ -10,6 +10,7 @@ defmodule Glific.Seeds.SeedsSim do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Groups.Group,
     Partners,
     Partners.Organization,
     Repo,
@@ -42,6 +43,7 @@ defmodule Glific.Seeds.SeedsSim do
     end
   end
 
+  add_seed_groups()
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
@@ -50,6 +52,7 @@ defmodule Glific.Seeds.SeedsSim do
     organizations
     |> seed_simulators(en_us)
     |> seed_users(en_us)
+    |> seed_collections()
 
     :ok
   end
@@ -80,6 +83,30 @@ defmodule Glific.Seeds.SeedsSim do
     }
   end
 
+  @doc false
+  @spec seed_collections([Organization.t()]) :: [Organization.t()]
+  defp seed_collections do
+    for org <- organizations do
+      create_collections(org)
+    end
+
+    organizations
+  end
+
+  defp create_collections(organization) do
+    Repo.insert!(%Group{
+      label: "Optin contacts",
+      is_restricted: false,
+      organization_id: organization.id
+    })
+
+    Repo.insert!(%Group{
+      label: "Optout contacts",
+      is_restricted: false,
+      organization_id: organization.id
+    })
+
+  end
   @doc false
   @spec seed_simulators([Organization.t()], Language.t()) :: [Organization.t()]
   def seed_simulators(organizations \\ [], language) do
@@ -143,6 +170,8 @@ defmodule Glific.Seeds.SeedsSim do
     for org <- organizations do
       add_saas_user(org, language)
     end
+
+    organizations
   end
 
   @doc """
