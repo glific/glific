@@ -566,7 +566,7 @@ defmodule Glific.Contacts do
   @spec is_contact_blocked?(Contact.t()) :: boolean()
   def is_contact_blocked?(contact) do
     if contact.status == :blocked ||
-         Glific.Clients.blocked?(contact.phone, contact.organization_id),
+         Glific.Clients.blocked?(contact.phone, contact.organization_id) && !is_simulator_contact?(contact.phone),
        do: true,
        else: false
   end
