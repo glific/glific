@@ -53,6 +53,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     SeedsSim.migrate_data(:simulator, organization)
 
+    SeedsSim.migrate_data(:collection, organization)
+
     saved_searches(organization)
 
     flow_labels(organization)
@@ -531,8 +533,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     data = [
       {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
-      {"Optin Workflow", ["optin"], uuid_map.optin, true, "optin.json"},
-      {"Optout Workflow", ["optout", "stop"], uuid_map.optout, true, "optout.json"},
       {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
       {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
@@ -542,6 +542,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     ]
 
     SeedsFlows.add_flow(organization, data, uuid_map)
+    SeedsFlows.opt_in_out_flows([organization])
   end
 
   def contacts_field(organization) do

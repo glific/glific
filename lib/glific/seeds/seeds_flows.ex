@@ -15,8 +15,6 @@ defmodule Glific.Seeds.SeedsFlows do
   def opt_in_out_flows(organizations) do
     organizations
     |> Enum.each(fn organization ->
-      Repo.put_process_state(organization.id)
-
       # we only check if the optin flow exist, if not, we add both optin and optout
       with {:error, _} <-
              Repo.fetch_by(Flow, %{name: "Optin Workflow", organization_id: organization.id}),
@@ -26,7 +24,8 @@ defmodule Glific.Seeds.SeedsFlows do
 
   @spec add_opt_flow(Organization.t()) :: :ok
   defp add_opt_flow(organization) do
-    {:ok, optin_collection} = Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+    {:ok, optin_collection} =
+      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
 
     {:ok, optout_collection} =
       Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
