@@ -20,6 +20,11 @@ defmodule Glific.Clients do
     blocked?: Glific.Clients.Stir
   }
 
+  @dev %{
+    id: 1,
+    name: "Glific"
+  }
+
   @plugins %{
     @tap[:id] => @tap,
     @stir[:id] => @stir
@@ -35,7 +40,7 @@ defmodule Glific.Clients do
     if env(e) == :prod,
       do: @plugins,
       # for testing and development we'll use org id 1
-      else: %{1 => Map.merge(@tap, @stir)}
+      else: %{@dev[:id] => @dev}
   end
 
   @doc """
