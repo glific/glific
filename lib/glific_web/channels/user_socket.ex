@@ -39,7 +39,7 @@ defmodule GlificWeb.UserSocket do
           socket
           |> assign(:session_fingerprint, fingerprint)
           |> assign(:user, user)
-          |> Absinthe.Phoenix.Socket.put_options(context: %{current_user: user})
+          |> Absinthe.Phoenix.Socket.put_options(context: %{current_user: user, conn: nil})
 
         Glific.Repo.put_current_user(user)
         Glific.Repo.put_organization_id(user.organization_id)
