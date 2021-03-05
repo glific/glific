@@ -34,8 +34,8 @@ defmodule Glific.Seeds.SeedsFlows do
     uuid_map = %{
       optin: Ecto.UUID.generate(),
       optout: Ecto.UUID.generate(),
-      optinc: Integer.to_string(optin_collection.id),
-      optoutc: Integer.to_string(optout_collection.id)
+      optin_collection: Integer.to_string(optin_collection.id),
+      optout_collection: Integer.to_string(optout_collection.id)
     }
 
     data = [

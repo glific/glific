@@ -176,7 +176,7 @@
             {
               "name": "Optout contacts",
               "type": "group",
-              "uuid": "OPTOUTC_UUID"
+              "uuid": "OPTOUT_COLLECTION_UUID"
             }
           ]
         }
