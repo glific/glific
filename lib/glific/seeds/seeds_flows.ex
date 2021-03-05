@@ -10,11 +10,29 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo
   }
 
+
+  @doc false
+  @spec seed([Organization.t()]) :: :ok
+  def seed(organizations) do
+    organizations
+    |> Enum.each(fn org ->
+      Glific.Repo.put_organization_id(org.id)
+      {uuid_map, data} = get_data_and_uuid_map(org)
+      add_flow(org, data, uuid_map)
+    end)
+
+    ## since optin and optout has a speicial case and we have a sparate  seeder migration for that we will add them saprately.
+    ## will come back to this in future and clean that up as well.
+    opt_in_out_flows(organizations)
+  end
+
+
   @doc false
   @spec opt_in_out_flows([Organization.t()]) :: :ok
   def opt_in_out_flows(organizations) do
     organizations
     |> Enum.each(fn organization ->
+      Glific.Repo.put_organization_id(organization.id)
       # we only check if the optin flow exist, if not, we add both optin and optout
       with {:error, _} <-
              Repo.fetch_by(Flow, %{name: "Optin Workflow", organization_id: organization.id}),
@@ -24,11 +42,10 @@ defmodule Glific.Seeds.SeedsFlows do
 
   @spec add_opt_flow(Organization.t()) :: :ok
   defp add_opt_flow(organization) do
-    {:ok, optin_collection} =
-      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
 
-    {:ok, optout_collection} =
-      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+    ## collections should be present in the db
+    {:ok, optin_collection} = Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+    {:ok, optout_collection} = Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
 
     uuid_map = %{
       optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
@@ -131,4 +148,29 @@ defmodule Glific.Seeds.SeedsFlows do
           )
         end
       )
+
+  @spec get_data_and_uuid_map(Organization.t()) :: tuple()
+  defp get_data_and_uuid_map(organization) do
+    uuid_map = %{
+      help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
+      language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
+      newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
+      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
+      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
+    }
+
+    data = [
+      {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
+      {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
+      {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
+      {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
+      {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
+      {"Registration Workflow", ["registration"], uuid_map.registration, false,
+       "registration.json"}
+    ]
+
+    {uuid_map, data}
+  end
+
 end

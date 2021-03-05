@@ -1,4 +1,4 @@
-defmodule Glific.Seeds.SeedsSim do
+defmodule Glific.Seeds.SeedsMigration do
   @moduledoc """
   One shot migration of data to add simulators and saas admin.
   We use the functions in this file to add simulators for new organizations as
@@ -85,9 +85,8 @@ defmodule Glific.Seeds.SeedsSim do
   @doc false
   @spec seed_collections([Organization.t()]) :: [Organization.t()]
   defp seed_collections(organizations) do
-    for org <- organizations do
-      create_collections(org)
-    end
+    for org <- organizations,
+    do: create_collections(org)
 
     organizations
   end

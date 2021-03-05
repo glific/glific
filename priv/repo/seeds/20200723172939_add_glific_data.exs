@@ -15,7 +15,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
-    Seeds.SeedsSim,
+    Seeds.SeedsMigration,
     Settings.Language,
     Tags.Tag,
     Users
@@ -51,9 +51,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     users(admin, organization)
 
-    SeedsSim.migrate_data(:simulator, organization)
+    SeedsMigration.migrate_data(:simulator, organization)
 
-    SeedsSim.migrate_data(:collection, organization)
+    SeedsMigration.migrate_data(:collection, organization)
 
     saved_searches(organization)
 
@@ -511,29 +511,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert_all(FlowLabel, flow_labels)
   end
 
-  def flows(organization) do
-    uuid_map = %{
-      help: SeedsFlows.generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
-      language: SeedsFlows.generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
-      newcontact: SeedsFlows.generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
-      registration: SeedsFlows.generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
-      activity: SeedsFlows.generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: SeedsFlows.generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-    }
+  def flows(organization),
+  do: SeedsFlows.seed([organization])
 
-    data = [
-      {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
-      {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
-      {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
-      {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
-      {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
-      {"Registration Workflow", ["registration"], uuid_map.registration, false,
-       "registration.json"}
-    ]
-
-    SeedsFlows.add_flow(organization, data, uuid_map)
-    SeedsFlows.opt_in_out_flows([organization])
-  end
 
   def contacts_field(organization) do
     data = [
