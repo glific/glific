@@ -85,10 +85,9 @@ defmodule Glific.Users do
   """
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
-    if Map.has_key?(attrs, :conn),
-      do:
-    # lets invalidate the tokens and socket for this user
-    GlificWeb.APIAuthPlug.delete_user_sessions(user, attrs.conn)
+    if attrs[:conn],
+      # lets invalidate the tokens and socket for this user
+      do: GlificWeb.APIAuthPlug.delete_user_sessions(user, attrs.conn)
 
     user
     |> User.update_fields_changeset(attrs)
@@ -109,7 +108,7 @@ defmodule Glific.Users do
   """
   @spec delete_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def delete_user(%User{} = user, params \\ %{}) do
-    if Map.has_key?(params, :conn),
+    if params[:conn],
       # lets invalidate the tokens and socket for this user
       do: GlificWeb.APIAuthPlug.delete_user_sessions(user, params.conn)
 
