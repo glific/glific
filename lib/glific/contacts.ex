@@ -10,6 +10,7 @@ defmodule Glific.Contacts do
   alias __MODULE__
 
   alias Glific.{
+    Clients,
     Contacts.Contact,
     Contacts.Location,
     Groups.ContactGroup,
@@ -568,7 +569,7 @@ defmodule Glific.Contacts do
     cond do
       contact.status == :blocked -> true
       is_simulator_contact?(contact.phone) -> false
-      Glific.Clients.blocked?(contact.phone, contact.organization_id) -> true
+      Clients.blocked?(contact.phone, contact.organization_id) -> true
       true -> false
     end
   end
