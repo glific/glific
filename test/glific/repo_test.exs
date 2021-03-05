@@ -12,7 +12,7 @@ defmodule Glific.RepoTest do
 
   describe "repo" do
     @valid_attrs %{
-      label: "Faker English (United States)",
+      label: "Faker English",
       label_locale: "Faker English",
       locale: "faker_en_US",
       is_active: true
