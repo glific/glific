@@ -162,7 +162,8 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "Resource not found"
   end
 
-  test "search struct will be generated via embedded schema having contacts and messages", _attrs do
+  test "search struct will be generated via embedded schema having contacts and messages",
+       _attrs do
     contacts = Contacts.list_contacts(%{})
     messages = Messages.list_messages(%{})
     search = %Search{contacts: contacts, messages: messages}

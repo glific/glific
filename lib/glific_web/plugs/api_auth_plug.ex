@@ -1,11 +1,14 @@
 defmodule GlificWeb.APIAuthPlug do
   @moduledoc false
+  @dialyzer {:nowarn_function, fake_conn: 0}
+  @dialyzer {:nowarn_function, delete_user_sessions: 1}
+  @dialyzer {:no_return, delete_user_sessions: 1}
   use Pow.Plug.Base
 
   require Logger
 
   alias Plug.Conn
-  alias Pow.{Config, Plug, Store.CredentialsCache}
+  alias Pow.{Config, Store.CredentialsCache}
   alias PowPersistentSession.Store.PersistentSessionCache
 
   alias GlificWeb.Endpoint
@@ -28,7 +31,7 @@ defmodule GlificWeb.APIAuthPlug do
   helper function that can be called from the socket token verification to
   validate the token
   """
-  # @spec get_credentials(Conn.t(), binary(), Config.t() | nil) :: {map(), [any()]} | nil
+  @spec get_credentials(Conn.t(), binary(), Config.t() | nil) :: {map(), [any()]} | nil
   def get_credentials(conn, signed_token, config) do
     with {:ok, token} <- verify_token(conn, signed_token, config),
          {user, metadata} <- CredentialsCache.get(store_config(config), token) do
@@ -145,6 +148,21 @@ defmodule GlificWeb.APIAuthPlug do
     end
   end
 
+  @spec fake_conn :: Conn.t()
+  defp fake_conn,
+    do: Pow.Plug.put_config(%Conn{}, otp_app: :glific)
+
+  @doc """
+  When we update a user record from the frontend (maybe by admin), we need to ensure
+  we log this user out, so we can load the new permissioning structure for this user
+  """
+  @spec delete_user_sessions(map(), Conn.t() | nil) :: :ok
+  def delete_user_sessions(user, conn \\ fake_conn()) do
+    # Delete existing user session
+    Pow.Plug.fetch_config(conn)
+    |> delete_all_user_sessions(user)
+  end
+
   @doc """
   Delete all user sessions after user resets or updates the password
   """
@@ -163,7 +181,7 @@ defmodule GlificWeb.APIAuthPlug do
   end
 
   defp sign_token(conn, token, config) do
-    Plug.sign_token(conn, signing_salt(), token, config)
+    Pow.Plug.sign_token(conn, signing_salt(), token, config)
   end
 
   defp signing_salt, do: Atom.to_string(__MODULE__)
@@ -176,7 +194,7 @@ defmodule GlificWeb.APIAuthPlug do
   end
 
   defp verify_token(conn, token, config),
-    do: Plug.verify_token(conn, signing_salt(), token, config)
+    do: Pow.Plug.verify_token(conn, signing_salt(), token, config)
 
   defp store_config(config) do
     backend = Config.get(config, :cache_store_backend, Pow.Store.Backend.MnesiaCache)
