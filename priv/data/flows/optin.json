@@ -164,7 +164,7 @@
                         {
                             "name": "Optin contacts",
                             "type": "group",
-                            "uuid": "OPTINC_UUID"
+                            "uuid": "OPTIN_COLLECTION_UUID"
                         }
                     ]
                 }
