@@ -5,6 +5,7 @@ defmodule Glific.Seeds.SeedsFlows do
     Flows.Flow,
     Flows.FlowLabel,
     Flows.FlowRevision,
+    Groups.Group,
     Partners.Organization,
     Repo
   }
@@ -25,9 +26,16 @@ defmodule Glific.Seeds.SeedsFlows do
 
   @spec add_opt_flow(Organization.t()) :: :ok
   defp add_opt_flow(organization) do
+    {:ok, optin_collection} = Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+
+    {:ok, optout_collection} =
+      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+
     uuid_map = %{
       optin: Ecto.UUID.generate(),
-      optout: Ecto.UUID.generate()
+      optout: Ecto.UUID.generate(),
+      optinc: Integer.to_string(optin_collection.id),
+      optoutc: Integer.to_string(optout_collection.id)
     }
 
     data = [

@@ -53,6 +53,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     SeedsSim.migrate_data(:simulator, organization)
 
+    SeedsSim.migrate_data(:collection, organization)
+
     saved_searches(organization)
 
     flow_labels(organization)

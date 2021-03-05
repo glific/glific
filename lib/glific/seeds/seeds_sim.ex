@@ -39,11 +39,11 @@ defmodule Glific.Seeds.SeedsSim do
     case phase do
       :simulator -> add_simulators(organizations)
       :optin -> optin_data(organizations)
+      :collection -> seed_collections(organizations)
       :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
     end
   end
 
-  add_seed_groups()
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
@@ -52,7 +52,6 @@ defmodule Glific.Seeds.SeedsSim do
     organizations
     |> seed_simulators(en_us)
     |> seed_users(en_us)
-    |> seed_collections()
 
     :ok
   end
@@ -85,7 +84,7 @@ defmodule Glific.Seeds.SeedsSim do
 
   @doc false
   @spec seed_collections([Organization.t()]) :: [Organization.t()]
-  defp seed_collections do
+  defp seed_collections(organizations) do
     for org <- organizations do
       create_collections(org)
     end
@@ -105,8 +104,8 @@ defmodule Glific.Seeds.SeedsSim do
       is_restricted: false,
       organization_id: organization.id
     })
-
   end
+
   @doc false
   @spec seed_simulators([Organization.t()], Language.t()) :: [Organization.t()]
   def seed_simulators(organizations \\ [], language) do
