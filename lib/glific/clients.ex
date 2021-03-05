@@ -23,6 +23,7 @@ defmodule Glific.Clients do
   @dev %{
     id: 1,
     name: "Glific"
+    gcs_bucket: Glific.Clients.Tap
   }
 
   @plugins %{
