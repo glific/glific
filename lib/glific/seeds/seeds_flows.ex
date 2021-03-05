@@ -31,8 +31,8 @@ defmodule Glific.Seeds.SeedsFlows do
       Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
 
     uuid_map = %{
-      optin: Ecto.UUID.generate(),
-      optout: Ecto.UUID.generate(),
+      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
+      optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e"),
       optin_collection: Integer.to_string(optin_collection.id),
       optout_collection: Integer.to_string(optout_collection.id)
     }
@@ -43,6 +43,14 @@ defmodule Glific.Seeds.SeedsFlows do
     ]
 
     add_flow(organization, data, uuid_map)
+  end
+
+  def generate_uuid(organization, default) do
+    # we have static uuids for the first organization since we might have our test cases
+    # hardcoded with these uuids
+    if organization.id == 1,
+      do: default,
+      else: Ecto.UUID.generate()
   end
 
   @doc false

@@ -441,14 +441,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  defp generate_uuid(organization, default) do
-    # we have static uuids for the first organization since we might have our test cases
-    # hardcoded with these uuids
-    if organization.id == 1,
-      do: default,
-      else: Ecto.UUID.generate()
-  end
-
   def saved_searches(organization) do
     data = [
       {"All conversations", "All"},
@@ -521,14 +513,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def flows(organization) do
     uuid_map = %{
-      help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
-      language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
-      newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
-      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
-      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
-      optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e")
+      help: SeedsFlows.generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
+      language: SeedsFlows.generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
+      newcontact: SeedsFlows.generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
+      registration: SeedsFlows.generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
+      activity: SeedsFlows.generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
+      feedback: SeedsFlows.generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
     }
 
     data = [
