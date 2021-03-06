@@ -676,6 +676,7 @@ defmodule GlificWeb.Schema.SearchTest do
         query_data[:data]["search"],
         fn d -> d["messages"] != [] end
       )
+
     assert results == []
   end
 

@@ -26,7 +26,7 @@ defmodule GlificWeb.Context do
     Glific.Repo.put_current_user(current_user)
 
     if current_user != nil,
-      do: %{current_user: current_user, conn: conn},
-      else: %{conn: conn}
+      do: %{current_user: current_user},
+      else: %{}
   end
 end
