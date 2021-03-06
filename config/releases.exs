@@ -42,13 +42,13 @@ config :glific, GlificWeb.Endpoint,
   # gigalixir handles SSL for us, we just force all connections via ssl only
   force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
-http_basic_auth_username =
+auth_username =
   System.get_env("AUTH_USERNAME") ||
     raise """
     environment variable AUTH_USERNAME is missing.
     """
 
-http_basic_auth_password =
+auth_password =
   System.get_env("AUTH_PASSWORD") ||
     raise """
     environment variable AUTH_PASSWORD is missing.
