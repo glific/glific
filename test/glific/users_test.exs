@@ -229,10 +229,14 @@ defmodule Glific.UsersTest do
       assert Users.authenticate(%{"phone" => "1234567890123", "organization_id" => 1}) == nil
 
       user = user_fixture(@valid_attrs)
-      auth_user = Users.authenticate(%{
-            "phone" => user.phone,
-            "organization_id" => 1,
-            "password" => @password})
+
+      auth_user =
+        Users.authenticate(%{
+          "phone" => user.phone,
+          "organization_id" => 1,
+          "password" => @password
+        })
+
       assert auth_user.id == user.id
     end
   end
