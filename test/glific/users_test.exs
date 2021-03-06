@@ -224,5 +224,16 @@ defmodule Glific.UsersTest do
       Users.create_user(valid_attrs)
       assert {:error, %Ecto.Changeset{}} = Users.create_user(valid_attrs)
     end
+
+    test "ensure when we authenticate a valid and invalid phone, we get nil" do
+      assert Users.authenticate(%{"phone" => "1234567890123", "organization_id" => 1}) == nil
+
+      user = user_fixture(@valid_attrs)
+      auth_user = Users.authenticate(%{
+            "phone" => user.phone,
+            "organization_id" => 1,
+            "password" => @password})
+      assert auth_user.id == user.id
+    end
   end
 end
