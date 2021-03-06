@@ -56,7 +56,7 @@ defmodule GlificWeb.Router do
     live "/", PageLive, :index
   end
 
-  if Code.ensure_loaded?(Oban.Web) do
+  if Code.ensure_compiled?(Oban.Web) do
     scope "/" do
       pipe_through [:browser, :auth]
 
