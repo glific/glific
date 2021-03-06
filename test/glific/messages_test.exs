@@ -252,7 +252,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "create_message/1 with valid data creates a message", attrs do
-      assert {:ok, %Message{} = message} =
+      assert {:ok, %Message{}} =
                @valid_attrs
                |> Map.merge(foreign_key_constraint(attrs))
                |> Messages.create_message()
@@ -333,7 +333,7 @@ defmodule Glific.MessagesTest do
 
     test "update_message/2 with valid data updates the message", attrs do
       message = message_fixture(attrs)
-      assert {:ok, %Message{} = message} = Messages.update_message(message, @update_attrs)
+      assert {:ok, %Message{}} = Messages.update_message(message, @update_attrs)
     end
 
     test "update_message/2 with invalid data returns error changeset", attrs do

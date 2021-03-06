@@ -119,7 +119,7 @@ defmodule Glific.Flows.WebhookTest do
         |> Map.put(:flow_id, flow.id)
         |> Map.put(:organization_id, flow.organization_id)
 
-      assert {:ok, %WebhookLog{} = webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
+      assert {:ok, %WebhookLog{}} = WebhookLog.create_webhook_log(valid_attrs)
     end
 
     test "update_webhook_log/2 with valid data updates the webhook_log", attrs do

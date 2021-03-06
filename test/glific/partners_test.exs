@@ -627,7 +627,7 @@ defmodule Glific.PartnersTest do
 
       {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-      assert {:ok, %Credential{} = credential} =
+      assert {:ok, %Credential{}} =
                Partners.get_credential(%{
                  organization_id: organization_id,
                  shortcode: provider.shortcode
@@ -679,7 +679,7 @@ defmodule Glific.PartnersTest do
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
 
-      assert [contact] =
+      assert [_contact] =
                Contacts.list_contacts(%{
                  filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
                })

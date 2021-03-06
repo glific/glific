@@ -274,9 +274,9 @@ defmodule GlificWeb.Schema.SearchTest do
         }
       )
 
-    assert {:ok, query_data} = result
+    assert {:ok, _query_data} = result
 
-    assert {:ok, saved_search} =
+    assert {:ok, _saved_search} =
              Repo.fetch_by(SavedSearch, %{
                label: "Save with Search",
                organization_id: user.organization_id
