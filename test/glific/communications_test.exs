@@ -327,16 +327,14 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "send message to simulator will be process normally",
-    %{global_schema: global_schema, organization_id: _organization_id} = _attrs do
-
+         %{global_schema: global_schema, organization_id: _organization_id} = _attrs do
       simulator_phone = Contacts.simulator_phone_prefix() <> "_1"
-      {:ok,  simulator} = Repo.fetch_by(Contacts.Contact, %{phone: simulator_phone})
+      {:ok, simulator} = Repo.fetch_by(Contacts.Contact, %{phone: simulator_phone})
 
       message = Fixtures.message_fixture(%{receiver_id: simulator.id})
       Communications.Message.send_message(message)
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
     end
-
   end
 end
