@@ -560,7 +560,9 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(attrs)
       assert Contacts.is_contact_blocked?(contact) == true
       {:ok, contact} = Contacts.update_contact(contact, %{status: :valid})
-      assert Contacts.is_contact_blocked?(contact) == false
+      # its still blocked since the phone number is "some phone" and only
+      # india and US phone are valid for glific in dev mode
+      assert Contacts.is_contact_blocked?(contact) == true
       assert Contacts.is_contact_blocked?(Map.put(contact, :phone, "9123456")) == false
     end
 
