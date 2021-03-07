@@ -670,14 +670,13 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
 
-    # eliminate all empty message contacts
-    results =
+    data =
       Enum.filter(
         query_data[:data]["search"],
-        fn d -> d["messages"] != [] end
+        fn row -> row["messages"] != [] end
       )
 
-    assert results == []
+    assert data == []
   end
 
   test "search with incomplete date range filters will return the conversations", %{staff: user} do
