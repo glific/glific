@@ -223,14 +223,14 @@ defmodule Glific.Contacts do
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_contact(%Contact{} = contact, attrs) do
     if has_permission?(contact.id) do
-      if !is_simulator_blocked?(contact, attrs) do
+      if is_simulator_block?(contact, attrs) do
+        # just treat it as if we blocked the simulator
+        # but in reality, we dont block the simulator
+        {:ok, contact}
+      else
         contact
         |> Contact.changeset(attrs)
         |> Repo.update()
-      else
-        # just treat it as if we blocked the simulator
-        # but in reality, we dont
-        {:ok, contact}
       end
     else
       raise "Permission denied"
@@ -238,12 +238,12 @@ defmodule Glific.Contacts do
   end
 
   # We do not want to block the simulator
-  @spec is_simulator_blocked?(Contact.t(), map()) :: boolean
-  defp is_simulator_blocked?(contact, attrs)  do
+  @spec is_simulator_block?(Contact.t(), map()) :: boolean
+  defp is_simulator_block?(contact, attrs) do
     if is_simulator_contact?(contact.phone) &&
-      attrs[:status] == :blocked,
-      do: true,
-    else: false
+         attrs[:status] == :blocked,
+       do: true,
+       else: false
   end
 
   @doc """
