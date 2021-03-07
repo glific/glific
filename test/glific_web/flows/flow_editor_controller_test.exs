@@ -12,7 +12,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   alias GlificWeb.Flows.FlowEditorController
 
   @valid_language_attrs %{
-    label: "English (United States)",
+    label: "English",
     label_locale: "English",
     locale: "en_US",
     is_active: true

@@ -16,8 +16,8 @@ defmodule GlificWeb.Schema.LanguageTest do
     label_0 = get_in(query_data, [:data, "languages", Access.at(0), "label"])
     label_1 = get_in(query_data, [:data, "languages", Access.at(1), "label"])
 
-    assert (label_0 == "English (United States)" and label_1 == "Hindi") or
-             (label_1 == "English (United States)" and label_0 == "Hindi")
+    assert (label_0 == "English" and label_1 == "Hindi") or
+             (label_1 == "English" and label_0 == "Hindi")
   end
 
   test "count returns the number of languages", %{staff: user} do
@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.LanguageTest do
   end
 
   test "language id returns one language or nil", %{staff: user} do
-    label = "English (United States)"
+    label = "English"
 
     {:ok, lang} = Glific.Repo.fetch_by(Glific.Settings.Language, %{label: label})
 

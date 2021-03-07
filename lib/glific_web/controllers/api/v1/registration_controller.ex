@@ -2,6 +2,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
   @moduledoc """
   The Pow User Registration Controller
   """
+  @dialyzer {:no_return, reset_password: 2}
+  @dialyzer {:no_return, reset_user_password: 2}
 
   use GlificWeb, :controller
 
@@ -158,8 +160,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @doc """
-    Controller function for reset password
-    It also verifies OTP to authorize the request
+  Controller function for reset password
+  It also verifies OTP to authorize the request
   """
   @spec reset_password(Conn.t(), map()) :: Conn.t()
   def reset_password(conn, %{"user" => user_params}) do
@@ -187,9 +189,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
     |> Users.reset_user_password(update_params)
     |> case do
       {:ok, user} ->
-        # Delete existing user session
-        Pow.Plug.fetch_config(conn)
-        |> APIAuthPlug.delete_all_user_sessions(user)
+        APIAuthPlug.delete_user_sessions(user, conn)
 
         # Create new user session
         {:ok, conn} =

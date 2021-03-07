@@ -5,17 +5,34 @@ defmodule Glific.Seeds.SeedsFlows do
     Flows.Flow,
     Flows.FlowLabel,
     Flows.FlowRevision,
+    Groups.Group,
     Partners.Organization,
     Repo
   }
+
+  @doc false
+  @spec seed([Organization.t()]) :: :ok
+  def seed(organizations) do
+    organizations
+    |> Enum.each(fn org ->
+      Glific.Repo.put_organization_id(org.id)
+      {uuid_map, data} = get_data_and_uuid_map(org)
+      {opt_uuid_map, opt_data} = get_opt_data(org)
+
+      add_flow(
+        org,
+        data ++ opt_data,
+        Map.merge(uuid_map, opt_uuid_map)
+      )
+    end)
+  end
 
   @doc false
   @spec opt_in_out_flows([Organization.t()]) :: :ok
   def opt_in_out_flows(organizations) do
     organizations
     |> Enum.each(fn organization ->
-      Repo.put_process_state(organization.id)
-
+      Glific.Repo.put_organization_id(organization.id)
       # we only check if the optin flow exist, if not, we add both optin and optout
       with {:error, _} <-
              Repo.fetch_by(Flow, %{name: "Optin Workflow", organization_id: organization.id}),
@@ -23,11 +40,20 @@ defmodule Glific.Seeds.SeedsFlows do
     end)
   end
 
-  @spec add_opt_flow(Organization.t()) :: :ok
-  defp add_opt_flow(organization) do
+  @spec get_opt_data(Organization.t()) :: {map(), list()}
+  defp get_opt_data(organization) do
+    ## collections should be present in the db
+    {:ok, optin_collection} =
+      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+
+    {:ok, optout_collection} =
+      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+
     uuid_map = %{
-      optin: Ecto.UUID.generate(),
-      optout: Ecto.UUID.generate()
+      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
+      optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e"),
+      optin_collection: Integer.to_string(optin_collection.id),
+      optout_collection: Integer.to_string(optout_collection.id)
     }
 
     data = [
@@ -35,7 +61,24 @@ defmodule Glific.Seeds.SeedsFlows do
       {"Optout Workflow", ["optout", "stop"], uuid_map.optout, true, "optout.json"}
     ]
 
+    {uuid_map, data}
+  end
+
+  @spec add_opt_flow(Organization.t()) :: :ok
+  defp add_opt_flow(organization) do
+    {uuid_map, data} = get_opt_data(organization)
+
     add_flow(organization, data, uuid_map)
+  end
+
+  @doc false
+  @spec generate_uuid(Organization.t(), Ecto.UUID.t()) :: Ecto.UUID.t()
+  def generate_uuid(organization, default) do
+    # we have static uuids for the first organization since we might have our test cases
+    # hardcoded with these uuids
+    if organization.id == 1,
+      do: default,
+      else: Ecto.UUID.generate()
   end
 
   @doc false
@@ -116,4 +159,28 @@ defmodule Glific.Seeds.SeedsFlows do
           )
         end
       )
+
+  @spec get_data_and_uuid_map(Organization.t()) :: tuple()
+  defp get_data_and_uuid_map(organization) do
+    uuid_map = %{
+      help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
+      language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
+      newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
+      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
+      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
+    }
+
+    data = [
+      {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
+      {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
+      {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
+      {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
+      {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
+      {"Registration Workflow", ["registration"], uuid_map.registration, false,
+       "registration.json"}
+    ]
+
+    {uuid_map, data}
+  end
 end

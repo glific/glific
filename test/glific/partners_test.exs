@@ -183,7 +183,7 @@ defmodule Glific.PartnersTest do
     @invalid_org_attrs %{bsp_id: nil, name: nil}
 
     @valid_default_language_attrs %{
-      label: "English (United States)",
+      label: "English",
       label_locale: "English",
       locale: "en_US",
       is_active: true

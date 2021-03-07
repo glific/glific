@@ -48,7 +48,6 @@ defmodule Glific.Flows.LocalizationTest do
 
     localization = Localization.process(json)
     assert length(Map.keys(get_in(localization.localizations, ["hi"]))) == 3
-
   end
 
   test "localization struct will be generated via embedded schema having localizations" do
@@ -58,11 +57,9 @@ defmodule Glific.Flows.LocalizationTest do
 
     localization = Localization.process(nil)
     assert localization.localizations == language_map
-
   end
 
   test "handle other edge cases with empty values" do
-
     empty_node_uuid = "0cde79fb-bff8-4ed2-ac99-135ea3403dbb"
 
     json = %{
@@ -79,7 +76,6 @@ defmodule Glific.Flows.LocalizationTest do
           ]
         }
       },
-
       "en" => nil
     }
 
@@ -87,11 +83,9 @@ defmodule Glific.Flows.LocalizationTest do
     localizations = localization.localizations
     assert localizations["hi"][empty_node_uuid] == nil
     assert localizations["en"] == %{}
-
   end
 
   test "attachment will also be processed" do
-
     attachment_node_uuid = "e46cc6ef-d037-4569-8fbe-64b4767c7734"
 
     json = %{
@@ -107,14 +101,13 @@ defmodule Glific.Flows.LocalizationTest do
           ]
         }
       },
-
       "en" => nil
     }
 
     localization = Localization.process(json)
 
-    assert get_in(localization.localizations, ["hi", attachment_node_uuid]).attachments == %{"image" => "https://gliic.org/someimage.png"}
-
+    assert get_in(localization.localizations, ["hi", attachment_node_uuid]).attachments == %{
+             "image" => "https://gliic.org/someimage.png"
+           }
   end
-
 end
