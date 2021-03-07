@@ -56,12 +56,10 @@ defmodule GlificWeb.Router do
     live "/", PageLive, :index
   end
 
-  if Code.ensure_compiled?(Oban.Web) do
-    scope "/" do
-      pipe_through [:browser, :auth]
+  scope "/" do
+    pipe_through [:browser, :auth]
 
-      oban_dashboard("/oban")
-    end
+    oban_dashboard("/oban")
   end
 
   # Enables LiveDashboard only for development
