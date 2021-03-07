@@ -18,11 +18,13 @@ defmodule Glific.Seeds.SeedsFlows do
       Glific.Repo.put_organization_id(org.id)
       {uuid_map, data} = get_data_and_uuid_map(org)
       {opt_uuid_map, opt_data} = get_opt_data(org)
+
       add_flow(
         org,
         data ++ opt_data,
-        Map.merge(uuid_map, opt_uuid_map))
-      end)
+        Map.merge(uuid_map, opt_uuid_map)
+      )
+    end)
   end
 
   @doc false
@@ -64,7 +66,7 @@ defmodule Glific.Seeds.SeedsFlows do
 
   @spec add_opt_flow(Organization.t()) :: :ok
   defp add_opt_flow(organization) do
-    {data, uuid_map} = get_opt_data(organization)
+    {uuid_map, data} = get_opt_data(organization)
 
     add_flow(organization, data, uuid_map)
   end

@@ -669,8 +669,12 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    data = Enum.filter(query_data[:data]["search"],
-      fn row -> row["messages"] != [] end)
+
+    data =
+      Enum.filter(
+        query_data[:data]["search"],
+        fn row -> row["messages"] != [] end
+      )
 
     assert data == []
   end
