@@ -86,7 +86,7 @@ defmodule Glific.Seeds.SeedsMigration do
   @spec seed_collections([Organization.t()]) :: [Organization.t()]
   defp seed_collections(organizations) do
     for org <- organizations,
-    do: create_collections(org)
+        do: create_collections(org)
 
     organizations
   end

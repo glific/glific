@@ -512,8 +512,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def flows(organization),
-  do: SeedsFlows.seed([organization])
-
+    do: SeedsFlows.seed([organization])
 
   def contacts_field(organization) do
     data = [

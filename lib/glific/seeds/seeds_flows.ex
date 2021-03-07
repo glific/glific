@@ -10,7 +10,6 @@ defmodule Glific.Seeds.SeedsFlows do
     Repo
   }
 
-
   @doc false
   @spec seed([Organization.t()]) :: :ok
   def seed(organizations) do
@@ -18,14 +17,13 @@ defmodule Glific.Seeds.SeedsFlows do
     |> Enum.each(fn org ->
       Glific.Repo.put_organization_id(org.id)
       {uuid_map, data} = get_data_and_uuid_map(org)
-      add_flow(org, data, uuid_map)
-    end)
-
-    ## since optin and optout has a speicial case and we have a sparate  seeder migration for that we will add them saprately.
-    ## will come back to this in future and clean that up as well.
-    opt_in_out_flows(organizations)
+      {opt_uuid_map, opt_data} = get_opt_data(org)
+      add_flow(
+        org,
+        data ++ opt_data,
+        Map.merge(uuid_map, opt_uuid_map))
+      end)
   end
-
 
   @doc false
   @spec opt_in_out_flows([Organization.t()]) :: :ok
@@ -40,12 +38,14 @@ defmodule Glific.Seeds.SeedsFlows do
     end)
   end
 
-  @spec add_opt_flow(Organization.t()) :: :ok
-  defp add_opt_flow(organization) do
-
+  @spec get_opt_data(Organization.t()) :: {map(), list()}
+  defp get_opt_data(organization) do
     ## collections should be present in the db
-    {:ok, optin_collection} = Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
-    {:ok, optout_collection} = Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+    {:ok, optin_collection} =
+      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+
+    {:ok, optout_collection} =
+      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
 
     uuid_map = %{
       optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
@@ -59,9 +59,18 @@ defmodule Glific.Seeds.SeedsFlows do
       {"Optout Workflow", ["optout", "stop"], uuid_map.optout, true, "optout.json"}
     ]
 
+    {uuid_map, data}
+  end
+
+  @spec add_opt_flow(Organization.t()) :: :ok
+  defp add_opt_flow(organization) do
+    {data, uuid_map} = get_opt_data(organization)
+
     add_flow(organization, data, uuid_map)
   end
 
+  @doc false
+  @spec generate_uuid(Organization.t(), Ecto.UUID.t()) :: Ecto.UUID.t()
   def generate_uuid(organization, default) do
     # we have static uuids for the first organization since we might have our test cases
     # hardcoded with these uuids
@@ -157,7 +166,7 @@ defmodule Glific.Seeds.SeedsFlows do
       newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
     }
 
     data = [
@@ -172,5 +181,4 @@ defmodule Glific.Seeds.SeedsFlows do
 
     {uuid_map, data}
   end
-
 end
