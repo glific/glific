@@ -39,8 +39,6 @@ config :glific, GlificWeb.Endpoint,
   check_origin: check_origin,
   secret_key_base: secret_key_base,
   url: [host: System.get_env("BASE_URL")],
-  # gigalixir handles SSL for us, we just force all connections via ssl only
-  force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
 auth_username =
   System.get_env("AUTH_USERNAME") ||
