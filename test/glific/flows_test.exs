@@ -127,7 +127,7 @@ defmodule Glific.FLowsTest do
       flow = Repo.preload(flow, [:revisions])
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
-      assert [revision] = flow.revisions
+      assert is_list(flow.revisions)
       assert length(flow.revisions) > 0
     end
 
@@ -150,7 +150,7 @@ defmodule Glific.FLowsTest do
         @valid_attrs
         |> Map.merge(%{keywords: ["test_keyword", "test_keyword_1"]})
 
-      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, valid_attrs)
+      assert {:ok, %Flow{}} = Flows.update_flow(flow, valid_attrs)
 
       # update flow with existing keyword should return error
       flow = flow_fixture(@valid_more_attrs)

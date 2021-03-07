@@ -31,6 +31,7 @@
         "lib/glific/seeds/seeds_migration.ex",
         "lib/glific/triggers",
         "lib/glific/triggers.ex",
+        "lib/glific_web/templates",
         "lib/glific_web/resolvers/triggers.ex",
         "lib/glific_web/resolvers/locations.ex",
         "lib/glific_web/flows/webhook_controller",

@@ -38,7 +38,31 @@ config :glific, GlificWeb.Endpoint,
   http: [:inet6, port: http_port],
   check_origin: check_origin,
   secret_key_base: secret_key_base,
-  url: [host: System.get_env("BASE_URL")]
+  url: [host: System.get_env("BASE_URL")],
+  # gigalixir handles SSL for us, we just force all connections via ssl only
+  force_ssl: [rewrite_on: [:x_forwarded_proto]]
+
+auth_username =
+  System.get_env("AUTH_USERNAME") ||
+    raise """
+    environment variable AUTH_USERNAME is missing.
+    """
+
+auth_password =
+  System.get_env("AUTH_PASSWORD") ||
+    raise """
+    environment variable AUTH_PASSWORD is missing.
+    """
+
+config :glific,
+  auth_username: auth_username,
+  auth_password: auth_password
+
+saas_phone =
+  System.get_env("SAAS_PHONE") ||
+    raise """
+    environment variable SAAS_PHONE is missing.
+    """
 
 # The SaaS Admin root account phone number
 config :glific, :saas_phone, System.get_env("SAAS_PHONE")

@@ -7,12 +7,15 @@ defmodule GlificWeb.Router do
   use Plug.ErrorHandler
   use Appsignal.Plug
 
+  import Oban.Web.Router
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
+    plug :fetch_live_flash
     plug :put_root_layout, {GlificWeb.LayoutView, :root}
     plug :protect_from_forgery
-    plug :put_secure_browser_headers, %{"content-security-policy" => "default-src 'self'"}
+    plug :put_secure_browser_headers
     plug Pow.Plug.Session, otp_app: :glific
   end
 
@@ -33,6 +36,10 @@ defmodule GlificWeb.Router do
     plug GlificWeb.Context
   end
 
+  pipeline :auth_protected do
+    plug :auth
+  end
+
   scope "/api/v1", GlificWeb.API.V1, as: :api_v1 do
     pipe_through :api
 
@@ -44,7 +51,31 @@ defmodule GlificWeb.Router do
   end
 
   scope "/", GlificWeb do
-    pipe_through :browser
+    pipe_through [:browser, :auth]
+
+    live "/", PageLive, :index
+  end
+
+  scope "/" do
+    pipe_through [:browser, :auth]
+
+    oban_dashboard("/oban")
+  end
+
+  # Enables LiveDashboard only for development
+  #
+  # If you want to use the LiveDashboard in production, you should put
+  # it behind authentication and allow only admins to access it.
+  # If your application does not have an admins-only section yet,
+  # you can use Plug.BasicAuth to set up some basic authentication
+  # as long as you are also using SSL (which you should anyway).
+  if Mix.env() in [:dev, :test] do
+    import Phoenix.LiveDashboard.Router
+
+    scope "/" do
+      pipe_through [:browser, :auth]
+      live_dashboard "/dashboard", metrics: GlificWeb.Telemetry
+    end
   end
 
   # Custom stack for Absinthe
@@ -122,6 +153,13 @@ defmodule GlificWeb.Router do
 
   scope "/webhook", GlificWeb.Flows do
     post "/stir/survey", WebhookController, :stir_survey
+  end
+
+  # implement basic authentication for live dashboard and oban pro
+  defp auth(conn, _opts) do
+    username = Application.fetch_env!(:glific, :auth_username)
+    password = Application.fetch_env!(:glific, :auth_password)
+    Plug.BasicAuth.basic_auth(conn, username: username, password: password)
   end
 
   # defp debug_response(conn, _) do
