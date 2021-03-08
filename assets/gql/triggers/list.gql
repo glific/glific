@@ -1,14 +1,15 @@
 query triggers($filter: triggerFilter, $opts: Opts) {
   triggers(filter: $filter, opts: $opts) {
     id
-    trigger_type
     start_at
     end_date
-    last_trigger_at
-    next_trigger_at
-    frequency
-    days
-    is_active
-    is_repeating
+    flow {
+      id
+      name
+    }
+    group {
+      id
+      label
+    }
   }
 }

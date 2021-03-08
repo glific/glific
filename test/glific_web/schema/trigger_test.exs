@@ -1,10 +1,9 @@
-defmodule GlificWeb.Schema.WebhookLogTest do
+defmodule GlificWeb.Schema.TriggerTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
   alias Glific.Fixtures
 
-  # load_gql(:count, GlificWeb.Schema, "assets/gql/triggers/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/triggers/list.gql")
 
   test "triggers field returns list of triggers", %{staff: user} = attrs do
