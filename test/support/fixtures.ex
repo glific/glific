@@ -333,7 +333,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec contact_user_group_fixture(map()) :: Groups.ContactGroup.t()
+  @spec contact_user_group_fixture(map()) :: {Groups.ContactGroup.t(), Groups.UserGroup.t()}
   def contact_user_group_fixture(attrs) do
     valid_attrs = %{
       contact_id: contact_fixture(attrs).id,
