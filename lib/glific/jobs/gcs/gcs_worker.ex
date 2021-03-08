@@ -191,12 +191,11 @@ defmodule Glific.Jobs.GcsWorker do
     File.rm(path)
     :ok
 
-
     rescue
-    # An exception is thrown if there is no provider handler and/or sending the message
-    # via the provider fails
+    # An exception is thrown when there is
+    #
     error ->
-      log_error(error)
+      log_error(error, media["organization_id"])
 
 
   end
@@ -258,4 +257,16 @@ defmodule Glific.Jobs.GcsWorker do
         {:error, error}
     end
   end
+
+  defp log_error(error, organization_id) do
+    disable_account(error, organization_id)
+    Logger.error("Error: while uploading the file on GCS. with organization id: #{organization_id}, #{error}")
+    {:error, "Can not upload file to GCS"}
+  end
+
+  defp disable_account(error, organization_id),
+  do: if String.contains(error, "The project to be billed is associated with a closed billing account."),
+  do: Partners.disable_credential(organization_id, "google_cloud_storage")
+
+
 end
