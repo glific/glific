@@ -53,7 +53,6 @@ defmodule Glific.Triggers.Trigger do
   ]
 
   schema "triggers" do
-
     field :trigger_type, :string, default: "scheduled"
 
     belongs_to :group, Group
@@ -116,7 +115,7 @@ defmodule Glific.Triggers.Trigger do
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
     %Trigger{}
-    |> Trigger.changeset(attrs |> fix_attrs(Repo.get_organization_id()))
+    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs(attrs.organization_id))
     |> Repo.insert()
   end
 
