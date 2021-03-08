@@ -16,6 +16,7 @@ defmodule Glific.Clients.Weunlearn do
   Choose the first group the contact belongs to, and send the message
   to the first staff member in that group
   """
+  # codebeat:disable[ABC]
   @spec broadcast(Action.t(), Contact.t(), non_neg_integer) :: non_neg_integer
   def broadcast(_action, contact, staff_id) do
     group_staff_id =
@@ -33,4 +34,5 @@ defmodule Glific.Clients.Weunlearn do
       do: staff_id,
       else: group_staff_id
   end
+  # codebeat:enable[ABC]
 end

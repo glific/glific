@@ -345,8 +345,8 @@ defmodule Glific.Fixtures do
       |> Enum.into(valid_attrs)
       |> Groups.create_contact_group()
 
-
     user = user_fixture(attrs)
+
     valid_attrs = %{
       user_id: user.id,
       group_id: contact_group.group_id
