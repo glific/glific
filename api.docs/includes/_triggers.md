@@ -310,7 +310,7 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
       "errors": null,
       "trigger": {
         "__typename": "Trigger",
-        "days": [10],
+        "days": [1],
         "endDate": "2021-03-08",
         "flow": {
           "__typename": "Flow",
@@ -365,84 +365,22 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>eventType</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td colspan="2" valign="top"><strong>startAt</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>triggerAction</strong></td>
-<td valign="top"><a href="#triggeraction">TriggerAction</a></td>
+<td colspan="2" valign="top"><strong>endDate</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>triggerCondition</strong></td>
-<td valign="top"><a href="#triggercondition">TriggerCondition</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### TriggerAction
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>id</strong></td>
-<td valign="top"><a href="#id">ID</a></td>
-<td></td>
+<td colspan="2" valign="top"><strong>is_active</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td><td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>actionType</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>flow</strong></td>
-<td valign="top"><a href="#flow">Flow</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>group</strong></td>
-<td valign="top"><a href="#group">Group</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### TriggerCondition
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>id</strong></td>
-<td valign="top"><a href="#id">ID</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>isActive</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>isRepeating</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
+<td colspan="2" valign="top"><strong>is_repeating</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td><td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>frequency</strong></td>
@@ -450,18 +388,18 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>startAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>days</strong></td>
+<td valign="top">[<a href="#integer">Integer</a>]</td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>endsAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>flow_id</strong></td>
+<td valign="top"><a href="#flow">Flow</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>fireAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>group_id</strong></td>
+<td valign="top"><a href="#group">Group</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -508,9 +446,9 @@ Filtering options for triggers
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>Match the name</td>
+<td colspan="2" valign="top"><strong>flow_id</strong></td>
+<td valign="top"><a href="#flow">Flow</a></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -526,12 +464,6 @@ Filtering options for triggers
 </tr>
 </thead>
 <tbody>
-
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
 
 <tr>
 <td colspan="2" valign="top"><strong>eventType</strong></td>
