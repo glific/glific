@@ -6,7 +6,6 @@
 query triggers($filter: TriggerFilter) {
   triggers(filter: $filter) {
       id
-      name
       eventType
       triggerAction {
         id
@@ -46,7 +45,6 @@ query triggers($filter: TriggerFilter) {
       {
         "eventType": "start_flow",
         "id": "1",
-        "name": "test trigger",
         "triggerAction": {
           "flow": {
             "id": "2",
@@ -87,7 +85,6 @@ query trigger($id: ID!) {
   trigger(id: $id) {
     trigger {
       id
-      name
       eventType
       triggerAction {
         id
@@ -131,7 +128,6 @@ query trigger($id: ID!) {
       "trigger": {
         "eventType": "start_flow",
         "id": "1",
-        "name": "test trigger",
         "triggerAction": {
           "flow": {
             "id": "2",
@@ -172,7 +168,7 @@ query countTriggers($filter: TriggerFilter) {
 
 {
   "filter": {
-    "name": test
+    "flowId": 1
   }
 }
 ```
@@ -200,7 +196,6 @@ mutation createTrigger($input: TriggerInput!) {
   createTrigger(input: $input) {
     trigger{
       id
-      name
       eventType
       triggerAction {
         id
@@ -231,7 +226,6 @@ mutation createTrigger($input: TriggerInput!) {
 
 {
   "input": {
-    "name": "test",
     "eventType": "start_flow",
     "flowId": 1,
     "groupId": 1,
@@ -251,7 +245,6 @@ mutation createTrigger($input: TriggerInput!) {
       "trigger": {
         "eventType": "start_flow",
         "id": "2",
-        "name": "test",
         "triggerAction": {
           "flow": {
             "id": "1",
@@ -295,7 +288,6 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
   updateTrigger(id: $id, input: $input) {
     trigger {
       id
-      name
       eventType
       triggerAction {
         id
@@ -343,7 +335,6 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
       "trigger": {
         "eventType": "start_flow",
         "id": "1",
-        "name": "test trigger",
         "triggerAction": {
           "flow": {
             "id": "2",
@@ -397,11 +388,6 @@ Type | Description
 </tr>
 </thead>
 <tbody>
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
 <tr>
 <td colspan="2" valign="top"><strong>id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
@@ -475,11 +461,6 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
