@@ -151,13 +151,7 @@ defmodule Glific.Jobs.GcsWorker do
     download_file_to_temp(media["url"], path, media["organization_id"])
     |> case do
       {:ok, _} ->
-        {:ok, response} = upload_file_on_gcs(media)
-
-        get_public_link(response)
-        |> update_gcs_url(media["id"])
-
-        File.rm(path)
-        :ok
+          upload_file_on_gcs(media)
 
       {:error, :timeout} ->
         {:error,
@@ -173,6 +167,7 @@ defmodule Glific.Jobs.GcsWorker do
     :ok
   end
 
+
   @spec get_public_link(map()) :: String.t()
   defp get_public_link(response) do
     Enum.join(["https://storage.googleapis.com", response.id], "/")
@@ -181,19 +176,29 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec upload_file_on_gcs(map()) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
-  defp upload_file_on_gcs(
-         %{
-           path: path,
-           file_name: file_name
-         } = media
-       ) do
+  defp upload_file_on_gcs(%{path: path, file_name: file_name} = media) do
     Logger.info("Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{file_name}")
 
-    CloudStorage.put(
+    {:ok, response} = CloudStorage.put(
       Glific.Media,
       :original,
       {%Waffle.File{path: path, file_name: file_name}, bucket(media)}
     )
+
+    get_public_link(response)
+    |> update_gcs_url(media["id"])
+
+    File.rm(path)
+    :ok
+
+
+    rescue
+    # An exception is thrown if there is no provider handler and/or sending the message
+    # via the provider fails
+    error ->
+      log_error(error)
+
+
   end
 
   # get the bucket name, we call our pseudo-plugin architecture
