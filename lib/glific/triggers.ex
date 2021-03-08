@@ -81,11 +81,6 @@ defmodule Glific.Triggers do
   defp start_flow(trigger) do
     flow = Flows.get_flow!(trigger.flow_id)
 
-    if !is_nil(trigger.contact_id) do
-      contact = Contacts.get_contact!(trigger.contact_id)
-      Flows.start_contact_flow(flow, contact)
-    end
-
     if !is_nil(trigger.group_id) do
       group = Groups.get_group!(trigger.group_id)
       Flows.start_group_flow(flow, group)
