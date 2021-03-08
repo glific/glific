@@ -1,4 +1,4 @@
-query triggers($filter: triggerFilter, $opts: Opts) {
+query triggers($filter: TriggerFilter, $opts: Opts) {
   triggers(filter: $filter, opts: $opts) {
     id
     start_at

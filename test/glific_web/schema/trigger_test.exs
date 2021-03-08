@@ -14,7 +14,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     triggers = get_in(query_data, [:data, "triggers"])
     assert length(triggers) > 0
     [trigger | _] = triggers
-    assert trigger["start_at"] == wl.start_at
+    assert String.to_integer(trigger["flow"]["id"]) == wl.flow_id
   end
 
 end
