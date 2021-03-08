@@ -17,21 +17,16 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   object :trigger do
     field :id, :id
-    field :trigger_type, :string
 
     field :start_at, :datetime
     field :end_date, :date
     field :is_active, :boolean
 
     field :is_repeating, :boolean
-    field :frequency, list_of(:string)
+    field :frequency, :string
     field :days, list_of(:integer)
 
     field :flow, :flow do
-      resolve(dataloader(Repo))
-    end
-
-    field :contact, :contact do
       resolve(dataloader(Repo))
     end
 
