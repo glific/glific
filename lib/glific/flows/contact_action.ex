@@ -25,6 +25,7 @@ defmodule Glific.Flows.ContactAction do
       {:ok, context, messages},
       fn contact, {_, _, _} ->
         {:ok, cid} = Glific.parse_maybe_integer(contact["uuid"])
+        cid = Glific.Clients.broadcast(action, context.contact, cid)
         send_message(context, action, messages, cid)
       end
     )
