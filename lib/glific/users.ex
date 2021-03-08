@@ -88,7 +88,12 @@ defmodule Glific.Users do
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
     # lets invalidate the tokens and socket for this user
-    GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
+    # we do this ONLY if either the role or is_restricted has changed
+    IO.inspect(user, label: "USER")
+    IO.inspect(attrs, label: "ATTR")
+    if user.roles != attrs[:roles] || user.is_restricted != attrs[:is_restricted] do
+      GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
+    end
 
     user
     |> User.update_fields_changeset(attrs)
