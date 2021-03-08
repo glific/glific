@@ -34,5 +34,6 @@ defmodule Glific.Clients.Weunlearn do
       do: staff_id,
       else: group_staff_id
   end
+
   # codebeat:enable[ABC]
 end
