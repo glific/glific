@@ -375,11 +375,11 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>is_active</strong></td>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td><td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>is_repeating</strong></td>
+<td colspan="2" valign="top"><strong>isRepeating</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td><td></td>
 </tr>
 <tr>
@@ -393,13 +393,13 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>flow_id</strong></td>
-<td valign="top"><a href="#flow">Flow</a></td>
+<td colspan="2" valign="top"><strong>flowId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>group_id</strong></td>
-<td valign="top"><a href="#group">Group</a></td>
+<td colspan="2" valign="top"><strong>groupId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 </tbody>
@@ -446,8 +446,8 @@ Filtering options for triggers
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>flow_id</strong></td>
-<td valign="top"><a href="#flow">Flow</a></td>
+<td colspan="2" valign="top"><strong>flowId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 </tbody>
