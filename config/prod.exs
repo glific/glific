@@ -60,8 +60,7 @@ config :glific, :environment, :prod
 
 # Uncomment if ssl required at Elixir level
 # config :glific, GlificWeb.Endpoint, force_ssl: [hsts: true]
-config :glific, GlificWeb.Endpoint,
-  force_ssl: [rewrite_on: [:x_forwarded_proto]]
+config :glific, GlificWeb.Endpoint, force_ssl: [rewrite_on: [:x_forwarded_proto]]
 
 # Check `Plug.SSL` for all available options in `force_ssl`.
 

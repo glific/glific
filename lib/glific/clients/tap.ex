@@ -13,7 +13,6 @@ defmodule Glific.Clients.Tap do
     bucket =
       Contact
       |> where([c], c.id == ^media["contact_id"])
-      |> where([c], c.organization_id == ^media["organization_id"])
       |> join(:inner, [c], cg in ContactGroup, on: c.id == cg.contact_id)
       |> join(:inner, [_c, cg], g in Group, on: cg.group_id == g.id)
       |> select([_c, _cg, g], g.label)

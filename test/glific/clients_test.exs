@@ -3,6 +3,7 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Contacts,
     Fixtures
   }
 
@@ -36,5 +37,20 @@ defmodule Glific.ClientsTest do
     assert Clients.blocked?("1123", 1) == false
     assert Clients.blocked?("44123", 1) == true
     assert Clients.blocked?("44123", 2) == false
+  end
+
+  test "check that broadcast returns a different staff id" do
+    contact = Fixtures.contact_fixture()
+
+    # a contact not in any group should return the same staff id
+    assert Clients.broadcast(nil, contact, 100) == 100
+
+    # lets munge organization_id
+    assert Clients.broadcast(nil, Map.put(contact, :organization_id, 103), 107) == 107
+
+    # now lets create a contact group and a user group
+    {cg, ug} = Fixtures.contact_user_group_fixture(%{organization_id: 1})
+    contact = Contacts.get_contact!(cg.contact_id)
+    assert Clients.broadcast(nil, contact, -1) == ug.user.contact_id
   end
 end
