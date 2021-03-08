@@ -6,7 +6,6 @@ defmodule Glific.Triggers do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts,
     Flows,
     Groups,
     Repo,
