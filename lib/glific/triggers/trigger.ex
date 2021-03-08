@@ -134,7 +134,7 @@ defmodule Glific.Triggers.Trigger do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &Repo.filter_with/2)
+    Repo.list_filter(args, Trigger, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
   end
 
   @doc """
