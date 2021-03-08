@@ -42,11 +42,9 @@ defmodule GlificWeb.Schema.TriggerTypes do
   end
 
   input_object :trigger_input do
-    field :name, :string
     field :trigger_type, :string
 
     field :flow_id, :id
-    field :contact_id, :id
     field :group_id, :id
 
     field :is_active, :boolean
@@ -64,7 +62,6 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   input_object :trigger_update_input do
     field :flow_id, :id
-    field :contact_id, :id
     field :group_id, :id
 
     field :is_active, :boolean

@@ -6,7 +6,6 @@ defmodule Glific.Triggers.Trigger do
   alias __MODULE__
 
   alias Glific.{
-    Contacts.Contact,
     Flows.Flow,
     Groups.Group,
     Partners,
@@ -17,12 +16,9 @@ defmodule Glific.Triggers.Trigger do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
-          name: String.t() | nil,
           trigger_type: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
-          contact_id: non_neg_integer | nil,
-          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           group_id: non_neg_integer | nil,
           group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           start_at: DateTime.t() | nil,
@@ -40,16 +36,15 @@ defmodule Glific.Triggers.Trigger do
         }
 
   @required_fields [
-    :name,
     :organization_id,
     :flow_id,
     :start_at
   ]
   @optional_fields [
+    :is_active,
     :trigger_type,
-    :contact_id,
     :group_id,
-    :end_at,
+    :end_date,
     :last_trigger_at,
     :next_trigger_at,
     :is_repeating,
@@ -58,11 +53,9 @@ defmodule Glific.Triggers.Trigger do
   ]
 
   schema "triggers" do
-    field :name, :string
 
     field :trigger_type, :string, default: "scheduled"
 
-    belongs_to :contact, Contact
     belongs_to :group, Group
     belongs_to :flow, Flow
 
