@@ -134,7 +134,8 @@ defmodule Glific.MixProject do
       {:csv, "~> 2.4"},
       {:observer_cli, "~> 1.6"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
-      {:ex_phone_number, "~> 0.2"}
+      {:ex_phone_number, "~> 0.2"},
+      {:tzdata, "~> 1.1"}
     ]
   end
 
