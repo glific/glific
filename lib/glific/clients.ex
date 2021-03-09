@@ -7,6 +7,8 @@ defmodule Glific.Clients do
   At some point we will move this to a more extensible scheme, which is as yet undetermined
   """
 
+  alias Glific.{Contacts.Contact, Flows.Action}
+
   @tap %{
     id: 12,
     name: "The Apprentice Project",
@@ -20,16 +22,23 @@ defmodule Glific.Clients do
     blocked?: Glific.Clients.Stir
   }
 
+  @weunlearn %{
+    id: 25,
+    broadcast: Glific.Clients.Weunlearn
+  }
+
   @dev %{
     id: 1,
     name: "Glific",
     gcs_bucket: Glific.Clients.Tap,
-    blocked?: Glific.Clients.Stir
+    blocked?: Glific.Clients.Stir,
+    broadcast: Glific.Clients.Weunlearn
   }
 
   @plugins %{
     @tap[:id] => @tap,
-    @stir[:id] => @stir
+    @stir[:id] => @stir,
+    @weunlearn[:id] => @weunlearn
   }
 
   @spec env(atom() | nil) :: atom()
@@ -68,5 +77,18 @@ defmodule Glific.Clients do
     if module_name,
       do: apply(module_name, :blocked?, [phone]),
       else: false
+  end
+
+  @doc """
+  Allow an organization to dynamically select which contact the broadcast message should
+  go to. This gives NGOs more flexibility when building flows
+  """
+  @spec broadcast(Action.t(), Contact.t(), non_neg_integer) :: non_neg_integer
+  def broadcast(action, contact, staff_id) do
+    module_name = get_in(plugins(), [contact.organization_id, :broadcast])
+
+    if module_name,
+      do: apply(module_name, :broadcast, [action, contact, staff_id]),
+      else: staff_id
   end
 end

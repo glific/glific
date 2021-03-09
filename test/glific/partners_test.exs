@@ -305,6 +305,7 @@ defmodule Glific.PartnersTest do
 
     test "update_organization/2 with oraganization settings" do
       organization = Fixtures.organization_fixture()
+      flow_id = 3
 
       update_org_attrs =
         @update_org_attrs
@@ -319,7 +320,7 @@ defmodule Glific.PartnersTest do
                 enabled: true
               }
             ],
-            flow_id: 1
+            flow_id: 3
           }
         })
 
@@ -334,6 +335,11 @@ defmodule Glific.PartnersTest do
       day2 = get_in(organization.out_of_office.enabled_days, [Access.at(1)])
       assert day2.enabled == false
 
+      # also check and ensure that out of office flow is set in flow keywords
+      flow_keywords_map = Glific.Flows.flow_keywords_map(organization.id)
+      assert flow_keywords_map["draft"]["outofoffice"] == flow_id
+      assert flow_keywords_map["published"]["outofoffice"] == flow_id
+
       # disable out_of_office setting
       update_org_attrs =
         @update_org_attrs
@@ -347,6 +353,11 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, update_org_attrs)
 
       assert organization.out_of_office.enabled == false
+
+      # also check and ensure that out of office flow is not set in flow keywords
+      flow_keywords_map = Glific.Flows.flow_keywords_map(organization.id)
+      assert flow_keywords_map["draft"]["outofoffice"] == nil
+      assert flow_keywords_map["published"]["outofoffice"] == nil
     end
 
     test "delete_organization/1 deletes the organization" do
@@ -627,7 +638,7 @@ defmodule Glific.PartnersTest do
 
       {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-      assert {:ok, %Credential{} = credential} =
+      assert {:ok, %Credential{}} =
                Partners.get_credential(%{
                  organization_id: organization_id,
                  shortcode: provider.shortcode
@@ -679,7 +690,7 @@ defmodule Glific.PartnersTest do
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
 
-      assert [contact] =
+      assert [_contact] =
                Contacts.list_contacts(%{
                  filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
                })

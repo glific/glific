@@ -222,20 +222,13 @@ defmodule Glific.Messages do
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
-    with true <- Map.has_key?(attrs, :template_id),
-         true <- Map.get(attrs, :is_hsm) do
+    if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
       attrs
-      |> Map.merge(%{
-        template_id: attrs.template_id,
-        receiver_id: attrs.receiver_id,
-        parameters: attrs.params,
-        media_id: attrs.media_id
-      })
+      |> Map.put(:parameters, attrs.params)
       |> create_and_send_hsm_message()
     else
-      _ ->
-        Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
-        |> create_and_send_message(attrs)
+      Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
+      |> create_and_send_message(attrs)
     end
   end
 
@@ -288,23 +281,42 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_otp_verification_message(integer, Contact.t(), String.t()) ::
+  @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
           {:ok, Message.t()}
-  def create_and_send_otp_verification_message(organization_id, contact, otp) do
+  def create_and_send_otp_verification_message(contact, otp) do
+    if Contacts.can_send_message_to?(contact, false),
+      do: create_and_send_otp_session_message(contact, otp),
+      else: create_and_send_otp_template_message(contact, otp)
+  end
+
+  @doc false
+  @spec create_and_send_otp_session_message(Contact.t(), String.t()) ::
+          {:ok, Message.t()}
+  def create_and_send_otp_session_message(contact, otp) do
+    ttl = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
+
+    body = "Your OTP for Registration is #{otp}. This is valid for #{ttl} minutes."
+    send_default_message(contact, body)
+  end
+
+  @doc false
+  @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
+          {:ok, Message.t()}
+  def create_and_send_otp_template_message(contact, otp) do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
       Repo.fetch_by(SessionTemplate, %{
         shortcode: "common_otp",
         is_hsm: true,
-        organization_id: organization_id
+        organization_id: contact.organization_id
       })
 
-    ttl_in_minutes = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
+    ttl = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
 
     parameters = [
       "Registration",
       otp,
-      "#{ttl_in_minutes} minutes"
+      "#{ttl} minutes"
     ]
 
     %{template_id: session_template.id, receiver_id: contact.id, parameters: parameters}
@@ -865,7 +877,7 @@ defmodule Glific.Messages do
         %{fields: %{}}
       )
 
-      with {:ok, last_message} <- send_default_msg(contact) do
+      with {:ok, last_message} <- send_default_message(contact) do
         query
         |> where([m], m.id != ^last_message.id)
       end
@@ -874,12 +886,13 @@ defmodule Glific.Messages do
     end
   end
 
-  @spec send_default_msg(Contact.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp send_default_msg(contact) do
+  @spec send_default_message(Contact.t(), String.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
+  defp send_default_message(contact, body \\ "Default message body") do
     org = Partners.organization(contact.organization_id)
 
     attrs = %{
-      body: "Default message body",
+      body: body,
       flow: :outbound,
       media_id: nil,
       organization_id: contact.organization_id,
