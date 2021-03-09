@@ -58,11 +58,10 @@ defmodule GlificWeb.Resolvers.Triggers do
   @spec delete_trigger(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_trigger(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, trigger} <- Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
+    with {:ok, trigger} <-
+           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
          {:ok, trigger} <- Trigger.delete_trigger(trigger) do
       {:ok, trigger}
     end
   end
-
-
 end
