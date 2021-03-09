@@ -114,6 +114,7 @@ defmodule Glific.Triggers.Trigger do
   defp fix_attrs(attrs) do
     # compute start_at if not set
     start_at = start_at(attrs)
+
     attrs
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs, start_at))

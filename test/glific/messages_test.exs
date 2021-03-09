@@ -609,8 +609,13 @@ defmodule Glific.MessagesTest do
 
       # also send hsm message via the wrapper function
       {:ok, message} =
-        %{template_id: hsm_template.id, receiver_id: contact.id,
-          params: parameters, organization_id: organization_id, is_hsm: true}
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          params: parameters,
+          organization_id: organization_id,
+          is_hsm: true
+        }
         |> Messages.create_and_send_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)
@@ -623,7 +628,6 @@ defmodule Glific.MessagesTest do
       assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.sent_at != nil
-
     end
 
     test "send media hsm message",
