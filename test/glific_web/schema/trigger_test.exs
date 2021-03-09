@@ -31,8 +31,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
-    flow = Fixtures.flow_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-11 09:22:51Z], flow_id: flow.id})
+    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
     tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
@@ -45,8 +44,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers field should return following limit and offset", %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
-    flow = Fixtures.flow_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-11 09:22:51Z], flow_id: flow.id})
+    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
     _tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result =
@@ -67,8 +65,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   test "triggers field returns list of triggers in various filters",
        %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
-    flow = Fixtures.flow_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-11 09:22:51Z], flow_id: flow.id})
+    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
     tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result = auth_query_gql_by(:list, user, variables: %{"flow" => %{"name" => "help"}})

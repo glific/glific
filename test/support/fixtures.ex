@@ -608,8 +608,8 @@ defmodule Glific.Fixtures do
     valid_attrs =
       valid_attrs
       |> Map.merge(attrs)
-      |> Map.put_new(:flow_id, f1.id)
-      |> Map.put_new(:group_id, g1.id)
+      |> Map.put(:flow_id, f1.id)
+      |> Map.put(:group_id, g1.id)
       |> Map.put(:organization_id, attrs.organization_id)
 
     {:ok, trigger} = Trigger.create_trigger(valid_attrs)
