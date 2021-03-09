@@ -577,17 +577,11 @@ defmodule Glific.Fixtures do
     [g1 | _] = Groups.list_groups(attrs)
     [f1 | _] = Flows.list_flows(attrs)
 
-    {:ok, group} =
-      Repo.fetch_by(Groups.Group, %{id: g1.id, organization_id: attrs.organization_id})
-
-      {:ok, flow} =
-      Repo.fetch_by(Flows.Flow, %{id: f1.id, organization_id: attrs.organization_id})
-
     valid_attrs =
       valid_attrs
       |> Map.merge(attrs)
-      |> Map.put(:flow_id, f1.id)
-      |> Map.put(:group_id, g1.id)
+      |> Map.put_new(:flow_id, f1.id)
+      |> Map.put_new(:group_id, g1.id)
       |> Map.put(:organization_id, attrs.organization_id)
 
     {:ok, trigger} = Trigger.create_trigger(valid_attrs)

@@ -8,7 +8,6 @@ defmodule Glific.Repo.Migrations.UpdateTrigger do
   defp triggers do
     alter table(:triggers) do
       remove :contact_id
-      remove :name
     end
   end
 end
