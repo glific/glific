@@ -127,6 +127,14 @@ defmodule Glific.Triggers.Trigger do
     |> Repo.insert()
   end
 
+  @doc false
+  @spec delete_trigger(Trigger.t()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def delete_trigger(%Trigger{} = trigger) do
+    trigger
+    |> Trigger.changeset(%{})
+    |> Repo.delete()
+  end
+
   @doc """
   Updates the triggger
   """

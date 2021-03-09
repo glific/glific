@@ -71,14 +71,15 @@ query triggers($filter: TriggerFilter) {
   }
 }
 ```
+
 This returns all the triggers for the organization filtered by the input <a href="#triggerfilter">TriggerFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#triggerfilter">TriggerFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                       | Default | Description                         |
+| --------- | ------------------------------------------ | ------- | ----------------------------------- |
+| filter    | <a href="#triggerfilter">TriggerFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                   | nil     | limit / offset / sort order options |
 
 ## Get a specific Trigger by ID
 
@@ -159,9 +160,9 @@ query trigger($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-ID | <a href="#id">ID</a> | nil ||
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
 
 ## Count all Triggers
 
@@ -189,9 +190,9 @@ query countTriggers($filter: TriggerFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#triggerfilter">TriggerFilter</a> | nil | filter the list
+| Parameter | Type                                       | Default | Description     |
+| --------- | ------------------------------------------ | ------- | --------------- |
+| filter    | <a href="#triggerfilter">TriggerFilter</a> | nil     | filter the list |
 
 ## Create a Trigger
 
@@ -279,14 +280,57 @@ mutation createTrigger($input: TriggerInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#triggerinput">TriggerInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#triggerinput">TriggerInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#triggerresult">TriggerResult</a> | The created trigger object
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The created trigger object |
+
+## Delete a Trigger
+
+```graphql
+mutation deleteTrigger($id: ID!)) {
+  deketeTrigger(id: $id) {
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "26"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "deketeTrigger": {
+      "errors": null,
+      "tag": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#triggerinput">TriggerInput</a> | required |             |
+
+### Return Parameters
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The created trigger object |
 
 ## Update a Trigger
 
@@ -371,17 +415,16 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#triggerinput">TriggerInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                    | required |             |
+| input     | <a href="#triggerinput">TriggerInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#triggerresult">TriggerResult</a> | The updated trigger object
 
-
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The updated trigger object |
 
 ## Trigger Objects
 
@@ -515,7 +558,7 @@ Type | Description
 </tbody>
 </table>
 
-### TriggerResult ###
+### TriggerResult
 
 <table>
 <thead>
@@ -540,10 +583,9 @@ Type | Description
 </tbody>
 </table>
 
-## Trigger Inputs ##
+## Trigger Inputs
 
-
-### TriggerFilter ###
+### TriggerFilter
 
 Filtering options for triggers
 
@@ -564,7 +606,7 @@ Filtering options for triggers
 </tbody>
 </table>
 
-### TriggerInput ###
+### TriggerInput
 
 <table>
 <thead>
@@ -627,7 +669,7 @@ Filtering options for triggers
 </tbody>
 </table>
 
-### TriggerUpdateInput ###
+### TriggerUpdateInput
 
 <table>
 <thead>
