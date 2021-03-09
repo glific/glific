@@ -321,7 +321,7 @@ defmodule Glific.PartnersTest do
               }
             ],
             flow_id: 3
-         }
+          }
         })
 
       assert {:ok, %Organization{} = organization} =
@@ -358,7 +358,6 @@ defmodule Glific.PartnersTest do
       flow_keywords_map = Glific.Flows.flow_keywords_map(organization.id)
       assert flow_keywords_map["draft"]["outofoffice"] == nil
       assert flow_keywords_map["published"]["outofoffice"] == nil
-
     end
 
     test "delete_organization/1 deletes the organization" do
