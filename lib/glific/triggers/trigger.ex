@@ -4,6 +4,7 @@ defmodule Glific.Triggers.Trigger do
   import Ecto.Changeset
 
   alias __MODULE__
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Flows.Flow,
@@ -134,7 +135,22 @@ defmodule Glific.Triggers.Trigger do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter(args, Trigger, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+    Repo.list_filter(args, Trigger, &Repo.opts_with_inserted_at/2, &filter_with/2)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:flow, flow}, query ->
+        from q in query,
+          join: c in assoc(q, :flow),
+          where: ilike(c.name, ^"%#{flow}%")
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """

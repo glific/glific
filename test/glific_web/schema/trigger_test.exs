@@ -43,6 +43,42 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert String.to_integer(trigger["flow"]["id"]) == tr_2.flow_id
   end
 
+  test "triggers field should return following limit and offset", %{staff: user} = attrs do
+    _tr_1 = Fixtures.trigger_fixture(attrs)
+    flow = Fixtures.flow_fixture(attrs)
+    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-11 09:22:51Z], flow_id: flow.id})
+    _tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "triggers"])) == 1
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 1}})
+
+    assert {:ok, query_data} = result
+
+    triggers = get_in(query_data, [:data, "triggers"])
+    assert length(triggers) == 1
+  end
+
+  test "triggers field returns list of triggers in various filters",
+       %{staff: user} = attrs do
+    _tr_1 = Fixtures.trigger_fixture(attrs)
+    flow = Fixtures.flow_fixture(attrs)
+    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-11 09:22:51Z], flow_id: flow.id})
+    tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
+
+    result = auth_query_gql_by(:list, user, variables: %{"flow" => %{"name" => "help"}})
+    assert {:ok, query_data} = result
+    triggers = get_in(query_data, [:data, "triggers"])
+    assert length(triggers) > 0
+    [trigger | _] = triggers
+    assert String.to_integer(trigger["flow"]["id"]) == tr_2.flow_id
+  end
+
   test "count_triggers/0 returns count of all trigger logs", attrs do
     logs_count = Trigger.count_triggers(%{filter: attrs})
 
