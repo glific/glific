@@ -162,6 +162,14 @@ defmodule Glific.Triggers.Trigger do
     end)
   end
 
+  @doc false
+  @spec delete_trigger(Trigger.t()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def delete_trigger(%Trigger{} = trigger) do
+    trigger
+    |> Trigger.changeset(%{})
+    |> Repo.delete()
+  end
+
   @doc """
   Return the count of triggers, using the same filter as list_triggers
   """

@@ -112,5 +112,12 @@ defmodule GlificWeb.Schema.TriggerTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.update_trigger/3)
     end
+
+    field :delete_trigger, :trigger_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Triggers.delete_trigger/3)
+    end
+
   end
 end
