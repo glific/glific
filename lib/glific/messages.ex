@@ -222,20 +222,13 @@ defmodule Glific.Messages do
   @spec check_for_hsm_message(map(), Contact.t()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
-    with true <- Map.has_key?(attrs, :template_id),
-         true <- Map.get(attrs, :is_hsm) do
+    if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
       attrs
-      |> Map.merge(%{
-        template_id: attrs.template_id,
-        receiver_id: attrs.receiver_id,
-        parameters: attrs.params,
-        media_id: attrs.media_id
-      })
+      |> Map.put(:parameters, attrs.params)
       |> create_and_send_hsm_message()
     else
-      _ ->
-        Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
-        |> create_and_send_message(attrs)
+      Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
+      |> create_and_send_message(attrs)
     end
   end
 
