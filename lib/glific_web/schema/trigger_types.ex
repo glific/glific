@@ -17,21 +17,17 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   object :trigger do
     field :id, :id
-    field :trigger_type, :string
+    field :name, :string
 
     field :start_at, :datetime
     field :end_date, :date
     field :is_active, :boolean
 
     field :is_repeating, :boolean
-    field :frequency, list_of(:string)
+    field :frequency, :string
     field :days, list_of(:integer)
 
     field :flow, :flow do
-      resolve(dataloader(Repo))
-    end
-
-    field :contact, :contact do
       resolve(dataloader(Repo))
     end
 
@@ -43,15 +39,13 @@ defmodule GlificWeb.Schema.TriggerTypes do
   @desc "Filtering options for triggers"
   input_object :trigger_filter do
     @desc "Match the flow_id"
-    field :flow_id, :id
+    field :flow, :string
   end
 
   input_object :trigger_input do
-    field :name, :string
     field :trigger_type, :string
 
     field :flow_id, :id
-    field :contact_id, :id
     field :group_id, :id
 
     field :is_active, :boolean
@@ -64,12 +58,11 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :start_time, :time
 
     field :start_at, :datetime
-    field :end_at, :datetime
+    field :end_date, :datetime
   end
 
   input_object :trigger_update_input do
     field :flow_id, :id
-    field :contact_id, :id
     field :group_id, :id
 
     field :is_active, :boolean
@@ -82,7 +75,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :start_time, :time
 
     field :start_at, :datetime
-    field :end_at, :datetime
+    field :end_date, :datetime
   end
 
   object :trigger_queries do

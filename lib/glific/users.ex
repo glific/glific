@@ -2,9 +2,6 @@ defmodule Glific.Users do
   @moduledoc """
   The Users context.
   """
-  @dialyzer {:no_return, update_user: 2}
-  @dialyzer {:no_return, delete_user: 1}
-  @dialyzer {:no_return, reset_user_password: 2}
 
   use Pow.Ecto.Context,
     repo: Glific.Repo,
@@ -86,10 +83,15 @@ defmodule Glific.Users do
       {:error, %Ecto.Changeset{}}
 
   """
+
+  @pow_config [otp_app: :glific]
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
     # lets invalidate the tokens and socket for this user
-    GlificWeb.APIAuthPlug.delete_user_sessions(user)
+    # we do this ONLY if either the role or is_restricted has changed
+    if user.roles != attrs[:roles] || user.is_restricted != attrs[:is_restricted] do
+      GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
+    end
 
     user
     |> User.update_fields_changeset(attrs)
@@ -111,7 +113,7 @@ defmodule Glific.Users do
   @spec delete_user(User.t()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def delete_user(%User{} = user) do
     # lets invalidate the tokens and socket for this user
-    GlificWeb.APIAuthPlug.delete_user_sessions(user)
+    GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
 
     Repo.delete(user)
   end
@@ -121,9 +123,6 @@ defmodule Glific.Users do
   """
   @spec reset_user_password(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def reset_user_password(%User{} = user, attrs) do
-    # lets invalidate the tokens and socket for this user
-    GlificWeb.APIAuthPlug.delete_user_sessions(user)
-
     user
     |> User.update_fields_changeset(attrs)
     |> Repo.update()

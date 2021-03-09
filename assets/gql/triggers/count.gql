@@ -1,0 +1,3 @@
+query countTriggers($filter: TriggerFilter) {
+  countTriggers(filter: $filter)
+}

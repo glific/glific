@@ -6,7 +6,6 @@ defmodule Glific.Triggers do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts,
     Flows,
     Groups,
     Repo,
@@ -80,11 +79,6 @@ defmodule Glific.Triggers do
   @spec start_flow(Trigger.t()) :: nil
   defp start_flow(trigger) do
     flow = Flows.get_flow!(trigger.flow_id)
-
-    if !is_nil(trigger.contact_id) do
-      contact = Contacts.get_contact!(trigger.contact_id)
-      Flows.start_contact_flow(flow, contact)
-    end
 
     if !is_nil(trigger.group_id) do
       group = Groups.get_group!(trigger.group_id)

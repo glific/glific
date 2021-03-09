@@ -607,9 +607,13 @@ defmodule Glific.Flows do
     organization = Partners.organization(organization_id)
 
     value =
-      if organization.out_of_office.enabled and organization.out_of_office.flow_id,
-        do: Map.put(value, "outofoffice", organization.out_of_office.flow_id),
-        else: value
+      if organization.out_of_office.enabled and organization.out_of_office.flow_id do
+        value
+        |> update_flow_keyword_map("published", "outofoffice", organization.out_of_office.flow_id)
+        |> update_flow_keyword_map("draft", "outofoffice", organization.out_of_office.flow_id)
+      else
+        value
+      end
 
     {:commit, value}
   end

@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "1.0.0",
+      version: "1.1.0",
       elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -60,7 +60,7 @@ defmodule Glific.MixProject do
   def application do
     [
       mod: {Glific.Application, []},
-      extra_applications: [:logger, :runtime_tools, :mnesia]
+      extra_applications: [:logger, :runtime_tools, :mnesia, :os_mon]
     ]
   end
 
@@ -77,10 +77,12 @@ defmodule Glific.MixProject do
       {:phoenix_ecto, "~> 4.1"},
       {:ecto_sql, "~> 3.4"},
       {:postgrex, ">= 0.0.0"},
-      {:floki, ">= 0.0.0", only: @test_envs},
+      {:floki, ">= 0.27.0", only: @test_envs},
       {:phoenix_html, "~> 2.11"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix_live_reload, "~> 1.2", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
+      {:phoenix_live_view, "~> 0.15"},
+      {:phoenix_live_dashboard, "~> 0.4"},
       {:telemetry_metrics, "~> 0.4"},
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.18"},
@@ -104,6 +106,8 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
       {:oban, "~> 2.0"},
+      {:oban_web, "~> 2.5", organization: "oban"},
+      {:oban_pro, "~> 0.6", organization: "oban"},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},

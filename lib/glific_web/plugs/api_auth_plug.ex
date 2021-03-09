@@ -1,8 +1,5 @@
 defmodule GlificWeb.APIAuthPlug do
   @moduledoc false
-  @dialyzer {:nowarn_function, fake_conn: 0}
-  @dialyzer {:nowarn_function, delete_user_sessions: 1}
-  @dialyzer {:no_return, delete_user_sessions: 1}
   use Pow.Plug.Base
 
   require Logger
@@ -148,16 +145,12 @@ defmodule GlificWeb.APIAuthPlug do
     end
   end
 
-  @spec fake_conn :: Conn.t()
-  defp fake_conn,
-    do: Pow.Plug.put_config(%Conn{}, otp_app: :glific)
-
   @doc """
   When we update a user record from the frontend (maybe by admin), we need to ensure
   we log this user out, so we can load the new permissioning structure for this user
   """
   @spec delete_user_sessions(map(), Conn.t() | nil) :: :ok
-  def delete_user_sessions(user, conn \\ fake_conn()) do
+  def delete_user_sessions(user, conn) do
     # Delete existing user session
     Pow.Plug.fetch_config(conn)
     |> delete_all_user_sessions(user)

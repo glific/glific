@@ -18,7 +18,8 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.GcsWorker,
     Partners,
     Searches.CollectionCount,
-    Templates
+    Templates,
+    Triggers
   }
 
   @global_organization_id 0
@@ -163,6 +164,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
+
+      "execute_triggers" ->
+        Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
