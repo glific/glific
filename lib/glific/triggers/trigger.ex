@@ -101,8 +101,7 @@ defmodule Glific.Triggers.Trigger do
   end
 
   defp start_at(%{start_at: start_at} = _attrs),
-  do: start_at
-
+    do: start_at
 
   @spec get_name(map(), DateTime.t()) :: String.t()
   defp get_name(attrs, start_at) do
@@ -114,6 +113,7 @@ defmodule Glific.Triggers.Trigger do
   defp fix_attrs(attrs) do
     # compute start_at if not set
     start_at = start_at(attrs)
+
     attrs
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs, start_at))
