@@ -157,7 +157,7 @@ query countTriggers($filter: TriggerFilter) {
 
 {
   "filter": {
-    "flowId": 1
+    "flow": "help"
   }
 }
 ```
@@ -445,11 +445,17 @@ Filtering options for triggers
 </tr>
 </thead>
 <tbody>
+
 <tr>
-<td colspan="2" valign="top"><strong>flowId</strong></td>
-<td valign="top"><a href="#id">ID</a></td>
-<td></td>
+<td colspan="2" valign="top"><strong>Flow</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the flow name
+
+</td>
 </tr>
+
 </tbody>
 </table>
 
