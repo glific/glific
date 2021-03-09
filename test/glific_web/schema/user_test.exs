@@ -145,8 +145,7 @@ defmodule GlificWeb.Schema.UserTest do
     user = user |> Repo.preload(:contact)
     Fixtures.otp_hsm_fixture()
 
-    {:ok, otp} =
-      RegistrationController.create_and_send_verification_code(user.contact)
+    {:ok, otp} = RegistrationController.create_and_send_verification_code(user.contact)
 
     name = "User Test Name New"
 
