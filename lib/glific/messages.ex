@@ -289,7 +289,7 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
-  {:ok, Message.t()}
+          {:ok, Message.t()}
   def create_and_send_otp_verification_message(contact, otp) do
     if Contacts.can_send_message_to?(contact, false),
       do: create_and_send_otp_session_message(contact, otp),
@@ -298,7 +298,7 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_otp_session_message(Contact.t(), String.t()) ::
-  {:ok, Message.t()}
+          {:ok, Message.t()}
   def create_and_send_otp_session_message(contact, otp) do
     ttl = Application.get_env(:passwordless_auth, :verification_code_ttl) |> div(60)
 
@@ -308,7 +308,7 @@ defmodule Glific.Messages do
 
   @doc false
   @spec create_and_send_otp_template_message(Contact.t(), String.t()) ::
-  {:ok, Message.t()}
+          {:ok, Message.t()}
   def create_and_send_otp_template_message(contact, otp) do
     # fetch session template by shortcode "verification"
     {:ok, session_template} =
@@ -893,7 +893,8 @@ defmodule Glific.Messages do
     end
   end
 
-  @spec send_default_message(Contact.t(), String.t()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
+  @spec send_default_message(Contact.t(), String.t()) ::
+          {:ok, Message.t()} | {:error, atom() | String.t()}
   defp send_default_message(contact, body \\ "Default message body") do
     org = Partners.organization(contact.organization_id)
 
