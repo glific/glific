@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/triggers/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/triggers/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/triggers/update.gql")
-  load_gql(:delete, GlificWeb.Schema, "assets/gql/triggers/delete.gql")
+  # load_gql(:delete, GlificWeb.Schema, "assets/gql/triggers/delete.gql")
 
   test "triggers field returns list of triggers", %{staff: user} = attrs do
     tr = Fixtures.trigger_fixture(attrs)
@@ -85,5 +85,19 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     Fixtures.trigger_fixture(attrs)
     assert Trigger.count_triggers(%{filter: attrs}) == logs_count + 1
+  end
+
+  test "triggers id returns one triggers or nil", %{staff: user} = attrs do
+    trigger = Fixtures.trigger_fixture(attrs)
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => trigger.id})
+    assert {:ok, query_data} = result
+
+    flow_id = get_in(query_data, [:data, "trigger", "trigger", "flow", "id"])
+    assert Integer.to_string(trigger.flow_id) == flow_id
+
+    end_date = get_in(query_data, [:data, "trigger", "trigger", "end_date"])
+    assert trigger.end_date == end_date
+
+
   end
 end

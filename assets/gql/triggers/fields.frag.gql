@@ -14,7 +14,7 @@ fragment TriggerFields on TriggerResult {
   }
 }
 
-fragment ErrorFields on TagResult {
+fragment ErrorFields on TriggerResult {
   errors {
     key
     message
