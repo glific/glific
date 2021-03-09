@@ -127,7 +127,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
 
       "execute_triggers" ->
-        Glific.Triggers.execute_triggers()
+        Triggers.execute_triggers()
 
       "chatbase" ->
         Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"], true)

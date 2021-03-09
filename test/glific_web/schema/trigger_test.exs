@@ -17,6 +17,10 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   load_gql(:list, GlificWeb.Schema, "assets/gql/triggers/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/triggers/count.gql")
+  load_gql(:by_id, GlificWeb.Schema, "assets/gql/triggers/by_id.gql")
+  load_gql(:create, GlificWeb.Schema, "assets/gql/triggers/create.gql")
+  load_gql(:update, GlificWeb.Schema, "assets/gql/triggers/update.gql")
+  load_gql(:delete, GlificWeb.Schema, "assets/gql/triggers/delete.gql")
 
   test "triggers field returns list of triggers", %{staff: user} = attrs do
     tr = Fixtures.trigger_fixture(attrs)
