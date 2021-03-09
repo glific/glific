@@ -312,7 +312,7 @@ mutation deleteTrigger($id: ID!)) {
 ```json
 {
   "data": {
-    "deketeTrigger": {
+    "deleteTrigger": {
       "errors": null,
       "tag": null
     }
@@ -322,9 +322,9 @@ mutation deleteTrigger($id: ID!)) {
 
 ### Query Parameters
 
-| Parameter | Type                                     | Default  | Description |
-| --------- | ---------------------------------------- | -------- | ----------- |
-| input     | <a href="#triggerinput">TriggerInput</a> | required |             |
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
 
 ### Return Parameters
 
