@@ -322,7 +322,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, _updated_context, _updated_message_stream} = result
 
     message =
       Glific.Messages.Message
@@ -361,7 +361,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, _updated_context, _updated_message_stream} = result
 
     message =
       Glific.Messages.Message
@@ -373,7 +373,7 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is set_contact_language", _attrs do
-    language_label = "English (United States)"
+    language_label = "English"
     [language | _] = Settings.list_languages(%{filter: %{label: language_label}})
 
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
@@ -381,13 +381,13 @@ defmodule Glific.Flows.ActionTest do
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
-    action = %Action{type: "set_contact_language", text: "English (United States)"}
+    action = %Action{type: "set_contact_language", text: "English"}
 
     message_stream = []
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, updated_context, _updated_message_stream} = result
     assert updated_context.contact.language_id == language.id
   end
 
@@ -403,7 +403,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, updated_context, _updated_message_stream} = result
     assert updated_context.contact.name == action.value
   end
 
@@ -424,7 +424,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, updated_context, _updated_message_stream} = result
     assert updated_context.contact.settings["preferences"]["preference1"] == true
 
     # now set an action without the name field
@@ -458,7 +458,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, updated_context, _updated_message_stream} = result
 
     assert updated_context.contact.fields[action.field.key].value == "field1"
     assert updated_context.contact.fields[action.field.key].type == "string"
@@ -487,7 +487,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:ok, updated_context, updated_message_stream} = result
+    assert {:ok, updated_context, _updated_message_stream} = result
 
     assert Map.delete(updated_context, :delay) == Map.delete(context, :delay)
   end
@@ -568,7 +568,7 @@ defmodule Glific.Flows.ActionTest do
 
     result = Action.execute(action, context, message_stream)
 
-    assert {:wait, updated_context, updated_message_stream} = result
+    assert {:wait, updated_context, _updated_message_stream} = result
 
     assert updated_context == context
 

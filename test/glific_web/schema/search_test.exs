@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.SearchTest do
     Repo,
     Searches,
     Searches.SavedSearch,
+    Searches.Search,
     Seeds.SeedsDev
   }
 
@@ -161,6 +162,15 @@ defmodule GlificWeb.Schema.SearchTest do
     assert message == "Resource not found"
   end
 
+  test "search struct will be generated via embedded schema having contacts and messages",
+       _attrs do
+    contacts = Contacts.list_contacts(%{})
+    messages = Messages.list_messages(%{})
+    search = %Search{contacts: contacts, messages: messages}
+    assert search.contacts == contacts
+    assert search.messages == messages
+  end
+
   test "search for conversations", %{staff: user} do
     {:ok, receiver} =
       Repo.fetch_by(Contact, %{name: "Default receiver", organization_id: user.organization_id})
@@ -264,9 +274,9 @@ defmodule GlificWeb.Schema.SearchTest do
         }
       )
 
-    assert {:ok, query_data} = result
+    assert {:ok, _query_data} = result
 
-    assert {:ok, saved_search} =
+    assert {:ok, _saved_search} =
              Repo.fetch_by(SavedSearch, %{
                label: "Save with Search",
                organization_id: user.organization_id
@@ -659,7 +669,14 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search"]) == []
+
+    data =
+      Enum.filter(
+        query_data[:data]["search"],
+        fn row -> row["messages"] != [] end
+      )
+
+    assert data == []
   end
 
   test "search with incomplete date range filters will return the conversations", %{staff: user} do

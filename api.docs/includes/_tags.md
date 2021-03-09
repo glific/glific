@@ -37,7 +37,7 @@ query tags($filter: TagFilter, $opts: Opts) {
         "label": "Child",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       },
       {
@@ -45,7 +45,7 @@ query tags($filter: TagFilter, $opts: Opts) {
         "label": "Compliment",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       },
       {
@@ -53,7 +53,7 @@ query tags($filter: TagFilter, $opts: Opts) {
         "label": "Contacts",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       }
     ]
@@ -101,7 +101,7 @@ query tag($id: ID!) {
         "label": "Contacts",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       }
     }
@@ -251,7 +251,7 @@ mutation updateTag($id: ID!, $input:TagInput!) {
         "label": "This is a update tag for this example",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       }
     }

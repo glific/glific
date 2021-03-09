@@ -333,6 +333,34 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec contact_user_group_fixture(map()) :: {Groups.ContactGroup.t(), Groups.UserGroup.t()}
+  def contact_user_group_fixture(attrs) do
+    valid_attrs = %{
+      contact_id: contact_fixture(attrs).id,
+      group_id: group_fixture(attrs).id
+    }
+
+    {:ok, contact_group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Groups.create_contact_group()
+
+    user = user_fixture(attrs)
+
+    valid_attrs = %{
+      user_id: user.id,
+      group_id: contact_group.group_id
+    }
+
+    {:ok, user_group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Groups.create_user_group()
+
+    {contact_group, Map.put(user_group, :user, user)}
+  end
+
+  @doc false
   @spec group_contacts_fixture(map()) :: [Groups.ContactGroup.t(), ...]
   def group_contacts_fixture(attrs) do
     attrs = %{filter: attrs, opts: %{order: :asc}}

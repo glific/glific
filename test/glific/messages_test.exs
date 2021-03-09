@@ -252,7 +252,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "create_message/1 with valid data creates a message", attrs do
-      assert {:ok, %Message{} = message} =
+      assert {:ok, %Message{}} =
                @valid_attrs
                |> Map.merge(foreign_key_constraint(attrs))
                |> Messages.create_message()
@@ -333,7 +333,7 @@ defmodule Glific.MessagesTest do
 
     test "update_message/2 with valid data updates the message", attrs do
       message = message_fixture(attrs)
-      assert {:ok, %Message{} = message} = Messages.update_message(message, @update_attrs)
+      assert {:ok, %Message{}} = Messages.update_message(message, @update_attrs)
     end
 
     test "update_message/2 with invalid data returns error changeset", attrs do
@@ -361,7 +361,7 @@ defmodule Glific.MessagesTest do
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
-      assert {:ok} = Messages.clear_messages(message.contact)
+      assert :ok = Messages.clear_messages(message.contact)
 
       assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
                Repo.fetch_by(Message, %{
@@ -383,7 +383,7 @@ defmodule Glific.MessagesTest do
           organization_id: message.organization_id
         })
 
-      assert {:ok} = Messages.clear_messages(contact)
+      assert :ok = Messages.clear_messages(contact)
 
       {:ok, message} =
         Repo.fetch_by(Message, %{
@@ -606,6 +606,24 @@ defmodule Glific.MessagesTest do
       assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.sent_at != nil
+
+      # also send hsm message via the wrapper function
+      {:ok, message} =
+        %{template_id: hsm_template.id, receiver_id: contact.id,
+          params: parameters, organization_id: organization_id, is_hsm: true}
+        |> Messages.create_and_send_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+
     end
 
     test "send media hsm message",
