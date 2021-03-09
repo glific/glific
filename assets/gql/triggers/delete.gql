@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteTrigger($id: ID!)) {
+  deleteTrigger(id: $id) {
+    ...TriggerFields
+
+    ...ErrorFields
+  }
+}

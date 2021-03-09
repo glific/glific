@@ -267,7 +267,7 @@ mutation createTrigger($input: TriggerInput!) {
 
 ```graphql
 mutation deleteTrigger($id: ID!)) {
-  deketeTrigger(id: $id) {
+  deleteTrigger(id: $id) {
     errors {
       key
       message

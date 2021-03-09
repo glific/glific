@@ -1,0 +1,22 @@
+fragment TriggerFields on TriggerResult {
+  trigger {
+    id
+    start_at
+    end_date
+    flow {
+      id
+      name
+    }
+    group {
+      id
+      label
+    }
+  }
+}
+
+fragment ErrorFields on TagResult {
+  errors {
+    key
+    message
+  }
+}
