@@ -3,7 +3,7 @@ defmodule Glific.Contacts.Import do
   The Contact Importer Module
   """
 
-  alias Glific.{Contacts, Groups, Settings}
+  alias Glific.{Contacts, Groups, Settings, Partners}
 
   defp cleanup_contact_data(data, organization_id) do
     %{
@@ -16,13 +16,18 @@ defmodule Glific.Contacts.Import do
   end
 
   defp insert_or_update_contact_data(contact, group_id) do
-    {_, contact} = Contacts.create_or_update_contact(contact)
-
-    Groups.create_contact_group(%{
+    with {:ok, contact} <- Contacts.optin_contact(contact),
+      {:ok, _} <- Groups.create_contact_group(%{
       contact_id: contact.id,
       group_id: group_id,
       organization_id: contact.organization_id
-    })
+    }) do
+      contact
+
+    else
+      {:error, error} -> %{phone: contact.phone, error: error}
+    end
+
   end
 
   @doc """
@@ -33,10 +38,24 @@ defmodule Glific.Contacts.Import do
   """
   @spec import_contacts(String.t(), integer, integer) :: list()
   def import_contacts(file_path, organization_id, group_id) do
-    File.stream!(file_path)
-    |> CSV.decode(headers: true, strip_fields: true)
-    |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id) end)
-    |> Enum.map(fn contact -> insert_or_update_contact_data(contact, group_id) end)
+    with %{id: organization_id, } <- Partners.organization(organization_id), Groups.get_group!(group_id) do
+
+        result =  File.stream!(file_path)
+        |> CSV.decode(headers: true, strip_fields: true)
+        |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id) end)
+        |> Enum.map(fn contact -> insert_or_update_contact_data(contact, group_id) end)
+
+        errors = result |> Enum.filter(fn contact ->  Map.has_key?(contact, :error) end)
+
+        case errors do
+          [] -> {:ok, "All contacts added"}
+          _ -> {:error, "All contacts could not be added", errors}
+        end
+
+    else
+    {:error, error}->  {:error, "Could not fetch the organization with id #{organization_id}. Error -> #{error}"}
+
+    end
 
   end
 end
