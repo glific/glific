@@ -117,7 +117,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t(), map()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   defp perform(%Oban.Job{args: %{"job" => job}} = args, services)
-       when job in ["contact_status", "wakeup_flows", "chatbase", "bigquery", "gcs"] do
+       when job in ["contact_status", "wakeup_flows", "chatbase", "bigquery", "gcs",  "execute_triggers"] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
@@ -125,6 +125,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "wakeup_flows" ->
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
+
+      "execute_triggers" ->
+        Glific.Triggers.execute_triggers()
 
       "chatbase" ->
         Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"], true)
@@ -164,9 +167,6 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
-
-      "execute_triggers" ->
-        Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
