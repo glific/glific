@@ -22,6 +22,7 @@ defmodule Glific.Fixtures do
     Tags,
     Templates,
     Templates.SessionTemplate,
+    Triggers.Trigger,
     Users
   }
 
@@ -589,5 +590,30 @@ defmodule Glific.Fixtures do
     {:ok, webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
 
     webhook_log
+  end
+
+  @doc false
+  @spec trigger_fixture(map()) :: Trigger.t()
+  def trigger_fixture(attrs) do
+    valid_attrs = %{
+      end_date: ~U[2021-03-09 09:22:51Z],
+      is_active: true,
+      is_repeating: false,
+      start_at: ~U[2021-03-08 08:22:51Z]
+    }
+
+    [g1 | _] = Groups.list_groups(attrs)
+    [f1 | _] = Flows.list_flows(attrs)
+
+    valid_attrs =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:flow_id, f1.id)
+      |> Map.put(:group_id, g1.id)
+      |> Map.put(:organization_id, attrs.organization_id)
+
+    {:ok, trigger} = Trigger.create_trigger(valid_attrs)
+
+    trigger
   end
 end
