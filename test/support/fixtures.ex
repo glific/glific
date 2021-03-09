@@ -568,7 +568,7 @@ defmodule Glific.Fixtures do
   @spec trigger_fixture(map()) :: Trigger.t()
   def trigger_fixture(attrs) do
     valid_attrs = %{
-      end_date: ~U[2021-03-08 08:22:51Z],
+      end_date: ~U[2021-03-09 09:22:51Z],
       is_active: true,
       is_repeating: false,
       start_at: ~U[2021-03-08 08:22:51Z]
