@@ -96,8 +96,34 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert Integer.to_string(trigger.flow_id) == flow_id
 
     end_date = get_in(query_data, [:data, "trigger", "trigger", "end_date"])
-    assert trigger.end_date == end_date
+    assert end_date == Date.to_string(trigger.end_date)
 
+  end
+
+  test "create a trigger and test possible scenarios and errors", %{manager: user} = attrs do
+
+    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" =>  1,
+            "flowId" => flow.id,
+            "groupId" => 1,
+            "startDate" => "2020-12-30",
+            "startTime" => "13:15:19",
+            "endDate" => "2020-12-29T13:15:19Z",
+            "isActive" => false,
+            "isRepeating" => false
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    flow_id = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "id"])
+    assert flow_id == Integer.to_string(flow.id)
 
   end
 end

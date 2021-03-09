@@ -100,9 +100,9 @@ defmodule Glific.Triggers.Trigger do
     DateTime.shift_zone!(dt, "Etc/UTC")
   end
 
-  defp start_at(%{start_at: start_at} = _attrs) do
-    start_at
-  end
+  defp start_at(%{start_at: start_at} = _attrs),
+  do: start_at
+
 
   @spec get_name(map(), DateTime.t()) :: String.t()
   defp get_name(attrs, start_at) do
