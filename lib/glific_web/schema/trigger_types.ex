@@ -17,6 +17,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   object :trigger do
     field :id, :id
+    field :name, :string
 
     field :start_at, :datetime
     field :end_date, :date
@@ -38,7 +39,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
   @desc "Filtering options for triggers"
   input_object :trigger_filter do
     @desc "Match the flow_id"
-    field :flow_id, :id
+    field :flow, :string
   end
 
   input_object :trigger_input do

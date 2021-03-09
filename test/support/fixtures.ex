@@ -602,14 +602,14 @@ defmodule Glific.Fixtures do
       start_at: ~U[2021-03-08 08:22:51Z]
     }
 
-    flow = flow_fixture(Map.merge(attrs, %{keywords: [], name: Person.name()}))
-    group = group_fixture(attrs)
+    [g1 | _] = Groups.list_groups(attrs)
+    [f1 | _] = Flows.list_flows(attrs)
 
     valid_attrs =
       valid_attrs
       |> Map.merge(attrs)
-      |> Map.put(:flow_id, flow.id)
-      |> Map.put(:group_id, group.id)
+      |> Map.put_new(:flow_id, f1.id)
+      |> Map.put_new(:group_id, g1.id)
       |> Map.put(:organization_id, attrs.organization_id)
 
     {:ok, trigger} = Trigger.create_trigger(valid_attrs)
