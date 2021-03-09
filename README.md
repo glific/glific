@@ -24,9 +24,9 @@ Glific is currently developed and hosted on the following platforms. Our goal is
 versions of each platform as soon as feasible (i.e. once the ecosystem of packages we used have upgraded). We do not
 have the bandwidth to support earlier versions of the packages.
   
-  * erlang 23.2.5
-  * elixir 1.11.3-otp-23
-  * nodejs 14.16.0
+  * erlang : 23.2.5
+  * elixir : 1.11.3-otp-23
+  * nodejs : 14.16.0
   * postgres : v12.x or v13.x
 
 
