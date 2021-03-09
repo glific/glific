@@ -28,10 +28,11 @@ defmodule Glific.Providers.GupshupContacts do
           name: attrs[:name],
           phone: attrs.phone,
           organization_id: organization_id,
-          optin_time: DateTime.utc_now(),
+          optin_time: attrs[:optin_time] || DateTime.utc_now(),
+          language_id: attrs[:language_id] || Partners.organization_language_id(organization_id),
           bsp_status: :hsm
         }
-        |> Contacts.create_contact()
+        |> Contacts.create_or_update_contact()
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
