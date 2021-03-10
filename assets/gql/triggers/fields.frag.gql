@@ -3,6 +3,7 @@ fragment TriggerFields on TriggerResult {
     id
     start_at
     end_date
+    name
     flow {
       id
       name
