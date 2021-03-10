@@ -210,7 +210,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
         }
       )
 
-    assert {:ok, query_data} = result
+    assert {:ok, _query_data} = result
 
     {:ok, query_data} = auth_query_gql_by(:info, user, variables: %{"id" => group.id})
 

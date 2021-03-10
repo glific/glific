@@ -2,7 +2,7 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
 
   alias Faker.Phone
-  import Mock
+  # import Mock
 
   alias Glific.{
     Contacts,
@@ -207,23 +207,20 @@ defmodule Glific.ContactsTest do
             status: 200
           }
       end)
-      with_mocks([{File, [], [stream!: fn("file_path") -> "" end]},
-                  {CSV, [], [decode: fn (_stram,_options) -> [
-                   {:ok, %{
-                      "name" => "Foo",
-                      "phone" => "8888888888",
-                      "opt_in" => "2020-08-11",
-                      "language" => "English"
-                    }}
-                  ] end]}]) do
-            [organization|_] = Partners.list_organizations()
-            [group|_] = Groups.list_groups(%{filter: %{}})
 
-            Import.import_contacts("file_path", organization.id,group.id)
-            count = Contacts.count_contacts(%{filter: %{name: "Foo"}})
+      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
 
-            assert count == 1
-        end
+      [~w(name phone Language opt_in), ~w(test 14156139297 english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts("./test/support/fixture.csv", organization.id, group.id)
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
     end
 
     test "import_contact/3 with invalid organization id returns an error" do
@@ -233,20 +230,16 @@ defmodule Glific.ContactsTest do
             status: 200
           }
       end)
-      with_mocks([{File, [], [stream!: fn("file_path") -> "" end]},
-                  {CSV, [], [decode: fn (_stram,_options) -> [
-                   {:ok, %{
-                      "name" => "Foo",
-                      "phone" => "8888888888",
-                      "opt_in" => "2020-08-11",
-                      "language" => "English"
-                    }}
-                  ] end]}]) do
 
-            [group|_] = Groups.list_groups(%{filter: %{}})
+      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
 
-            assert {:error, _} = Import.import_contacts("file_path", 999,group.id)
-        end
+      [~w(name phone Language opt_in), ~w(test 14156139297 english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      assert {:error, _} = Import.import_contacts("file_path", 999, group.id)
     end
 
     test "create_or_update_contact/1 with valid data updates a contact when contact exists in the database",

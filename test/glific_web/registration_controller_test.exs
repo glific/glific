@@ -236,7 +236,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
-      assert json = json_response(conn, 200)
+      assert _json = json_response(conn, 200)
     end
   end
 
