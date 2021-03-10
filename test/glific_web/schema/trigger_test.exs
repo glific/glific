@@ -109,8 +109,6 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert length(triggers) > 0
     [trigger | _] = triggers
     assert String.to_integer(trigger["flow"]["id"]) == tr_2.flow_id
-
-
   end
 
   test "count_triggers/0 returns count of all trigger logs", attrs do
