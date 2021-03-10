@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   alias Glific.{
     Fixtures,
+    Partners,
     Repo,
     Seeds.SeedsDev,
     Triggers.Trigger
@@ -98,14 +99,23 @@ defmodule GlificWeb.Schema.TriggerTest do
     flow_name = get_in(query_data, [:data, "trigger", "trigger", "flow", "name"])
     assert trigger.flow.name == flow_name
 
-    end_date = get_in(query_data, [:data, "trigger", "trigger", "end_date"])
-    assert end_date == Date.to_string(trigger.end_date)
+    {:ok, end_date} = get_in(query_data, [:data, "trigger", "trigger", "end_date"])
+              |> Date.from_iso8601
+
+    assert end_date == trigger.end_date
+
+    {:ok, start_date, _} =  get_in(query_data, [:data, "trigger", "trigger", "start_at"])
+                            |> DateTime.from_iso8601()
+
+    assert start_date == trigger.start_at
 
   end
 
   test "create a trigger and test possible scenarios and errors", %{manager: user} = attrs do
-
     [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+
+    start_date =  "2020-12-30"
+    start_time =  "13:15:19"
 
     result =
       auth_query_gql_by(:create, user,
@@ -114,9 +124,9 @@ defmodule GlificWeb.Schema.TriggerTest do
             "days" =>  1,
             "flowId" => flow.id,
             "groupId" => 1,
-            "startDate" => "2020-12-30",
-            "startTime" => "13:15:19",
-            "endDate" => "2020-12-29T13:15:19Z",
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => "2020-12-29",
             "isActive" => false,
             "isRepeating" => false
           }
@@ -128,13 +138,24 @@ defmodule GlificWeb.Schema.TriggerTest do
     flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
     assert flow_name == flow.name
 
-    # start_at = get_in(query_data, [:data, "createTrigger", "trigger", "start_at"])
-    # assert flow_id == Integer.to_string(flow.id)
+    ## we are ignoring the enddate's time
+    assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == "2020-12-29"
+
+    ## start date should be converted into UTC
+    {:ok, start_at, _} =  get_in(query_data, [:data, "createTrigger", "trigger", "start_at"])
+                          |> DateTime.from_iso8601()
+
+    {:ok, d} =  Date.from_iso8601(start_date)
+    {:ok, t} =  Time.from_iso8601(start_time)
+    {:ok, ndt} = NaiveDateTime.new(d, t)
+    tz = Partners.organization_timezone(attrs.organization_id)
+    dt = DateTime.from_naive!(ndt, tz)
+
+    assert DateTime.shift_zone!(dt, "Etc/UTC") == start_at
 
   end
 
    test "update a trigger and test possible scenarios and errors", %{manager: user} = attrs do
-    [_flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
     trigger = Fixtures.trigger_fixture(attrs)
               |> Repo.preload(:flow)
 
@@ -142,14 +163,21 @@ defmodule GlificWeb.Schema.TriggerTest do
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => trigger.id,
-          "input" => %{"startAt" => "2020-11-30", "isActive" => true}
+          "input" => %{
+            "startDate" => "2020-12-30",
+            "startTime" =>  "13:15:19",
+            "isActive" => true,
+            "flowId" => trigger.flow_id
+          }
         }
       )
 
     assert {:ok, query_data} = result
-
     flow_name = get_in(query_data, [:data, "updateTrigger", "trigger", "flow", "name"])
+
     assert flow_name == trigger.flow.name
+
+    assert get_in(query_data, [:data, "updateTrigger", "trigger", "end_date"]) == Date.to_string(trigger.end_date)
 
   end
 

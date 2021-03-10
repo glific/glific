@@ -58,7 +58,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :start_time, :time
 
     field :start_at, :datetime
-    field :end_date, :datetime
+    field :end_date, :date
   end
 
   input_object :trigger_update_input do

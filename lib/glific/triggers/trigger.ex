@@ -100,6 +100,7 @@ defmodule Glific.Triggers.Trigger do
     DateTime.shift_zone!(dt, "Etc/UTC")
   end
 
+  ## TODO: We need to change this and convert the datetime to utc
   defp start_at(%{start_at: start_at} = _attrs),
     do: start_at
 
