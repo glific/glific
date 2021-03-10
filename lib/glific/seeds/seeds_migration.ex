@@ -1,4 +1,4 @@
-defmodule Glific.Seeds.SeedsSim do
+defmodule Glific.Seeds.SeedsMigration do
   @moduledoc """
   One shot migration of data to add simulators and saas admin.
   We use the functions in this file to add simulators for new organizations as
@@ -10,6 +10,7 @@ defmodule Glific.Seeds.SeedsSim do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Groups.Group,
     Partners,
     Partners.Organization,
     Repo,
@@ -38,6 +39,7 @@ defmodule Glific.Seeds.SeedsSim do
     case phase do
       :simulator -> add_simulators(organizations)
       :optin -> optin_data(organizations)
+      :collection -> seed_collections(organizations)
       :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
     end
   end
@@ -78,6 +80,29 @@ defmodule Glific.Seeds.SeedsSim do
       last_communication_at: time,
       optin_time: time
     }
+  end
+
+  @doc false
+  @spec seed_collections([Organization.t()]) :: [Organization.t()]
+  defp seed_collections(organizations) do
+    for org <- organizations,
+        do: create_collections(org)
+
+    organizations
+  end
+
+  defp create_collections(organization) do
+    Repo.insert!(%Group{
+      label: "Optin contacts",
+      is_restricted: false,
+      organization_id: organization.id
+    })
+
+    Repo.insert!(%Group{
+      label: "Optout contacts",
+      is_restricted: false,
+      organization_id: organization.id
+    })
   end
 
   @doc false
@@ -143,6 +168,8 @@ defmodule Glific.Seeds.SeedsSim do
     for org <- organizations do
       add_saas_user(org, language)
     end
+
+    organizations
   end
 
   @doc """

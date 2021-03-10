@@ -59,7 +59,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "label": "Another Template Label",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         },
         "messageMedia": null,
         "parent": {
@@ -80,7 +80,7 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
         "label": "Default Template Label",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         },
         "messageMedia": null,
         "parent": null,
@@ -143,7 +143,7 @@ query sessionTemplate($id: ID!) {
         "label": "Default Template Label",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         },
         "shortcode": null,
         "translations": "{\"2\":{\"number_parameters\":0,\"language_id\":2,\"body\":\"पूर्व उपस्थित नमूना\"}}",

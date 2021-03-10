@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createTrigger($input: TriggerInput!) {
+  createTrigger(input: $input) {
+    ...TriggerFields
+
+    ...ErrorFields
+  }
+}

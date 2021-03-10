@@ -17,7 +17,7 @@ defmodule Glific.Flows.ContactSettingTest do
   end
 
   test "set contact language", attrs do
-    language_label = "English (United States)"
+    language_label = "English"
 
     {:ok, language} = Repo.fetch_by(Language, %{label: language_label})
 
