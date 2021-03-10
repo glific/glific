@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   alias Glific.{
     Fixtures,
+    Repo,
     Seeds.SeedsDev,
     Triggers.Trigger
   }
@@ -89,11 +90,13 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers id returns one triggers or nil", %{staff: user} = attrs do
     trigger = Fixtures.trigger_fixture(attrs)
+              |> Repo.preload(:flow)
+
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => trigger.id})
     assert {:ok, query_data} = result
 
-    flow_id = get_in(query_data, [:data, "trigger", "trigger", "flow", "id"])
-    assert Integer.to_string(trigger.flow_id) == flow_id
+    flow_name = get_in(query_data, [:data, "trigger", "trigger", "flow", "name"])
+    assert trigger.flow.name == flow_name
 
     end_date = get_in(query_data, [:data, "trigger", "trigger", "end_date"])
     assert end_date == Date.to_string(trigger.end_date)
@@ -122,8 +125,32 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     assert {:ok, query_data} = result
 
-    flow_id = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "id"])
-    assert flow_id == Integer.to_string(flow.id)
+    flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
+    assert flow_name == flow.name
+
+    # start_at = get_in(query_data, [:data, "createTrigger", "trigger", "start_at"])
+    # assert flow_id == Integer.to_string(flow.id)
 
   end
+
+   test "update a trigger and test possible scenarios and errors", %{manager: user} = attrs do
+    [_flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    trigger = Fixtures.trigger_fixture(attrs)
+              |> Repo.preload(:flow)
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => trigger.id,
+          "input" => %{"startAt" => "2020-11-30", "isActive" => true}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    flow_name = get_in(query_data, [:data, "updateTrigger", "trigger", "flow", "name"])
+    assert flow_name == trigger.flow.name
+
+  end
+
 end
