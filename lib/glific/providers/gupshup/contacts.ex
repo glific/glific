@@ -28,10 +28,11 @@ defmodule Glific.Providers.GupshupContacts do
           name: attrs[:name],
           phone: attrs.phone,
           organization_id: organization_id,
-          optin_time: Map.get(attrs, :optin_time,  DateTime.utc_now()),
+          optin_time: Map.get(attrs, :optin_time, DateTime.utc_now()),
           optin_status: true,
           optin_method: Map.get(attrs, :method, "URL"),
-          language_id: Map.get(attrs, :language_id, Partners.organization_language_id(organization_id)),
+          language_id:
+            Map.get(attrs, :language_id, Partners.organization_language_id(organization_id)),
           bsp_status: :hsm
         }
         |> Contacts.create_or_update_contact()

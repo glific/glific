@@ -3,7 +3,7 @@ defmodule Glific.Contacts.Import do
   The Contact Importer Module
   """
 
-  alias Glific.{Contacts, Groups, Settings, Partners}
+  alias Glific.{Contacts, Contacts.Contact, Groups, Partners, Settings}
 
   @spec cleanup_contact_data(map(), non_neg_integer) :: map()
   defp cleanup_contact_data(data, organization_id) do
@@ -37,10 +37,10 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(String.t(), integer, integer) :: list()
+  @spec import_contacts(String.t(), integer, integer) :: tuple()
   def import_contacts(file_path, organization_id, group_id) do
     with %{id: organization_id} <- Partners.organization(organization_id),
-    # this will raise an exception if group_id is not present
+         # this will raise an exception if group_id is not present
          _group <- Groups.get_group!(group_id) do
       result =
         File.stream!(file_path)
