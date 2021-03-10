@@ -644,13 +644,16 @@ defmodule Glific.ContactsTest do
       assert updated_contact.bsp_status == :hsm
     end
 
-    test "is_contact_blocked?/2 will check if the contact is blocked",
+    test "is_contact_blocked?/1 will check if the contact is blocked",
          %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, %{status: :blocked})
       contact = contact_fixture(attrs)
-      assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == true
-      Contacts.update_contact(contact, %{status: :valid})
-      assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == false
+      assert Contacts.is_contact_blocked?(contact) == true
+      {:ok, contact} = Contacts.update_contact(contact, %{status: :valid})
+      # its still blocked since the phone number is "some phone" and only
+      # india and US phone are valid for glific in dev mode
+      assert Contacts.is_contact_blocked?(contact) == true
+      assert Contacts.is_contact_blocked?(Map.put(contact, :phone, "9123456")) == false
     end
 
     test "getting saas variables" do

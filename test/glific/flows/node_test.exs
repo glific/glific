@@ -101,7 +101,7 @@ defmodule Glific.Flows.NodeTest do
         %{
           "uuid" => Ecto.UUID.generate(),
           "type" => "set_contact_language",
-          "language" => "English (United States)"
+          "language" => "English"
         },
         %{
           "uuid" => Ecto.UUID.generate(),
@@ -145,7 +145,7 @@ defmodule Glific.Flows.NodeTest do
 
     assert message.body == "This is a test message"
 
-    [language | _] = Settings.list_languages(%{filter: %{label: "English (United States)"}})
+    [language | _] = Settings.list_languages(%{filter: %{label: "English"}})
     updated_contact = Contacts.get_contact!(contact.id)
 
     assert updated_contact.language_id == language.id
@@ -161,7 +161,7 @@ defmodule Glific.Flows.NodeTest do
         %{
           "uuid" => "UUID Act 1",
           "type" => "set_contact_language",
-          "language" => "English (United States)"
+          "language" => "English"
         }
       ],
       "exits" => [

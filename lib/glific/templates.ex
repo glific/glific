@@ -276,7 +276,7 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec insert_hsm(map(), Organization.t(), map()) :: {:ok}
+  @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -326,7 +326,7 @@ defmodule Glific.Templates do
       {:error, error} -> Logger.info("Error adding new Session Template: #{inspect(error)}")
     end
 
-    {:ok}
+    :ok
   end
 
   @spec update_hsm(map(), Organization.t(), map()) ::

@@ -1,0 +1,16 @@
+query triggers($filter: TriggerFilter, $opts: Opts) {
+  triggers(filter: $filter, opts: $opts) {
+    id
+    start_at
+    end_date
+    name
+    flow {
+      id
+      name
+    }
+    group {
+      id
+      label
+    }
+  }
+}

@@ -4,8 +4,6 @@ defmodule Glific.Media do
   """
   use Waffle.Definition
 
-  alias Glific.Partners
-
   # Include ecto support (requires package waffle_ecto installed):
   use Waffle.Ecto.Definition
 
@@ -15,17 +13,8 @@ defmodule Glific.Media do
   # @versions [:original, :thumb]
 
   # Override the bucket on a per definition basis:
-  def bucket({_file, org_id}) when is_binary(org_id) do
-    organization =
-      String.to_integer(org_id)
-      |> Partners.organization()
-
-    organization.services["google_cloud_storage"]
-    |> case do
-      nil -> "custom_bucket_name"
-      credentials -> credentials.secrets["bucket"]
-    end
-  end
+  @spec bucket({any(), String.t()}) :: String.t()
+  def bucket({_file, bucket}), do: bucket
 
   # Whitelist file extensions:
   def validate({file, _}) do

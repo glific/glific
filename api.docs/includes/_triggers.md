@@ -4,35 +4,20 @@
 
 ```graphql
 query triggers($filter: TriggerFilter) {
-  triggers(filter: $filter) {
+  triggers {
+    days
+    endDate
+    flow {
       id
       name
-      eventType
-      triggerAction {
-        id
-        flow {
-          id
-          name
-        }
-        group {
-          id
-          label
-        }
-      }
-      triggerCondition {
-        id
-        frequency
-        endsAt
-        startAt
-        isActive
-        isRepeating
-      }
     }
-}
-
-{
-  "filter": {
-    "name": "test trigger"
+    group {
+      id
+      label
+    }
+    isActive
+    isRepeating
+    startAt
   }
 }
 ```
@@ -44,41 +29,54 @@ query triggers($filter: TriggerFilter) {
   "data": {
     "triggers": [
       {
-        "eventType": "start_flow",
-        "id": "1",
-        "name": "test trigger",
-        "triggerAction": {
-          "flow": {
-            "id": "2",
-            "name": "Language Workflow"
-          },
-          "group": {
-            "id": "1",
-            "label": "Default Group"
-          },
-          "id": "1"
-        },
-        "triggerCondition": {
-          "endsAt": "2020-12-29T13:15:19Z",
-          "frequency": "today",
+        "__typename": "Trigger",
+        "days": [1],
+        "endDate": "2021-03-08",
+        "flow": {
+          "__typename": "Flow",
           "id": "1",
-          "isActive": true,
-          "isRepeating": false,
-          "startAt": "2020-12-29T13:15:19Z"
-        }
+          "name": "Help Workflow"
+        },
+        "group": {
+          "__typename": "Group",
+          "id": "1",
+          "label": "Optin contacts"
+        },
+        "isActive": true,
+        "isRepeating": false,
+        "startAt": "2021-03-08T08:22:51Z"
+      },
+      {
+        "__typename": "Trigger",
+        "days": [1],
+        "endDate": "2021-03-08",
+        "flow": {
+          "__typename": "Flow",
+          "id": "1",
+          "name": "Help Workflow"
+        },
+        "group": {
+          "__typename": "Group",
+          "id": "1",
+          "label": "Optin contacts"
+        },
+        "isActive": false,
+        "isRepeating": false,
+        "startAt": "2019-06-12T04:19:55Z"
       }
     ]
   }
 }
 ```
+
 This returns all the triggers for the organization filtered by the input <a href="#triggerfilter">TriggerFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#triggerfilter">TriggerFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                       | Default | Description                         |
+| --------- | ------------------------------------------ | ------- | ----------------------------------- |
+| filter    | <a href="#triggerfilter">TriggerFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                   | nil     | limit / offset / sort order options |
 
 ## Get a specific Trigger by ID
 
@@ -86,28 +84,20 @@ opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 query trigger($id: ID!) {
   trigger(id: $id) {
     trigger {
-      id
-      name
-      eventType
-      triggerAction {
+      days
+      endDate
+      flow {
+        name
         id
-        flow {
-          id
-          name
-        }
-        group {
-          id
-          label
-        }
+        keywords
       }
-      triggerCondition {
+      frequency
+      group {
         id
-        frequency
-        endsAt
-        startAt
-        isActive
-        isRepeating
+        label
       }
+      isActive
+      isRepeating
     }
     errors {
       key
@@ -129,28 +119,23 @@ query trigger($id: ID!) {
     "trigger": {
       "errors": null,
       "trigger": {
-        "eventType": "start_flow",
-        "id": "1",
-        "name": "test trigger",
-        "triggerAction": {
-          "flow": {
-            "id": "2",
-            "name": "Language Workflow"
-          },
-          "group": {
-            "id": "1",
-            "label": "Default Group"
-          },
-          "id": "1"
-        },
-        "triggerCondition": {
-          "endsAt": "2020-12-29T13:15:19Z",
-          "frequency": "today",
+        "__typename": "Trigger",
+        "days": [1, 2],
+        "endDate": "2021-03-08",
+        "flow": {
+          "__typename": "Flow",
           "id": "1",
-          "isActive": true,
-          "isRepeating": false,
-          "startAt": "2020-12-29T13:15:19Z"
-        }
+          "keywords": ["help", "मदद"],
+          "name": "Help Workflow"
+        },
+        "frequency": "",
+        "group": {
+          "__typename": "Group",
+          "id": "1",
+          "label": "Optin contacts"
+        },
+        "isActive": true,
+        "isRepeating": false
       }
     }
   }
@@ -159,9 +144,9 @@ query trigger($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-ID | <a href="#id">ID</a> | nil ||
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
 
 ## Count all Triggers
 
@@ -172,7 +157,7 @@ query countTriggers($filter: TriggerFilter) {
 
 {
   "filter": {
-    "name": test
+    "flow": "help"
   }
 }
 ```
@@ -189,38 +174,30 @@ query countTriggers($filter: TriggerFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#triggerfilter">TriggerFilter</a> | nil | filter the list
+| Parameter | Type                                       | Default | Description     |
+| --------- | ------------------------------------------ | ------- | --------------- |
+| filter    | <a href="#triggerfilter">TriggerFilter</a> | nil     | filter the list |
 
 ## Create a Trigger
 
 ```graphql
 mutation createTrigger($input: TriggerInput!) {
   createTrigger(input: $input) {
-    trigger{
-      id
-      name
-      eventType
-      triggerAction {
+    trigger {
+      days
+      endDate
+      flow {
         id
-        flow {
-          id
-          name
-        }
-        group {
-          id
-          label
-        }
+        name
       }
-      triggerCondition {
+      frequency
+      group {
         id
-        frequency
-        endsAt
-        startAt
-        isActive
-        isRepeating
+        label
       }
+      isActive
+      isRepeating
+      startAt
     }
     errors {
       key
@@ -231,12 +208,13 @@ mutation createTrigger($input: TriggerInput!) {
 
 {
   "input": {
-    "name": "test",
-    "eventType": "start_flow",
+    "days": 1,
     "flowId": 1,
     "groupId": 1,
     "startAt": "2020-12-30T13:15:19Z",
-    "endsAt": "2020-12-29T13:15:19Z"
+    "endDate": "2020-12-29T13:15:19Z",
+    "isActive": false,
+    "isRepeating": false
   }
 }
 ```
@@ -247,31 +225,69 @@ mutation createTrigger($input: TriggerInput!) {
 {
   "data": {
     "createTrigger": {
+      "__typename": "TriggerResult",
       "errors": null,
       "trigger": {
-        "eventType": "start_flow",
-        "id": "2",
-        "name": "test",
-        "triggerAction": {
-          "flow": {
-            "id": "1",
-            "name": "Help Workflow"
-          },
-          "group": {
-            "id": "1",
-            "label": "Default Group"
-          },
-          "id": "2"
+        "__typename": "Trigger",
+        "days": [1],
+        "endDate": "2021-03-08",
+        "flow": {
+          "__typename": "Flow",
+          "id": "1",
+          "name": "Help Workflow"
         },
-        "triggerCondition": {
-          "endsAt": "2020-12-30T13:15:19Z",
-          "frequency": "today",
+        "frequency": "",
+        "group": {
+          "__typename": "Group",
           "id": "2",
-          "isActive": true,
-          "isRepeating": false,
-          "startAt": "2020-12-29T13:15:19Z"
-        }
+          "label": "Optout contacts"
+        },
+        "isActive": false,
+        "isRepeating": false,
+        "startAt": "2021-03-08T08:22:51Z"
       }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#triggerinput">TriggerInput</a> | required |             |
+
+### Return Parameters
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The created trigger object |
+
+## Delete a Trigger
+
+```graphql
+mutation deleteTrigger($id: ID!)) {
+  deleteTrigger(id: $id) {
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "26"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "deleteTrigger": {
+      "errors": null,
+      "tag": null
     }
   }
 }
@@ -281,12 +297,14 @@ mutation createTrigger($input: TriggerInput!) {
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-input | <a href="#triggerinput">TriggerInput</a> | required ||
+id | <a href="#id">ID</a>! | required ||
+
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#triggerresult">TriggerResult</a> | The created trigger object
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The created trigger object |
 
 ## Update a Trigger
 
@@ -294,28 +312,20 @@ Type | Description
 mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
   updateTrigger(id: $id, input: $input) {
     trigger {
-      id
-      name
-      eventType
-      triggerAction {
+      days
+      endDate
+      flow {
         id
-        flow {
-          id
-          name
-        }
-        group {
-          id
-          label
-        }
+        name
       }
-      triggerCondition {
+      frequency
+      group {
         id
-        frequency
-        endsAt
-        startAt
-        isActive
-        isRepeating
+        label
       }
+      isRepeating
+      startAt
+      isActive
     }
     errors {
       key
@@ -339,30 +349,26 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 {
   "data": {
     "updateTrigger": {
+      "__typename": "TriggerResult",
       "errors": null,
       "trigger": {
-        "eventType": "start_flow",
-        "id": "1",
-        "name": "test trigger",
-        "triggerAction": {
-          "flow": {
-            "id": "2",
-            "name": "Language Workflow"
-          },
-          "group": {
-            "id": "1",
-            "label": "Default Group"
-          },
-          "id": "1"
-        },
-        "triggerCondition": {
-          "endsAt": "2020-12-29T13:15:19Z",
-          "frequency": "today",
+        "__typename": "Trigger",
+        "days": [1],
+        "endDate": "2021-03-08",
+        "flow": {
+          "__typename": "Flow",
           "id": "1",
-          "isActive": true,
-          "isRepeating": false,
-          "startAt": "2020-12-29T13:15:19Z"
-        }
+          "name": "Help Workflow"
+        },
+        "frequency": "",
+        "group": {
+          "__typename": "Group",
+          "id": "1",
+          "label": "Optin contacts"
+        },
+        "isActive": true,
+        "isRepeating": false,
+        "startAt": "2021-03-08T08:22:51Z"
       }
     }
   }
@@ -371,17 +377,16 @@ mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#triggerinput">TriggerInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                    | required |             |
+| input     | <a href="#triggerinput">TriggerInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#triggerresult">TriggerResult</a> | The updated trigger object
 
-
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The updated trigger object |
 
 ## Trigger Objects
 
@@ -398,99 +403,27 @@ Type | Description
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
 <td colspan="2" valign="top"><strong>id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>eventType</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td colspan="2" valign="top"><strong>startAt</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>triggerAction</strong></td>
-<td valign="top"><a href="#triggeraction">TriggerAction</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>triggerCondition</strong></td>
-<td valign="top"><a href="#triggercondition">TriggerCondition</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### TriggerAction
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>id</strong></td>
-<td valign="top"><a href="#id">ID</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>actionType</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>flow</strong></td>
-<td valign="top"><a href="#flow">Flow</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>group</strong></td>
-<td valign="top"><a href="#group">Group</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### TriggerCondition
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>id</strong></td>
-<td valign="top"><a href="#id">ID</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td colspan="2" valign="top"><strong>endDate</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
+<td valign="top"><a href="#boolean">Boolean</a></td><td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>isRepeating</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
+<td valign="top"><a href="#boolean">Boolean</a></td><td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>frequency</strong></td>
@@ -498,24 +431,24 @@ Type | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>startAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>days</strong></td>
+<td valign="top">[<a href="#integer">Integer</a>]</td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>endsAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>flowId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>fireAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>groupId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 </tbody>
 </table>
 
-### TriggerResult ###
+### TriggerResult
 
 <table>
 <thead>
@@ -540,10 +473,9 @@ Type | Description
 </tbody>
 </table>
 
-## Trigger Inputs ##
+## Trigger Inputs
 
-
-### TriggerFilter ###
+### TriggerFilter
 
 Filtering options for triggers
 
@@ -556,15 +488,21 @@ Filtering options for triggers
 </tr>
 </thead>
 <tbody>
+
 <tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
+<td colspan="2" valign="top"><strong>Flow</strong></td>
 <td valign="top"><a href="#string">String</a></td>
-<td>Match the name</td>
+<td>
+
+Match the flow name
+
+</td>
 </tr>
+
 </tbody>
 </table>
 
-### TriggerInput ###
+### TriggerInput
 
 <table>
 <thead>
@@ -575,12 +513,6 @@ Filtering options for triggers
 </tr>
 </thead>
 <tbody>
-
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
 
 <tr>
 <td colspan="2" valign="top"><strong>eventType</strong></td>
@@ -627,7 +559,7 @@ Filtering options for triggers
 </tbody>
 </table>
 
-### TriggerUpdateInput ###
+### TriggerUpdateInput
 
 <table>
 <thead>

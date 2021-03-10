@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateTrigger($id: ID!, $input: TriggerUpdateInput!) {
+  updateTrigger(id: $id, input: $input) {
+    ...TriggerFields
+    
+    ...ErrorFields
+  }
+}
