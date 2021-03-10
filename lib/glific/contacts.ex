@@ -303,7 +303,8 @@ defmodule Glific.Contacts do
   This function is called by the messaging framework for all incoming messages, hence
   might be a good candidate to maintain a contact level cache at some point
 
-  We use a fetch followed by create, to avoid the explosion in the id namespace
+  We use a fetch followed by create, to avoid the explosion in the id namespace. We also
+  avoid updating the contact to skip the DB call, and only do so if the name has changed
   """
   @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_contact(sender) do
