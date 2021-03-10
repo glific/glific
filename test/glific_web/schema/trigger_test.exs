@@ -115,6 +115,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "create a trigger and test possible scenarios and errors", %{manager: user} = attrs do
     [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
     start_date = "2020-12-30"
     start_time = "13:15:19"
@@ -125,7 +126,7 @@ defmodule GlificWeb.Schema.TriggerTest do
           "input" => %{
             "days" => 1,
             "flowId" => flow.id,
-            "groupId" => 1,
+            "groupId" => group.id,
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => "2020-12-29",
@@ -183,4 +184,21 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert get_in(query_data, [:data, "updateTrigger", "trigger", "end_date"]) ==
              Date.to_string(trigger.end_date)
   end
+
+  test "delete a trigger", %{manager: user} = attrs do
+     trigger =
+      Fixtures.trigger_fixture(attrs)
+      |> Repo.preload(:flow)
+
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => trigger.id})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "deleteTrigger", "errors"]) == nil
+
+    result = auth_query_gql_by(:delete, user, variables: %{"id" => trigger.id})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "deleteTrigger", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
+
 end
