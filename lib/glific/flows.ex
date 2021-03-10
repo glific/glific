@@ -8,7 +8,6 @@ defmodule Glific.Flows do
 
   alias Glific.{
     Caches,
-    Contacts,
     Contacts.Contact,
     Groups.Group,
     Partners,
@@ -474,12 +473,7 @@ defmodule Glific.Flows do
   @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
     {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, @status})
-
-    # Why are we doing this test? We can potentially have flows that
-    # do not send a message
-    if Contacts.can_send_message_to?(contact),
-      do: process_contact_flow([contact], flow, @status),
-      else: {:error, ["contact", "Cannot send the message to the contact."]}
+    process_contact_flow([contact], flow, @status)
   end
 
   @doc """
