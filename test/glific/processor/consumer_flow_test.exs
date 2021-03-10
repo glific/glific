@@ -126,8 +126,9 @@ defmodule Glific.Processor.ConsumerFlowTest do
     # We should add check that there is a set of optin and optout message here
     new_message_count = Repo.aggregate(Message, :count)
     assert new_message_count > message_count
+    IO.inspect(Repo.query("select * from messages"))
 
-    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"})
+    sender = Repo.get_by(Contact, %{name: "Chrissy Cron"}) |> IO.inspect
     assert sender.optin_status == false
     assert !is_nil(sender.optout_time)
   end

@@ -396,18 +396,18 @@ defmodule GlificWeb.Schema.ContactTest do
     contact = get_in(query_data, [:data, "optinContact", "contact"])
     assert contact["bspStatus"] == "HSM"
     assert contact["name"] == "contact name"
+    contact_id = contact["id"]
 
-    # trying to optin already existing phone gives error
+    # trying to optin already existing phone should update the existing contact
     result =
       auth_query_gql_by(:optin_contact, manager,
-        variables: %{"name" => "contact name", "phone" => "test phone"}
+        variables: %{"name" => "contact name", "phone" => "test phone 2"}
       )
 
     assert {:ok, query_data} = result
 
-    error_message = get_in(query_data, [:data, "optinContact", "errors", Access.at(0), "message"])
-
-    assert error_message == "has already been taken"
+    contact = get_in(query_data, [:data, "optinContact", "contact"])
+    assert contact_id == contact["id"]
   end
 
   test "optin contact responds with error in case of gupshup api fails", %{manager: manager} do
