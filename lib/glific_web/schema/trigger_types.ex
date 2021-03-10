@@ -38,11 +38,14 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
   @desc "Filtering options for triggers"
   input_object :trigger_filter do
-    @desc "Match the flow_id"
+    @desc "Match the flow"
     field :flow, :string
 
     @desc "Match the name"
     field :name, :string
+
+    @desc "Match the group"
+    field :group, :string
   end
 
   input_object :trigger_input do

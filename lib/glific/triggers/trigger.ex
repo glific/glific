@@ -159,6 +159,11 @@ defmodule Glific.Triggers.Trigger do
           join: c in assoc(q, :flow),
           where: ilike(c.name, ^"%#{flow}%")
 
+      {:group, group}, query ->
+        from q in query,
+          join: g in assoc(q, :group),
+          where: ilike(g.label, ^"%#{group}%")
+
       _, query ->
         query
     end)

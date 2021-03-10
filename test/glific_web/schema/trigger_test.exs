@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   test "trigger field returns list of triggers in various filters", %{staff: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
-      |> Repo.preload(:flow)
+      |> Repo.preload([:flow, :group])
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => trigger.name}})
     assert {:ok, query_data} = result
@@ -53,6 +53,15 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     triggers = get_in(query_data, [:data, "triggers"])
     assert length(triggers) > 0
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"group" => trigger.group.label}})
+
+    assert {:ok, query_data} = result
+
+    triggers = get_in(query_data, [:data, "triggers"])
+    assert length(triggers) > 0
+
   end
 
   test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
