@@ -43,7 +43,6 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     @desc "Match the name"
     field :name, :string
-
   end
 
   input_object :trigger_input do

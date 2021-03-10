@@ -36,8 +36,9 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "trigger field returns list of triggers in various filters", %{staff: user} = attrs do
-    trigger = Fixtures.trigger_fixture(attrs)
-              |> Repo.preload(:flow)
+    trigger =
+      Fixtures.trigger_fixture(attrs)
+      |> Repo.preload(:flow)
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => trigger.name}})
     assert {:ok, query_data} = result
@@ -45,12 +46,13 @@ defmodule GlificWeb.Schema.TriggerTest do
     triggers = get_in(query_data, [:data, "triggers"])
     assert length(triggers) > 0
 
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"flow" => trigger.flow.name}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"flow" => trigger.flow.name}})
+
     assert {:ok, query_data} = result
 
     triggers = get_in(query_data, [:data, "triggers"])
     assert length(triggers) > 0
-
   end
 
   test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
@@ -204,7 +206,7 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "delete a trigger", %{manager: user} = attrs do
-     trigger =
+    trigger =
       Fixtures.trigger_fixture(attrs)
       |> Repo.preload(:flow)
 
@@ -218,5 +220,4 @@ defmodule GlificWeb.Schema.TriggerTest do
     message = get_in(query_data, [:data, "deleteTrigger", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
-
 end
