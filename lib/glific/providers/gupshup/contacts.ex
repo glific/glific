@@ -8,7 +8,8 @@ defmodule Glific.Providers.GupshupContacts do
     Contacts.Contact,
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient
+    Providers.Gupshup.ApiClient,
+    Repo
   }
 
   @behaviour Glific.Providers.ContactBehaviour
@@ -30,17 +31,38 @@ defmodule Glific.Providers.GupshupContacts do
           organization_id: organization_id,
           optin_time: Map.get(attrs, :optin_time, DateTime.utc_now()),
           optin_status: true,
-          optin_method: Map.get(attrs, :method, "URL"),
+          optin_method: Map.get(attrs, :method, "BSP"),
           language_id:
             Map.get(attrs, :language_id, Partners.organization_language_id(organization_id)),
           bsp_status: :hsm
         }
-        |> Contacts.create_or_update_contact()
+        |> create_or_update_contact()
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
     end
   end
+
+  # This method creates a contact if it does not exist. Otherwise, updates it.
+  @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp create_or_update_contact(contact_data) do
+    case Repo.get_by(Contact, %{phone: contact_data.phone}) do
+      nil ->
+        Contacts.create_contact(contact_data)
+
+      contact ->
+        # in the case of update we need to ensure that we preserve bsp_status
+        # and optin_time, method if it already exists
+        contact_data =
+          contact_data
+          |> Map.put(:bsp_status, contact.bsp_status || contact_data.bsp_status)
+          |> Map.put(:optin_method, contact.optin_method || contact_data.optin_method)
+          |> Map.put(:optin_time, contact.optin_time || contact_data.optin_time)
+
+        Contacts.update_contact(contact, contact_data)
+    end
+  end
+
 
   @doc """
   Fetch opted in contacts data from providers server

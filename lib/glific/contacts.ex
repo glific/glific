@@ -329,20 +329,6 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  This method creates a contact if it does not exist. Otherwise, updates it.
-  """
-  @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_or_update_contact(contact_data) do
-    case Repo.get_by(Contact, %{phone: contact_data.phone}) do
-      nil ->
-        create_contact(contact_data)
-
-      contact ->
-        update_contact(contact, contact_data)
-    end
-  end
-
-  @doc """
   Check if this contact id is a new contact.
   In general, we should always retrive as little as possible from the DB
   """
