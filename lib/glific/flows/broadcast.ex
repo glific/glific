@@ -7,7 +7,6 @@ defmodule Glific.Flows.Broadcast do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts,
     Contacts.Contact,
     Flows,
     Flows.Flow,
@@ -119,9 +118,7 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-
-          if Contacts.can_send_message_to?(contact),
-            do: FlowContext.init_context(flow, contact, @status, opts)
+          FlowContext.init_context(flow, contact, @status, opts)
         end,
         ordered: false,
         timeout: 1_000,

@@ -193,8 +193,9 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "startContactFlow", "errors", Access.at(0), "message"]) ==
-             "Cannot send the message to the contact."
+    # flows dont care about the contact state, we allow each flow node to check
+    # and figure out if the operation is permitted
+    assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
 
     # will add test for success with integration tests
   end
