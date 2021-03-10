@@ -35,6 +35,44 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert String.to_integer(trigger["flow"]["id"]) == tr.flow_id
   end
 
+  test "trigger field returns list of triggers in various filters", %{staff: user} do
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => "Messages"}})
+    assert {:ok, query_data} = result
+
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    [tag | _] = tags
+    assert get_in(tag, ["label"]) == "Messages"
+
+    # get language_id for next test
+    parent_id = String.to_integer(get_in(tag, ["id"]))
+    language_id = String.to_integer(get_in(tag, ["language", "id"]))
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"parent" => "messages"}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"parentId" => parent_id}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"languageId" => language_id}})
+
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"language" => "Hindi"}})
+    assert {:ok, query_data} = result
+    tags = get_in(query_data, [:data, "tags"])
+    assert length(tags) > 0
+  end
+
   test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
     valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
