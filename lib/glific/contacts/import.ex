@@ -43,7 +43,9 @@ defmodule Glific.Contacts.Import do
          # this will raise an exception if group_id is not present
          _group <- Groups.get_group!(group_id) do
       result =
-        File.stream!(file_path)
+        file_path
+        |> Path.expand()
+        |> File.stream!()
         |> CSV.decode(headers: true, strip_fields: true)
         |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id) end)
         |> Enum.map(fn contact -> insert_or_update_contact_data(contact, group_id) end)
