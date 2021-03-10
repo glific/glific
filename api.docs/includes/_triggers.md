@@ -263,6 +263,49 @@ mutation createTrigger($input: TriggerInput!) {
 | ------------------------------------------ | -------------------------- |
 | <a href="#triggerresult">TriggerResult</a> | The created trigger object |
 
+## Delete a Trigger
+
+```graphql
+mutation deleteTrigger($id: ID!)) {
+  deleteTrigger(id: $id) {
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "id": "26"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "deleteTrigger": {
+      "errors": null,
+      "tag": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a>! | required ||
+
+
+### Return Parameters
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#triggerresult">TriggerResult</a> | The created trigger object |
+
 ## Update a Trigger
 
 ```graphql

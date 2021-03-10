@@ -40,11 +40,12 @@ defmodule GlificWeb.Schema.TriggerTypes do
   input_object :trigger_filter do
     @desc "Match the flow_id"
     field :flow, :string
+
+    @desc "Match the name"
+    field :name, :string
   end
 
   input_object :trigger_input do
-    field :trigger_type, :string
-
     field :flow_id, :id
     field :group_id, :id
 
@@ -58,24 +59,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :start_time, :time
 
     field :start_at, :datetime
-    field :end_date, :datetime
-  end
-
-  input_object :trigger_update_input do
-    field :flow_id, :id
-    field :group_id, :id
-
-    field :is_active, :boolean
-    field :is_repeating, :boolean
-    field :frequency, list_of(:string)
-    field :days, list_of(:integer)
-
-    # the input widgets in the front end collect this seperately
-    field :start_date, :date
-    field :start_time, :time
-
-    field :start_at, :datetime
-    field :end_date, :datetime
+    field :end_date, :date
   end
 
   object :trigger_queries do
@@ -108,9 +92,15 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     field :update_trigger, :trigger_result do
       arg(:id, non_null(:id))
-      arg(:input, non_null(:trigger_update_input))
+      arg(:input, non_null(:trigger_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.update_trigger/3)
+    end
+
+    field :delete_trigger, :trigger_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Triggers.delete_trigger/3)
     end
   end
 end

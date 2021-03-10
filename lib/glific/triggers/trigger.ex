@@ -100,14 +100,15 @@ defmodule Glific.Triggers.Trigger do
     DateTime.shift_zone!(dt, "Etc/UTC")
   end
 
-  defp start_at(%{start_at: start_at} = _attrs) do
-    start_at
-  end
+  ## We might need to change this and convert the datetime to utc
+  defp start_at(%{start_at: start_at} = _attrs),
+    do: start_at
 
   @spec get_name(map(), DateTime.t()) :: String.t()
   defp get_name(attrs, start_at) do
     flow = Repo.get_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id})
-    "#{flow.name} #{DateTime.to_string(start_at)}"
+    {:ok, date} = Timex.format(start_at, "%Y/%m/%d %H:%m%p", :strftime)
+    "#{flow.name} #{date}"
   end
 
   @spec fix_attrs(map()) :: map()
@@ -136,7 +137,7 @@ defmodule Glific.Triggers.Trigger do
   @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def update_trigger(%Trigger{} = trigger, attrs) do
     trigger
-    |> Trigger.changeset(attrs)
+    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
     |> Repo.update()
   end
 
@@ -145,7 +146,7 @@ defmodule Glific.Triggers.Trigger do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter(args, Trigger, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -161,6 +162,14 @@ defmodule Glific.Triggers.Trigger do
       _, query ->
         query
     end)
+  end
+
+  @doc false
+  @spec delete_trigger(Trigger.t()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def delete_trigger(%Trigger{} = trigger) do
+    trigger
+    |> Trigger.changeset(%{})
+    |> Repo.delete()
   end
 
   @doc """
