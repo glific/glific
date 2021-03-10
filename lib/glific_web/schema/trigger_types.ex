@@ -40,6 +40,10 @@ defmodule GlificWeb.Schema.TriggerTypes do
   input_object :trigger_filter do
     @desc "Match the flow_id"
     field :flow, :string
+
+    @desc "Match the name"
+    field :name, :string
+
   end
 
   input_object :trigger_input do
@@ -118,6 +122,5 @@ defmodule GlificWeb.Schema.TriggerTypes do
       middleware(Authorize, :manager)
       resolve(&Resolvers.Triggers.delete_trigger/3)
     end
-
   end
 end
