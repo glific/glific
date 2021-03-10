@@ -437,7 +437,7 @@ defmodule Glific.Flows.ActionTest do
     message_stream = []
 
     result = Action.execute(action, context, message_stream)
-    assert {:ok, updated_context, _updated_message_stream} = result
+    assert {:ok, updated_context, __updated_message_stream} = result
     assert updated_context == context
   end
 
