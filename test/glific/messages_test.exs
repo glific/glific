@@ -14,7 +14,8 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users
   }
 
   setup do
@@ -501,6 +502,26 @@ defmodule Glific.MessagesTest do
         Map.merge(valid_attrs, %{
           sender_id: org_contact.id,
           receiver_id: org_contact.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
+    test "create_group_message/1 should create group message when send by staff member",
+         %{organization_id: organization_id = _attrs} do
+      [u1 | _] = Users.list_users(%{organization_id: organization_id})
+
+      valid_attrs = %{
+        body: "group message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs =
+        Map.merge(valid_attrs, %{
+          sender_id: u1.contact_id,
+          receiver_id: u1.contact_id,
           organization_id: organization_id
         })
 
