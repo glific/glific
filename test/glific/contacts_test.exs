@@ -210,7 +210,7 @@ defmodule Glific.ContactsTest do
 
       file = File.open!("./test/support/fixture.csv", [:write, :utf8])
 
-      [~w(name phone Language opt_in), ~w(test 14156139297 english 2021-03-09)]
+      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -233,13 +233,29 @@ defmodule Glific.ContactsTest do
 
       file = File.open!("./test/support/fixture.csv", [:write, :utf8])
 
-      [~w(name phone Language opt_in), ~w(test 14156139297 english 2021-03-09)]
+      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      assert {:error, _} = Import.import_contacts("file_path", 999, group.id)
+      assert {:error, _} = Import.import_contacts("./test/support/fixture.csv", 999, group.id)
+    end
+
+    test "insert_or_update_contact_data/3 returns an error" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 404
+          }
+      end)
+
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      {:error, message, _error} =
+        Import.import_contacts("./test/support/fixture.csv", 1, group.id)
+
+      assert "All contacts could not be added" == message
     end
 
     test "create_or_update_contact/1 with valid data updates a contact when contact exists in the database",
