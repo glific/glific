@@ -63,7 +63,6 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :end_date, :date
   end
 
-
   object :trigger_queries do
     field :trigger, :trigger_result do
       arg(:id, non_null(:id))
