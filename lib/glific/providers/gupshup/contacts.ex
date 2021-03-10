@@ -3,6 +3,8 @@ defmodule Glific.Providers.GupshupContacts do
   Contacts API layer between application and Gupshup
   """
 
+  use Publicist
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -52,17 +54,19 @@ defmodule Glific.Providers.GupshupContacts do
 
       contact ->
         # in the case of update we need to ensure that we preserve bsp_status
-        # and optin_time, method if it already exists
+        # and optin_time, method if the contact is already opted in
         contact_data =
-          contact_data
-          |> Map.put(:bsp_status, contact.bsp_status || contact_data.bsp_status)
-          |> Map.put(:optin_method, contact.optin_method || contact_data.optin_method)
-          |> Map.put(:optin_time, contact.optin_time || contact_data.optin_time)
+          if contact.optin_status,
+            do:
+              contact_data
+              |> Map.put(:bsp_status, contact.bsp_status || contact_data.bsp_status)
+              |> Map.put(:optin_method, contact.optin_method || contact_data.optin_method)
+              |> Map.put(:optin_time, contact.optin_time || contact_data.optin_time),
+            else: contact_data
 
         Contacts.update_contact(contact, contact_data)
     end
   end
-
 
   @doc """
   Fetch opted in contacts data from providers server

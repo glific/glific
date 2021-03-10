@@ -184,13 +184,14 @@ defmodule Glific.ContactsTest do
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
     end
 
+    # this is actually in the gupshup provider contact
     test "create_or_update_contact/1 with valid data creates a new contact when contact does not exist",
          attrs do
       attrs = Map.merge(attrs, @valid_attrs)
       contacts_count = Contacts.count_contacts(%{filter: attrs})
 
       assert contacts_count == 0
-      assert {:ok, %Contact{} = contact} = Contacts.create_or_update_contact(attrs)
+      assert {:ok, %Contact{} = contact} = Glific.Providers.GupshupContacts.create_or_update_contact(attrs)
     end
 
     test "create_or_update_contact/1 with valid data updates a contact when contact exists in the database",
@@ -198,9 +199,9 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(attrs)
 
       assert {:ok, %Contact{} = contact} =
-               Contacts.create_or_update_contact(
-                 Map.merge(@update_attrs, %{phone: contact.phone})
-               )
+        Glific.Providers.GupshupContacts.create_or_update_contact(
+          Map.merge(@update_attrs, %{phone: contact.phone})
+        )
 
       assert contact.name == "some updated name"
       assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
