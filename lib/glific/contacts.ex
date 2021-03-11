@@ -27,6 +27,8 @@ defmodule Glific.Contacts do
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
+    organization_contact_id = Partners.organization_contact_id(user.organization_id)
+
     sub_query =
       ContactGroup
       |> select([cg], cg.contact_id)
@@ -34,7 +36,7 @@ defmodule Glific.Contacts do
       |> where([cg, ug: ug], ug.user_id == ^user.id)
 
     query
-    |> where([c], c.id == ^user.contact_id or c.id in subquery(sub_query))
+    |> where([c], c.id in [^user.contact_id, ^organization_contact_id] or c.id in subquery(sub_query))
   end
 
   @doc """
