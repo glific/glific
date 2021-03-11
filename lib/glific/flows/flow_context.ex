@@ -327,7 +327,7 @@ defmodule Glific.Flows.FlowContext do
   # this marks complete all the context which are newer than date
   # this is used when a wait_for_time context wakes up, and it has no
   # idea what happened it was sleeping
-  @spec add_date_clause(Ecto.Query.t(), DateTime.t()) :: Ecto.Query.t()
+  @spec add_date_clause(Ecto.Query.t(), DateTime.t() | nil) :: Ecto.Query.t()
   defp add_date_clause(query, nil), do: query
 
   defp add_date_clause(query, after_insert),
