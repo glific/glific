@@ -7,6 +7,7 @@ defmodule Glific.MessagesTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Groups,
     Groups.Group,
     Messages,
     Messages.Message,
@@ -513,17 +514,32 @@ defmodule Glific.MessagesTest do
          %{organization_id: organization_id = _attrs} do
       [_u1, _u2, _u3, u4 | _] = Users.list_users(%{organization_id: organization_id})
 
+      group_1 = Fixtures.group_fixture(%{label: "new group"})
+      group_2 = Fixtures.group_fixture(%{label: "another group"})
+
+      # add user groups
+      :ok =
+        Groups.update_user_groups(%{
+          user_id: u4.id,
+          group_ids: ["#{group_1.id}", "#{group_2.id}"],
+          organization_id: u4.organization_id
+        })
+
+      {:ok, restricted_user} = Users.update_user(u4, %{is_restricted: true})
+      Repo.put_current_user(restricted_user)
+
       valid_attrs = %{
         body: "group message",
         flow: :outbound,
-        type: :text
+        type: :text,
+        group_id: group_1.id
       }
 
       message_attrs =
         Map.merge(valid_attrs, %{
-          sender_id: u4.contact_id,
+          sender_id: restricted_user.contact_id,
           organization_id: organization_id,
-          user_id: u4.id
+          user_id: restricted_user.id
         })
 
       assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
