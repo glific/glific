@@ -515,13 +515,12 @@ defmodule Glific.MessagesTest do
       [_u1, _u2, _u3, u4 | _] = Users.list_users(%{organization_id: organization_id})
 
       group_1 = Fixtures.group_fixture(%{label: "new group"})
-      group_2 = Fixtures.group_fixture(%{label: "another group"})
 
       # add user groups
       :ok =
         Groups.update_user_groups(%{
           user_id: u4.id,
-          group_ids: ["#{group_1.id}", "#{group_2.id}"],
+          group_ids: ["#{group_1.id}"],
           organization_id: u4.organization_id
         })
 
