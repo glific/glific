@@ -61,7 +61,6 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     triggers = get_in(query_data, [:data, "triggers"])
     assert length(triggers) > 0
-
   end
 
   test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
