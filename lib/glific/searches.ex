@@ -317,8 +317,8 @@ defmodule Glific.Searches do
 
     is_status? =
       is_nil(args.filter[:id]) &&
-      is_nil(args.filter[:ids]) &&
-      !is_nil(args.filter[:status])
+        is_nil(args.filter[:ids]) &&
+        !is_nil(args.filter[:status])
 
     contact_ids =
       cond do

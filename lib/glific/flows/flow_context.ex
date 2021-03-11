@@ -324,16 +324,26 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  # this marks complete all the context which are newer than date
+  # this is used when a wait_for_time context wakes up, and it has no
+  # idea what happened it was sleeping
+  @spec add_date_clause(Ecto.Query.t(), DateTime.t()) :: Ecto.Query.t()
+  defp add_date_clause(query, nil), do: query
+
+  defp add_date_clause(query, after_insert),
+    do: query |> where([fc], fc.inserted_at > ^after_insert)
+
   @doc """
   Set all the flows for a specific context to be completed
   """
-  @spec mark_flows_complete(non_neg_integer) :: nil
-  def mark_flows_complete(contact_id) do
+  @spec mark_flows_complete(non_neg_integer, DateTime.t() | nil) :: nil
+  def mark_flows_complete(contact_id, after_insert_date \\ nil) do
     now = DateTime.utc_now()
 
     FlowContext
     |> where([fc], fc.contact_id == ^contact_id)
     |> where([fc], is_nil(fc.completed_at))
+    |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.wait_for_time == false)
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
@@ -406,8 +416,7 @@ defmodule Glific.Flows.FlowContext do
         where:
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
-            is_nil(fc.completed_at) and
-            fc.wait_for_time == false,
+            is_nil(fc.completed_at),
         order_by: [desc: fc.id],
         limit: 1
 
@@ -417,9 +426,15 @@ defmodule Glific.Flows.FlowContext do
         else: query
 
     # There are lot of test cases failing becuase of this change. Will come back to it end of this PR.
-    query
-    |> Repo.one()
-    |> Repo.preload([:contact, :flow])
+    fc =
+      query
+      |> Repo.one()
+      |> Repo.preload([:contact, :flow])
+
+    # if this context is waiting on time, we skip it
+    if fc && fc.wait_for_time,
+      do: nil,
+      else: fc
   end
 
   @doc """
@@ -514,6 +529,9 @@ defmodule Glific.Flows.FlowContext do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
     {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
+
+    # also mark all newer contexts as completed
+    mark_flows_complete(context.contact_id, context.inserted_at)
 
     {:ok, flow} =
       Flows.get_cached_flow(
