@@ -22,6 +22,7 @@ defmodule Glific.MessagesTest do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
     SeedsDev.hsm_templates(organization)
+    SeedsDev.seed_users(organization)
     :ok
   end
 
@@ -510,7 +511,7 @@ defmodule Glific.MessagesTest do
 
     test "create_group_message/1 should create group message when send by staff member",
          %{organization_id: organization_id = _attrs} do
-      [u1 | _] = Users.list_users(%{organization_id: organization_id})
+      [_u1, _u2, _u3, u4 | _] = Users.list_users(%{organization_id: organization_id})
 
       valid_attrs = %{
         body: "group message",
@@ -520,9 +521,9 @@ defmodule Glific.MessagesTest do
 
       message_attrs =
         Map.merge(valid_attrs, %{
-          sender_id: u1.contact_id,
-          receiver_id: u1.contact_id,
-          organization_id: organization_id
+          sender_id: u4.contact_id,
+          organization_id: organization_id,
+          user_id: u4.id
         })
 
       assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
