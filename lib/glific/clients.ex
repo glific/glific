@@ -31,13 +31,6 @@ defmodule Glific.Clients do
     id: 1,
     name: "Glific",
     gcs_bucket: Glific.Clients.Tap,
-    broadcast: Glific.Clients.Weunlearn
-  }
-
-  @test %{
-    id: 1,
-    name: "Glific",
-    gcs_bucket: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn
   }
@@ -55,13 +48,10 @@ defmodule Glific.Clients do
   @doc false
   @spec plugins(atom() | nil) :: map()
   def plugins(e \\ nil) do
-    env(e)
-    |> case do
-      :prod -> @plugins
+    if env(e) == :prod,
+      do: @plugins,
       # for testing and development we'll use org id 1
-      :test -> @test
-      _ -> @dev
-    end
+      else: %{@dev[:id] => @dev}
   end
 
   @doc """
