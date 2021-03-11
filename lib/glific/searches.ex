@@ -316,7 +316,8 @@ defmodule Glific.Searches do
       |> update_args_for_count(count)
 
     is_status? =
-      is_nil(args.filter[:id]) && is_nil(args.filter[:ids]) &&
+      is_nil(args.filter[:id]) &&
+        is_nil(args.filter[:ids]) &&
         !is_nil(args.filter[:status])
 
     contact_ids =
@@ -336,8 +337,14 @@ defmodule Glific.Searches do
       |> Repo.all()
       |> get_contact_ids(is_status?)
 
-    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    |> Conversations.list_conversations(count)
+    # if we dont have any contact ids at this stage
+    # it means that the user did not have permission
+    if contact_ids == [] do
+      if count, do: 0, else: []
+    else
+      put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+      |> Conversations.list_conversations(count)
+    end
   end
 
   # codebeat:enable[ABC]
