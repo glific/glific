@@ -584,6 +584,7 @@ defmodule Glific.Contacts do
   def is_contact_blocked?(contact) do
     cond do
       contact.status == :blocked -> true
+      is_simulator_contact?(contact.phone) -> false
       Clients.blocked?(contact.phone, contact.organization_id) -> true
       true -> false
     end
