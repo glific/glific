@@ -7,6 +7,7 @@ defmodule Glific.MessagesTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Groups,
     Groups.Group,
     Messages,
     Messages.Message,
@@ -14,13 +15,15 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
     SeedsDev.hsm_templates(organization)
+    SeedsDev.seed_users(organization)
     :ok
   end
 
@@ -502,6 +505,40 @@ defmodule Glific.MessagesTest do
           sender_id: org_contact.id,
           receiver_id: org_contact.id,
           organization_id: organization_id
+        })
+
+      assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
+    test "create_group_message/1 should create group message when send by staff member",
+         %{organization_id: organization_id = _attrs} do
+      [_u1, _u2, _u3, u4 | _] = Users.list_users(%{organization_id: organization_id})
+
+      group_1 = Fixtures.group_fixture(%{label: "new group"})
+
+      # add user groups
+      :ok =
+        Groups.update_user_groups(%{
+          user_id: u4.id,
+          group_ids: ["#{group_1.id}"],
+          organization_id: u4.organization_id
+        })
+
+      {:ok, restricted_user} = Users.update_user(u4, %{is_restricted: true})
+      Repo.put_current_user(restricted_user)
+
+      valid_attrs = %{
+        body: "group message",
+        flow: :outbound,
+        type: :text,
+        group_id: group_1.id
+      }
+
+      message_attrs =
+        Map.merge(valid_attrs, %{
+          sender_id: restricted_user.contact_id,
+          organization_id: organization_id,
+          user_id: restricted_user.id
         })
 
       assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
