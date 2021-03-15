@@ -29,6 +29,7 @@ defmodule Glific.Contacts do
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
     organization_contact_id = Partners.organization_contact_id(user.organization_id)
+
     sub_query =
       ContactGroup
       |> select([cg], cg.contact_id)
@@ -36,7 +37,10 @@ defmodule Glific.Contacts do
       |> where([cg, ug: ug], ug.user_id == ^user.id)
 
     query
-    |> where([c], c.id in [^user.contact_id, ^organization_contact_id] or c.id in subquery(sub_query))
+    |> where(
+      [c],
+      c.id in [^user.contact_id, ^organization_contact_id] or c.id in subquery(sub_query)
+    )
   end
 
   @doc """
@@ -56,6 +60,20 @@ defmodule Glific.Contacts do
     args
     |> Repo.list_filter_query(Contact, &Repo.opts_with_name/2, &filter_with/2)
     |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns a list of contacts.
+
+      iex> fetch_contacts_in_phone_list([9999999999, 1111111111])
+
+  Gets the list of contacts filtered by the list of provided phone numbers.
+  """
+  @spec fetch_contacts_in_phone_list(list) :: [Contact.t()]
+  def fetch_contacts_in_phone_list(phone_list) do
+    Contact
+    |> where([c], c.phone in ^phone_list)
     |> Repo.all()
   end
 
