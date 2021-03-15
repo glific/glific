@@ -138,17 +138,17 @@ defmodule Glific.Jobs.GcsWorker do
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
 
-    file_name =
+    remote_name =
       "#{timestamp()}_C#{media["contact_id"]}_F#{media["flow_id"]}_M#{media["id"]}.#{extension}"
 
-    path = "#{System.tmp_dir!()}/#{file_name}"
+    local_name = "#{System.tmp_dir!()}/#{remote_name}"
 
     media =
       media
-      |> Map.put(:file_name, file_name)
-      |> Map.put(:path, path)
+      |> Map.put(:remote_name, remote_name)
+      |> Map.put(:local_name, local_name)
 
-    download_file_to_temp(media["url"], path, media["organization_id"])
+    download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(media)
@@ -156,7 +156,7 @@ defmodule Glific.Jobs.GcsWorker do
         get_public_link(response)
         |> update_gcs_url(media["id"])
 
-        File.rm(path)
+        File.rm(local_name)
         :ok
 
       {:error, :timeout} ->
@@ -183,23 +183,25 @@ defmodule Glific.Jobs.GcsWorker do
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
   defp upload_file_on_gcs(
          %{
-           path: path,
-           file_name: file_name
+           local_name: local_name,
+           remote_name: remote_name
          } = media
        ) do
-    Logger.info("Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{file_name}")
+    Logger.info("Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}")
+
+    {remote_name, bucket} = gcs_params(media)
 
     CloudStorage.put(
       Glific.Media,
       :original,
-      {%Waffle.File{path: path, file_name: file_name}, bucket(media)}
+      {%Waffle.File{path: local_name, file_name: remote_name}, bucket}
     )
   end
 
   # get the bucket name, we call our pseudo-plugin architecture
   # to allow NGOs to overwrite bucket names
-  @spec bucket(map()) :: String.t()
-  defp bucket(media) do
+  @spec gcs_params(map()) :: {String.t(), String.t()}
+  defp gcs_params(media) do
     organization = Partners.organization(media["organization_id"])
 
     bucket_name =
@@ -210,7 +212,7 @@ defmodule Glific.Jobs.GcsWorker do
       end
 
     # allow end users to override bucket_name
-    Glific.Clients.gcs_bucket(media, bucket_name)
+    Glific.Clients.gcs_params(media, bucket_name)
   end
 
   @spec update_gcs_url(String.t(), integer()) ::
