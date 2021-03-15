@@ -254,7 +254,9 @@ defmodule Glific.Messages do
         flow: :outbound
       })
       |> update_message_attrs()
+      |> IO.inspect(label: "New Attrs")
       |> create_message()
+      |> IO.inspect(label: "New message")
 
     Communications.Message.send_message(message, attrs)
   end
