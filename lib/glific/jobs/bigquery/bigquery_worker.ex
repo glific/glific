@@ -300,7 +300,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
             flow_label: row.flow_label,
             flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name)
+            flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
+            updated_at: Bigquery.format_date(row.updated_at, organization_id)
           }
           |> Bigquery.format_data_for_bigquery("messages_delta")
           | acc
@@ -392,7 +393,8 @@ defmodule Glific.Jobs.BigQueryWorker do
               uuid: row.flow.uuid,
               results: Bigquery.format_json(row.results),
               contact_phone: row.contact.phone,
-              flow_context_id: row.flow_context_id
+              flow_context_id: row.flow_context_id,
+              updated_at: Bigquery.format_date(row.updated_at, organization_id)
             }
             |> Bigquery.format_data_for_bigquery("flow_results_delta")
             | acc
