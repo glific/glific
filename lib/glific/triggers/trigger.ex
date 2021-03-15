@@ -107,7 +107,8 @@ defmodule Glific.Triggers.Trigger do
   @spec get_name(map(), DateTime.t()) :: String.t()
   defp get_name(attrs, start_at) do
     flow = Repo.get_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id})
-    {:ok, date} = Timex.format(start_at, "%Y/%m/%d %H:%m%p", :strftime)
+    {:ok, ndt} = NaiveDateTime.new(attrs.start_date, attrs.start_time)
+    {:ok, date} = Timex.format(ndt, "%Y/%m/%d %H:%m%p", :strftime)
     "#{flow.name} #{date}"
   end
 
