@@ -143,7 +143,6 @@ defmodule Glific.Messages do
     %Message{}
     |> Message.changeset(attrs)
     |> Repo.insert()
-    |> IO.inspect(label: "Message Create")
   end
 
   @spec put_contact_id(map()) :: map()
