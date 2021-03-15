@@ -21,9 +21,9 @@ defmodule Glific.Triggers do
   @spec execute_triggers(DateTime.t()) :: [Trigger.t()]
   def execute_triggers(now \\ DateTime.utc_now()) do
     # triggers are executed at most once per day
-    %Trigger{}
+    Trigger
     |> where([t], t.is_active == true)
-    |> where([t], fragment("date_trunc('day', t.last_trigger_at) != CURRENT_DATE"))
+    |> where([t], is_nil(t.last_trigger_at) or fragment("date_trunc('day', ?) != CURRENT_DATE", t.last_trigger_at))
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
@@ -51,7 +51,12 @@ defmodule Glific.Triggers do
     {:ok, trigger} =
       Trigger.update_trigger(
         trigger,
-        %{is_active: false}
+        %{
+          is_active: false,
+          flow_id: trigger.flow_id,
+          organization_id: trigger.organization_id,
+          name: trigger.name
+        }
       )
 
     trigger

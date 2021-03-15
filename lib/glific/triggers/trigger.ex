@@ -105,6 +105,8 @@ defmodule Glific.Triggers.Trigger do
     do: start_at
 
   @spec get_name(map()) :: String.t()
+  defp get_name(%{name: name} = _attrs) when not is_nil(name), do: name
+
   defp get_name(attrs) do
     with {:ok, flow} <-
            Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}),
