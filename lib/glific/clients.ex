@@ -12,32 +12,37 @@ defmodule Glific.Clients do
   @tap %{
     id: 12,
     name: "The Apprentice Project",
-    gcs_bucket: Glific.Clients.Tap
+    gcs_params: Glific.Clients.Tap
   }
 
   @stir %{
     id: 13,
     name: "STiR Education",
-    webhook: Glific.Clients.Stir,
     blocked?: Glific.Clients.Stir
   }
 
+  @reap_benefit %{
+    id: 15,
+    gcs_params: Glific.Clients.ReapBenefit
+  }
+
   @weunlearn %{
-    id: 25,
-    broadcast: Glific.Clients.Weunlearn
+    id: 25
+    # broadcast: Glific.Clients.Weunlearn
   }
 
   @dev %{
     id: 1,
     name: "Glific",
-    gcs_bucket: Glific.Clients.Tap,
+    gcs_params: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn
   }
 
   @plugins %{
-    @tap[:id] => @tap,
+    @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
+    @tap[:id] => @tap,
     @weunlearn[:id] => @weunlearn
   }
 
@@ -57,13 +62,13 @@ defmodule Glific.Clients do
   @doc """
   Overwrite the default GCS storage bucket
   """
-  @spec gcs_bucket(map(), String.t()) :: String.t()
-  def gcs_bucket(media, default) do
-    module_name = get_in(plugins(), [media["organization_id"], :gcs_bucket])
+  @spec gcs_params(map(), String.t()) :: {String.t(), String.t()}
+  def gcs_params(media, bucket) do
+    module_name = get_in(plugins(), [media["organization_id"], :gcs_params])
 
     if module_name,
-      do: apply(module_name, :gcs_bucket, [media, default]),
-      else: default
+      do: apply(module_name, :gcs_params, [media, bucket]),
+      else: {media["remote_name"], bucket}
   end
 
   @doc """

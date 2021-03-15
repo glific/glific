@@ -3,6 +3,7 @@ defmodule Glific.ClientsTest do
 
   alias Glific.{
     Clients,
+    Clients.ReapBenefit,
     Contacts,
     Fixtures
   }
@@ -17,26 +18,62 @@ defmodule Glific.ClientsTest do
     assert Enum.count(map) > 1
   end
 
-  test "gcs_bucket with contact id" do
-    bucket = Clients.gcs_bucket(%{"organization_id" => 1, "contact_id" => 2}, "default")
-    assert bucket == "default"
+  test "gcs_params with contact id" do
+    {directory, _bucket} =
+      Clients.gcs_params(
+        %{"organization_id" => 1, "contact_id" => 2, "remote_name" => "remote"},
+        "default"
+      )
 
-    bucket = Clients.gcs_bucket(%{"organization_id" => 43, "contact_id" => 1}, "default")
-    assert bucket == "default"
+    assert !String.contains?(directory, "/")
+
+    {directory, _bucket} =
+      Clients.gcs_params(
+        %{"organization_id" => 43, "contact_id" => 1, "remote_name" => "remote"},
+        "default"
+      )
+
+    assert !String.contains?(directory, "/")
 
     cg = Fixtures.contact_group_fixture(%{organization_id: 1})
 
-    bucket =
-      Clients.gcs_bucket(%{"organization_id" => 1, "contact_id" => cg.contact_id}, "default")
+    {directory, _bucket} =
+      Clients.gcs_params(
+        %{"organization_id" => 1, "contact_id" => cg.contact_id, "remote_name" => "remote"},
+        "default"
+      )
 
-    assert bucket != "default"
+    assert String.contains?(directory, "/")
+
+    # also test reap_benefit separately
+    {directory, _bucket} =
+      ReapBenefit.gcs_params(
+        %{"flow_id" => 1, "remote_name" => "foo"},
+        "default"
+      )
+
+    assert directory == "Help Workflow/foo"
+
+    {directory, _bucket} =
+      ReapBenefit.gcs_params(
+        %{"flow_id" => 23, "remote_name" => "foo"},
+        "default"
+      )
+
+    assert directory == "foo"
   end
 
   test "check blocked only allow US and India numbers" do
     assert Clients.blocked?("91123", 1) == false
     assert Clients.blocked?("1123", 1) == false
-    assert Clients.blocked?("44123", 1) == true
-    assert Clients.blocked?("44123", 2) == false
+    assert Clients.blocked?("44123", 1) == false
+    assert Clients.blocked?("256123", 1) == false
+    assert Clients.blocked?("255123", 1) == true
+    assert Clients.blocked?("925123", 1) == true
+    assert Clients.blocked?("255123", 2) == false
+    assert Clients.blocked?("256123", 2) == false
+    assert Clients.blocked?("56123", 2) == false
+    assert Clients.blocked?("9256123", 2) == false
   end
 
   test "check that broadcast returns a different staff id" do
