@@ -133,6 +133,47 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, nil, [{:type, :video}]) == true
   end
 
+  test "test the execute function for has_image" do
+    c = %Case{type: "has_image", arguments: []}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :audio}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :video}]) == false
+  end
+
+  test "test the execute function for has_audio" do
+    c = %Case{type: "has_audio", arguments: []}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :audio}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :video}]) == false
+  end
+
+  test "test the execute function for has_file" do
+    c = %Case{type: "has_file", arguments: []}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :document}]) == true
+    assert wrap_execute(c, nil, nil, [{:type, :audio}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :video}]) == false
+  end
+
+  test "test the execute function for has_video" do
+    c = %Case{type: "has_video", arguments: []}
+    assert wrap_execute(c, nil, nil, [{:type, :location}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :text}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, nil}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :image}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :audio}]) == false
+    assert wrap_execute(c, nil, nil, [{:type, :video}]) == true
+  end
+
   test "test the execute function for has_only_phrase or has_only_text" do
     c = %Case{type: "has_only_phrase", arguments: ["only phrase"]}
     assert wrap_execute(c, nil, "only phrase") == true
