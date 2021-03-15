@@ -27,6 +27,11 @@ defmodule Glific.SearchesTest do
       assert saved_search in Searches.list_saved_searches(%{filter: attrs})
     end
 
+    test "list_saved_searches/1 returns all searches where is_reserved is false", attrs do
+      saved_search = saved_search_fixture(attrs)
+      assert saved_search in Searches.list_saved_searches(%{filter: %{is_reserved: false}})
+    end
+
     test "count_saved_searches/1 returns count of all saved_searches",
          %{organization_id: organization_id} = attrs do
       saved_searches_count = Searches.count_saved_searches(%{filter: attrs})
