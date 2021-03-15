@@ -417,6 +417,11 @@ Filtering options for savedSearches
 <td valign="top"><a href="#string">String</a></td>
 <td>Match the shortcode</td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isReserved</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Match the isReserved status</td>
+</tr>
 </tbody>
 </table>
 

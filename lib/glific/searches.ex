@@ -37,7 +37,7 @@ defmodule Glific.Searches do
   """
   @spec list_saved_searches(map()) :: [SavedSearch.t()]
   def list_saved_searches(args),
-    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Returns the count of searches, using the same filter as list_saved_searches
@@ -45,6 +45,19 @@ defmodule Glific.Searches do
   @spec count_saved_searches(map()) :: integer
   def count_saved_searches(args),
     do: Repo.count_filter(args, SavedSearch, &Repo.filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:is_reserved, is_reserved}, query ->
+        from q in query, where: q.is_reserved == ^is_reserved
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Gets a single search.
