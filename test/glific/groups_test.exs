@@ -56,6 +56,30 @@ defmodule Glific.GroupsTest do
       assert Groups.get_group!(group.id) == group
     end
 
+    test "get_or_create_group_by_label!/1 creates and returns a group if label does not exist",
+         attrs do
+      label = "Group"
+      current_count = Groups.count_groups(%{filter: %{label: label}})
+
+      assert current_count == 0
+
+      {:ok, group} = Groups.get_or_create_group_by_label(label, attrs.organization_id)
+      count = Groups.count_groups(%{filter: %{label: label}})
+
+      assert count == 1
+      assert group.label == label
+    end
+
+    test "get_or_create_group_by_label!/1 retrieves a group if label exists", attrs do
+      label = "Group"
+      existing_group = group_fixture(Map.merge(%{label: label}, attrs))
+
+      {:ok, group} =
+        Groups.get_or_create_group_by_label(existing_group.label, attrs.organization_id)
+
+      assert group == existing_group
+    end
+
     test "create_group/1 with valid data creates a group", attrs do
       assert {:ok, %Group{} = group} = Groups.create_group(Map.merge(attrs, @valid_attrs))
       assert group.is_restricted == false
