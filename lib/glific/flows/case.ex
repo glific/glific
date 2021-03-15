@@ -121,7 +121,7 @@ defmodule Glific.Flows.Case do
 
   def execute(%{type: type}, _context, msg)
       when type == "has_media",
-      do: msg.type in [:audio, :video, :image, :document]
+      do: msg.type in [:audio, :video, :image]
 
   def execute(%{type: type}, _context, msg)
       when type == "has_audio",
