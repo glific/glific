@@ -64,7 +64,7 @@ defmodule Glific.Flows.ContactAction do
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
-    count = FlowContext.match_outbound(context, body) |> IO.inspect(label: "COUNT")
+    count = FlowContext.match_outbound(context, body)
 
     {context, count}
   end
@@ -233,7 +233,6 @@ defmodule Glific.Flows.ContactAction do
     }
 
     attrs
-    |> IO.inspect(label: "ATTRS")
     |> Messages.create_and_send_message()
     |> handle_message_result(context, messages, attrs)
   end

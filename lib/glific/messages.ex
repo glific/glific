@@ -235,7 +235,6 @@ defmodule Glific.Messages do
     else
       _ ->
         Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
-        |> IO.inspect(label: "Can send message")
         |> create_and_send_message(attrs)
     end
   end
