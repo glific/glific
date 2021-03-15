@@ -12,7 +12,7 @@ defmodule Glific.Dialogflow.Sessions do
   @doc """
   Add message to queue worker to detect the intent
   """
-  @spec detect_intent(map(), String.t()) :: tuple
+  @spec detect_intent(map(), String.t()) :: :ok
   def detect_intent(message, session_id) do
     %{
       :path => session_id,
@@ -22,7 +22,7 @@ defmodule Glific.Dialogflow.Sessions do
     |> SessionWorker.new()
     |> Oban.insert()
 
-    {:ok}
+    :ok
   end
 
   @doc """

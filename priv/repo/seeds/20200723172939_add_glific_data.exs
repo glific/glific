@@ -15,7 +15,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
-    Seeds.SeedsSim,
+    Seeds.SeedsMigration,
     Settings.Language,
     Tags.Tag,
     Users
@@ -51,7 +51,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     users(admin, organization)
 
-    SeedsSim.migrate_data(:simulator, organization)
+    SeedsMigration.migrate_data(:simulator, organization)
+
+    SeedsMigration.migrate_data(:collection, organization)
 
     saved_searches(organization)
 
@@ -88,7 +90,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def languages(0 = _count_organizations) do
     en_us =
       Repo.insert!(%Language{
-        label: "English (United States)",
+        label: "English",
         label_locale: "English",
         locale: "en_US"
       })
@@ -110,7 +112,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Gujarati", "ગુજરાતી", "gu"},
       {"Bengali", "বাংলা", "bn"},
       {"Punjabi", "ਪੰਜਾਬੀ", "pa"},
-      {"Marathi", "मराठी", "mr"}
+      {"Marathi", "मराठी", "mr"},
+      {"Urdu", "اردو", "ur"},
+      {"Spanish", "Español", "es"}
     ]
 
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -136,7 +140,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def languages(_count_organizations) do
-    {:ok, en_us} = Repo.fetch_by(Language, %{label: "English (United States)"})
+    {:ok, en_us} = Repo.fetch_by(Language, %{label: "English"})
     {:ok, hi} = Repo.fetch_by(Language, %{label: "Hindi"})
     [en_us, hi]
   end
@@ -439,14 +443,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  defp generate_uuid(organization, default) do
-    # we have static uuids for the first organization since we might have our test cases
-    # hardcoded with these uuids
-    if organization.id == 1,
-      do: default,
-      else: Ecto.UUID.generate()
-  end
-
   def saved_searches(organization) do
     data = [
       {"All conversations", "All"},
@@ -517,32 +513,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert_all(FlowLabel, flow_labels)
   end
 
-  def flows(organization) do
-    uuid_map = %{
-      help: generate_uuid(organization, "3fa22108-f464-41e5-81d9-d8a298854429"),
-      language: generate_uuid(organization, "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf"),
-      newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
-      registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
-      activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
-      optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
-      optout: generate_uuid(organization, "9e607fd5-232e-43c8-8fac-d8a99d72561e")
-    }
-
-    data = [
-      {"Help Workflow", ["help", "मदद"], uuid_map.help, true, "help.json"},
-      {"Optin Workflow", ["optin"], uuid_map.optin, true, "optin.json"},
-      {"Optout Workflow", ["optout", "stop"], uuid_map.optout, true, "optout.json"},
-      {"Feedback", ["feedback"], uuid_map.feedback, true, "feedback.json"},
-      {"Activity", ["activity"], uuid_map.activity, true, "activity.json"},
-      {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
-      {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
-      {"Registration Workflow", ["registration"], uuid_map.registration, false,
-       "registration.json"}
-    ]
-
-    SeedsFlows.add_flow(organization, data, uuid_map)
-  end
+  def flows(organization),
+    do: SeedsFlows.seed([organization])
 
   def contacts_field(organization) do
     data = [

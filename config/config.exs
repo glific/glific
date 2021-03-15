@@ -19,7 +19,7 @@ config :glific, GlificWeb.Endpoint,
   secret_key_base: "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e",
   render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Glific.PubSub,
-  live_view: [signing_salt: "Xz6dQndd"]
+  live_view: [signing_salt: "4htfH6BMHdxcuDKFHeSryT32amWvVvlX"]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -51,6 +51,8 @@ config :glific, Oban,
   plugins: [
     # Prune jobs after 5 mins, gives us some time to go investigate if needed
     {Oban.Plugins.Pruner, max_age: 300},
+    Oban.Pro.Plugins.Lifeline,
+    Oban.Web.Plugins.Stats,
     {
       Oban.Plugins.Cron,
       crontab: [
@@ -58,6 +60,7 @@ config :glific, Oban,
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
         {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
         {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},

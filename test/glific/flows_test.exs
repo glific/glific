@@ -127,7 +127,7 @@ defmodule Glific.FLowsTest do
       flow = Repo.preload(flow, [:revisions])
       assert flow.name == @valid_attrs.name
       assert flow.flow_type == @valid_attrs.flow_type
-      assert [_revision] = flow.revisions
+      assert is_list(flow.revisions)
       assert length(flow.revisions) > 0
     end
 

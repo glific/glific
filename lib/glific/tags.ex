@@ -423,10 +423,10 @@ defmodule Glific.Tags do
     List.flatten(deleted_rows)
   end
 
-  @spec publish_delete_message_tag(list, non_neg_integer, boolean()) :: {:ok}
+  @spec publish_delete_message_tag(list, non_neg_integer, boolean()) :: :ok
   defp publish_delete_message_tag(list, organization_id, publish \\ true)
-  defp publish_delete_message_tag(_message_tags, _organization_id, false), do: {:ok}
-  defp publish_delete_message_tag([], _organization_id, _publish), do: {:ok}
+  defp publish_delete_message_tag(_message_tags, _organization_id, false), do: :ok
+  defp publish_delete_message_tag([], _organization_id, _publish), do: :ok
 
   defp publish_delete_message_tag(message_tags, organization_id, true) do
     _list =
@@ -435,7 +435,7 @@ defmodule Glific.Tags do
         Communications.publish_data(message_tag, :deleted_message_tag, organization_id)
       end)
 
-    {:ok}
+    :ok
   end
 
   @doc """

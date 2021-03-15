@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query trigger($id: ID!) {
+  trigger(id: $id) {
+    ...TriggerFields
+    
+    ...ErrorFields
+  }
+}

@@ -9,6 +9,7 @@ defmodule Glific.Repo do
   alias __MODULE__
 
   alias Glific.{Partners, Users.User}
+  use Publicist
 
   import Ecto.Query
   require Logger
@@ -281,13 +282,11 @@ defmodule Glific.Repo do
   Can we skip checking permissions for this user. This eliminates a DB call
   in many a case
   """
-  @spec skip_permission? :: User.t() | true
-  def skip_permission? do
-    user = Glific.Repo.get_current_user()
-
+  @spec skip_permission?(User.t() | nil) :: boolean()
+  def skip_permission?(user \\ get_current_user()) do
     cond do
       is_nil(user) -> raise(RuntimeError, message: "Invalid user")
-      user.is_restricted and Enum.member?(user.roles, :staff) -> user
+      user.is_restricted and Enum.member?(user.roles, :staff) -> false
       true -> true
     end
   end
@@ -299,10 +298,11 @@ defmodule Glific.Repo do
   @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t()), boolean()) ::
           Ecto.Query.t()
   def add_permission(query, permission_fn, skip_permission \\ false) do
-    case skip_permission or skip_permission?() do
-      true -> query
-      user -> permission_fn.(query, user)
-    end
+    user = get_current_user()
+
+    if skip_permission || skip_permission?(user),
+      do: query,
+      else: permission_fn.(query, user)
   end
 
   # codebeat:enable[ABC, LOC]

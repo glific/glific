@@ -18,7 +18,8 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.GcsWorker,
     Partners,
     Searches.CollectionCount,
-    Templates
+    Templates,
+    Triggers
   }
 
   @global_organization_id 0
@@ -116,7 +117,14 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t(), map()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   defp perform(%Oban.Job{args: %{"job" => job}} = args, services)
-       when job in ["contact_status", "wakeup_flows", "chatbase", "bigquery", "gcs"] do
+       when job in [
+              "contact_status",
+              "wakeup_flows",
+              "chatbase",
+              "bigquery",
+              "gcs",
+              "execute_triggers"
+            ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "contact_status" ->
@@ -124,6 +132,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "wakeup_flows" ->
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
+
+      "execute_triggers" ->
+        Triggers.execute_triggers()
 
       "chatbase" ->
         Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"], true)

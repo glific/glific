@@ -38,7 +38,7 @@ query languages($opts: Opts) {
       {
         "id": "2",
         "isActive": false,
-        "label": "English (United States)",
+        "label": "English",
         "labelLocale": "English",
         "locale": "en_US"
       }
@@ -85,7 +85,7 @@ query language($id: ID!) {
     "language": {
       "language": {
         "id": "2",
-        "label": "English (United States)"
+        "label": "English"
       }
     }
   }

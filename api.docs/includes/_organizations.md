@@ -46,7 +46,7 @@ query organizations($filter: OrganizationFilter, $opts: Opts) {
           },
           {
             "id": "2",
-            "label": "English (United States)"
+            "label": "English"
           }
         ],
         "defaultLanguage": {

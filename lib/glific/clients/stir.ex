@@ -11,6 +11,16 @@ defmodule Glific.Clients.Stir do
 
   def webhook(_), do: %{}
 
+  @doc false
+  @spec blocked?(String.t()) :: boolean
+  def blocked?(phone) do
+    pattern = :binary.compile_pattern(["91", "1", "44", "256"])
+
+    if String.starts_with?(phone, pattern),
+      do: false,
+      else: true
+  end
+
   @spec get_value(String.t(), map()) :: integer()
   defp get_value(k, v) do
     k = String.downcase(k)

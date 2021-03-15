@@ -406,7 +406,7 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
         "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
         "id": "5",
         "language": {
-          "label": "English (United States)"
+          "label": "English"
         },
         "name": "This is a updated contact for this example",
         "bspStatus": "SESSION_AND_HSM",

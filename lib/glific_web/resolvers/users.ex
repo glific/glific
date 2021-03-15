@@ -44,7 +44,9 @@ defmodule GlificWeb.Resolvers.Users do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_current_user(_, %{input: params}, %{context: %{current_user: current_user}}) do
+  def update_current_user(_, %{input: params}, %{
+        context: %{current_user: current_user}
+      }) do
     with {:ok, params} <- update_password_params(current_user, params),
          {:ok, current_user} <- Users.update_user(current_user, params) do
       {:ok, %{user: current_user}}
