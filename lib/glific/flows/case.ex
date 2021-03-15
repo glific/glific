@@ -135,7 +135,7 @@ defmodule Glific.Flows.Case do
       when type == "has_image",
       do: msg.type == :image
 
-      def execute(%{type: type}, _context, msg)
+  def execute(%{type: type}, _context, msg)
       when type == "has_file",
       do: msg.type == :document
 
