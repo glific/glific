@@ -25,6 +25,6 @@ defmodule Glific.Clients.Tap do
 
     if is_nil(group_name),
       do: {media["remote_name"], bucket},
-    else: {group_name <> "/" <> media["remote_name"], bucket}
+      else: {group_name <> "/" <> media["remote_name"], bucket}
   end
 end

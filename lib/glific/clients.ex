@@ -27,7 +27,7 @@ defmodule Glific.Clients do
   }
 
   @weunlearn %{
-    id: 25,
+    id: 25
     # broadcast: Glific.Clients.Weunlearn
   }
 
@@ -67,7 +67,7 @@ defmodule Glific.Clients do
     module_name = get_in(plugins(), [media["organization_id"], :gcs_params])
 
     if module_name,
-      do: apply(module_name, :gcs_bucket, [media, bucket]),
+      do: apply(module_name, :gcs_params, [media, bucket]),
       else: {media["remote_name"], bucket}
   end
 

@@ -187,7 +187,9 @@ defmodule Glific.Jobs.GcsWorker do
            remote_name: remote_name
          } = media
        ) do
-    Logger.info("Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}")
+    Logger.info(
+      "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
+    )
 
     {remote_name, bucket} = gcs_params(media)
 

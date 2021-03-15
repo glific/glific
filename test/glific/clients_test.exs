@@ -17,19 +17,25 @@ defmodule Glific.ClientsTest do
     assert Enum.count(map) > 1
   end
 
-  test "gcs_bucket with contact id" do
-    bucket = Clients.gcs_bucket(%{"organization_id" => 1, "contact_id" => 2}, "default")
-    assert bucket == "default"
+  test "gcs_params with contact id" do
+    {directory, _bucket} = Clients.gcs_params(
+      %{"organization_id" => 1, "contact_id" => 2, "remote_name" => "remote"},
+      "default")
+    assert !String.contains?(directory, "/")
 
-    bucket = Clients.gcs_bucket(%{"organization_id" => 43, "contact_id" => 1}, "default")
-    assert bucket == "default"
+    {directory, _bucket} = Clients.gcs_params(
+      %{"organization_id" => 43, "contact_id" => 1, "remote_name" => "remote"},
+      "default")
+    assert !String.contains?(directory, "/")
 
     cg = Fixtures.contact_group_fixture(%{organization_id: 1})
 
-    bucket =
-      Clients.gcs_bucket(%{"organization_id" => 1, "contact_id" => cg.contact_id}, "default")
+    {directory, _bucket} =
+      Clients.gcs_params(
+        %{"organization_id" => 1, "contact_id" => cg.contact_id, "remote_name" => "remote"},
+        "default")
 
-    assert bucket != "default"
+    assert String.contains?(directory, "/")
   end
 
   test "check blocked only allow US and India numbers" do
