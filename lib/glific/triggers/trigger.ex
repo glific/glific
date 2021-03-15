@@ -104,12 +104,14 @@ defmodule Glific.Triggers.Trigger do
   defp start_at(%{start_at: start_at} = _attrs),
     do: start_at
 
-  @spec get_name(map(), DateTime.t()) :: String.t()
-  defp get_name(attrs, start_at) do
-    flow = Repo.get_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id})
-    {:ok, ndt} = NaiveDateTime.new(attrs.start_date, attrs.start_time)
-    {:ok, date} = Timex.format(ndt, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}")
-    "#{flow.name}#{date}"
+  @spec get_name(map()) :: String.t()
+  defp get_name(attrs) do
+    with {:ok, flow} <-
+           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}),
+         {:ok, ndt} <- NaiveDateTime.new(attrs.start_date, attrs.start_time),
+         {:ok, date} <- Timex.format(ndt, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}") do
+      "#{flow.name}#{date}"
+    end
   end
 
   @spec fix_attrs(map()) :: map()
@@ -119,7 +121,7 @@ defmodule Glific.Triggers.Trigger do
 
     attrs
     |> Map.put(:start_at, start_at)
-    |> Map.put(:name, get_name(attrs, start_at))
+    |> Map.put(:name, get_name(attrs))
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, start_at)
   end
