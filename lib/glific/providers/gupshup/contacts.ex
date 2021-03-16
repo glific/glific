@@ -45,9 +45,11 @@ defmodule Glific.Providers.GupshupContacts do
     end
   end
 
-  # This method creates a contact if it does not exist. Otherwise, updates it.
+  @doc """
+    This method creates a contact if it does not exist. Otherwise, updates it.
+  """
   @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp create_or_update_contact(contact_data) do
+  def create_or_update_contact(contact_data) do
     case Repo.get_by(Contact, %{phone: contact_data.phone}) do
       nil ->
         Contacts.create_contact(contact_data)

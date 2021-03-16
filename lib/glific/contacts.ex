@@ -64,6 +64,20 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Returns a list of contacts.
+
+      iex> fetch_contacts_in_phone_list([9999999999, 1111111111])
+
+  Gets the list of contacts filtered by the list of provided phone numbers.
+  """
+  @spec fetch_contacts_in_phone_list(list) :: [Contact.t()]
+  def fetch_contacts_in_phone_list(phone_list) do
+    Contact
+    |> where([c], c.phone in ^phone_list)
+    |> Repo.all()
+  end
+
+  @doc """
   Return the list of contacts who are also users
   """
   @spec list_user_contacts(map()) :: [Contact.t()]

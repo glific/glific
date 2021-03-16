@@ -2,7 +2,7 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
 
   alias Faker.Phone
-  # import Mock
+  import Mock
 
   alias Glific.{
     Contacts,
@@ -62,6 +62,16 @@ defmodule Glific.ContactsTest do
       optin_status: true,
       optout_time: nil,
       phone: "some phone 3",
+      status: :invalid,
+      bsp_status: :session_and_hsm,
+      fields: %{}
+    }
+    @valid_attrs_4 %{
+      name: "some name 3",
+      optin_time: DateTime.utc_now(),
+      optin_status: true,
+      optout_time: nil,
+      phone: "phone",
       status: :invalid,
       bsp_status: :session_and_hsm,
       fields: %{}
@@ -200,7 +210,17 @@ defmodule Glific.ContactsTest do
       assert {:ok, %Contact{}} = GupshupContacts.create_or_update_contact(attrs)
     end
 
-    test "import_contact/3 with valid data inserts new contacts in the database" do
+    test "fetch_contacts_in_phone_list/1 retrieves contacts from the provided phone list",
+         attrs do
+      attrs = Map.merge(attrs, @valid_attrs_4)
+      {:ok, contact} = Contacts.create_contact(attrs)
+
+      [result] = Contacts.fetch_contacts_in_phone_list([contact.phone])
+
+      assert result == contact
+    end
+
+    test "import_contact/3 with valid data from file inserts new contacts in the database" do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -208,7 +228,8 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
+      file_path = "./test/support/fixture.csv"
+      file = File.open!(file_path, [:write, :utf8])
 
       [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
@@ -217,10 +238,95 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts("./test/support/fixture.csv", organization.id, group.id)
+      Import.import_contacts(organization.id, group.label, file_path: file_path)
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
+    end
+
+    test "import_contact/3 with valid data from file updates existing contacts in the database",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file_path = "./test/support/fixture.csv"
+      file = File.open!(file_path, [:write, :utf8])
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+
+      [~w(name phone Language opt_in), ~w(updated #{contact.phone} english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, file_path: file_path)
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 deletes contacts when delete=1 column is present", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file_path = "./test/support/fixture.csv"
+      file = File.open!(file_path, [:write, :utf8])
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+
+      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09 1)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, file_path: file_path)
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 0
+    end
+
+    test "import_contact/3 does not call glific opt_in api if column empty" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      with_mocks([
+        {
+          Contacts,
+          [:passthrough],
+          [optin_contact: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        }
+      ]) do
+        file_path = "./test/support/fixture.csv"
+        file = File.open!(file_path, [:write, :utf8])
+
+        [~w(name phone Language opt_in)]
+        |> Enum.concat([["updated", "9989329297", "english", ""]])
+        |> CSV.encode()
+        |> Enum.each(&IO.write(file, &1))
+
+        [organization | _] = Partners.list_organizations()
+        [group | _] = Groups.list_groups(%{filter: %{}})
+
+        Import.import_contacts(organization.id, group.label, file_path: file_path)
+        count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
+
+        assert count == 1
+        assert_not_called(Contacts.optin_contact())
+      end
     end
 
     test "import_contact/3 with invalid organization id returns an error" do
@@ -231,7 +337,8 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
+      file_path = "./test/support/fixture.csv"
+      file = File.open!(file_path, [:write, :utf8])
 
       [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
@@ -239,23 +346,7 @@ defmodule Glific.ContactsTest do
 
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      assert {:error, _} = Import.import_contacts("./test/support/fixture.csv", 999, group.id)
-    end
-
-    test "insert_or_update_contact_data/3 returns an error" do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 404
-          }
-      end)
-
-      [group | _] = Groups.list_groups(%{filter: %{}})
-
-      {:error, message, _error} =
-        Import.import_contacts("./test/support/fixture.csv", 1, group.id)
-
-      assert "All contacts could not be added" == message
+      assert {:error, _} = Import.import_contacts(999, group.label, file_path: file_path)
     end
 
     test "create_or_update_contact/1 with valid data updates a contact when contact exists in the database",
