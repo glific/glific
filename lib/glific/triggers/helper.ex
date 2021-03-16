@@ -11,7 +11,16 @@ defmodule Glific.Triggers.Helper do
   time the event can potentially occur
   """
   @spec compute_next(Trigger.t()) :: DateTime.t() | {:error, any()}
-  def compute_next(%Trigger{last_trigger_at: time, frequency: frequency, days: days} = _trigger) do
+  def compute_next(
+        %Trigger{
+          last_trigger_at: time,
+          frequency: frequency,
+          days: days,
+          next_trigger_at: next_time
+        } = _trigger
+      ) do
+    time = if is_nil(time), do: next_time, else: time
+
     cond do
       "daily" in frequency -> Timex.shift(time, days: 1) |> Timex.to_datetime()
       "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()

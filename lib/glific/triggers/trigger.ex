@@ -116,6 +116,12 @@ defmodule Glific.Triggers.Trigger do
     end
   end
 
+  defp get_next_trigger_at(%{next_trigger_at: next_trigger_at} = _attrs, _start_at)
+       when not is_nil(next_trigger_at),
+       do: next_trigger_at
+
+  defp get_next_trigger_at(_attrs, start_at), do: start_at
+
   @spec fix_attrs(map()) :: map()
   defp fix_attrs(attrs) do
     # compute start_at if not set
@@ -125,7 +131,7 @@ defmodule Glific.Triggers.Trigger do
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs))
     # set the initial value of the next firing of the trigger
-    |> Map.put(:next_trigger_at, start_at)
+    |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
   end
 
   @doc false

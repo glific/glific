@@ -82,15 +82,20 @@ defmodule Glific.Triggers do
     next_trigger_at = Helper.compute_next(trigger)
 
     {next_trigger_at, is_active} =
-      if Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :gt,
-        do: {nil, false},
-        else: {next_trigger_at, true}
+      if is_nil(trigger.last_trigger_at) or
+           Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :lt,
+         do: {next_trigger_at, true},
+         else: {nil, false}
 
     attrs = %{
       # we keep the time component constant
+      start_at: trigger.start_at,
       last_trigger_at: trigger.next_trigger_at,
       next_trigger_at: next_trigger_at,
-      is_active: is_active
+      flow_id: trigger.flow_id,
+      organization_id: trigger.organization_id,
+      is_active: is_active,
+      name: trigger.name
     }
 
     {:ok, trigger} = Trigger.update_trigger(trigger, attrs)
