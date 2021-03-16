@@ -686,8 +686,7 @@ defmodule Glific.Messages do
       Enum.reduce(
         messages,
         {%{}, %{}, []},
-        fn m, acc ->
-          {conversations, processed_contacts, contact_order} = acc
+        fn m, {conversations, processed_contacts, contact_order}  ->
           conversations = add(m, conversations)
 
           # We need to do this to maintain the sort order when returning
@@ -696,8 +695,11 @@ defmodule Glific.Messages do
           if Map.has_key?(processed_contacts, m.contact_id) do
             {conversations, processed_contacts, contact_order}
           else
-            {conversations, Map.put(processed_contacts, m.contact_id, true),
-             [m.contact | contact_order]}
+            {
+              conversations,
+              Map.put(processed_contacts, m.contact_id, true),
+              [m.contact | contact_order]
+            }
           end
         end
       )

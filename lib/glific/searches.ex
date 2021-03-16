@@ -270,7 +270,7 @@ defmodule Glific.Searches do
     query
     |> join(:left, [c: c], m in Message,
       as: :m,
-      on: c.id == m.contact_id and m.message_number == 0
+      on: c.id == m.contact_id and m.message_number == c.last_message_number
     )
     |> where([c: c], c.id != ^organization_contact_id)
     |> where([c: c], c.status != :blocked)
