@@ -21,6 +21,7 @@ defmodule Glific.Repo.Migrations.AddIndexes do
     create_if_not_exists index(:messages, :updated_at)
 
     sql = [
+      "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
       "CREATE INDEX IF NOT EXISTS messages_body_idx_gin ON messages USING gin (body gin_trgm_ops)"
     ]
 

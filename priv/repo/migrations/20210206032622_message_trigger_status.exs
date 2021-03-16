@@ -5,7 +5,7 @@ defmodule Glific.Repo.Migrations.MessageTriggerStatus do
     message_number_trigger()
 
     # also drop the search_messages table
-    drop table(:search_messages)
+    drop_if_exists table(:search_messages)
   end
 
   defp message_number_trigger do
