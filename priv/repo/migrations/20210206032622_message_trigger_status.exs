@@ -2,6 +2,13 @@ defmodule Glific.Repo.Migrations.MessageTriggerStatus do
   use Ecto.Migration
 
   def up do
+    message_number_trigger()
+
+    # also drop the search_messages table
+    drop table(:search_messages)
+  end
+
+  defp message_number_trigger do
     execute """
     CREATE OR REPLACE FUNCTION update_message_number()
     RETURNS trigger AS $$
