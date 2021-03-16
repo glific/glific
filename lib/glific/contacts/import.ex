@@ -84,6 +84,7 @@ defmodule Glific.Contacts.Import do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
+
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     with %{id: organization_id} <- Partners.organization(organization_id),
