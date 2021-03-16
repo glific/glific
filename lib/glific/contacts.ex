@@ -36,7 +36,10 @@ defmodule Glific.Contacts do
       |> where([cg, ug: ug], ug.user_id == ^user.id)
 
     query
-    |> where([c], c.id in [^user.contact_id, ^organization_contact_id] or c.id in subquery(sub_query))
+    |> where(
+      [c],
+      c.id in [^user.contact_id, ^organization_contact_id] or c.id in subquery(sub_query)
+    )
   end
 
   @doc """
