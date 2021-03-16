@@ -24,7 +24,7 @@ defmodule Glific.Triggers.Helper do
     cond do
       "daily" in frequency -> Timex.shift(time, days: 1) |> Timex.to_datetime()
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      # "monthly" in frequency -> Timex.shift(time, months: 1) |> Timex.to_datetime()
+      "monthly" in frequency -> Timex.shift(time, months: 1) |> Timex.to_datetime()
       "weekday" in frequency -> weekday(time)
       "weekend" in frequency -> weekend(time)
       true -> others(time, days)
