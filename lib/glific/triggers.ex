@@ -3,7 +3,9 @@ defmodule Glific.Triggers do
   The trigger manager for all the trigger system that starts flows
   within Glific
   """
+
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Flows,
@@ -18,12 +20,16 @@ defmodule Glific.Triggers do
   @doc """
   Periodic call to execute the triggers outstanding for the day
   """
-  @spec execute_triggers(DateTime.t()) :: [Trigger.t()]
-  def execute_triggers(now \\ DateTime.utc_now()) do
+  @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
+  def execute_triggers(_org_id, now \\ DateTime.utc_now()) do
     # triggers are executed at most once per day
-    %Trigger{}
+    Trigger
     |> where([t], t.is_active == true)
-    |> where([t], fragment("date_trunc('day', t.last_trigger_at) != CURRENT_DATE"))
+    |> where(
+      [t],
+      is_nil(t.last_trigger_at) or
+        fragment("date_trunc('day', ?) != CURRENT_DATE", t.last_trigger_at)
+    )
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
@@ -37,7 +43,10 @@ defmodule Glific.Triggers do
     # to avoid other process, unlikely to happen, but might
     trigger = Repo.get!(Trigger, id)
 
-    if Date.diff(DateTime.to_date(trigger.last_trigger_at), DateTime.to_date(now)) < 0 do
+    if is_nil(trigger.last_trigger_at) or
+         Date.diff(DateTime.to_date(trigger.last_trigger_at), DateTime.to_date(now)) < 0 do
+      Logger.info("executing trigger: #{trigger.name} for org_id: #{trigger.organization_id}")
+
       trigger
       |> update_next()
       |> start_flow()
@@ -48,10 +57,20 @@ defmodule Glific.Triggers do
 
   @spec update_next(Trigger.t()) :: Trigger.t()
   defp update_next(%Trigger{is_repeating: false} = trigger) do
+    Logger.info(
+      "updating trigger: #{trigger.name} of org_id: #{trigger.organization_id} as inactive"
+    )
+
     {:ok, trigger} =
       Trigger.update_trigger(
         trigger,
-        %{is_active: false}
+        %{
+          is_active: false,
+          start_at: trigger.start_at,
+          flow_id: trigger.flow_id,
+          organization_id: trigger.organization_id,
+          name: trigger.name
+        }
       )
 
     trigger
@@ -60,16 +79,27 @@ defmodule Glific.Triggers do
   defp update_next(trigger) do
     next_trigger_at = Helper.compute_next(trigger)
 
+    Logger.info(
+      "updating next trigger time for trigger: #{trigger.name} of org_id: #{
+        trigger.organization_id
+      } with time #{next_trigger_at}"
+    )
+
     {next_trigger_at, is_active} =
-      if Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :gt,
-        do: {nil, false},
-        else: {next_trigger_at, true}
+      if is_nil(trigger.last_trigger_at) or
+           Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :lt,
+         do: {next_trigger_at, true},
+         else: {nil, false}
 
     attrs = %{
       # we keep the time component constant
+      start_at: trigger.start_at,
       last_trigger_at: trigger.next_trigger_at,
       next_trigger_at: next_trigger_at,
-      is_active: is_active
+      flow_id: trigger.flow_id,
+      organization_id: trigger.organization_id,
+      is_active: is_active,
+      name: trigger.name
     }
 
     {:ok, trigger} = Trigger.update_trigger(trigger, attrs)
@@ -79,6 +109,12 @@ defmodule Glific.Triggers do
   @spec start_flow(Trigger.t()) :: nil
   defp start_flow(trigger) do
     flow = Flows.get_flow!(trigger.flow_id)
+
+    Logger.info(
+      "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{
+        trigger.organization_id
+      } with time #{trigger.next_trigger_at}"
+    )
 
     if !is_nil(trigger.group_id) do
       group = Groups.get_group!(trigger.group_id)
