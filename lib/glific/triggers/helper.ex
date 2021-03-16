@@ -23,8 +23,8 @@ defmodule Glific.Triggers.Helper do
 
     cond do
       "daily" in frequency -> Timex.shift(time, days: 1) |> Timex.to_datetime()
-      "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      "monthly" in frequency -> Timex.shift(time, months: 1) |> Timex.to_datetime()
+      # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
+      # "monthly" in frequency -> Timex.shift(time, months: 1) |> Timex.to_datetime()
       "weekday" in frequency -> weekday(time)
       "weekend" in frequency -> weekend(time)
       true -> others(time, days)
@@ -38,12 +38,10 @@ defmodule Glific.Triggers.Helper do
     # we need to loop from current to 7 and then back to current
     # and pick the number of days to shift
     current = Date.day_of_week(time)
-
     start_list = if current == 7, do: [], else: Enum.to_list((current + 1)..7)
 
     shift =
       (start_list ++ Enum.to_list(1..current))
-      |> Enum.map(&Integer.to_string/1)
       |> Enum.with_index(1)
       |> Enum.filter(fn {x, _shift} -> x in days end)
       |> hd
