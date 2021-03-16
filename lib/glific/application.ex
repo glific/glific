@@ -41,15 +41,11 @@ defmodule Glific.Application do
       :poolboy.child_spec(message_poolname(), poolboy_config()),
 
       # Add the process to manage simulator contacts
-      Glific.Contacts.Simulator
+      Glific.Contacts.Simulator,
+
+      # Add the broadcast task supervisor
+      {Task.Supervisor, name: Glific.Broadcast.Supervisor}
     ]
-
-    glific_children = []
-
-    children =
-      if Application.get_env(:glific, :environment) == :test,
-        do: children,
-        else: children ++ glific_children
 
     # Add this :telemetry.attach/4 for oban success/failure call:
     :telemetry.attach(
