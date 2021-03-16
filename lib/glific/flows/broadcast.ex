@@ -125,7 +125,7 @@ defmodule Glific.Flows.Broadcast do
         on_timeout: :kill_task
       )
 
-    stream |> Enum.to_list()
+    stream |> Enum.to_list() |> IO.inspect(label: "Stream tasks")
 
     # Stream.run(stream)
   end
