@@ -41,7 +41,7 @@ defmodule Glific.Triggers do
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> Enum.map(&execute_trigger(&1, now))
   end
 
