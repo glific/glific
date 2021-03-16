@@ -121,7 +121,7 @@ defmodule Glific.Flows.Broadcast do
           FlowContext.init_context(flow, contact, @status, opts)
         end,
         ordered: false,
-        timeout: 3_000,
+        timeout: 5_000,
         on_timeout: :kill_task
       )
 
