@@ -23,7 +23,11 @@ defmodule Glific.Triggers do
     # triggers are executed at most once per day
     Trigger
     |> where([t], t.is_active == true)
-    |> where([t], is_nil(t.last_trigger_at) or fragment("date_trunc('day', ?) != CURRENT_DATE", t.last_trigger_at))
+    |> where(
+      [t],
+      is_nil(t.last_trigger_at) or
+        fragment("date_trunc('day', ?) != CURRENT_DATE", t.last_trigger_at)
+    )
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
@@ -37,7 +41,8 @@ defmodule Glific.Triggers do
     # to avoid other process, unlikely to happen, but might
     trigger = Repo.get!(Trigger, id)
 
-    if Date.diff(DateTime.to_date(trigger.last_trigger_at), DateTime.to_date(now)) < 0 do
+    if is_nil(trigger.last_trigger_at) or
+         Date.diff(DateTime.to_date(trigger.last_trigger_at), DateTime.to_date(now)) < 0 do
       trigger
       |> update_next()
       |> start_flow()
@@ -53,6 +58,7 @@ defmodule Glific.Triggers do
         trigger,
         %{
           is_active: false,
+          start_at: trigger.start_at,
           flow_id: trigger.flow_id,
           organization_id: trigger.organization_id,
           name: trigger.name
