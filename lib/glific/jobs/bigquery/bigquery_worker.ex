@@ -71,7 +71,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp insert_for_table(nil, _), do: nil
 
   ## We are not using this code. We will remove this code later
-  defp insert_for_table(%{table: table} = _bigquery_job, organization_id)
+  defp insert_for_table(%{table: table} = _bigquery_job, _organization_id)
        when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
        do: :ok
 
@@ -130,11 +130,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("contacts", organization_id, attrs) do
-    Logger.info(
-      "fetching data for contacts to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
-        organization_id
-      }"
-    )
+    Logger.info( "fetching data for contacts to send on bigquery attrs: #{inspect attrs} , org_id: #{ organization_id}")
 
     get_query("contacts", organization_id, attrs)
     |> Repo.all()
@@ -185,11 +181,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flows", organization_id, attrs) do
-    Logger.info(
-      "fetching data for flows to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
-        organization_id
-      }"
-    )
+    Logger.info( "fetching data for flows to send on bigquery attrs: #{inspect attrs}, org_id: #{organization_id}")
 
     get_query("flows", organization_id, attrs)
     |> Repo.all()
@@ -218,11 +210,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flow_results", organization_id, attrs) do
-    Logger.info(
-      "fetching data for flow_results to send on bigquery maxid: #{max_id}, min_id: #{min_id}, org_id: #{
-        organization_id
-      }"
-    )
+    Logger.info("fetching data for flow_results to send on bigquery attrs: #{inspect attrs}, org_id: #{ organization_id }")
 
     get_query("flow_results", organization_id, attrs)
     |> Repo.all()
@@ -284,18 +272,17 @@ defmodule Glific.Jobs.BigQueryWorker do
 
 
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, table, organization_id, attrs) when data in [%{}, nil, []] do
+  defp make_job(data, table, organization_id, %{action: :insert} = attrs) when data in [%{}, nil, []] do
     table = Atom.to_string(table)
-    Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+    Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
     :ok
   end
 
+  defp make_job(data, _table, _organization_id, %{action: :update} = _attrs)
+  when data in [%{}, nil, []], do: :ok
+
   defp make_job(data, table, organization_id, attrs) do
-    Logger.info(
-      "making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{
-        max_id
-      }"
-    )
+    Logger.info("making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{ inspect attrs}")
 
     __MODULE__.new(%{
       data: data,
@@ -324,7 +311,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec apply_action_clause(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
-  defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = attrs),
+  defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = _attrs),
     do: query |> where([m], m.id > ^min_id and m.id <= ^max_id)
 
   defp apply_action_clause(query, %{action: :update} = _attrs),

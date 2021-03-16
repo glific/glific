@@ -463,7 +463,7 @@ defmodule Glific.Bigquery do
     Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{ inspect(res)}")
 
     ## Max id will be nil or 0 in case of update statement.
-    if not is_nil(max_id) or max_id = 0,
+    if ((not is_nil(max_id)) and (max_id != 0)),
     do: Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
     :ok
