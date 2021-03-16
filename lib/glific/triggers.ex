@@ -22,7 +22,6 @@ defmodule Glific.Triggers do
   """
   @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
   def execute_triggers(org_id, now \\ DateTime.utc_now()) do
-    IO.inspect(org_id)
     Repo.put_process_state(org_id)
     # triggers are executed at most once per day
     Trigger
@@ -35,7 +34,7 @@ defmodule Glific.Triggers do
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
-    |> Repo.all()|>IO.inspect()
+    |> Repo.all()
     |> Enum.map(&execute_trigger(&1, now))
   end
 
