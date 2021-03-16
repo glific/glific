@@ -2,6 +2,12 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
   use Ecto.Migration
 
   def up do
+    message_number_trigger()
+
+    drop_if_exists table(:search_messages)
+  end
+
+  defp message_number_trigger do
     execute """
     CREATE OR REPLACE FUNCTION public.update_message_number()
     RETURNS trigger
@@ -18,27 +24,44 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
 
       IF (TG_OP = 'INSERT') THEN
 
-        UPDATE organizations SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') WHERE id = NEW.organization_id;
+        UPDATE organizations
+          SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc')
+          WHERE id = NEW.organization_id;
 
         IF(NEW.group_id > 0) THEN
+          UPDATE messages
+            SET message_number = 0, is_read = true, is_replied = true
+            WHERE id = NEW.id;
 
-          UPDATE messages SET message_number = 0, is_read = true, is_replied = true WHERE id = NEW.id;
-
-          UPDATE groups  SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') WHERE id = NEW.group_id;
+          UPDATE groups
+            SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc')
+            WHERE id = NEW.group_id;
 
           IF (New.sender_id = New.receiver_id) THEN
-            UPDATE messages SET message_number = message_number + 1 WHERE group_id = NEW.group_id AND sender_id = receiver_id AND id < NEW.id;
+            UPDATE messages
+              SET message_number = message_number + 1
+              WHERE group_id = NEW.group_id AND sender_id = receiver_id AND id < NEW.id;
           ELSE
-            UPDATE messages SET message_number = message_number + 1 WHERE contact_id = NEW.contact_id AND id < NEW.id;
+            UPDATE messages
+              SET message_number = message_number + 1
+              WHERE contact_id = NEW.contact_id AND id < NEW.id;
           END IF;
-
         ELSE
           IF (NEW.flow = 'inbound') THEN
-            session_lim := (SELECT session_limit * 60 FROM organizations WHERE id = NEW.organization_id LIMIT 1);
-            current_diff := (SELECT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) - EXTRACT(EPOCH FROM (SELECT last_message_at FROM contacts  WHERE id = NEW.contact_id AND organization_id = NEW.organization_id LIMIT 1)));
+            session_lim :=
+              (SELECT session_limit * 60 FROM organizations WHERE id = NEW.organization_id LIMIT 1);
+            current_diff :=
+              (SELECT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) -
+                 EXTRACT(EPOCH FROM
+                   (SELECT last_message_at
+                    FROM contacts
+                    WHERE id = NEW.contact_id AND organization_id = NEW.organization_id LIMIT 1)));
 
-            current_session_uuid := (SELECT session_uuid FROM messages WHERE contact_id = NEW.contact_id AND organization_id = NEW.organization_id AND flow = 'inbound'
-              AND id != NEW.id  ORDER BY id DESC LIMIT 1);
+            current_session_uuid :=
+              (SELECT session_uuid
+               FROM messages
+               WHERE contact_id = NEW.contact_id AND organization_id = NEW.organization_id AND flow = 'inbound'
+                 AND id != NEW.id  ORDER BY id DESC LIMIT 1);
 
             IF (current_diff < session_lim AND current_session_uuid IS NOT NULL) THEN
               session_uuid_value = current_session_uuid;
@@ -46,18 +69,35 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
               session_uuid_value = (SELECT uuid_generate_v4());
             END IF;
 
-            UPDATE contacts  SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc'), last_message_at = (CURRENT_TIMESTAMP at time zone 'utc') WHERE id = NEW.contact_id;
+            UPDATE contacts
+              SET
+                last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc'),
+                last_message_at = (CURRENT_TIMESTAMP at time zone 'utc') WHERE id = NEW.contact_id;
 
-            UPDATE messages SET message_number = message_number + 1, is_read = CASE WHEN flow = 'inbound' THEN true ELSE is_read END, is_replied = CASE WHEN flow = 'outbound' THEN true ELSE is_replied END WHERE contact_id = NEW.contact_id AND id < NEW.id;
+            UPDATE messages
+              SET
+                message_number = message_number + 1,
+                is_read = CASE WHEN flow = 'inbound' THEN true ELSE is_read END,
+                is_replied = CASE WHEN flow = 'outbound' THEN true ELSE is_replied END
+              WHERE contact_id = NEW.contact_id AND id < NEW.id;
 
-            UPDATE messages SET message_number = 0, is_read = false, is_replied = false, session_uuid = session_uuid_value WHERE id = NEW.id;
-
+            UPDATE messages
+              SET message_number = 0, is_read = false, is_replied = false, session_uuid = session_uuid_value
+              WHERE id = NEW.id;
           ELSE
+            UPDATE contacts
+              SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc')
+              WHERE id = NEW.contact_id;
 
-            UPDATE contacts SET last_communication_at = (CURRENT_TIMESTAMP at time zone 'utc') WHERE id = NEW.contact_id;
-            UPDATE messages SET message_number = 0, is_read = true, is_replied = false WHERE id = NEW.id;
-            UPDATE messages SET  message_number = message_number + 1,  is_replied = CASE  WHEN flow = 'inbound' THEN true ELSE is_replied END WHERE contact_id = NEW.contact_id AND id < NEW.id;
+            UPDATE messages
+              SET message_number = 0, is_read = true, is_replied = false
+              WHERE id = NEW.id;
 
+            UPDATE messages
+              SET
+                message_number = message_number + 1,
+                is_replied = CASE  WHEN flow = 'inbound' THEN true ELSE is_replied END
+              WHERE contact_id = NEW.contact_id AND id < NEW.id;
           END IF;
 
         END IF;
