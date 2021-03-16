@@ -114,7 +114,8 @@ defmodule Glific.Flows.Broadcast do
     opts = [delay: delay]
 
     stream =
-      Task.async_stream(
+      Task.Supervisor.async_stream_nolink(
+        Glific.Broadcast.Supervisor,
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)

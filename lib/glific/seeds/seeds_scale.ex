@@ -168,8 +168,6 @@ if Code.ensure_loaded?(Faker) do
     end
 
     defp seed_messages(organization, sender_id) do
-      Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
-
       # we dont need the generated dev messages
       if organization.id == 1,
         do: Repo.query!("TRUNCATE messages CASCADE;")
@@ -192,8 +190,6 @@ if Code.ensure_loaded?(Faker) do
 
       seed_flows(contact_ids, sender_id, organization.id)
       seed_flow_results(contact_ids, organization.id)
-
-      Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
     end
 
     @flow_ids [1, 2, 3]
@@ -580,11 +576,7 @@ if Code.ensure_loaded?(Faker) do
     defp set_restart(opts, true), do: Map.put(opts, :restart, true) |> Map.put(:halt, true)
 
     defp seed_message_tags(organization) do
-      Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
-
       seed_message_tags_generic(organization)
-
-      Repo.query!("ALTER TABLE messages_tags ENABLE TRIGGER update_search_message_trigger;")
     end
 
     defp seed_message_tags_generic(organization) do
