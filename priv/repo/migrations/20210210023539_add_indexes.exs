@@ -19,6 +19,12 @@ defmodule Glific.Repo.Migrations.AddIndexes do
 
     create_if_not_exists index(:messages, :inserted_at)
     create_if_not_exists index(:messages, :updated_at)
+    create_if_not_exists index(:messages, :group_id)
+
+    ## Removing the indexes which are not in use.
+    drop_if_exists index(:messages, :sender_id)
+    drop_if_exists index(:messages, :receiver_id)
+    drop_if_exists index(:messages, [:organization_id, :contact_id])
 
     sql = [
       "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
