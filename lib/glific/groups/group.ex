@@ -15,7 +15,13 @@ defmodule Glific.Groups.Group do
   }
 
   @required_fields [:label]
-  @optional_fields [:is_restricted, :description, :organization_id, :last_message_number, :last_communication_at]
+  @optional_fields [
+    :is_restricted,
+    :description,
+    :organization_id,
+    :last_message_number,
+    :last_communication_at
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

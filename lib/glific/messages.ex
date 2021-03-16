@@ -647,7 +647,7 @@ defmodule Glific.Messages do
   defp add_order_by(query, ids) do
     if length(ids) == 1,
       # if messages for one contact, order by message number
-      do: query |> order_by([m], asc: m.message_number),
+      do: query |> order_by([m], desc: m.message_number),
       # else order by most recent messages
       else: query |> order_by([m], desc: m.inserted_at)
   end
@@ -686,7 +686,7 @@ defmodule Glific.Messages do
       Enum.reduce(
         messages,
         {%{}, %{}, []},
-        fn m, {conversations, processed_contacts, contact_order}  ->
+        fn m, {conversations, processed_contacts, contact_order} ->
           conversations = add(m, conversations)
 
           # We need to do this to maintain the sort order when returning
