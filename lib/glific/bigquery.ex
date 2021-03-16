@@ -432,11 +432,7 @@ defmodule Glific.Bigquery do
   @spec do_make_insert_query(tuple(), non_neg_integer, list(), Keyword.t()) ::
           {:ok, any()} | {:error, any()}
   defp do_make_insert_query(
-         {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}},
-         organization_id,
-         data,
-         opts
-       ) do
+    {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}, organization_id, data, opts ) do
     table = Keyword.get(opts, :table)
 
     Logger.info(
