@@ -125,6 +125,8 @@ defmodule Glific.Flows.Broadcast do
         on_timeout: :kill_task
       )
 
-    Stream.run(stream)
+    stream |> Enum.to_list()
+
+    # Stream.run(stream)
   end
 end
