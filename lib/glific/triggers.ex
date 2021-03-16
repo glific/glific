@@ -58,7 +58,7 @@ defmodule Glific.Triggers do
   @spec update_next(Trigger.t()) :: Trigger.t()
   defp update_next(%Trigger{is_repeating: false} = trigger) do
     Logger.info(
-      "updating trigger: #{trigger.name} of org_id: #{trigger.organization_id(as(inactive))}"
+      "updating trigger: #{trigger.name} of org_id: #{trigger.organization_id} as inactive"
     )
 
     {:ok, trigger} =
@@ -113,7 +113,7 @@ defmodule Glific.Triggers do
     Logger.info(
       "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{
         trigger.organization_id
-      } with time #{next_trigger_at}"
+      } with time #{trigger.next_trigger_at}"
     )
 
     if !is_nil(trigger.group_id) do
