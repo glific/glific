@@ -121,12 +121,10 @@ defmodule Glific.Flows.Broadcast do
           FlowContext.init_context(flow, contact, @status, opts)
         end,
         ordered: false,
-        timeout: 1_000,
+        timeout: 3_000,
         on_timeout: :kill_task
       )
 
-    stream |> Enum.to_list() |> IO.inspect(label: "Stream tasks")
-
-    # Stream.run(stream)
+    Stream.run(stream)
   end
 end
