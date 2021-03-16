@@ -70,6 +70,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
+  ## We are not using this code. We will remove this code later
   defp insert_for_table(%{table: table} = _bigquery_job, organization_id)
        when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
        do: :ok
@@ -77,7 +78,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
     Logger.info("Checking for bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
-
     data =
       Bigquery.get_table_struct(bigquery_job.table)
       |> select([m], m.id)
@@ -93,17 +93,14 @@ defmodule Glific.Jobs.BigQueryWorker do
         nil
 
       max_id > table_id ->
-        queue_table_data(bigquery_job.table, organization_id, %{
-          min_id: table_id,
-          max_id: max_id,
-          action: :insert
-        })
+        queue_table_data(bigquery_job.table, organization_id, %{ min_id: table_id, max_id: max_id, action: :insert })
 
       true ->
         nil
     end
 
-    queue_table_data(bigquery_job.table, organization_id, %{action: :update, max_id: 0})
+    queue_table_data(bigquery_job.table, organization_id, %{action: :update, max_id: nil})
+
     :ok
   end
 
@@ -285,14 +282,15 @@ defmodule Glific.Jobs.BigQueryWorker do
       latitude: if(!is_nil(row.location), do: row.location.latitude)
     }
 
+
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, table, organization_id, max_id) when data in [%{}, nil, []] do
+  defp make_job(data, table, organization_id, attrs) when data in [%{}, nil, []] do
     table = Atom.to_string(table)
     Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
     :ok
   end
 
-  defp make_job(data, table, organization_id, max_id) do
+  defp make_job(data, table, organization_id, attrs) do
     Logger.info(
       "making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{
         max_id
@@ -303,10 +301,9 @@ defmodule Glific.Jobs.BigQueryWorker do
       data: data,
       table: table,
       organization_id: organization_id,
-      max_id: max_id
+      max_id: attrs[:max_id]
     })
     |> Oban.insert()
-
     :ok
   end
 
@@ -365,18 +362,17 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> preload([:flow])
 
   defp get_query("flow_results", organization_id, attrs),
-    do:
-      FlowResult
+  do: FlowResult
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
 
+
+  @impl Oban.Worker
   @doc """
   Standard perform method to use Oban worker
   """
-  @impl Oban.Worker
-
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
         %Oban.Job{
