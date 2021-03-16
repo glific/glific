@@ -94,10 +94,9 @@ defmodule Glific.Triggers.Trigger do
 
   @spec start_at(map()) :: DateTime.t()
   defp start_at(%{start_at: nil} = attrs) do
-    {:ok, ndt} = NaiveDateTime.new(attrs.start_date, attrs.start_time)
     tz = Partners.organization_timezone(attrs.organization_id)
-    dt = DateTime.from_naive!(ndt, tz)
-    DateTime.shift_zone!(dt, "Etc/UTC")
+    org_time = DateTime.new!(attrs.start_date, attrs.start_time, tz)
+    DateTime.shift_zone!(org_time, "Etc/UTC")
   end
 
   ## We might need to change this and convert the datetime to utc
