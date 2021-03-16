@@ -16,10 +16,20 @@ defmodule Glific.Triggers do
   @max_trigger_limit 1000
 
   @doc """
+  Periodic call to execute the triggers for active organizations
+  """
+  @spec periodic_trigger(list()) :: :ok
+  def periodic_trigger(organization_ids) do
+    organization_ids
+    |> Enum.each(fn organization_id -> execute_triggers(organization_id, DateTime.utc_now()) end)
+  end
+
+  @doc """
   Periodic call to execute the triggers outstanding for the day
   """
-  @spec execute_triggers(DateTime.t()) :: [Trigger.t()]
-  def execute_triggers(now \\ DateTime.utc_now()) do
+  @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
+  def execute_triggers(org_id, now \\ DateTime.utc_now()) do
+    Repo.put_process_state(org_id)
     # triggers are executed at most once per day
     Trigger
     |> where([t], t.is_active == true)
@@ -31,7 +41,7 @@ defmodule Glific.Triggers do
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.map(&execute_trigger(&1, now))
   end
 
