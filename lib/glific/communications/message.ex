@@ -8,6 +8,7 @@ defmodule Glific.Communications.Message do
   alias Glific.{
     Communications,
     Contacts,
+    Contacts.Contact,
     Messages,
     Messages.Message,
     Partners,
@@ -174,15 +175,8 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when we receive a message from whats app
   """
-  @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
+  @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
-    if Contacts.is_contact_blocked?(message_params.sender.phone, organization_id),
-      do: {:ok},
-      else: do_receive_message(message_params, type)
-  end
-
-  @spec do_receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
-  defp do_receive_message(%{organization_id: organization_id} = message_params, type) do
     Logger.info(
       "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{
         message_params.bsp_message_id
@@ -194,6 +188,13 @@ defmodule Glific.Communications.Message do
       |> Map.put(:organization_id, organization_id)
       |> Contacts.maybe_create_contact()
 
+    if Contacts.is_contact_blocked?(contact),
+      do: :ok,
+      else: do_receive_message(contact, message_params, type)
+  end
+
+  @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
+  defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
     message_params =
@@ -225,7 +226,7 @@ defmodule Glific.Communications.Message do
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
-  @spec receive_media(map()) :: {:ok}
+  @spec receive_media(map()) :: :ok
   defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)
 
@@ -235,7 +236,7 @@ defmodule Glific.Communications.Message do
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
 
-    {:ok}
+    :ok
   end
 
   # handler for receiving the location message

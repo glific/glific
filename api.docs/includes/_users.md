@@ -188,7 +188,7 @@ query currentUser {
         "organization": {
           "activeLanguages": [
             {
-              "label": "English (United States)"
+              "label": "English"
             }
           ]
         },

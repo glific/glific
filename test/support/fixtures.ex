@@ -22,6 +22,7 @@ defmodule Glific.Fixtures do
     Tags,
     Templates,
     Templates.SessionTemplate,
+    Triggers.Trigger,
     Users
   }
 
@@ -333,6 +334,34 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec contact_user_group_fixture(map()) :: {Groups.ContactGroup.t(), Groups.UserGroup.t()}
+  def contact_user_group_fixture(attrs) do
+    valid_attrs = %{
+      contact_id: contact_fixture(attrs).id,
+      group_id: group_fixture(attrs).id
+    }
+
+    {:ok, contact_group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Groups.create_contact_group()
+
+    user = user_fixture(attrs)
+
+    valid_attrs = %{
+      user_id: user.id,
+      group_id: contact_group.group_id
+    }
+
+    {:ok, user_group} =
+      attrs
+      |> Enum.into(valid_attrs)
+      |> Groups.create_user_group()
+
+    {contact_group, Map.put(user_group, :user, user)}
+  end
+
+  @doc false
   @spec group_contacts_fixture(map()) :: [Groups.ContactGroup.t(), ...]
   def group_contacts_fixture(attrs) do
     attrs = %{filter: attrs, opts: %{order: :asc}}
@@ -561,5 +590,30 @@ defmodule Glific.Fixtures do
     {:ok, webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
 
     webhook_log
+  end
+
+  @doc false
+  @spec trigger_fixture(map()) :: Trigger.t()
+  def trigger_fixture(attrs) do
+    valid_attrs = %{
+      end_date: ~U[2021-03-09 09:22:51Z],
+      is_active: true,
+      is_repeating: false,
+      start_at: ~U[2021-03-08 08:22:51Z]
+    }
+
+    [g1 | _] = Groups.list_groups(attrs)
+    [f1 | _] = Flows.list_flows(attrs)
+
+    valid_attrs =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:flow_id, f1.id)
+      |> Map.put(:group_id, g1.id)
+      |> Map.put(:organization_id, attrs.organization_id)
+
+    {:ok, trigger} = Trigger.create_trigger(valid_attrs)
+
+    trigger
   end
 end

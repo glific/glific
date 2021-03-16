@@ -373,7 +373,7 @@ defmodule Glific.Flows.ActionTest do
   end
 
   test "execute an action when type is set_contact_language", _attrs do
-    language_label = "English (United States)"
+    language_label = "English"
     [language | _] = Settings.list_languages(%{filter: %{label: language_label}})
 
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
@@ -381,7 +381,7 @@ defmodule Glific.Flows.ActionTest do
     # preload contact
     context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
 
-    action = %Action{type: "set_contact_language", text: "English (United States)"}
+    action = %Action{type: "set_contact_language", text: "English"}
 
     message_stream = []
 

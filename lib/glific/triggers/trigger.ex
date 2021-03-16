@@ -4,9 +4,9 @@ defmodule Glific.Triggers.Trigger do
   import Ecto.Changeset
 
   alias __MODULE__
+  import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts.Contact,
     Flows.Flow,
     Groups.Group,
     Partners,
@@ -21,8 +21,6 @@ defmodule Glific.Triggers.Trigger do
           trigger_type: String.t() | nil,
           flow_id: non_neg_integer | nil,
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
-          contact_id: non_neg_integer | nil,
-          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           group_id: non_neg_integer | nil,
           group: Group.t() | Ecto.Association.NotLoaded.t() | nil,
           start_at: DateTime.t() | nil,
@@ -40,16 +38,16 @@ defmodule Glific.Triggers.Trigger do
         }
 
   @required_fields [
-    :name,
     :organization_id,
     :flow_id,
     :start_at
   ]
   @optional_fields [
+    :name,
+    :is_active,
     :trigger_type,
-    :contact_id,
     :group_id,
-    :end_at,
+    :end_date,
     :last_trigger_at,
     :next_trigger_at,
     :is_repeating,
@@ -58,16 +56,14 @@ defmodule Glific.Triggers.Trigger do
   ]
 
   schema "triggers" do
-    field :name, :string
-
     field :trigger_type, :string, default: "scheduled"
 
-    belongs_to :contact, Contact
     belongs_to :group, Group
     belongs_to :flow, Flow
 
     field :start_at, :utc_datetime
     field :end_date, :date
+    field :name, :string
 
     field :last_trigger_at, :utc_datetime
     field :next_trigger_at, :utc_datetime
@@ -96,25 +92,33 @@ defmodule Glific.Triggers.Trigger do
     |> foreign_key_constraint(:organization_id)
   end
 
-  @spec start_at(map(), non_neg_integer) :: DateTime.t()
-  defp start_at(%{start_at: nil} = attrs, org_id) do
+  @spec start_at(map()) :: DateTime.t()
+  defp start_at(%{start_at: nil} = attrs) do
     {:ok, ndt} = NaiveDateTime.new(attrs.start_date, attrs.start_time)
-    tz = Partners.organization_timezone(org_id)
+    tz = Partners.organization_timezone(attrs.organization_id)
     dt = DateTime.from_naive!(ndt, tz)
     DateTime.shift_zone!(dt, "Etc/UTC")
   end
 
-  defp start_at(%{start_at: start_at} = _attrs, _organization_id) do
-    start_at
+  ## We might need to change this and convert the datetime to utc
+  defp start_at(%{start_at: start_at} = _attrs),
+    do: start_at
+
+  @spec get_name(map(), DateTime.t()) :: String.t()
+  defp get_name(attrs, start_at) do
+    flow = Repo.get_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id})
+    {:ok, date} = Timex.format(start_at, "%Y/%m/%d %H:%m%p", :strftime)
+    "#{flow.name} #{date}"
   end
 
-  @spec fix_attrs(map(), non_neg_integer) :: map()
-  defp fix_attrs(attrs, org_id) do
+  @spec fix_attrs(map()) :: map()
+  defp fix_attrs(attrs) do
     # compute start_at if not set
-    start_at = start_at(attrs, org_id)
+    start_at = start_at(attrs)
 
     attrs
     |> Map.put(:start_at, start_at)
+    |> Map.put(:name, get_name(attrs, start_at))
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, start_at)
   end
@@ -123,7 +127,7 @@ defmodule Glific.Triggers.Trigger do
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
     %Trigger{}
-    |> Trigger.changeset(attrs |> fix_attrs(Repo.get_organization_id()))
+    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
     |> Repo.insert()
   end
 
@@ -133,7 +137,7 @@ defmodule Glific.Triggers.Trigger do
   @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def update_trigger(%Trigger{} = trigger, attrs) do
     trigger
-    |> Trigger.changeset(attrs)
+    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
     |> Repo.update()
   end
 
@@ -142,7 +146,35 @@ defmodule Glific.Triggers.Trigger do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &Repo.filter_with/2)
+    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:flow, flow}, query ->
+        from q in query,
+          join: c in assoc(q, :flow),
+          where: ilike(c.name, ^"%#{flow}%")
+
+      {:group, group}, query ->
+        from q in query,
+          join: g in assoc(q, :group),
+          where: ilike(g.label, ^"%#{group}%")
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc false
+  @spec delete_trigger(Trigger.t()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def delete_trigger(%Trigger{} = trigger) do
+    trigger
+    |> Trigger.changeset(%{})
+    |> Repo.delete()
   end
 
   @doc """

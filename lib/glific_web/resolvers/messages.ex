@@ -80,7 +80,7 @@ defmodule GlificWeb.Resolvers.Messages do
   def clear_messages(_, %{contact_id: contact_id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {:ok} <- Messages.clear_messages(contact) do
+         :ok <- Messages.clear_messages(contact) do
       {:ok, %{success: true}}
     end
   end

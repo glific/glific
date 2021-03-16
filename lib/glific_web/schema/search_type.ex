@@ -36,6 +36,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
+    field :is_reserved, :boolean
   end
 
   input_object :saved_search_input do
