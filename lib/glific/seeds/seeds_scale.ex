@@ -665,9 +665,6 @@ if Code.ensure_loaded?(Faker) do
 
       seed_message_tags(organization)
 
-      # now execute the stored procedure to build the search index
-      Repo.query!("SELECT create_search_messages(100)")
-
       nil
     end
   end

@@ -273,6 +273,7 @@ defmodule Glific.Searches do
       on: c.id == m.contact_id and m.message_number == 0
     )
     |> where([c: c], c.id != ^organization_contact_id)
+    |> where([c: c], c.status != :blocked)
     |> order_by([c: c], desc: c.last_communication_at)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
@@ -407,7 +408,6 @@ defmodule Glific.Searches do
     args
     |> basic_query()
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
-    |> where([c: c], c.status != :blocked)
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
