@@ -213,6 +213,22 @@ defmodule GlificWeb.Schema.TriggerTest do
              Date.to_string(trigger.end_date)
   end
 
+  test "update a trigger with existing name and next_trigger_at", attrs do
+    trigger =
+      Fixtures.trigger_fixture(Map.merge(attrs, %{last_trigger_at: DateTime.utc_now()}))
+      update_attrs = %{
+        start_at: trigger.start_at,
+        last_trigger_at: trigger.next_trigger_at,
+        flow_id: trigger.flow_id,
+        organization_id: trigger.organization_id,
+        is_active: false,
+        name: trigger.name
+      }
+      {:ok, updated_trigger} = Trigger.update_trigger(trigger, update_attrs)
+      assert trigger.name == updated_trigger.name
+      assert trigger.next_trigger_at == updated_trigger.next_trigger_at
+  end
+
   test "delete a trigger", %{manager: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
