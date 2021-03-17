@@ -59,8 +59,8 @@ defmodule Glific.TriggersTest do
         })
 
       assert capture_log(fn ->
-        Triggers.execute_triggers(attrs.organization_id)
-      end) =~ "executing trigger: test trigger for org_id: #{attrs.organization_id}"
+               Triggers.execute_triggers(attrs.organization_id)
+             end) =~ "executing trigger: test trigger for org_id: #{attrs.organization_id}"
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
@@ -101,14 +101,15 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
 
-    test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined", attrs do
+    test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined",
+         attrs do
       start_at = Timex.shift(DateTime.utc_now(), days: -1)
       end_date = Timex.shift(DateTime.utc_now(), days: 5)
 
       _trigger =
         Fixtures.trigger_fixture(%{
           start_at: start_at,
-          days: [7, 6, 5, 4, 3, 2 , 1],
+          days: [7, 6, 5, 4, 3, 2, 1],
           frequency: ["weekly"],
           is_repeating: true,
           organization_id: attrs.organization_id,
