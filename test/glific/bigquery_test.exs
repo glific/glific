@@ -140,7 +140,6 @@ defmodule Glific.BigqueryTest do
     assert job_table2.table_id > job_table1.table_id
   end
 
-
   test "handle_sync_errors/2 should raise error", attrs do
     assert_raise ArgumentError, fn ->
       Bigquery.handle_sync_errors(
@@ -159,7 +158,6 @@ defmodule Glific.BigqueryTest do
                attrs
              )
   end
-
 
   test "create_tables/3 should create tables" do
     Tesla.Mock.mock(fn
