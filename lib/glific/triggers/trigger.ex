@@ -108,8 +108,8 @@ defmodule Glific.Triggers.Trigger do
     with {:ok, flow} <-
            Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}) do
       tz = Partners.organization_timezone(attrs.organization_id)
-      org_time = DateTime.new!(attrs.start_date, attrs.start_time, tz)
-
+      time = DateTime.new!(attrs.start_date, attrs.start_time)
+      org_time = DateTime.shift_zone!(time, tz)
       {:ok, date} = Timex.format(org_time, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}")
       "#{flow.name}#{date}"
     end
