@@ -34,7 +34,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
           SELECT last_message_number INTO var_message_number FROM groups WHERE id = NEW.group_id LIMIT 1;
 
           UPDATE messages
-            SET message_number = var_message_number + 1, is_read = true, is_replied = true
+            SET message_number = var_message_number + 1
             WHERE id = NEW.id;
 
           UPDATE groups
@@ -68,36 +68,29 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
               SET
                 last_communication_at = now,
                 last_message_at = now,
-                last_message_number = last_message_number + 1
+                last_message_number = last_message_number + 1,
+                "org_read_messages?" = false,
+                "org_replied_messages?" = false,
+                "contact_replied_messages?" = true
               WHERE id = NEW.contact_id;
 
             UPDATE messages
               SET
-                is_read = true,
-                is_replied = CASE WHEN flow = 'outbound' THEN true ELSE is_replied END
-              WHERE contact_id = NEW.contact_id AND id < NEW.id AND (is_read = false OR is_replied = false);
-
-            UPDATE messages
-              SET
                 message_number = var_message_number + 1,
-                is_read = false,
-                is_replied = false,
                 session_uuid = session_uuid_value
               WHERE id = NEW.id;
           ELSE
             UPDATE contacts
               SET
                 last_communication_at = now,
-                last_message_number = last_message_number + 1
+                last_message_number = last_message_number + 1,
+                "org_replied_messages?" = true,
+                "contact_replied_messages?" = false
               WHERE id = NEW.contact_id;
 
             UPDATE messages
-              SET message_number = var_message_number + 1, is_read = true, is_replied = false
+              SET message_number = var_message_number + 1
               WHERE id = NEW.id;
-
-            UPDATE messages
-              SET is_replied = true
-              WHERE contact_id = NEW.contact_id AND id < NEW.id AND is_replied = false;
           END IF;
 
         END IF;

@@ -633,6 +633,8 @@ defmodule Glific.Messages do
     |> Repo.all()
     |> make_conversations()
     |> add_empty_conversations(args)
+
+    # |> adjust_message_numbers()
   end
 
   defp do_list_conversations(query, _args, true = _count) do
@@ -987,11 +989,9 @@ defmodule Glific.Messages do
   Mark that the user has read all messages sent by a given contact
   """
   @spec mark_contact_messages_as_read(non_neg_integer, non_neg_integer) :: nil
-  def mark_contact_messages_as_read(contact_id, organization_id) do
-    Message
-    |> where([m], m.contact_id == ^contact_id)
-    |> where([m], m.organization_id == ^organization_id)
-    |> where([m], m.is_read == false)
-    |> Repo.update_all(set: [is_read: true])
+  def mark_contact_messages_as_read(contact_id, _organization_id) do
+    Contact
+    |> where([c], c.id == ^contact_id)
+    |> Repo.update_all(set: [org_read_messages?: true])
   end
 end

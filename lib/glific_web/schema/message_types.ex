@@ -47,10 +47,6 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :bsp_status, :message_status_enum
 
-    # expose the message status fields
-    field :is_read, :boolean
-    field :is_replied, :boolean
-
     # expose the date we processed this message since external clients need it
     field :inserted_at, :datetime
     field :updated_at, :datetime
