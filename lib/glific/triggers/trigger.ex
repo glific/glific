@@ -9,7 +9,6 @@ defmodule Glific.Triggers.Trigger do
   alias Glific.{
     Flows.Flow,
     Groups.Group,
-    Partners,
     Partners.Organization,
     Repo
   }

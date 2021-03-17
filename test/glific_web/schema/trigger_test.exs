@@ -4,7 +4,6 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   alias Glific.{
     Fixtures,
-    Partners,
     Repo,
     Seeds.SeedsDev,
     Triggers.Trigger
@@ -179,11 +178,9 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     {:ok, d} = Date.from_iso8601(start_date)
     {:ok, t} = Time.from_iso8601(start_time)
-    {:ok, ndt} = NaiveDateTime.new(d, t)
-    tz = Partners.organization_timezone(attrs.organization_id)
-    dt = DateTime.from_naive!(ndt, tz)
+    time = DateTime.new!(d, t)
 
-    assert DateTime.shift_zone!(dt, "Etc/UTC") == start_at
+    assert time == start_at
   end
 
   test "update a trigger and test possible scenarios and errors", %{manager: user} = attrs do
