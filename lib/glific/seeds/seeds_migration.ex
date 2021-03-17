@@ -40,7 +40,9 @@ defmodule Glific.Seeds.SeedsMigration do
       :simulator -> add_simulators(organizations)
       :optin -> optin_data(organizations)
       :collection -> seed_collections(organizations)
+      :fix_message_number -> fix_message_number(organizations)
       :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
+
     end
   end
 
@@ -270,6 +272,19 @@ defmodule Glific.Seeds.SeedsMigration do
     |> update([c], set: [optin_status: true, optin_method: "BSP"])
     |> Repo.update_all([], skip_organization_id: true)
 
+    :ok
+  end
+
+  @spec fix_message_number(list) :: :ok
+  defp fix_message_number(organizations) do
+    organizations
+    |> Enum.each(organizations, &do_fix_message_number/1)
+  end
+
+  @spec do_fix_message_number(Organization.t()) :: :ok
+  defp do_fix_message_number(org) do
+    query  = "UPDATE messages m SET message_number = m2.row_num  FROM (  select m2.*, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at asc) as row_num from messages m2 where m2.organization_id = #{org.id} ) m2 where m.organization_id = #{org.id}"
+    Repo.query!(query)
     :ok
   end
 end
