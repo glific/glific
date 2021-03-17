@@ -24,11 +24,23 @@ defmodule Glific.TriggersTest do
 
   describe "triggers" do
     test "execute_triggers/2 should execute a trigger", attrs do
-      time = Timex.shift(DateTime.utc_now(), days: -1)
-      _trigger = Fixtures.trigger_fixture(%{start_at: time, organization_id: attrs.organization_id})
-      msg_count1 = Messages.count_messages(%{filter: attrs})|>IO.inspect()
+      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      end_date = Timex.shift(DateTime.utc_now(), days: 1)
+
+      _trigger = Fixtures.trigger_fixture(%{start_at: start_at, organization_id: attrs.organization_id, end_date: end_date})
+      msg_count1 = Messages.count_messages(%{filter: attrs})
        Triggers.execute_triggers(attrs.organization_id)
-      msg_count2 = Messages.count_messages(%{filter: attrs})|>IO.inspect()
+      msg_count2 = Messages.count_messages(%{filter: attrs})
+      assert msg_count2 > msg_count1
+    end
+
+    test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
+      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      end_date = Timex.shift(DateTime.utc_now(), days: 2)
+      _trigger = Fixtures.trigger_fixture(%{start_at: start_at, organization_id: attrs.organization_id, last_trigger_at: time, end_date: end_date})
+      msg_count1 = Messages.count_messages(%{filter: attrs})
+       Triggers.execute_triggers(attrs.organization_id)
+      msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
     end
   end
