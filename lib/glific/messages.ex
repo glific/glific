@@ -645,15 +645,6 @@ defmodule Glific.Messages do
     |> Repo.aggregate(:count)
   end
 
-  @spec add_order_by(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp add_order_by(query, ids) do
-    if length(ids) == 1,
-      # if messages for one contact, order by message number
-      do: query |> order_by([m], desc: m.message_number),
-      # else order by most recent messages
-      else: query |> order_by([m], desc: m.inserted_at)
-  end
-
   @doc """
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
@@ -667,7 +658,7 @@ defmodule Glific.Messages do
         {:ids, ids}, query ->
           query
           |> where([m], m.id in ^ids)
-          |> add_order_by(ids)
+          |> order_by([m], desc: m.inserted_at)
 
         {:filter, filter}, query ->
           query |> conversations_with(filter)
