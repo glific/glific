@@ -33,6 +33,7 @@
         "lib/glific_web/resolvers/triggers.ex",
         "lib/glific_web/resolvers/locations.ex",
         "lib/glific_web/flows/webhook_controller",
+        "lib/glific/triggers/helper.ex",
         "lib/glific/triggers/trigger_log.ex",
         "lib/glific_web.ex",
         "lib/glific_web/channels/user_socket.ex",
