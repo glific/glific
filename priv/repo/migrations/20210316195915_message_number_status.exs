@@ -3,6 +3,7 @@ defmodule Glific.Repo.Migrations.MessageNumberStatus do
 
   def change do
     drop_if_exists table(:search_messages)
+    drop_search_message_triggers()
 
     alter table(:contacts) do
       add :org_read_messages?, :boolean,
@@ -32,5 +33,14 @@ defmodule Glific.Repo.Migrations.MessageNumberStatus do
         default: 0,
         comment: "The max message number sent via this group"
     end
+  end
+
+  def drop_search_message_triggers do
+    [
+      "drop trigger IF EXISTS update_search_message_trigger on  contacts",
+      "drop trigger IF EXISTS update_search_message_trigger on messages",
+      "drop trigger IF EXISTS update_search_message_trigger on messages_tags"
+    ] |> Enum.each(&execute/1)
+
   end
 end
