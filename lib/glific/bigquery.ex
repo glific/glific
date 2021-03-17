@@ -432,7 +432,11 @@ defmodule Glific.Bigquery do
   @spec do_make_insert_query(tuple(), non_neg_integer, list(), Keyword.t()) ::
           {:ok, any()} | {:error, any()}
   defp do_make_insert_query(
-    {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}}, organization_id, data, opts ) do
+         {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}},
+         organization_id,
+         data,
+         opts
+       ) do
     table = Keyword.get(opts, :table)
 
     Logger.info(
@@ -456,11 +460,15 @@ defmodule Glific.Bigquery do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
 
-    Logger.info("Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{ inspect(res)}")
+    Logger.info(
+      "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{
+        inspect(res)
+      }"
+    )
 
     ## Max id will be nil or 0 in case of update statement.
-    if ((not is_nil(max_id)) and (max_id != 0)),
-    do: Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+    if not is_nil(max_id) and max_id != 0,
+      do: Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
     :ok
   end
@@ -505,30 +513,47 @@ defmodule Glific.Bigquery do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
-        Logger.info("remove duplicates for  #{table} table on bigquery, org_id: #{organization_id}")
+        Logger.info(
+          "remove duplicates for  #{table} table on bigquery, org_id: #{organization_id}"
+        )
+
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
+
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
           body: %{query: sql, useLegacySql: false}
         )
-        |> handle_merge_job_error(table, credentials, organization_id)
+        |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
         :ok
     end
   end
 
-  @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer):: String.t()
+  @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
-    "DELETE FROM `#{credentials.dataset_id}.#{table}` WHERE EXISTS( SELECT * FROM  ( SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{credentials.dataset_id}.#{table}` delta where updated_at > DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{timezone}') ) WHERE row_num > 1)"
+
+    "DELETE FROM `#{credentials.dataset_id}.#{table}` WHERE EXISTS( SELECT * FROM  ( SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
+      credentials.dataset_id
+    }.#{table}` delta where updated_at > DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
+      timezone
+    }') ) WHERE row_num > 1)"
   end
 
-  @spec handle_merge_job_error(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
-  defp handle_merge_job_error({:ok, response}, table, _credentials, organization_id),
-  do: Logger.info("duplicate entries have been removed form #{table} on bigquery for org_id: #{organization_id}. #{inspect(response)}")
+  @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
+  defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
+    do:
+      Logger.info(
+        "duplicate entries have been removed form #{table} on bigquery for org_id: #{
+          organization_id
+        }. #{inspect(response)}"
+      )
 
-  defp handle_merge_job_error({:error, error}, table, _, _) do
+  defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
-    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
+
+    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{
+            inspect(error)
+          }"
   end
 end

@@ -78,6 +78,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp insert_for_table(bigquery_job, organization_id) do
     table_id = bigquery_job.table_id
     Logger.info("Checking for bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
+
     data =
       Bigquery.get_table_struct(bigquery_job.table)
       |> select([m], m.id)
@@ -93,7 +94,11 @@ defmodule Glific.Jobs.BigQueryWorker do
         nil
 
       max_id > table_id ->
-        queue_table_data(bigquery_job.table, organization_id, %{ min_id: table_id, max_id: max_id, action: :insert })
+        queue_table_data(bigquery_job.table, organization_id, %{
+          min_id: table_id,
+          max_id: max_id,
+          action: :insert
+        })
 
       true ->
         nil
@@ -130,7 +135,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("contacts", organization_id, attrs) do
-    Logger.info( "fetching data for contacts to send on bigquery attrs: #{inspect attrs} , org_id: #{ organization_id}")
+    Logger.info(
+      "fetching data for contacts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{
+        organization_id
+      }"
+    )
 
     get_query("contacts", organization_id, attrs)
     |> Repo.all()
@@ -181,7 +190,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flows", organization_id, attrs) do
-    Logger.info( "fetching data for flows to send on bigquery attrs: #{inspect attrs}, org_id: #{organization_id}")
+    Logger.info(
+      "fetching data for flows to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+        organization_id
+      }"
+    )
 
     get_query("flows", organization_id, attrs)
     |> Repo.all()
@@ -210,7 +223,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("flow_results", organization_id, attrs) do
-    Logger.info("fetching data for flow_results to send on bigquery attrs: #{inspect attrs}, org_id: #{ organization_id }")
+    Logger.info(
+      "fetching data for flow_results to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+        organization_id
+      }"
+    )
 
     get_query("flow_results", organization_id, attrs)
     |> Repo.all()
@@ -270,19 +287,24 @@ defmodule Glific.Jobs.BigQueryWorker do
       latitude: if(!is_nil(row.location), do: row.location.latitude)
     }
 
-
   @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
-  defp make_job(data, table, organization_id, %{action: :insert} = attrs) when data in [%{}, nil, []] do
+  defp make_job(data, table, organization_id, %{action: :insert} = attrs)
+       when data in [%{}, nil, []] do
     table = Atom.to_string(table)
     Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
     :ok
   end
 
   defp make_job(data, _table, _organization_id, %{action: :update} = _attrs)
-  when data in [%{}, nil, []], do: :ok
+       when data in [%{}, nil, []],
+       do: :ok
 
   defp make_job(data, table, organization_id, attrs) do
-    Logger.info("making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{ inspect attrs}")
+    Logger.info(
+      "making a new job for #{table} to send on bigquery org_id: #{organization_id} with max id: #{
+        inspect(attrs)
+      }"
+    )
 
     __MODULE__.new(%{
       data: data,
@@ -291,12 +313,13 @@ defmodule Glific.Jobs.BigQueryWorker do
       max_id: attrs[:max_id]
     })
     |> Oban.insert()
+
     :ok
   end
 
   @spec make_job_to_remove_duplicate(String.t(), non_neg_integer) :: :ok
   defp make_job_to_remove_duplicate(table, organization_id) do
-    Logger.info( "removing duplicates for the table #{table} and org_id: #{organization_id}")
+    Logger.info("removing duplicates for the table #{table} and org_id: #{organization_id}")
 
     __MODULE__.new(%{
       table: table,
@@ -347,12 +370,12 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> preload([:flow])
 
   defp get_query("flow_results", organization_id, attrs),
-  do: FlowResult
+    do:
+      FlowResult
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
-
 
   @impl Oban.Worker
   @doc """
@@ -361,7 +384,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
         %Oban.Job{
-          args: %{"table" => table, "organization_id" => organization_id, "remove_duplicates" => true}
+          args: %{
+            "table" => table,
+            "organization_id" => organization_id,
+            "remove_duplicates" => true
+          }
         } = _job
       ),
       do: Bigquery.make_job_to_remove_duplicate(table, organization_id)

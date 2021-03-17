@@ -54,27 +54,38 @@ defmodule Glific.BigqueryTest do
   test "queue_table_data/4 should create job for messages",
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("messages", attrs)
-    BigQueryWorker.queue_table_data("messages", attrs.organization_id, %{min_id: @min_id, max_id: max_id})
+
+    BigQueryWorker.queue_table_data("messages", attrs.organization_id, %{
+      min_id: @min_id,
+      max_id: max_id
+    })
+
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
   end
-
-
 
   test "queue_table_data/4 should create job for contacts",
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("contacts", attrs)
-    BigQueryWorker.queue_table_data("contacts", attrs.organization_id, %{min_id: @min_id, max_id: max_id})
+
+    BigQueryWorker.queue_table_data("contacts", attrs.organization_id, %{
+      min_id: @min_id,
+      max_id: max_id
+    })
+
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
   end
 
-
-
   test "queue_table_data/4 should create job for flows",
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("flows", attrs)
-    BigQueryWorker.queue_table_data("flows", attrs.organization_id, %{min_id: @min_id, max_id: max_id})
+
+    BigQueryWorker.queue_table_data("flows", attrs.organization_id, %{
+      min_id: @min_id,
+      max_id: max_id
+    })
+
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
   end
@@ -82,7 +93,12 @@ defmodule Glific.BigqueryTest do
   test "queue_table_data/4 should create job for flow_results",
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("flow_results", attrs)
-    BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, %{min_id: @min_id, max_id: max_id})
+
+    BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, %{
+      min_id: @min_id,
+      max_id: max_id
+    })
+
     assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
     Oban.drain_queue(queue: :bigquery)
   end
