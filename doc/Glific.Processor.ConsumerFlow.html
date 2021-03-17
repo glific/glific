@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific.Processor.ConsumerFlow — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific.Processor.ConsumerFlow — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,17 +73,21 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        Glific.Processor.ConsumerFlow <small class="app-vsn">(Glific v0.9.4)</small>
+Glific.Processor.ConsumerFlow <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_flow.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
 <p>Given a message, run it thru the flow engine. This is an auxilary module to help
-consumer_worker which is the main workhorse</p>        </section>
+consumer_worker which is the main workhorse</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -83,26 +97,45 @@ consumer_worker which is the main workhorse</p>        </section>
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#check_flows/4">check_flows(message, body, state, is_beta)</a>
+    <a href="#check_flows/4">check_flows(message, body, state, opts \\ [])</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Start a flow or reactivate a flow if needed. This will be linked to the entire
 trigger mechanism once we have that under control.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#load_state/1">load_state(organization_id)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Load the relevant state into the gen_server state object that we need
 to process messages</p></div>
+
 </div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#move_forward/4">move_forward(arg, body, context, opts)</a>
+
   </div>
+
+    <div class="summary-synopsis"><p>In case contact is not in optin flow let's move ahead with the regualr processing.</p></div>
+
+</div>
+
+  </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -110,55 +143,114 @@ to process messages</p></div>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="check_flows/4">
+
+    <span id="check_flows/3"></span>
+
   <div class="detail-header">
     <a href="#check_flows/4" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">check_flows(message, body, state, is_beta)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_flow.ex#L93" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">check_flows(message, body, state, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_flow.ex#L111" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>check_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>() | Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()) ::
-  {Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+          <pre>check_flows(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>() | Glific.Messages.Message.t(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()
+) :: {Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
       </div>
 
 <p>Start a flow or reactivate a flow if needed. This will be linked to the entire
-trigger mechanism once we have that under control.</p>  </section>
+trigger mechanism once we have that under control.</p>
+  </section>
 </section>
 <section class="detail" id="load_state/1">
+
   <div class="detail-header">
     <a href="#load_state/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">load_state(organization_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_flow.ex#L22" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_flow.ex#L23" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>load_state(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
       </div>
 
 <p>Load the relevant state into the gen_server state object that we need
-to process messages</p>  </section>
+to process messages</p>
+  </section>
 </section>
+<section class="detail" id="move_forward/4">
+
+  <div class="detail-header">
+    <a href="#move_forward/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">move_forward(arg, body, context, opts)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/processor/consumer_flow.ex#L61" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>move_forward(
+  {Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()},
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(),
+  <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()
+) :: {Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+<p>In case contact is not in optin flow let's move ahead with the regualr processing.</p>
+  </section>
+</section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -172,7 +264,9 @@ to process messages</p>  </section>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -192,5 +286,7 @@ to process messages</p>  </section>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

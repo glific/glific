@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific.Caches.CacheBehaviour — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific.Caches.CacheBehaviour — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,16 +73,20 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        Glific.Caches.CacheBehaviour <small>behaviour</small> <small class="app-vsn">(Glific v0.9.4)</small>
+Glific.Caches.CacheBehaviour <small>behaviour</small> <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific/caches/cache_behaviour.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
-<p>The cache API behaviour</p>        </section>
+<p>The cache API behaviour</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -82,6 +96,7 @@ Glific      </a>
             </a>
             Summary
           </h1>
+
   <div class="summary-callbacks summary">
     <h2>
       <a href="#callbacks">Callbacks</a>
@@ -89,30 +104,43 @@ Glific      </a>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#c:fetch/3">fetch(non_neg_integer, arg2, function)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#c:get/2">get(non_neg_integer, arg2)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#c:remove/2">remove(non_neg_integer, list)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#c:set/3">set(non_neg_integer, list, any)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#c:set/4">set(non_neg_integer, list, function, map)</a>
+
   </div>
+
 </div>
+
   </div>
+
         </section>
+
 
         <section id="callbacks" class="details-list">
           <h1 class="section-heading">
@@ -120,117 +148,161 @@ Glific      </a>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Callbacks          </h1>
+Callbacks
+          </h1>
           <div class="callbacks-list">
 <section class="detail" id="c:fetch/3">
+
   <div class="detail-header">
     <a href="#c:fetch/3" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">fetch(non_neg_integer, arg2, function)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific/caches/cache_behaviour.ex#L14" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>fetch(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), (<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>() -&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>())) ::
   {:ok | :error | :commit | :ignore, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
+
 
   </section>
 </section>
 <section class="detail" id="c:get/2">
+
   <div class="detail-header">
     <a href="#c:get/2" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">get(non_neg_integer, arg2)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific/caches/cache_behaviour.ex#L12" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>get(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:ok, false}</pre>
+
       </div>
+
 
   </section>
 </section>
 <section class="detail" id="c:remove/2">
+
   <div class="detail-header">
     <a href="#c:remove/2" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">remove(non_neg_integer, list)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific/caches/cache_behaviour.ex#L17" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>remove(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+
       </div>
+
 
   </section>
 </section>
 <section class="detail" id="c:set/3">
+
   <div class="detail-header">
     <a href="#c:set/3" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">set(non_neg_integer, list, any)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific/caches/cache_behaviour.ex#L8" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>set(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
           <pre>set(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
+
 
   </section>
 </section>
 <section class="detail" id="c:set/4">
+
   <div class="detail-header">
     <a href="#c:set/4" class="detail-link" title="Link to this callback">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this callback</span>
     </a>
     <h1 class="signature">set(non_neg_integer, list, function, map)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific/caches/cache_behaviour.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>set(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(), (<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>() -&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
+
 
   </section>
 </section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -244,7 +316,9 @@ Callbacks          </h1>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -264,5 +338,7 @@ Callbacks          </h1>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

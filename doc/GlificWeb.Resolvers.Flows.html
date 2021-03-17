@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>GlificWeb.Resolvers.Flows — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>GlificWeb.Resolvers.Flows — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,17 +73,21 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        GlificWeb.Resolvers.Flows <small class="app-vsn">(Glific v0.9.4)</small>
+GlificWeb.Resolvers.Flows <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
-<p>Flow Resolver which sits between the GraphQL schema and Glific Flow Context API. This layer basically stiches together
-one or more calls to resolve the incoming queries.</p>        </section>
+<p>Flow Resolver which sits between the GraphQL schema and Glific Flow Context API.
+This layer basically stiches together one or more calls to resolve the incoming queries.</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -83,6 +97,7 @@ one or more calls to resolve the incoming queries.</p>        </section>
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
@@ -90,47 +105,71 @@ one or more calls to resolve the incoming queries.</p>        </section>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#copy_flow/3">copy_flow(_, map1, map2)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Make a copy a flow</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#count_flows/3">count_flows(_, args, _)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Get the count of flows filtered by args</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#flow/3">flow(_, map1, map2)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Get a specific flow by id</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#flows/3">flows(_, args, _)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Get the list of flows</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#publish_flow/3">publish_flow(_, map, _)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Publish a flow</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#start_contact_flow/3">start_contact_flow(_, map1, map2)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Start a flow for a contact</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#start_group_flow/3">start_group_flow(_, map1, map2)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Start a flow for all contacts of a group</p></div>
+
 </div>
+
   </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -138,171 +177,230 @@ one or more calls to resolve the incoming queries.</p>        </section>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="copy_flow/3">
+
   <div class="detail-header">
     <a href="#copy_flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">copy_flow(_, map1, map2)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L125" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L132" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>copy_flow(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{
+
+          <pre>copy_flow(<a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), input: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}, %{
   context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()
 }) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
 
-<p>Make a copy a flow</p>  </section>
+<p>Make a copy a flow</p>
+  </section>
 </section>
 <section class="detail" id="count_flows/3">
+
   <div class="detail-header">
     <a href="#count_flows/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_flows(_, args, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L37" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L38" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>count_flows(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+
+          <pre>count_flows(<a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}</pre>
+
       </div>
 
-<p>Get the count of flows filtered by args</p>  </section>
+<p>Get the count of flows filtered by args</p>
+  </section>
 </section>
 <section class="detail" id="flow/3">
+
   <div class="detail-header">
     <a href="#flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">flow(_, map1, map2)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L20" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L21" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>flow(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+
+          <pre>flow(<a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
 
-<p>Get a specific flow by id</p>  </section>
+<p>Get a specific flow by id</p>
+  </section>
 </section>
 <section class="detail" id="flows/3">
+
   <div class="detail-header">
     <a href="#flows/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">flows(_, args, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L29" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L30" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>flows(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+
+          <pre>flows(<a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, [Glific.Flows.Flow]}</pre>
+
       </div>
 
-<p>Get the list of flows</p>  </section>
+<p>Get the list of flows</p>
+  </section>
 </section>
 <section class="detail" id="publish_flow/3">
+
   <div class="detail-header">
     <a href="#publish_flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">publish_flow(_, map, _)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L75" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L73" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>publish_flow(<a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{uuid: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
+
+          <pre>publish_flow(<a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(), %{uuid: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}, %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}) ::
   {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
 
-<p>Publish a flow</p>  </section>
+<p>Publish a flow</p>
+  </section>
 </section>
 <section class="detail" id="start_contact_flow/3">
+
   <div class="detail-header">
     <a href="#start_contact_flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">start_contact_flow(_, map1, map2)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L89" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L96" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>start_contact_flow(
-  <a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(),
+  <a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(),
   %{flow_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), contact_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()},
   %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}
 ) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
 
-<p>Start a flow for a contact</p>  </section>
+<p>Start a flow for a contact</p>
+  </section>
 </section>
 <section class="detail" id="start_group_flow/3">
+
   <div class="detail-header">
     <a href="#start_group_flow/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">start_group_flow(_, map1, map2)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L108" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/resolvers/flows.ex#L115" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>start_group_flow(
-  <a href="https://hexdocs.pm/absinthe/1.5.5/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(),
+  <a href="https://hexdocs.pm/absinthe/1.6.3/Absinthe.Resolution.html#t:t/0">Absinthe.Resolution.t</a>(),
   %{flow_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), group_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()},
   %{context: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}
 ) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
       </div>
 
-<p>Start a flow for all contacts of a group</p>  </section>
+<p>Start a flow for all contacts of a group</p>
+  </section>
 </section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -316,7 +414,9 @@ Functions          </h1>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -336,5 +436,7 @@ Functions          </h1>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

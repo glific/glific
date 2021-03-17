@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific - Two Way Open Source Communication Platform — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific - Two Way Open Source Communication Platform — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="extras">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -68,7 +78,8 @@ Glific      </a>
 <a href="https://hexdocs.pm/glific/"><img src="https://img.shields.io/hexpm/v/glific.svg" alt="Glific on hex.pm"></img></a>
 <img src="https://img.shields.io/github/issues-raw/glific/glific" alt="GitHub issues"></img>
 <a href="https://discord.gg/MVf2KF"><img src="https://img.shields.io/discord/717975833226248303.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" alt="Discord"></img></a>
-<a href="https://codebeat.co/projects/github-com-glific-glific-master"><img src="https://codebeat.co/badges/dd951390-5f51-4c98-bddc-0b618bdb43fd" alt="codebeat badge"></img></a></p><h2 id="packages-needed" class="section-heading">
+<a href="https://codebeat.co/projects/github-com-glific-glific-master"><img src="https://codebeat.co/badges/dd951390-5f51-4c98-bddc-0b618bdb43fd" alt="codebeat badge"></img></a>
+<a href="https://img.shields.io/github/commit-activity/m/glific/glific"><img src="https://img.shields.io/github/commit-activity/m/glific/glific" alt="Commits"></img></a></p><h2 id="packages-needed" class="section-heading">
   <a href="#packages-needed" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Packages Needed
 </h2>
@@ -78,7 +89,7 @@ Glific      </a>
 </h2>
 <p>Glific is currently developed and hosted on the following platforms. Our goal is to always try and use the latest
 versions of each platform as soon as feasible (i.e. once the ecosystem of packages we used have upgraded). We do not
-have the bandwidth to support earlier versions of the packages.</p><ul><li>erlang : 23.0.2</li><li>elixir : 1.10.4</li><li>nodejs : 14.15.0</li><li>postgres : v12.x or v13.x</li></ul><h2 id="download-code" class="section-heading">
+have the bandwidth to support earlier versions of the packages.</p><ul><li>erlang : 23.2.5</li><li>elixir : 1.11.3-otp-23</li><li>nodejs : 14.16.0</li><li>postgres : v12.x or v13.x</li></ul><h2 id="download-code" class="section-heading">
   <a href="#download-code" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Download code
 </h2>
@@ -86,7 +97,7 @@ have the bandwidth to support earlier versions of the packages.</p><ul><li>erlan
   <a href="#setup" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Setup
 </h2>
-<ul><li>Copy the file: <code class="inline">config/dev.secret.exs.txt</code> to <code class="inline">config/dev.secret.exs</code> and edit it with your credentials</li><li>Start the postgres server</li><li>Run <code class="inline">mix setup</code></li><li>This will setup Glific with default credentials as:<ul><li>Phone <code class="inline">917834811114</code></li><li>Password <code class="inline">secret1234</code></li></ul></li><li>Run <a href="https://hexdocs.pm/phoenix/1.5.7/Mix.Tasks.Phx.Server.html"><code class="inline">mix phx.server</code></a></li></ul><h2 id="here-we-go" class="section-heading">
+<ul><li>Copy the file: <code class="inline">config/dev.secret.exs.txt</code> to <code class="inline">config/dev.secret.exs</code> and edit it with your credentials</li><li>Start the postgres server</li><li>Run <code class="inline">mix setup</code></li><li>This will setup Glific with default credentials as:<ul><li>Phone <code class="inline">917834811114</code></li><li>Password <code class="inline">secret1234</code></li></ul></li><li>Run <a href="https://hexdocs.pm/phoenix/1.5.8/Mix.Tasks.Phx.Server.html"><code class="inline">mix phx.server</code></a></li></ul><h2 id="here-we-go" class="section-heading">
   <a href="#here-we-go" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Here we go
 </h2>
@@ -102,7 +113,7 @@ install <a href="https://github.com/glific/glific-frontend/">Glific Frontend</a>
 <p>The frontend and backend are great, but you will need an account with a WhatsApp Business Provider to explore the
 application. The currently supported backend is <a href="https://www.gupshup.io/developer/home">Gupshup</a>.
 You will need to do the following:</p><ul><li>Create a <a href="https://www.gupshup.io/developer/home">Gupshup Account</a></li><li>Create a <a href="https://www.gupshup.io/whatsappassistant/#/account-setup">WhatsApp Messaging App on Gupshup</a></li><li>You can name it <code class="inline">GlificTest</code> and ensure the <code class="inline">App Type</code> is <code class="inline">Access API</code></li><li>Edit <code class="inline">config/dev.secret.exs</code> in the backend directory</li><li>Enter your API Key, which can be found by clicking on your profile in the top left
-corner of your gupshup dashboard</li><li>Enter your APP name</li><li>Start the backend server in iex session: <code class="inline">iex -S mix</code></li><li>Update HSM templates: <code class="inline">Glific.Templates.update_hsms(1)</code></li><li>Install <a href="https://ngrok.com/download">ngrok</a></li><li>Start ngrok to proxy port 4000:<ul><li>Start the backend server: <a href="https://hexdocs.pm/phoenix/1.5.7/Mix.Tasks.Phx.Server.html"><code class="inline">mix phx.server</code></a></li><li><code class="inline">$ ngrok http 4000 --host-header=localhost:4000</code> (do this in a new window))</li><li>Remember the URL it assigns you, something like: <code class="inline">https://9f6a7c7822d2.ngrok.io</code></li></ul></li><li>Goto the <a href="https://www.gupshup.io/whatsappassistant/#/settings">Settings Page</a></li><li>On that page, Search for <code class="inline">Manage your Template messaging settings</code> and enable it</li><li>On same page, Search for <code class="inline">Callback URL / Link your Bot</code></li><li>Enter your callback URL that ngrok gave you, add: <code class="inline">/gupshup</code> to the end. Something like:
+corner of your gupshup dashboard</li><li>Enter your APP name</li><li>Start the backend server in iex session: <code class="inline">iex -S mix</code></li><li>Update HSM templates: <code class="inline">Glific.Templates.update_hsms(1)</code></li><li>Install <a href="https://ngrok.com/download">ngrok</a></li><li>Start ngrok to proxy port 4000:<ul><li>Start the backend server: <a href="https://hexdocs.pm/phoenix/1.5.8/Mix.Tasks.Phx.Server.html"><code class="inline">mix phx.server</code></a></li><li><code class="inline">$ ngrok http 4000 --host-header=localhost:4000</code> (do this in a new window))</li><li>Remember the URL it assigns you, something like: <code class="inline">https://9f6a7c7822d2.ngrok.io</code></li></ul></li><li>Goto the <a href="https://www.gupshup.io/whatsappassistant/#/settings">Settings Page</a></li><li>On that page, Search for <code class="inline">Manage your Template messaging settings</code> and enable it</li><li>On same page, Search for <code class="inline">Callback URL / Link your Bot</code></li><li>Enter your callback URL that ngrok gave you, add: <code class="inline">/gupshup</code> to the end. Something like:
 <code class="inline">https://9f6a7c7822d2.ngrok.io/gupshup/</code></li><li>Click <a href="https://hexdocs.pm/elixir/Set.html"><code class="inline">Set</code></a>. It should give you a <code class="inline">Callback set successfully</code> message. If not, check the above steps.</li></ul><h2 id="updating-your-instance" class="section-heading">
   <a href="#updating-your-instance" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Updating your instance
@@ -128,7 +139,8 @@ to update your codebase from the glicic repository.</p><ul><li>Ensure you are in
   <a href="#chat-with-us" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Chat with us
 </h2>
-<ul><li><a href="https://discord.gg/me6NCMu">Chat on Discord</a></li></ul>      <footer class="footer">
+<ul><li><a href="https://discord.gg/me6NCMu">Chat on Discord</a></li></ul>
+      <footer class="footer">
         <p>
           <span class="line">
             Built using
@@ -141,7 +153,9 @@ to update your codebase from the glicic repository.</p><ul><li>Ensure you are in
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -161,5 +175,7 @@ to update your codebase from the glicic repository.</p><ul><li>Ensure you are in
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

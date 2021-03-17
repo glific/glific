@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific.Users — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific.Users — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,16 +73,20 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        Glific.Users <small class="app-vsn">(Glific v0.9.4)</small>
+Glific.Users <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
-<p>The Users context.</p>        </section>
+<p>The Users context.</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -82,6 +96,7 @@ Glific      </a>
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
@@ -89,96 +104,142 @@ Glific      </a>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#count_users/1">count_users(args)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Return the count of users, using the same filter as list_users</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#create/1">create(params)</a>
+
   </div>
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:create/1"><code class="inline">Pow.Context.create/1</code></a>.</p></div>
+
+    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:create/1"><code class="inline">Pow.Context.create/1</code></a>.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#create_user/1">create_user(attrs)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Creates a user.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#delete/1">delete(user)</a>
+
   </div>
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:delete/1"><code class="inline">Pow.Context.delete/1</code></a>.</p></div>
+
+    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:delete/1"><code class="inline">Pow.Context.delete/1</code></a>.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#delete_user/1">delete_user(user)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Deletes a user.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#get_by/1">get_by(clauses)</a>
+
   </div>
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:get_by/1"><code class="inline">Pow.Context.get_by/1</code></a>.</p></div>
+
+    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:get_by/1"><code class="inline">Pow.Context.get_by/1</code></a>.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#get_user!/1">get_user!(id)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Gets a single user.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#list_users/1">list_users(args)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Returns the list of filtered users.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#pow_authenticate/1">pow_authenticate(params)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#pow_create/1">pow_create(params)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#pow_delete/1">pow_delete(user)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#pow_get_by/1">pow_get_by(clauses)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#pow_update/2">pow_update(user, params)</a>
+
   </div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#reset_user_password/2">reset_user_password(user, attrs)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Reset user password</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#update/2">update(user, params)</a>
+
   </div>
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:update/2"><code class="inline">Pow.Context.update/2</code></a>.</p></div>
+
+    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:update/2"><code class="inline">Pow.Context.update/2</code></a>.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#update_user/2">update_user(user, attrs)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Updates a user.</p></div>
+
 </div>
+
   </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -186,351 +247,455 @@ Glific      </a>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="count_users/1">
+
   <div class="detail-header">
     <a href="#count_users/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">count_users(args)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L34" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L35" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>count_users(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+
       </div>
 
-<p>Return the count of users, using the same filter as list_users</p>  </section>
+<p>Return the count of users, using the same filter as list_users</p>
+  </section>
 </section>
 <section class="detail" id="create/1">
+
   <div class="detail-header">
     <a href="#create/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create(params)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:create/1"><code class="inline">Pow.Context.create/1</code></a>.</p>  </section>
+<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:create/1"><code class="inline">Pow.Context.create/1</code></a>.</p>
+  </section>
 </section>
 <section class="detail" id="create_user/1">
+
   <div class="detail-header">
     <a href="#create_user/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">create_user(attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L67" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L68" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>create_user(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
       </div>
 
 <p>Creates a user.</p><h2 id="create_user/1-examples" class="section-heading">
   <a href="#create_user/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_user</span><span class="p" data-group-id="6587530787-1">(</span><span class="p" data-group-id="6587530787-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6587530787-2">}</span><span class="p" data-group-id="6587530787-1">)</span><span class="w">
-</span><span class="p" data-group-id="6587530787-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6587530787-4">%</span><span class="nc" data-group-id="6587530787-4">User</span><span class="p" data-group-id="6587530787-4">{</span><span class="p" data-group-id="6587530787-4">}</span><span class="p" data-group-id="6587530787-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_user</span><span class="p" data-group-id="9283653054-1">(</span><span class="p" data-group-id="9283653054-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9283653054-2">}</span><span class="p" data-group-id="9283653054-1">)</span><span class="w">
+</span><span class="p" data-group-id="9283653054-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9283653054-4">%</span><span class="nc" data-group-id="9283653054-4">User</span><span class="p" data-group-id="9283653054-4">{</span><span class="p" data-group-id="9283653054-4">}</span><span class="p" data-group-id="9283653054-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_user</span><span class="p" data-group-id="6587530787-5">(</span><span class="p" data-group-id="6587530787-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6587530787-6">}</span><span class="p" data-group-id="6587530787-5">)</span><span class="w">
-</span><span class="p" data-group-id="6587530787-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6587530787-8">%</span><span class="nc" data-group-id="6587530787-8">Ecto.Changeset</span><span class="p" data-group-id="6587530787-8">{</span><span class="p" data-group-id="6587530787-8">}</span><span class="p" data-group-id="6587530787-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_user</span><span class="p" data-group-id="9283653054-5">(</span><span class="p" data-group-id="9283653054-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9283653054-6">}</span><span class="p" data-group-id="9283653054-5">)</span><span class="w">
+</span><span class="p" data-group-id="9283653054-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9283653054-8">%</span><span class="nc" data-group-id="9283653054-8">Ecto.Changeset</span><span class="p" data-group-id="9283653054-8">{</span><span class="p" data-group-id="9283653054-8">}</span><span class="p" data-group-id="9283653054-7">}</span></code></pre>
+  </section>
 </section>
 <section class="detail" id="delete/1">
+
   <div class="detail-header">
     <a href="#delete/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete(user)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:delete/1"><code class="inline">Pow.Context.delete/1</code></a>.</p>  </section>
+<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:delete/1"><code class="inline">Pow.Context.delete/1</code></a>.</p>
+  </section>
 </section>
 <section class="detail" id="delete_user/1">
+
   <div class="detail-header">
     <a href="#delete_user/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">delete_user(user)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L105" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L114" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>delete_user(Glific.Users.User.t()) ::
-  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
       </div>
 
 <p>Deletes a user.</p><h2 id="delete_user/1-examples" class="section-heading">
   <a href="#delete_user/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_user</span><span class="p" data-group-id="9668858424-1">(</span><span class="n">user</span><span class="p" data-group-id="9668858424-1">)</span><span class="w">
-</span><span class="p" data-group-id="9668858424-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9668858424-3">%</span><span class="nc" data-group-id="9668858424-3">User</span><span class="p" data-group-id="9668858424-3">{</span><span class="p" data-group-id="9668858424-3">}</span><span class="p" data-group-id="9668858424-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_user</span><span class="p" data-group-id="3414115054-1">(</span><span class="n">user</span><span class="p" data-group-id="3414115054-1">)</span><span class="w">
+</span><span class="p" data-group-id="3414115054-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3414115054-3">%</span><span class="nc" data-group-id="3414115054-3">User</span><span class="p" data-group-id="3414115054-3">{</span><span class="p" data-group-id="3414115054-3">}</span><span class="p" data-group-id="3414115054-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_user</span><span class="p" data-group-id="9668858424-4">(</span><span class="n">user</span><span class="p" data-group-id="9668858424-4">)</span><span class="w">
-</span><span class="p" data-group-id="9668858424-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9668858424-6">%</span><span class="nc" data-group-id="9668858424-6">Ecto.Changeset</span><span class="p" data-group-id="9668858424-6">{</span><span class="p" data-group-id="9668858424-6">}</span><span class="p" data-group-id="9668858424-5">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_user</span><span class="p" data-group-id="3414115054-4">(</span><span class="n">user</span><span class="p" data-group-id="3414115054-4">)</span><span class="w">
+</span><span class="p" data-group-id="3414115054-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3414115054-6">%</span><span class="nc" data-group-id="3414115054-6">Ecto.Changeset</span><span class="p" data-group-id="3414115054-6">{</span><span class="p" data-group-id="3414115054-6">}</span><span class="p" data-group-id="3414115054-5">}</span></code></pre>
+  </section>
 </section>
 <section class="detail" id="get_by/1">
+
   <div class="detail-header">
     <a href="#get_by/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_by(clauses)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:get_by/1"><code class="inline">Pow.Context.get_by/1</code></a>.</p>  </section>
+<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:get_by/1"><code class="inline">Pow.Context.get_by/1</code></a>.</p>
+  </section>
 </section>
 <section class="detail" id="get_user!/1">
+
   <div class="detail-header">
     <a href="#get_user!/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">get_user!(id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L52" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L53" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>get_user!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: Glific.Users.User.t()</pre>
+
       </div>
 
-<p>Gets a single user.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the User does not exist.</p><h2 id="get_user!/1-examples" class="section-heading">
+<p>Gets a single user.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the User does not exist.</p><h2 id="get_user!/1-examples" class="section-heading">
   <a href="#get_user!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_user!</span><span class="p" data-group-id="5805569797-1">(</span><span class="mi">123</span><span class="p" data-group-id="5805569797-1">)</span><span class="w">
-</span><span class="p" data-group-id="5805569797-2">%</span><span class="nc" data-group-id="5805569797-2">User</span><span class="p" data-group-id="5805569797-2">{</span><span class="p" data-group-id="5805569797-2">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_user!</span><span class="p" data-group-id="6095292424-1">(</span><span class="mi">123</span><span class="p" data-group-id="6095292424-1">)</span><span class="w">
+</span><span class="p" data-group-id="6095292424-2">%</span><span class="nc" data-group-id="6095292424-2">User</span><span class="p" data-group-id="6095292424-2">{</span><span class="p" data-group-id="6095292424-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_user!</span><span class="p" data-group-id="5805569797-3">(</span><span class="mi">456</span><span class="p" data-group-id="5805569797-3">)</span><span class="w">
-</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_user!</span><span class="p" data-group-id="6095292424-3">(</span><span class="mi">456</span><span class="p" data-group-id="6095292424-3">)</span><span class="w">
+</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
+  </section>
 </section>
 <section class="detail" id="list_users/1">
+
   <div class="detail-header">
     <a href="#list_users/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">list_users(args)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L26" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L27" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>list_users(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [Glific.Users.User.t()]</pre>
+
       </div>
 
 <p>Returns the list of filtered users.</p><h2 id="list_users/1-examples" class="section-heading">
   <a href="#list_users/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_users</span><span class="p" data-group-id="2006102278-1">(</span><span class="p" data-group-id="2006102278-1">)</span><span class="w">
-</span><span class="p" data-group-id="2006102278-2">[</span><span class="p" data-group-id="2006102278-3">%</span><span class="nc" data-group-id="2006102278-3">User</span><span class="p" data-group-id="2006102278-3">{</span><span class="p" data-group-id="2006102278-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2006102278-2">]</span></code></pre>  </section>
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_users</span><span class="p" data-group-id="0691133095-1">(</span><span class="p" data-group-id="0691133095-1">)</span><span class="w">
+</span><span class="p" data-group-id="0691133095-2">[</span><span class="p" data-group-id="0691133095-3">%</span><span class="nc" data-group-id="0691133095-3">User</span><span class="p" data-group-id="0691133095-3">{</span><span class="p" data-group-id="0691133095-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0691133095-2">]</span></code></pre>
+  </section>
 </section>
 <section class="detail" id="pow_authenticate/1">
+
   <div class="detail-header">
     <a href="#pow_authenticate/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">pow_authenticate(params)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
+
   </section>
 </section>
 <section class="detail" id="pow_create/1">
+
   <div class="detail-header">
     <a href="#pow_create/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">pow_create(params)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
+
   </section>
 </section>
 <section class="detail" id="pow_delete/1">
+
   <div class="detail-header">
     <a href="#pow_delete/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">pow_delete(user)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
+
   </section>
 </section>
 <section class="detail" id="pow_get_by/1">
+
   <div class="detail-header">
     <a href="#pow_get_by/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">pow_get_by(clauses)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
+
   </section>
 </section>
 <section class="detail" id="pow_update/2">
+
   <div class="detail-header">
     <a href="#pow_update/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">pow_update(user, params)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
+
   </section>
 </section>
 <section class="detail" id="reset_user_password/2">
+
   <div class="detail-header">
     <a href="#reset_user_password/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">reset_user_password(user, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L113" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L125" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>reset_user_password(Glific.Users.User.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
       </div>
 
-<p>Reset user password</p>  </section>
+<p>Reset user password</p>
+  </section>
 </section>
 <section class="detail" id="update/2">
+
   <div class="detail-header">
     <a href="#update/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update(user, params)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L5" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L6" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.21/Pow.Context.html#c:update/2"><code class="inline">Pow.Context.update/2</code></a>.</p>  </section>
+<p>Callback implementation for <a href="https://hexdocs.pm/pow/1.0.22/Pow.Context.html#c:update/2"><code class="inline">Pow.Context.update/2</code></a>.</p>
+  </section>
 </section>
 <section class="detail" id="update_user/2">
+
   <div class="detail-header">
     <a href="#update_user/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_user(user, attrs)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L86" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/users.ex#L89" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>update_user(Glific.Users.User.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Users.User.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
       </div>
 
 <p>Updates a user.</p><h2 id="update_user/2-examples" class="section-heading">
   <a href="#update_user/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_user</span><span class="p" data-group-id="2399894862-1">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2399894862-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2399894862-2">}</span><span class="p" data-group-id="2399894862-1">)</span><span class="w">
-</span><span class="p" data-group-id="2399894862-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2399894862-4">%</span><span class="nc" data-group-id="2399894862-4">User</span><span class="p" data-group-id="2399894862-4">{</span><span class="p" data-group-id="2399894862-4">}</span><span class="p" data-group-id="2399894862-3">}</span><span class="w">
+<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_user</span><span class="p" data-group-id="2456887025-1">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2456887025-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2456887025-2">}</span><span class="p" data-group-id="2456887025-1">)</span><span class="w">
+</span><span class="p" data-group-id="2456887025-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2456887025-4">%</span><span class="nc" data-group-id="2456887025-4">User</span><span class="p" data-group-id="2456887025-4">{</span><span class="p" data-group-id="2456887025-4">}</span><span class="p" data-group-id="2456887025-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_user</span><span class="p" data-group-id="2399894862-5">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2399894862-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2399894862-6">}</span><span class="p" data-group-id="2399894862-5">)</span><span class="w">
-</span><span class="p" data-group-id="2399894862-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2399894862-8">%</span><span class="nc" data-group-id="2399894862-8">Ecto.Changeset</span><span class="p" data-group-id="2399894862-8">{</span><span class="p" data-group-id="2399894862-8">}</span><span class="p" data-group-id="2399894862-7">}</span></code></pre>  </section>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_user</span><span class="p" data-group-id="2456887025-5">(</span><span class="n">user</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2456887025-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2456887025-6">}</span><span class="p" data-group-id="2456887025-5">)</span><span class="w">
+</span><span class="p" data-group-id="2456887025-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2456887025-8">%</span><span class="nc" data-group-id="2456887025-8">Ecto.Changeset</span><span class="p" data-group-id="2456887025-8">{</span><span class="p" data-group-id="2456887025-8">}</span><span class="p" data-group-id="2456887025-7">}</span></code></pre>
+  </section>
 </section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -544,7 +709,9 @@ Functions          </h1>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -564,5 +731,7 @@ Functions          </h1>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

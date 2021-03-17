@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific.Bigquery — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific.Bigquery — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,16 +73,20 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        Glific.Bigquery <small class="app-vsn">(Glific v0.9.4)</small>
+Glific.Bigquery <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
-<p>Glific Bigquery Dataset and table creation</p>        </section>
+<p>Glific Bigquery Dataset and table creation</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -82,31 +96,89 @@ Glific      </a>
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#alter_bigquery_tables/2">alter_bigquery_tables(dataset_id, organization_id)</a>
+    <a href="#alter_tables/3">alter_tables(conn, dataset_id, project_id)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Alter bigquery table schema,
 if required this function should be called from iex</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#bigquery_dataset/2">bigquery_dataset(dataset_id, organization_id)</a>
+    <a href="#do_refresh_the_schema/2">do_refresh_the_schema(organization_id, cred)</a>
+
   </div>
+
+    <div class="summary-synopsis"><p>Refresh the biquery schema and update all the older versions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#format_data_for_bigquery/2">format_data_for_bigquery(data, table)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>  Format Data for bigquery error</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#format_date/2">format_date(date, organization_id)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Format dates for the bigquery.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#format_json/1">format_json(definition)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>  Format all the json values</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#make_insert_query/4">make_insert_query(data, table, organization_id, max_id)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>  Insert rows in the biqquery</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#make_merge_job/2">make_merge_job(table, organization_id)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>  Merge delta and main tables.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#sync_schema_with_bigquery/1">sync_schema_with_bigquery(organization_id)</a>
+
+  </div>
+
     <div class="summary-synopsis"><p>Creating a dataset with messages and contacts as tables</p></div>
+
 </div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#update_contact/3">update_contact(phone_no, updated_fields, organization_id)</a>
+
   </div>
-    <div class="summary-synopsis"><p>  Updating existing field in a table</p></div>
-</div>
-  </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -114,74 +186,252 @@ if required this function should be called from iex</p></div>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
-<section class="detail" id="alter_bigquery_tables/2">
+<section class="detail" id="alter_tables/3">
+
   <div class="detail-header">
-    <a href="#alter_bigquery_tables/2" class="detail-link" title="Link to this function">
+    <a href="#alter_tables/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">alter_bigquery_tables(dataset_id, organization_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L115" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">alter_tables(conn, dataset_id, project_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L209" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>alter_bigquery_tables(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+
+          <pre>alter_tables(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Client.html#t:t/0">Tesla.Client.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: :ok</pre>
+
       </div>
 
 <p>Alter bigquery table schema,
-if required this function should be called from iex</p>  </section>
+if required this function should be called from iex</p>
+  </section>
 </section>
-<section class="detail" id="bigquery_dataset/2">
+<section class="detail" id="do_refresh_the_schema/2">
+
   <div class="detail-header">
-    <a href="#bigquery_dataset/2" class="detail-link" title="Link to this function">
+    <a href="#do_refresh_the_schema/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">bigquery_dataset(dataset_id, organization_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L24" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">do_refresh_the_schema(organization_id, cred)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L110" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>bigquery_dataset(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+
+          <pre>do_refresh_the_schema(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:error, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>()} | {:ok, <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>()}</pre>
+
       </div>
 
-<p>Creating a dataset with messages and contacts as tables</p>  </section>
+<p>Refresh the biquery schema and update all the older versions.</p>
+  </section>
 </section>
-<section class="detail" id="update_contact/3">
+<section class="detail" id="format_data_for_bigquery/2">
+
   <div class="detail-header">
-    <a href="#update_contact/3" class="detail-link" title="Link to this function">
+    <a href="#format_data_for_bigquery/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update_contact(phone_no, updated_fields, organization_id)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L144" class="view-source" rel="help" title="View Source">
+    <h1 class="signature">format_data_for_bigquery(data, table)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L271" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>update_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+
+          <pre>format_data_for_bigquery(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
       </div>
 
-<p>  Updating existing field in a table</p>  </section>
+<p>  Format Data for bigquery error</p>
+  </section>
 </section>
+<section class="detail" id="format_date/2">
+
+  <div class="detail-header">
+    <a href="#format_date/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">format_date(date, organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L235" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>format_date(<a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>() | nil, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>Format dates for the bigquery.</p>
+  </section>
+</section>
+<section class="detail" id="format_json/1">
+
+  <div class="detail-header">
+    <a href="#format_json/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">format_json(definition)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L259" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>format_json(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">iodata</a>()</pre>
+
+      </div>
+
+<p>  Format all the json values</p>
+  </section>
+</section>
+<section class="detail" id="make_insert_query/4">
+
+  <div class="detail-header">
+    <a href="#make_insert_query/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">make_insert_query(data, table, organization_id, max_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L414" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>make_insert_query(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()
+) :: :ok</pre>
+
+      </div>
+
+<p>  Insert rows in the biqquery</p>
+  </section>
+</section>
+<section class="detail" id="make_merge_job/2">
+
+  <div class="detail-header">
+    <a href="#make_merge_job/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">make_merge_job(table, organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L509" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>make_merge_job(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+
+      </div>
+
+<p>  Merge delta and main tables.</p>
+  </section>
+</section>
+<section class="detail" id="sync_schema_with_bigquery/1">
+
+  <div class="detail-header">
+    <a href="#sync_schema_with_bigquery/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">sync_schema_with_bigquery(organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/bigquery.ex#L43" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>sync_schema_with_bigquery(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Creating a dataset with messages and contacts as tables</p>
+  </section>
+</section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -195,7 +445,9 @@ if required this function should be called from iex</p>  </section>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -215,5 +467,7 @@ if required this function should be called from iex</p>  </section>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

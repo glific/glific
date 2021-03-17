@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>GlificWeb.Tenants — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>GlificWeb.Tenants — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,11 +73,13 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        GlificWeb.Tenants <small class="app-vsn">(Glific v0.9.4)</small>
+GlificWeb.Tenants <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
@@ -77,7 +89,9 @@ Triplex. (<a href="https://github.com/ateliware/triplex).">https://github.com/at
 postgres row level security instead, and hence copying the code from there. The
 original copyright and license (MIT) belong to the contributors to Triplex.</p><p>The main objetive of it is to make a little bit easier to manage organizations
 through postgres db schemas or equivalents, executing queries and commands
-inside and outside the organization without much boilerplate code.</p>        </section>
+inside and outside the organization without much boilerplate code.</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -87,6 +101,7 @@ inside and outside the organization without much boilerplate code.</p>        </
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
@@ -94,24 +109,36 @@ inside and outside the organization without much boilerplate code.</p>        </
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#organization_handler/1">organization_handler(name \\ nil)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Given a string from the connection info (subdomain), check and
 retrieve the organization id.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#reserved_organization?/1">reserved_organization?(prefix)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Returns if the given <code class="inline">organization</code> is reserved or not.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#reserved_organizations/0">reserved_organizations()</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Returns the list of reserved organizations.</p></div>
+
 </div>
+
   </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -119,78 +146,106 @@ retrieve the organization id.</p></div>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="organization_handler/1">
+
     <span id="organization_handler/0"></span>
+
   <div class="detail-header">
     <a href="#organization_handler/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">organization_handler(name \\ nil)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L60" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>organization_handler(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+
       </div>
 
 <p>Given a string from the connection info (subdomain), check and
 retrieve the organization id.</p><p>For the short term, we'll default to organization id Glific, if
-we cannot resolve the sub-domain, we'll remove this in v0.4</p>  </section>
+we cannot resolve the sub-domain, we'll remove this in v0.4</p>
+  </section>
 </section>
 <section class="detail" id="reserved_organization?/1">
+
   <div class="detail-header">
     <a href="#reserved_organization?/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">reserved_organization?(prefix)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L42" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>reserved_organization?(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
       </div>
 
-<p>Returns if the given <code class="inline">organization</code> is reserved or not.</p><p>The function <code class="inline">to_prefix/1</code> will be applied to the organization.</p>  </section>
+<p>Returns if the given <code class="inline">organization</code> is reserved or not.</p><p>The function <code class="inline">to_prefix/1</code> will be applied to the organization.</p>
+  </section>
 </section>
 <section class="detail" id="reserved_organizations/0">
+
   <div class="detail-header">
     <a href="#reserved_organizations/0" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">reserved_organizations()</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L25" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>reserved_organizations() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+
       </div>
 
 <p>Returns the list of reserved organizations.</p><p>By default, there are some limitations for the name of a organization depending on
 the database, like &quot;public&quot; or anything that start with &quot;pg_&quot;.</p><p>Notice that you can use regexes, and they will be applied to the organization
-names.</p>  </section>
+names.</p>
+  </section>
 </section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -204,7 +259,9 @@ names.</p>  </section>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -224,5 +281,7 @@ names.</p>  </section>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

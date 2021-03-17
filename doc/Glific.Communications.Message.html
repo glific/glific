@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific.Communications.Message — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific.Communications.Message — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,16 +73,20 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        Glific.Communications.Message <small class="app-vsn">(Glific v0.9.4)</small>
+Glific.Communications.Message <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
-<p>The Message Communication Context, which encapsulates and manages tags and the related join tables.</p>        </section>
+<p>The Message Communication Context, which encapsulates and manages tags and the related join tables.</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -82,6 +96,7 @@ Glific      </a>
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
@@ -89,35 +104,53 @@ Glific      </a>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#handle_error_response/2">handle_error_response(response, message)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Callback in case of any error while sending the message</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#handle_success_response/2">handle_success_response(response, message)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Callback when message send succsully</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#receive_message/2">receive_message(message_params, type \\ :text)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Callback when we receive a message from whats app</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#send_message/2">send_message(message, attrs \\ %{})</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Send message to receiver using define provider.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#update_bsp_status/3">update_bsp_status(bsp_message_id, bsp_status, errors)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Callback to update the provider status for a message</p></div>
+
 </div>
+
   </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -125,120 +158,165 @@ Glific      </a>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="handle_error_response/2">
+
   <div class="detail-header">
     <a href="#handle_error_response/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">handle_error_response(response, message)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L123" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L138" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>handle_error_response(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>(), Glific.Messages.Message.t()) ::
   {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
       </div>
 
-<p>Callback in case of any error while sending the message</p>  </section>
+<p>Callback in case of any error while sending the message</p>
+  </section>
 </section>
 <section class="detail" id="handle_success_response/2">
+
   <div class="detail-header">
     <a href="#handle_success_response/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">handle_success_response(response, message)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L67" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L88" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>handle_success_response(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>(), Glific.Messages.Message.t()) ::
   {:ok, Glific.Messages.Message.t()}</pre>
+
       </div>
 
-<p>Callback when message send succsully</p>  </section>
+<p>Callback when message send succsully</p>
+  </section>
 </section>
 <section class="detail" id="receive_message/2">
+
     <span id="receive_message/1"></span>
+
   <div class="detail-header">
     <a href="#receive_message/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">receive_message(message_params, type \\ :text)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L164" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L179" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>receive_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: {:ok} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+          <pre>receive_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: :ok | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
       </div>
 
-<p>Callback when we receive a message from whats app</p>  </section>
+<p>Callback when we receive a message from whats app</p>
+  </section>
 </section>
 <section class="detail" id="send_message/2">
+
     <span id="send_message/1"></span>
+
   <div class="detail-header">
     <a href="#send_message/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">send_message(message, attrs \\ %{})</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L38" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L37" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>send_message(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
   {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
       </div>
 
-<p>Send message to receiver using define provider.</p>  </section>
+<p>Send message to receiver using define provider.</p>
+  </section>
 </section>
 <section class="detail" id="update_bsp_status/3">
+
   <div class="detail-header">
     <a href="#update_bsp_status/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">update_bsp_status(bsp_message_id, bsp_status, errors)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L144" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/communications/message.ex#L159" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>update_bsp_status(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+
       </div>
 
-<p>Callback to update the provider status for a message</p>  </section>
+<p>Callback to update the provider status for a message</p>
+  </section>
 </section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -252,7 +330,9 @@ Functions          </h1>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -272,5 +352,7 @@ Functions          </h1>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

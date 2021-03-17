@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>GlificWeb.Plug — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>GlificWeb.Plug — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,17 +73,21 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        GlificWeb.Plug <small class="app-vsn">(Glific v0.9.4)</small>
+GlificWeb.Plug <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/plug.ex#L2" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
         <section id="moduledoc">
 <p>This file and the below files have been &quot;borrowed and modified&quot; from triplex: <a href="https://github.com/ateliware/triplex">https://github.com/ateliware/triplex</a>
-The original copyright and license - MIT belong to the authors and contributors of Triplex</p><ul><li>plug.ex</li><li>ensure_plug.ex</li><li>ensure_plug_config.ex</li><li>subdomain_plug.ex</li><li>subdomain_plug_config.ex</li><li>param_plug.ex</li><li>param_plug_config.ex</li></ul><p>This module have some basic functions for our triplex plugs.</p><p>The plugs we have for now are:</p><ul><li><code class="inline">GlificWeb.ParamPlug</code> - loads the organization from a body or query param</li><li><a href="GlificWeb.SubdomainPlug.html"><code class="inline">GlificWeb.SubdomainPlug</code></a> - loads the organization from the url subdomain</li><li><a href="GlificWeb.EnsurePlug.html"><code class="inline">GlificWeb.EnsurePlug</code></a> - ensures the current organization is loaded and halts if not</li></ul>        </section>
+The original copyright and license - MIT belong to the authors and contributors of Triplex</p><ul><li>plug.ex</li><li>ensure_plug.ex</li><li>ensure_plug_config.ex</li><li>subdomain_plug.ex</li><li>subdomain_plug_config.ex</li><li>param_plug.ex</li><li>param_plug_config.ex</li></ul><p>This module have some basic functions for our triplex plugs.</p><p>The plugs we have for now are:</p><ul><li><code class="inline">GlificWeb.ParamPlug</code> - loads the organization from a body or query param</li><li><a href="GlificWeb.SubdomainPlug.html"><code class="inline">GlificWeb.SubdomainPlug</code></a> - loads the organization from the url subdomain</li><li><a href="GlificWeb.EnsurePlug.html"><code class="inline">GlificWeb.EnsurePlug</code></a> - ensures the current organization is loaded and halts if not</li></ul>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -83,6 +97,7 @@ The original copyright and license - MIT belong to the authors and contributors 
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
@@ -90,18 +105,36 @@ The original copyright and license - MIT belong to the authors and contributors 
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#ensure_organization/2">ensure_organization(conn, config)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Ensure the organization is loaded, and if not, halts the <code class="inline">conn</code>.</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#put_organization/3">put_organization(conn, organization, config)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Puts the given <code class="inline">organization</code> as an assign on the given <code class="inline">conn</code>, but only if the
 organization is not reserved.</p></div>
+
 </div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#send_error/1">send_error(conn)</a>
+
   </div>
+
+    <div class="summary-synopsis"><p>Global unauthorized error handler</p></div>
+
+</div>
+
+  </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -109,54 +142,102 @@ organization is not reserved.</p></div>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="ensure_organization/2">
+
   <div class="detail-header">
     <a href="#ensure_organization/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">ensure_organization(conn, config)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/plug.ex#L63" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/plug.ex#L82" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>ensure_organization(<a href="https://hexdocs.pm/plug/1.11.0/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/1.11.0/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+
       </div>
 
-<p>Ensure the organization is loaded, and if not, halts the <code class="inline">conn</code>.</p><p>The <code class="inline">config</code> map/struct must have:</p><ul><li><code class="inline">assign</code>: the name of the assign where we must save the organization.</li></ul>  </section>
+<p>Ensure the organization is loaded, and if not, halts the <code class="inline">conn</code>.</p><p>The <code class="inline">config</code> map/struct must have:</p><ul><li><code class="inline">assign</code>: the name of the assign where we must save the organization.</li></ul>
+  </section>
 </section>
 <section class="detail" id="put_organization/3">
+
   <div class="detail-header">
     <a href="#put_organization/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">put_organization(conn, organization, config)</h1>
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/plug.ex#L39" class="view-source" rel="help" title="View Source">
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/plug.ex#L52" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>put_organization(<a href="https://hexdocs.pm/plug/1.11.0/Plug.Conn.html#t:t/0">Plug.Conn.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/plug/1.11.0/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+
       </div>
 
 <p>Puts the given <code class="inline">organization</code> as an assign on the given <code class="inline">conn</code>, but only if the
 organization is not reserved.</p><p>The <code class="inline">config</code> map/struct must have:</p><ul><li><code class="inline">organization_handler</code>: function to handle the organization param. Its return will
-be used as the organization.</li><li><code class="inline">assign</code>: the name of the assign where we must save the organization.</li></ul>  </section>
+be used as the organization.</li><li><code class="inline">assign</code>: the name of the assign where we must save the organization.</li></ul>
+  </section>
 </section>
+<section class="detail" id="send_error/1">
+
+  <div class="detail-header">
+    <a href="#send_error/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">send_error(conn)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/plugs/plug.ex#L34" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>send_error(<a href="https://hexdocs.pm/plug/1.11.0/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()) :: <a href="https://hexdocs.pm/plug/1.11.0/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()</pre>
+
+      </div>
+
+<p>Global unauthorized error handler</p>
+  </section>
+</section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -170,7 +251,9 @@ be used as the organization.</li><li><code class="inline">assign</code>: the nam
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -190,5 +273,7 @@ be used as the organization.</li><li><code class="inline">assign</code>: the nam
   </div>
 </section>
 </div>
+
+
   </body>
 </html>

@@ -5,15 +5,22 @@
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v0.9.4">
-    <title>Glific — Glific v0.9.4</title>
+    <meta name="project" content="Glific v1.1.5">
+
+    <title>Glific — Glific v1.1.5</title>
     <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
-    <script src="dist/sidebar_items-3ad871d56d.js"></script>
+
+    <script src="dist/sidebar_items-70cc72f525.js"></script>
+
       <script src="docs_config.js"></script>
+
     <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+
+
   </head>
   <body data-type="modules">
     <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+
 <div class="main">
 
 <button class="sidebar-button sidebar-toggle">
@@ -41,17 +48,20 @@
   <div class="sidebar-header">
     <div class="sidebar-projectDetails">
       <a href="https://glific.io" class="sidebar-projectName">
-Glific      </a>
+Glific
+      </a>
       <strong class="sidebar-projectVersion">
-        v0.9.4
+        v1.1.5
       </strong>
     </div>
+
   </div>
 
   <ul class="sidebar-listNav">
     <li><a id="extras-list" href="#full-list">Pages</a></li>
 
       <li><a id="modules-list" href="#full-list">Modules</a></li>
+
 
   </ul>
   <div class="gradient"></div>
@@ -63,11 +73,13 @@ Glific      </a>
     <div id="content" class="content-inner">
 
       <h1>
-        Glific <small class="app-vsn">(Glific v0.9.4)</small>
+Glific <small class="app-vsn">(Glific v1.1.5)</small>
+
           <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
             <span class="sr-only">View Source</span>
           </a>
+
       </h1>
 
 
@@ -75,7 +87,9 @@ Glific      </a>
 <p>Glific keeps the contexts that define your domain
 and business logic.</p><p>Contexts are also responsible for managing your data, regardless
 if it comes from the database, an external API or others.</p><p>For now we'll keep some commonly used functions here, until we need
-a new file</p>        </section>
+a new file</p>
+        </section>
+
 
         <section id="summary" class="details-list">
           <h1 class="section-heading">
@@ -85,6 +99,7 @@ a new file</p>        </section>
             </a>
             Summary
           </h1>
+
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
@@ -92,65 +107,107 @@ a new file</p>        </section>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#atomize_keys/1">atomize_keys(map)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Convert map string keys to :atom keys</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#go_back_time/3">go_back_time(go_back, time \\ DateTime.utc_now(), unit \\ :hour)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Return a time object where you go back x units. We introduce the notion
 of hour and minute</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#in_past_time/3">in_past_time(time, units \\ :hours, back \\ 24)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>See if the current time is within the past time units</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#parse_maybe_integer/1">parse_maybe_integer(value)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Wrapper to return :ok/:error when parsing strings to potential integers</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#safe_string_to_atom/1">safe_string_to_atom(value)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>You shouldn’t really use String.to_atom/1 on user-supplied data.
+The BEAM has a limit on how many different atoms you can have and they’re not garbage collected!
+With data coming from outside the system, stick to strings or use String.to_existing_atom/1 instead!
+So this is a generic function which will convert the string to atom and throws an error in case of invalid key</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#signature/3">signature(organization_id, body, timestamp)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Compute the signature at a specific time for the body</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#stacktrace/0">stacktrace()</a>
+
   </div>
+
     <div class="summary-synopsis"><p>easy way for glific developers to get a stacktrace when debugging</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#string_clean/1">string_clean(str)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
 and not restricting ourselves to alphanumeric</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#suspicious_code/1">suspicious_code(code)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Really simple function to ensure folks do not add Repo and/or IO calls
 to an EEx snippet. This is an extremely short term fix to avoid shooting
 ourselves in the foot, but we should move to lua for flows scripting in the
 near future</p></div>
+
 </div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="#validate_shortcode/1">validate_shortcode(changeset)</a>
+
   </div>
+
     <div class="summary-synopsis"><p>Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
 along with the valid shortcode.</p></div>
+
 </div>
+
   </div>
+
         </section>
+
 
         <section id="functions" class="details-list">
           <h1 class="section-heading">
@@ -158,211 +215,322 @@ along with the valid shortcode.</p></div>
               <span class="icon-link" aria-hidden="true"></span>
               <span class="sr-only">Link to this section</span>
             </a>
-Functions          </h1>
+Functions
+          </h1>
           <div class="functions-list">
 <section class="detail" id="atomize_keys/1">
+
   <div class="detail-header">
     <a href="#atomize_keys/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">atomize_keys(map)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L100" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>atomize_keys(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
       </div>
 
-<p>Convert map string keys to :atom keys</p>  </section>
+<p>Convert map string keys to :atom keys</p>
+  </section>
 </section>
 <section class="detail" id="go_back_time/3">
+
     <span id="go_back_time/1"></span>
+
     <span id="go_back_time/2"></span>
+
   <div class="detail-header">
     <a href="#go_back_time/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">go_back_time(go_back, time \\ DateTime.utc_now(), unit \\ :hour)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L84" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>go_back_time(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()</pre>
+
       </div>
 
 <p>Return a time object where you go back x units. We introduce the notion
-of hour and minute</p>  </section>
+of hour and minute</p>
+  </section>
 </section>
 <section class="detail" id="in_past_time/3">
+
     <span id="in_past_time/1"></span>
+
     <span id="in_past_time/2"></span>
+
   <div class="detail-header">
     <a href="#in_past_time/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">in_past_time(time, units \\ :hours, back \\ 24)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L76" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>in_past_time(<a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
       </div>
 
-<p>See if the current time is within the past time units</p>  </section>
+<p>See if the current time is within the past time units</p>
+  </section>
 </section>
 <section class="detail" id="parse_maybe_integer/1">
+
   <div class="detail-header">
     <a href="#parse_maybe_integer/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">parse_maybe_integer(value)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L21" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>parse_maybe_integer(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()} | :error</pre>
+
       </div>
 
-<p>Wrapper to return :ok/:error when parsing strings to potential integers</p>  </section>
+<p>Wrapper to return :ok/:error when parsing strings to potential integers</p>
+  </section>
+</section>
+<section class="detail" id="safe_string_to_atom/1">
+
+  <div class="detail-header">
+    <a href="#safe_string_to_atom/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">safe_string_to_atom(value)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L166" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>safe_string_to_atom(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()</pre>
+
+      </div>
+
+<p>You shouldn’t really use String.to_atom/1 on user-supplied data.
+The BEAM has a limit on how many different atoms you can have and they’re not garbage collected!
+With data coming from outside the system, stick to strings or use String.to_existing_atom/1 instead!
+So this is a generic function which will convert the string to atom and throws an error in case of invalid key</p>
+  </section>
 </section>
 <section class="detail" id="signature/3">
+
   <div class="detail-header">
     <a href="#signature/3" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">signature(organization_id, body, timestamp)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L150" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>signature(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
       </div>
 
-<p>Compute the signature at a specific time for the body</p>  </section>
+<p>Compute the signature at a specific time for the body</p>
+  </section>
 </section>
 <section class="detail" id="stacktrace/0">
+
   <div class="detail-header">
     <a href="#stacktrace/0" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">stacktrace()</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L126" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>stacktrace() :: :ok</pre>
+
+          <pre>stacktrace() :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
       </div>
 
-<p>easy way for glific developers to get a stacktrace when debugging</p>  </section>
+<p>easy way for glific developers to get a stacktrace when debugging</p>
+  </section>
 </section>
 <section class="detail" id="string_clean/1">
+
   <div class="detail-header">
     <a href="#string_clean/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">string_clean(str)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L63" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>string_clean(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil</pre>
+
       </div>
 
 <p>Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
-and not restricting ourselves to alphanumeric</p>  </section>
+and not restricting ourselves to alphanumeric</p>
+  </section>
 </section>
 <section class="detail" id="suspicious_code/1">
+
   <div class="detail-header">
     <a href="#suspicious_code/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">suspicious_code(code)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L143" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
+
           <pre>suspicious_code(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
       </div>
 
 <p>Really simple function to ensure folks do not add Repo and/or IO calls
 to an EEx snippet. This is an extremely short term fix to avoid shooting
 ourselves in the foot, but we should move to lua for flows scripting in the
 near future</p><p>Note that folks can potentially find other ways to access the same modules, so
-this by no means should be considered remotely secure</p>  </section>
+this by no means should be considered remotely secure</p>
+  </section>
 </section>
 <section class="detail" id="validate_shortcode/1">
+
   <div class="detail-header">
     <a href="#validate_shortcode/1" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
     <h1 class="signature">validate_shortcode(changeset)</h1>
+
       <a href="https://github.com/glific/glific/blob/master/lib/glific.ex#L44" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
+
+
   </div>
 
   <section class="docstring">
+
       <h2>Specs</h2>
       <div class="specs">
-          <pre>validate_shortcode(<a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()) ::
-  <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.5/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+
+          <pre>validate_shortcode(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()) ::
+  <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>() | <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+
       </div>
 
 <p>Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
-along with the valid shortcode.</p>  </section>
+along with the valid shortcode.</p>
+  </section>
 </section>
+
           </div>
         </section>
+
       <footer class="footer">
         <p>
           <span class="line">
@@ -376,7 +544,9 @@ along with the valid shortcode.</p>  </section>
           </span>
         </p>
         <p>
+
             <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
           <button class="line footer-button display-shortcuts-help">
             Display keyboard shortcuts
           </button>
@@ -396,5 +566,7 @@ along with the valid shortcode.</p>  </section>
   </div>
 </section>
 </div>
+
+
   </body>
 </html>
