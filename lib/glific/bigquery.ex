@@ -28,12 +28,9 @@ defmodule Glific.Bigquery do
 
   @bigquery_tables %{
     "messages" => :message_schema,
-    "messages_delta" => :message_delta_schema,
     "contacts" => :contact_schema,
-    "contacts_delta" => :contact_delta_schema,
     "flows" => :flow_schema,
     "flow_results" => :flow_result_schema,
-    "flow_results_delta" => :flow_result_delta_schema
   }
 
   @doc """
