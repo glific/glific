@@ -79,12 +79,12 @@ defmodule Glific.Contacts.Import do
         file_path |> Path.expand() |> File.stream!()
 
       url != nil ->
-        {_, response} = Tesla.get(url)
-        {_, stream} = StringIO.open(response.body)
+        {:ok, response} = Tesla.get(url)
+        {:ok, stream} = StringIO.open(response.body)
         stream |> IO.binstream(:line)
 
       data != nil ->
-        {_, stream} = StringIO.open(data)
+        {:ok, stream} = StringIO.open(data)
         stream |> IO.binstream(:line)
     end
   end
@@ -105,8 +105,9 @@ defmodule Glific.Contacts.Import do
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
+    # this ensures the  org_id exists and is valid
     with %{} <- Partners.organization(organization_id),
-         {_, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
+         {:ok, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
       result =
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
