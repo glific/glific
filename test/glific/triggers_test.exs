@@ -1,6 +1,8 @@
 defmodule Glific.TriggersTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
+  import ExUnit.CaptureLog
+  require Logger
 
   alias Glific.{
     Fixtures,
@@ -36,6 +38,22 @@ defmodule Glific.TriggersTest do
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
+    end
+
+    test "execute_triggers/2 should execute a trigger and capture log", attrs do
+      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      end_date = Timex.shift(DateTime.utc_now(), days: 1)
+
+      _trigger =
+        Fixtures.trigger_fixture(%{
+          start_at: start_at,
+          organization_id: attrs.organization_id,
+          end_date: end_date
+        })
+
+      assert capture_log(fn ->
+        Triggers.execute_triggers(attrs.organization_id)
+      end) =~ "executing trigger: test trigger for org_id: #{attrs.organization_id}"
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
