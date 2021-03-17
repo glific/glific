@@ -12,13 +12,13 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
     LANGUAGE plpgsql
     AS $function$
     DECLARE message_ids BIGINT[];
-    DECLARE session_lim INT;
-    DECLARE current_diff INT;
+    DECLARE session_lim BIGINT;
+    DECLARE current_diff BIGINT;
     DECLARE current_session_uuid UUID;
     DECLARE session_uuid_value UUID;
     DECLARE now TIMESTAMP WITH TIME ZONE;
     DECLARE var_message_at TIMESTAMP WITH TIME ZONE;
-    DECLARE var_message_number INT;
+    DECLARE var_message_number BIGINT;
 
     BEGIN
       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
