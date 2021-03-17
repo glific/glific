@@ -576,11 +576,7 @@ defmodule Glific.Bigquery do
     sql = """
     DELETE FROM `#{credentials.dataset_id}.#{table}_delta` WHERE EXISTS(SELECT * FROM  ( SELECT updated_at,
     ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
-      credentials.dataset_id
-    }.#{table}_delta` delta )
-    WHERE row_num > 0 AND updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{
-      timezone
-    }'))
+      credentials.dataset_id}.#{table}_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{timezone}') ) WHERE row_num > 0)
     """
 
     query_body = %{query: sql, useLegacySql: false}
