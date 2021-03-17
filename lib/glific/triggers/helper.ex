@@ -24,9 +24,9 @@ defmodule Glific.Triggers.Helper do
     cond do
       "daily" in frequency -> Timex.shift(time, days: 1) |> Timex.to_datetime()
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      "monthly" in frequency -> Timex.shift(time, months: 1) |> Timex.to_datetime()
-      "weekday" in frequency -> weekday(time)
-      "weekend" in frequency -> weekend(time)
+      # "monthly" in frequency -> Timex.shift(time, months: 1) |> Timex.to_datetime()
+      # "weekday" in frequency -> weekday(time)
+      # "weekend" in frequency -> weekend(time)
       true -> others(time, days)
     end
   end
@@ -50,23 +50,23 @@ defmodule Glific.Triggers.Helper do
     Timex.shift(time, days: shift) |> Timex.to_datetime()
   end
 
-  @spec weekday(DateTime.t()) :: DateTime.t()
-  defp weekday(time) do
-    day_of_week = Date.day_of_week(time)
+  # @spec weekday(DateTime.t()) :: DateTime.t()
+  # defp weekday(time) do
+  #   day_of_week = Date.day_of_week(time)
 
-    if day_of_week < 5,
-      do: Timex.shift(time, days: 1) |> Timex.to_datetime(),
-      else: Timex.shift(time, days: 8 - day_of_week) |> Timex.to_datetime()
-  end
+  #   if day_of_week < 5,
+  #     do: Timex.shift(time, days: 1) |> Timex.to_datetime(),
+  #     else: Timex.shift(time, days: 8 - day_of_week) |> Timex.to_datetime()
+  # end
 
-  @spec weekend(DateTime.t()) :: DateTime.t()
-  defp weekend(time) do
-    day_of_week = Date.day_of_week(time)
+  # @spec weekend(DateTime.t()) :: DateTime.t()
+  # defp weekend(time) do
+  #   day_of_week = Date.day_of_week(time)
 
-    cond do
-      day_of_week in [5, 6] -> Timex.shift(time, days: 1) |> Timex.to_datetime()
-      day_of_week == 7 -> Timex.shift(time, days: 6) |> Timex.to_datetime()
-      true -> Timex.shift(time, days: 6 - day_of_week) |> Timex.to_datetime()
-    end
-  end
+  #   cond do
+  #     day_of_week in [5, 6] -> Timex.shift(time, days: 1) |> Timex.to_datetime()
+  #     day_of_week == 7 -> Timex.shift(time, days: 6) |> Timex.to_datetime()
+  #     true -> Timex.shift(time, days: 6 - day_of_week) |> Timex.to_datetime()
+  #   end
+  # end
 end

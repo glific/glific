@@ -100,5 +100,26 @@ defmodule Glific.TriggersTest do
       msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
     end
+
+    test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined", attrs do
+      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      end_date = Timex.shift(DateTime.utc_now(), days: 5)
+
+      _trigger =
+        Fixtures.trigger_fixture(%{
+          start_at: start_at,
+          days: [7, 6, 5, 4, 3, 2 , 1],
+          frequency: ["weekly"],
+          is_repeating: true,
+          organization_id: attrs.organization_id,
+          last_trigger_at: start_at,
+          end_date: end_date
+        })
+
+      msg_count1 = Messages.count_messages(%{filter: attrs})
+      Triggers.execute_triggers(attrs.organization_id)
+      msg_count2 = Messages.count_messages(%{filter: attrs})
+      assert msg_count2 > msg_count1
+    end
   end
 end
