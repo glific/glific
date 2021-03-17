@@ -21,11 +21,10 @@ defmodule Glific.Triggers do
   Periodic call to execute the triggers outstanding for the day
   """
   @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
-  def execute_triggers(org_id, now \\ DateTime.utc_now()) do
-    Repo.put_process_state(org_id)
+  def execute_triggers(organization_id, now \\ DateTime.utc_now()) do
     # triggers are executed at most once per day
     Trigger
-    |> where([t], t.is_active == true)
+    |> where([t], t.organization_id == ^organization_id and t.is_active == true)
     |> where(
       [t],
       is_nil(t.last_trigger_at) or
