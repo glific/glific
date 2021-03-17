@@ -8,7 +8,8 @@ defmodule Glific.TriggersTest do
     Fixtures,
     Messages,
     Seeds.SeedsDev,
-    Triggers
+    Triggers,
+    Triggers.Trigger
   }
 
   setup do
@@ -38,6 +39,11 @@ defmodule Glific.TriggersTest do
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
+    end
+
+    test "triggers field returns list of triggers", attrs do
+      tr = Fixtures.trigger_fixture(attrs)
+      assert Trigger.get_trigger!(tr.id) == tr
     end
 
     @tag :pending
