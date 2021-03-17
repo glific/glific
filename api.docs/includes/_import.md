@@ -35,8 +35,8 @@ The method takes in the following parameters:
     - date_format: The format of the opt_in in the CSV. Default `{YYYY}-{M}-{D}`
 
 ## Examples
-`Import.import_contacts(1, "Group", file_path: "test.csv")`
-`Import.import_contacts(1,"Group", url: "http://foo.com/bar.csv")`
-`Import.import_contacts(1,"Group", data: "name,phone,Language,opt_in,delete\ntest2,1111111111,hindi,2021-03-09,1")`
-`Import.import_contacts(1, "Group", file_path: "test.csv", date_format: "{YYYY}-{M}-{D}")`
+* `Import.import_contacts(1, "Group", file_path: "test.csv")`
+* `Import.import_contacts(1,"Group", url: "http://foo.com/bar.csv")`
+* `Import.import_contacts(1,"Group", data: "name,phone,Language,opt_in,delete\ntest2,1111111111,hindi,2021-03-09,1")`
+* `Import.import_contacts(1, "Group", file_path: "test.csv", date_format: "{YYYY}-{M}-{D}")`
 
