@@ -416,6 +416,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       type: row.type,
       flow: row.flow,
       inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+      updated_at: Bigquery.format_date(row.updated_at, organization_id),
       sent_at: Bigquery.format_date(row.sent_at, organization_id),
       uuid: row.uuid,
       status: row.status,

@@ -110,7 +110,7 @@ defmodule Glific.BigquerySchema do
         ]
       },
       %{
-        description: "Store the settings of the user as a map (which is a jsonb object in psql). 
+        description: "Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
       the user with messages based on their preferences",
         name: "settings",
@@ -273,7 +273,7 @@ defmodule Glific.BigquerySchema do
         ]
       },
       %{
-        description: "Store the settings of the user as a map (which is a jsonb object in psql). 
+        description: "Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
       the user with messages based on their preferences",
         name: "settings",
@@ -489,7 +489,13 @@ defmodule Glific.BigquerySchema do
         name: "latitude",
         type: "STRING",
         mode: "NULLABLE"
-      }
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
     ]
   end
 
