@@ -18,12 +18,12 @@ defmodule Glific.Clients do
   @stir %{
     id: 13,
     name: "STiR Education",
-    blocked?: Glific.Clients.Stir
+    # blocked?: Glific.Clients.Stir
   }
 
   @reap_benefit %{
     id: 15,
-    gcs_params: Glific.Clients.ReapBenefit
+    # gcs_params: Glific.Clients.ReapBenefit
   }
 
   @weunlearn %{
