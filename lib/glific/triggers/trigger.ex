@@ -9,6 +9,7 @@ defmodule Glific.Triggers.Trigger do
   alias Glific.{
     Flows.Flow,
     Groups.Group,
+    Partners,
     Partners.Organization,
     Repo
   }
@@ -105,9 +106,11 @@ defmodule Glific.Triggers.Trigger do
 
   defp get_name(attrs) do
     with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}),
-         {:ok, ndt} <- NaiveDateTime.new(attrs.start_date, attrs.start_time),
-         {:ok, date} <- Timex.format(ndt, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}") do
+           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}) do
+      tz = Partners.organization_timezone(attrs.organization_id)
+      org_time = DateTime.new!(attrs.start_date, attrs.start_time, tz)
+
+      {:ok, date} = Timex.format(org_time, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}")
       "#{flow.name}#{date}"
     end
   end
