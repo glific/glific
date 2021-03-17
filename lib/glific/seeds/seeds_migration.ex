@@ -277,12 +277,14 @@ defmodule Glific.Seeds.SeedsMigration do
 
   @spec fix_message_number(list) :: :ok
   defp fix_message_number(organizations),
-  do: Enum.each(organizations, &do_fix_message_number/1)
+  do: Enum.each(organizations, fn org -> do_fix_message_number(org.id) end)
 
 
-  @spec do_fix_message_number(Organization.t()) :: :ok
-  defp do_fix_message_number(org) do
-    query  = "UPDATE messages m SET message_number = m2.row_num  FROM (  SELECT m2.*, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at asc) as row_num from messages m2 where m2.organization_id = #{org.id} ) m2 where m.organization_id = #{org.id}"
+
+
+  @spec do_fix_message_number(non_neg_integer) :: :ok
+  def do_fix_message_number(org_id) do
+    query  = "UPDATE messages m SET message_number = m2.row_num  FROM (  SELECT m2.*, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at asc) as row_num from messages m2 where m2.organization_id = #{org_id} ) m2 where m.organization_id = #{org_id} and m1.id = m2.id;"
     Repo.query!(query)
     :ok
   end
