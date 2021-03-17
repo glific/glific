@@ -82,9 +82,9 @@ defmodule Glific.Contacts.Contact do
     belongs_to :organization, Organization
     has_one :user, User
 
-    field :org_read_messages?, :boolean, default: false
-    field :org_replied_messages?,  :boolean, default: false
-    field :contact_replied_messages?, :boolean, default: false
+    field :org_read_messages?, :boolean, default: true
+    field :org_replied_messages?, :boolean, default: true
+    field :contact_replied_messages?, :boolean, default: true
 
     field :optin_time, :utc_datetime
     field :optin_status, :boolean, default: false

@@ -15,7 +15,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
       "DROP FUNCTION IF EXISTS update_search_messages_on_messages_tags_update()",
       "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages",
       "DROP TRIGGER IF EXISTS update_search_message_trigger ON contacts",
-      "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages_tags",
+      "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages_tags"
     ]
 
     sql |> Enum.each(fn s -> execute(s) end)

@@ -83,7 +83,7 @@ defmodule Glific.Messages.Message do
     :sent_at,
     :user_id,
     :flow_id,
-    :session_uuid,
+    :session_uuid
   ]
 
   schema "messages" do

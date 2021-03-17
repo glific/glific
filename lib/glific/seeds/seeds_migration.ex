@@ -303,5 +303,4 @@ defmodule Glific.Seeds.SeedsMigration do
 
   def fix_message_number(organizations) when is_list(organizations),
     do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
-
 end

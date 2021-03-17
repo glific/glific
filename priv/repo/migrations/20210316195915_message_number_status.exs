@@ -3,23 +3,23 @@ defmodule Glific.Repo.Migrations.MessageNumberStatus do
 
   def change do
     drop_if_exists table(:search_messages)
-    drop_search_message_triggers()
+    drop_search_message_code()
 
     alter table(:contacts) do
       add :org_read_messages?, :boolean,
-        default: false,
+        default: true,
         comment: "Has a staff read the messages sent by this contact"
 
       add :org_replied_messages?, :boolean,
-        default: false,
+        default: true,
         comment: "Has a staff or flow replied to the messages sent by this contact"
 
       add :contact_replied_messages?, :boolean,
-        default: false,
+        default: true,
         comment: "Has the contact replied to the messages sent by the system"
 
       add :last_message_number, :integer,
-        default: 0,
+        default: -1,
         comment: "The max message number recd or sent by this contact"
     end
 
@@ -35,12 +35,16 @@ defmodule Glific.Repo.Migrations.MessageNumberStatus do
     end
   end
 
-  def drop_search_message_triggers do
+  defp drop_search_message_code do
     [
-      "drop trigger IF EXISTS update_search_message_trigger on  contacts",
-      "drop trigger IF EXISTS update_search_message_trigger on messages",
-      "drop trigger IF EXISTS update_search_message_trigger on messages_tags"
-    ] |> Enum.each(&execute/1)
-
+      "DROP TRIGGER IF EXISTS update_search_message_trigger ON  contacts",
+      "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages",
+      "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages_tags",
+      "DROP FUNCTION IF EXISTS create_search_messages",
+      "DROP FUNCTION IF EXISTS update_search_messages_on_messages_update",
+      "DROP FUNCTION IF EXISTS update_search_messages_on_contacts_update",
+      "DROP FUNCTION IF EXISTS update_search_messages_on_messages_tags_update"
+    ]
+    |> Enum.each(&execute/1)
   end
 end
