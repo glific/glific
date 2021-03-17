@@ -23,7 +23,7 @@ Install the following packages using your favorite package manager. Links are pr
 Glific is currently developed and hosted on the following platforms. Our goal is to always try and use the latest
 versions of each platform as soon as feasible (i.e. once the ecosystem of packages we used have upgraded). We do not
 have the bandwidth to support earlier versions of the packages.
-  
+
   * erlang : 23.2.5
   * elixir : 1.11.3-otp-23
   * nodejs : 14.16.0
@@ -96,8 +96,8 @@ to update your codebase from the glicic repository.
 ## Documentation
 
   * [GraphQL API docs](https://glific.github.io/slate/)
-  * [Code docs](https://hexdocs.pm/glific/readme.html)
-  * [Slab docs](https://glific.slab.com/public/glific-documentation-nb8345sh)
+  * [Code docs](https://glific.github.io/glific/doc/readme.html#documentation)
+  * [Slab docs](https://docs.glific.org/)
 
 ## Learn more
 
