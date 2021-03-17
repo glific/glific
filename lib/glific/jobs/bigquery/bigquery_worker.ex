@@ -59,9 +59,9 @@ defmodule Glific.Jobs.BigQueryWorker do
     credential = organization.services["bigquery"]
 
     if credential do
-      make_merge_job("contacts", organization_id)
-      make_merge_job("messages", organization_id)
-      make_merge_job("flow_results", organization_id)
+      make_job_to_remove_duplicate("contacts", organization_id)
+      make_job_to_remove_duplicate("messages", organization_id)
+      make_job_to_remove_duplicate("flow_results", organization_id)
     end
 
     :ok
@@ -294,16 +294,14 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec make_merge_job(String.t(), non_neg_integer) :: :ok
-  defp make_merge_job(table, organization_id) do
-    Logger.info(
-      "making a new merge job for #{table} to send on bigquery org_id: #{organization_id}"
-    )
+  @spec make_job_to_remove_duplicate(String.t(), non_neg_integer) :: :ok
+  defp make_job_to_remove_duplicate(table, organization_id) do
+    Logger.info( "removing duplicates for the table #{table} and org_id: #{organization_id}")
 
     __MODULE__.new(%{
       table: table,
       organization_id: organization_id,
-      merge_table: true
+      remove_duplicates: true
     })
     |> Oban.insert()
 
@@ -363,10 +361,10 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec perform(Oban.Job.t()) :: :ok | {:error, :string}
   def perform(
         %Oban.Job{
-          args: %{"table" => table, "organization_id" => organization_id, "merge_table" => true}
+          args: %{"table" => table, "organization_id" => organization_id, "remove_duplicates" => true}
         } = _job
       ),
-      do: Bigquery.make_merge_job(table, organization_id)
+      do: Bigquery.make_job_to_remove_duplicate(table, organization_id)
 
   def perform(
         %Oban.Job{
