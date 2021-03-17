@@ -2,12 +2,16 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
 
   alias Faker.Phone
+  # import Mock
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.Import,
+    Groups,
     Partners,
     Partners.Organization,
+    Providers.GupshupContacts,
     Seeds.SeedsDev,
     Settings,
     Settings.Language
@@ -16,6 +20,7 @@ defmodule Glific.ContactsTest do
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
+    SeedsDev.seed_groups()
     :ok
   end
 
@@ -23,6 +28,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs %{
       name: "some name",
       optin_time: ~U[2010-04-17 14:00:00Z],
+      optin_status: false,
       optout_time: nil,
       phone: "some phone",
       status: :valid,
@@ -33,6 +39,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_1 %{
       name: "some name 1",
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: "some phone 1",
       status: :invalid,
@@ -42,6 +49,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_2 %{
       name: "some name 2",
       optin_time: ~U[2010-04-17 14:00:00Z],
+      optin_status: true,
       optout_time: nil,
       phone: "some phone 2",
       status: :valid,
@@ -51,6 +59,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_3 %{
       name: "some name 3",
       optin_time: DateTime.utc_now(),
+      optin_status: true,
       optout_time: nil,
       phone: "some phone 3",
       status: :invalid,
@@ -60,6 +69,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: "some phone 4",
       status: :valid,
@@ -69,6 +79,7 @@ defmodule Glific.ContactsTest do
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: "some phone 5",
       status: :valid,
@@ -78,6 +89,7 @@ defmodule Glific.ContactsTest do
     @update_attrs %{
       name: "some updated name",
       optin_time: ~U[2011-05-18 15:01:01Z],
+      optin_status: true,
       optout_time: nil,
       phone: "some updated phone",
       status: :invalid,
@@ -87,6 +99,7 @@ defmodule Glific.ContactsTest do
     @invalid_attrs %{
       name: nil,
       optin_time: nil,
+      optin_status: false,
       optout_time: nil,
       phone: nil,
       status: nil,
@@ -174,6 +187,91 @@ defmodule Glific.ContactsTest do
          %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, @invalid_attrs)
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
+    end
+
+    # this is actually in the gupshup provider contact
+    test "create_or_update_contact/1 with valid data creates a new contact when contact does not exist",
+         attrs do
+      attrs = Map.merge(attrs, @valid_attrs)
+      contacts_count = Contacts.count_contacts(%{filter: attrs})
+
+      assert contacts_count == 0
+
+      assert {:ok, %Contact{}} = GupshupContacts.create_or_update_contact(attrs)
+    end
+
+    test "import_contact/3 with valid data inserts new contacts in the database" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
+
+      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts("./test/support/fixture.csv", organization.id, group.id)
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 with invalid organization id returns an error" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
+
+      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      assert {:error, _} = Import.import_contacts("./test/support/fixture.csv", 999, group.id)
+    end
+
+    test "insert_or_update_contact_data/3 returns an error" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 404
+          }
+      end)
+
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      {:error, message, _error} =
+        Import.import_contacts("./test/support/fixture.csv", 1, group.id)
+
+      assert "All contacts could not be added" == message
+    end
+
+    test "create_or_update_contact/1 with valid data updates a contact when contact exists in the database",
+         attrs do
+      contact = contact_fixture(attrs)
+
+      assert {:ok, %Contact{} = contact} =
+               GupshupContacts.create_or_update_contact(
+                 Map.merge(@update_attrs, %{phone: contact.phone})
+               )
+
+      assert contact.name == "some updated name"
+      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
+      assert contact.optout_time == nil
+      assert contact.status == :invalid
+      assert contact.bsp_status == :hsm
     end
 
     test "update_contact/2 with valid data updates the contact",
@@ -349,9 +447,28 @@ defmodule Glific.ContactsTest do
           )
         )
 
+      opted_out_contact =
+        contact_fixture(
+          Map.merge(
+            attrs,
+            %{
+              phone: Phone.EnUs.phone(),
+              bsp_status: :hsm,
+              optout_time: DateTime.utc_now(),
+              last_message_at: Timex.shift(DateTime.utc_now(), days: -2)
+            }
+          )
+        )
+
       assert true == Contacts.can_send_message_to?(contact)
       assert false == Contacts.can_send_message_to?(contact2)
       assert false == Contacts.can_send_message_to?(contact3)
+
+      assert true ==
+               Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
+
+      assert false ==
+               Contacts.can_send_message_to?(opted_out_contact, false, %{is_optin_flow: true})
     end
 
     test "ensure that contact returns the valid state for sending the hsm message",
@@ -376,6 +493,7 @@ defmodule Glific.ContactsTest do
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
               optin_time: DateTime.utc_now(),
+              optin_status: true,
               optout_time: nil
             }
           )
@@ -388,7 +506,8 @@ defmodule Glific.ContactsTest do
             %{
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
-              optin_time: nil
+              optin_time: nil,
+              optin_status: false
             }
           )
         )
@@ -401,6 +520,7 @@ defmodule Glific.ContactsTest do
               phone: Phone.EnUs.phone(),
               bsp_status: :session_and_hsm,
               optin_time: nil,
+              optin_status: false,
               optout_time: DateTime.utc_now()
             }
           )
@@ -455,6 +575,18 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
+
+      assert_raise RuntimeError, "Contact does not exist with phone: 8910928313", fn ->
+        Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now())
+      end
+    end
+
+    test "maybe_create_contact/1 will update contact name", %{organization_id: organization_id} do
+      contact = contact_fixture(%{organization_id: organization_id, status: :valid})
+      sender = %{name: "demo phone 2", organization_id: 1, phone: contact.phone}
+      Contacts.maybe_create_contact(sender)
+      contact = Contacts.get_contact!(contact.id)
+      assert "demo phone 2" == contact.name
     end
 
     test "set_session_status/2 will return :ok if contact list is empty" do
@@ -467,7 +599,8 @@ defmodule Glific.ContactsTest do
         contact_fixture(%{
           organization_id: organization_id,
           bsp_status: :none,
-          optin_time: nil
+          optin_time: nil,
+          optin_status: false
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
@@ -483,7 +616,8 @@ defmodule Glific.ContactsTest do
         contact_fixture(%{
           organization_id: organization_id,
           bsp_status: :none,
-          optin_time: DateTime.utc_now()
+          optin_time: DateTime.utc_now(),
+          optin_status: true
         })
 
       {:ok, contact} = Contacts.set_session_status(contact, :none)
@@ -500,6 +634,7 @@ defmodule Glific.ContactsTest do
           organization_id: organization_id,
           bsp_status: :session_and_hsm,
           optin_time: Timex.shift(DateTime.utc_now(), hours: -25),
+          optin_status: true,
           last_message_at: Timex.shift(DateTime.utc_now(), hours: -24)
         })
 
@@ -509,13 +644,21 @@ defmodule Glific.ContactsTest do
       assert updated_contact.bsp_status == :hsm
     end
 
-    test "is_contact_blocked?/2 will check if the contact is blocked",
+    test "is_contact_blocked?/1 will check if the contact is blocked",
          %{organization_id: _organization_id} = attrs do
       attrs = Map.merge(attrs, %{status: :blocked})
       contact = contact_fixture(attrs)
-      assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == true
-      Contacts.update_contact(contact, %{status: :valid})
-      assert Contacts.is_contact_blocked?(contact.phone, attrs.organization_id) == false
+      assert Contacts.is_contact_blocked?(contact) == true
+      {:ok, contact} = Contacts.update_contact(contact, %{status: :valid})
+      # its still blocked since the phone number is "some phone" and only
+      # india and US phone are valid for glific in dev mode
+      assert Contacts.is_contact_blocked?(contact) == true
+      assert Contacts.is_contact_blocked?(Map.put(contact, :phone, "9123456")) == false
+    end
+
+    test "getting saas variables" do
+      Application.put_env(:glific, :saas_phone, "9997887776")
+      assert "9997887776" == Contacts.saas_phone()
     end
   end
 end

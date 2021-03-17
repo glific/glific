@@ -124,7 +124,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "keywords [testkeyword] are already taken" =
+    assert "The keyword `testkeyword` was already used in the `Flow Test Name` Flow." =
              get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
   end
 
@@ -166,7 +166,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
   test "Publish flow", %{manager: user} do
     {:ok, flow} =
-      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+      Repo.fetch_by(Flow, %{name: "Language Workflow", organization_id: user.organization_id})
 
     result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
     assert {:ok, query_data} = result
@@ -193,8 +193,9 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
 
-    assert get_in(query_data, [:data, "startContactFlow", "errors", Access.at(0), "message"]) ==
-             "Cannot send the message to the contact."
+    # flows dont care about the contact state, we allow each flow node to check
+    # and figure out if the operation is permitted
+    assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
 
     # will add test for success with integration tests
   end

@@ -10,6 +10,7 @@ defmodule Glific.Contacts do
   alias __MODULE__
 
   alias Glific.{
+    Clients,
     Contacts.Contact,
     Contacts.Location,
     Groups.ContactGroup,
@@ -27,6 +28,8 @@ defmodule Glific.Contacts do
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
+    organization_contact_id = Partners.organization_contact_id(user.organization_id)
+
     sub_query =
       ContactGroup
       |> select([cg], cg.contact_id)
@@ -34,7 +37,10 @@ defmodule Glific.Contacts do
       |> where([cg, ug: ug], ug.user_id == ^user.id)
 
     query
-    |> where([c], c.id == ^user.contact_id or c.id in subquery(sub_query))
+    |> where(
+      [c],
+      c.id in [^user.contact_id, ^organization_contact_id] or c.id in subquery(sub_query)
+    )
   end
 
   @doc """
@@ -172,9 +178,9 @@ defmodule Glific.Contacts do
   @spec get_contact!(integer) :: Contact.t()
   def get_contact!(id) do
     Contact
-    |> Ecto.Queryable.to_query()
+    |> where([c], c.id == ^id)
     |> Repo.add_permission(&Contacts.add_permission/2)
-    |> Repo.get!(id)
+    |> Repo.one!()
   end
 
   @doc """
@@ -222,12 +228,27 @@ defmodule Glific.Contacts do
   @spec update_contact(Contact.t(), map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def update_contact(%Contact{} = contact, attrs) do
     if has_permission?(contact.id) do
-      contact
-      |> Contact.changeset(attrs)
-      |> Repo.update()
+      if is_simulator_block?(contact, attrs) do
+        # just treat it as if we blocked the simulator
+        # but in reality, we dont block the simulator
+        {:ok, contact}
+      else
+        contact
+        |> Contact.changeset(attrs)
+        |> Repo.update()
+      end
     else
       raise "Permission denied"
     end
+  end
+
+  # We do not want to block the simulator
+  @spec is_simulator_block?(Contact.t(), map()) :: boolean
+  defp is_simulator_block?(contact, attrs) do
+    if is_simulator_contact?(contact.phone) &&
+         attrs[:status] == :blocked,
+       do: true,
+       else: false
   end
 
   @doc """
@@ -303,7 +324,8 @@ defmodule Glific.Contacts do
   This function is called by the messaging framework for all incoming messages, hence
   might be a good candidate to maintain a contact level cache at some point
 
-  We use a fetch followed by create, to avoid the explosion in the id namespace
+  We use a fetch followed by create, to avoid the explosion in the id namespace. We also
+  avoid updating the contact to skip the DB call, and only do so if the name has changed
   """
   @spec maybe_create_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_contact(sender) do
@@ -347,16 +369,19 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in and ignore if it's blocked
   """
-  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t()) ::
+  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(phone, organization_id, utc_time) do
+  def contact_opted_in(phone, organization_id, utc_time, opts \\ []) do
     attrs = %{
       phone: phone,
       optin_time: utc_time,
-      last_message_at: nil,
+      optin_status: true,
+      optin_method: Keyword.get(opts, :method, "BSP"),
+      optin_message_id: Keyword.get(opts, :message_id),
+      last_message_at: DateTime.utc_now(),
       optout_time: nil,
       status: :valid,
-      bsp_status: :hsm,
+      bsp_status: Keyword.get(opts, :bsp_status, :session_and_hsm),
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     }
@@ -366,36 +391,66 @@ defmodule Glific.Contacts do
         create_contact(attrs)
 
       contact ->
-        if contact.status == :blocked,
+        # we ignore the optin from the BSP if we are already opted in
+        if ignore_optin?(contact, opts),
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
+    |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
   end
+
+  @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
+  defp ignore_optin?(contact, opts) do
+    cond do
+      # if we are already opted in and we get the optin request from
+      # BSP, we ignore it
+      contact.optin_status and opts[:method] == "BSP" -> true
+      contact.status == :blocked -> true
+      true -> false
+    end
+  end
+
+  @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp optin_on_bsp({:ok, contact}, true) do
+    contact
+    |> Map.from_struct()
+    |> optin_contact()
+
+    {:ok, contact}
+  end
+
+  defp optin_on_bsp(res, _), do: res
 
   @doc """
   Update DB fields when contact opted out
   """
-  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: {:ok}
+  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: :ok
   def contact_opted_out(phone, organization_id, utc_time) do
-    attrs = %{
-      phone: phone,
-      optout_time: utc_time,
-      optin_time: nil,
-      status: :invalid,
-      bsp_status: :none,
-      organization_id: organization_id,
-      updated_at: DateTime.utc_now()
-    }
+    if !is_simulator_contact?(phone) do
+      attrs = %{
+        phone: phone,
+        optout_time: utc_time,
+        optin_time: nil,
+        optin_status: false,
+        optin_method: nil,
+        optin_message_id: nil,
+        status: :invalid,
+        bsp_status: :none,
+        organization_id: organization_id,
+        updated_at: DateTime.utc_now()
+      }
 
-    case Repo.get_by(Contact, %{phone: phone}) do
-      nil ->
-        raise "Contact does not exist with phone: #{phone}"
+      case Repo.get_by(Contact, %{phone: phone}) do
+        nil ->
+          raise "Contact does not exist with phone: #{phone}"
 
-      contact ->
-        update_contact(contact, attrs)
+        contact ->
+          update_contact(contact, attrs)
+      end
     end
 
-    {:ok}
+    :ok
   end
 
   @doc """
@@ -417,13 +472,29 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a session message to the contact
   """
-  def can_send_message_to?(contact, _is_hsm) do
+  def can_send_message_to?(contact, false = _is_hsm) do
     if contact.status == :valid &&
          contact.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(contact.last_message_at, :hours, 24),
        do: true,
        else: false
   end
+
+  @doc """
+  Check if we can send a session message to the contact with some extra perameters
+  """
+
+  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: boolean()
+  def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
+    if is_hsm do
+      contact.bsp_status in [:session_and_hsm, :hsm]
+    else
+      contact.bsp_status in [:session_and_hsm, :session] &&
+        Glific.in_past_time(contact.last_message_at, :hours, 24)
+    end
+  end
+
+  def can_send_message_to?(contact, is_hsm, _), do: can_send_message_to?(contact, is_hsm)
 
   @doc """
   Get contact's current location
@@ -514,11 +585,13 @@ defmodule Glific.Contacts do
   @doc """
   check if contact is blocked or not
   """
-  @spec is_contact_blocked?(String.t(), non_neg_integer) :: boolean()
-  def is_contact_blocked?(phone, _organization_id) do
-    case Repo.fetch_by(Contact, %{phone: phone}) do
-      {:ok, contact} -> contact.status == :blocked
-      _ -> false
+  @spec is_contact_blocked?(Contact.t()) :: boolean()
+  def is_contact_blocked?(contact) do
+    cond do
+      contact.status == :blocked -> true
+      is_simulator_contact?(contact.phone) -> false
+      Clients.blocked?(contact.phone, contact.organization_id) -> true
+      true -> false
     end
   end
 
@@ -563,4 +636,20 @@ defmodule Glific.Contacts do
       )
     )
   end
+
+  @simulator_phone_prefix "9876543210"
+
+  @doc false
+  @spec simulator_phone_prefix :: String.t()
+  def simulator_phone_prefix, do: @simulator_phone_prefix
+
+  @doc false
+  @spec saas_phone :: String.t()
+  def saas_phone, do: Application.fetch_env!(:glific, :saas_phone)
+
+  @doc """
+  Lets centralize the code to detect simulator messages and interaction
+  """
+  @spec is_simulator_contact?(String.t()) :: boolean
+  def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 end

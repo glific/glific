@@ -37,32 +37,31 @@ query messages($filter: MessageFilter, $opts: Opts) {
         "id": "3",
         "body": "Hello, how are you",
         "sender": {
-            "id": "2",
-            "name": "Default Sender"
+          "id": "2",
+          "name": "Default Sender"
         }
-
       },
       {
         "id": "15",
         "body": "Hello world",
         "sender": {
-            "id": "13",
-            "name": "Althea Hirthe"
+          "id": "13",
+          "name": "Althea Hirthe"
         }
-
       }
     ]
   }
 }
 ```
+
 This returns all the messages for the organization filtered by the input <a href="#messagefilter">MessageFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#messagefilter">MessageFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                       | Default | Description                         |
+| --------- | ------------------------------------------ | ------- | ----------------------------------- |
+| filter    | <a href="#messagefilter">MessageFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                   | nil     | limit / offset / sort order options |
 
 ## Get a specific Message by ID
 
@@ -106,9 +105,9 @@ query message($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-ID | <a href="#id">ID</a>
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> |
 
 ## Count all Messages
 
@@ -136,9 +135,9 @@ query countMessages($filter: MessageFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#messagefilter">MessageFilter</a> | nil | filter the list
+| Parameter | Type                                       | Default | Description     |
+| --------- | ------------------------------------------ | ------- | --------------- |
+| filter    | <a href="#messagefilter">MessageFilter</a> | nil     | filter the list |
 
 ## Create a Message
 
@@ -193,18 +192,19 @@ mutation createMessage($input:MessageInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#messageinput">MessageInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#messageinput">MessageInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#messageresult">MessageResult</a> | The created message object
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#messageresult">MessageResult</a> | The created message object |
 
 ## Update a Message
 
-```graphql
+````graphql
 mutation updateMessage($id: ID!, $input:MessageInput!) {
   updateMessage(id: $id, input: $input) {
     message {
@@ -247,20 +247,20 @@ mutation updateMessage($id: ID!, $input:MessageInput!) {
     }
   }
 }
-```
+````
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#messageInput">MessageInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                    | required |             |
+| input     | <a href="#messageInput">MessageInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#messageresult">MessageResult</a> | The updated message object
 
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#messageresult">MessageResult</a> | The updated message object |
 
 ## Delete a Message
 
@@ -310,14 +310,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error object or empty
+
+| Parameter                                  | Type                     | Default | Description |
+| ------------------------------------------ | ------------------------ | ------- | ----------- |
+| <a href="#messageresult">MessageResult</a> | An error object or empty |
 
 ## Delete a Messages of a contact
 
@@ -370,16 +371,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-contactId | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| contactId | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#clearmessagesresult">ClearMessagesResult</a> | An error object or empty
 
-
+| Parameter                                              | Type                     | Default | Description |
+| ------------------------------------------------------ | ------------------------ | ------- | ----------- |
+| <a href="#clearmessagesresult">ClearMessagesResult</a> | An error object or empty |
 
 ## Create and send Message
 
@@ -432,7 +432,8 @@ mutation createAndSendMessage($input: MessageInput!) {
 }
 ```
 
-```	```
+` `
+
 ## Create and send SessionTemplate
 
 ```graphql
@@ -461,12 +462,13 @@ mutation createAndSendMessage($input: MessageInput!) {
     "isHsm": true,
     "params": ["Fifty", "Next Week"],
     "templateId": 32
-    
+
   }
 }
 ```
 
 > The above query returns JSON structured like this:
+
 ```json
 {
   "data": {
@@ -540,16 +542,16 @@ mutation createAndSendMessage($input: MessageInput!) {
 ```
 
 ### Query Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#messageinput">MessageInput</a> | required ||
+
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#messageinput">MessageInput</a> | required |             |
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error object or empty
 
-
+| Parameter                                  | Type                     | Default | Description |
+| ------------------------------------------ | ------------------------ | ------- | ----------- |
+| <a href="#messageresult">MessageResult</a> | An error object or empty |
 
 ## Create and send Message to contacts of a group
 
@@ -582,9 +584,7 @@ mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
 {
   "data": {
     "createAndSendMessageToGroup": {
-      "contactIds": [
-        "8"
-      ],
+      "contactIds": ["8"],
       "errors": null,
       "success": true
     }
@@ -593,16 +593,17 @@ mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
 ```
 
 ### Query Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#messageinput">MessageInput</a> | required ||
-groupId | [<a href="#id">ID</a>]! | required ||
+
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#messageinput">MessageInput</a> | required |             |
+| groupId   | [<a href="#id">ID</a>]!                  | required |             |
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-[<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids
 
+| Parameter                                              | Type                | Default | Description |
+| ------------------------------------------------------ | ------------------- | ------- | ----------- |
+| [<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids |
 
 ## Send hsm Message
 
@@ -664,26 +665,25 @@ mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String
         }
       ],
       "message": "You need to provide correct number of parameters for hsm template",
-      "path": [
-        "sendHsmMessage"
-      ]
+      "path": ["sendHsmMessage"]
     }
   ]
 }
 ```
 
 ### Query Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-templateId | <a href="#id">ID</a>! | required ||
-receiverId | <a href="#id">ID</a>! | required ||
-parameters | [<a href="#string">String</a>]! | required ||
+
+| Parameter  | Type                            | Default  | Description |
+| ---------- | ------------------------------- | -------- | ----------- |
+| templateId | <a href="#id">ID</a>!           | required |             |
+| receiverId | <a href="#id">ID</a>!           | required |             |
+| parameters | [<a href="#string">String</a>]! | required |             |
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error object or empty
 
+| Parameter                                  | Type                     | Default | Description |
+| ------------------------------------------ | ------------------------ | ------- | ----------- |
+| <a href="#messageresult">MessageResult</a> | An error object or empty |
 
 ## Subscription for Sent Message
 
@@ -707,6 +707,7 @@ subscription {
 }
 
 ```
+
 > The above query returns JSON structured like this:
 
 ```json
@@ -715,24 +716,26 @@ subscription {
     "sentMessage": {
       "body": "Test",
       "flow": "OUTBOUND",
-      "id" : "10397",
+      "id": "10397",
       "type": "TEXT",
       "receiver": {
-          "id" : "484",
-          "phone" : "91997612324"
+        "id": "484",
+        "phone": "91997612324"
       },
       "sender": {
-          "id" : "1",
-          "phone" : "917834811114"
+        "id": "1",
+        "phone": "917834811114"
       }
     }
   }
 }
 ```
+
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error or object
+
+| Parameter                                  | Type               | Default | Description |
+| ------------------------------------------ | ------------------ | ------- | ----------- |
+| <a href="#messageresult">MessageResult</a> | An error or object |
 
 ## Subscription for Update Message Status
 
@@ -757,6 +760,7 @@ subscription {
 }
 
 ```
+
 > The above query returns JSON structured like this:
 
 ```json
@@ -765,25 +769,27 @@ subscription {
     "update_message_status": {
       "body": "Test",
       "flow": "OUTBOUND",
-      "id" : "10397",
+      "id": "10397",
       "type": "TEXT",
       "status": "sent",
       "receiver": {
-          "id" : "484",
-          "phone" : "91997612324"
+        "id": "484",
+        "phone": "91997612324"
       },
       "sender": {
-          "id" : "1",
-          "phone" : "917834811114"
+        "id": "1",
+        "phone": "917834811114"
       }
     }
   }
 }
 ```
+
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error or object
+
+| Parameter                                  | Type               | Default | Description |
+| ------------------------------------------ | ------------------ | ------- | ----------- |
+| <a href="#messageresult">MessageResult</a> | An error or object |
 
 ## Subscription for Sent Group Message
 
@@ -800,6 +806,7 @@ subscription {
 }
 
 ```
+
 > The above query returns JSON structured like this:
 
 ```json
@@ -808,19 +815,53 @@ subscription {
     "sent_group_message": {
       "body": "Test",
       "flow": "OUTBOUND",
-      "id" : "10397",
+      "id": "10397",
       "type": "TEXT",
       "status": "sent",
-      "group_id" : "3",
+      "group_id": "3"
     }
   }
 }
 ```
-### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error or object
 
+## Subscription for Cleared Message
+
+```graphql
+subscription {
+  cleared_messages() {
+    id
+    phone
+    name
+    lastMessageAt
+    optinTime
+    bspStatus
+  }
+}
+
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "cleared_messages": {
+      "bspStatus": "HSM",
+      "id": "100",
+      "lastMessageAt": null,
+      "name": "contact name",
+      "optinTime": "2020-11-25T16:12:18Z",
+      "phone": "917834811119"
+    }
+  }
+}
+```
+
+### Return Parameters
+
+| Parameter                                  | Type               | Default | Description |
+| ------------------------------------------ | ------------------ | ------- | ----------- |
+| <a href="#contactresult">ContactResult</a> | An error or object |
 
 ## Subscription for Received Message
 
@@ -844,6 +885,7 @@ subscription {
 }
 
 ```
+
 > The above query returns JSON structured like this:
 
 ```json
@@ -852,26 +894,60 @@ subscription {
     "sentMessage": {
       "body": "New Message",
       "flow": "OUTBOUND",
-      "id" : "10397",
+      "id": "10397",
       "type": "TEXT",
       "receiver": {
-          "id" : "1",
-          "phone" : "917834811114"
+        "id": "1",
+        "phone": "917834811114"
       },
       "sender": {
-          "id" : "3",
-          "phone" : "91998782231"
+        "id": "3",
+        "phone": "91998782231"
       }
     }
   }
 }
 ```
+
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#messageresult">MessageResult</a> | An error or an object
 
+| Parameter                                  | Type                  | Default | Description |
+| ------------------------------------------ | --------------------- | ------- | ----------- |
+| <a href="#messageresult">MessageResult</a> | An error or an object |
 
+## Remove unread status from messages belonging to a contact
+
+```graphql
+mutation markContactMessagesAsRead($contactId : Gid!) {
+  markContactMessagesAsRead(contactId: $contactId)
+}
+
+{
+  "contactId": "26"
+}
+```
+
+> The above query returns the same contactID back
+
+```json
+{
+  "data": {
+    "markContactMessagesAsRead": ["26"]
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                    | Default  | Description |
+| --------- | ----------------------- | -------- | ----------- |
+| contactId | <a href="#gid">Gid</a>! | required |             |
+
+### Return Parameters
+
+| Parameter                     | Type                                   | Default | Description |
+| ----------------------------- | -------------------------------------- | ------- | ----------- |
+| <a href="#gid">Contact ID</a> | The same contact ID or an error object |
 
 ## Message Objects
 
@@ -953,6 +1029,18 @@ Parameter | Type | Default | Description
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>isRead</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Applicable only to inbound messages</td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>isReplied</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>For inbound messages, false == Not replied, For outbound messages, false == Not Responded</td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -985,7 +1073,7 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-### MessageResult ###
+### MessageResult
 
 <table>
 <thead>
@@ -1065,9 +1153,9 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-## Message Inputs ##
+## Message Inputs
 
-### MessageFilter ###
+### MessageFilter
 
 Filtering options for messages
 
@@ -1170,11 +1258,10 @@ Match the tags excluded
 </td>
 </tr>
 
-
 </tbody>
 </table>
 
-### MessageInput ###
+### MessageInput
 
 <table>
 <thead>
@@ -1185,7 +1272,6 @@ Match the tags excluded
 </tr>
 </thead>
 <tbody>
-
 
 <tr>
 <td colspan="2" valign="top"><strong>body</strong></td>
@@ -1204,7 +1290,6 @@ Match the tags excluded
 <td valign="top"><a href="#message_flow_enum">MessageFlowEnum</a></td>
 <td></td>
 </tr>
-
 
 <tr>
 <td colspan="2" valign="top"><strong>sender_id</strong></td>

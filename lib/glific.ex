@@ -112,7 +112,7 @@ defmodule Glific do
         if is_atom(k) do
           {atomize_keys(k), atomize_keys(v)}
         else
-          {String.to_existing_atom(k), atomize_keys(v)}
+          {Glific.safe_string_to_atom(k), atomize_keys(v)}
         end
       end)
       |> Enum.into(%{})
@@ -122,10 +122,10 @@ defmodule Glific do
   @doc """
   easy way for glific developers to get a stacktrace when debugging
   """
-  @spec stacktrace :: :ok
+  @spec stacktrace :: String.t()
   def stacktrace do
-    inspect(Process.info(self(), :current_stacktrace))
-    :ok
+    {_, stacktrace} = Process.info(self(), :current_stacktrace)
+    inspect(stacktrace)
   end
 
   @not_allowed ["Repo", "IO", "File", "Code"]
@@ -155,32 +155,22 @@ defmodule Glific do
     Base.encode16(hmac, case: :lower)
   end
 
-  @doc false
-  @spec validate_media?(String.t(), String.t()) :: boolean
-  def validate_media?(url, type) do
-    case Tesla.get(url) do
-      {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
-        headers
-        |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
-        |> Map.put_new("content-type", "")
-        |> do_validate_headers(type, url)
+  @doc """
+  You shouldn’t really use String.to_atom/1 on user-supplied data.
+  The BEAM has a limit on how many different atoms you can have and they’re not garbage collected!
+  With data coming from outside the system, stick to strings or use String.to_existing_atom/1 instead!
+  So this is a generic function which will convert the string to atom and throws an error in case of invalid key
+  """
 
-      _ ->
-        false
-    end
+  @spec safe_string_to_atom(String.t() | atom()) :: atom()
+  def safe_string_to_atom(value) when is_atom(value), do: value
+
+  def safe_string_to_atom(value) do
+    String.to_existing_atom(value)
+  rescue
+    ArgumentError ->
+      error = "#{value} can not be converted to atom"
+      Appsignal.send_error(:error, error, __STACKTRACE__)
+      :invalid_atom
   end
-
-  @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
-  defp do_validate_headers(headers, "document", _url),
-    do: String.contains?(headers["content-type"], "pdf")
-
-  defp do_validate_headers(headers, "sticker", _url) do
-    ## we might need to do some more changes in this. Currently I can find that this
-    String.contains?(headers["content-type"], "image")
-  end
-
-  defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
-    do: String.contains?(headers["content-type"], type)
-
-  defp do_validate_headers(_, _, _), do: false
 end

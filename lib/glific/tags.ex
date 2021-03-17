@@ -2,6 +2,7 @@ defmodule Glific.Tags do
   @moduledoc """
   The Tags Context, which encapsulates and manages tags and the related join tables.
   """
+  use Publicist
 
   alias Glific.{
     Communications,
@@ -171,7 +172,7 @@ defmodule Glific.Tags do
     do:
       Repo.label_id_map(
         Tag,
-        ["language", "newcontact", "notreplied", "unread"],
+        ["language", "newcontact"],
         organization_id,
         :shortcode
       )
@@ -242,6 +243,8 @@ defmodule Glific.Tags do
   """
   @spec create_message_tag(map()) :: {:ok, MessageTag.t()} | {:error, Ecto.Changeset.t()}
   def create_message_tag(%{organization_id: organization_id} = attrs) do
+    attrs = Map.merge(%{publish: true}, attrs)
+
     {status, response} =
       %MessageTag{}
       |> MessageTag.changeset(attrs)
@@ -250,8 +253,10 @@ defmodule Glific.Tags do
         conflict_target: [:message_id, :tag_id]
       )
 
-    if status == :ok,
-      do: Communications.publish_data(response, :created_message_tag, organization_id)
+    with true <- attrs.publish,
+         :ok <- status do
+      Communications.publish_data(response, :created_message_tag, organization_id)
+    end
 
     {status, response}
   end
@@ -289,7 +294,7 @@ defmodule Glific.Tags do
       |> where([m], m.message_id == ^message_id and m.tag_id in ^tag_ids)
 
     Repo.all(query)
-    |> publish_delete_message(organization_id)
+    |> publish_delete_message_tag(organization_id)
 
     Repo.delete_all(query)
   end
@@ -389,14 +394,16 @@ defmodule Glific.Tags do
   @doc """
   Remove a specific tag from contact messages
   """
-  @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer) :: list()
-  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id)
+  @spec remove_tag_from_all_message(integer(), String.t(), non_neg_integer, boolean()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish \\ true)
+
+  def remove_tag_from_all_message(contact_id, tag_shortcode, organization_id, publish)
       when is_binary(tag_shortcode) do
-    remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id)
+    remove_tag_from_all_message(contact_id, [tag_shortcode], organization_id, publish)
   end
 
-  @spec remove_tag_from_all_message(integer(), [String.t()], non_neg_integer) :: list()
-  def remove_tag_from_all_message(contact_id, tag_shortcode_list, organization_id) do
+  @spec remove_tag_from_all_message(integer(), [String.t()], non_neg_integer, boolean()) :: list()
+  def remove_tag_from_all_message(contact_id, tag_shortcode_list, organization_id, publish) do
     query =
       from mt in MessageTag,
         join: m in assoc(mt, :message),
@@ -407,7 +414,7 @@ defmodule Glific.Tags do
 
     query
     |> Repo.all()
-    |> publish_delete_message(organization_id)
+    |> publish_delete_message_tag(organization_id, publish)
 
     {_, deleted_rows} =
       select(query, [mt], [mt.message_id])
@@ -416,17 +423,19 @@ defmodule Glific.Tags do
     List.flatten(deleted_rows)
   end
 
-  @spec publish_delete_message(list, non_neg_integer) :: {:ok}
-  defp publish_delete_message([], _organization_id), do: {:ok}
+  @spec publish_delete_message_tag(list, non_neg_integer, boolean()) :: :ok
+  defp publish_delete_message_tag(list, organization_id, publish \\ true)
+  defp publish_delete_message_tag(_message_tags, _organization_id, false), do: :ok
+  defp publish_delete_message_tag([], _organization_id, _publish), do: :ok
 
-  defp publish_delete_message(message_tags, organization_id) do
+  defp publish_delete_message_tag(message_tags, organization_id, true) do
     _list =
       message_tags
       |> Enum.reduce([], fn message_tag, _acc ->
         Communications.publish_data(message_tag, :deleted_message_tag, organization_id)
       end)
 
-    {:ok}
+    :ok
   end
 
   @doc """

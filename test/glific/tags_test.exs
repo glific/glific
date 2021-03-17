@@ -1,5 +1,6 @@
 defmodule Glific.TagsTest do
   use Glific.DataCase
+  use ExUnit.Case
 
   alias Glific.{
     Fixtures,
@@ -122,6 +123,16 @@ defmodule Glific.TagsTest do
       assert tag == Tags.get_tag!(tag.id)
     end
 
+    test "publish_delete_message_tag with possible scenarios should return :ok", %{
+      organization_id: organization_id
+    } do
+      tag = tag_fixture(%{organization_id: organization_id})
+      assert Tags.publish_delete_message_tag([], organization_id, true) === :ok
+      assert Tags.publish_delete_message_tag([], organization_id, false) === :ok
+      assert Tags.publish_delete_message_tag([tag], organization_id, true) === :ok
+      assert Tags.publish_delete_message_tag([tag], organization_id, false) === :ok
+    end
+
     test "delete_tag/1 deletes the tag", %{organization_id: organization_id} do
       tag = tag_fixture(%{organization_id: organization_id})
       assert {:ok, %Tag{}} = Tags.delete_tag(tag)
@@ -238,7 +249,7 @@ defmodule Glific.TagsTest do
          %{organization_id: _organization_id} = attrs do
       status_map = Tags.status_map(attrs)
       assert is_map(status_map)
-      assert status_map["unread"] != nil
+      assert status_map["language"] != nil
       assert status_map["newcontact"] != nil
     end
 
@@ -410,7 +421,7 @@ defmodule Glific.TagsTest do
       {:ok, tag} =
         Repo.fetch_by(
           Tag,
-          %{shortcode: "unread", organization_id: organization_id}
+          %{shortcode: "newcontact", organization_id: organization_id}
         )
 
       {:ok, message1_tag} =
@@ -435,7 +446,7 @@ defmodule Glific.TagsTest do
         })
 
       untag_message_id =
-        Tags.remove_tag_from_all_message(message_1.contact_id, "unread", organization_id)
+        Tags.remove_tag_from_all_message(message_1.contact_id, "newcontact", organization_id)
 
       assert message_1.id in untag_message_id
       assert message_2.id in untag_message_id

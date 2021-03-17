@@ -3,15 +3,19 @@ defmodule Glific.Providers.GupshupContacts do
   Contacts API layer between application and Gupshup
   """
 
+  use Publicist
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient
+    Providers.Gupshup.ApiClient,
+    Repo
   }
 
   @behaviour Glific.Providers.ContactBehaviour
+  @days_shift -14
 
   @doc """
     Update a contact phone as opted in
@@ -27,13 +31,40 @@ defmodule Glific.Providers.GupshupContacts do
           name: attrs[:name],
           phone: attrs.phone,
           organization_id: organization_id,
-          optin_time: DateTime.utc_now(),
+          optin_time: Map.get(attrs, :optin_time, DateTime.utc_now()),
+          optin_status: true,
+          optin_method: Map.get(attrs, :method, "BSP"),
+          language_id:
+            Map.get(attrs, :language_id, Partners.organization_language_id(organization_id)),
           bsp_status: :hsm
         }
-        |> Contacts.create_contact()
+        |> create_or_update_contact()
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
+    end
+  end
+
+  # This method creates a contact if it does not exist. Otherwise, updates it.
+  @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp create_or_update_contact(contact_data) do
+    case Repo.get_by(Contact, %{phone: contact_data.phone}) do
+      nil ->
+        Contacts.create_contact(contact_data)
+
+      contact ->
+        # in the case of update we need to ensure that we preserve bsp_status
+        # and optin_time, method if the contact is already opted in
+        contact_data =
+          if contact.optin_status,
+            do:
+              contact_data
+              |> Map.put(:bsp_status, contact.bsp_status || contact_data.bsp_status)
+              |> Map.put(:optin_method, contact.optin_method || contact_data.optin_method)
+              |> Map.put(:optin_time, contact.optin_time || contact_data.optin_time),
+            else: contact_data
+
+        Contacts.update_contact(contact, contact_data)
     end
   end
 
@@ -68,28 +99,38 @@ defmodule Glific.Providers.GupshupContacts do
   @spec update_contacts(list() | nil, Organization.t() | nil) :: :ok | any()
   defp update_contacts(users, organization) do
     Enum.each(users, fn user ->
-      # handle scenario when contact has not sent a message yet
-      last_message_at =
-        if user["lastMessageTimeStamp"] != 0,
-          do:
-            DateTime.from_unix(user["lastMessageTimeStamp"], :millisecond)
-            |> elem(1)
-            |> DateTime.truncate(:second),
-          else: nil
+      if user["optinStatus"] == "OPT_IN" do
+        # handle scenario when contact has not sent a message yet
+        last_message_at = last_message_at(user["lastMessageTimeStamp"])
 
-      {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
+        {:ok, optin_time} = DateTime.from_unix(user["optinTimeStamp"], :millisecond)
 
-      phone = user["countryCode"] <> user["phoneCode"]
+        phone = user["countryCode"] <> user["phoneCode"]
 
-      Contacts.upsert(%{
-        phone: phone,
-        last_message_at: last_message_at,
-        optin_time: optin_time |> DateTime.truncate(:second),
-        bsp_status: check_bsp_status(last_message_at),
-        organization_id: organization.id,
-        language_id: organization.default_language_id
-      })
+        Contacts.upsert(%{
+          phone: phone,
+          last_message_at: last_message_at,
+          optin_time: optin_time |> DateTime.truncate(:second),
+          optin_status: true,
+          optin_method: user["optinSource"],
+          bsp_status: check_bsp_status(last_message_at),
+          organization_id: organization.id,
+          language_id: organization.default_language_id,
+          last_communication_at: last_message_at
+        })
+      end
     end)
+  end
+
+  @spec last_message_at(non_neg_integer()) :: DateTime.t()
+  defp last_message_at(0) do
+    Timex.shift(DateTime.utc_now(), days: @days_shift)
+  end
+
+  defp last_message_at(time) do
+    DateTime.from_unix(time, :millisecond)
+    |> elem(1)
+    |> DateTime.truncate(:second)
   end
 
   @spec check_bsp_status(DateTime.t()) :: atom()

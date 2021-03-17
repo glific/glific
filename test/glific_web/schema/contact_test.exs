@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.ContactTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Contacts.Simulator,
     Fixtures,
     Messages.Message,
     Repo,
@@ -37,9 +38,10 @@ defmodule GlificWeb.Schema.ContactTest do
     contacts = get_in(query_data, [:data, "contacts"])
     assert length(contacts) > 0
 
-    res = contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "Glific Admin" end)
+    res =
+      contacts |> get_in([Access.all(), "name"]) |> Enum.find(fn x -> x == "NGO Main Account" end)
 
-    assert res == "Glific Admin"
+    assert res == "NGO Main Account"
 
     [contact | _] = contacts
     assert contact["groups"] == []
@@ -94,13 +96,13 @@ defmodule GlificWeb.Schema.ContactTest do
     assert get_in(query_data, [:data, "countContacts"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Glific Admin"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "NGO Main Account"}})
 
     assert get_in(query_data, [:data, "countContacts"]) == 1
   end
 
   test "contact by id returns one contact or nil", %{staff: user} do
-    name = "Glific Admin"
+    name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
@@ -120,7 +122,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contact by id returns one contact with phone for manager/admin role", %{manager: user} do
-    name = "Glific Admin"
+    name = "NGO Main Account"
     {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
@@ -164,7 +166,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
     {:ok, contact} =
-      Repo.fetch_by(Contact, %{name: "Glific Admin", organization_id: user.organization_id})
+      Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: user.organization_id})
 
     name = "Contact Test Name New"
     phone = "1-415-555-1212 New"
@@ -309,7 +311,7 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "search contacts field obeys tag filters", %{staff: user} do
-    [ct1, _ct2, ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
+    [ct1, _ct2, _ct3] = Fixtures.contact_tags_fixture(%{organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:list, user,
@@ -330,7 +332,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:list, user,
         variables: %{
           "filter" => %{
-            "includeTags" => ["#{ct1.tag_id}", "#{ct3.tag_id}"],
+            "includeTags" => ["#{ct1.tag_id}"],
             "includeGroups" => ["#{cg3.group_id}"]
           }
         }
@@ -394,18 +396,18 @@ defmodule GlificWeb.Schema.ContactTest do
     contact = get_in(query_data, [:data, "optinContact", "contact"])
     assert contact["bspStatus"] == "HSM"
     assert contact["name"] == "contact name"
+    contact_id = contact["id"]
 
-    # trying to optin already existing phone gives error
+    # trying to optin already existing phone should update the existing contact
     result =
       auth_query_gql_by(:optin_contact, manager,
-        variables: %{"name" => "contact name", "phone" => "test phone"}
+        variables: %{"name" => "contact name", "phone" => "test phone 2"}
       )
 
     assert {:ok, query_data} = result
 
-    error_message = get_in(query_data, [:data, "optinContact", "errors", Access.at(0), "message"])
-
-    assert error_message == "has already been taken"
+    contact = get_in(query_data, [:data, "optinContact", "contact"])
+    assert contact_id == contact["id"]
   end
 
   test "optin contact responds with error in case of gupshup api fails", %{manager: manager} do
@@ -430,6 +432,9 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "simulator get returns a simulator contact",
        %{staff: staff, manager: manager, user: user} do
+    Simulator.reset()
+
+    # we should get 5 simulators
     result = auth_query_gql_by(:sim_get, staff, variables: %{})
     assert {:ok, query_data} = result
     assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
@@ -440,6 +445,21 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result = auth_query_gql_by(:sim_get, user, variables: %{})
     assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:sim_get, user, variables: %{})
+    assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "simulatorGet"]) == nil
 
     # now release a simulator and try again
@@ -447,6 +467,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "simulatorRelease"]) == nil
 
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
     result = auth_query_gql_by(:sim_get, user, variables: %{})
     assert {:ok, query_data} = result
     assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")

@@ -1,7 +1,7 @@
-query search( 
+query search(
     $saveSearchInput: SaveSearchInput,
-    $contactOpts: Opts!, 
-    $messageOpts: Opts!, 
+    $contactOpts: Opts!,
+    $messageOpts: Opts!,
     $filter: SearchFilter
   ) {
     search(saveSearchInput:$saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
@@ -10,6 +10,9 @@ query search(
         name
         phone
         lastMessageAt
+        isOrgRead
+        isOrgReplied
+        isContactReplied
       }
       messages {
         id

@@ -80,7 +80,7 @@ defmodule GlificWeb.Resolvers.Messages do
   def clear_messages(_, %{contact_id: contact_id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {:ok} <- Messages.clear_messages(contact) do
+         :ok <- Messages.clear_messages(contact) do
       {:ok, %{success: true}}
     end
   end
@@ -116,8 +116,8 @@ defmodule GlificWeb.Resolvers.Messages do
   @doc false
   @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def send_hsm_message(_, %{template_id: id, receiver_id: receiver_id, parameters: parameters}, _) do
-    {:ok, message} = Messages.create_and_send_hsm_message(id, receiver_id, parameters)
+  def send_hsm_message(_, attrs, _) do
+    {:ok, message} = Messages.create_and_send_hsm_message(attrs)
     {:ok, %{message: message}}
   end
 

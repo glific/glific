@@ -2,6 +2,7 @@
   ignore_modules: [
     Glific.Media,
     Glific.Media.Type,
+    Glific.Sandbox,
     GlificWeb.Plugs.AppsignalAbsinthePlug
   ],
   ignore_paths: [

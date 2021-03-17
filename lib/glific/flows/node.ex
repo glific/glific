@@ -25,6 +25,7 @@ defmodule Glific.Flows.Node do
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
+          flow_id: Ecto.UUID.t() | nil,
           flow: Flow.t() | nil,
           actions: [Action.t()] | [],
           exits: [Exit.t()] | [],
@@ -33,7 +34,7 @@ defmodule Glific.Flows.Node do
 
   embedded_schema do
     field :uuid, Ecto.UUID
-
+    field :flow_id, Ecto.UUID
     field :flow_uuid, Ecto.UUID
     embeds_one :flow, Flow
 
@@ -51,7 +52,8 @@ defmodule Glific.Flows.Node do
 
     node = %Node{
       uuid: json["uuid"],
-      flow_uuid: flow.uuid
+      flow_uuid: flow.uuid,
+      flow_id: flow.id
     }
 
     {actions, uuid_map} =
@@ -87,6 +89,30 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
+  Validate a node and all its children
+  """
+  @spec validate(Node.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(node, errors, flow) do
+    errors =
+      node.actions
+      |> Enum.reduce(
+        errors,
+        &Action.validate(&1, &2, flow)
+      )
+
+    errors =
+      node.exits
+      |> Enum.reduce(
+        errors,
+        &Exit.validate(&1, &2, flow)
+      )
+
+    if node.router,
+      do: Router.validate(node.router, errors, flow),
+      else: errors
+  end
+
+  @doc """
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
@@ -94,8 +120,10 @@ defmodule Glific.Flows.Node do
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # update the flow count
+
     FlowCount.upsert_flow_count(%{
       uuid: node.uuid,
+      flow_id: node.flow_id,
       flow_uuid: node.flow_uuid,
       organization_id: context.organization_id,
       type: "node"

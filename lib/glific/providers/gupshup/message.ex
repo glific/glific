@@ -166,6 +166,12 @@ defmodule Glific.Providers.Gupshup.Message do
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 
+    ## gupshup does not allow null in the caption.
+    attrs =
+      if Map.has_key?(attrs, :caption) and is_nil(attrs[:caption]),
+        do: Map.put(attrs, :caption, ""),
+        else: attrs
+
     create_oban_job(message, request_body, attrs)
   end
 
@@ -175,6 +181,8 @@ defmodule Glific.Providers.Gupshup.Message do
     Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm])
   end
 
+  @spec create_oban_job(Message.t(), map(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   defp create_oban_job(message, request_body, attrs) do
     attrs = to_minimal_map(attrs)
     worker_module = Communications.provider_worker(message.organization_id)

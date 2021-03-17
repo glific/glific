@@ -10,7 +10,11 @@ config :glific, Glific.Repo,
   password: "postgres",
   database: "glific_test#{System.get_env("MIX_TEST_PARTITION")}",
   hostname: "localhost",
-  pool: Ecto.Adapters.SQL.Sandbox
+  pool_size: 20,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: 20,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
@@ -21,10 +25,15 @@ config :glific, GlificWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger,
-  level: :warn
+  level: :emergency
+
+# level: :debug
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
+
+# The SaaS Admin root account phone number
+config :glific, :saas_phone, "+91111222333"
 
 # config :absinthe, Absinthe.Logger,
 #  pipeline: true,

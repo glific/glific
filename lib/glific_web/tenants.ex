@@ -71,14 +71,12 @@ defmodule GlificWeb.Tenants do
   def organization_handler("api"), do: organization_handler()
 
   def organization_handler(shortcode) do
-    organization = Partners.organization(shortcode)
-
-    if is_nil(organization) do
-      # in the normal case we'll redirect them here to glific.io
-      # and halt this connection
-      organization_handler()
-    else
-      organization.id
+    case Partners.organization(shortcode) do
+      # lets stop resolving nil to glific to avoid any potential security issues
+      nil -> 0
+      # we assume 0 is the error for now
+      {:error, _error} -> 0
+      organization -> organization.id
     end
   end
 end

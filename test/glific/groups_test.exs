@@ -16,7 +16,7 @@ defmodule Glific.GroupsTest do
       is_restricted: false
     }
     @valid_other_attrs %{
-      label: "other group",
+      label: "some other group",
       is_restricted: true
     }
     @update_attrs %{
@@ -38,15 +38,15 @@ defmodule Glific.GroupsTest do
 
     test "list_groups/1 returns all groups", attrs do
       group = group_fixture(attrs)
-      assert Groups.list_groups(%{filter: attrs}) == [group]
+      assert Groups.list_groups(%{filter: Map.put(attrs, :label, group.label)}) == [group]
     end
 
     test "count_groups/1 returns count of all groups", attrs do
       _ = group_fixture(attrs)
-      assert Groups.count_groups(%{filter: attrs}) == 1
+      assert Groups.count_groups(%{filter: attrs}) == 3
 
       _ = group_fixture(Map.merge(attrs, @valid_other_attrs))
-      assert Groups.count_groups(%{filter: attrs}) == 2
+      assert Groups.count_groups(%{filter: attrs}) == 4
 
       assert Groups.count_groups(%{filter: Map.merge(attrs, %{label: "other group"})}) == 1
     end
@@ -96,7 +96,7 @@ defmodule Glific.GroupsTest do
     test "list_groups/1 with multiple items", attrs do
       group1 = group_fixture(attrs)
       group2 = group_fixture(Map.merge(attrs, @valid_other_attrs))
-      groups = Groups.list_groups(%{filter: attrs})
+      groups = Groups.list_groups(%{filter: Map.put(attrs, :label, "some")})
       assert length(groups) == 2
       [h, t | _] = groups
       assert (h == group1 && t == group2) || (h == group2 && t == group1)
@@ -105,10 +105,10 @@ defmodule Glific.GroupsTest do
     test "list_groups/1 with multiple items sorted", attrs do
       group1 = group_fixture(attrs)
       group2 = group_fixture(Map.merge(attrs, @valid_other_attrs))
-      groups = Groups.list_groups(%{opts: %{order: :asc}, filter: attrs})
+      groups = Groups.list_groups(%{opts: %{order: :asc}, filter: Map.put(attrs, :label, "some")})
       assert length(groups) == 2
       [h, t | _] = groups
-      assert h == group2 && t == group1
+      assert h == group1 && t == group2
     end
 
     test "list_groups/1 with items filtered", attrs do
@@ -118,7 +118,7 @@ defmodule Glific.GroupsTest do
       groups =
         Groups.list_groups(%{
           opts: %{order: :asc},
-          filter: Map.merge(attrs, %{label: "other group"})
+          filter: Map.merge(attrs, %{label: "some other group"})
         })
 
       assert length(groups) == 1
@@ -133,21 +133,6 @@ defmodule Glific.GroupsTest do
       SeedsDev.seed_organizations(default_provider)
       SeedsDev.seed_contacts()
       :ok
-    end
-
-    def contact_group_fixture(attrs) do
-      [contact | _] = Contacts.list_contacts(%{filter: attrs})
-
-      valid_attrs = %{
-        contact_id: contact.id,
-        group_id: group_fixture(attrs).id
-      }
-
-      {:ok, contact_group} =
-        valid_attrs
-        |> Groups.create_contact_group()
-
-      contact_group
     end
 
     test "create_contacts_group/1 with valid data creates a group", attrs do
@@ -165,13 +150,29 @@ defmodule Glific.GroupsTest do
       assert contact_group.group_id == group.id
     end
 
-    test "ensure that creating contact_group with same contact and group give an error", attrs do
+    test "ensure that creating contact_group with same contact and group returns the existing one",
+         attrs do
       [contact | _] = Contacts.list_contacts(%{filter: attrs})
       group = group_fixture(attrs)
-      Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
 
-      assert {:error, %Ecto.Changeset{}} =
-               Groups.create_contact_group(%{contact_id: contact.id, group_id: group.id})
+      {:ok, cg1} =
+        Groups.create_contact_group(%{
+          contact_id: contact.id,
+          group_id: group.id,
+          organization_id: attrs.organization_id
+        })
+
+      # here we just want to ensure an error happened
+      # since we are forgiving in this api call and allow a contact to be added to the
+      # same group
+      {:ok, cg2} =
+        Groups.create_contact_group(%{
+          contact_id: contact.id,
+          group_id: group.id,
+          organization_id: attrs.organization_id
+        })
+
+      assert cg1 == cg2
     end
   end
 

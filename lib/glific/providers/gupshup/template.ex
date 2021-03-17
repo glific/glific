@@ -1,12 +1,13 @@
 defmodule Glific.Providers.Gupshup.Template do
   @moduledoc """
-  Messgae API layer between application and Gupshup
+  Message API layer between application and Gupshup
   """
 
   alias Glific.{
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
+    Templates,
     Templates.SessionTemplate
   }
 
@@ -27,7 +28,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
       attrs
       |> Map.merge(%{
-        number_parameter: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
+        number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
         uuid: response_data["template"]["id"],
         status: response_data["template"]["status"],
         is_active:
@@ -36,7 +37,7 @@ defmodule Glific.Providers.Gupshup.Template do
             else: false
           )
       })
-      |> Glific.Templates.do_create_session_template()
+      |> Templates.do_create_session_template()
     else
       {status, response} ->
         # structure of response body can be different for different errors
@@ -58,7 +59,7 @@ defmodule Glific.Providers.Gupshup.Template do
            ApiClient.get_templates(organization_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      Glific.Templates.do_update_hsms(response_data["templates"], organization)
+      Templates.do_update_hsms(response_data["templates"], organization)
       :ok
     else
       _ ->
@@ -78,7 +79,7 @@ defmodule Glific.Providers.Gupshup.Template do
       languageCode: language.locale,
       content: attrs.body,
       category: attrs.category,
-      vertical: attrs.shortcode,
+      vertical: attrs.label,
       templateType: String.upcase(Atom.to_string(attrs.type)),
       example: attrs.example
     }

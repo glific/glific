@@ -3,8 +3,6 @@ defmodule Glific.Partners do
   The Partners context. This is the gateway for the application to access/update all the organization
   and Provider information.
   """
-  @behaviour Waffle.Storage.Google.Token.Fetcher
-  @active_hours 1
   use Publicist
 
   import Ecto.Query, warn: false
@@ -14,6 +12,7 @@ defmodule Glific.Partners do
     Bigquery,
     Caches,
     Flags,
+    GCS,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
@@ -41,7 +40,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
+      Enum.member?(["dialogflow", "goth", "shortcode", "chatbase"], provider.shortcode)
     end)
   end
 
@@ -285,6 +284,10 @@ defmodule Glific.Partners do
     # first delete the cached organization
     remove_organization_cache(organization.id, organization.shortcode)
 
+    ## in case user updates the out of office flow it should udate the flow keyword map as well.
+    ## We need to think about a better approch to handle this one.
+    Caches.remove(organization.id, ["flow_keywords_map"])
+
     organization
     |> Organization.changeset(attrs)
     |> Repo.update(skip_organization_id: true)
@@ -355,7 +358,7 @@ defmodule Glific.Partners do
       organization
       |> set_root_user()
       |> set_credentials()
-      |> Repo.preload(:bsp)
+      |> Repo.preload([:bsp, :contact])
       |> set_bsp_info()
       |> set_out_of_office_values()
       |> set_languages()
@@ -368,7 +371,6 @@ defmodule Glific.Partners do
 
     # also update the flags table with updated values
     Flags.init(organization)
-
     organization
   end
 
@@ -404,13 +406,12 @@ defmodule Glific.Partners do
   @doc """
   Cache the entire organization structure.
   """
-  @spec organization(non_neg_integer | String.t()) :: Organization.t() | nil
+  @spec organization(non_neg_integer | String.t()) ::
+          Organization.t() | nil | {:error, String.t()}
   def organization(cache_key) do
     case Caches.fetch(@global_organization_id, {:organization, cache_key}, &load_cache/1) do
       {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve organization, #{inspect(cache_key)}, #{error}"
-        )
+        {:error, error}
 
       {_, organization} ->
         Glific.Repo.put_organization_id(organization.id)
@@ -561,14 +562,20 @@ defmodule Glific.Partners do
     :ok
   end
 
-  @spec recent_organizations(map(), boolean) :: map()
-  defp recent_organizations(map, false), do: map
+  @active_minutes 60
 
-  defp recent_organizations(map, true) do
+  @doc """
+  Get the organizations which had a message transaction in the last minutes
+  as defined by @active_minutes
+  """
+  @spec recent_organizations(map(), boolean) :: map()
+  def recent_organizations(map, false), do: map
+
+  def recent_organizations(map, true) do
     Enum.filter(
       map,
       fn {_id, %{last_communication_at: last_communication_at}} ->
-        Timex.diff(DateTime.utc_now(), last_communication_at, :hours) < @active_hours
+        Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
   end
@@ -669,10 +676,8 @@ defmodule Glific.Partners do
     if valid_bsp?(credential),
       do: fetch_opted_in_contacts(attrs)
 
-    if credential.provider.shortcode == "bigquery" do
-      org = credential.organization |> Repo.preload(:contact)
-      Bigquery.bigquery_dataset(org.contact.phone, org.id)
-    end
+    credential.organization
+    |> credential_update_callback(credential.provider.shortcode)
 
     {:ok, credential}
   end
@@ -686,15 +691,6 @@ defmodule Glific.Partners do
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
     )
-  end
-
-  # This is required for GCS
-  @impl Waffle.Storage.Google.Token.Fetcher
-  @spec get_token(binary) :: binary
-  def get_token(organization_id) when is_binary(organization_id) do
-    organization_id = String.to_integer(organization_id)
-    token = get_goth_token(organization_id, "google_cloud_storage")
-    token.token
   end
 
   @doc """
@@ -726,4 +722,45 @@ defmodule Glific.Partners do
         token
     end
   end
+
+  @doc """
+  Disable a specific credential for the organization
+  """
+  @spec disable_credential(non_neg_integer, String.t()) :: :ok
+  def disable_credential(organization_id, shortcode) do
+    case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
+      {:ok, provider} ->
+        # first delete the cached organization
+        organization = get_organization!(organization_id)
+        remove_organization_cache(organization.id, organization.shortcode)
+
+        Credential
+        |> where([c], c.provider_id == ^provider.id)
+        |> where([c], c.organization_id == ^organization_id)
+        |> Repo.update_all(set: [is_active: false])
+
+        Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
+
+      _ ->
+        {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
+    end
+
+    :ok
+  end
+
+  @doc """
+    Updating setup
+  """
+  @spec credential_update_callback(Organization.t(), String.t()) :: :ok
+  def credential_update_callback(organization, "bigquery") do
+    Bigquery.sync_schema_with_bigquery(organization.id)
+    :ok
+  end
+
+  def credential_update_callback(organization, "google_cloud_storage") do
+    GCS.refresh_gsc_setup(organization.id)
+    :ok
+  end
+
+  def credential_update_callback(_organization, _provider), do: :ok
 end

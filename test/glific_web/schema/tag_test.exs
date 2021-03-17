@@ -3,10 +3,10 @@ defmodule GlificWeb.Schema.TagTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Contacts,
     Fixtures,
     Repo,
     Seeds.SeedsDev,
-    Tags,
     Tags.Tag
   }
 
@@ -263,39 +263,16 @@ defmodule GlificWeb.Schema.TagTest do
   test "mark all contact messages as unread", %{staff: user} do
     message_1 = Fixtures.message_fixture()
 
-    message_2 =
+    _message_2 =
       Fixtures.message_fixture(%{
         sender_id: message_1.contact_id,
         receiver_id: message_1.receiver_id
       })
 
-    message_3 =
+    _message_3 =
       Fixtures.message_fixture(%{
         sender_id: message_1.contact_id,
         receiver_id: message_1.receiver_id
-      })
-
-    {:ok, tag} = Repo.fetch_by(Tag, %{shortcode: "unread", organization_id: user.organization_id})
-
-    message1_tag =
-      Fixtures.message_tag_fixture(%{
-        message_id: message_1.id,
-        tag_id: tag.id,
-        organization_id: user.organization_id
-      })
-
-    message2_tag =
-      Fixtures.message_tag_fixture(%{
-        message_id: message_2.id,
-        tag_id: tag.id,
-        organization_id: user.organization_id
-      })
-
-    message3_tag =
-      Fixtures.message_tag_fixture(%{
-        message_id: message_3.id,
-        tag_id: tag.id,
-        organization_id: user.organization_id
       })
 
     result =
@@ -305,16 +282,10 @@ defmodule GlificWeb.Schema.TagTest do
 
     assert {:ok, query_data} = result
 
-    untag_message_id = get_in(query_data, [:data, "markContactMessagesAsRead"])
+    contact_id = get_in(query_data, [:data, "markContactMessagesAsRead"])
 
-    assert untag_message_id != nil
+    assert contact_id != message_1.contact_id
 
-    assert Integer.to_string(message_1.id) in untag_message_id
-    assert Integer.to_string(message_2.id) in untag_message_id
-    assert Integer.to_string(message_3.id) in untag_message_id
-
-    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
-    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message2_tag.id) end
-    assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message3_tag.id) end
+    assert Contacts.get_contact!(message_1.contact_id).is_org_read == true
   end
 end

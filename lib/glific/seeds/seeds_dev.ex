@@ -6,9 +6,9 @@ if Code.ensure_loaded?(Faker) do
     alias Glific.{
       Contacts,
       Contacts.Contact,
-      Flows,
       Flows.Flow,
       Flows.FlowLabel,
+      Flows.FlowResult,
       Flows.FlowRevision,
       Groups,
       Groups.Group,
@@ -17,6 +17,7 @@ if Code.ensure_loaded?(Faker) do
       Partners.Organization,
       Partners.Provider,
       Repo,
+      Seeds.SeedsFlows,
       Settings,
       Settings.Language,
       Tags.Tag,
@@ -54,8 +55,6 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
-    @simulator_phone "9876543210"
-
     @doc false
     @spec seed_contacts(Organization.t() | nil) :: {integer(), nil}
     def seed_contacts(organization \\ nil) do
@@ -72,6 +71,8 @@ if Code.ensure_loaded?(Faker) do
           name: "Default receiver",
           language_id: hi_in.id,
           optin_time: utc_now,
+          optin_status: true,
+          optin_method: "BSP",
           bsp_status: :session_and_hsm
         },
         %{
@@ -88,11 +89,6 @@ if Code.ensure_loaded?(Faker) do
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
           language_id: en_us.id
-        },
-        %{
-          name: "Simulator Two",
-          phone: @simulator_phone <> "_2",
-          language_id: en_us.id
         }
       ]
 
@@ -106,6 +102,7 @@ if Code.ensure_loaded?(Faker) do
             organization_id: organization.id,
             last_message_at: utc_now,
             last_communication_at: utc_now,
+            optin_status: false,
             bsp_status: :session
           }
           |> Map.merge(contact_entry)
@@ -143,7 +140,7 @@ if Code.ensure_loaded?(Faker) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
-          %{name: "Glific Admin", organization_id: organization.id}
+          %{name: "NGO Main Account", organization_id: organization.id}
         )
 
       {:ok, receiver} =
@@ -345,6 +342,8 @@ if Code.ensure_loaded?(Faker) do
           name: name,
           language_id: en_us.id,
           optin_time: utc_now,
+          optin_status: true,
+          optin_method: "BSP",
           last_message_at: utc_now,
           last_communication_at: utc_now,
           organization_id: organization.id
@@ -385,7 +384,7 @@ if Code.ensure_loaded?(Faker) do
 
       create_contact_user(
         {organization, en_us, utc_now},
-        {"NGO Admin", "919876543210", ["admin"]}
+        {"NGO Admin", "919999988888", ["admin"]}
       )
 
       {_, user} =
@@ -416,45 +415,30 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    defp add_to_group(contacts, group, organization, size) do
+      contacts
+      |> Enum.take(size)
+      |> Enum.each(fn c ->
+        Repo.insert!(%Groups.ContactGroup{
+          contact_id: c.id,
+          group_id: group.id,
+          organization_id: organization.id
+        })
+      end)
+    end
+
     @doc false
-    @spec seed_group_contacts(Organization.t() | nil) :: nil
+    @spec seed_group_contacts(Organization.t() | nil) :: :ok
     def seed_group_contacts(organization \\ nil) do
       organization = get_organization(organization)
 
-      [_glific_admin, c1, c2, c3 | _] =
+      [_glific_admin | remainder] =
         Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
 
       [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c1.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c3.id,
-        group_id: g1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c2.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%Groups.ContactGroup{
-        contact_id: c3.id,
-        group_id: g2.id,
-        organization_id: organization.id
-      })
+      add_to_group(remainder, g1, organization, 7)
+      add_to_group(remainder, g2, organization, -7)
     end
 
     @doc false
@@ -472,7 +456,7 @@ if Code.ensure_loaded?(Faker) do
       {:ok, sender} =
         Repo.fetch_by(
           Contact,
-          %{name: "Glific Admin", organization_id: organization.id}
+          %{name: "NGO Main Account", organization_id: organization.id}
         )
 
       group = group |> Repo.preload(:contacts)
@@ -688,8 +672,12 @@ if Code.ensure_loaded?(Faker) do
           organization_id: organization.id
         })
 
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "test.json"))
+        |> Jason.decode!()
+
       Repo.insert!(%FlowRevision{
-        definition: FlowRevision.default_definition(test_flow),
+        definition: definition,
         flow_id: test_flow.id,
         status: "published",
         organization_id: organization.id
@@ -728,11 +716,11 @@ if Code.ensure_loaded?(Faker) do
         )
 
       # seed multiple flow labels
-      Repo.insert_all(FlowLabel, flow_labels)
+      Repo.insert_all(FlowLabel, flow_labels, on_conflict: :raise)
     end
 
     @doc false
-    @spec seed_flows(Organization.t() | nil) :: [any()]
+    @spec seed_flows(Organization.t() | nil) :: :ok
     def seed_flows(organization \\ nil) do
       organization = get_organization(organization)
 
@@ -742,93 +730,86 @@ if Code.ensure_loaded?(Faker) do
         activity: "b050c652-65b5-4ccf-b62b-1e8b3f328676",
         feedback: "6c21af89-d7de-49ac-9848-c9febbf737a5",
         optout: "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
-        survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430"
+        survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
+        help: "3fa22108-f464-41e5-81d9-d8a298854429"
       }
-
-      flow_labels_id_map =
-        FlowLabel.get_all_flowlabel(organization.id)
-        |> Enum.reduce(%{}, fn flow_label, acc ->
-          acc |> Map.merge(%{flow_label.name => flow_label.uuid})
-        end)
 
       data = [
         {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
          "out_of_office.json"},
-        {"Activity", ["activity"], uuid_map.activity, false, "activity.json"},
-        {"Feedback", ["feedback"], uuid_map.feedback, false, "feedback.json"},
-        {"Optout Workflow", ["optout"], uuid_map.optout, false, "optout.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
       ]
 
-      Enum.map(data, &flow(&1, organization, uuid_map, flow_labels_id_map))
-    end
-
-    defp replace_uuids(json, uuid_map),
-      do:
-        Enum.reduce(
-          uuid_map,
-          json,
-          fn {key, uuid}, acc ->
-            String.replace(
-              acc,
-              key |> Atom.to_string() |> String.upcase() |> Kernel.<>("_UUID"),
-              uuid
-            )
-          end
-        )
-
-    defp replace_label_uuids(json, flow_labels_id_map),
-      do:
-        Enum.reduce(
-          flow_labels_id_map,
-          json,
-          fn {key, id}, acc ->
-            String.replace(
-              acc,
-              key |> Kernel.<>(":ID"),
-              "#{id}"
-            )
-          end
-        )
-
-    defp flow({name, keywords, uuid, ignore_keywords, file}, organization, uuid_map, id_map) do
-      # Using create_flow so that it will clear the cache
-      # while creating outofoffice flow in periodic tests
-      {:ok, f} =
-        %{
-          name: name,
-          keywords: keywords,
-          ignore_keywords: ignore_keywords,
-          version_number: "13.1.0",
-          uuid: uuid,
-          organization_id: organization.id
-        }
-        |> Flows.create_flow()
-
-      flow_revision(f, organization, file, uuid_map, id_map)
+      SeedsFlows.add_flow(organization, data, uuid_map)
     end
 
     @doc false
-    @spec flow_revision(Flow.t(), Organization.t(), String.t(), map(), map()) :: nil
-    def flow_revision(f, organization, file, uuid_map, id_map) do
-      definition =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
-        |> replace_uuids(uuid_map)
-        |> replace_label_uuids(id_map)
-        |> Jason.decode!()
-        |> Map.merge(%{
-          "name" => f.name,
-          "uuid" => f.uuid
-        })
+    @spec seed_flow_results(Organization.t() | nil) :: :ok
+    def seed_flow_results(organization \\ nil) do
+      {:ok, contact1} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Adelle Cavin", organization_id: organization.id}
+        )
 
-      Repo.insert(%FlowRevision{
-        definition: definition,
-        flow_id: f.id,
-        status: "published",
-        version: 1,
-        organization_id: organization.id
+      {:ok, contact2} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Margarita Quinteros", organization_id: organization.id}
+        )
+
+      {:ok, contact3} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Chrissy Cron", organization_id: organization.id}
+        )
+
+      {:ok, flow1} =
+        Repo.fetch_by(
+          Flow,
+          %{name: "Survey Workflow", organization_id: organization.id}
+        )
+
+      {:ok, flow2} =
+        Repo.fetch_by(
+          Flow,
+          %{name: "Preference Workflow", organization_id: organization.id}
+        )
+
+      0..10
+      |> Enum.each(fn _ ->
+        create_flow_results(
+          Enum.random([contact1, contact2, contact3]),
+          Enum.random([flow1, flow2]),
+          organization.id
+        )
+      end)
+
+      :ok
+    end
+
+    defp create_flow_results(contact, flow, org_id) do
+      Repo.insert!(%FlowResult{
+        results: get_results(),
+        contact_id: contact.id,
+        flow_id: flow.id,
+        flow_uuid: flow.uuid,
+        flow_version: 1,
+        organization_id: org_id
       })
+    end
+
+    defp get_results do
+      Enum.random([
+        %{language: %{input: Enum.random(0..10), category: "EngLish"}},
+        %{language: %{input: Enum.random(0..10), category: "Hindi"}},
+        %{optin: %{input: Enum.random(0..10), category: "Optin"}},
+        %{help: %{input: Enum.random(0..10), category: "Optin"}},
+        %{preference: %{input: Enum.random(0..10), category: "Video"}},
+        %{preference: %{input: Enum.random(0..10), category: "Image"}},
+        %{preference: %{input: Enum.random(0..10), category: "Audio"}}
+      ])
     end
 
     @spec get_organization(Organization.t() | nil) :: Organization.t()
@@ -948,13 +929,11 @@ if Code.ensure_loaded?(Faker) do
 
       seed_session_templates(organization)
 
-      seed_messages(organization)
-
-      seed_messages_media(organization)
-
       seed_flow_labels(organization)
 
       seed_flows(organization)
+
+      seed_flow_results(organization)
 
       seed_groups(organization)
 
@@ -963,6 +942,10 @@ if Code.ensure_loaded?(Faker) do
       seed_group_users(organization)
 
       seed_group_messages(organization)
+
+      seed_messages(organization)
+
+      seed_messages_media(organization)
 
       hsm_templates(organization)
     end

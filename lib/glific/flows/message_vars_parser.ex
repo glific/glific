@@ -24,6 +24,8 @@ defmodule Glific.Flows.MessageVarParser do
   @spec bound(String.t(), map()) :: String.t()
   defp bound(nil, _binding), do: ""
 
+  defp bound(str, nil), do: str
+
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
     language = get_in(binding, ["contact", "fields", "language"])
@@ -36,6 +38,8 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
+    var = String.replace_trailing(var, ".", "")
+
     substitution =
       get_in(binding, String.split(var, "."))
       |> bound()
@@ -54,6 +58,7 @@ defmodule Glific.Flows.MessageVarParser do
 
   @spec stringify_keys(map()) :: map() | nil
   defp stringify_keys(nil), do: nil
+  defp stringify_keys(""), do: nil
 
   defp stringify_keys(atom) when is_atom(atom), do: Atom.to_string(atom)
   defp stringify_keys(map) when is_struct(map), do: Map.from_struct(map)

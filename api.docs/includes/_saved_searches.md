@@ -47,14 +47,15 @@ query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {
   }
 }
 ```
+
 This returns all the saved searches for the organization filtered by the input <a href="#savedsearchfilter">SavedSearchFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#savedsearchfilter">SavedSearchFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                               | Default | Description                         |
+| --------- | -------------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#savedsearchfilter">SavedSearchFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                           | nil     | limit / offset / sort order options |
 
 ## Count all Saved Searches
 
@@ -82,9 +83,9 @@ query countSavedSearches($filter: SavedSearchFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#savedsearchfilter">SavedSearchFilter</a> | nil | filter the list
+| Parameter | Type                                               | Default | Description     |
+| --------- | -------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#savedsearchfilter">SavedSearchFilter</a> | nil     | filter the list |
 
 ## Get a specific Saved Search by ID
 
@@ -122,9 +123,38 @@ query savedSearch($id: ID!) {
 
 ### Query Parameters
 
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> |
+
+## Get a Collection Count Stats for organization
+
+```graphql
+query search_queries {
+  collectionStats(organizationId: "1")
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "collectionStats": "{\"1\":{\"Unread\":4,\"Optout\":0,\"Not replied\":2,\"Not Responded\":2,\"All\":4}}"
+  }
+}
+```
+
+### Query Parameters
+
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-ID | <a href="#id">ID</a>
+id | <a href="#id">ID</a>! | required ||
+
+### Return Parameters
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+<a href="#json">JSON with "organization_id" as name and collection count as value</a> |
 
 
 ## Save a Search
@@ -165,7 +195,7 @@ mutation createSavedSearch($input: SavedSearchInput!) {
         "id": "26",
         "label": "This is a saved search",
         "shortcode": "Save Search",
-        "args": "{\"term\": \"Save this search\"}",
+        "args": "{\"term\": \"Save this search\"}"
       }
     }
   }
@@ -174,18 +204,19 @@ mutation createSavedSearch($input: SavedSearchInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#savesearchinput">SaveSearchInput</a> | required ||
+| Parameter | Type                                           | Default  | Description |
+| --------- | ---------------------------------------------- | -------- | ----------- |
+| input     | <a href="#savesearchinput">SaveSearchInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#savedsearchresult">SavedSearchResult</a> | The created Saved Search object
+
+| Type                                               | Description                     |
+| -------------------------------------------------- | ------------------------------- |
+| <a href="#savedsearchresult">SavedSearchResult</a> | The created Saved Search object |
 
 ## Update a Saved Search
 
-```graphql
+````graphql
 mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {
   updateSavedSearch(id: $id, input: $input) {
     savedSearch {
@@ -220,20 +251,20 @@ mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {
     }
   }
 }
-```
+````
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#savedsearchinput">SavedSearchInput</a> | required ||
+| Parameter | Type                                             | Default  | Description |
+| --------- | ------------------------------------------------ | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                            | required |             |
+| input     | <a href="#savedsearchinput">SavedSearchInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#savedsearchresult">SavedSearchResult</a> | The updated saved search object
 
+| Type                                               | Description                     |
+| -------------------------------------------------- | ------------------------------- |
+| <a href="#savedsearchresult">SavedSearchResult</a> | The updated saved search object |
 
 ## Delete a SavedSearch
 
@@ -284,15 +315,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-<a href="#savedsearchresult">SavedSearchResult</a> | An error object or empty
 
+| Parameter                                          | Type                     | Default | Description |
+| -------------------------------------------------- | ------------------------ | ------- | ----------- |
+| <a href="#savedsearchresult">SavedSearchResult</a> | An error object or empty |
 
 ## Saved Search Objects
 
@@ -336,7 +367,7 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-### SavedSearchResult ###
+### SavedSearchResult
 
 <table>
 <thead>
@@ -361,10 +392,9 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-## SavedSearch Inputs ##
+## SavedSearch Inputs
 
-
-### SavedSearchFilter ###
+### SavedSearchFilter
 
 Filtering options for savedSearches
 
@@ -387,10 +417,15 @@ Filtering options for savedSearches
 <td valign="top"><a href="#string">String</a></td>
 <td>Match the shortcode</td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isReserved</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Match the isReserved status</td>
+</tr>
 </tbody>
 </table>
 
-### SavedSearchInput ###
+### SavedSearchInput
 
 <table>
 <thead>

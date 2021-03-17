@@ -183,7 +183,7 @@ defmodule Glific.PartnersTest do
     @invalid_org_attrs %{bsp_id: nil, name: nil}
 
     @valid_default_language_attrs %{
-      label: "English (United States)",
+      label: "English",
       label_locale: "English",
       locale: "en_US",
       is_active: true
@@ -305,6 +305,7 @@ defmodule Glific.PartnersTest do
 
     test "update_organization/2 with oraganization settings" do
       organization = Fixtures.organization_fixture()
+      flow_id = 3
 
       update_org_attrs =
         @update_org_attrs
@@ -319,7 +320,7 @@ defmodule Glific.PartnersTest do
                 enabled: true
               }
             ],
-            flow_id: 1
+            flow_id: 3
           }
         })
 
@@ -334,6 +335,11 @@ defmodule Glific.PartnersTest do
       day2 = get_in(organization.out_of_office.enabled_days, [Access.at(1)])
       assert day2.enabled == false
 
+      # also check and ensure that out of office flow is set in flow keywords
+      flow_keywords_map = Glific.Flows.flow_keywords_map(organization.id)
+      assert flow_keywords_map["draft"]["outofoffice"] == flow_id
+      assert flow_keywords_map["published"]["outofoffice"] == flow_id
+
       # disable out_of_office setting
       update_org_attrs =
         @update_org_attrs
@@ -347,6 +353,11 @@ defmodule Glific.PartnersTest do
                Partners.update_organization(organization, update_org_attrs)
 
       assert organization.out_of_office.enabled == false
+
+      # also check and ensure that out of office flow is not set in flow keywords
+      flow_keywords_map = Glific.Flows.flow_keywords_map(organization.id)
+      assert flow_keywords_map["draft"]["outofoffice"] == nil
+      assert flow_keywords_map["published"]["outofoffice"] == nil
     end
 
     test "delete_organization/1 deletes the organization" do
@@ -491,8 +502,8 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Partners.Organization{}} =
                Caches.get(global_organization_id, {:organization, organization.shortcode})
 
-      #  with wrong shortcode it raises an exceptin
-      assert_raise ArgumentError, fn -> Partners.organization("wrong_shortcode") end
+      #  with wrong shortcode it returns an error
+      assert {:error, _} = Partners.organization("wrong_shortcode")
     end
 
     test "organization/1 should return cached active languages" do
@@ -627,7 +638,7 @@ defmodule Glific.PartnersTest do
 
       {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-      assert {:ok, %Credential{} = credential} =
+      assert {:ok, %Credential{}} =
                Partners.get_credential(%{
                  organization_id: organization_id,
                  shortcode: provider.shortcode
@@ -679,7 +690,7 @@ defmodule Glific.PartnersTest do
 
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
 
-      assert [contact] =
+      assert [_contact] =
                Contacts.list_contacts(%{
                  filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
                })
@@ -750,10 +761,37 @@ defmodule Glific.PartnersTest do
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        token = Partners.get_token("#{organization_id}")
+        token = Partners.get_goth_token(organization_id, "google_cloud_storage")
 
         assert token != nil
       end
+    end
+
+    test "disable_credentails/2 should disable the crednetails",
+         %{organization_id: organization_id} = _attrs do
+      provider = provider_fixture()
+
+      valid_attrs = %{
+        shortcode: provider.shortcode,
+        secrets: %{api_key: "test_value"},
+        organization_id: organization_id,
+        is_active: true
+      }
+
+      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
+
+      assert credential.is_active == true
+
+      # credential with same provider shortcode for the organization should not be allowed
+      Partners.disable_credential(organization_id, provider.shortcode)
+
+      {:ok, credential} =
+        Repo.fetch_by(Credential, %{
+          organization_id: organization_id,
+          provider_id: provider.id
+        })
+
+      assert credential.is_active == false
     end
   end
 end

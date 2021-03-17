@@ -102,6 +102,48 @@ defmodule Glific.Flows.Router do
     }
   end
 
+  @spec validate_eex(Keyword.t(), String.t()) :: Keyword.t()
+  defp validate_eex(errors, content) do
+    cond do
+      Glific.suspicious_code(content) ->
+        [{EEx, "Suspicious Code"}] ++ errors
+
+      !is_nil(EEx.compile_string(content)) ->
+        errors
+    end
+  rescue
+    # if there is a syntax error or anything else
+    # an exception is thrown and hence we rescue it here
+    _ ->
+      [{EEx, "Invalid Code"}] ++ errors
+  end
+
+  @doc """
+  Validate a action and all its children
+  """
+  @spec validate(Router.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(router, errors, flow) do
+    errors = validate_eex(errors, router.operand)
+
+    errors =
+      router.categories
+      |> Enum.reduce(
+        errors,
+        &Category.validate(&1, &2, flow)
+      )
+
+    errors =
+      router.cases
+      |> Enum.reduce(
+        errors,
+        &Case.validate(&1, &2, flow)
+      )
+
+    if router.wait,
+      do: Wait.validate(router.wait, errors, flow),
+      else: errors
+  end
+
   @doc """
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
@@ -122,33 +164,7 @@ defmodule Glific.Flows.Router do
       when type == "switch" do
     {msg, rest} =
       if messages == [] do
-        # get the value from the "input" version of the operand field
-        # this is the split by result flow
-        content =
-          router.operand
-          |> MessageVarParser.parse(%{
-            "contact" => Contacts.get_contact_field_map(context.contact_id),
-            "results" => context.results
-          })
-          |> MessageVarParser.parse_results(context.results)
-
-        # Once we have the content, we send it over to EEx to execute
-        content =
-          try do
-            if Glific.suspicious_code(content) do
-              Logger.error("EEx suspicious code: #{content}")
-              "Invalid Code"
-            else
-              EEx.eval_string(content)
-            end
-          rescue
-            EEx.SyntaxError ->
-              Logger.error("EEx threw a SyntaxError: #{content}")
-              "Invalid Code"
-          end
-
-        msg = Messages.create_temp_message(context.contact.organization_id, content)
-        {msg, []}
+        split_by_expression(router, context)
       else
         [msg | rest] = messages
         {msg, rest}
@@ -158,6 +174,28 @@ defmodule Glific.Flows.Router do
 
     category_uuid = find_category(router, context, msg)
 
+    execute_category(router, context, {msg, rest}, category_uuid)
+  end
+
+  def execute(_router, _context, _messages),
+    do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
+
+  @spec execute_category(
+          Router.t(),
+          FlowContext.t(),
+          {Message.t(), [Message.t()]},
+          Ecto.UUID.t() | nil
+        ) ::
+          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  defp execute_category(_router, context, {msg, _rest}, nil = _category_uuid) do
+    # lets reset the context tree
+    FlowContext.reset_all_contexts(context)
+
+    # This error is logged and sent upstream to the reporting engine
+    {:error, "Could not find category for: #{msg.body}"}
+  end
+
+  defp execute_category(router, context, {msg, rest}, category_uuid) do
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
 
@@ -170,17 +208,46 @@ defmodule Glific.Flows.Router do
     Category.execute(category, context, rest)
   end
 
-  def execute(_router, _context, _messages),
-    do: raise(UndefinedFunctionError, message: "Unimplemented router type and/or wait type")
+  @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
+  defp split_by_expression(router, context) do
+    # get the value from the "input" version of the operand field
+    # this is the split by result flow
+    content =
+      router.operand
+      |> MessageVarParser.parse(%{
+        "contact" => Contacts.get_contact_field_map(context.contact_id),
+        "results" => context.results
+      })
+      |> MessageVarParser.parse_results(context.results)
+      # Once we have the content, we send it over to EEx to execute
+      |> execute_eex()
 
-  @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: Ecto.UUID.t()
+    msg = Messages.create_temp_message(context.organization_id, content)
+    {msg, []}
+  end
+
+  @spec execute_eex(String.t()) :: String.t()
+  defp execute_eex(content) do
+    if Glific.suspicious_code(content) do
+      Logger.error("EEx suspicious code: #{content}")
+      "Invalid Code"
+    else
+      EEx.eval_string(content)
+    end
+  rescue
+    EEx.SyntaxError ->
+      Logger.error("EEx threw a SyntaxError: #{content}")
+      "Invalid Code"
+  end
+
+  @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: Ecto.UUID.t() | nil
   defp find_category(router, _context, %{body: body} = _msg)
-       when body in ["No Response", "Exit Loop"] do
-    # Find the category with name == "No Response" or "Exit Loop"
+       when body in ["No Response", "Exit Loop", "Success", "Failure"] do
+    # Find the category with above name
     category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: raise(ArgumentError, message: "Did not find a #{body} category"),
+      do: nil,
       else: category.uuid
   end
 

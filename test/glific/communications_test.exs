@@ -11,13 +11,12 @@ defmodule Glific.CommunicationsTest do
     Messages,
     Providers.Gupshup.Worker,
     Repo,
-    Seeds.SeedsDev,
-    Tags,
-    Tags.Tag
+    Seeds.SeedsDev
   }
 
   setup do
     default_provider = SeedsDev.seed_providers()
+    SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_organizations(default_provider)
     :ok
   end
@@ -117,7 +116,7 @@ defmodule Glific.CommunicationsTest do
     end
 
     test "send message will remove the Not replied tag from messages",
-         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+         %{organization_id: _organization_id, global_schema: global_schema} = attrs do
       message_1 = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
 
       message_2 =
@@ -134,43 +133,12 @@ defmodule Glific.CommunicationsTest do
 
       assert message_2.contact_id == message_1.contact_id
 
-      {:ok, tag} =
-        Repo.fetch_by(
-          Tag,
-          %{shortcode: "notreplied", organization_id: organization_id}
-        )
-
-      {:ok, unread_tag} =
-        Repo.fetch_by(
-          Tag,
-          %{shortcode: "unread", organization_id: organization_id}
-        )
-
-      message1_tag =
-        Fixtures.message_tag_fixture(
-          Map.merge(
-            attrs,
-            %{message_id: message_1.id, tag_id: tag.id}
-          )
-        )
-
-      message_unread_tag =
-        Fixtures.message_tag_fixture(
-          Map.merge(
-            attrs,
-            %{message_id: message_1.id, tag_id: unread_tag.id}
-          )
-        )
-
       Communications.Message.send_message(message_2)
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
 
-      assert_raise Ecto.NoResultsError, fn -> Tags.get_message_tag!(message1_tag.id) end
-
-      assert_raise Ecto.NoResultsError, fn ->
-        Tags.get_message_tag!(message_unread_tag.id)
-      end
+      contact_1 = Contacts.get_contact!(message_1.contact_id)
+      assert contact_1.is_org_replied == true
     end
 
     test "if response status code is not 200 handle the error response",
@@ -355,6 +323,17 @@ defmodule Glific.CommunicationsTest do
         scheduled_at: {scheduled_time, delta: 10},
         prefix: global_schema
       )
+    end
+
+    test "send message to simulator will be process normally",
+         %{global_schema: global_schema, organization_id: _organization_id} = _attrs do
+      simulator_phone = Contacts.simulator_phone_prefix() <> "_1"
+      {:ok, simulator} = Repo.fetch_by(Contacts.Contact, %{phone: simulator_phone})
+
+      message = Fixtures.message_fixture(%{receiver_id: simulator.id})
+      Communications.Message.send_message(message)
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
     end
   end
 end

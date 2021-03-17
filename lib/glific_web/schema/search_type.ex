@@ -18,18 +18,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :label, :string
     field :shortcode, :string
     field :args, :json
-
-    # the number of contacts this saved search matches
-    # this is an expensive operation
-    field :count, :integer do
-      resolve(fn saved_search, resolution, context ->
-        Resolvers.Searches.saved_search_count(
-          resolution,
-          %{id: saved_search.id},
-          context
-        )
-      end)
-    end
+    field :is_reserved, :boolean
   end
 
   object :conversation do
@@ -47,6 +36,7 @@ defmodule GlificWeb.Schema.SearchTypes do
   input_object :saved_search_filter do
     field :label, :string
     field :shortcode, :string
+    field :is_reserved, :boolean
   end
 
   input_object :saved_search_input do
@@ -90,6 +80,9 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "term for saving the search"
     field :term, :string
+
+    @desc "status of the message, this replaces the unread/not responded tags"
+    field :status, :string
 
     @desc "term for saving the search"
     field :date_range, :date_range_input
@@ -142,6 +135,13 @@ defmodule GlificWeb.Schema.SearchTypes do
       arg(:filter, :saved_search_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Searches.count_saved_searches/3)
+    end
+
+    @desc "Get a collection count for organizaion"
+    field :collection_stats, :json do
+      arg(:organization_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Searches.collection_stats/3)
     end
 
     field :saved_search_count, :integer do

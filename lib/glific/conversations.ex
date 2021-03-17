@@ -10,7 +10,7 @@ defmodule Glific.Conversations do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Messages, Repo}
+  alias Glific.{Contacts.Contact, Messages, Messages.Message, Repo}
 
   @doc """
   Returns the last M conversations, each conversation not more than N messages
@@ -32,15 +32,16 @@ defmodule Glific.Conversations do
 
   @spec get_message_ids(list(), map()) :: list()
   defp get_message_ids(ids, %{limit: message_limit, offset: message_offset}) do
-    query =
-      from m in Messages.Message,
-        where:
-          m.contact_id in ^ids and
-            m.message_number >= ^message_offset and
-            m.message_number < ^(message_limit + message_offset) and
-            is_nil(m.group_id),
-        select: m.id
+    query = from m in Message, as: :m
 
-    Repo.all(query)
+    start = message_offset + message_limit
+
+    query
+    |> join(:inner, [m: m], c in Contact, as: :c, on: c.id == m.contact_id)
+    |> where([m: m], m.contact_id in ^ids and m.receiver_id != m.sender_id)
+    |> where([m: m, c: c], m.message_number >= c.last_message_number - ^start)
+    |> where([m: m, c: c], m.message_number <= c.last_message_number - ^message_offset)
+    |> select([m: m], m.id)
+    |> Repo.all()
   end
 end

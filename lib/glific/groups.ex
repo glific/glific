@@ -6,7 +6,7 @@ defmodule Glific.Groups do
 
   alias __MODULE__
 
-  alias Glific.{Repo, Users.User}
+  alias Glific.{Contacts.Contact, Repo, Users.User}
 
   alias Glific.Groups.{ContactGroup, Group, UserGroup}
 
@@ -105,9 +105,9 @@ defmodule Glific.Groups do
   @spec get_group!(integer) :: Group.t()
   def get_group!(id) do
     Group
-    |> Ecto.Queryable.to_query()
+    |> where([g], g.id == ^id)
     |> Repo.add_permission(&Groups.add_permission/2)
-    |> Repo.get!(id)
+    |> Repo.one!()
   end
 
   @doc """
@@ -208,10 +208,57 @@ defmodule Glific.Groups do
   """
   @spec create_contact_group(map()) :: {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_group(attrs \\ %{}) do
-    # Merge default values if not present in attributes
-    %ContactGroup{}
-    |> ContactGroup.changeset(attrs)
-    |> Repo.insert()
+    # we allow errors here in case the contact already exists in the group
+    result =
+      %ContactGroup{}
+      |> ContactGroup.changeset(attrs)
+      |> Repo.insert()
+
+    case result do
+      {:ok, _cg} -> result
+      {:error, cs} -> fetch_contact_group(attrs, cs)
+    end
+  end
+
+  @spec fetch_contact_group(map(), Ecto.Changeset.t()) ::
+          {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
+  defp fetch_contact_group(attrs, changeset) do
+    result =
+      Repo.fetch_by(
+        ContactGroup,
+        Map.take(attrs, [:contact_id, :group_id, :organization_id])
+      )
+
+    case result do
+      {:ok, _cg} -> result
+      {:error, _} -> {:error, changeset}
+    end
+  end
+
+  @doc """
+  Given a group id, get stats on the contacts within this group based on bsp_status
+  and also the total count
+  """
+  @spec info_group_contacts(non_neg_integer) :: map()
+  def info_group_contacts(group_id) do
+    total =
+      ContactGroup
+      |> where([cg], cg.group_id == ^group_id)
+      |> Repo.aggregate(:count)
+
+    result = %{total: total}
+
+    ContactGroup
+    |> join(:inner, [cg], c in Contact, as: :c, on: cg.contact_id == c.id)
+    |> where([cg], cg.group_id == ^group_id)
+    |> where([c: c], c.status == :valid)
+    |> group_by([c: c], c.bsp_status)
+    |> select([c: c], [c.bsp_status, count(c.id)])
+    |> Repo.all()
+    |> Enum.reduce(
+      result,
+      fn [name, count], result -> Map.put(result, name, count) end
+    )
   end
 
   @doc """

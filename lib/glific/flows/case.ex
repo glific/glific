@@ -61,6 +61,14 @@ defmodule Glific.Flows.Case do
     {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
 
+  @doc """
+  Validate a case
+  """
+  @spec validate(Case.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(_case, errors, _flow) do
+    errors
+  end
+
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
 
@@ -114,6 +122,22 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type}, _context, msg)
       when type == "has_media",
       do: msg.type in [:audio, :video, :image]
+
+  def execute(%{type: type}, _context, msg)
+      when type == "has_audio",
+      do: msg.type == :audio
+
+  def execute(%{type: type}, _context, msg)
+      when type == "has_video",
+      do: msg.type == :video
+
+  def execute(%{type: type}, _context, msg)
+      when type == "has_image",
+      do: msg.type == :image
+
+  def execute(%{type: type}, _context, msg)
+      when type == "has_file",
+      do: msg.type == :document
 
   def execute(%{type: type} = c, _context, msg)
       when type == "has_all_words",

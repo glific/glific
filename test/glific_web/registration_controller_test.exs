@@ -41,11 +41,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      {:ok, otp} =
-        RegistrationController.create_and_send_verification_code(
-          conn.assigns[:organization_id],
-          receiver
-        )
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
 
       valid_params = %{
         "user" => %{
@@ -88,11 +84,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      {:ok, otp} =
-        RegistrationController.create_and_send_verification_code(
-          conn.assigns[:organization_id],
-          receiver
-        )
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
 
       valid_params = %{
         "user" => %{
@@ -129,11 +121,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
           organization_id: conn.assigns[:organization_id]
         })
 
-      {:ok, otp} =
-        RegistrationController.create_and_send_verification_code(
-          conn.assigns[:organization_id],
-          receiver
-        )
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
 
       invalid_params = %{
         "user" => %{
@@ -236,7 +224,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :send_otp, valid_params))
 
-      assert json = json_response(conn, 200)
+      assert _json = json_response(conn, 200)
     end
   end
 
@@ -268,11 +256,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       user = user_fixture() |> Repo.preload([:contact])
 
       # reset password of a user
-      {:ok, otp} =
-        RegistrationController.create_and_send_verification_code(
-          conn.assigns[:organization_id],
-          user.contact
-        )
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(user.contact)
 
       valid_params = %{
         "user" => %{
@@ -309,11 +293,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "with incorrect phone number", %{conn: conn} do
       user = user_fixture() |> Repo.preload([:contact])
 
-      {:ok, otp} =
-        RegistrationController.create_and_send_verification_code(
-          conn.assigns[:organization_id],
-          user.contact
-        )
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(user.contact)
 
       invalid_params = %{
         "user" => %{
@@ -333,11 +313,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       user = user_fixture() |> Repo.preload([:contact])
 
       # reset password of user
-      {:ok, otp} =
-        RegistrationController.create_and_send_verification_code(
-          conn.assigns[:organization_id],
-          user.contact
-        )
+      {:ok, otp} = RegistrationController.create_and_send_verification_code(user.contact)
 
       valid_params = %{
         "user" => %{

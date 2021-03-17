@@ -8,12 +8,11 @@ defmodule Glific.Communications.Message do
   alias Glific.{
     Communications,
     Contacts,
+    Contacts.Contact,
     Messages,
     Messages.Message,
     Partners,
-    Repo,
-    Taggers,
-    Tags
+    Repo
   }
 
   @doc false
@@ -44,7 +43,7 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    if Contacts.can_send_message_to?(message.receiver, message.is_hsm) do
+    if Contacts.can_send_message_to?(message.receiver, message.is_hsm, attrs) do
       {:ok, _} =
         apply(
           Communications.provider_handler(message.organization_id),
@@ -52,12 +51,34 @@ defmodule Glific.Communications.Message do
           [message, attrs]
         )
 
-      {:ok, Communications.publish_data(message, :sent_message, message.organization_id)}
+      publish_message(message)
     else
-      Logger.error("Could not send message: message_id: '#{message.id}'")
-      {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
-      {:error, "Cannot send the message to the contact."}
+      log_error(message)
     end
+  rescue
+    # An exception is thrown if there is no provider handler and/or sending the message
+    # via the provider fails
+    _ ->
+      log_error(message)
+  end
+
+  @spec log_error(Message.t()) :: {:error, String.t()}
+  defp log_error(message) do
+    Logger.error("Could not send message: message_id: '#{message.id}'")
+    {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
+    {:error, "Cannot send the message to the contact."}
+  end
+
+  @spec publish_message(Message.t()) :: {:ok, Message.t()}
+  defp publish_message(message) do
+    {
+      :ok,
+      if message.publish? do
+        Communications.publish_data(message, :sent_message, message.organization_id)
+      else
+        message
+      end
+    }
   end
 
   @doc """
@@ -80,14 +101,6 @@ defmodule Glific.Communications.Message do
       })
 
     publish_message_status(message)
-
-    Tags.remove_tag_from_all_message(
-      message.contact_id,
-      ["notreplied", "unread"],
-      message.organization_id
-    )
-
-    Taggers.TaggerHelper.tag_outbound_message(message)
     {:ok, message}
   end
 
@@ -109,11 +122,13 @@ defmodule Glific.Communications.Message do
 
   @spec publish_message_status(Message.t()) :: any()
   defp publish_message_status(message) do
-    Communications.publish_data(
-      message,
-      :update_message_status,
-      message.organization_id
-    )
+    if is_nil(message.group_id),
+      do:
+        Communications.publish_data(
+          message,
+          :update_message_status,
+          message.organization_id
+        )
   end
 
   @doc """
@@ -160,15 +175,8 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback when we receive a message from whats app
   """
-  @spec receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
+  @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
-    if Contacts.is_contact_blocked?(message_params.sender.phone, organization_id),
-      do: {:ok},
-      else: do_receive_message(message_params, type)
-  end
-
-  @spec do_receive_message(map(), atom()) :: {:ok} | {:error, String.t()}
-  defp do_receive_message(%{organization_id: organization_id} = message_params, type) do
     Logger.info(
       "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{
         message_params.bsp_message_id
@@ -180,6 +188,13 @@ defmodule Glific.Communications.Message do
       |> Map.put(:organization_id, organization_id)
       |> Contacts.maybe_create_contact()
 
+    if Contacts.is_contact_blocked?(contact),
+      do: :ok,
+      else: do_receive_message(contact, message_params, type)
+  end
+
+  @spec do_receive_message(Contact.t(), map(), atom()) :: :ok | {:error, String.t()}
+  defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
     message_params =
@@ -202,19 +217,16 @@ defmodule Glific.Communications.Message do
   end
 
   # handler for receiving the text message
-  @spec receive_text(map()) :: {:ok}
+  @spec receive_text(map()) :: :ok
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> Taggers.TaggerHelper.tag_inbound_message()
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
-
-    {:ok}
   end
 
   # handler for receiving the media (image|video|audio|document|sticker)  message
-  @spec receive_media(map()) :: {:ok}
+  @spec receive_media(map()) :: :ok
   defp receive_media(message_params) do
     {:ok, message_media} = Messages.create_message_media(message_params)
 
@@ -224,7 +236,7 @@ defmodule Glific.Communications.Message do
     |> Communications.publish_data(:received_message, message_params.organization_id)
     |> process_message()
 
-    {:ok}
+    :ok
   end
 
   # handler for receiving the location message
@@ -244,6 +256,17 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
+  # lets have a default timeout of 3 seconds for each call
+  @timeout 4000
+
+  @spec error(String.t(), any(), any(), list()) :: :ok
+  defp error(error, e, r, stacktrace) do
+    error = error <> ": #{inspect(e)}, #{inspect(r)}"
+    Logger.error(error)
+    Appsignal.send_error(:error, error, stacktrace)
+    :ok
+  end
+
   @spec process_message(Message.t()) :: :ok
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
@@ -252,9 +275,25 @@ defmodule Glific.Communications.Message do
       Repo.get_current_user()
     }
 
-    :poolboy.transaction(
-      Glific.Application.message_poolname(),
-      fn pid -> GenServer.cast(pid, {message, process_state, self()}) end
-    )
+    self = self()
+
+    # We dont want to block the input pipeline, and we are unsure how long the consumer worker
+    # will take. So we run it as a separate task
+    # We will also set a short timeout for both the genserver and the poolboy transaction
+    Task.start(fn ->
+      :poolboy.transaction(
+        Glific.Application.message_poolname(),
+        fn pid ->
+          try do
+            GenServer.call(pid, {message, process_state, self}, @timeout)
+          catch
+            e, r ->
+              error("poolboy genserver caught error", e, r, __STACKTRACE__)
+          end
+        end
+      )
+    end)
+
+    :ok
   end
 end

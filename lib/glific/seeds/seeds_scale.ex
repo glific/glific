@@ -31,6 +31,8 @@ if Code.ensure_loaded?(Faker) do
         phone: phone,
         bsp_status: "session_and_hsm",
         optin_time: DateTime.truncate(DateTime.utc_now(), :second),
+        optin_status: true,
+        optin_method: "BSP",
         optout_time: nil,
         status: "valid",
         language_id: organization.default_language_id,
@@ -66,6 +68,7 @@ if Code.ensure_loaded?(Faker) do
       )
     end
 
+    @flow_ids [1, 2, 3]
     defp create_message_entry(contact_id, sender_id, "beneficiary", index, organization) do
       create_message_entry(
         %{
@@ -73,7 +76,8 @@ if Code.ensure_loaded?(Faker) do
           sender_id: contact_id,
           receiver_id: sender_id,
           contact_id: contact_id,
-          organization_id: organization.id
+          organization_id: organization.id,
+          flow_id: Enum.random(@flow_ids)
         },
         index
       )
@@ -164,8 +168,6 @@ if Code.ensure_loaded?(Faker) do
     end
 
     defp seed_messages(organization, sender_id) do
-      Repo.query!("ALTER TABLE messages DISABLE TRIGGER update_search_message_trigger;")
-
       # we dont need the generated dev messages
       if organization.id == 1,
         do: Repo.query!("TRUNCATE messages CASCADE;")
@@ -188,8 +190,6 @@ if Code.ensure_loaded?(Faker) do
 
       seed_flows(contact_ids, sender_id, organization.id)
       seed_flow_results(contact_ids, organization.id)
-
-      Repo.query!("ALTER TABLE messages ENABLE TRIGGER update_search_message_trigger;")
     end
 
     @flow_ids [1, 2, 3]
@@ -209,7 +209,7 @@ if Code.ensure_loaded?(Faker) do
         flow_context_id: context_id,
         results: create_results_entry(flow_id),
         inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        updated_at: DateTime.utc_now() |> DateTime.add(120, :second) |> DateTime.truncate(:second)
       }
     end
 
@@ -217,25 +217,25 @@ if Code.ensure_loaded?(Faker) do
     defp create_results_entry(1 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Hindi"},
-          %{2 => "English"}
+          %{1 => "Hindi", 2 => "Visual Arts", 3 => "Boring"},
+          %{1 => "English", 2 => "Other", 3 => "Theater", 4 => "Interesting"}
         ])
 
     defp create_results_entry(2 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Visual Arts"},
-          %{2 => "Poetry"},
-          %{3 => "Theater"},
-          %{4 => "Help"},
-          %{5 => "Other"}
+          %{1 => "Visual Arts", 3 => "Interesting"},
+          %{1 => "Hindi", 2 => "Poetry", 3 => "Interesting"},
+          %{1 => "English", 2 => "Theater", 3 => "Boring"},
+          %{1 => "Hindi", 4 => "Help"},
+          %{1 => "English", 5 => "Other"}
         ])
 
     defp create_results_entry(3 = _flow_id),
       do:
         Enum.random([
-          %{1 => "Interesting"},
-          %{2 => "Boring"}
+          %{1 => "English", 2 => "Other", 3 => "Boring"},
+          %{1 => "Hindi", 2 => "Poetry", 3 => "Boring"}
         ])
 
     @contact_num 5..15
@@ -576,24 +576,14 @@ if Code.ensure_loaded?(Faker) do
     defp set_restart(opts, true), do: Map.put(opts, :restart, true) |> Map.put(:halt, true)
 
     defp seed_message_tags(organization) do
-      Repo.query!("ALTER TABLE messages_tags DISABLE TRIGGER update_search_message_trigger;")
-
       seed_message_tags_generic(organization)
-
-      seed_message_tags_unread(organization)
-
-      seed_message_tags_not_responded(organization)
-
-      Repo.query!("ALTER TABLE messages_tags ENABLE TRIGGER update_search_message_trigger;")
     end
 
     defp seed_message_tags_generic(organization) do
       query =
         from t in Tag,
           select: t.id,
-          where:
-            t.shortcode not in ["unread", "notresponded", "notreplied"] and
-              t.organization_id == ^organization.id
+          where: t.organization_id == ^organization.id
 
       tag_ids = Repo.all(query) |> Enum.shuffle()
 
@@ -634,79 +624,6 @@ if Code.ensure_loaded?(Faker) do
       end
     end
 
-    defp seed_message_tags_unread(organization) do
-      query =
-        from t in Tag,
-          select: t.id,
-          where:
-            t.shortcode in ["unread", "notreplied"] and
-              t.organization_id == ^organization.id
-
-      tag_ids = Repo.all(query) |> Enum.shuffle()
-
-      _ =
-        Repo.all(
-          from m in "messages", select: m.id, where: m.receiver_id == 1 and m.message_number == 0
-        )
-        |> Enum.shuffle()
-        |> Enum.reduce([], fn x, acc ->
-          create_message_tag_unread(x, tag_ids, organization.id, acc)
-        end)
-        |> Enum.chunk_every(1000)
-        |> Enum.map(&Repo.insert_all(MessageTag, &1))
-    end
-
-    defp create_message_tag_unread(message_id, tag_ids, organization_id, acc) do
-      x = Enum.random(0..100)
-      [t0, t1] = Enum.take_random(tag_ids, 2)
-
-      [m0, m1] = [
-        %{message_id: message_id, tag_id: t0, organization_id: organization_id},
-        %{message_id: message_id, tag_id: t1, organization_id: organization_id}
-      ]
-
-      # seed message_tags on received messages only: 10% no tags etc
-      cond do
-        x < 20 -> acc
-        x < 70 -> [m0 | acc]
-        true -> [m0 | [m1 | acc]]
-      end
-    end
-
-    defp seed_message_tags_not_responded(organization) do
-      query =
-        from t in Tag,
-          select: t.id,
-          where:
-            t.shortcode in ["notresponded"] and
-              t.organization_id == ^organization.id
-
-      tag_ids = Repo.all(query) |> Enum.shuffle()
-
-      _ =
-        Repo.all(
-          from m in "messages", select: m.id, where: m.receiver_id != 1 and m.message_number == 0
-        )
-        |> Enum.shuffle()
-        |> Enum.reduce([], fn x, acc ->
-          create_message_tag_not_responded(x, tag_ids, organization.id, acc)
-        end)
-        |> Enum.chunk_every(1000)
-        |> Enum.map(&Repo.insert_all(MessageTag, &1))
-    end
-
-    defp create_message_tag_not_responded(message_id, tag_ids, organization_id, acc) do
-      x = Enum.random(0..100)
-      [t0] = Enum.take_random(tag_ids, 1)
-
-      m0 = %{message_id: message_id, tag_id: t0, organization_id: organization_id}
-
-      # seed message_tags on received messages only: 10% no tags etc
-      if x < 50,
-        do: acc,
-        else: [m0 | acc]
-    end
-
     @doc false
     @spec seed_scale :: nil
     def seed_scale do
@@ -739,9 +656,6 @@ if Code.ensure_loaded?(Faker) do
       seed_messages(organization, sender_id)
 
       seed_message_tags(organization)
-
-      # now execute the stored procedure to build the search index
-      Repo.query!("SELECT create_search_messages(100)")
 
       nil
     end

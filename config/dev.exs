@@ -6,11 +6,21 @@ config :glific, Glific.Repo,
   password: "postgres",
   database: "glific_dev",
   hostname: "localhost",
+  # log: false,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  pool_size: 10,
+  prepare: :named,
+  parameters: [plan_cache_mode: "force_custom_plan"]
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :dev
+
+config :glific,
+  auth_username: "admin",
+  auth_password: "admin"
+
+# The SaaS Admin root account phone number
+config :glific, :saas_phone, "+91111222333"
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

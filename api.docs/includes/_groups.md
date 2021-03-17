@@ -116,6 +116,39 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 id | <a href="#id">ID</a> | nil |
 
+## Get Group Information for a Group by ID
+
+Returns a count of the total number of contacts in the group, along with a breakdown of
+each type: "none", "session", "session_and_hsm", "hsm". If a key is missing, the value is 0
+
+```graphql
+  query groupInfo($id: ID!) {
+    groupInfo(id: $id)
+}
+
+{
+  "id": "2"
+}
+
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "groupInfo": "{\"total\":2,\"session_and_hsm\":1,\"session\":1}"
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+id | <a href="#id">ID</a> | nil |
+
+
+
 ## Create Group
 ```graphql
 mutation createGroup($input: GroupInput!) {

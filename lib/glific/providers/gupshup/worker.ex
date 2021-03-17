@@ -10,13 +10,12 @@ defmodule Glific.Providers.Gupshup.Worker do
 
   alias Glific.{
     Communications,
+    Contacts,
     Messages.Message,
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient
   }
-
-  @simulater_phone "9876543210"
 
   @doc """
   Standard perform method to use Oban worker
@@ -27,7 +26,11 @@ defmodule Glific.Providers.Gupshup.Worker do
     organization = Partners.organization(message["organization_id"])
 
     if is_nil(organization.services["bsp"]) do
-      handle_fake_response(message, "API Key does not exist", 401)
+      handle_fake_response(
+        message,
+        "{\"message\": \"API Key does not exist\"}",
+        401
+      )
     else
       perform(job, organization)
     end
@@ -48,7 +51,7 @@ defmodule Glific.Providers.Gupshup.Worker do
            organization.services["bsp"].keys["bsp_limit"]
          ) do
       {:ok, _} ->
-        if payload["destination"] == @simulater_phone do
+        if Contacts.is_simulator_contact?(payload["destination"]) do
           process_simulator(payload["destination"], message)
         else
           process_gupshup(organization.id, payload, message, attrs)

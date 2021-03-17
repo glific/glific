@@ -52,6 +52,14 @@ defmodule Glific.Flows.Exit do
   end
 
   @doc """
+  Validate a exit
+  """
+  @spec validate(Exit.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(_exit, errors, _flow) do
+    errors
+  end
+
+  @doc """
   Execute a exit, given a message stream.
   """
   @spec execute(Exit.t(), FlowContext.t(), [Message.t()]) ::
@@ -60,9 +68,11 @@ defmodule Glific.Flows.Exit do
     context = Repo.preload(context, :flow)
     # update the flow count
     FlowCount.upsert_flow_count(%{
+      id: exit.id,
       uuid: exit.uuid,
       destination_uuid: exit.destination_node_uuid,
       flow_uuid: context.flow_uuid,
+      flow_id: context.flow.id,
       organization_id: context.organization_id,
       type: "exit",
       recent_message: get_recent_messages(context.recent_inbound)
@@ -83,9 +93,7 @@ defmodule Glific.Flows.Exit do
   end
 
   # get most recent message
-
-  @spec get_recent_messages(list()) :: map()
-  defp get_recent_messages(nil), do: %{}
-  defp get_recent_messages([]), do: %{}
+  @spec get_recent_messages(nil | list()) :: map()
+  defp get_recent_messages(recent_inbound) when recent_inbound in [nil, []], do: %{}
   defp get_recent_messages(recent_inbound), do: hd(recent_inbound)
 end

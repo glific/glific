@@ -158,11 +158,8 @@ Type | Description
 ## Get BSP balance for an organization
 
 ```graphql
-query bspbalance {
-  bspbalance {
-    key
-    value
-  }
+query provider_queries {
+  bspbalance
 }
 
 ```
@@ -172,10 +169,7 @@ query bspbalance {
 ```json
 {
   "data": {
-    "bspbalance": {
-      "key": "bsp_balance",
-      "value": "{\"balance\":0.628}"
-    }
+    "bspbalance": "{\"balance\":0.426}"
   }
 }
 ```
@@ -183,7 +177,7 @@ query bspbalance {
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#bsp_balance_result">bsp_balance_result</a> | remaining bsp balance
+<a href="#json">JSON with "balance" as name and the amount of remaining balance as value</a> |
 
 ## Create a Provider
 
@@ -430,12 +424,7 @@ Type | Description
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>key</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>value</strong></td>
+<td colspan="2" valign="top"><strong>bspbalance</strong></td>
 <td valign="top"><a href="#id">Json</a></td>
 <td></td>
 </tr>

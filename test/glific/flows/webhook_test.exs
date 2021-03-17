@@ -57,8 +57,9 @@ defmodule Glific.Flows.WebhookTest do
         body: Jason.encode!(@action_body)
       }
 
-      result = Webhook.execute(action, context)
-      assert @results = result
+      assert Webhook.execute(action, context) == nil
+      # we now need to wait for the Oban job and fire and then
+      # check the results of the context
     end
 
     test "execute a webhook for post method should not break and update the webhook log in case of error",
@@ -118,7 +119,7 @@ defmodule Glific.Flows.WebhookTest do
         |> Map.put(:flow_id, flow.id)
         |> Map.put(:organization_id, flow.organization_id)
 
-      assert {:ok, %WebhookLog{} = webhook_log} = WebhookLog.create_webhook_log(valid_attrs)
+      assert {:ok, %WebhookLog{}} = WebhookLog.create_webhook_log(valid_attrs)
     end
 
     test "update_webhook_log/2 with valid data updates the webhook_log", attrs do

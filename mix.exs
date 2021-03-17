@@ -8,8 +8,8 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "0.9.4",
-      elixir: "~> 1.10",
+      version: "1.1.5",
+      elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
@@ -60,7 +60,7 @@ defmodule Glific.MixProject do
   def application do
     [
       mod: {Glific.Application, []},
-      extra_applications: [:logger, :runtime_tools, :mnesia]
+      extra_applications: [:logger, :runtime_tools, :mnesia, :os_mon]
     ]
   end
 
@@ -77,12 +77,12 @@ defmodule Glific.MixProject do
       {:phoenix_ecto, "~> 4.1"},
       {:ecto_sql, "~> 3.4"},
       {:postgrex, ">= 0.0.0"},
-      {:phoenix_live_view, "~> 0.13"},
-      {:floki, ">= 0.0.0", only: @test_envs},
+      {:floki, ">= 0.27.0", only: @test_envs},
       {:phoenix_html, "~> 2.11"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_dashboard, "~> 0.2"},
+      {:phoenix_live_reload, "~> 1.2", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
+      {:phoenix_live_view, "~> 0.15"},
+      {:phoenix_live_dashboard, "~> 0.4"},
       {:telemetry_metrics, "~> 0.4"},
       {:telemetry_poller, "~> 0.4"},
       {:gettext, "~> 0.18"},
@@ -90,7 +90,7 @@ defmodule Glific.MixProject do
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
-      {:pow, "~> 1.0"},
+      {:pow, "~> 1.0.21"},
       {:dialyxir, "~> 1.0", only: [:dev | @test_envs], runtime: false},
       {:credo, "~> 1.4", only: [:dev | @test_envs], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev | @test_envs], runtime: false},
@@ -106,6 +106,8 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
       {:oban, "~> 2.0"},
+      {:oban_web, "~> 2.5", organization: "oban"},
+      {:oban_pro, "~> 0.6", organization: "oban"},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},
@@ -132,7 +134,8 @@ defmodule Glific.MixProject do
       {:csv, "~> 2.4"},
       {:observer_cli, "~> 1.6"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
-      {:ex_phone_number, "~> 0.2"}
+      {:ex_phone_number, "~> 0.2"},
+      {:tzdata, "~> 1.1"}
     ]
   end
 

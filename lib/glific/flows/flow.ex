@@ -87,7 +87,9 @@ defmodule Glific.Flows.Flow do
       flow
       |> cast(attrs, @required_fields ++ @optional_fields)
       |> validate_required(@required_fields)
-      |> unique_constraint([:name, :organization_id])
+      |> unique_constraint([:name, :organization_id],
+        message: "Sorry, the flow name already exists."
+      )
       |> update_change(:keywords, &update_keywords(&1))
 
     validate_keywords(changeset, get_change(changeset, :keywords))
@@ -114,38 +116,51 @@ defmodule Glific.Flows.Flow do
         do: Flows.Flow,
         else: Flows.Flow |> where([f], f.id != ^id and f.organization_id == ^organization_id)
 
-    keywords_list =
-      query
-      |> select([f], f.keywords)
-      |> Repo.all()
-      |> Enum.reduce([], fn keywords, acc -> keywords ++ acc end)
+    flow_keyword_list = get_other_flow_keyword_list(query)
+    keywords_list = Map.keys(flow_keyword_list)
 
-    # get list of existing keywords
     existing_keywords =
-      Enum.filter(keywords, fn keyword ->
-        if keyword in keywords_list, do: keyword
+      keywords
+      |> Enum.filter(fn keyword ->
+        if keyword in keywords_list, do: Glific.string_clean(keyword)
       end)
 
     if existing_keywords != [] do
       changeset
       |> add_error(
         :keywords,
-        create_keywords_error_message(existing_keywords)
+        create_keywords_error_message(existing_keywords, flow_keyword_list)
       )
     else
       changeset
     end
   end
 
-  @spec create_keywords_error_message([]) :: String.t()
-  defp create_keywords_error_message(existing_keywords) do
+  @spec create_keywords_error_message([], map()) :: String.t()
+  defp create_keywords_error_message(existing_keywords, flow_keyword_list) do
     existing_keywords_string =
       existing_keywords
-      |> Enum.map(&to_string/1)
+      |> Enum.map(fn keyword ->
+        "The keyword `#{keyword}` was already used in the `#{flow_keyword_list[keyword]}` Flow"
+      end)
       |> Enum.join(", ")
 
-    "keywords [#{existing_keywords_string}] are already taken"
+    "#{existing_keywords_string}."
   end
+
+  @spec get_other_flow_keyword_list(Ecto.Query.t()) :: map()
+  defp get_other_flow_keyword_list(query),
+    do:
+      query
+      |> select([f], %{keywords: f.keywords, name: f.name})
+      |> Repo.all()
+      |> Enum.reduce(%{}, fn flow, acc ->
+        flow.keywords
+        |> Enum.reduce(%{}, fn keyword, acc_2 ->
+          Map.put(acc_2, Glific.string_clean(keyword), flow.name)
+        end)
+        |> Map.merge(acc)
+      end)
 
   @doc """
   Process a json structure from floweditor to the Glific data types
@@ -248,8 +263,7 @@ defmodule Glific.Flows.Flow do
   end
 
   @doc """
-  Helper function to load a active flow from
-  the database and build an object
+  Helper function to load a active flow from the database and build an object
   """
   @spec get_loaded_flow(non_neg_integer, String.t(), map()) :: map()
   def get_loaded_flow(organization_id, status, args) do
@@ -260,6 +274,7 @@ defmodule Glific.Flows.Flow do
         where: fr.flow_id == f.id,
         select: %Flow{
           id: f.id,
+          name: f.name,
           uuid: f.uuid,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
@@ -278,6 +293,78 @@ defmodule Glific.Flows.Flow do
     flow.definition
     |> clean_definition()
     |> process(flow)
+  end
+
+  @doc """
+  Validate a flow and ensures the flow  is valid with our internal rule-set
+  """
+  @spec validate_flow(non_neg_integer, String.t(), map()) :: Keyword.t()
+  def validate_flow(organization_id, status, args) do
+    organization_id
+    |> get_loaded_flow(status, args)
+    |> validate_flow()
+  end
+
+  @spec validate_flow(map()) :: Keyword.t()
+  defp validate_flow(flow) do
+    errors = []
+
+    flow.nodes
+    |> Enum.reduce(
+      errors,
+      &Node.validate(&1, &2, flow)
+    )
+    |> dangling_nodes(flow)
+    |> missing_flow_context_nodes(flow)
+  end
+
+  @spec flow_objects(map(), atom()) :: MapSet.t()
+  defp flow_objects(flow, type) do
+    flow.uuid_map
+    |> Enum.filter(fn {_k, v} -> elem(v, 0) == type end)
+    |> Enum.map(fn {k, _v} -> k end)
+    |> MapSet.new()
+  end
+
+  @spec dangling_nodes(Keyword.t(), map()) :: Keyword.t()
+  defp dangling_nodes(errors, flow) do
+    all_nodes = flow_objects(flow, :node)
+    all_exits = flow_objects(flow, :exit)
+
+    # the first node is always reachable
+    reachable_nodes =
+      all_exits
+      |> Enum.reduce(
+        MapSet.new([hd(flow.nodes).uuid]),
+        fn e, acc ->
+          {:exit, exit} = flow.uuid_map[e]
+          MapSet.put(acc, exit.destination_node_uuid)
+        end
+      )
+      |> MapSet.delete(nil)
+
+    dangling = MapSet.difference(all_nodes, reachable_nodes)
+
+    if MapSet.size(dangling) == 0,
+      do: errors,
+      else: [dangling: "Your flow has dangling nodes"] ++ errors
+  end
+
+  @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
+  defp missing_flow_context_nodes(errors, flow) do
+    all_nodes = flow_objects(flow, :node)
+
+    flow_context_nodes =
+      FlowContext
+      |> where([fc], fc.flow_id == ^flow.id and is_nil(fc.completed_at))
+      |> select([fc], fc.node_uuid)
+      |> distinct(true)
+      |> Repo.all()
+      |> MapSet.new()
+
+    if MapSet.subset?(flow_context_nodes, all_nodes),
+      do: errors,
+      else: [flowContext: "Some of your users in the flow have their node deleted"] ++ errors
   end
 
   # add the appropriate where clause as needed

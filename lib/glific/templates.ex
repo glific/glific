@@ -52,6 +52,9 @@ defmodule Glific.Templates do
       {:is_active, is_active}, query ->
         from q in query, where: q.is_active == ^is_active
 
+      {:status, status}, query ->
+        from q in query, where: q.status == ^status
+
       {:term, term}, query ->
         query
         |> join(:left, [template], template_tag in TemplateTag,
@@ -112,6 +115,9 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
     # validate HSM before calling the BSP's API
+    if Map.has_key?(attrs, :shortcode),
+      do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)})
+
     validation_result = validate_hsm(attrs)
 
     if validation_result == :ok,
@@ -270,14 +276,14 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec insert_hsm(map(), Organization.t(), map()) :: {:ok}
+  @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
     type =
       template["templateType"]
       |> String.downcase()
-      |> String.to_existing_atom()
+      |> Glific.safe_string_to_atom()
 
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id
@@ -317,10 +323,10 @@ defmodule Glific.Templates do
     |> Repo.insert()
     |> case do
       {:ok, template} -> Logger.info("New Session Template Added with label: #{template.label}")
-      {:error, error} -> Logger.info("Error adding new Session Template: #{error}")
+      {:error, error} -> Logger.info("Error adding new Session Template: #{inspect(error)}")
     end
 
-    {:ok}
+    :ok
   end
 
   @spec update_hsm(map(), Organization.t(), map()) ::
@@ -364,8 +370,14 @@ defmodule Glific.Templates do
 
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
+    is_active =
+      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
+        do: true,
+        else: false
+
     update_attrs = %{
-      status: template["status"]
+      status: template["status"],
+      is_active: is_active
     }
 
     {:ok, _} =
@@ -382,7 +394,7 @@ defmodule Glific.Templates do
     type =
       template["templateType"]
       |> String.downcase()
-      |> String.to_existing_atom()
+      |> Glific.safe_string_to_atom()
 
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id

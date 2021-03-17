@@ -41,6 +41,11 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :status, :contact_status_enum
     field :bsp_status, :contact_provider_status_enum
 
+    field :is_org_read, :boolean
+    field :is_org_replied, :boolean
+    field :is_contact_replied, :boolean
+    field :last_message_number, :integer
+
     field :optin_time, :datetime
     field :optout_time, :datetime
 

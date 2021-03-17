@@ -339,6 +339,12 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>Status</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>Message Status - Unread / Not replied / Not Responded / Optout</td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>IncludeTags</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
 <td></td>

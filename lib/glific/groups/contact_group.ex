@@ -13,8 +13,8 @@ defmodule Glific.Groups.ContactGroup do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @required_fields [:contact_id, :group_id, :organization_id]
-  @optional_fields []
+  @required_fields [:contact_id, :group_id]
+  @optional_fields [:organization_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

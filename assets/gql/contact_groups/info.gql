@@ -1,0 +1,3 @@
+query groupInfo($id: ID!) {
+    groupInfo(id: $id)
+}

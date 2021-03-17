@@ -406,7 +406,7 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
         "fields": "{\"name\":{\"value\":\"default\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:38.298593Z\"},\"age_group\":{\"value\":\"19 or above\",\"type\":\"string\",\"inserted_at\":\"2020-08-29T05:35:46.623892Z\"}}",
         "id": "5",
         "language": {
-          "label": "English (United States)"
+          "label": "English"
         },
         "name": "This is a updated contact for this example",
         "bspStatus": "SESSION_AND_HSM",
@@ -803,6 +803,26 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>status</strong></td>
 <td valign="top"><a href="#contactstatusenum">ContactStatusEnum</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isOrgRead</strong></td>
+<td valign="top"><a href="#datetime">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isOrgReplied</strong></td>
+<td valign="top"><a href="#datetime">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isContactReplied</strong></td>
+<td valign="top"><a href="#datetime">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>LastMessageNumber</strong></td>
+<td valign="top"><a href="#datetime">Integer</a></td>
 <td></td>
 </tr>
 <tr>

@@ -1,0 +1,39 @@
+name: Continuous Deployment
+
+
+on:
+  push:
+    branches: [ master, v1.0]
+
+jobs:
+  deploy:
+    # only run this job if the verify job succeeds
+
+    # only run this job if the workflow is running on the feature/master branch
+    if: github.ref == 'refs/heads/master'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: master # Checkout out master instead of the latest commit
+          fetch-depth: 0 # Checkout the whole branch
+
+      # setup the python
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8.1'
+              
+      # configure the gigalixir-actions with our credentials and app name
+      - uses: mhanberg/gigalixir-action@v0.4.3
+        with:
+          GIGALIXIR_USERNAME: ${{ secrets.GIGALIXIR_USERNAME }}
+          GIGALIXIR_PASSWORD: ${{ secrets.GIGALIXIR_PASSWORD }}
+          GIGALIXIR_APP: ${{ secrets.GIGALIXIR_APPNAME }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          MIGRATIONS: false
+
+      # Remove unattended-upgrades
+      - name: remove unattended-upgrades
+        run: sudo apt-get -y remove unattended-upgrades

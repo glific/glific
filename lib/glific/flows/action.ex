@@ -8,9 +8,11 @@ defmodule Glific.Flows.Action do
   use Ecto.Schema
 
   alias Glific.{
+    Contacts.Contact,
     Flows,
+    Flows.Flow,
     Groups,
-    Messages,
+    Groups.Group,
     Messages.Message,
     Repo
   }
@@ -25,6 +27,8 @@ defmodule Glific.Flows.Action do
     Templating,
     Webhook
   }
+
+  require Logger
 
   @min_delay 2
 
@@ -54,6 +58,7 @@ defmodule Glific.Flows.Action do
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
+          enter_flow_name: String.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
@@ -100,6 +105,8 @@ defmodule Glific.Flows.Action do
     embeds_one :templating, Templating
 
     field :enter_flow_uuid, Ecto.UUID
+    field :enter_flow_name, :string
+
     embeds_one :enter_flow, Flow
   end
 
@@ -124,7 +131,11 @@ defmodule Glific.Flows.Action do
   @spec process(map(), map(), Node.t()) :: {Action.t(), map()}
   def process(%{"type" => "enter_flow"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_enter_flow)
-    process(json, uuid_map, node, %{enter_flow_uuid: json["flow"]["uuid"]})
+
+    process(json, uuid_map, node, %{
+      enter_flow_uuid: json["flow"]["uuid"],
+      enter_flow_name: json["flow"]["name"]
+    })
   end
 
   def process(%{"type" => "set_contact_language"} = json, uuid_map, node) do
@@ -185,6 +196,8 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+    attrs = Map.put(attrs, :templating, templating)
     process(json, uuid_map, node, attrs)
   end
 
@@ -227,6 +240,92 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
+  @spec get_name(atom()) :: String.t()
+  defp get_name(module) do
+    module
+    |> Atom.to_string()
+    |> String.split(".")
+    |> List.last()
+  end
+
+  @spec check_entity_exists(map(), Keyword.t(), atom()) :: Keyword.t()
+  defp check_entity_exists(entity, errors, object) do
+    case Repo.fetch_by(object, %{id: entity["uuid"]}) do
+      {:ok, _} -> errors
+      _ -> [{object, "Could not find #{get_name(object)}: #{entity["name"]}"}] ++ errors
+    end
+  end
+
+  @spec object(String.t()) :: atom()
+  defp object("send_broadcast"), do: Contact
+  defp object("add_contact_groups"), do: Group
+  defp object("remove_contact_groups"), do: Group
+
+  @doc """
+  Validate a action and all its children
+  """
+  @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
+  def validate(%{type: type} = action, errors, _flow)
+      when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
+    # ensure that the contacts and/or groups exist that are involved in the above
+    # action
+    object = object(type)
+
+    Enum.reduce(
+      if(object == Contact, do: action.contacts, else: action.groups),
+      errors,
+      fn entity, errors ->
+        case Glific.parse_maybe_integer(entity["uuid"]) do
+          {:ok, _entity_id} ->
+            # ensure entity_id exists
+            check_entity_exists(entity, errors, object)
+
+          _ ->
+            [{object, "Could not parse #{get_name(object)} object"}] ++ errors
+        end
+      end
+    )
+  end
+
+  def validate(%{type: "enter_flow"} = action, errors, _flow) do
+    # ensure that the flow exists
+    case Repo.fetch_by(Flow, %{uuid: action.enter_flow_uuid}) do
+      {:ok, _} -> errors
+      _ -> [{Flow, "Could not find Sub Flow: #{action.enter_flow_name}"}] ++ errors
+    end
+  end
+
+  def validate(%{type: "wait_for_time"} = action, errors, flow) do
+    # ensure that any downstream messages from this action are of type HSM
+    # if wait time > 24 hours!
+    if action.wait_time >= 24 * 60 * 60 &&
+         type_of_next_message(flow, action) == :session,
+       do:
+         [{Message, "The next message after a long wait for time should be an HSM template"}] ++
+           errors,
+       else: errors
+  end
+
+  # default validate, do nothing
+  def validate(_action, errors, _flow), do: errors
+
+  @spec type_of_next_message(Flow.t(), Action.t()) :: atom()
+  defp type_of_next_message(flow, action) do
+    # lets keep this simple for now, we'll just go follow the exit of this
+    # action to the next node
+    {:node, node} = flow.uuid_map[action.node_uuid]
+    [exit | _] = node.exits
+    {:node, dest_node} = flow.uuid_map[exit.destination_node_uuid]
+    [action | _] = dest_node.actions
+
+    if is_nil(action.templating),
+      do: :session,
+      else: :hsm
+  rescue
+    # in case any of the uuids don't exist, we just trap the exception
+    _ -> :unknown
+  end
+
   @doc """
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
@@ -259,16 +358,9 @@ defmodule Glific.Flows.Action do
     value = FlowContext.get_result_value(context, action.value)
 
     context =
-      cond do
-        key == "settings" and value == "optout" ->
-          ContactAction.optout(context)
-
-        key == "settings" ->
-          ContactSetting.set_contact_preference(context, value)
-
-        true ->
-          ContactField.add_contact_field(context, key, name, value, "string")
-      end
+      if key == "settings",
+        do: settings(context, value),
+        else: ContactField.add_contact_field(context, key, name, value, "string")
 
     {:ok, context, messages}
   end
@@ -290,7 +382,7 @@ defmodule Glific.Flows.Action do
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
     # for now, we'll just delay by at least min_delay second
-    context = %{context | delay: min(context.delay + @min_delay, @min_delay)}
+    context = %{context | delay: max(context.delay + @min_delay, @min_delay)}
     Flow.start_sub_flow(context, action.enter_flow_uuid)
 
     # We null the messages here, since we are going into a different flow
@@ -299,27 +391,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
-    # first call the webhook
-    json = Webhook.execute(action, context)
-
-    if is_nil(json) or is_nil(action.result_name) do
-      {:ok, context,
-       [
-         Messages.create_temp_message(context.contact.organization_id, "Failure")
-         | messages
-       ]}
-    else
-      json = Map.merge(json, %{"category" => "webhook"})
-
-      {
-        :ok,
-        FlowContext.update_results(context, action.result_name, json),
-        [
-          Messages.create_temp_message(context.contact.organization_id, "Success")
-          | messages
-        ]
-      }
-    end
+    # just call the webhook, and ask the caller to wait
+    # we are processing the webhook using Oban and this happens asynchrnously
+    Webhook.execute(action, context)
+    # webhooks dont consume a message, so we send it forward
+    {:wait, context, messages}
   end
 
   def execute(%{type: "add_input_labels"} = action, context, messages) do
@@ -329,16 +405,7 @@ defmodule Glific.Flows.Action do
       |> Enum.map(fn label -> label["name"] end)
       |> Enum.join(", ")
 
-    # there is a chance that:
-    # when we send a fake temp message (like No Response)
-    # or when a flow is resumed, there is no last_message
-    # hence check for the existence of one
-    if context.last_message != nil do
-      {:ok, _} =
-        Repo.get(Message, context.last_message.id)
-        |> Message.changeset(%{flow_label: flow_label})
-        |> Repo.update()
-    end
+    add_flow_label(context, flow_label)
 
     {:ok, context, messages}
   end
@@ -350,15 +417,19 @@ defmodule Glific.Flows.Action do
         action.groups,
         [],
         fn group, _acc ->
-          {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+          case Glific.parse_maybe_integer(group["uuid"]) do
+            {:ok, group_id} ->
+              Groups.create_contact_group(%{
+                contact_id: context.contact_id,
+                group_id: group_id,
+                organization_id: context.organization_id
+              })
 
-          Groups.create_contact_group(%{
-            contact_id: context.contact_id,
-            group_id: group_id,
-            organization_id: context.organization_id
-          })
+            _ ->
+              Logger.error("Could not parse action groups: #{inspect(action)}")
+          end
 
-          {:ok, group_id}
+          []
         end
       )
 
@@ -379,7 +450,7 @@ defmodule Glific.Flows.Action do
           end
         )
 
-      Groups.delete_group_contacts_by_ids(context.contact_id, groups_ids)
+      Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
     end
 
     {:ok, context, messages}
@@ -411,6 +482,41 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
+
+  @spec add_flow_label(FlowContext.t(), String.t()) :: nil
+  defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
+
+  defp add_flow_label(%{last_message: last_message}, flow_label) do
+    # there is a chance that:
+    # when we send a fake temp message (like No Response)
+    # or when a flow is resumed, there is no last_message
+    # hence we check for the existence of one in these functions
+    {:ok, _} =
+      Repo.get(Message, last_message.id)
+      |> Message.changeset(%{flow_label: flow_label})
+      |> Repo.update()
+
+    nil
+  end
+
+  @spec settings(FlowContext.t(), String.t()) :: FlowContext.t()
+  defp settings(context, value) do
+    case String.downcase(value) do
+      "optout" ->
+        ContactAction.optout(context)
+
+      "optin" ->
+        ContactAction.optin(
+          context,
+          method: "WA",
+          message_id: context.last_message.bsp_message_id,
+          bsp_status: :session_and_hsm
+        )
+
+      _ ->
+        ContactSetting.set_contact_preference(context, value)
+    end
+  end
 
   # let's format attachment and add as a map
   @spec process_attachments(list()) :: map()

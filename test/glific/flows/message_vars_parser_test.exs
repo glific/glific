@@ -10,6 +10,9 @@ defmodule Glific.Flows.MessageVarParserTest do
              MessageVarParser.parse("hello @contact.name", %{"contact" => %{"name" => "Glific"}})
 
     assert "hello Glific" ==
+             MessageVarParser.parse("hello @contact.name.", %{"contact" => %{"name" => "Glific"}})
+
+    assert "hello Glific" ==
              MessageVarParser.parse("hello @organization.name", %{
                "organization" => %{"name" => "Glific"}
              })

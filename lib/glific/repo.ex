@@ -9,6 +9,7 @@ defmodule Glific.Repo do
   alias __MODULE__
 
   alias Glific.{Partners, Users.User}
+  use Publicist
 
   import Ecto.Query
   require Logger
@@ -182,7 +183,7 @@ defmodule Glific.Repo do
             |> Map.put_new(:with, field)
 
           {:order_with, field}, acc ->
-            Map.put(acc, :with, String.to_existing_atom(field))
+            Map.put(acc, :with, Glific.safe_string_to_atom(field))
 
           _, acc ->
             acc
@@ -224,6 +225,13 @@ defmodule Glific.Repo do
   @spec opts_with_inserted_at(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_inserted_at(query, opts), do: opts_with_field(query, opts, :inserted_at)
 
+  @spec make_like(Ecto.Queryable.t(), atom(), String.t() | nil) :: Ecto.Queryable.t()
+  defp make_like(query, _name, str) when is_nil(str) or str == "",
+    do: query
+
+  defp make_like(query, name, str),
+    do: from(q in query, where: ilike(field(q, ^name), ^"%#{str}%"))
+
   # codebeat:disable[ABC, LOC]
   @doc """
   Add all the common filters here, rather than in each file
@@ -232,19 +240,19 @@ defmodule Glific.Repo do
   def filter_with(query, filter) do
     Enum.reduce(filter, query, fn
       {:name, name}, query ->
-        from q in query, where: ilike(q.name, ^"%#{name}%")
+        make_like(query, :name, name)
 
       {:phone, phone}, query ->
-        from q in query, where: ilike(q.phone, ^"%#{phone}%")
+        make_like(query, :phone, phone)
 
       {:label, label}, query ->
-        from q in query, where: ilike(q.label, ^"%#{label}%")
+        make_like(query, :label, label)
 
       {:body, body}, query ->
-        from q in query, where: ilike(q.body, ^"%#{body}%")
+        make_like(query, :body, body)
 
       {:shortcode, shortcode}, query ->
-        from q in query, where: ilike(q.shortcode, ^"%#{shortcode}%")
+        make_like(query, :shortcode, shortcode)
 
       {:language, language}, query ->
         from q in query,
@@ -274,13 +282,11 @@ defmodule Glific.Repo do
   Can we skip checking permissions for this user. This eliminates a DB call
   in many a case
   """
-  @spec skip_permission? :: User.t() | true
-  def skip_permission? do
-    user = Glific.Repo.get_current_user()
-
+  @spec skip_permission?(User.t() | nil) :: boolean()
+  def skip_permission?(user \\ get_current_user()) do
     cond do
       is_nil(user) -> raise(RuntimeError, message: "Invalid user")
-      user.is_restricted and Enum.member?(user.roles, :staff) -> user
+      user.is_restricted and Enum.member?(user.roles, :staff) -> false
       true -> true
     end
   end
@@ -292,10 +298,11 @@ defmodule Glific.Repo do
   @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t()), boolean()) ::
           Ecto.Query.t()
   def add_permission(query, permission_fn, skip_permission \\ false) do
-    case skip_permission or skip_permission?() do
-      true -> query
-      user -> permission_fn.(query, user)
-    end
+    user = get_current_user()
+
+    if skip_permission || skip_permission?(user),
+      do: query,
+      else: permission_fn.(query, user)
   end
 
   # codebeat:enable[ABC, LOC]
@@ -375,7 +382,8 @@ defmodule Glific.Repo do
   @doc false
   @spec put_process_state(non_neg_integer) :: non_neg_integer
   def put_process_state(organization_id) do
-    put_current_user(Partners.organization(organization_id).root_user)
     put_organization_id(organization_id)
+    put_current_user(Partners.organization(organization_id).root_user)
+    organization_id
   end
 end

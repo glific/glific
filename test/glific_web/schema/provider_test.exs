@@ -30,12 +30,11 @@ defmodule GlificWeb.Schema.ProviderTest do
     res =
       providers
       |> get_in([Access.all(), "name"])
-      |> Enum.find(fn x -> x == "Glifproxy" end)
+      |> Enum.find(fn x -> x == "Gupshup" end)
 
-    assert res == "Glifproxy"
+    assert res == "Gupshup"
   end
 
-  # @tag :pending
   test "count returns the number of providers", %{user: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countProviders"]) > 1

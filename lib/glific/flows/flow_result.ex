@@ -67,6 +67,7 @@ defmodule Glific.Flows.FlowResult do
     flow_revision
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint(:flow_context_id)
   end
 
   @doc false

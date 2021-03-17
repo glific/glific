@@ -7,6 +7,7 @@ defmodule Glific.MessagesTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Groups,
     Groups.Group,
     Messages,
     Messages.Message,
@@ -14,13 +15,15 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
-    Templates.SessionTemplate
+    Templates.SessionTemplate,
+    Users
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_contacts(organization)
     SeedsDev.hsm_templates(organization)
+    SeedsDev.seed_users(organization)
     :ok
   end
 
@@ -98,6 +101,7 @@ defmodule Glific.MessagesTest do
       {:ok, message} =
         valid_attrs
         |> Map.merge(attrs)
+        |> Map.put(:bsp_message_id, Faker.String.base64(10))
         |> Messages.create_message()
 
       # we do this to get the session_uuid which is computed by a trigger
@@ -243,8 +247,15 @@ defmodule Glific.MessagesTest do
       assert Messages.get_message!(message.id) == message
     end
 
+    test "tag_in_message?/2 should check message has tag",
+         %{organization_id: organization_id} = attrs do
+      tag = Fixtures.tag_fixture(%{organization_id: organization_id})
+      message = message_fixture(attrs)
+      assert false == Messages.tag_in_message?(message, tag.id)
+    end
+
     test "create_message/1 with valid data creates a message", attrs do
-      assert {:ok, %Message{} = message} =
+      assert {:ok, %Message{}} =
                @valid_attrs
                |> Map.merge(foreign_key_constraint(attrs))
                |> Messages.create_message()
@@ -315,17 +326,17 @@ defmodule Glific.MessagesTest do
       {:ok, message1} =
         Repo.fetch_by(Message, %{body: "message 1", organization_id: organization_id})
 
-      assert message6.message_number == 0
-      assert message5.message_number == 1
-      assert message4.message_number == 2
-      assert message3.message_number == 3
-      assert message2.message_number == 4
-      assert message1.message_number == 5
+      assert message6.message_number == 5
+      assert message5.message_number == 4
+      assert message4.message_number == 3
+      assert message3.message_number == 2
+      assert message2.message_number == 1
+      assert message1.message_number == 0
     end
 
     test "update_message/2 with valid data updates the message", attrs do
       message = message_fixture(attrs)
-      assert {:ok, %Message{} = message} = Messages.update_message(message, @update_attrs)
+      assert {:ok, %Message{}} = Messages.update_message(message, @update_attrs)
     end
 
     test "update_message/2 with invalid data returns error changeset", attrs do
@@ -353,7 +364,7 @@ defmodule Glific.MessagesTest do
 
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
-      assert {:ok} = Messages.clear_messages(message.contact)
+      assert :ok = Messages.clear_messages(message.contact)
 
       assert {:error, ["Elixir.Glific.Messages.Message", "Resource not found"]} =
                Repo.fetch_by(Message, %{
@@ -363,6 +374,29 @@ defmodule Glific.MessagesTest do
 
       # message media should be deleted
       assert {:error, _} = Repo.fetch(MessageMedia, message_media.id)
+    end
+
+    test "clear_messages/1 deletes messages for simulator and sends a message with default body",
+         attrs do
+      message = message_fixture(attrs)
+
+      {:ok, contact} =
+        Repo.fetch_by(Glific.Contacts.Contact, %{
+          name: "Glific Simulator One",
+          organization_id: message.organization_id
+        })
+
+      assert :ok = Messages.clear_messages(contact)
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          contact_id: contact.id,
+          organization_id: contact.organization_id
+        })
+
+      message = Messages.get_message!(message.id)
+
+      assert message.body == "Default message body"
     end
 
     test "change_message/1 returns a message changeset", attrs do
@@ -456,6 +490,67 @@ defmodule Glific.MessagesTest do
                Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
     end
 
+    test "create_group_message/1 should create group message",
+         %{organization_id: organization_id} do
+      org_contact = Glific.Partners.organization(organization_id).contact
+
+      valid_attrs = %{
+        body: "group message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs =
+        Map.merge(valid_attrs, %{
+          sender_id: org_contact.id,
+          receiver_id: org_contact.id,
+          organization_id: organization_id
+        })
+
+      assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
+    test "create_group_message/1 should create group message when send by staff member",
+         %{organization_id: organization_id = _attrs} do
+      [_u1, _u2, _u3, u4 | _] = Users.list_users(%{organization_id: organization_id})
+
+      group_1 = Fixtures.group_fixture(%{label: "new group"})
+
+      # add user groups
+      :ok =
+        Groups.update_user_groups(%{
+          user_id: u4.id,
+          group_ids: ["#{group_1.id}"],
+          organization_id: u4.organization_id
+        })
+
+      {:ok, restricted_user} = Users.update_user(u4, %{is_restricted: true})
+      Repo.put_current_user(restricted_user)
+
+      valid_attrs = %{
+        body: "group message",
+        flow: :outbound,
+        type: :text,
+        group_id: group_1.id
+      }
+
+      message_attrs =
+        Map.merge(valid_attrs, %{
+          sender_id: restricted_user.contact_id,
+          organization_id: organization_id,
+          user_id: restricted_user.id
+        })
+
+      assert {:ok, %Message{}} = Messages.create_group_message(message_attrs)
+    end
+
+    test "create_group_message/1 should return changeset error", attrs do
+      assert {:error, %Ecto.Changeset{}} =
+               @invalid_attrs
+               |> Map.merge(foreign_key_constraint(attrs))
+               |> Messages.create_group_message()
+    end
+
     test "create and send message to a group should send message to contacts of the group",
          %{organization_id: organization_id} = attrs do
       [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
@@ -473,6 +568,7 @@ defmodule Glific.MessagesTest do
       }
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      org_contact = Glific.Partners.organization(organization_id).contact
 
       assert {:ok, [contact1_id, contact2_id | _]} =
                Messages.create_and_send_message_to_group(message_attrs, group)
@@ -482,13 +578,31 @@ defmodule Glific.MessagesTest do
 
       # a message should be created with group_id
       assert {:ok, _message} =
-               Repo.fetch_by(Message, %{body: valid_attrs.body, group_id: group.id})
+               Repo.fetch_by(Message, %{
+                 body: valid_attrs.body,
+                 group_id: group.id,
+                 sender_id: org_contact.id,
+                 receiver_id: org_contact.id
+               })
 
       # group should be updated with last communication at
       {:ok, updated_group} =
         Repo.fetch_by(Group, %{id: cg1.group_id, organization_id: organization_id})
 
       assert updated_group.last_communication_at >= group.last_communication_at
+    end
+
+    test "create and send message should send message to contact", attrs do
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message"
     end
 
     test "send hsm message incorrect parameters",
@@ -507,7 +621,8 @@ defmodule Glific.MessagesTest do
       parameters = ["param1"]
 
       {:error, error_message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
 
       assert error_message == "You need to provide correct number of parameters for hsm template"
 
@@ -515,7 +630,30 @@ defmodule Glific.MessagesTest do
       parameters = ["param1", "param2", "param3"]
 
       {:ok, message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+
+      # also send hsm message via the wrapper function
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          params: parameters,
+          organization_id: organization_id,
+          is_hsm: true
+        }
+        |> Messages.create_and_send_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
@@ -546,14 +684,21 @@ defmodule Glific.MessagesTest do
 
       # send media hsm without media should return error
       {:error, error_message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters)
+        %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
+        |> Messages.create_and_send_hsm_message()
 
       assert error_message == "You need to provide media for media hsm template"
 
       media = Fixtures.message_media_fixture(attrs)
 
       {:ok, message} =
-        Messages.create_and_send_hsm_message(hsm_template.id, contact.id, parameters, media.id)
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters,
+          media_id: media.id
+        }
+        |> Messages.create_and_send_hsm_message()
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
@@ -677,6 +822,145 @@ defmodule Glific.MessagesTest do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert {:ok, %MessageMedia{}} = Messages.delete_message_media(message_media)
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
+    end
+
+    test "validate media/2 check for nil or empty media url", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: false, message: "Please provide a media URL"} ==
+               Messages.validate_media(
+                 "",
+                 nil
+               )
+
+      assert %{is_valid: false, message: "Please provide a media URL"} ==
+               Messages.validate_media(
+                 nil,
+                 nil
+               )
+    end
+
+    @valid_media_url "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
+
+    test "validate media/2 check for size error", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581222"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Size is too big for the image. Maximum size limit is 5120KB"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
+    test "validate media/2 check for invalid header", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+    end
+
+    test "validate media/2 when media type and url are different", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "video"
+               )
+    end
+
+    test "validate media/2 check for type other than defined default types", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{
+               is_valid: false,
+               message: "Media content-type is not valid"
+             } ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "text"
+               )
+    end
+
+    test "validate media/2 return valid as true", _attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "image/png"},
+              {"content-length", "3209581"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert %{is_valid: true, message: "success"} ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
     end
 
     test "change_message_media/1 returns a message_media changeset", attrs do

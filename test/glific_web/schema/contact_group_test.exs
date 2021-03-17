@@ -21,6 +21,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   end
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_groups/create.gql")
+  load_gql(:info, GlificWeb.Schema, "assets/gql/contact_groups/info.gql")
 
   load_gql(
     :update_group_contacts,
@@ -157,7 +158,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     {:ok, group} =
       Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
 
-    name = "Glific Admin"
+    name = "NGO Main Account"
 
     {:ok, contact} =
       Repo.fetch_by(Contact, %{name: name, organization_id: user_auth.organization_id})
@@ -174,7 +175,8 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert contact_group["contact"]["id"] |> String.to_integer() == contact.id
     assert contact_group["group"]["id"] |> String.to_integer() == group.id
 
-    # try creating the same contact group entry twice
+    first_id = contact_group["id"]
+    # try creating the same contact group entry twice and ensure we get the same id
     result =
       auth_query_gql_by(:create, user_auth,
         variables: %{"input" => %{"contact_id" => contact.id, "group_id" => group.id}}
@@ -182,7 +184,40 @@ defmodule GlificWeb.Schema.ContactGroupTest do
 
     assert {:ok, query_data} = result
 
-    contact = get_in(query_data, [:data, "createContactGroup", "errors", Access.at(0), "message"])
-    assert contact == "has already been taken"
+    second_id = get_in(query_data, [:data, "createContactGroup", "contact_group", "id"])
+    assert first_id == second_id
+  end
+
+  test "info on groups 1 and 2 return some data", %{staff: user_auth} do
+    user = Fixtures.user_fixture()
+    label = "Default Group"
+
+    {:ok, group} =
+      Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
+
+    [contact1, contact2 | _] =
+      Contacts.list_contacts(%{filter: %{organization_id: user.organization_id}})
+
+    # add group contacts
+    result =
+      auth_query_gql_by(:update_group_contacts, user_auth,
+        variables: %{
+          "input" => %{
+            "group_id" => group.id,
+            "add_contact_ids" => [contact1.id, contact2.id],
+            "delete_contact_ids" => []
+          }
+        }
+      )
+
+    assert {:ok, _query_data} = result
+
+    {:ok, query_data} = auth_query_gql_by(:info, user, variables: %{"id" => group.id})
+
+    str = get_in(query_data, [:data, "groupInfo"])
+    assert is_binary(str)
+    json = Jason.decode!(str)
+    assert(Enum.count(json) > 0)
+    assert(Map.has_key?(json, "total"))
   end
 end

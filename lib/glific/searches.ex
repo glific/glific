@@ -37,7 +37,7 @@ defmodule Glific.Searches do
   """
   @spec list_saved_searches(map()) :: [SavedSearch.t()]
   def list_saved_searches(args),
-    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, SavedSearch, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Returns the count of searches, using the same filter as list_saved_searches
@@ -45,6 +45,19 @@ defmodule Glific.Searches do
   @spec count_saved_searches(map()) :: integer
   def count_saved_searches(args),
     do: Repo.count_filter(args, SavedSearch, &Repo.filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:is_reserved, is_reserved}, query ->
+        from q in query, where: q.is_reserved == ^is_reserved
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Gets a single search.
@@ -143,26 +156,103 @@ defmodule Glific.Searches do
 
   defp filter_active_contacts_of_organization(contact_ids)
        when is_list(contact_ids) do
-    Contact
+    query = from c in Contact, as: :c
+
+    query
     |> where([c], c.id in ^contact_ids)
-    |> where([c], c.status != ^:blocked)
+    |> where([c], c.status != :blocked)
     |> select([c], c.id)
+    |> Repo.add_permission(&Searches.add_permission_contact/2)
+  end
+
+  @spec status_query(map()) :: Ecto.Query.t()
+  defp status_query(opts) do
+    query = from c in Contact, as: :c
+
+    query
+    |> where([c], c.status != :blocked)
+    |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
+    |> distinct(true)
+    |> add_contact_opts(opts)
+    |> Repo.add_permission(&Searches.add_permission_contact/2)
+  end
+
+  @spec add_contact_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_contact_opts(query, %{limit: limit, offset: offset}) do
+    query
+    |> limit(^limit)
+    |> offset(^offset)
+    |> order_by([c], desc: c.last_communication_at)
+  end
+
+  defp add_contact_opts(query, _opts) do
+    # always order in descending order of most recent communications
+    query
+    |> order_by([c], desc: c.last_communication_at)
+  end
+
+  # codebeat:disable[ABC]
+  @spec filter_status_contacts_of_organization(String.t(), map()) :: Ecto.Query.t()
+  defp filter_status_contacts_of_organization("Unread", opts) do
+    status_query(opts)
+    |> where([c], c.is_org_read == false)
+  end
+
+  defp filter_status_contacts_of_organization("Optout", opts) do
+    status_query(opts)
+    |> where([c], c.status != :blocked)
+    |> where([c], not is_nil(c.optout_time))
+  end
+
+  defp filter_status_contacts_of_organization("Optin", opts) do
+    status_query(opts)
+    |> where([c], c.status != :blocked)
+    |> where([c], c.optin_status == true)
+  end
+
+  defp filter_status_contacts_of_organization("Not replied", opts) do
+    status_query(opts)
+    |> where([c], c.is_org_replied == false)
+  end
+
+  defp filter_status_contacts_of_organization("Not Responded", opts) do
+    status_query(opts)
+    |> where([c], c.is_contact_replied == false)
+  end
+
+  # codebeat:enable[ABC]
+
+  @spec permission_query(User.t()) :: Ecto.Query.t()
+  defp permission_query(user) do
+    ContactGroup
+    |> select([cg], cg.contact_id)
+    |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
+    |> where([cg, ug: ug], ug.user_id == ^user.id)
   end
 
   @doc """
   Add permissioning specific to searches, in this case we want to restrict the visibility of
-  contact ids
+  contact ids where message is the main query table
   """
+  # codebeat:disable[ABC]
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
-    sub_query =
-      ContactGroup
-      |> select([cg], cg.contact_id)
-      |> join(:inner, [cg], ug in UserGroup, as: :ug, on: ug.group_id == cg.group_id)
-      |> where([cg, ug: ug], ug.user_id == ^user.id)
+    sub_query = permission_query(user)
 
     query
     |> where([m: m], m.contact_id == ^user.contact_id or m.contact_id in subquery(sub_query))
+  end
+
+  @doc """
+  Add permissioning specific to searches, in this case we want to restrict the visibility of
+  contact ids where the contact is the main query table
+  """
+  @spec add_permission_contact(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission_contact(query, user) do
+    sub_query = permission_query(user)
+
+    query
+    |> where([c: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
   end
 
   @spec basic_query(map()) :: Ecto.Query.t()
@@ -174,12 +264,15 @@ defmodule Glific.Searches do
     query
     |> join(:left, [c: c], m in Message,
       as: :m,
-      on: c.id == m.contact_id and m.message_number == 0
+      on: c.id == m.contact_id and m.message_number == c.last_message_number
     )
     |> where([c: c], c.id != ^organization_contact_id)
+    |> where([c: c], c.status != :blocked)
     |> order_by([c: c], desc: c.last_communication_at)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
+
+  # codebeat:enable[ABC]
 
   # common function to build query between count and search
   # order by the last time there was communication with this contact
@@ -219,14 +312,21 @@ defmodule Glific.Searches do
     )
   end
 
+  # codebeat:disable[ABC]
   def search(args, count) do
     # save the search if needed
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
     do_save_search(args)
 
     args =
-      check_filter_for_save_search(args)
+      args
+      |> check_filter_for_save_search()
       |> update_args_for_count(count)
+
+    is_status? =
+      is_nil(args.filter[:id]) &&
+        is_nil(args.filter[:ids]) &&
+        !is_nil(args.filter[:status])
 
     contact_ids =
       cond do
@@ -236,13 +336,35 @@ defmodule Glific.Searches do
         args.filter[:ids] != nil ->
           filter_active_contacts_of_organization(args.filter.ids)
 
+        args.filter[:status] != nil ->
+          filter_status_contacts_of_organization(args.filter.status, args.contact_opts)
+
         true ->
           search_query(args.filter[:term], args)
       end
       |> Repo.all()
+      |> get_contact_ids(is_status?)
 
-    put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
-    |> Conversations.list_conversations(count)
+    # if we dont have any contact ids at this stage
+    # it means that the user did not have permission
+    if contact_ids == [] do
+      if count, do: 0, else: []
+    else
+      put_in(args, [Access.key(:filter, %{}), :ids], contact_ids)
+      |> Conversations.list_conversations(count)
+    end
+  end
+
+  # codebeat:enable[ABC]
+
+  @spec get_contact_ids(list(), boolean | nil) :: list()
+  defp get_contact_ids(results, false), do: results
+
+  defp get_contact_ids(results, true) do
+    # one set of queries (status queries) return a map for each row
+    # where id is a key in the map
+    results
+    |> Enum.map(fn data -> data.id end)
   end
 
   @doc """
@@ -271,17 +393,21 @@ defmodule Glific.Searches do
     |> offset(^offset)
   end
 
+  # codebeat:disable[ABC]
   @spec get_filtered_contacts(String.t(), map()) :: list()
   defp get_filtered_contacts(term, args) do
-    {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+    {limit, offset} = {args.contact_opts.limit, args.contact_opts.offset}
 
-    # since this revolves arund contacts
-    basic_query(args)
+    # since this revolves around contacts
+    args
+    |> basic_query()
     |> where([c: c], ilike(c.name, ^"%#{term}%") or ilike(c.phone, ^"%#{term}%"))
     |> limit(^limit)
     |> offset(^offset)
     |> Repo.all()
   end
+
+  # codebeat:enable[ABC]
 
   @spec get_filtered_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_messages_with_term(term, args) do
@@ -291,6 +417,7 @@ defmodule Glific.Searches do
     |> Repo.all()
   end
 
+  # codebeat:disable[ABC]
   @spec get_filtered_tagged_message(String.t(), map()) :: list()
   defp get_filtered_tagged_message(term, args) do
     filtered_query(args)
@@ -299,6 +426,8 @@ defmodule Glific.Searches do
     |> where([t: t], ilike(t.label, ^"%#{term}%") or ilike(t.shortcode, ^"%#{term}%"))
     |> Repo.all()
   end
+
+  # codebeat:enable[ABC]
 
   # Add the term if present to the list of args
   @spec add_term(map(), String.t() | nil) :: map()
@@ -327,7 +456,7 @@ defmodule Glific.Searches do
         atom_k =
           if is_atom(k),
             do: k,
-            else: k |> Macro.underscore() |> String.to_existing_atom()
+            else: k |> Macro.underscore() |> Glific.safe_string_to_atom()
 
         if atom_k in [:filter, :contact_opts, :message_opts],
           do: {atom_k, convert_to_atom(v)},

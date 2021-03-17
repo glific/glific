@@ -40,14 +40,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   @doc false
   @spec groups_post(Plug.Conn.t(), map) :: Plug.Conn.t()
-  def groups_post(conn, params) do
+  def groups_post(conn, _params) do
     conn
     |> json(%{
-      uuid: generate_uuid(),
+      uuid: 0,
       query: nil,
-      status: "ready",
+      status: "not-ready",
       count: 0,
-      name: params["name"]
+      name: "ALERT: PLEASE CREATE NEW GROUP FROM THE ORGANIZATION SETTINGS"
     })
   end
 
@@ -181,7 +181,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def templates(conn, _params) do
     results =
       Glific.Templates.list_session_templates(%{
-        filter: %{organization_id: conn.assigns[:organization_id]}
+        filter: %{organization_id: conn.assigns[:organization_id], status: "APPROVED"}
       })
       |> Enum.reduce([], fn template, acc ->
         template = Glific.Repo.preload(template, :language)
@@ -404,7 +404,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec validate_media(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def validate_media(conn, params) do
-    json(conn, %{is_valid: Glific.validate_media?(params["url"], params["type"])})
+    json(conn, Glific.Messages.validate_media(params["url"], params["type"]))
   end
 
   @doc false

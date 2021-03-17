@@ -6,6 +6,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   alias Plug.Conn.Query
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
+  # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -87,7 +88,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   end
 
   @doc """
-  Sending HSM template to contact
+  Sending message to contact
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
@@ -120,8 +121,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     get_credentials(org_id)
 
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_url <> "/users/" <> credentials.app_name
-      gupshup_get(template_url, credentials.api_key)
+      url = @gupshup_url <> "/users/" <> credentials.app_name
+      gupshup_get(url, credentials.api_key)
     end
   end
 end

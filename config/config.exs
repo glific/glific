@@ -13,11 +13,13 @@ config :glific,
 
 # Configures the endpoint
 config :glific, GlificWeb.Endpoint,
+  server: true,
+  http: [port: 4000],
   url: [host: "glific.test"],
   secret_key_base: "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e",
   render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Glific.PubSub,
-  live_view: [signing_salt: "Xz6dQndd"]
+  live_view: [signing_salt: "4htfH6BMHdxcuDKFHeSryT32amWvVvlX"]
 
 # Configures Elixir's Logger
 config :logger, :console,
@@ -37,17 +39,34 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
-  queues: [default: 10, dialogflow: 10, gupshup: 10, webhook: 10, crontab: 10],
-  crontab: [
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-    {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
-    {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-    {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
-    {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-    {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-    {"30 */1 * * *", Glific.Jobs.MinuteWorker, args: %{job: :sync_glific_db_with_cloud}}
+  queues: [
+    default: 10,
+    # dialogflow: 10,
+    gupshup: 10,
+    webhook: 10,
+    crontab: 10,
+    bigquery: 5,
+    gcs: 5
+  ],
+  plugins: [
+    # Prune jobs after 5 mins, gives us some time to go investigate if needed
+    {Oban.Plugins.Pruner, max_age: 300},
+    Oban.Pro.Plugins.Lifeline,
+    Oban.Web.Plugins.Stats,
+    {
+      Oban.Plugins.Cron,
+      crontab: [
+        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+        {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
+        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+        {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
+        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
+      ]
+    }
   ]
 
 config :tesla, adapter: Tesla.Adapter.Hackney
@@ -99,7 +118,7 @@ config :glific, Glific.Vault, ciphers: false
 
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,
-  token_fetcher: Glific.Partners
+  token_fetcher: Glific.GCS
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

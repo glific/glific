@@ -7,6 +7,7 @@
 ![GitHub issues](https://img.shields.io/github/issues-raw/glific/glific)
 [![Discord](https://img.shields.io/discord/717975833226248303.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/MVf2KF)
 [![codebeat badge](https://codebeat.co/badges/dd951390-5f51-4c98-bddc-0b618bdb43fd)](https://codebeat.co/projects/github-com-glific-glific-master)
+[![Commits](https://img.shields.io/github/commit-activity/m/glific/glific)](https://img.shields.io/github/commit-activity/m/glific/glific)
 
 ## Packages Needed
 
@@ -22,10 +23,10 @@ Install the following packages using your favorite package manager. Links are pr
 Glific is currently developed and hosted on the following platforms. Our goal is to always try and use the latest
 versions of each platform as soon as feasible (i.e. once the ecosystem of packages we used have upgraded). We do not
 have the bandwidth to support earlier versions of the packages.
-
-  * erlang : 23.0.2
-  * elixir : 1.10.4
-  * nodejs : 14.15.0
+  
+  * erlang : 23.2.5
+  * elixir : 1.11.3-otp-23
+  * nodejs : 14.16.0
   * postgres : v12.x or v13.x
 
 

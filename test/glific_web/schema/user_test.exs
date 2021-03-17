@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.UserTest do
 
     [user | _] = users
 
-    assert get_in(user, ["name"]) == "Glific Admin"
+    assert get_in(user, ["name"]) == "NGO Admin"
   end
 
   test "users obeys limit and offset", %{staff: user} do
@@ -145,11 +145,25 @@ defmodule GlificWeb.Schema.UserTest do
     user = user |> Repo.preload(:contact)
     Fixtures.otp_hsm_fixture()
 
-    {:ok, otp} =
-      RegistrationController.create_and_send_verification_code(
-        user.organization_id,
-        user.contact
+    {:ok, otp} = RegistrationController.create_and_send_verification_code(user.contact)
+
+    name = "User Test Name New"
+
+    result =
+      auth_query_gql_by(:update_current, user,
+        variables: %{
+          "input" => %{"name" => name, "otp" => otp, "password" => "new_password"}
+        }
       )
+
+    assert {:ok, query_data} = result
+
+    user_result = get_in(query_data, [:data, "updateCurrentUser", "user"])
+    assert user_result["name"] == name
+
+    # send a template message, by modifying the user status
+    contact = Map.put(user.contact, :status, :hsm)
+    {:ok, otp} = RegistrationController.create_and_send_verification_code(contact)
 
     name = "User Test Name New"
 

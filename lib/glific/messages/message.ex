@@ -49,6 +49,7 @@ defmodule Glific.Messages.Message do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           body: String.t() | nil,
           clean_body: String.t() | nil,
+          publish?: boolean,
           bsp_message_id: String.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
@@ -70,6 +71,7 @@ defmodule Glific.Messages.Message do
     :body,
     :flow_label,
     :clean_body,
+    :publish?,
     :is_hsm,
     :status,
     :bsp_status,
@@ -95,6 +97,11 @@ defmodule Glific.Messages.Message do
     # we keep the clean version of the body here for easy access by flows
     # and other actors
     field :clean_body, :string, virtual: true
+
+    # should we publish this message. When we are sending to a group, it could be to a large
+    # number of contacts which will overwhelm the frontend. Hence we suppress the subscription
+    # when sendign to a group
+    field :publish?, :boolean, default: true, virtual: true
 
     field :is_hsm, :boolean, default: false
 

@@ -66,16 +66,18 @@ defmodule Glific.Jobs do
   Create or update a gcs_job with the message_id and
   organization_id
   """
-  @spec upsert_gcs_job(map()) :: {:ok, GcsJob.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_gcs_job(attrs) do
-    changeset = GcsJob.changeset(%GcsJob{}, attrs)
+  @spec update_gcs_job(map()) :: {:ok, GcsJob.t()} | {:error, Ecto.Changeset.t()}
+  def update_gcs_job(attrs) do
+    case Repo.get_by(GcsJob, %{organization_id: attrs.organization_id}) do
+      nil ->
+        GcsJob.changeset(%GcsJob{}, attrs)
+        |> Repo.insert()
 
-    Repo.insert!(
-      changeset,
-      returning: true,
-      on_conflict: [set: [message_media_id: attrs.message_media_id]],
-      conflict_target: :organization_id
-    )
+      gcs_job ->
+        gcs_job
+        |> GcsJob.changeset(attrs)
+        |> Repo.update()
+    end
   end
 
   @doc false
@@ -98,6 +100,16 @@ defmodule Glific.Jobs do
     |> BigqueryJob.changeset(attrs)
     |> Repo.update()
   end
+
+  @doc """
+  Update a bigquery_job table
+  """
+  @spec update_bigquery_job(non_neg_integer, String.t(), map()) ::
+          {:ok, BigqueryJob.t()} | {:error, Ecto.Changeset.t()}
+  def update_bigquery_job(organization_id, table, attrs),
+    do:
+      get_bigquery_job(organization_id, table)
+      |> update_bigquery_job(attrs)
 
   @doc false
   @spec get_bigquery_jobs(integer) :: list() | nil

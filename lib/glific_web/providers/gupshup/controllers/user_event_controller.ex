@@ -16,7 +16,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
 
     get_in(params, ["payload", "phone"])
-    |> Glific.Contacts.contact_opted_in(conn.assigns[:organization_id], timestamp)
+    |> Glific.Contacts.contact_opted_in(
+      conn.assigns[:organization_id],
+      timestamp,
+      method: "BSP"
+    )
 
     handler(conn, params, "Opted in handler")
   end

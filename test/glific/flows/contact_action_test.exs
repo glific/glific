@@ -50,7 +50,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     # preload contact
     {:ok, context} = FlowContext.create_flow_context(attrs)
-    context = Repo.preload(context, :contact)
+    context = Repo.preload(context, [:contact, :flow])
 
     action = %Action{text: "This is test message"}
 
@@ -72,11 +72,12 @@ defmodule Glific.Flows.ContactActionTest do
 
     # preload contact
     context =
-      %FlowContext{
+      Repo.insert!(%FlowContext{
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
-        contact_id: contact.id
-      }
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
       |> Repo.preload(:contact)
 
     [template | _] =
@@ -109,12 +110,12 @@ defmodule Glific.Flows.ContactActionTest do
 
     # preload contact
     context =
-      %FlowContext{
+      Repo.insert!(%FlowContext{
         flow_id: 1,
         flow_uuid: Ecto.UUID.generate(),
         contact_id: contact.id,
         organization_id: contact.organization_id
-      }
+      })
       |> Repo.preload(:contact)
 
     [template | _] =

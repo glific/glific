@@ -31,7 +31,7 @@ defmodule Glific.FlagsTest do
     organization = Partners.organization(Fixtures.get_org_id())
 
     status = Flags.init(organization)
-    assert status == {:ok, false}
+    assert status == nil
 
     assert FunWithFlags.enabled?(
              :enable_out_of_office,
@@ -102,6 +102,33 @@ defmodule Glific.FlagsTest do
     }
   }
 
+  test "disable org settings and ensure nothing happens" do
+    organization = Fixtures.organization_fixture()
+
+    # when office hours includes whole day of seven days
+    {:ok, _} =
+      Partners.update_organization(
+        organization,
+        put_in(@organization_settings, [:out_of_office, :enabled], false)
+      )
+
+    organization = Partners.organization(organization.id)
+    Flags.out_of_office_check(organization)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == false
+
+    # also might as well check update
+    Flags.out_of_office_update(organization.id)
+
+    assert FunWithFlags.enabled?(
+             :out_of_office_active,
+             for: %{organization_id: organization.id}
+           ) == false
+  end
+
   test "out_of_office_check/1 should de-activate out_of_office_active flag" do
     organization = Fixtures.organization_fixture()
 
@@ -134,7 +161,6 @@ defmodule Glific.FlagsTest do
            ) == true
   end
 
-  # @tag :pending
   test "out_of_office_update/1 should activate / de-activate out_of_office_active flag" do
     organization = Fixtures.organization_fixture()
 

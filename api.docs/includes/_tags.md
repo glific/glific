@@ -37,7 +37,7 @@ query tags($filter: TagFilter, $opts: Opts) {
         "label": "Child",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       },
       {
@@ -45,7 +45,7 @@ query tags($filter: TagFilter, $opts: Opts) {
         "label": "Compliment",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       },
       {
@@ -53,7 +53,7 @@ query tags($filter: TagFilter, $opts: Opts) {
         "label": "Contacts",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       }
     ]
@@ -101,7 +101,7 @@ query tag($id: ID!) {
         "label": "Contacts",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       }
     }
@@ -251,7 +251,7 @@ mutation updateTag($id: ID!, $input:TagInput!) {
         "label": "This is a update tag for this example",
         "language": {
           "id": "2",
-          "label": "English (United States)"
+          "label": "English"
         }
       }
     }
@@ -330,13 +330,7 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 <a href="#tagresult">TagResult</a> | An error object or empty
 
-
-
-
-
-
-
-## Remove unread tag from messages
+## Remove unread status from contact
 
 ```graphql
 mutation markContactMessagesAsRead($contactId : Gid!) {
@@ -348,18 +342,17 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 }
 ```
 
-> The above query returns effected messages ids:
+> The above query returns the same contactID back
 
 ```json
 {
   "data": {
     "markContactMessagesAsRead": [
-      "2", "10"
+       "26"
     ]
   }
 }
 ```
-
 
 ### Query Parameters
 
@@ -370,7 +363,7 @@ contactId | <a href="#gid">Gid</a>! | required ||
 ### Return Parameters
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
-<a href="#list">List</a> | An error object or empty
+<a href="#gid">Contact ID</a> | The same contact ID or an error object
 
 ## Tag Objects
 
