@@ -118,8 +118,7 @@ defmodule Glific.Groups do
   def get_or_create_group_by_label(label, organization_id) do
     result =
       Group
-      |> where([l], l.label == ^label)
-      |> Repo.one()
+      |> Repo.get_by(%{label: label})
 
     case result do
       nil -> create_group(%{label: label, organization_id: organization_id})

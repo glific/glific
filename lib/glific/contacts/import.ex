@@ -3,7 +3,16 @@ defmodule Glific.Contacts.Import do
   The Contact Importer Module
   """
 
-  alias Glific.{Contacts, Contacts.Contact, Groups, Groups.ContactGroup,  Partners, Providers.GupshupContacts, Repo, Settings}
+  alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Groups,
+    Groups.ContactGroup,
+    Partners,
+    Providers.GupshupContacts,
+    Repo,
+    Settings
+  }
 
   @spec cleanup_contact_data(map(), non_neg_integer, String.t()) :: map()
   defp cleanup_contact_data(data, organization_id, date_format) do
@@ -36,7 +45,7 @@ defmodule Glific.Contacts.Import do
       nil ->
         %{ok: "Contact does not exist"}
 
-      {:ok, contact} ->
+      contact ->
         Contacts.delete_contact(contact)
         contact
     end
@@ -96,15 +105,12 @@ defmodule Glific.Contacts.Import do
 
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
-    with %{id: organization_id} <- Partners.organization(organization_id),
+    with %{} <- Partners.organization(organization_id),
          {_, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
-      contact_data =
+      result =
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
         |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
-
-      result =
-        contact_data
         |> Enum.map(fn contact -> process_data(contact, group.id) end)
 
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
