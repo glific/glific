@@ -1,4 +1,4 @@
-# Glific.Contacts.Import Module
+# Glific Contact Import
 
 ## import_contacts(organization_id, group_label, opts \\ [])
 
@@ -39,7 +39,10 @@ if a group by the provided label does not exist.
     - date_format: The format of the opt_in in the CSV. Default `{YYYY}-{M}-{D}`
 
 ## Examples
-* `Import.import_contacts(1, "Group", file_path: "test.csv")`
-* `Import.import_contacts(1,"Group", url: "http://foo.com/bar.csv")`
-* `Import.import_contacts(1,"Group", data: "name,phone,Language,opt_in,delete\ntest2,1111111111,hindi,2021-03-09,1")`
-* `Import.import_contacts(1, "Group", file_path: "test.csv", date_format: "{YYYY}-{M}-{D}")`
+
+You will need to fun these examples from iex
+
+* `Glific.Contacts.Import.import_contacts(1, "Group", file_path: "test.csv")`
+* `Glific.Contacts.Import.import_contacts(1,"Group", url: "http://foo.com/bar.csv")`
+* `Glific.Contacts.Import.import_contacts(1,"Group", data: "name,phone,Language,opt_in,delete\ntest2,1111111111,hindi,2021-03-09,1")`
+* `Glific.Contacts.Import.import_contacts(1, "Group", file_path: "test.csv", date_format: "{YYYY}-{M}-{D}")`
