@@ -3,22 +3,6 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
 
   def up do
     message_number_trigger()
-
-    drop_old_triggers_and_functions()
-  end
-
-  defp drop_old_triggers_and_functions do
-    sql = [
-      "DROP FUNCTION IF EXISTS create_search_messages",
-      "DROP FUNCTION IF EXISTS update_search_messages_on_messages_update()",
-      "DROP FUNCTION IF EXISTS update_search_messages_on_contacts_update()",
-      "DROP FUNCTION IF EXISTS update_search_messages_on_messages_tags_update()",
-      "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages",
-      "DROP TRIGGER IF EXISTS update_search_message_trigger ON contacts",
-      "DROP TRIGGER IF EXISTS update_search_message_trigger ON messages_tags"
-    ]
-
-    sql |> Enum.each(fn s -> execute(s) end)
   end
 
   defp message_number_trigger do
@@ -85,9 +69,9 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 last_communication_at = now,
                 last_message_at = now,
                 last_message_number = last_message_number + 1,
-                "org_read_messages?" = false,
-                "org_replied_messages?" = false,
-                "contact_replied_messages?" = true
+                is_org_read = false,
+                is_org_replied = false,
+                is_contact_replied = true
               WHERE id = NEW.contact_id;
 
             UPDATE messages
@@ -100,8 +84,8 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
               SET
                 last_communication_at = now,
                 last_message_number = last_message_number + 1,
-                "org_replied_messages?" = true,
-                "contact_replied_messages?" = false
+                is_org_replied = true,
+                is_contact_replied = false
               WHERE id = NEW.contact_id;
 
             UPDATE messages

@@ -6,15 +6,15 @@ defmodule Glific.Repo.Migrations.MessageNumberStatus do
     drop_search_message_code()
 
     alter table(:contacts) do
-      add :org_read_messages?, :boolean,
+      add :is_org_read, :boolean,
         default: true,
         comment: "Has a staff read the messages sent by this contact"
 
-      add :org_replied_messages?, :boolean,
+      add :is_org_replied, :boolean,
         default: true,
         comment: "Has a staff or flow replied to the messages sent by this contact"
 
-      add :contact_replied_messages?, :boolean,
+      add :is_contact_replied, :boolean,
         default: true,
         comment: "Has the contact replied to the messages sent by the system"
 

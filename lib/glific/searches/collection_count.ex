@@ -110,9 +110,9 @@ defmodule Glific.Searches.CollectionCount do
   @spec query(list()) :: Ecto.Query.t()
   defp query(org_id_list) do
     Contact
-    |> add_orgs(org_id_list)
     # block messages sent to group
     |> where([c], c.status != :blocked)
+    |> add_orgs(org_id_list)
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
   end
@@ -138,7 +138,7 @@ defmodule Glific.Searches.CollectionCount do
   defp unread(result, query) do
     query
     |> where([c], c.last_message_number > -1)
-    |> where([c], c.org_read_messages? == false)
+    |> where([c], c.is_org_read == false)
     |> make_result(result, "Unread")
   end
 
@@ -146,7 +146,7 @@ defmodule Glific.Searches.CollectionCount do
   defp not_replied(result, query) do
     query
     |> where([c], c.last_message_number > -1)
-    |> where([c], c.org_replied_messages? == false)
+    |> where([c], c.is_org_replied == false)
     |> make_result(result, "Not replied")
   end
 
@@ -154,7 +154,7 @@ defmodule Glific.Searches.CollectionCount do
   defp not_responded(result, query) do
     query
     |> where([c], c.last_message_number > -1)
-    |> where([c], c.contact_replied_messages? == false)
+    |> where([c], c.is_contact_replied == false)
     |> make_result(result, "Not Responded")
   end
 

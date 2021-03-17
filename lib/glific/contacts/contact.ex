@@ -25,9 +25,9 @@ defmodule Glific.Contacts.Contact do
     :name,
     :bsp_status,
     :status,
-    :org_read_messages?,
-    :org_replied_messages?,
-    :contact_replied_messages?,
+    :is_org_read,
+    :is_org_replied,
+    :is_contact_replied,
     :optin_time,
     :optin_status,
     :optin_method,
@@ -48,9 +48,9 @@ defmodule Glific.Contacts.Contact do
           masked_phone: String.t() | nil,
           status: ContactStatus | nil,
           bsp_status: ContactProviderStatus | nil,
-          org_read_messages?: boolean,
-          org_replied_messages?: boolean,
-          contact_replied_messages?: boolean,
+          is_org_read: boolean,
+          is_org_replied: boolean,
+          is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -82,9 +82,9 @@ defmodule Glific.Contacts.Contact do
     belongs_to :organization, Organization
     has_one :user, User
 
-    field :org_read_messages?, :boolean, default: true
-    field :org_replied_messages?, :boolean, default: true
-    field :contact_replied_messages?, :boolean, default: true
+    field :is_org_read, :boolean, default: true
+    field :is_org_replied, :boolean, default: true
+    field :is_contact_replied, :boolean, default: true
 
     field :optin_time, :utc_datetime
     field :optin_status, :boolean, default: false

@@ -992,6 +992,6 @@ defmodule Glific.Messages do
   def mark_contact_messages_as_read(contact_id, _organization_id) do
     Contact
     |> where([c], c.id == ^contact_id)
-    |> Repo.update_all(set: [org_read_messages?: true])
+    |> Repo.update_all(set: [is_org_read: true])
   end
 end

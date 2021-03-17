@@ -195,7 +195,7 @@ defmodule Glific.Searches do
   @spec filter_status_contacts_of_organization(String.t(), map()) :: Ecto.Query.t()
   defp filter_status_contacts_of_organization("Unread", opts) do
     status_query(opts)
-    |> where([c], c.org_read_messages? == false)
+    |> where([c], c.is_org_read == false)
   end
 
   defp filter_status_contacts_of_organization("Optout", opts) do
@@ -212,12 +212,12 @@ defmodule Glific.Searches do
 
   defp filter_status_contacts_of_organization("Not replied", opts) do
     status_query(opts)
-    |> where([c], c.org_replied_messages? == false)
+    |> where([c], c.is_org_replied == false)
   end
 
   defp filter_status_contacts_of_organization("Not Responded", opts) do
     status_query(opts)
-    |> where([c], c.contact_replied_messages? == false)
+    |> where([c], c.is_contact_replied == false)
   end
 
   # codebeat:enable[ABC]
