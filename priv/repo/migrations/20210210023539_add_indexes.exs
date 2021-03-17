@@ -19,12 +19,15 @@ defmodule Glific.Repo.Migrations.AddIndexes do
 
     create_if_not_exists index(:messages, :inserted_at)
     create_if_not_exists index(:messages, :updated_at)
+    create_if_not_exists index(:messages, :group_id)
 
-    create_if_not_exists index(:search_messages, :contact_id)
+    ## Removing the indexes which are not in use.
+    drop_if_exists index(:messages, :sender_id)
+    drop_if_exists index(:messages, :receiver_id)
+    drop_if_exists index(:messages, [:organization_id, :contact_id])
 
     sql = [
-      "CREATE INDEX IF NOT EXISTS search_messages_name_idx_gin ON search_messages USING gin (name gin_trgm_ops)",
-      "CREATE INDEX IF NOT EXISTS search_messages_phone_idx_gin ON search_messages USING gin (phone gin_trgm_ops)",
+      "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
       "CREATE INDEX IF NOT EXISTS messages_body_idx_gin ON messages USING gin (body gin_trgm_ops)"
     ]
 
