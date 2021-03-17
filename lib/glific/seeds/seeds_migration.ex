@@ -40,6 +40,7 @@ defmodule Glific.Seeds.SeedsMigration do
       :simulator -> add_simulators(organizations)
       :optin -> optin_data(organizations)
       :collection -> seed_collections(organizations)
+      :fix_message_number -> fix_message_number(organizations)
       :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
     end
   end
@@ -272,4 +273,34 @@ defmodule Glific.Seeds.SeedsMigration do
 
     :ok
   end
+
+  @doc """
+  Reset message number for a list of organizations or for a org_id
+  """
+  @spec fix_message_number(list | integer()) :: :ok
+  def fix_message_number(org_id) when is_integer(org_id) do
+    query = """
+    UPDATE
+      messages m
+    SET
+      message_number = m2.row_num
+    FROM (
+      SELECT
+        id,
+        contact_id,
+        ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
+      FROM
+        messages m2
+      WHERE
+        m2.organization_id = #{org_id} ) m2
+    WHERE
+      m.organization_id = #{org_id} AND m.id = m2.id;
+    """
+
+    Repo.query!(query)
+    :ok
+  end
+
+  def fix_message_number(organizations) when is_list(organizations),
+    do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
 end

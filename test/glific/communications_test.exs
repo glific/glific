@@ -118,7 +118,6 @@ defmodule Glific.CommunicationsTest do
     test "send message will remove the Not replied tag from messages",
          %{organization_id: _organization_id, global_schema: global_schema} = attrs do
       message_1 = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
-      assert message_1.is_replied == false
 
       message_2 =
         Fixtures.message_fixture(
@@ -138,8 +137,8 @@ defmodule Glific.CommunicationsTest do
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
 
-      message_1 = Messages.get_message!(message_1.id)
-      assert message_1.is_replied == true
+      contact_1 = Contacts.get_contact!(message_1.contact_id)
+      assert contact_1.is_org_replied == true
     end
 
     test "if response status code is not 200 handle the error response",

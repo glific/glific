@@ -633,6 +633,8 @@ defmodule Glific.Messages do
     |> Repo.all()
     |> make_conversations()
     |> add_empty_conversations(args)
+
+    # |> adjust_message_numbers()
   end
 
   defp do_list_conversations(query, _args, true = _count) do
@@ -647,7 +649,7 @@ defmodule Glific.Messages do
   defp add_order_by(query, ids) do
     if length(ids) == 1,
       # if messages for one contact, order by message number
-      do: query |> order_by([m], asc: m.message_number),
+      do: query |> order_by([m], desc: m.message_number),
       # else order by most recent messages
       else: query |> order_by([m], desc: m.inserted_at)
   end
@@ -686,8 +688,7 @@ defmodule Glific.Messages do
       Enum.reduce(
         messages,
         {%{}, %{}, []},
-        fn m, acc ->
-          {conversations, processed_contacts, contact_order} = acc
+        fn m, {conversations, processed_contacts, contact_order} ->
           conversations = add(m, conversations)
 
           # We need to do this to maintain the sort order when returning
@@ -696,8 +697,11 @@ defmodule Glific.Messages do
           if Map.has_key?(processed_contacts, m.contact_id) do
             {conversations, processed_contacts, contact_order}
           else
-            {conversations, Map.put(processed_contacts, m.contact_id, true),
-             [m.contact | contact_order]}
+            {
+              conversations,
+              Map.put(processed_contacts, m.contact_id, true),
+              [m.contact | contact_order]
+            }
           end
         end
       )
@@ -985,11 +989,9 @@ defmodule Glific.Messages do
   Mark that the user has read all messages sent by a given contact
   """
   @spec mark_contact_messages_as_read(non_neg_integer, non_neg_integer) :: nil
-  def mark_contact_messages_as_read(contact_id, organization_id) do
-    Message
-    |> where([m], m.contact_id == ^contact_id)
-    |> where([m], m.organization_id == ^organization_id)
-    |> where([m], m.is_read == false)
-    |> Repo.update_all(set: [is_read: true])
+  def mark_contact_messages_as_read(contact_id, _organization_id) do
+    Contact
+    |> where([c], c.id == ^contact_id)
+    |> Repo.update_all(set: [is_org_read: true])
   end
 end

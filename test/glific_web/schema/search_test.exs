@@ -316,8 +316,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) ==
              to_string(sender.id)
 
-    is_replied =
-      get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "is_replied"])
+    is_replied = get_in(query_data, [:data, "search", Access.at(0), "contact", "isOrgReplied"])
 
     assert is_replied == false
   end
@@ -340,8 +339,7 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) != nil
 
-    is_replied =
-      get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "is_replied"])
+    is_replied = get_in(query_data, [:data, "search", Access.at(0), "contact", "isOrgReplied"])
 
     assert is_replied == false
   end
