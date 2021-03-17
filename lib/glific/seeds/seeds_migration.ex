@@ -42,7 +42,6 @@ defmodule Glific.Seeds.SeedsMigration do
       :collection -> seed_collections(organizations)
       :fix_message_number -> fix_message_number(organizations)
       :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
-
     end
   end
 
@@ -275,25 +274,33 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
-  @spec do_fix_message_number(non_neg_integer) :: :ok
-  def do_fix_message_number(org_id) do
-    query  = "UPDATE messages m SET message_number = m2.row_num  FROM (  SELECT id, contact_id, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at asc) as row_num from messages m2 where m2.organization_id = #{org_id} ) m2 where m.organization_id = #{org_id} and m.id = m2.id;"
-    Repo.query!(query)
-    :ok
-  end
-
   @doc """
-    Reset message number for a list of organizations or for a org_id
+  Reset message number for a list of organizations or for a org_id
   """
   @spec fix_message_number(list | integer()) :: :ok
   def fix_message_number(org_id) when is_integer(org_id) do
-    query  = "UPDATE messages m SET message_number = m2.row_num  FROM (  SELECT id, contact_id, ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at asc) as row_num from messages m2 where m2.organization_id = #{org_id} ) m2 where m.organization_id = #{org_id} and m.id = m2.id;"
+    query = """
+    UPDATE
+      messages m
+    SET
+      message_number = m2.row_num
+    FROM (
+      SELECT
+        id,
+        contact_id,
+        ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
+      FROM
+        messages m2
+      WHERE
+        m2.organization_id = #{org_id} ) m2
+    WHERE
+      m.organization_id = #{org_id} AND m.id = m2.id;
+    """
+
     Repo.query!(query)
     :ok
   end
 
-  @spec fix_message_number(list) :: :ok
-  def fix_message_number(organizations),
-  do: Enum.each(organizations, fn org -> do_fix_message_number(org.id) end)
-
+  def fix_message_number(organizations) when is_list(organizations),
+    do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
 end
