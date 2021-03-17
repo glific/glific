@@ -10,7 +10,6 @@ defmodule Glific.Searches.CollectionCount do
   alias Glific.{
     Communications,
     Contacts.Contact,
-    Messages.Message,
     Partners,
     Repo
   }
@@ -71,8 +70,8 @@ defmodule Glific.Searches.CollectionCount do
     |> unread(query)
     |> not_replied(query)
     |> not_responded(query)
-    |> optin(org_id_list)
-    |> optout(org_id_list)
+    |> optin(query)
+    |> optout(query)
     |> publish_data()
   end
 
@@ -110,13 +109,12 @@ defmodule Glific.Searches.CollectionCount do
 
   @spec query(list()) :: Ecto.Query.t()
   defp query(org_id_list) do
-    Message
-    |> join(:inner, [m], c in Contact, on: m.contact_id == c.id)
-    |> add_orgs(org_id_list)
+    Contact
     # block messages sent to group
-    |> where([m, c], c.status != :blocked and m.receiver_id != m.sender_id)
-    |> group_by([_m, c], c.organization_id)
-    |> select([_m, c], [count(c.id, :distinct), c.organization_id])
+    |> where([c], c.status != :blocked)
+    |> add_orgs(org_id_list)
+    |> group_by([c], c.organization_id)
+    |> select([c], [count(c.id), c.organization_id])
   end
 
   @spec make_result(Ecto.Query.t(), map(), String.t()) :: map()
@@ -132,52 +130,44 @@ defmodule Glific.Searches.CollectionCount do
   @spec all(map(), Ecto.Query.t()) :: map()
   defp all(result, query) do
     query
+    |> where([c], c.last_message_number > -1)
     |> make_result(result, "All")
   end
 
   @spec unread(map(), Ecto.Query.t()) :: map()
   defp unread(result, query) do
     query
-    |> where([m], m.is_read == false)
-    |> where([m], m.flow == :inbound)
+    |> where([c], c.last_message_number > -1)
+    |> where([c], c.is_org_read == false)
     |> make_result(result, "Unread")
   end
 
   @spec not_replied(map(), Ecto.Query.t()) :: map()
   defp not_replied(result, query) do
     query
-    |> where([m], m.is_replied == false)
-    |> where([m], m.flow == :inbound)
+    |> where([c], c.last_message_number > -1)
+    |> where([c], c.is_org_replied == false)
     |> make_result(result, "Not replied")
   end
 
   @spec not_responded(map(), Ecto.Query.t()) :: map()
   defp not_responded(result, query) do
     query
-    |> where([m], m.is_replied == false)
-    |> where([m], m.flow == :outbound)
+    |> where([c], c.last_message_number > -1)
+    |> where([c], c.is_contact_replied == false)
     |> make_result(result, "Not Responded")
   end
 
-  @spec contact_query(list()) :: Ecto.Query.t()
-  defp contact_query(org_id_list) do
-    Contact
-    |> where([c], c.status != :blocked)
-    |> group_by([c], c.organization_id)
-    |> select([c], [count(c.id), c.organization_id])
-    |> add_orgs(org_id_list)
-  end
-
-  @spec optin(map(), list()) :: map()
-  defp optin(result, org_id_list) do
-    contact_query(org_id_list)
+  @spec optin(map(), Ecto.Query.t()) :: map()
+  defp optin(result, query) do
+    query
     |> where([c], c.optin_status == true)
     |> make_result(result, "Optin")
   end
 
-  @spec optout(map(), list()) :: map()
-  defp optout(result, org_id_list) do
-    contact_query(org_id_list)
+  @spec optout(map(), Ecto.Query.t()) :: map()
+  defp optout(result, query) do
+    query
     |> where([c], not is_nil(c.optout_time))
     |> make_result(result, "Optout")
   end

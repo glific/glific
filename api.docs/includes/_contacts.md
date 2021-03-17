@@ -806,6 +806,26 @@ Type | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>isOrgRead</strong></td>
+<td valign="top"><a href="#datetime">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isOrgReplied</strong></td>
+<td valign="top"><a href="#datetime">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isContactReplied</strong></td>
+<td valign="top"><a href="#datetime">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>LastMessageNumber</strong></td>
+<td valign="top"><a href="#datetime">Integer</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>fields</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>

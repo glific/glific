@@ -191,18 +191,11 @@ defmodule Glific.Searches do
     |> order_by([c], desc: c.last_communication_at)
   end
 
-  @spec direction(String.t()) :: atom()
-  defp direction("Not replied"), do: :inbound
-  defp direction("Not Responded"), do: :outbound
-
   # codebeat:disable[ABC]
   @spec filter_status_contacts_of_organization(String.t(), map()) :: Ecto.Query.t()
   defp filter_status_contacts_of_organization("Unread", opts) do
     status_query(opts)
-    |> join(:inner, [c: c], m in Message,
-      as: :m,
-      on: c.id == m.contact_id and m.is_read == false
-    )
+    |> where([c], c.is_org_read == false)
   end
 
   defp filter_status_contacts_of_organization("Optout", opts) do
@@ -217,13 +210,14 @@ defmodule Glific.Searches do
     |> where([c], c.optin_status == true)
   end
 
-  defp filter_status_contacts_of_organization(status, opts)
-       when status in ["Not replied", "Not Responded"] do
+  defp filter_status_contacts_of_organization("Not replied", opts) do
     status_query(opts)
-    |> join(:inner, [c: c], m in Message,
-      as: :m,
-      on: c.id == m.contact_id and m.flow == ^direction(status) and m.is_replied == false
-    )
+    |> where([c], c.is_org_replied == false)
+  end
+
+  defp filter_status_contacts_of_organization("Not Responded", opts) do
+    status_query(opts)
+    |> where([c], c.is_contact_replied == false)
   end
 
   # codebeat:enable[ABC]
@@ -270,7 +264,7 @@ defmodule Glific.Searches do
     query
     |> join(:left, [c: c], m in Message,
       as: :m,
-      on: c.id == m.contact_id and m.message_number == 0
+      on: c.id == m.contact_id and m.message_number == c.last_message_number
     )
     |> where([c: c], c.id != ^organization_contact_id)
     |> where([c: c], c.status != :blocked)
