@@ -287,7 +287,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       latitude: if(!is_nil(row.location), do: row.location.latitude)
     }
 
-  @spec make_job(list(), atom(), non_neg_integer, non_neg_integer) :: :ok
+  @spec make_job(list(), atom(), non_neg_integer, map()) :: :ok
   defp make_job(data, table, organization_id, %{action: :insert} = attrs)
        when data in [%{}, nil, []] do
     table = Atom.to_string(table)
