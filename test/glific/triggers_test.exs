@@ -40,6 +40,7 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
 
+    @tag :pending
     test "execute_triggers/2 should execute a trigger and capture log", attrs do
       start_at = Timex.shift(DateTime.utc_now(), days: -1)
       end_date = Timex.shift(DateTime.utc_now(), days: 1)

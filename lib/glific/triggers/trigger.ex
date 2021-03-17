@@ -152,6 +152,12 @@ defmodule Glific.Triggers.Trigger do
   end
 
   @doc """
+  get the triggger
+  """
+  @spec get_trigger!(integer) :: Trigger.t()
+  def get_trigger!(id), do: Repo.get!(Trigger, id)
+
+  @doc """
   Returns the list of triggers filtered by args
   """
   @spec list_triggers(map()) :: [Trigger.t()]
