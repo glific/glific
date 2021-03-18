@@ -4,7 +4,7 @@ import Config
 config :glific, Glific.Repo,
   username: "postgres",
   password: "postgres",
-  database: "glific_dev",
+  database: "glific_prod_dump",
   hostname: "localhost",
   # log: false,
   show_sensitive_data_on_connection_error: true,

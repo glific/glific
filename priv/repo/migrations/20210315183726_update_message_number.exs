@@ -30,7 +30,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
           SET last_communication_at = now
           WHERE id = NEW.organization_id;
 
-        IF(NEW.group_id > 0) THEN
+        IF(NEW.group_id > 0 AND New.sender_id = New.receiver_id) THEN
           SELECT last_message_number INTO var_message_number FROM groups WHERE id = NEW.group_id LIMIT 1;
 
           UPDATE messages
