@@ -91,7 +91,7 @@ defmodule Glific.Contacts.Contact do
     field :optin_method, :string
     field :optin_message_id, :string
 
-    field :last_message_number, :integer, default: -1
+    field :last_message_number, :integer, default: 0
 
     field :optout_time, :utc_datetime
     field :last_message_at, :utc_datetime
