@@ -511,7 +511,7 @@ defmodule Glific.Bigquery do
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
         Logger.info("merge #{table} table on bigquery for org_id: #{organization_id}")
-        sql = generate_merge_query(table, credentials)
+        sql = generate_merge_query(table, credentials, organization_id)
 
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
           body: %{query: sql, useLegacySql: false}
@@ -523,8 +523,8 @@ defmodule Glific.Bigquery do
     end
   end
 
-  @spec generate_merge_query(String.t(), map()) :: String.t()
-  defp generate_merge_query("contacts", credentials),
+  @spec generate_merge_query(String.t(), map(), non_neg_integer) :: String.t()
+  defp generate_merge_query("contacts", credentials, organization_id),
     do:
       [
         "provider_status",
@@ -540,29 +540,26 @@ defmodule Glific.Bigquery do
         "tags"
       ]
       |> format_update_fields
-      |> do_generate_merge_query("contacts_delta", "contacts", credentials)
+      |> do_generate_merge_query("contacts_delta", "contacts", credentials, organization_id)
 
-  defp generate_merge_query("messages", credentials),
+  defp generate_merge_query("messages", credentials, organization_id),
     do:
-      ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
+      ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid", "updated_at"]
       |> format_update_fields
-      |> do_generate_merge_query("messages_delta", "messages", credentials)
+      |> do_generate_merge_query("messages_delta", "messages", credentials, organization_id)
 
-  defp generate_merge_query("flow_results", credentials),
+  defp generate_merge_query("flow_results", credentials, organization_id),
     do:
-      ["results"]
+      ["results", "updated_at"]
       |> format_update_fields
-      |> do_generate_merge_query("flow_results_delta", "flow_results", credentials)
+      |> do_generate_merge_query("flow_results_delta", "flow_results", credentials, organization_id)
 
-  defp generate_merge_query(_, _), do: :ok
+  defp generate_merge_query(_, _, _), do: :ok
 
-  @spec do_generate_merge_query(String.t(), String.t(), String.t(), map()) :: String.t()
-  defp do_generate_merge_query(fileds_to_update, source, target, credentials) do
-    "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
-      credentials.dataset_id
-    }.#{source}` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{
-      fileds_to_update
-    };"
+  @spec do_generate_merge_query(String.t(), String.t(), String.t(), map(), non_neg_integer) :: String.t()
+  defp do_generate_merge_query(fileds_to_update, source, target, credentials, organization_id) do
+    timezone = Partners.organization(organization_id).timezone
+    "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `#{credentials.dataset_id }.#{source}` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{timezone}'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{fileds_to_update};"
   end
 
   @spec format_update_fields(list()) :: String.t()
