@@ -51,3 +51,5 @@ npm-debug.log
 
 # don't commit mnesia files
 /Mnesia*
+
+/test/support/fixture.csv
