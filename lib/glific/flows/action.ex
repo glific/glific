@@ -522,16 +522,21 @@ defmodule Glific.Flows.Action do
   @spec process_attachments(list()) :: map()
   defp process_attachments(nil), do: %{}
 
+  ## we will remvoe this once we have a fix it form the flow editor
   defp process_attachments(attachment_list) do
     attachment_list
-    |> Enum.reduce(
-      %{},
-      fn attachment, acc ->
-        case String.split(attachment, ":", parts: 2) do
-          [type, url] -> Map.put(acc, type, url)
-          _ -> acc
-        end
-      end
-    )
+    |> Enum.reduce(%{}, fn attachment, acc -> do_process_attachment(attachment, acc) end)
+  end
+
+  @spec do_process_attachment(String.t(), map()) :: map()
+  defp do_process_attachment(attachment, acc) do
+    case String.split(attachment, ":", parts: 2) do
+      [type, url] ->
+        type = if type == "application", do: "document", else: type
+        Map.put(acc, type, url)
+
+      _ ->
+        acc
+    end
   end
 end

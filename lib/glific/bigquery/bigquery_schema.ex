@@ -514,6 +514,12 @@ defmodule Glific.BigquerySchema do
         name: "latitude",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
