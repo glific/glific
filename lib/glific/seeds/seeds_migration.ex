@@ -298,7 +298,7 @@ defmodule Glific.Seeds.SeedsMigration do
     """
 
     # set a large timeout for this
-    Repo.query!(query, timeout: 300_000)
+    Repo.query!(query, [], timeout: 300_000)
 
     set_last_message_number_for_contacts(org_id)
     set_last_message_number_for_collection(org_id)
