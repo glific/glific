@@ -297,7 +297,8 @@ defmodule Glific.Seeds.SeedsMigration do
       m.organization_id = #{org_id} AND m.id = m2.id;
     """
 
-    Repo.query!(query)
+    # set a large timeout for this
+    Repo.query!(query, timeout: 300_000)
 
     set_last_message_number_for_contacts(org_id)
     set_last_message_number_for_collection(org_id)
