@@ -119,17 +119,23 @@ defmodule Glific.BigqueryTest do
 
   test "generate_merge_query/2 create merge query for messages", attrs do
     credentials = %{dataset_id: "test_dataset"}
-    assert @messages_query == Bigquery.generate_merge_query("messages", credentials, attrs.organization_id)
+
+    assert @messages_query ==
+             Bigquery.generate_merge_query("messages", credentials, attrs.organization_id)
   end
 
   test "generate_merge_query/2 create merge query for contacts", attrs do
     credentials = %{dataset_id: "test_dataset"}
-    assert @contact_query == Bigquery.generate_merge_query("contacts", credentials, attrs.organization_id)
+
+    assert @contact_query ==
+             Bigquery.generate_merge_query("contacts", credentials, attrs.organization_id)
   end
 
   test "generate_merge_query/2 create merge query for flow_results", attrs do
     credentials = %{dataset_id: "test_dataset"}
-    assert @flow_results_query == Bigquery.generate_merge_query("flow_results", credentials, attrs.organization_id)
+
+    assert @flow_results_query ==
+             Bigquery.generate_merge_query("flow_results", credentials, attrs.organization_id)
   end
 
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do

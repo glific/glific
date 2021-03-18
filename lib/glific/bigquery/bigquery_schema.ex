@@ -520,7 +520,7 @@ defmodule Glific.BigquerySchema do
         name: "updated_at",
         type: "DATETIME",
         mode: "NULLABLE"
-      },
+      }
     ]
   end
 
