@@ -528,7 +528,10 @@ defmodule Glific.Flows.Action do
       %{},
       fn attachment, acc ->
         case String.split(attachment, ":", parts: 2) do
-          [type, url] -> Map.put(acc, type, url)
+          [type, url] ->
+            ## we will remvoe this once we have a fix it form the flow editor
+            type = if type == "application", do: "document", else: type
+            Map.put(acc, type, url)
           _ -> acc
         end
       end
