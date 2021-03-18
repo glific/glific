@@ -326,7 +326,7 @@ defmodule Glific.Seeds.SeedsMigration do
         organization_id = #{org_id};
     """
 
-    Repo.query!(query, timeout: 300_000)
+    Repo.query!(query, [], timeout: 300_000)
     :ok
   end
 
@@ -347,7 +347,7 @@ defmodule Glific.Seeds.SeedsMigration do
         organization_id = #{org_id};
     """
 
-    Repo.query!(query, timeout: 300_000)
+    Repo.query!(query, [], timeout: 300_000)
     :ok
   end
 end
