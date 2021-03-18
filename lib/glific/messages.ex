@@ -874,10 +874,17 @@ defmodule Glific.Messages do
   defp reset_contact_fields(contact) do
     simulator = Contacts.is_simulator_contact?(contact.phone)
 
+    values = %{
+      last_message_number: 0,
+      is_org_read: true,
+      is_org_replied: true,
+      is_contact_replied: true
+    }
+
     values =
       if simulator,
-        do: %{last_message_number: 0, fields: %{}},
-        else: %{last_message_number: 0}
+        do: values |> Map.put(:fields, %{}),
+        else: values
 
     Contacts.update_contact(contact, values)
 
