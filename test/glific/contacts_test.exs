@@ -24,6 +24,17 @@ defmodule Glific.ContactsTest do
     :ok
   end
 
+  defp get_tmp_path(name \\ "fixture.csv") do
+    System.tmp_dir!()
+    |> Path.join(name)
+  end
+
+  defp get_tmp_file(name \\ "fixture.csv") do
+    name
+    |> get_tmp_path()
+    |> File.open!([:write, :utf8])
+  end
+
   describe "contacts" do
     @valid_attrs %{
       name: "some name",
@@ -224,8 +235,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file_path = "./test/support/fixture.csv"
-      file = File.open!(file_path, [:write, :utf8])
+      file = get_tmp_file()
 
       [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
@@ -234,7 +244,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: file_path)
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
@@ -291,8 +301,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file_path = "./test/support/fixture.csv"
-      file = File.open!(file_path, [:write, :utf8])
+      file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
       [~w(name phone Language opt_in), ~w(updated #{contact.phone} english 2021-03-09)]
@@ -302,7 +311,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: file_path)
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -363,8 +372,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file_path = "./test/support/fixture.csv"
-      file = File.open!(file_path, [:write, :utf8])
+      file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
       [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09 1)]
@@ -374,7 +382,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: file_path)
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
@@ -388,8 +396,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file_path = "./test/support/fixture.csv"
-      file = File.open!(file_path, [:write, :utf8])
+      file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       Contacts.delete_contact(contact)
 
@@ -400,7 +407,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: file_path)
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
@@ -421,8 +428,7 @@ defmodule Glific.ContactsTest do
           [optin_contact: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
         }
       ]) do
-        file_path = "./test/support/fixture.csv"
-        file = File.open!(file_path, [:write, :utf8])
+        file = get_tmp_file()
 
         [~w(name phone Language opt_in)]
         |> Enum.concat([["updated", "9989329297", "english", ""]])
@@ -432,7 +438,7 @@ defmodule Glific.ContactsTest do
         [organization | _] = Partners.list_organizations()
         [group | _] = Groups.list_groups(%{filter: %{}})
 
-        Import.import_contacts(organization.id, group.label, file_path: file_path)
+        Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
         assert count == 1
@@ -448,8 +454,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file_path = "./test/support/fixture.csv"
-      file = File.open!(file_path, [:write, :utf8])
+      file = get_tmp_file()
 
       [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
@@ -457,7 +462,7 @@ defmodule Glific.ContactsTest do
 
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      assert {:error, _} = Import.import_contacts(999, group.label, file_path: file_path)
+      assert {:error, _} = Import.import_contacts(999, group.label, file_path: get_tmp_path())
     end
 
     test "insert_or_update_contact_data/3 returns an error if insertion fails" do
@@ -470,15 +475,14 @@ defmodule Glific.ContactsTest do
 
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      file_path = "./test/support/fixture.csv"
-      file = File.open!(file_path, [:write, :utf8])
+      file = get_tmp_file()
 
       [~w(name phone Language opt_in), ~w(test phone english 2021-03-09)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
       {:error, message, _error} =
-        Import.import_contacts(1, group.label, file_path: "./test/support/fixture.csv")
+        Import.import_contacts(1, group.label, file_path: get_tmp_path())
 
       assert "All contacts could not be added" == message
     end
