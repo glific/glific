@@ -859,34 +859,32 @@ defmodule Glific.Messages do
 
     FlowContext.mark_flows_complete(contact.id)
 
-    query =
-      Message
-      |> where([m], m.contact_id == ^contact.id)
-      |> where([m], m.organization_id == ^contact.organization_id)
-      |> check_simulator(contact, contact.phone)
+    Message
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
 
-    Repo.delete_all(query)
-
+    reset_contact_fields(contact)
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     :ok
   end
 
-  @spec check_simulator(Ecto.Query.t(), Contact.t(), String.t()) :: Ecto.Query.t()
-  defp check_simulator(query, contact, phone) do
-    if Contacts.is_simulator_contact?(phone) do
-      Contacts.update_contact(
-        contact,
-        %{fields: %{}}
-      )
+  @spec reset_contact_fields(Contact.t()) :: nil
+  defp reset_contact_fields(contact) do
+    simulator = Contacts.is_simulator_contact?(contact.phone)
 
-      with {:ok, last_message} <- send_default_message(contact) do
-        query
-        |> where([m], m.id != ^last_message.id)
-      end
-    else
-      query
-    end
+    values =
+      if simulator,
+        do: %{last_message_number: 0, fields: %{}},
+        else: %{last_message_number: 0}
+
+    Contacts.update_contact(contact, values)
+
+    if simulator,
+      do: {:ok, _last_message} = send_default_message(contact)
+
+    nil
   end
 
   @spec send_default_message(Contact.t(), String.t()) ::
