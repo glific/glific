@@ -47,11 +47,13 @@ defmodule Glific.Conversations do
       # this is for one contact, so we assume offset is message number
       # and we want messages from this message and older
       start = max(0, offset - limit)
+
       query
       |> where([m: m, c: c], m.message_number >= ^start)
       |> where([m: m, c: c], m.message_number <= ^offset)
     else
       start = offset + limit
+
       query
       |> where([m: m, c: c], m.message_number >= c.last_message_number - ^start)
       |> where([m: m, c: c], m.message_number <= c.last_message_number - ^offset)
