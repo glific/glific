@@ -37,26 +37,35 @@ defmodule Glific.Conversations do
     query
     |> join(:inner, [m: m], c in Contact, as: :c, on: c.id == m.contact_id)
     |> where([m: m], m.contact_id in ^ids and m.receiver_id != m.sender_id)
-    |> add_special_offset(ids, message_limit, message_offset)
+    |> add_special_offset(length(ids), message_limit, message_offset)
     |> select([m: m], m.id)
     |> Repo.all()
   end
 
-  defp add_special_offset(query, ids, limit, offset) do
-    if length(ids) == 1 do
-      # this is for one contact, so we assume offset is message number
-      # and we want messages from this message and older
-      start = max(0, offset - limit)
+  @spec add_special_offset(Ecto.Query.t(), integer, integer, integer) :: Ecto.Query.t()
+  defp add_special_offset(query, _, limit, 0) do
+    # this is for the latest messages, irrespective whether its for one or multiple contact
+    query
+    |> where([m: m, c: c], m.message_number <= c.last_message_number)
+    |> where([m: m, c: c], m.message_number > c.last_message_number - ^limit)
+  end
 
-      query
-      |> where([m: m, c: c], m.message_number >= ^start)
-      |> where([m: m, c: c], m.message_number <= ^offset)
-    else
-      start = offset + limit
+  defp add_special_offset(query, 1, limit, offset) do
+    # this is for one contact, so we assume offset is message number
+    # and we want messages from this message and older
+    final = offset + limit
 
-      query
-      |> where([m: m, c: c], m.message_number >= c.last_message_number - ^start)
-      |> where([m: m, c: c], m.message_number <= c.last_message_number - ^offset)
-    end
+    query
+    |> where([m: m, c: c], m.message_number >= ^offset)
+    |> where([m: m, c: c], m.message_number <= ^final)
+  end
+
+  defp add_special_offset(query, _, limit, offset) do
+    # this is for multiple contacts
+    start = offset + limit
+
+    query
+    |> where([m: m, c: c], m.message_number >= c.last_message_number - ^start)
+    |> where([m: m, c: c], m.message_number <= c.last_message_number - ^offset)
   end
 end
