@@ -298,9 +298,29 @@ defmodule Glific.Seeds.SeedsMigration do
     """
 
     Repo.query!(query)
+
+    contact_last_message_number = """
+    UPDATE
+      contacts c
+    SET
+      last_message_number = (
+        SELECT
+          max(message_number)
+        FROM
+          messages
+        WHERE
+          contact_id = c.id)
+      WHERE
+        organization_id = #{org_id};
+    """
+
+    Repo.query!(contact_last_message_number)
+
     :ok
   end
 
   def fix_message_number(organizations) when is_list(organizations),
     do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
+
+
 end
