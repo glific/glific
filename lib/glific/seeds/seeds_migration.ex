@@ -299,13 +299,24 @@ defmodule Glific.Seeds.SeedsMigration do
 
     Repo.query!(query)
 
-    contact_last_message_number = """
+    set_last_message_number_for_contacts(org_id)
+    set_last_message_number_for_collection(org_id)
+
+    :ok
+  end
+
+  def fix_message_number(organizations) when is_list(organizations),
+    do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
+
+  @spec set_last_message_number_for_contacts(integer()) :: :ok
+  defp set_last_message_number_for_contacts(org_id) do
+    query = """
     UPDATE
       contacts c
     SET
       last_message_number = (
         SELECT
-          max(message_number)
+          max(message_number) as message_number
         FROM
           messages
         WHERE
@@ -314,11 +325,28 @@ defmodule Glific.Seeds.SeedsMigration do
         organization_id = #{org_id};
     """
 
-    Repo.query!(contact_last_message_number)
-
+    Repo.query!(query)
     :ok
   end
 
-  def fix_message_number(organizations) when is_list(organizations),
-    do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
+  @spec set_last_message_number_for_collection(integer()) :: :ok
+  defp set_last_message_number_for_collection(org_id) do
+    query = """
+    UPDATE
+      groups g
+    SET
+      last_message_number = (
+        SELECT
+          max(message_number) as message_number
+        FROM
+          messages
+        WHERE
+          group_id = g.id and messages.receiver_id = messages.sender_id)
+      WHERE
+        organization_id = #{org_id};
+    """
+
+    Repo.query!(query)
+    :ok
+  end
 end
