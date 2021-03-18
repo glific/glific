@@ -110,8 +110,8 @@ defmodule Glific.Messages.Message do
     field :errors, :map, default: %{}
     field :send_at, :utc_datetime
     field :sent_at, :utc_datetime
-    field :message_number, :integer, default: 0
-    field :session_uuid, Ecto.UUID
+    field :message_number, :integer, default: 0, read_after_writes: true
+    field :session_uuid, Ecto.UUID, read_after_writes: true
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact

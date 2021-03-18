@@ -130,14 +130,14 @@ defmodule Glific.Searches.CollectionCount do
   @spec all(map(), Ecto.Query.t()) :: map()
   defp all(result, query) do
     query
-    |> where([c], c.last_message_number > -1)
+    |> where([c], c.last_message_number > 0)
     |> make_result(result, "All")
   end
 
   @spec unread(map(), Ecto.Query.t()) :: map()
   defp unread(result, query) do
     query
-    |> where([c], c.last_message_number > -1)
+    |> where([c], c.last_message_number > 0)
     |> where([c], c.is_org_read == false)
     |> make_result(result, "Unread")
   end
@@ -145,7 +145,7 @@ defmodule Glific.Searches.CollectionCount do
   @spec not_replied(map(), Ecto.Query.t()) :: map()
   defp not_replied(result, query) do
     query
-    |> where([c], c.last_message_number > -1)
+    |> where([c], c.last_message_number > 0)
     |> where([c], c.is_org_replied == false)
     |> make_result(result, "Not replied")
   end
@@ -153,7 +153,7 @@ defmodule Glific.Searches.CollectionCount do
   @spec not_responded(map(), Ecto.Query.t()) :: map()
   defp not_responded(result, query) do
     query
-    |> where([c], c.last_message_number > -1)
+    |> where([c], c.last_message_number > 0)
     |> where([c], c.is_contact_replied == false)
     |> make_result(result, "Not Responded")
   end

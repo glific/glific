@@ -19,7 +19,7 @@ defmodule Glific.Repo.Migrations.MessageNumberStatus do
         comment: "Has the contact replied to the messages sent by the system"
 
       add :last_message_number, :integer,
-        default: -1,
+        default: 0,
         comment: "The max message number recd or sent by this contact"
     end
 

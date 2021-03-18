@@ -30,12 +30,10 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
           SET last_communication_at = now
           WHERE id = NEW.organization_id;
 
-        IF(NEW.group_id > 0) THEN
+        IF(NEW.group_id > 0 AND NEW.sender_id = NEW.receiver_id) THEN
           SELECT last_message_number INTO var_message_number FROM groups WHERE id = NEW.group_id LIMIT 1;
 
-          UPDATE messages
-            SET message_number = var_message_number + 1
-            WHERE id = NEW.id;
+          NEW.message_number = var_message_number + 1;
 
           UPDATE groups
             SET
@@ -74,11 +72,8 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 is_contact_replied = true
               WHERE id = NEW.contact_id;
 
-            UPDATE messages
-              SET
-                message_number = var_message_number + 1,
-                session_uuid = session_uuid_value
-              WHERE id = NEW.id;
+              NEW.message_number = var_message_number + 1;
+              NEW.session_uuid = session_uuid_value;
           ELSE
             UPDATE contacts
               SET
@@ -88,9 +83,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 is_contact_replied = false
               WHERE id = NEW.contact_id;
 
-            UPDATE messages
-              SET message_number = var_message_number + 1
-              WHERE id = NEW.id;
+            NEW.message_number = var_message_number + 1;
           END IF;
 
         END IF;
@@ -107,7 +100,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
 
     execute """
     CREATE TRIGGER update_message_number_trigger
-    AFTER INSERT
+    BEFORE INSERT
     ON messages
     FOR EACH ROW
     EXECUTE PROCEDURE update_message_number();
