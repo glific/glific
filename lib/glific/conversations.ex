@@ -42,16 +42,19 @@ defmodule Glific.Conversations do
     |> Repo.all()
   end
 
+  @doc """
+  Adding special offset to calculate recent message based on message number
+  """
   @spec add_special_offset(Ecto.Query.t(), integer, integer, integer) :: Ecto.Query.t()
-  defp add_special_offset(query, _, limit, 0) do
-    # this is for the latest messages, irrespective whether its for one or multiple contact
+  def add_special_offset(query, _, limit, 0) do
+    # this is for the latest messages, irrespective whether its for one or multiple contact/group
     query
     |> where([m: m, c: c], m.message_number <= c.last_message_number)
     |> where([m: m, c: c], m.message_number > c.last_message_number - ^limit)
   end
 
-  defp add_special_offset(query, 1, limit, offset) do
-    # this is for one contact, so we assume offset is message number
+  def add_special_offset(query, 1, limit, offset) do
+    # this is for one contact/group, so we assume offset is message number
     # and we want messages from this message and older
     final = offset + limit
 
@@ -60,8 +63,8 @@ defmodule Glific.Conversations do
     |> where([m: m, c: c], m.message_number <= ^final)
   end
 
-  defp add_special_offset(query, _, limit, offset) do
-    # this is for multiple contacts
+  def add_special_offset(query, _, limit, offset) do
+    # this is for multiple contacts/groups
     start = offset + limit
 
     query
