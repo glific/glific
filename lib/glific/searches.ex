@@ -297,6 +297,12 @@ defmodule Glific.Searches do
 
   defp do_save_search(_args), do: nil
 
+  @spec group_ids(map()) :: list() | nil
+  defp group_ids(%{filter: %{include_groups: gids}}), do: gids
+  defp group_ids(%{filter: %{ids: gids}}), do: gids
+  defp group_ids(%{filter: %{id: gid}}), do: [gid]
+  defp group_ids(_), do: nil
+
   @doc """
   Full text search interface via Postgres
   """
@@ -307,7 +313,7 @@ defmodule Glific.Searches do
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
 
     ConversationsGroup.list_conversations(
-      get_in(args, [:filter, :include_groups]),
+      group_ids(args),
       args
     )
   end
