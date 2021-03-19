@@ -146,9 +146,10 @@ defmodule GlificWeb.Schema.TriggerTest do
     [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
-    start_date = "2020-12-30"
-    start_time = "13:15:19"
-
+    start_time = Timex.shift(DateTime.utc_now(), days: 1)
+    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    end_time = Timex.shift(DateTime.utc_now(), days: 5)
+    {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -157,8 +158,8 @@ defmodule GlificWeb.Schema.TriggerTest do
             "flowId" => flow.id,
             "groupId" => group.id,
             "startDate" => start_date,
-            "startTime" => start_time,
-            "endDate" => "2020-12-29",
+            "startTime" => "13:15:19",
+            "endDate" => end_date,
             "isActive" => false,
             "isRepeating" => false
           }
@@ -171,7 +172,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert flow_name == flow.name
 
     ## we are ignoring the enddate's time
-    assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == "2020-12-29"
+    assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == end_date
 
     ## start date should be converted into UTC
     {:ok, start_at, _} =
