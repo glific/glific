@@ -7,6 +7,7 @@ defmodule Glific.TriggersTest do
   alias Glific.{
     Fixtures,
     Messages,
+    Repo,
     Seeds.SeedsDev,
     Triggers,
     Triggers.Trigger
@@ -103,7 +104,7 @@ defmodule Glific.TriggersTest do
 
     test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined",
          attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 5)
 
       _trigger =
@@ -116,6 +117,17 @@ defmodule Glific.TriggersTest do
           last_trigger_at: start_at,
           end_date: end_date
         })
+
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      Repo.update_all(Trigger,
+        set: [
+          start_at: Timex.shift(time, days: -1),
+          last_trigger_at: Timex.shift(time, days: -1),
+          next_trigger_at: Timex.shift(time, days: -1)
+        ]
+      )
+      | Trigger.list_triggers(%{})
 
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)

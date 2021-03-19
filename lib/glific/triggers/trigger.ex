@@ -96,7 +96,7 @@ defmodule Glific.Triggers.Trigger do
   # @doc false
   #  if trigger start_at should always be greater than current time
   @spec validate_start_at(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_start_at(changeset) do
+  defp validate_start_at(%{changes: changes} = changeset) when not is_nil(changes.start_at) do
     start_at = changeset.changes[:start_at]
     time = DateTime.utc_now()
 
@@ -109,6 +109,8 @@ defmodule Glific.Triggers.Trigger do
           "Trigger start_at should always be greater than current time"
         )
   end
+
+  defp validate_start_at(changeset), do: changeset
 
   @spec start_at(map()) :: DateTime.t()
   defp start_at(%{start_at: nil} = attrs) do
