@@ -127,8 +127,6 @@ defmodule Glific.TriggersTest do
           next_trigger_at: Timex.shift(time, days: -1)
         ]
       )
-      | Trigger.list_triggers(%{})
-
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
