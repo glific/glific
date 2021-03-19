@@ -11,6 +11,7 @@ defmodule Glific.ConversationsGroup do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Conversations,
     Conversations.Conversation,
     Groups,
     Groups.Group,
@@ -60,11 +61,12 @@ defmodule Glific.ConversationsGroup do
 
   @spec get_messages(list(), map()) :: [Message.t()]
   defp get_messages(ids, %{limit: limit, offset: offset}) do
-    Message
-    |> where([m], m.receiver_id == m.sender_id)
-    |> where([m], m.group_id in ^ids)
-    |> where([m], m.message_number >= ^offset)
-    |> where([m], m.message_number < ^(limit + offset))
+    query = from m in Message, as: :m
+
+    query
+    |> join(:inner, [m: m], c in Group, as: :c, on: c.id == m.group_id)
+    |> where([m: m], m.group_id in ^ids and m.receiver_id == m.sender_id)
+    |> Conversations.add_special_offset(length(ids), limit, offset)
     |> order_by([m], desc: m.inserted_at)
     |> Repo.all()
   end
