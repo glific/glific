@@ -296,8 +296,8 @@ defmodule Glific.Seeds.SeedsMigration do
 
   @spec fix_message_number_query_for_contacts(integer()) :: String.t()
   defp fix_message_number_query_for_contacts(org_id) do
-   """
-   UPDATE
+    """
+    UPDATE
       messages m
       SET
         message_number = m2.row_num
