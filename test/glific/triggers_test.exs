@@ -26,8 +26,8 @@ defmodule Glific.TriggersTest do
 
   describe "triggers" do
     test "execute_triggers/2 should execute a trigger", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
-      end_date = Timex.shift(DateTime.utc_now(), days: 1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
+      end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
       _trigger =
         Fixtures.trigger_fixture(%{
@@ -35,7 +35,15 @@ defmodule Glific.TriggersTest do
           organization_id: attrs.organization_id,
           end_date: end_date
         })
+        time = DateTime.truncate(DateTime.utc_now(), :second)
 
+        Repo.update_all(Trigger,
+          set: [
+            start_at: Timex.shift(time, days: -1),
+            last_trigger_at: Timex.shift(time, days: -1),
+            next_trigger_at: Timex.shift(time, days: -1)
+          ]
+        )
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
@@ -65,7 +73,7 @@ defmodule Glific.TriggersTest do
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
       _trigger =
@@ -75,7 +83,15 @@ defmodule Glific.TriggersTest do
           last_trigger_at: start_at,
           end_date: end_date
         })
+        time = DateTime.truncate(DateTime.utc_now(), :second)
 
+        Repo.update_all(Trigger,
+          set: [
+            start_at: Timex.shift(time, days: -1),
+            last_trigger_at: nil,
+            next_trigger_at: Timex.shift(time, days: -1)
+          ]
+        )
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
