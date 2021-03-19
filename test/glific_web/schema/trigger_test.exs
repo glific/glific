@@ -150,6 +150,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
     end_time = Timex.shift(DateTime.utc_now(), days: 5)
     {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
+    start_time = "13:15:19"
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -158,7 +159,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "flowId" => flow.id,
             "groupId" => group.id,
             "startDate" => start_date,
-            "startTime" => "13:15:19",
+            "startTime" => start_time,
             "endDate" => end_date,
             "isActive" => false,
             "isRepeating" => false
@@ -191,13 +192,17 @@ defmodule GlificWeb.Schema.TriggerTest do
       Fixtures.trigger_fixture(attrs)
       |> Repo.preload(:flow)
 
+      start_time = Timex.shift(DateTime.utc_now(), days: 1)
+      {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+      start_time = "13:15:19"
+
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => trigger.id,
           "input" => %{
-            "startDate" => "2020-12-30",
-            "startTime" => "13:15:19",
+            "startDate" => start_date,
+            "startTime" => start_time,
             "isActive" => true,
             "flowId" => trigger.flow_id
           }
