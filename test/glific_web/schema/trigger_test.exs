@@ -77,7 +77,8 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers field should return following limit and offset", %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
+    time = Timex.shift(DateTime.utc_now(), days: 1)
+    valid_attrs_2 = Map.merge(attrs, %{start_at: time})
     _tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result =

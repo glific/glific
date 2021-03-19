@@ -597,10 +597,10 @@ defmodule Glific.Fixtures do
   def trigger_fixture(attrs) do
     valid_attrs = %{
       name: "test trigger",
-      end_date: ~U[2021-03-09 09:22:51Z],
+      end_date: DateTime.forward(5),
       is_active: true,
       is_repeating: false,
-      start_at: ~U[2021-03-08 08:22:51Z]
+      start_at: DateTime.forward(1)
     }
 
     [g1 | _] = Groups.list_groups(attrs)
