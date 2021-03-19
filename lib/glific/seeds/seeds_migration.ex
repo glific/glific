@@ -294,7 +294,6 @@ defmodule Glific.Seeds.SeedsMigration do
   def fix_message_number(organizations) when is_list(organizations),
     do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
 
-
   @spec fix_message_number_query_for_contacts(integer()) :: :ok
   defp fix_message_number_query_for_contacts(org_id) do
    """
@@ -315,7 +314,6 @@ defmodule Glific.Seeds.SeedsMigration do
       m.organization_id = #{org_id} and m.sender_id != m.receiver_id and m.id = m2.id;
     """
   end
-
 
   @spec fix_message_number_query_for_groups(integer()) :: :ok
   defp fix_message_number_query_for_groups(org_id) do
