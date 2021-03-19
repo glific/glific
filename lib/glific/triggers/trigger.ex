@@ -87,9 +87,27 @@ defmodule Glific.Triggers.Trigger do
     trigger
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_start_at()
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
+  end
+
+  # @doc false
+  #  if trigger start_at should always be greater than current time
+  @spec validate_start_at(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_start_at(changeset) do
+    start_at = changeset.changes[:start_at]
+    time = DateTime.utc_now()
+
+    if DateTime.compare(time, start_at) == :lt,
+      do: changeset,
+      else:
+        add_error(
+          changeset,
+          :start_at,
+          "Trigger start_at should always be greater than current time"
+        )
   end
 
   @spec start_at(map()) :: DateTime.t()
