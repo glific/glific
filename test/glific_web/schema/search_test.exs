@@ -256,8 +256,11 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    assert [conversation] = get_in(query_data, [:data, "search"])
-    assert %{"body" => "#{group.label} message"} in conversation["group"]["messages"]
+    assert [_g1, _g_2, _g3, _g4, g5 | _] = get_in(query_data, [:data, "search"])
+    group = g5["group"]
+    [message | _] = g5["messages"]
+    label = group["label"]
+    assert "#{label} message" == message["body"]
   end
 
   test "save search will save the arguments", %{staff: user} do
