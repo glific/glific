@@ -306,10 +306,18 @@ defmodule Glific.Searches do
   def search(%{filter: %{search_group: true}} = args, _count) do
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
 
-    ConversationsGroup.list_conversations(
-      get_in(args, [:filter, :include_groups]),
-      args
-    )
+    group_ids =
+      cond do
+        args.filter[:id] != nil
+          -> [args.filter.id]
+
+        args.filter[:ids] != nil ->
+          args.filter[:ids]
+
+        true -> nil
+      end
+
+    ConversationsGroup.list_conversations(group_ids, args )
   end
 
   # codebeat:disable[ABC]
