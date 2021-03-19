@@ -279,29 +279,14 @@ defmodule Glific.Seeds.SeedsMigration do
   """
   @spec fix_message_number(list | integer()) :: :ok
   def fix_message_number(org_id) when is_integer(org_id) do
-    query = """
-    UPDATE
-      messages m
-    SET
-      message_number = m2.row_num
-    FROM (
-      SELECT
-        id,
-        contact_id,
-        ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
-      FROM
-        messages m2
-      WHERE
-        m2.organization_id = #{org_id} ) m2
-    WHERE
-      m.organization_id = #{org_id} AND m.id = m2.id;
-    """
-
-    # set a large timeout for this
-    Repo.query!(query, [], timeout: 300_000)
-
-    set_last_message_number_for_contacts(org_id)
-    set_last_message_number_for_collection(org_id)
+    # set a large query timeout for this
+    [
+      fix_message_number_query_for_contacts(org_id),
+      set_last_message_number_for_contacts(org_id),
+      fix_message_number_query_for_groups(org_id),
+      set_last_message_number_for_collection(org_id)
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 300_000))
 
     :ok
   end
@@ -309,9 +294,53 @@ defmodule Glific.Seeds.SeedsMigration do
   def fix_message_number(organizations) when is_list(organizations),
     do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
 
+
+  @spec fix_message_number_query_for_contacts(integer()) :: :ok
+  defp fix_message_number_query_for_contacts(org_id) do
+   """
+       UPDATE
+      messages m
+      SET
+        message_number = m2.row_num
+      FROM (
+        SELECT
+          id,
+          contact_id,
+          ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
+        FROM
+          messages m2
+        WHERE
+          m2.organization_id = #{org_id} and m2.sender_id != m2.receiver_id ) m2
+      WHERE
+      m.organization_id = #{org_id} and m.sender_id != m.receiver_id and m.id = m2.id;
+    """
+  end
+
+
+  @spec fix_message_number_query_for_groups(integer()) :: :ok
+  defp fix_message_number_query_for_groups(org_id) do
+    """
+       UPDATE
+      messages m
+      SET
+        message_number = m2.row_num
+      FROM (
+        SELECT
+          id,
+          group_id,
+          ROW_NUMBER() OVER (PARTITION BY group_id ORDER BY inserted_at ASC) AS row_num
+        FROM
+          messages m2
+        WHERE
+          m2.organization_id = #{org_id} and m2.sender_id = m2.receiver_id ) m2
+      WHERE
+      m.organization_id = #{org_id} and m.sender_id = m.receiver_id and m.id = m2.id;
+    """
+  end
+
   @spec set_last_message_number_for_contacts(integer()) :: :ok
   defp set_last_message_number_for_contacts(org_id) do
-    query = """
+    """
     UPDATE
       contacts c
     SET
@@ -325,14 +354,11 @@ defmodule Glific.Seeds.SeedsMigration do
       WHERE
         organization_id = #{org_id};
     """
-
-    Repo.query!(query, [], timeout: 300_000)
-    :ok
   end
 
   @spec set_last_message_number_for_collection(integer()) :: :ok
   defp set_last_message_number_for_collection(org_id) do
-    query = """
+    """
     UPDATE
       groups g
     SET
@@ -346,8 +372,5 @@ defmodule Glific.Seeds.SeedsMigration do
       WHERE
         organization_id = #{org_id};
     """
-
-    Repo.query!(query, [], timeout: 300_000)
-    :ok
   end
 end
