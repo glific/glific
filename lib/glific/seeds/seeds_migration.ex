@@ -286,7 +286,7 @@ defmodule Glific.Seeds.SeedsMigration do
       fix_message_number_query_for_groups(org_id),
       set_last_message_number_for_collection(org_id)
     ]
-    |> Enum.each(&Repo.query!(&1, [], timeout: 300_000))
+    |> Enum.each(&Repo.query!(&1, [], timeout: 900_000))
 
     :ok
   end
@@ -297,7 +297,7 @@ defmodule Glific.Seeds.SeedsMigration do
   @spec fix_message_number_query_for_contacts(integer()) :: String.t()
   defp fix_message_number_query_for_contacts(org_id) do
    """
-       UPDATE
+   UPDATE
       messages m
       SET
         message_number = m2.row_num
@@ -311,14 +311,14 @@ defmodule Glific.Seeds.SeedsMigration do
         WHERE
           m2.organization_id = #{org_id} and m2.sender_id != m2.receiver_id ) m2
       WHERE
-      m.organization_id = #{org_id} and m.sender_id != m.receiver_id and m.id = m2.id;
+        m.organization_id = #{org_id} and m.sender_id != m.receiver_id and m.id = m2.id;
     """
   end
 
   @spec fix_message_number_query_for_groups(integer()) :: String.t()
   defp fix_message_number_query_for_groups(org_id) do
     """
-       UPDATE
+    UPDATE
       messages m
       SET
         message_number = m2.row_num
@@ -332,7 +332,7 @@ defmodule Glific.Seeds.SeedsMigration do
         WHERE
           m2.organization_id = #{org_id} and m2.sender_id = m2.receiver_id ) m2
       WHERE
-      m.organization_id = #{org_id} and m.sender_id = m.receiver_id and m.id = m2.id;
+        m.organization_id = #{org_id} and m.sender_id = m.receiver_id and m.id = m2.id;
     """
   end
 
