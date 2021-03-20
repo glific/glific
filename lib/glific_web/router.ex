@@ -21,7 +21,7 @@ defmodule GlificWeb.Router do
 
   scope path: "/feature-flags" do
     # ensure that this is protected once we have authentication in place
-    pipe_through :browser
+    pipe_through [:browser, :auth]
     forward "/", FunWithFlags.UI.Router, namespace: "feature-flags"
   end
 
