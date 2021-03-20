@@ -21,7 +21,7 @@ defmodule GlificWeb.Router do
 
   scope path: "/feature-flags" do
     # ensure that this is protected once we have authentication in place
-    pipe_through :browser
+    pipe_through [:browser, :auth]
     forward "/", FunWithFlags.UI.Router, namespace: "feature-flags"
   end
 
@@ -73,7 +73,7 @@ defmodule GlificWeb.Router do
 
   scope "/" do
     pipe_through [:browser, :auth]
-    live_dashboard "/dashboard", metrics: GlificWeb.Telemetry
+    live_dashboard "/dashboard", metrics: GlificWeb.Telemetry, ecto_repos: [Glific.Repo]
   end
 
   # Custom stack for Absinthe
