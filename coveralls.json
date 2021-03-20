@@ -5,6 +5,7 @@
     },
     "skip_files": [
         "lib/glific.ex",
+        "lib/glific/searches.ex",
         "lib/glific/application.ex",
         "lib/glific/appsignal.ex",
         "lib/glific/bigquery/bigquery_schema.ex",
