@@ -187,6 +187,35 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert time == start_at
   end
 
+  test "create a trigger with time prior to current timestamp should raise an error", %{manager: user} = attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
+
+    start_time = Timex.shift(DateTime.utc_now(), days: -1)
+    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    end_time = Timex.shift(DateTime.utc_now(), days: 5)
+    {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
+    start_time = "13:15:19"
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => false,
+            "isRepeating" => false
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message == "Trigger start_at should always be greater than current time"
+  end
+
   test "update a trigger and test possible scenarios and errors", %{manager: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
