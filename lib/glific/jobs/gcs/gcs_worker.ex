@@ -181,13 +181,9 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec upload_file_on_gcs(map()) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
-  defp upload_file_on_gcs(
-         %{
-           "local_name" => local_name,
-           "remote_name" => remote_name
-         } = media
-       ) do
+  defp upload_file_on_gcs(%{"local_name" => local_name} = media) do
     {remote_name, bucket} = gcs_params(media)
+
     Logger.info(
       "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
     )
@@ -195,10 +191,12 @@ defmodule Glific.Jobs.GcsWorker do
     CloudStorage.put(
       Glific.Media,
       :original,
-      {%Waffle.File{path: local_name, file_name: remote_name},
-       # the below scope is sent to both token fetcher and bucket, hence
-       # sending both the values
-       {Integer.to_string(media["organization_id"]), bucket}}
+      {
+        %Waffle.File{path: local_name, file_name: remote_name},
+        # the below scope is sent to both token fetcher and bucket, hence
+        # sending both the values
+        {Integer.to_string(media["organization_id"]), bucket}
+      }
     )
   end
 
