@@ -145,8 +145,8 @@ defmodule Glific.Jobs.GcsWorker do
 
     media =
       media
-      |> Map.put(:remote_name, remote_name)
-      |> Map.put(:local_name, local_name)
+      |> Map.put("remote_name", remote_name)
+      |> Map.put("local_name", local_name)
 
     download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
@@ -181,40 +181,21 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec upload_file_on_gcs(map()) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
-  defp upload_file_on_gcs(
-         %{
-           local_name: local_name,
-           remote_name: remote_name
-         } = media
-       ) do
+  defp upload_file_on_gcs(%{"local_name" => local_name} = media) do
+    remote_name = Glific.Clients.gcs_file_name(media)
+
     Logger.info(
       "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
     )
 
-    {remote_name, bucket} = gcs_params(media)
-
     CloudStorage.put(
       Glific.Media,
       :original,
-      {%Waffle.File{path: local_name, file_name: remote_name}, bucket}
+      {
+        %Waffle.File{path: local_name, file_name: remote_name},
+        Integer.to_string(media["organization_id"])
+      }
     )
-  end
-
-  # get the bucket name, we call our pseudo-plugin architecture
-  # to allow NGOs to overwrite bucket names
-  @spec gcs_params(map()) :: {String.t(), String.t()}
-  defp gcs_params(media) do
-    organization = Partners.organization(media["organization_id"])
-
-    bucket_name =
-      organization.services["google_cloud_storage"]
-      |> case do
-        nil -> "custom_bucket_name"
-        credentials -> credentials.secrets["bucket"]
-      end
-
-    # allow end users to override bucket_name
-    Glific.Clients.gcs_params(media, bucket_name)
   end
 
   @spec update_gcs_url(String.t(), integer()) ::

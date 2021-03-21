@@ -9,12 +9,23 @@ defmodule Glific.Media do
 
   @versions [:original]
 
+  alias Glific.Partners
+
   # To add a thumbnail version:
   # @versions [:original, :thumb]
 
   # Override the bucket on a per definition basis:
-  @spec bucket({any(), String.t()}) :: String.t()
-  def bucket({_file, bucket}), do: bucket
+  def bucket({_file, org_id}) when is_binary(org_id) do
+    organization =
+      String.to_integer(org_id)
+      |> Partners.organization()
+
+    organization.services["google_cloud_storage"]
+    |> case do
+      nil -> "custom_bucket_name"
+      credentials -> credentials.secrets["bucket"]
+    end
+  end
 
   # Whitelist file extensions:
   def validate({file, _}) do
