@@ -6,7 +6,7 @@ defmodule Glific.Notifications.Notification do
   alias __MODULE__
   import Ecto.Query, warn: false
 
-  alias Glific.{}
+  alias Glific.{Partners.Organization}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -46,7 +46,7 @@ defmodule Glific.Notifications.Notification do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Trigger.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(Notification.t(), map()) :: Ecto.Changeset.t()
   def changeset(trigger, attrs) do
     trigger
     |> cast(attrs, @required_fields ++ @optional_fields)
