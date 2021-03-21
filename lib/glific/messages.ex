@@ -633,6 +633,8 @@ defmodule Glific.Messages do
     |> Repo.all()
     |> make_conversations()
     |> add_empty_conversations(args)
+
+    # |> adjust_message_numbers()
   end
 
   defp do_list_conversations(query, _args, true = _count) do
@@ -641,15 +643,6 @@ defmodule Glific.Messages do
     |> distinct(true)
     |> exclude(:order_by)
     |> Repo.aggregate(:count)
-  end
-
-  @spec add_order_by(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp add_order_by(query, ids) do
-    if length(ids) == 1,
-      # if messages for one contact, order by message number
-      do: query |> order_by([m], asc: m.message_number),
-      # else order by most recent messages
-      else: query |> order_by([m], desc: m.inserted_at)
   end
 
   @doc """
@@ -665,7 +658,7 @@ defmodule Glific.Messages do
         {:ids, ids}, query ->
           query
           |> where([m], m.id in ^ids)
-          |> add_order_by(ids)
+          |> order_by([m], desc: m.inserted_at)
 
         {:filter, filter}, query ->
           query |> conversations_with(filter)
@@ -686,8 +679,7 @@ defmodule Glific.Messages do
       Enum.reduce(
         messages,
         {%{}, %{}, []},
-        fn m, acc ->
-          {conversations, processed_contacts, contact_order} = acc
+        fn m, {conversations, processed_contacts, contact_order} ->
           conversations = add(m, conversations)
 
           # We need to do this to maintain the sort order when returning
@@ -696,8 +688,11 @@ defmodule Glific.Messages do
           if Map.has_key?(processed_contacts, m.contact_id) do
             {conversations, processed_contacts, contact_order}
           else
-            {conversations, Map.put(processed_contacts, m.contact_id, true),
-             [m.contact | contact_order]}
+            {
+              conversations,
+              Map.put(processed_contacts, m.contact_id, true),
+              [m.contact | contact_order]
+            }
           end
         end
       )
@@ -864,34 +859,39 @@ defmodule Glific.Messages do
 
     FlowContext.mark_flows_complete(contact.id)
 
-    query =
-      Message
-      |> where([m], m.contact_id == ^contact.id)
-      |> where([m], m.organization_id == ^contact.organization_id)
-      |> check_simulator(contact, contact.phone)
+    Message
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
 
-    Repo.delete_all(query)
-
+    reset_contact_fields(contact)
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     :ok
   end
 
-  @spec check_simulator(Ecto.Query.t(), Contact.t(), String.t()) :: Ecto.Query.t()
-  defp check_simulator(query, contact, phone) do
-    if Contacts.is_simulator_contact?(phone) do
-      Contacts.update_contact(
-        contact,
-        %{fields: %{}}
-      )
+  @spec reset_contact_fields(Contact.t()) :: nil
+  defp reset_contact_fields(contact) do
+    simulator = Contacts.is_simulator_contact?(contact.phone)
 
-      with {:ok, last_message} <- send_default_message(contact) do
-        query
-        |> where([m], m.id != ^last_message.id)
-      end
-    else
-      query
-    end
+    values = %{
+      last_message_number: 0,
+      is_org_read: true,
+      is_org_replied: true,
+      is_contact_replied: true
+    }
+
+    values =
+      if simulator,
+        do: values |> Map.put(:fields, %{}),
+        else: values
+
+    Contacts.update_contact(contact, values)
+
+    if simulator,
+      do: {:ok, _last_message} = send_default_message(contact)
+
+    nil
   end
 
   @spec send_default_message(Contact.t(), String.t()) ::
@@ -985,11 +985,9 @@ defmodule Glific.Messages do
   Mark that the user has read all messages sent by a given contact
   """
   @spec mark_contact_messages_as_read(non_neg_integer, non_neg_integer) :: nil
-  def mark_contact_messages_as_read(contact_id, organization_id) do
-    Message
-    |> where([m], m.contact_id == ^contact_id)
-    |> where([m], m.organization_id == ^organization_id)
-    |> where([m], m.is_read == false)
-    |> Repo.update_all(set: [is_read: true])
+  def mark_contact_messages_as_read(contact_id, _organization_id) do
+    Contact
+    |> where([c], c.id == ^contact_id)
+    |> Repo.update_all(set: [is_org_read: true])
   end
 end

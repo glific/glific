@@ -326,12 +326,12 @@ defmodule Glific.MessagesTest do
       {:ok, message1} =
         Repo.fetch_by(Message, %{body: "message 1", organization_id: organization_id})
 
-      assert message6.message_number == 0
-      assert message5.message_number == 1
-      assert message4.message_number == 2
+      assert message6.message_number == 6
+      assert message5.message_number == 5
+      assert message4.message_number == 4
       assert message3.message_number == 3
-      assert message2.message_number == 4
-      assert message1.message_number == 5
+      assert message2.message_number == 2
+      assert message1.message_number == 1
     end
 
     test "update_message/2 with valid data updates the message", attrs do
@@ -445,14 +445,14 @@ defmodule Glific.MessagesTest do
       assert {:ok, message1} =
                Repo.fetch_by(Message, %{
                  contact_id: contact1_id,
-                 message_number: 0,
+                 message_number: 1,
                  body: valid_attrs.body
                })
 
       assert {:ok, message2} =
                Repo.fetch_by(Message, %{
                  contact_id: contact2_id,
-                 message_number: 0,
+                 message_number: 1,
                  body: valid_attrs.body
                })
 

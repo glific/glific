@@ -2,7 +2,7 @@ defmodule Glific.ContactsTest do
   use Glific.DataCase, async: true
 
   alias Faker.Phone
-  # import Mock
+  import Mock
 
   alias Glific.{
     Contacts,
@@ -22,6 +22,17 @@ defmodule Glific.ContactsTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_groups()
     :ok
+  end
+
+  defp get_tmp_path(name \\ "fixture.csv") do
+    System.tmp_dir!()
+    |> Path.join(name)
+  end
+
+  defp get_tmp_file(name \\ "fixture.csv") do
+    name
+    |> get_tmp_path()
+    |> File.open!([:write, :utf8])
   end
 
   describe "contacts" do
@@ -62,6 +73,16 @@ defmodule Glific.ContactsTest do
       optin_status: true,
       optout_time: nil,
       phone: "some phone 3",
+      status: :invalid,
+      bsp_status: :session_and_hsm,
+      fields: %{}
+    }
+    @valid_attrs_4 %{
+      name: "some name 3",
+      optin_time: DateTime.utc_now(),
+      optin_status: true,
+      optout_time: nil,
+      phone: "phone",
       status: :invalid,
       bsp_status: :session_and_hsm,
       fields: %{}
@@ -200,7 +221,13 @@ defmodule Glific.ContactsTest do
       assert {:ok, %Contact{}} = GupshupContacts.create_or_update_contact(attrs)
     end
 
-    test "import_contact/3 with valid data inserts new contacts in the database" do
+    test "import_contact/3 raises an exception if more than one keyword argument provided" do
+      assert_raise RuntimeError, fn ->
+        Import.import_contacts(999, "foo", file_path: "file_path", url: "")
+      end
+    end
+
+    test "import_contact/3 with valid data from file inserts new contacts in the database" do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -208,7 +235,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
+      file = get_tmp_file()
 
       [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
@@ -217,10 +244,206 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts("./test/support/fixture.csv", organization.id, group.id)
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
+    end
+
+    test "import_contact/3 with valid data from string inserts new contacts in the database" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      data = "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09\n"
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, data: data)
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 with valid data from URL inserts new contacts in the database" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09\n"
+          }
+      end)
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, url: "http://www.bar.com/foo.csv")
+      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 with valid data from file updates existing contacts in the database",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = get_tmp_file()
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+
+      [~w(name phone Language opt_in), ~w(updated #{contact.phone} english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 with valid data from string updates existing contacts in the database",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      data = "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09\n"
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, data: data)
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 with valid data from URL updates existing contacts in the database",
+         attrs do
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body: "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09\n"
+          }
+      end)
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, url: "http://www.bar.com/foo.csv")
+      count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
+
+      assert count == 1
+    end
+
+    test "import_contact/3 deletes contacts when delete=1 column is present", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = get_tmp_file()
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+
+      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09 1)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 0
+    end
+
+    test "import_contact/3 ignores delete if the contact allready deleted", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = get_tmp_file()
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      Contacts.delete_contact(contact)
+
+      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09 1)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 0
+    end
+
+    test "import_contact/3 does not call glific opt_in api if column empty" do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      with_mocks([
+        {
+          Contacts,
+          [:passthrough],
+          [optin_contact: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        }
+      ]) do
+        file = get_tmp_file()
+
+        [~w(name phone Language opt_in)]
+        |> Enum.concat([["updated", "9989329297", "english", ""]])
+        |> CSV.encode()
+        |> Enum.each(&IO.write(file, &1))
+
+        [organization | _] = Partners.list_organizations()
+        [group | _] = Groups.list_groups(%{filter: %{}})
+
+        Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+        count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
+
+        assert count == 1
+        assert_not_called(Contacts.optin_contact())
+      end
     end
 
     test "import_contact/3 with invalid organization id returns an error" do
@@ -231,7 +454,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      file = File.open!("./test/support/fixture.csv", [:write, :utf8])
+      file = get_tmp_file()
 
       [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
       |> CSV.encode()
@@ -239,10 +462,10 @@ defmodule Glific.ContactsTest do
 
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      assert {:error, _} = Import.import_contacts("./test/support/fixture.csv", 999, group.id)
+      assert {:error, _} = Import.import_contacts(999, group.label, file_path: get_tmp_path())
     end
 
-    test "insert_or_update_contact_data/3 returns an error" do
+    test "insert_or_update_contact_data/3 returns an error if insertion fails" do
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -252,8 +475,14 @@ defmodule Glific.ContactsTest do
 
       [group | _] = Groups.list_groups(%{filter: %{}})
 
+      file = get_tmp_file()
+
+      [~w(name phone Language opt_in), ~w(test phone english 2021-03-09)]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
       {:error, message, _error} =
-        Import.import_contacts("./test/support/fixture.csv", 1, group.id)
+        Import.import_contacts(1, group.label, file_path: get_tmp_path())
 
       assert "All contacts could not be added" == message
     end

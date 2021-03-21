@@ -10,6 +10,9 @@ query search(
         name
         phone
         lastMessageAt
+        isOrgRead
+        isOrgReplied
+        isContactReplied
       }
       messages {
         id
@@ -22,8 +25,6 @@ query search(
         user {
           id
         }
-        is_read
-        is_replied
       }
       group {
         id

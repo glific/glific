@@ -3,8 +3,8 @@ defmodule GlificWeb.Schema.TagTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Contacts,
     Fixtures,
-    Messages,
     Repo,
     Seeds.SeedsDev,
     Tags.Tag
@@ -263,13 +263,13 @@ defmodule GlificWeb.Schema.TagTest do
   test "mark all contact messages as unread", %{staff: user} do
     message_1 = Fixtures.message_fixture()
 
-    message_2 =
+    _message_2 =
       Fixtures.message_fixture(%{
         sender_id: message_1.contact_id,
         receiver_id: message_1.receiver_id
       })
 
-    message_3 =
+    _message_3 =
       Fixtures.message_fixture(%{
         sender_id: message_1.contact_id,
         receiver_id: message_1.receiver_id
@@ -286,8 +286,6 @@ defmodule GlificWeb.Schema.TagTest do
 
     assert contact_id != message_1.contact_id
 
-    assert Messages.get_message!(message_1.id).is_read == true
-    assert Messages.get_message!(message_2.id).is_read == true
-    assert Messages.get_message!(message_3.id).is_read == true
+    assert Contacts.get_contact!(message_1.contact_id).is_org_read == true
   end
 end

@@ -111,11 +111,24 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  Get group by group name.
+  Create the group if it does not exist
+  """
+  @spec get_or_create_group_by_label(String.t(), non_neg_integer) :: {:ok, Group.t()} | nil
+  def get_or_create_group_by_label(label, organization_id) do
+    case Repo.get_by(Group, %{label: label}) do
+      nil -> create_group(%{label: label, organization_id: organization_id})
+      group -> {:ok, group}
+    end
+  end
+
+  @doc """
   Fetches all group ids in an organization
   """
   @spec get_group_ids :: list()
   def get_group_ids do
-    Repo.all(Group)
+    Group
+    |> Repo.all()
     |> Enum.map(fn group -> group.id end)
   end
 

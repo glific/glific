@@ -87,17 +87,34 @@ defmodule Glific.Triggers.Trigger do
     trigger
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> validate_start_at()
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
   end
 
+  # @doc false
+  #  if trigger start_at should always be greater than current time
+  @spec validate_start_at(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_start_at(%{changes: changes} = changeset) when not is_nil(changes.start_at) do
+    start_at = changeset.changes[:start_at]
+    time = DateTime.utc_now()
+
+    if DateTime.compare(time, start_at) == :lt,
+      do: changeset,
+      else:
+        add_error(
+          changeset,
+          :start_at,
+          "Trigger start_at should always be greater than current time"
+        )
+  end
+
+  defp validate_start_at(changeset), do: changeset
+
   @spec start_at(map()) :: DateTime.t()
   defp start_at(%{start_at: nil} = attrs) do
-    {:ok, ndt} = NaiveDateTime.new(attrs.start_date, attrs.start_time)
-    tz = Partners.organization_timezone(attrs.organization_id)
-    dt = DateTime.from_naive!(ndt, tz)
-    DateTime.shift_zone!(dt, "Etc/UTC")
+    DateTime.new!(attrs.start_date, attrs.start_time)
   end
 
   ## We might need to change this and convert the datetime to utc
@@ -109,9 +126,11 @@ defmodule Glific.Triggers.Trigger do
 
   defp get_name(attrs) do
     with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}),
-         {:ok, ndt} <- NaiveDateTime.new(attrs.start_date, attrs.start_time),
-         {:ok, date} <- Timex.format(ndt, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}") do
+           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}) do
+      tz = Partners.organization_timezone(attrs.organization_id)
+      time = DateTime.new!(attrs.start_date, attrs.start_time)
+      org_time = DateTime.shift_zone!(time, tz)
+      {:ok, date} = Timex.format(org_time, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}")
       "#{flow.name}#{date}"
     end
   end
@@ -151,6 +170,12 @@ defmodule Glific.Triggers.Trigger do
     |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
     |> Repo.update()
   end
+
+  @doc """
+  get the triggger
+  """
+  @spec get_trigger!(integer) :: Trigger.t()
+  def get_trigger!(id), do: Repo.get!(Trigger, id)
 
   @doc """
   Returns the list of triggers filtered by args

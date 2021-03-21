@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] -- 2021-03-19
+
+### Added
+- Triggers
+- Ability to optionally delete / optin Contcts via import
+
+### Fixed
+- Quick access to saved searches
+- Fixed showing all messages in the conversation
+- Improved UI for adding contacts to a collection
+- Database optimizations for inserting messages
+
 ## [1.1.2] - 2021-03-11
 
 ### Added
