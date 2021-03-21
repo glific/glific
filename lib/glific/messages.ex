@@ -259,6 +259,7 @@ defmodule Glific.Messages do
     Notifications.create_notification(%{
       category: "Message",
       message: "Cannot send the message to the contact.",
+      severity: "Error",
       organization_id: attrs.organization_id,
       entity: %{
         id: contact.id,

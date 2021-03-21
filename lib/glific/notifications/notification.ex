@@ -15,6 +15,7 @@ defmodule Glific.Notifications.Notification do
           category: String.t() | nil,
           entity: map() | nil,
           message: String.t() | nil,
+          severity: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -25,16 +26,18 @@ defmodule Glific.Notifications.Notification do
     :category,
     :entity,
     :message,
-    :organization_id
   ]
 
   @optional_fields [
+    :severity,
+    :organization_id
   ]
 
   schema "notifications" do
     field :category, :string
     field :entity, :map
     field :message, :string
+    field :severity, :string, default: "Error"
 
     belongs_to :organization, Organization
 

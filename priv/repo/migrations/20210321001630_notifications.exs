@@ -22,6 +22,8 @@ defmodule Glific.Repo.Migrations.Notifications do
 
       add :message, :string, comment: "The specific error message that caused this notification"
 
+      add :severity, :string, default: "Error", comment: "The severity level. We'll include a few info notifications"
+
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
