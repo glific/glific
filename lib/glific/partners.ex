@@ -758,7 +758,7 @@ defmodule Glific.Partners do
   end
 
   def credential_update_callback(organization, "google_cloud_storage") do
-    GCS.refresh_gsc_setup(organization.id)
+    GCS.refresh_gcs_setup(organization.id)
     :ok
   end
 

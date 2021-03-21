@@ -195,7 +195,10 @@ defmodule Glific.Jobs.GcsWorker do
     CloudStorage.put(
       Glific.Media,
       :original,
-      {%Waffle.File{path: local_name, file_name: remote_name}, bucket}
+      {%Waffle.File{path: local_name, file_name: remote_name},
+       # the below scope is sent to both token fetcher and bucket, hence
+       # sending both the values
+       {Integer.to_string(media["organization_id"]), bucket}}
     )
   end
 

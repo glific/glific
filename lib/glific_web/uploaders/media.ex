@@ -14,7 +14,7 @@ defmodule Glific.Media do
 
   # Override the bucket on a per definition basis:
   @spec bucket({any(), String.t()}) :: String.t()
-  def bucket({_file, bucket}), do: bucket
+  def bucket({_file, {_org_id, bucket}}), do: bucket
 
   # Whitelist file extensions:
   def validate({file, _}) do
