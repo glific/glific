@@ -145,10 +145,11 @@ defmodule Glific.Jobs.GcsWorker do
 
     media =
       media
-      |> Map.put(:remote_name, remote_name)
-      |> Map.put(:local_name, local_name)
+      |> Map.put("remote_name", remote_name)
+      |> Map.put("local_name", local_name)
 
-    download_file_to_temp(media["url"], local_name, media["organization_id"])
+# download_file_to_temp(media["url"], local_name, media["organization_id"])
+    {:ok, nil}
     |> case do
       {:ok, _} ->
         {:ok, response} = upload_file_on_gcs(media)
@@ -183,15 +184,15 @@ defmodule Glific.Jobs.GcsWorker do
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
   defp upload_file_on_gcs(
          %{
-           local_name: local_name,
-           remote_name: remote_name
+           "local_name" => local_name,
+           "remote_name" => remote_name
          } = media
        ) do
     Logger.info(
       "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
     )
 
-    {remote_name, bucket} = gcs_params(media)
+    {remote_name, bucket} = gcs_params(media) |> IO.inspect()
 
     CloudStorage.put(
       Glific.Media,
