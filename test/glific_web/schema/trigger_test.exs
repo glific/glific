@@ -151,6 +151,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     end_time = Timex.shift(DateTime.utc_now(), days: 5)
     {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
     start_time = "13:15:19"
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -187,7 +188,8 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert time == start_at
   end
 
-  test "create a trigger with time prior to current timestamp should raise an error", %{manager: user} = attrs do
+  test "create a trigger with time prior to current timestamp should raise an error",
+       %{manager: user} = attrs do
     [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
@@ -196,6 +198,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     end_time = Timex.shift(DateTime.utc_now(), days: 5)
     {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
     start_time = "13:15:19"
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -221,9 +224,9 @@ defmodule GlificWeb.Schema.TriggerTest do
       Fixtures.trigger_fixture(attrs)
       |> Repo.preload(:flow)
 
-      start_time = Timex.shift(DateTime.utc_now(), days: 1)
-      {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
-      start_time = "13:15:19"
+    start_time = Timex.shift(DateTime.utc_now(), days: 1)
+    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    start_time = "13:15:19"
 
     result =
       auth_query_gql_by(:update, user,

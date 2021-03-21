@@ -6,8 +6,7 @@ defmodule Glific.Notifications.Notification do
   alias __MODULE__
   import Ecto.Query, warn: false
 
-  alias Glific.{
-  }
+  alias Glific.{}
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -25,7 +24,7 @@ defmodule Glific.Notifications.Notification do
   @required_fields [
     :category,
     :entity,
-    :message,
+    :message
   ]
 
   @optional_fields [
