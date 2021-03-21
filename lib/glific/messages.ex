@@ -253,27 +253,37 @@ defmodule Glific.Messages do
     Communications.Message.send_message(message, attrs)
   end
 
-  @doc false
   defp create_and_send_message(false, attrs) do
+    notification(attrs)
+    {:error, "Cannot send the message to the contact."}
+  end
+
+  # create and insert a notification for this error
+  # add as much detail, so we can reverse-engineer
+  @spec notification(map()) :: nil
+  defp notification(attrs) do
     contact = attrs.receiver
 
-    Notifications.create_notification(%{
-      category: "Message",
-      message: "Cannot send the message to the contact.",
-      severity: "Error",
-      organization_id: attrs.organization_id,
-      entity: %{
-        id: contact.id,
-        name: contact.name,
-        phone: contact.phone,
-        is_hsm: attrs[:is_hsm],
-        bsp_status: contact.bsp_status,
-        status: contact.status,
-        last_message_at: contact.last_message_at
-      }
-    })
+    {:ok, _} =
+      Notifications.create_notification(%{
+        category: "Message",
+        message: "Cannot send the message to the contact.",
+        severity: "Error",
+        organization_id: attrs.organization_id,
+        entity: %{
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone,
+          bsp_status: contact.bsp_status,
+          status: contact.status,
+          last_message_at: contact.last_message_at,
+          is_hsm: attrs[:is_hsm],
+          flow_id: attrs[:flow_id],
+          group_id: attrs[:group_id]
+        }
+      })
 
-    {:error, "Cannot send the message to the contact."}
+    nil
   end
 
   @spec parse_message_body(map()) :: String.t() | nil

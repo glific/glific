@@ -20,6 +20,7 @@ defmodule Glific.Flows.FlowContext do
     Flows.Node,
     Messages,
     Messages.Message,
+    Notifications,
     Partners.Organization,
     Repo
   }
@@ -131,13 +132,32 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.update()
   end
 
+  @spec notification(FlowContext.t(), String.t()) :: nil
+  defp notification(context, message) do
+    {:ok, _} =
+      Notifications.create_notification(%{
+        category: "Flow",
+        message: message,
+        severity: "Error",
+        organization_id: context.organization_id,
+        entity: %{
+          contact_id: context.contact_id,
+          flow_id: context.flow_id,
+          parent_id: context.parent_id
+        }
+      })
+
+    nil
+  end
+
   @doc """
   Resets all the context for the user when we hit an error. This can potentially
   prevent an infinite loop from happening if flows are connected in a cycle
   """
-  @spec reset_all_contexts(FlowContext.t()) :: FlowContext.t() | nil
-  def reset_all_contexts(context) do
-    Logger.info("Ending Flow Tree: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
+  @spec reset_all_contexts(FlowContext.t(), String.t()) :: FlowContext.t() | nil
+  def reset_all_contexts(context, message) do
+    Logger.info(message)
+    notification(context, message)
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
@@ -460,7 +480,7 @@ defmodule Glific.Flows.FlowContext do
           "Seems like the flow: #{flow.id} changed underneath us for: #{context.organization_id}"
         )
 
-        reset_all_contexts(context)
+        reset_all_contexts(context, "A new flow was published, resetting flows for this contact.")
     end
   end
 
