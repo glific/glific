@@ -11,7 +11,7 @@ defmodule Glific.Repo.Migrations.NewTriggerTable do
     drop table(:triggers)
   end
 
-  def triggers() do
+  def triggers do
     # lets drop the tables from the DB if it exists
     # since we are starting off with a blank slate
     drop_if_exists table(:trigger_logs)

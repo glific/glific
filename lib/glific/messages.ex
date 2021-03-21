@@ -253,7 +253,24 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  defp create_and_send_message(false, _) do
+  defp create_and_send_message(false, attrs) do
+    contact = attrs.receiver
+
+    Notifications.create_notification(%{
+      category: "Message",
+      message: "Cannot send the message to the contact.",
+      organization_id: attrs.organization_id,
+      entity: %{
+        id: contact.id,
+        name: contact.name,
+        phone: contact.phone,
+        is_hsm: attrs[:is_hsm],
+        bsp_status: contact.bsp_status,
+        status: contact.status,
+        last_message_at: contact.last_message_at
+      }
+    })
+
     {:error, "Cannot send the message to the contact."}
   end
 
