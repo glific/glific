@@ -16,6 +16,7 @@ defmodule Glific.Messages do
     Messages.Message,
     Messages.MessageMedia,
     Messages.MessageVariables,
+    Notifications,
     Partners,
     Repo,
     Tags,

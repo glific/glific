@@ -7,7 +7,8 @@ defmodule Glific.Notifications do
   require Logger
 
   alias Glific.{
-    Notifications.Notification
+    Notifications.Notification,
+    Repo
   }
 
   @doc """
@@ -48,10 +49,10 @@ defmodule Glific.Notifications do
 
     Enum.reduce(filter, query, fn
       {:category, category}, query ->
-        from q in query, where: q.category = ^category
+        from q in query, where: q.category == ^category
 
       {:message, message}, query ->
-        from q in query, where: ilike(q.message, "%#{message}%")
+        from q in query, where: ilike(q.message, ^"%#{message}%")
 
       _, query ->
         query
