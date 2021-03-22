@@ -3,6 +3,7 @@ defmodule Glific.BigqueryTest do
   use Oban.Testing, repo: Glific.Repo
   use ExUnit.Case
   import Mock
+  import ExUnit.CaptureLog
 
   alias Glific.{
     Bigquery,
@@ -140,6 +141,28 @@ defmodule Glific.BigqueryTest do
       }
     ]) do
       assert :ok == Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
+  end
+
+  @tag :pending
+  test "make_job_to_remove_duplicate/2 should raise info log", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+      }
+    ]) do
+      assert capture_log(fn ->
+        Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+      end) =~ "remove duplicates for  messages table on bigquery, org_id: #{attrs.organization_id}"
     end
   end
 
