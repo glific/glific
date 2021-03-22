@@ -279,9 +279,16 @@ defmodule Glific.Searches do
   # whether inboound or outbound
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
-    basic_query(args)
+    Logger.info("Search query with params: #{inspect args} and terms: #{args}")
+
+    query = basic_query(args)
     |> select([c: c], c.id)
     |> Full.run(term, args)
+
+    Logger.info("Full run query #{inspect query}")
+
+    query
+
   end
 
   @spec do_save_search(map()) :: SavedSearch.t() | nil
