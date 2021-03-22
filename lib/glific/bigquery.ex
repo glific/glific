@@ -541,7 +541,7 @@ defmodule Glific.Bigquery do
   defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
     do:
       Logger.info(
-        "duplicate entries have been removed form #{table} on bigquery for org_id: #{
+        "duplicate entries have been removed from #{table} on bigquery for org_id: #{
           organization_id
         }. #{inspect(response)}"
       )
