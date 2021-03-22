@@ -133,6 +133,33 @@ defmodule Glific.BigqueryTest do
     end
   end
 
+  @delete_query "DELETE FROM `test_dataset.messages` WHERE EXISTS( SELECT * FROM  ( SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `test_dataset.messages` delta where updated_at > DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), 'Asia/Kolkata') ) WHERE row_num > 1)"
+  test "generate_duplicate_removal_query/3 should create sql query", attrs do
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: "{\"clear\":{\"code\":200,\"status\":\"TABLE_CREATED\"}}"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+    assert @delete_query == Bigquery.generate_duplicate_removal_query("messages", %{conn: conn, project_id: "test_project", dataset_id: "test_dataset"}, attrs.organization_id)
+  end
+
   test "handle_insert_query_response/3 should update table", attrs do
     job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
 
