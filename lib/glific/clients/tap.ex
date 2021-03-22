@@ -11,20 +11,21 @@ defmodule Glific.Clients.Tap do
   In the case of TAP we retrive the first group the contact is in and store
   and set the remote name to be a sub-directory under that group (if one exists)
   """
-  @spec gcs_params(map(), String.t()) :: {String.t(), String.t()}
-  def gcs_params(media, bucket) do
+  @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(media) do
     group_name =
       Contact
       |> where([c], c.id == ^media["contact_id"])
+      |> where([c], c.organization_id == ^media["organization_id"])
       |> join(:inner, [c], cg in ContactGroup, on: c.id == cg.contact_id)
       |> join(:inner, [_c, cg], g in Group, on: cg.group_id == g.id)
       |> select([_c, _cg, g], g.label)
       |> order_by([_c, _cg, g], g.label)
       |> first()
-      |> Repo.one()
+      |> Repo.one(skip_organization_id: true)
 
     if is_nil(group_name),
-      do: {media["remote_name"], bucket},
-      else: {group_name <> "/" <> media["remote_name"], bucket}
+      do: media["remote_name"],
+      else: group_name <> "/" <> media["remote_name"]
   end
 end

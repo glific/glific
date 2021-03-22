@@ -27,8 +27,8 @@ defmodule Glific.GCS do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec refresh_gsc_setup(non_neg_integer) :: :ok
-  def refresh_gsc_setup(organization_id) do
+  @spec refresh_gcs_setup(non_neg_integer) :: :ok
+  def refresh_gcs_setup(organization_id) do
     Logger.info("refresh GCS setup for org_id: #{organization_id}")
 
     organization_id
