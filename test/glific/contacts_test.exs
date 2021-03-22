@@ -689,14 +689,14 @@ defmodule Glific.ContactsTest do
           )
         )
 
-      assert true == Contacts.can_send_message_to?(contact)
-      assert false == Contacts.can_send_message_to?(contact2)
-      assert false == Contacts.can_send_message_to?(contact3)
+      assert {:ok, _} = Contacts.can_send_message_to?(contact)
+      assert {:error, _} = Contacts.can_send_message_to?(contact2)
+      assert {:error, _} = Contacts.can_send_message_to?(contact3)
 
-      assert true ==
+      assert {:ok, _} =
                Contacts.can_send_message_to?(opted_out_contact, true, %{is_optin_flow: true})
 
-      assert false ==
+      assert {:error, _} =
                Contacts.can_send_message_to?(opted_out_contact, false, %{is_optin_flow: true})
     end
 
@@ -755,10 +755,10 @@ defmodule Glific.ContactsTest do
           )
         )
 
-      assert false == Contacts.can_send_message_to?(contact1, true)
-      assert true == Contacts.can_send_message_to?(contact2, true)
-      assert false == Contacts.can_send_message_to?(contact3, true)
-      assert false == Contacts.can_send_message_to?(contact4, true)
+      assert {:error, _} = Contacts.can_send_message_to?(contact1, true)
+      assert {:ok, _} = Contacts.can_send_message_to?(contact2, true)
+      assert {:error, _} = Contacts.can_send_message_to?(contact3, true)
+      assert {:error, _} = Contacts.can_send_message_to?(contact4, true)
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message",

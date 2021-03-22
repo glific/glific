@@ -456,41 +456,63 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a message to the contact
   """
-  @spec can_send_message_to?(Contact.t()) :: boolean()
+  @spec can_send_message_to?(Contact.t()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
 
   @doc false
-  @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
+  @spec can_send_message_to?(Contact.t(), boolean()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact, true = _is_hsm) do
-    if contact.status == :valid &&
-         contact.bsp_status in [:session_and_hsm, :hsm] &&
-         contact.optin_time != nil,
-       do: true,
-       else: false
+    cond do
+      contact.status != :valid ->
+        {:error, "Contact status is not valid"}
+
+      contact.bsp_status not in [:session_and_hsm, :hsm] ->
+        {:error, "Cannot send hsm message to contact, invalid bsp status"}
+
+      contact.optin_time == nil ->
+        {:error, "Cannot send hsm message to contact, not opted in"}
+
+      true ->
+        {:ok, nil}
+    end
   end
 
   @doc """
   Check if we can send a session message to the contact
   """
   def can_send_message_to?(contact, false = _is_hsm) do
-    if contact.status == :valid &&
-         contact.bsp_status in [:session_and_hsm, :session] &&
-         Glific.in_past_time(contact.last_message_at, :hours, 24),
-       do: true,
-       else: false
+    cond do
+      contact.status != :valid ->
+        {:error, "Contact status is not valid"}
+
+      contact.bsp_status not in [:session_and_hsm, :session] ->
+        {:error, "Cannot send session message to contact, invalid bsp status"}
+
+      Glific.in_past_time(contact.last_message_at, :hours, 24) == false ->
+        {:error, "Cannot send session message to contact, not messaged in 24 hour window"}
+
+      true ->
+        {:ok, nil}
+    end
   end
 
   @doc """
   Check if we can send a session message to the contact with some extra perameters
+  Specifically designed for when we are trying to optin an opted out contact
   """
-
-  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: boolean()
+  @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
   def can_send_message_to?(contact, is_hsm, %{is_optin_flow: true} = _attrs) do
     if is_hsm do
-      contact.bsp_status in [:session_and_hsm, :hsm]
+      if contact.bsp_status in [:session_and_hsm, :hsm],
+        do: {:ok, nil},
+        else: {:error, "Cannot send hsm message to contact, invalid bsp status"}
     else
-      contact.bsp_status in [:session_and_hsm, :session] &&
-        Glific.in_past_time(contact.last_message_at, :hours, 24)
+      if contact.bsp_status in [:session_and_hsm, :session] &&
+           Glific.in_past_time(contact.last_message_at, :hours, 24),
+         do: {:ok, nil},
+         else:
+           {:error,
+            "Cannot send session message to contact, invalid bsp status or not messaged in 24 hour window"}
     end
   end
 
