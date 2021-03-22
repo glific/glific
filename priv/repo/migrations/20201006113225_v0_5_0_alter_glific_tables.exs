@@ -20,7 +20,7 @@ defmodule Glific.Repo.Migrations.V0_5_0_AlterGlificTables do
   end
 
   defp organizations do
-    drop unique_index(:organizations, :provider_phone)
+    drop_if_exists unique_index(:organizations, :provider_phone)
 
     alter table(:organizations) do
       remove :provider_appname

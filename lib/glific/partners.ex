@@ -352,7 +352,7 @@ defmodule Glific.Partners do
   @spec fill_cache(Organization.t()) :: Organization.t()
   def fill_cache(organization) do
     # For this process, lets set the organization id
-    Glific.Repo.put_organization_id(organization.id)
+    Repo.put_organization_id(organization.id)
 
     organization =
       organization
@@ -414,7 +414,7 @@ defmodule Glific.Partners do
         {:error, error}
 
       {_, organization} ->
-        Glific.Repo.put_organization_id(organization.id)
+        Repo.put_organization_id(organization.id)
         organization
     end
   end
