@@ -103,6 +103,13 @@ defmodule Glific.BigqueryTest do
     Oban.drain_queue(queue: :bigquery)
   end
 
+  test "periodic_updates/4 should create job for to remove duplicate contact",
+       %{global_schema: global_schema} = attrs do
+      BigQueryWorker.periodic_updates(attrs.organization_id)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
+  end
+
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
     Bigquery.handle_insert_query_response(
       {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
