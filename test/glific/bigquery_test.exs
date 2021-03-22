@@ -127,7 +127,6 @@ defmodule Glific.BigqueryTest do
 
     assert @flow_results_query ==
              Bigquery.generate_merge_query("flow_results", credentials, attrs.organization_id)
->>>>>>> master
   end
 
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
