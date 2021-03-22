@@ -66,7 +66,7 @@ defmodule Glific.Communications.Message do
   defp log_error(message) do
     Logger.error("Could not send message: message_id: '#{message.id}'")
     {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
-    {:error, "Cannot send the message to the contact."}
+    {:error, "Cannot send the message to the contact. Kindly check Gupshup Setting"}
   end
 
   @spec publish_message(Message.t()) :: {:ok, Message.t()}
