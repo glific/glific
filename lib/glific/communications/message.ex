@@ -68,8 +68,7 @@ defmodule Glific.Communications.Message do
   defp log_error(message, reason) do
     Messages.notify(message, reason)
 
-    # This seems SO SO WRONG. we should NEVER EVER do something like this, unless it is explicit
-    # {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
+    {:ok, _} = Messages.update_message(message, %{status: :error})
     {:error, reason}
   end
 
