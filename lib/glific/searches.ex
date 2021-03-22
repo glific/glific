@@ -279,7 +279,6 @@ defmodule Glific.Searches do
   # whether inboound or outbound
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
-
     Logger.info("Search query with params: #{inspect(args)} and terms: #{term}")
 
     query = basic_query(args)
@@ -358,6 +357,9 @@ defmodule Glific.Searches do
       end
       |> Repo.all()
       |> get_contact_ids(is_status?)
+
+
+      Logger.info("fetched conatct ids : args: #{inspect(contact_ids)}")
 
     # if we dont have any contact ids at this stage
     # it means that the user did not have permission
