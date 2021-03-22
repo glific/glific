@@ -2,6 +2,7 @@ defmodule Glific.BigqueryTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
   use ExUnit.Case
+  import Mock
 
   alias Glific.{
     Bigquery,
@@ -121,6 +122,25 @@ defmodule Glific.BigqueryTest do
 
     {:ok, credential} = Partners.get_credential(%{organization_id: 1, shortcode: "bigquery"})
     assert false == credential.is_active
+  end
+
+  test "make_job_to_remove_duplicate/2 should delete duplicate messages", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+      }
+    ]) do
+      assert :ok == Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
   end
 
   test "handle_insert_query_response/3 should raise error", attrs do
