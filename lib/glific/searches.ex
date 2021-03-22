@@ -280,6 +280,7 @@ defmodule Glific.Searches do
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
     basic_query(args)
+    |> add_contact_opts(args.contact_opts)
     |> select([c: c], c.id)
     |> Full.run(term, args)
   end
