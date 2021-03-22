@@ -102,33 +102,6 @@ defmodule Glific.BigqueryTest do
     Oban.drain_queue(queue: :bigquery)
   end
 
-  @messages_query "MERGE `test_dataset.messages` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `test_dataset.messages_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), 'Asia/Kolkata'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.type = source.type,target.status = source.status,target.sent_at = source.sent_at,target.tags_label = source.tags_label,target.flow_label = source.flow_label,target.flow_name = source.flow_name,target.flow_uuid = source.flow_uuid,target.updated_at = source.updated_at;"
-
-  @contact_query "MERGE `test_dataset.contacts` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `test_dataset.contacts_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), 'Asia/Kolkata'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.provider_status = source.provider_status,target.status = source.status,target.language = source.language,target.optin_time = source.optin_time,target.optout_time = source.optout_time,target.last_message_at = source.last_message_at,target.updated_at = source.updated_at,target.fields = source.fields,target.settings = source.settings,target.groups = source.groups,target.tags = source.tags;"
-
-  @flow_results_query "MERGE `test_dataset.flow_results` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `test_dataset.flow_results_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), 'Asia/Kolkata'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.results = source.results,target.updated_at = source.updated_at;"
-
-  test "generate_merge_query/2 create merge query for messages", attrs do
-    credentials = %{dataset_id: "test_dataset"}
-
-    assert @messages_query ==
-             Bigquery.generate_merge_query("messages", credentials, attrs.organization_id)
-  end
-
-  test "generate_merge_query/2 create merge query for contacts", attrs do
-    credentials = %{dataset_id: "test_dataset"}
-
-    assert @contact_query ==
-             Bigquery.generate_merge_query("contacts", credentials, attrs.organization_id)
-  end
-
-  test "generate_merge_query/2 create merge query for flow_results", attrs do
-    credentials = %{dataset_id: "test_dataset"}
-
-    assert @flow_results_query ==
-             Bigquery.generate_merge_query("flow_results", credentials, attrs.organization_id)
-  end
-
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
     Bigquery.handle_insert_query_response(
       {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
