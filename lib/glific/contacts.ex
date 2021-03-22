@@ -464,13 +464,13 @@ defmodule Glific.Contacts do
   def can_send_message_to?(contact, true = _is_hsm) do
     cond do
       contact.status != :valid ->
-        {:error, "Contact status is not valid"}
+        {:error, "Contact status is not valid."}
 
       contact.bsp_status not in [:session_and_hsm, :hsm] ->
-        {:error, "Cannot send hsm message to contact, invalid bsp status"}
+        {:error, "Cannot send hsm message to contact, invalid bsp status."}
 
       contact.optin_time == nil ->
-        {:error, "Cannot send hsm message to contact, not opted in"}
+        {:error, "Cannot send hsm message to contact, not opted in."}
 
       true ->
         {:ok, nil}
@@ -483,13 +483,13 @@ defmodule Glific.Contacts do
   def can_send_message_to?(contact, false = _is_hsm) do
     cond do
       contact.status != :valid ->
-        {:error, "Contact status is not valid"}
+        {:error, "Contact status is not valid."}
 
       contact.bsp_status not in [:session_and_hsm, :session] ->
-        {:error, "Cannot send session message to contact, invalid bsp status"}
+        {:error, "Cannot send session message to contact, invalid bsp status."}
 
       Glific.in_past_time(contact.last_message_at, :hours, 24) == false ->
-        {:error, "Cannot send session message to contact, not messaged in 24 hour window"}
+        {:error, "Cannot send session message to contact, not messaged in 24 hour window."}
 
       true ->
         {:ok, nil}
@@ -505,14 +505,14 @@ defmodule Glific.Contacts do
     if is_hsm do
       if contact.bsp_status in [:session_and_hsm, :hsm],
         do: {:ok, nil},
-        else: {:error, "Cannot send hsm message to contact, invalid bsp status"}
+        else: {:error, "Cannot send hsm message to contact, invalid bsp status."}
     else
       if contact.bsp_status in [:session_and_hsm, :session] &&
            Glific.in_past_time(contact.last_message_at, :hours, 24),
          do: {:ok, nil},
          else:
            {:error,
-            "Cannot send session message to contact, invalid bsp status or not messaged in 24 hour window"}
+            "Cannot send session message to contact, invalid bsp status or not messaged in 24 hour window."}
     end
   end
 
