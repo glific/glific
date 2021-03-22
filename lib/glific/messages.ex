@@ -233,10 +233,10 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(boolean(), map()) ::
+  @spec create_and_send_message(tuple(), map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp create_and_send_message(
-         true = _is_valid_contact,
+         {:ok, _contact} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
     {:ok, message} =
@@ -253,8 +253,8 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  defp create_and_send_message(false, _) do
-    {:error, "Cannot send the message to the contact."}
+  defp create_and_send_message({:error, message}, _) do
+    {:error, message}
   end
 
   @spec parse_message_body(map()) :: String.t() | nil

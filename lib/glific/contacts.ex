@@ -456,17 +456,17 @@ defmodule Glific.Contacts do
   @doc """
   Check if we can send a message to the contact
   """
-  @spec can_send_message_to?(Contact.t()) :: boolean()
+  @spec can_send_message_to?(Contact.t()) :: tuple()
   def can_send_message_to?(contact), do: can_send_message_to?(contact, false)
 
   @doc false
-  @spec can_send_message_to?(Contact.t(), boolean()) :: boolean()
+  @spec can_send_message_to?(Contact.t(), boolean()) :: tuple()
   def can_send_message_to?(contact, true = _is_hsm) do
     if contact.status == :valid &&
          contact.bsp_status in [:session_and_hsm, :hsm] &&
          contact.optin_time != nil,
-       do: true,
-       else: false
+       do: {:ok, contact},
+       else: {:error, "Cannot send hsm message to contact"}
   end
 
   @doc """
@@ -476,8 +476,8 @@ defmodule Glific.Contacts do
     if contact.status == :valid &&
          contact.bsp_status in [:session_and_hsm, :session] &&
          Glific.in_past_time(contact.last_message_at, :hours, 24),
-       do: true,
-       else: false
+       do: {:ok, contact},
+       else: {:error, "Cannot send session message to contact"}
   end
 
   @doc """
