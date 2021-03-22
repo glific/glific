@@ -7,8 +7,8 @@ defmodule Glific.Stats do
   require Logger
 
   alias Glific.{
-    Stats.Stat,
-    Repo
+    Repo,
+    Stats.Stat
   }
 
   @doc """

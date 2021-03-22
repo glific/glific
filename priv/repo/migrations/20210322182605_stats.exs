@@ -31,8 +31,12 @@ defmodule Glific.Repo.Migrations.Stats do
 
       add :period, :string, comment: "The period for this record: hour, day, week, month, summary"
 
-      add :date, :date, comment: "All stats are measured with respect to UTC time, to keep things timezone agnostic"
-      add :hour, :integer, comment: "The hour that this record represents, 0..23, only for PERIOD: hour"
+      add :date, :date,
+        comment:
+          "All stats are measured with respect to UTC time, to keep things timezone agnostic"
+
+      add :hour, :integer,
+        comment: "The hour that this record represents, 0..23, only for PERIOD: hour"
 
       # foreign key to organization restricting scope of this table to this organization only
       add :organization_id, references(:organizations, on_delete: :delete_all), null: false
