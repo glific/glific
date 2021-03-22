@@ -144,7 +144,6 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  @tag :pending
   test "make_job_to_remove_duplicate/2 should raise info log", attrs do
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -161,8 +160,11 @@ defmodule Glific.BigqueryTest do
       }
     ]) do
       assert capture_log(fn ->
-        Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
-      end) =~ "remove duplicates for  messages table on bigquery, org_id: #{attrs.organization_id}"
+               Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+             end) =~
+               "remove duplicates for  messages table on bigquery, org_id: #{
+                 attrs.organization_id
+               }"
     end
   end
 
@@ -252,7 +254,8 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  test "handle_duplicate_removal_job_error/2 should log info about deletion", attrs do
+  test "handle_duplicate_removal_job_error/2 should raise error about deletion in case of error",
+       attrs do
     assert_raise RuntimeError, fn ->
       Bigquery.handle_duplicate_removal_job_error(
         {:error, "error"},
@@ -261,6 +264,21 @@ defmodule Glific.BigqueryTest do
         attrs.organization_id
       )
     end
+  end
+
+  test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
+       attrs do
+    assert capture_log(fn ->
+      Bigquery.handle_duplicate_removal_job_error(
+        {:ok, "successful"},
+        "messages",
+        %{},
+        attrs.organization_id
+      )
+           end) =~
+             "duplicate entries have been removed from messages on bigquery for org_id: #{
+              attrs.organization_id
+            }"
   end
 
   test "create_tables/3 should create tables" do
