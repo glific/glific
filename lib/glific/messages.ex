@@ -4,8 +4,6 @@ defmodule Glific.Messages do
   """
   import Ecto.Query, warn: false
 
-  require Logger
-
   alias Glific.{
     Communications,
     Contacts,
@@ -630,17 +628,10 @@ defmodule Glific.Messages do
   end
 
   defp do_list_conversations(query, args, false = _count) do
-    query =
     query
     |> preload([:contact, :sender, :receiver, :tags, :user, :media])
-
-    Logger.info("before list conversations. #{inspect(query)}")
-
-    data =  Repo.all(query)
-
-    Logger.info("messages query ran sucessully.")
-
-    make_conversations(data)
+    |> Repo.all()
+    |> make_conversations()
     |> add_empty_conversations(args)
 
     # |> adjust_message_numbers()
@@ -660,9 +651,6 @@ defmodule Glific.Messages do
   """
   @spec list_conversations(map(), boolean) :: [Conversation.t()] | integer
   def list_conversations(args, count \\ false) do
-    Logger.info("List conversations args: #{inspect(args)}")
-    Logger.info("message id count: #{length(args.ids)}")
-
     args
     |> Enum.reduce(
       Message,
