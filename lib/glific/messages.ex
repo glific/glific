@@ -660,7 +660,8 @@ defmodule Glific.Messages do
   """
   @spec list_conversations(map(), boolean) :: [Conversation.t()] | integer
   def list_conversations(args, count \\ false) do
-    Logger.info("List conversations # args: {args}")
+    Logger.info("List conversations args: #{inspect(args)}")
+    Logger.info("message id count: #{length(args.ids)}")
 
     args
     |> Enum.reduce(

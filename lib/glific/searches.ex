@@ -359,7 +359,7 @@ defmodule Glific.Searches do
       |> get_contact_ids(is_status?)
 
 
-      Logger.info("fetched conatct ids : args: #{inspect(contact_ids)}")
+      Logger.info("count conatct ids : args: #{length(contact_ids)}")
 
     # if we dont have any contact ids at this stage
     # it means that the user did not have permission
