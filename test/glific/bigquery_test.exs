@@ -93,6 +93,7 @@ defmodule Glific.BigqueryTest do
   test "queue_table_data/4 should create job for flow_results",
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("flow_results", attrs)
+
     BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, %{
       min_id: @min_id,
       max_id: max_id
@@ -156,6 +157,16 @@ defmodule Glific.BigqueryTest do
                attrs.organization_id,
                attrs
              )
+  end
+
+  test "handle_sync_errors/2 should raise error when status is not ALREADY_EXISTS", attrs do
+    assert_raise RuntimeError, fn ->
+      Bigquery.handle_sync_errors(
+        %{body: ""},
+        attrs.organization_id,
+        attrs
+      )
+    end
   end
 
   test "create_tables/3 should create tables" do
