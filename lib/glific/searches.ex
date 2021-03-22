@@ -282,6 +282,7 @@ defmodule Glific.Searches do
     Logger.info("Search query with params: #{inspect(args)} and terms: #{term}")
 
     query = basic_query(args)
+    |> add_contact_opts(args.contact_opts)
     |> select([c: c], c.id)
     |> Full.run(term, args)
 
