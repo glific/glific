@@ -12,6 +12,16 @@ defmodule Glific.BigqueryTest do
     Seeds.SeedsDev
   }
 
+  setup_with_mocks([
+    {
+      Goth.Token,
+      [:passthrough],
+      [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+    }
+  ]) do
+    %{token: "0xFAKETOKEN_Q="}
+  end
+
   setup do
     organization = SeedsDev.seed_organizations()
 
@@ -133,15 +143,7 @@ defmodule Glific.BigqueryTest do
         }
     end)
 
-    with_mocks([
-      {
-        Goth.Token,
-        [:passthrough],
-        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
-      }
-    ]) do
-      assert :ok == Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
-    end
+    assert :ok == Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
   end
 
   test "make_job_to_remove_duplicate/2 should raise info log", attrs do
@@ -254,6 +256,11 @@ defmodule Glific.BigqueryTest do
     end
   end
 
+  test "fetch_bigquery_credentials/2 should return credentials in ok tuple format", attrs do
+    assert {:ok, value} = Bigquery.fetch_bigquery_credentials(attrs.organization_id)
+    assert true == is_map(value)
+  end
+
   test "handle_duplicate_removal_job_error/2 should raise error about deletion in case of error",
        attrs do
     assert_raise RuntimeError, fn ->
@@ -269,16 +276,16 @@ defmodule Glific.BigqueryTest do
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
        attrs do
     assert capture_log(fn ->
-      Bigquery.handle_duplicate_removal_job_error(
-        {:ok, "successful"},
-        "messages",
-        %{},
-        attrs.organization_id
-      )
+             Bigquery.handle_duplicate_removal_job_error(
+               {:ok, "successful"},
+               "messages",
+               %{},
+               attrs.organization_id
+             )
            end) =~
              "duplicate entries have been removed from messages on bigquery for org_id: #{
-              attrs.organization_id
-            }"
+               attrs.organization_id
+             }"
   end
 
   test "create_tables/3 should create tables" do
