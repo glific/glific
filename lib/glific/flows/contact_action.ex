@@ -189,8 +189,8 @@ defmodule Glific.Flows.ContactAction do
   @spec infinite_loop(FlowContext.t(), String.t()) ::
           {:ok, map(), any()}
   defp infinite_loop(context, body) do
-    Logger.info("Infinite loop detected, body: #{body}. Resetting context")
-    context = FlowContext.reset_all_contexts(context)
+    message = "Infinite loop detected, body: #{body}. Resetting flows"
+    context = FlowContext.reset_all_contexts(context, message)
 
     # at some point soon, we should change action signatures to allow error
     {:ok, context, []}
@@ -250,9 +250,10 @@ defmodule Glific.Flows.ContactAction do
 
   @spec error(FlowContext.t(), any(), map()) :: {:ok, map(), any()}
   defp error(context, error, attrs) do
-    Logger.info("Error sending message: #{inspect(error)}, #{inspect(attrs)}")
+    message = "Error sending message, resetting contect: #{inspect(error)}, #{inspect(attrs)}"
+
     # returning for now, but resetting the context
-    context = FlowContext.reset_all_contexts(context)
+    context = FlowContext.reset_all_contexts(context, message)
     {:ok, context, []}
   end
 

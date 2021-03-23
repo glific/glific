@@ -9,12 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Triggers
 - Ability to optionally delete / optin Contcts via import
+- Ability for NGOs to customize some glific operations via integrated elixir code
 
 ### Fixed
 - Quick access to saved searches
 - Fixed showing all messages in the conversation
 - Improved UI for adding contacts to a collection
 - Database optimizations for inserting messages
+
+### Removed
+- No longer use Postgres full text search, simplified search
 
 ## [1.1.2] - 2021-03-11
 

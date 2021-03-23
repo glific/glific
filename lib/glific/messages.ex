@@ -4,6 +4,8 @@ defmodule Glific.Messages do
   """
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Communications,
     Contacts,
@@ -16,6 +18,7 @@ defmodule Glific.Messages do
     Messages.Message,
     Messages.MessageMedia,
     Messages.MessageVariables,
+    Notifications,
     Partners,
     Repo,
     Tags,
@@ -233,10 +236,10 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(boolean(), map()) ::
+  @spec create_and_send_message({:ok | :error, any()}, map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp create_and_send_message(
-         true = _is_valid_contact,
+         {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
     {:ok, message} =
@@ -252,9 +255,45 @@ defmodule Glific.Messages do
     Communications.Message.send_message(message, attrs)
   end
 
-  @doc false
-  defp create_and_send_message(false, _) do
-    {:error, "Cannot send the message to the contact."}
+  defp create_and_send_message({:error, reason}, attrs) do
+    notify(attrs, reason)
+    {:error, reason}
+  end
+
+  @doc """
+  Create and insert a notification for this error when sending a message.
+  Add as much detail, so we can reverse-engineer why the sending failed.
+  """
+  @spec notify(map(), String.t()) :: nil
+  def notify(attrs, reason \\ "Cannot send the message to the contact.") do
+    contact = attrs.receiver
+
+    Logger.error(
+      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
+        reason
+      }"
+    )
+
+    {:ok, _} =
+      Notifications.create_notification(%{
+        category: "Message",
+        message: reason,
+        severity: "Error",
+        organization_id: attrs.organization_id,
+        entity: %{
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone,
+          bsp_status: contact.bsp_status,
+          status: contact.status,
+          last_message_at: contact.last_message_at,
+          is_hsm: Map.get(attrs, :is_hsm),
+          flow_id: Map.get(attrs, :flow_id),
+          group_id: Map.get(attrs, :group_id)
+        }
+      })
+
+    nil
   end
 
   @spec parse_message_body(map()) :: String.t() | nil
@@ -284,9 +323,10 @@ defmodule Glific.Messages do
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
           {:ok, Message.t()}
   def create_and_send_otp_verification_message(contact, otp) do
-    if Contacts.can_send_message_to?(contact, false),
-      do: create_and_send_otp_session_message(contact, otp),
-      else: create_and_send_otp_template_message(contact, otp)
+    case Contacts.can_send_message_to?(contact, false) do
+      {:ok, _} -> create_and_send_otp_session_message(contact, otp)
+      _ -> create_and_send_otp_template_message(contact, otp)
+    end
   end
 
   @doc false

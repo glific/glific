@@ -135,6 +135,8 @@ defmodule Glific.Jobs.GcsWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media}}) do
+    Repo.put_organization_id(media["organization_id"])
+
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
 

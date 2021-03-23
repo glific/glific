@@ -248,7 +248,7 @@ defmodule Glific.CommunicationsTest do
       assert {:error, _msg} = Communications.Message.send_message(message)
 
       message = Messages.get_message!(message.id)
-      assert message.status == :contact_opt_out
+      assert message.status == :error
       assert message.bsp_status == nil
     end
 

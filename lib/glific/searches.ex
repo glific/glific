@@ -162,7 +162,7 @@ defmodule Glific.Searches do
     |> where([c], c.id in ^contact_ids)
     |> where([c], c.status != :blocked)
     |> select([c], c.id)
-    |> Repo.add_permission(&Searches.add_permission_contact/2)
+    |> Repo.add_permission(&Searches.add_permission/2)
   end
 
   @spec status_query(map()) :: Ecto.Query.t()
@@ -174,7 +174,7 @@ defmodule Glific.Searches do
     |> select([c], %{id: c.id, last_communication_at: c.last_communication_at})
     |> distinct(true)
     |> add_contact_opts(opts)
-    |> Repo.add_permission(&Searches.add_permission_contact/2)
+    |> Repo.add_permission(&Searches.add_permission/2)
   end
 
   @spec add_contact_opts(Ecto.Query.t(), map()) :: Ecto.Query.t()
@@ -232,23 +232,10 @@ defmodule Glific.Searches do
 
   @doc """
   Add permissioning specific to searches, in this case we want to restrict the visibility of
-  contact ids where message is the main query table
-  """
-  # codebeat:disable[ABC]
-  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
-  def add_permission(query, user) do
-    sub_query = permission_query(user)
-
-    query
-    |> where([m: m], m.contact_id == ^user.contact_id or m.contact_id in subquery(sub_query))
-  end
-
-  @doc """
-  Add permissioning specific to searches, in this case we want to restrict the visibility of
   contact ids where the contact is the main query table
   """
-  @spec add_permission_contact(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
-  def add_permission_contact(query, user) do
+  @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
+  def add_permission(query, user) do
     sub_query = permission_query(user)
 
     query
@@ -262,13 +249,11 @@ defmodule Glific.Searches do
     query = from c in Contact, as: :c
 
     query
-    |> join(:left, [c: c], m in Message,
-      as: :m,
-      on: c.id == m.contact_id and m.message_number == c.last_message_number
-    )
+    |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
     |> where([c: c], c.id != ^organization_contact_id)
     |> where([c: c], c.status != :blocked)
     |> order_by([c: c], desc: c.last_communication_at)
+    |> group_by([c: c], c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
 
@@ -280,6 +265,7 @@ defmodule Glific.Searches do
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
     basic_query(args)
+    |> add_contact_opts(args.contact_opts)
     |> select([c: c], c.id)
     |> Full.run(term, args)
   end
