@@ -2,6 +2,8 @@ defmodule Glific.BigqueryTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
   use ExUnit.Case
+  import Mock
+  import ExUnit.CaptureLog
 
   alias Glific.{
     Bigquery,
@@ -10,6 +12,16 @@ defmodule Glific.BigqueryTest do
     Seeds.SeedsDev
   }
 
+  setup_with_mocks([
+    {
+      Goth.Token,
+      [:passthrough],
+      [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+    }
+  ]) do
+    %{token: "0xFAKETOKEN_Q="}
+  end
+
   setup do
     organization = SeedsDev.seed_organizations()
 
@@ -17,6 +29,7 @@ defmodule Glific.BigqueryTest do
     {
     "project_id": "DEFAULT PROJECT ID",
     "private_key_id": "DEFAULT API KEY",
+    "client_email": "DEFAULT CLIENT EMAIL",
     "private_key": "DEFAULT PRIVATE KEY"
     }
     """
@@ -93,6 +106,7 @@ defmodule Glific.BigqueryTest do
   test "queue_table_data/4 should create job for flow_results",
        %{global_schema: global_schema} = attrs do
     max_id = get_max_id("flow_results", attrs)
+
     BigQueryWorker.queue_table_data("flow_results", attrs.organization_id, %{
       min_id: @min_id,
       max_id: max_id
@@ -102,32 +116,11 @@ defmodule Glific.BigqueryTest do
     Oban.drain_queue(queue: :bigquery)
   end
 
-  @messages_query "MERGE `test_dataset.messages` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `test_dataset.messages_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), 'Asia/Kolkata'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.type = source.type,target.status = source.status,target.sent_at = source.sent_at,target.tags_label = source.tags_label,target.flow_label = source.flow_label,target.flow_name = source.flow_name,target.flow_uuid = source.flow_uuid,target.updated_at = source.updated_at;"
-
-  @contact_query "MERGE `test_dataset.contacts` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `test_dataset.contacts_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), 'Asia/Kolkata'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.provider_status = source.provider_status,target.status = source.status,target.language = source.language,target.optin_time = source.optin_time,target.optout_time = source.optout_time,target.last_message_at = source.last_message_at,target.updated_at = source.updated_at,target.fields = source.fields,target.settings = source.settings,target.groups = source.groups,target.tags = source.tags;"
-
-  @flow_results_query "MERGE `test_dataset.flow_results` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `test_dataset.flow_results_delta` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), 'Asia/Kolkata'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET target.results = source.results,target.updated_at = source.updated_at;"
-
-  test "generate_merge_query/2 create merge query for messages", attrs do
-    credentials = %{dataset_id: "test_dataset"}
-
-    assert @messages_query ==
-             Bigquery.generate_merge_query("messages", credentials, attrs.organization_id)
-  end
-
-  test "generate_merge_query/2 create merge query for contacts", attrs do
-    credentials = %{dataset_id: "test_dataset"}
-
-    assert @contact_query ==
-             Bigquery.generate_merge_query("contacts", credentials, attrs.organization_id)
-  end
-
-  test "generate_merge_query/2 create merge query for flow_results", attrs do
-    credentials = %{dataset_id: "test_dataset"}
-
-    assert @flow_results_query ==
-             Bigquery.generate_merge_query("flow_results", credentials, attrs.organization_id)
->>>>>>> master
+  test "periodic_updates/4 should create job for to remove duplicate contact",
+       %{global_schema: global_schema} = attrs do
+    BigQueryWorker.periodic_updates(attrs.organization_id)
+    assert_enqueued(worker: BigQueryWorker, prefix: global_schema)
+    Oban.drain_queue(queue: :bigquery)
   end
 
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
@@ -142,6 +135,41 @@ defmodule Glific.BigqueryTest do
     assert false == credential.is_active
   end
 
+  test "make_job_to_remove_duplicate/2 should delete duplicate messages", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    assert :ok == Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+  end
+
+  test "make_job_to_remove_duplicate/2 should raise info log", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+      }
+    ]) do
+      assert capture_log(fn ->
+               Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+             end) =~
+               "remove duplicates for  messages table on bigquery, org_id: #{
+                 attrs.organization_id
+               }"
+    end
+  end
+
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise Protocol.UndefinedError, fn ->
       Bigquery.handle_insert_query_response(
@@ -151,6 +179,39 @@ defmodule Glific.BigqueryTest do
         max_id: 10
       )
     end
+  end
+
+  @delete_query "DELETE FROM `test_dataset.messages` WHERE updated_at in (SELECT updated_at FROM (SELECT updated_at, id, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `test_dataset.messages` delta where updated_at IS NOT NULL AND updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), 'Asia/Kolkata')) WHERE row_num > 1)"
+
+  test "generate_duplicate_removal_query/3 should create sql query", attrs do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body: "{\"clear\":{\"code\":200,\"status\":\"TABLE_CREATED\"}}"
+        }
+    end)
+
+    conn = %Tesla.Client{
+      adapter: nil,
+      fun: nil,
+      post: [],
+      pre: [
+        {Tesla.Middleware.Headers, :call,
+         [
+           [
+             {"authorization", "Bearer ya29.c.Kp0B9Acz3QK1"}
+           ]
+         ]}
+      ]
+    }
+
+    assert @delete_query ==
+             Bigquery.generate_duplicate_removal_query(
+               "messages",
+               %{conn: conn, project_id: "test_project", dataset_id: "test_dataset"},
+               attrs.organization_id
+             )
   end
 
   test "handle_insert_query_response/3 should update table", attrs do
@@ -184,6 +245,48 @@ defmodule Glific.BigqueryTest do
                attrs.organization_id,
                attrs
              )
+  end
+
+  test "handle_sync_errors/2 should raise error when status is not ALREADY_EXISTS", attrs do
+    assert_raise RuntimeError, fn ->
+      Bigquery.handle_sync_errors(
+        %{body: ""},
+        attrs.organization_id,
+        attrs
+      )
+    end
+  end
+
+  test "fetch_bigquery_credentials/2 should return credentials in ok tuple format", attrs do
+    assert {:ok, value} = Bigquery.fetch_bigquery_credentials(attrs.organization_id)
+    assert true == is_map(value)
+  end
+
+  test "handle_duplicate_removal_job_error/2 should raise error about deletion in case of error",
+       attrs do
+    assert_raise RuntimeError, fn ->
+      Bigquery.handle_duplicate_removal_job_error(
+        {:error, "error"},
+        "messages",
+        %{},
+        attrs.organization_id
+      )
+    end
+  end
+
+  test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
+       attrs do
+    assert capture_log(fn ->
+             Bigquery.handle_duplicate_removal_job_error(
+               {:ok, "successful"},
+               "messages",
+               %{},
+               attrs.organization_id
+             )
+           end) =~
+             "duplicate entries have been removed from messages on bigquery for org_id: #{
+               attrs.organization_id
+             }"
   end
 
   test "create_tables/3 should create tables" do
