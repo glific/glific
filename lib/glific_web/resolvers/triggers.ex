@@ -52,6 +52,8 @@ defmodule GlificWeb.Resolvers.Triggers do
            Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
          {:ok, trigger} <- Trigger.update_trigger(trigger, params) do
       {:ok, %{trigger: trigger}}
+    else
+      _ -> {:error, "Trigger start_at should always be greater than current time"}
     end
   end
 
