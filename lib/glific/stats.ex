@@ -4,7 +4,8 @@ defmodule Glific.Stats do
   """
 
   import Ecto.Query, warn: false
-  require Logger
+
+  use Publicist
 
   alias Glific.{
     Flows.FlowContext,
@@ -92,13 +93,15 @@ defmodule Glific.Stats do
     time = time |> Timex.shift(hours: -1)
     date = DateTime.to_date(time)
 
-    org_id_list
-    |> empty_results(time, date)
-    |> get_hourly_stats(org_id_list, time)
-    |> get_daily_stats(org_id_list, time)
-    |> get_weekly_stats(org_id_list, time, date)
-    |> get_monthly_stats(org_id_list, time, date)
+    rows =
+      org_id_list
+      |> empty_results(time, date)
+      |> get_hourly_stats(org_id_list, time)
+      |> get_daily_stats(org_id_list, time)
+      |> get_weekly_stats(org_id_list, time, date)
+      |> get_monthly_stats(org_id_list, time, date)
 
+    Repo.insert_all(Stat, Map.values(rows))
     nil
   end
 
@@ -124,7 +127,7 @@ defmodule Glific.Stats do
       %{},
       fn id, acc ->
         acc
-        |> Map.put({:hour, id}, empty_result(time, date, "hour"))
+        |> Map.put({:hour, id}, empty_result(time, date, id, "hour"))
         |> empty_daily_results(time, date, id)
         |> empty_weekly_results(time, date, id)
         |> empty_monthly_results(time, date, id)
@@ -135,7 +138,7 @@ defmodule Glific.Stats do
   @spec empty_daily_results(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
   defp empty_daily_results(stats, time, date, org_id) do
     if is_daily?(time) do
-      stats |> Map.put({:day, org_id}, empty_result(time, date, "day"))
+      stats |> Map.put({:day, org_id}, empty_result(time, date, org_id, "day"))
     else
       stats
     end
@@ -144,7 +147,11 @@ defmodule Glific.Stats do
   @spec empty_weekly_results(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
   defp empty_weekly_results(stats, time, date, org_id) do
     if is_weekly?(time, date) do
-      stats |> Map.put({:week, org_id}, empty_result(time, Date.beginning_of_week(date), "week"))
+      stats
+      |> Map.put(
+        {:week, org_id},
+        empty_result(time, Date.beginning_of_week(date), org_id, "week")
+      )
     else
       stats
     end
@@ -154,14 +161,18 @@ defmodule Glific.Stats do
   defp empty_monthly_results(stats, time, date, org_id) do
     if is_monthly?(time, date) do
       stats
-      |> Map.put({:month, org_id}, empty_result(time, Date.beginning_of_month(date), "month"))
+      |> Map.put(
+        {:month, org_id},
+        empty_result(time, Date.beginning_of_month(date), org_id, "month")
+      )
     else
       stats
     end
   end
 
-  @spec empty_result(DateTime.t(), Date.t(), String.t()) :: map()
-  defp empty_result(time, date, period) do
+  @spec empty_result(DateTime.t(), Date.t(), non_neg_integer, String.t()) :: map()
+  defp empty_result(time, date, organization_id, period) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
     %{
       contacts: 0,
       active: 0,
@@ -175,7 +186,10 @@ defmodule Glific.Stats do
       flows_completed: 0,
       period: period,
       date: date,
-      hour: if(period == "hour", do: time.hour, else: 0)
+      hour: if(period == "hour", do: time.hour, else: 0),
+      organization_id: organization_id,
+      inserted_at: now,
+      updated_at: now
     }
   end
 
@@ -299,18 +313,18 @@ defmodule Glific.Stats do
       |> group_by([fc], fc.organization_id)
       |> select([fc], [count(fc.id), fc.organization_id])
 
-    start =
+    flow_start =
       query
       |> where([fc], fc.inserted_at >= ^start)
       |> where([fc], fc.inserted_at <= ^finish)
 
-    completed =
+    flow_completed =
       query
       |> where([fc], fc.completed_at >= ^start)
       |> where([fc], fc.completed_at <= ^finish)
 
     stats
-    |> make_result(start, period, :flow_start)
-    |> make_result(completed, period, :flow_completed)
+    |> make_result(flow_start, period, :flow_start)
+    |> make_result(flow_completed, period, :flow_completed)
   end
 end
