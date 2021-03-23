@@ -600,7 +600,8 @@ defmodule Glific.Fixtures do
       end_date: DateTime.forward(5),
       is_active: true,
       is_repeating: false,
-      start_at: DateTime.forward(1)
+      start_date: Timex.shift(Date.utc_today(), days: 1),
+      start_time: Time.utc_now()
     }
 
     [g1 | _] = Groups.list_groups(attrs)

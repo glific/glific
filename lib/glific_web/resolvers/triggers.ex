@@ -47,9 +47,10 @@ defmodule GlificWeb.Resolvers.Triggers do
   """
   @spec update_trigger(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_trigger(_, %{id: id, input: params}, _) do
-    with {:ok, trigger} <- Repo.fetch(Trigger, id) do
-      {:ok, trigger} = Trigger.update_trigger(trigger, params)
+  def update_trigger(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, trigger} <-
+           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
+         {:ok, trigger} <- Trigger.update_trigger(trigger, params) do
       {:ok, %{trigger: trigger}}
     end
   end
