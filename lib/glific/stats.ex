@@ -116,35 +116,35 @@ defmodule Glific.Stats do
       fn id, acc ->
         acc
         |> Map.put({:hour, id}, empty_result(time, date, "hour"))
-        |> empty_daily_results(time, date)
-        |> empty_weekly_results(time, date)
-        |> empty_monthly_results(time, date)
+        |> empty_daily_results(time, date, id)
+        |> empty_weekly_results(time, date, id)
+        |> empty_monthly_results(time, date, id)
       end
     )
   end
 
-  @spec empty_daily_result(map(), DateTime.t(), Date.t()) :: map()
-  defp empty_daily_result(stats, time, date) do
+  @spec empty_daily_result(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
+  defp empty_daily_results(stats, time, date, org_id) do
     if is_daily?(time) do
-      stats |> Map.put({:day, id}, empty_result(time, date, "day"))
+      stats |> Map.put({:day, org_id}, empty_result(time, date, "day"))
     else
       stats
     end
   end
 
-  @spec empty_weekly_result(map(), DateTime, t()) :: map()
-  defp empty_weekly_result(stats, time) do
-    if is_weekly?(time) do
-      stats |> Map.put({:week, id}, empty_result(time, Date.beginning_of_week(date), "week"))
+  @spec empty_weekly_result(map(), t(), DateTime, non_neg_integer()) :: map()
+  defp empty_weekly_results(stats, time, date, org_id) do
+    if is_weekly?(time, date) do
+      stats |> Map.put({:week, org_id}, empty_result(time, Date.beginning_of_week(date), "week"))
     else
       stats
     end
   end
 
   @spec empty_monthly_result(map(), DateTime, t()) :: map()
-  defp empty_monthly_result(stats, time) do
-    if is_monthly?(time) do
-      stats |> Map.put({:month, id}, empty_result(time, Date.beginning_of_month(date), "month"))
+  defp empty_monthly_results(stats, time, date, org_id) do
+    if is_monthly?(time, date) do
+      stats |> Map.put({:month, org_id}, empty_result(time, Date.beginning_of_month(date), "month"))
     else
       stats
     end
@@ -170,7 +170,7 @@ defmodule Glific.Stats do
   end
 
   @spec add(map(), tuple(), atom(), non_neg_integer) :: map()
-  defp add(result, period_org, key, value) do
+  defp add(result, {period_org, org_id}, key, value) do
     result
     |> Map.put(org_id, Map.put(result[period_org], key, value))
   end
@@ -211,6 +211,11 @@ defmodule Glific.Stats do
     |> get_periodic_stats(org_id_list, {:day, start, finish})
   end
 
+  defp get_daily_stats(stats, %{hour: hour} = _time, _date) when hour != 23, do: stats
+
+  defp get_daily_stats(_stats, _time, _date) do
+  end
+
   @spec get_weekly_stats(map(), list(), DateTime.t()) :: map()
   defp get_weekly_stats(stats, org_id_list, time) do
     start = Timex.beginning_of_week(time)
@@ -235,8 +240,8 @@ defmodule Glific.Stats do
 
     time_query =
       query
-      |> where([c], c.last_message_at >= start)
-      |> where([c], c.last_message_at <= finish)
+      |> where([c], c.last_message_at >= ^start)
+      |> where([c], c.last_message_at <= ^finish)
 
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
@@ -246,10 +251,5 @@ defmodule Glific.Stats do
     |> make_result(time_query, period, :active)
     |> make_result(optin, period, :optin)
     |> make_result(optout, period, :optout)
-  end
-
-  defp get_daily_stats(stats, %{hour: hour} = _time, _date) when hour != 23, do: stats
-
-  defp get_daily_stats(stats, time, date) do
   end
 end
