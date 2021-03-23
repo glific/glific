@@ -577,7 +577,7 @@ defmodule Glific.Bigquery do
 
     "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT * , ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC ) AS row_num FROM `#{
       credentials.dataset_id
-    }.#{source}` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 90 MINUTE), '#{
+    }.#{source}` delta WHERE updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
       timezone
     }'))  WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{
       fileds_to_update
@@ -596,8 +596,7 @@ defmodule Glific.Bigquery do
     timezone = Partners.organization(organization_id).timezone
     ## remove all the data for last 3 hours
     sql = """
-    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn
-    from `#{credentials.dataset_id}.#{table}_delta` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{timezone}')) a where a.rn <> 1 order by id);
+    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 4 HOUR), '#{timezone}');
     """
 
     query_body = %{query: sql, useLegacySql: false}
