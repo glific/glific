@@ -51,17 +51,23 @@ defmodule Glific.Stats.Stat do
   ]
 
   schema "stats" do
+    # contact fields
     field :contacts, :integer, default: 0
     field :active, :integer, default: 0
     field :optin, :integer, default: 0
     field :optout, :integer, default: 0
+
+    # message fields
     field :messages, :integer, default: 0
     field :inbound, :integer, default: 0
     field :outbound, :integer, default: 0
     field :hsm, :integer, default: 0
+
+    # flow fields
     field :flows_started, :integer, default: 0
     field :flows_completed, :integer, default: 0
 
+    # time fields
     field :period, :string, default: "hour"
 
     field :date, :date
