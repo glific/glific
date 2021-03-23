@@ -9,7 +9,6 @@ defmodule Glific.Searches.CollectionCount do
 
   alias Glific.{
     Communications,
-    Contacts.Contact,
     Partners,
     Repo
   }
@@ -61,11 +60,11 @@ defmodule Glific.Searches.CollectionCount do
   @spec empty_results(list()) :: map()
   defp empty_results(org_id_list),
     do:
-  Enum.reduce(
-    org_id_list,
-    %{},
-    fn id, acc -> Map.put(acc, id, empty_result()) end
-  )
+      Enum.reduce(
+        org_id_list,
+        %{},
+        fn id, acc -> Map.put(acc, id, empty_result()) end
+      )
 
   @spec empty_result :: map()
   defp empty_result,
@@ -90,7 +89,7 @@ defmodule Glific.Searches.CollectionCount do
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(
       result,
-    fn [cnt, org_id], result -> add(result, org_id, key, cnt) end
+      fn [cnt, org_id], result -> add(result, org_id, key, cnt) end
     )
   end
 

@@ -11,6 +11,7 @@ defmodule Glific.Partners do
   alias Glific.{
     Bigquery,
     Caches,
+    Contacts.Contact,
     Flags,
     GCS,
     Partners.Credential,
@@ -770,8 +771,8 @@ defmodule Glific.Partners do
   """
   @spec org_id_list(list(), boolean) :: list()
   def org_id_list([], recent) do
-    Partners.active_organizations([])
-    |> Partners.recent_organizations(recent)
+    active_organizations([])
+    |> recent_organizations(recent)
     |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
   end
 
@@ -798,5 +799,4 @@ defmodule Glific.Partners do
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
   end
-
 end
