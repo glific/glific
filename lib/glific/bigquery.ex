@@ -30,7 +30,7 @@ defmodule Glific.Bigquery do
     "messages" => :message_schema,
     "contacts" => :contact_schema,
     "flows" => :flow_schema,
-    "flow_results" => :flow_result_schema,
+    "flow_results" => :flow_result_schema
   }
 
   @doc """
@@ -530,14 +530,15 @@ defmodule Glific.Bigquery do
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
-    "DELETE FROM `#{credentials.dataset_id}.#{table}` WHERE EXISTS( SELECT * FROM  ( SELECT updated_at, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
-      credentials.dataset_id
-    }.#{table}` delta where updated_at > DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
+    "Delete FROM `#{credentials.dataset_id}.#{table}` WHERE updated_at in (SELECT updated_at FROM
+    (SELECT updated_at, id, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num
+    FROM `#{credentials.dataset_id}.#{table}` delta where updated_at IS NOT NULL AND updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
       timezone
-    }') ) WHERE row_num > 1)"
+    }')) WHERE row_num > 1)"
   end
 
-  @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
+  @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
+          :ok
   defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
     do:
       Logger.info(
