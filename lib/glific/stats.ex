@@ -42,8 +42,9 @@ defmodule Glific.Stats do
   In future we will put the status as virtual filed in the stats itself.
   """
   @spec list_stats(map()) :: list()
-  def list_stats(args),
-    do: Repo.list_filter(args, Stat, &Repo.opts_with_inserted_at/2, &filter_with/2)
+  def list_stats(args) do
+    Repo.list_filter(args, Stat, &Repo.opts_with_inserted_at/2, &filter_with/2)
+  end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -173,6 +174,7 @@ defmodule Glific.Stats do
   @spec empty_result(DateTime.t(), Date.t(), non_neg_integer, String.t()) :: map()
   defp empty_result(time, date, organization_id, period) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
+
     %{
       contacts: 0,
       active: 0,
