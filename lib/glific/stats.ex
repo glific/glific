@@ -102,13 +102,13 @@ defmodule Glific.Stats do
       Date.day_of_week(date) == 7
   end
 
-  @spec is_monthly?(DateTime.t(), Date.t()) :: boolean
+  @spec is_monthly?(Date.t(), DateTime.t()) :: boolean
   defp is_monthly?(time, date) do
     is_daily?(time) &&
       Date.days_in_month(date) == time.day
   end
 
-  @spec empty_results(list()) :: map()
+  @spec empty_results(list(), DateTime.t(), Date.t()) :: map()
   defp empty_results(org_id_list, time, date) do
     Enum.reduce(
       org_id_list,
@@ -123,7 +123,7 @@ defmodule Glific.Stats do
     )
   end
 
-  @spec empty_daily_result(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
+  @spec empty_daily_results(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
   defp empty_daily_results(stats, time, date, org_id) do
     if is_daily?(time) do
       stats |> Map.put({:day, org_id}, empty_result(time, date, "day"))
@@ -132,7 +132,7 @@ defmodule Glific.Stats do
     end
   end
 
-  @spec empty_weekly_result(map(), t(), DateTime, non_neg_integer()) :: map()
+  @spec empty_weekly_results(map(),  Date.t(), DateTime.t(), non_neg_integer()) :: map()
   defp empty_weekly_results(stats, time, date, org_id) do
     if is_weekly?(time, date) do
       stats |> Map.put({:week, org_id}, empty_result(time, Date.beginning_of_week(date), "week"))
@@ -141,7 +141,7 @@ defmodule Glific.Stats do
     end
   end
 
-  @spec empty_monthly_result(map(), DateTime, t()) :: map()
+  @spec empty_monthly_results(map(),  Date.t(), DateTime.t(), non_neg_integer()) :: map()
   defp empty_monthly_results(stats, time, date, org_id) do
     if is_monthly?(time, date) do
       stats |> Map.put({:month, org_id}, empty_result(time, Date.beginning_of_month(date), "month"))
@@ -189,8 +189,8 @@ defmodule Glific.Stats do
   defp get_periodic_stats(stats, org_id_list, {period, start, finish}) do
     stats
     |> get_contact_stats(org_id_list, {period, start, finish})
-    |> get_message_stats(org_id_list, {period, start, finish})
-    |> get_flow_stats(org_id_list, {period, start, finish})
+    # |> get_message_stats(org_id_list, {period, start, finish})
+    # |> get_flow_stats(org_id_list, {period, start, finish})
   end
 
   @spec get_hourly_stats(map(), list(), DateTime.t()) :: map()
