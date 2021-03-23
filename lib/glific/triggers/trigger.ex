@@ -87,7 +87,7 @@ defmodule Glific.Triggers.Trigger do
     trigger
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> validate_start_at()
+    |> validate_start_at(attrs)
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
@@ -95,12 +95,9 @@ defmodule Glific.Triggers.Trigger do
 
   # @doc false
   #  if trigger start_at should always be greater than current time
-  @spec validate_start_at(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp validate_start_at(%{changes: changes} = changeset) when not is_nil(changes.start_at) do
-    start_at = changeset.changes[:start_at]
-    time = DateTime.utc_now()
-
-    if DateTime.compare(time, start_at) == :lt,
+  @spec validate_start_at(Ecto.Changeset.t(), map) :: Ecto.Changeset.t()
+  defp validate_start_at(changeset, attrs) when not is_nil(attrs.start_at) do
+    if DateTime.compare(DateTime.utc_now(), attrs.start_at) == :lt,
       do: changeset,
       else:
         add_error(
@@ -110,16 +107,12 @@ defmodule Glific.Triggers.Trigger do
         )
   end
 
-  defp validate_start_at(changeset), do: changeset
+  defp validate_start_at(changeset, _attrs), do: changeset
 
   @spec start_at(map()) :: DateTime.t()
-  defp start_at(%{start_at: nil} = attrs) do
+  defp start_at(attrs) do
     DateTime.new!(attrs.start_date, attrs.start_time)
   end
-
-  ## We might need to change this and convert the datetime to utc
-  defp start_at(%{start_at: start_at} = _attrs),
-    do: start_at
 
   @spec get_name(map()) :: String.t()
   defp get_name(%{name: name} = _attrs) when not is_nil(name), do: name
