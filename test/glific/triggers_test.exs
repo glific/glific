@@ -28,12 +28,13 @@ defmodule Glific.TriggersTest do
 
   describe "triggers" do
     test "execute_triggers/2 should execute a trigger", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: 1)
+      start_date = Timex.shift(Date.utc_today(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
       _trigger =
         Fixtures.trigger_fixture(%{
-          start_at: start_at,
+          start_date: start_date,
+          start_time: Time.utc_now(),
           organization_id: attrs.organization_id,
           end_date: end_date
         })
@@ -80,12 +81,13 @@ defmodule Glific.TriggersTest do
 
     @tag :pending
     test "execute_triggers/2 should execute a trigger and capture log", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      start_date = Timex.shift(Date.utc_today(), days: -1)
       end_date = Timex.shift(DateTime.utc_now(), days: 1)
 
       _trigger =
         Fixtures.trigger_fixture(%{
-          start_at: start_at,
+          start_date: start_date,
+          start_time: Time.utc_now(),
           organization_id: attrs.organization_id,
           end_date: end_date
         })
@@ -96,12 +98,13 @@ defmodule Glific.TriggersTest do
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: 1)
+      start_date = Timex.shift(Date.utc_today(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
       _trigger =
         Fixtures.trigger_fixture(%{
-          start_at: start_at,
+          start_date: start_date,
+          start_time: Time.utc_now(),
           organization_id: attrs.organization_id,
           last_trigger_at: start_at,
           end_date: end_date
@@ -124,12 +127,13 @@ defmodule Glific.TriggersTest do
     end
 
     test "execute_triggers/2 should execute a trigger with frequency as daily", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: 1)
+      start_date = Timex.shift(Date.utc_today(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 5)
 
       _trigger =
         Fixtures.trigger_fixture(%{
-          start_at: start_at,
+          start_date: start_date,
+          start_time: Time.utc_now(),
           frequency: ["daily"],
           is_repeating: true,
           organization_id: attrs.organization_id,
@@ -155,12 +159,13 @@ defmodule Glific.TriggersTest do
 
     test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined",
          attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: 1)
+      start_date = Timex.shift(Date.utc_today(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 5)
 
       _trigger =
         Fixtures.trigger_fixture(%{
-          start_at: start_at,
+          start_date: start_date,
+          start_time: Time.utc_now(),
           days: [7, 6, 5, 4, 3, 2, 1],
           frequency: ["weekly"],
           is_repeating: true,
