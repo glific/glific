@@ -9,27 +9,9 @@ defmodule Glific.Searches.CollectionCount do
 
   alias Glific.{
     Communications,
-    Contacts.Contact,
     Partners,
     Repo
   }
-
-  @spec org_id_list(list(), boolean) :: list()
-  defp org_id_list([], recent) do
-    Partners.active_organizations([])
-    |> Partners.recent_organizations(recent)
-    |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
-  end
-
-  defp org_id_list(list, _recent) do
-    Enum.map(
-      list,
-      fn l ->
-        {:ok, int_l} = Glific.parse_maybe_integer(l)
-        int_l
-      end
-    )
-  end
 
   @spec publish_data(map()) :: map()
   defp publish_data(results) do
@@ -51,7 +33,7 @@ defmodule Glific.Searches.CollectionCount do
   """
   @spec collection_stats(list, boolean) :: map()
   def collection_stats(list \\ [], recent \\ true) do
-    org_id_list = org_id_list(list, recent)
+    org_id_list = Partners.org_id_list(list, recent)
 
     # org_id_list can be empty here, if so we return an empty map
     if org_id_list == [],
@@ -61,7 +43,7 @@ defmodule Glific.Searches.CollectionCount do
 
   @spec do_collection_stats(list()) :: map()
   defp do_collection_stats(org_id_list) do
-    query = query(org_id_list)
+    query = Partners.contact_organization_query(org_id_list)
 
     org_id_list
     # create the empty results array for each org in list
@@ -99,22 +81,6 @@ defmodule Glific.Searches.CollectionCount do
   defp add(result, org_id, key, value) do
     result
     |> Map.put(org_id, Map.put(result[org_id], key, value))
-  end
-
-  @spec add_orgs(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp add_orgs(query, org_id_list) do
-    query
-    |> where([o], o.organization_id in ^org_id_list)
-  end
-
-  @spec query(list()) :: Ecto.Query.t()
-  defp query(org_id_list) do
-    Contact
-    # block messages sent to group
-    |> where([c], c.status != :blocked)
-    |> add_orgs(org_id_list)
-    |> group_by([c], c.organization_id)
-    |> select([c], [count(c.id), c.organization_id])
   end
 
   @spec make_result(Ecto.Query.t(), map(), String.t()) :: map()

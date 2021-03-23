@@ -43,20 +43,14 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    case Contacts.can_send_message_to?(message.receiver, message.is_hsm, attrs) do
-      {:ok, _} ->
-        {:ok, _} =
-          apply(
-            Communications.provider_handler(message.organization_id),
-            @type_to_token[message.type],
-            [message, attrs]
-          )
+    {:ok, _} =
+      apply(
+        Communications.provider_handler(message.organization_id),
+        @type_to_token[message.type],
+        [message, attrs]
+      )
 
-        publish_message(message)
-
-      {:error, reason} ->
-        log_error(message, reason)
-    end
+    publish_message(message)
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
