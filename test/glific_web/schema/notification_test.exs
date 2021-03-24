@@ -17,10 +17,14 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert notification["category"] == notify.category
   end
 
-  test "notifications field returns list of notifications in desc order", %{staff: user} = attrs do
+  test "notifications field returns list of notifications in desc order",
+       %{staff: user} = attrs do
     _notify_1 = Fixtures.notification_fixture(attrs)
     :timer.sleep(1000)
-    valid_attrs_2 = Map.merge(attrs, %{category: "Provider Error", message: "No balance in wallet"})
+
+    valid_attrs_2 =
+      Map.merge(attrs, %{category: "Provider Error", message: "No balance in wallet"})
+
     notify_2 = Fixtures.notification_fixture(valid_attrs_2)
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
@@ -34,10 +38,15 @@ defmodule GlificWeb.Schema.NotificationTest do
   test "notifications field returns list of notifications in various filters",
        %{staff: user} = attrs do
     notify_1 = Fixtures.notification_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{category: "Provider Error", message: "No balance in wallet"})
+
+    valid_attrs_2 =
+      Map.merge(attrs, %{category: "Provider Error", message: "No balance in wallet"})
+
     _notify_2 = Fixtures.notification_fixture(valid_attrs_2)
 
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"category" => notify_1.category}})
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"category" => notify_1.category}})
+
     assert {:ok, query_data} = result
     notifications = get_in(query_data, [:data, "notifications"])
     assert length(notifications) > 0
@@ -45,9 +54,7 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert get_in(notification, ["category"]) == notify_1.category
 
     result =
-      auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"message" => notify_1.message}}
-      )
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"message" => notify_1.message}})
 
     assert {:ok, query_data} = result
     notifications = get_in(query_data, [:data, "notifications"])
@@ -58,7 +65,10 @@ defmodule GlificWeb.Schema.NotificationTest do
 
   test "notifications field obeys limit and offset", %{staff: user} = attrs do
     _notify_1 = Fixtures.notification_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{category: "Provider Error", message: "No balance in wallet"})
+
+    valid_attrs_2 =
+      Map.merge(attrs, %{category: "Provider Error", message: "No balance in wallet"})
+
     _notify_2 = Fixtures.notification_fixture(valid_attrs_2)
 
     result =

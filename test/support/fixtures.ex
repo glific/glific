@@ -624,6 +624,7 @@ defmodule Glific.Fixtures do
   @spec notification_fixture(map()) :: Notification.t()
   def notification_fixture(attrs) do
     [_glific_admin, contact | _] = Contacts.list_contacts(attrs)
+
     valid_attrs = %{
       category: "Message",
       message: "Cannot send message",
@@ -635,7 +636,7 @@ defmodule Glific.Fixtures do
         phone: contact.phone,
         bsp_status: contact.bsp_status,
         status: contact.status,
-        last_message_at: contact.last_message_at,
+        last_message_at: contact.last_message_at
       }
     }
 
