@@ -149,8 +149,7 @@ defmodule Glific.Stats do
 
   @spec is_monthly?(DateTime.t(), Date.t()) :: boolean
   defp is_monthly?(time, date) do
-    is_daily?(time) &&
-      Date.days_in_month(date) == time.day
+    is_daily?(time) && time.day == Date.days_in_month(date)
   end
 
   @spec empty_results(list(), Keyword.t()) :: map()
@@ -307,7 +306,7 @@ defmodule Glific.Stats do
       finish = Timex.end_of_month(time)
 
       stats
-      |> get_periodic_stats(org_id_list, {:week, start, finish})
+      |> get_periodic_stats(org_id_list, {:month, start, finish})
     else
       stats
     end
