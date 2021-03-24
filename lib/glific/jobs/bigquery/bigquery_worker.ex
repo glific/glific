@@ -126,21 +126,29 @@ defmodule Glific.Jobs.BigQueryWorker do
       }"
     )
 
-    get_query("messages", organization_id, attrs)
+    Logger.info("it's done 1")
+    v1 = get_query("messages", organization_id, attrs)
     |> Repo.all()
-    |> IO.inspect()
+
+    Logger.info("it's done 2")
+
+    v2 = v1
     |> Enum.reduce([], fn row, acc ->
-      if Contacts.is_simulator_contact?(row.contact.phone),
-        do: acc,
-        else: [
+        [
           row
           |> get_message_row(organization_id)
           |> Bigquery.format_data_for_bigquery("messages")
           | acc
         ]
     end)
-    |> IO.inspect()
+
+    Logger.info("it's done 3 with v2: #{inspect(v2)}")
+
+
+    v2
     |> make_job(:messages, organization_id, attrs)
+
+    Logger.info("it's done")
 
     :ok
   end
@@ -272,7 +280,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _), do: :ok
 
-  defp get_message_row(row, organization_id),
+  def get_message_row(row, organization_id),
     do: %{
       id: row.id,
       body: row.body,

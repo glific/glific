@@ -208,7 +208,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization_id,
         flow_context_id: context_id,
         results: create_results_entry(flow_id),
-        inserted_at: DateTime.utc_now()
+        inserted_at: DateTime.utc_now(),
         updated_at: DateTime.utc_now() |> DateTime.add(120, :second)
       }
     end

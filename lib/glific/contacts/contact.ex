@@ -66,8 +66,8 @@ defmodule Glific.Contacts.Contact do
           last_communication_at: :utc_datetime | nil,
           settings: map() | nil,
           fields: map() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   schema "contacts" do
