@@ -128,6 +128,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
     get_query("messages", organization_id, attrs)
     |> Repo.all()
+    |> IO.inspect()
     |> Enum.reduce([], fn row, acc ->
       if Contacts.is_simulator_contact?(row.contact.phone),
         do: acc,
@@ -138,6 +139,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           | acc
         ]
     end)
+    |> IO.inspect()
     |> make_job(:messages, organization_id, attrs)
 
     :ok
@@ -188,7 +190,7 @@ defmodule Glific.Jobs.BigQueryWorker do
                 end),
               tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
             }
-            |> format_data_for_bigquery("contacts")
+            |> Bigquery.format_data_for_bigquery("contacts")
             | acc
           ]
       end
@@ -212,16 +214,16 @@ defmodule Glific.Jobs.BigQueryWorker do
       fn row, acc ->
         [
           %{
-            id: row.flow.id,
+            id: row.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date(row.inserted_at, organization_id),
             updated_at: format_date(row.updated_at, organization_id),
-            keywords: format_json(row.flow.keywords),
+            keywords: Bigquery.format_json(row.flow.keywords),
             status: row.status,
-            revision: format_json(row.definition)
+            revision: Bigquery.format_json(row.definition)
           }
-          |> format_data_for_bigquery("flows")
+          |> Bigquery.format_data_for_bigquery("flows")
           | acc
         ]
       end
@@ -252,13 +254,13 @@ defmodule Glific.Jobs.BigQueryWorker do
               uuid: row.flow.uuid,
               inserted_at: format_date(row.inserted_at, organization_id),
               updated_at: format_date(row.updated_at, organization_id),
-              results: format_json(row.results),
+              results: Bigquery.format_json(row.results),
               contact_phone: row.contact.phone,
               contact_name: row.contact.name,
               flow_version: row.flow_version,
               flow_context_id: row.flow_context_id
             }
-            |> format_data_for_bigquery("flow_results")
+            |> Bigquery.format_data_for_bigquery("flow_results")
             | acc
           ]
       end
