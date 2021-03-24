@@ -30,6 +30,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
     field :version_number, :string
+    field :status, :string
     field :flow_type, :flow_type_enum
     field :inserted_at, :datetime
     field :updated_at, :datetime

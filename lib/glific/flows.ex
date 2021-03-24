@@ -26,8 +26,22 @@ defmodule Glific.Flows do
 
   """
   @spec list_flows(map()) :: [Flow.t()]
-  def list_flows(args),
-    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+  def list_flows(args) do
+    Repo.list_filter(args, Flow, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    |> Enum.map(fn flow ->
+      flow
+      |> Map.put(:status, get_status(flow.id))
+    end)
+  end
+
+  @spec get_status(integer()) :: String.t()
+  defp get_status(id) do
+    Repo.fetch_by(FlowRevision, %{flow_id: id, revision_number: 0})
+    |> case do
+      {:ok, flow_revision} -> flow_revision.status
+      {:error, _} -> ""
+    end
+  end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
