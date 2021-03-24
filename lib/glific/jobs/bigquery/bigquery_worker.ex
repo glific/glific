@@ -216,7 +216,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       fn row, acc ->
         [
           %{
-            id: row.flow.id,
+            id: row.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
