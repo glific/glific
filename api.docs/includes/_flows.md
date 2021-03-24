@@ -636,6 +636,12 @@ Type | Description
 <td valign="top">[<a href="#string">String</a>]</td>
 <td></td>
 </tr>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>status</strong></td>
+<td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
 <tr>
 <td colspan="2" valign="top"><strong>ignoreKeywords</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
