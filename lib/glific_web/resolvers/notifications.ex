@@ -4,14 +4,15 @@ defmodule GlificWeb.Resolvers.Notifications do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Flows.Notification
+  alias Glific.Notifications
+  alias Glific.Notifications.Notification
 
   @doc """
   Get the list of notifications filtered by args
   """
   @spec notifications(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Notification]}
   def notifications(_, args, _) do
-    {:ok, Notification.list_notifications(args)}
+    {:ok, Notifications.list_notifications(args)}
   end
 
   @doc """
@@ -19,6 +20,6 @@ defmodule GlificWeb.Resolvers.Notifications do
   """
   @spec count_notifications(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
   def count_notifications(_, args, _) do
-    {:ok, Notification.count_notifications(args)}
+    {:ok, Notifications.count_notifications(args)}
   end
 end
