@@ -82,7 +82,6 @@ defmodule GlificWeb.Schema.NotificationTest do
     notify_2 = Fixtures.notification_fixture(valid_attrs_2)
 
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    IO.inspect(query_data)
     assert get_in(query_data, [:data, "countNotifications"]) == 2
 
     {:ok, query_data} =
