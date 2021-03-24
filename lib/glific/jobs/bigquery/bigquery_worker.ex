@@ -67,8 +67,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  @spec format_date(DateTime.t(), non_neg_integer()) :: String.t()
-  def format_date(date, organization_id) do
+  @spec format_date_with_milisecond(DateTime.t(), non_neg_integer()) :: String.t()
+  def format_date_with_milisecond(date, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
     date
@@ -126,13 +126,8 @@ defmodule Glific.Jobs.BigQueryWorker do
       }"
     )
 
-    Logger.info("it's done 1")
-    v1 = get_query("messages", organization_id, attrs)
+    get_query("messages", organization_id, attrs)
     |> Repo.all()
-
-    Logger.info("it's done 2")
-
-    v2 = v1
     |> Enum.reduce([], fn row, acc ->
         [
           row
@@ -141,14 +136,7 @@ defmodule Glific.Jobs.BigQueryWorker do
           | acc
         ]
     end)
-
-    Logger.info("it's done 3 with v2: #{inspect(v2)}")
-
-
-    v2
     |> make_job(:messages, organization_id, attrs)
-
-    Logger.info("it's done")
 
     :ok
   end
@@ -175,23 +163,23 @@ defmodule Glific.Jobs.BigQueryWorker do
               provider_status: row.bsp_status,
               status: row.status,
               language: row.language.label,
-              optin_time: format_date(row.optin_time, organization_id),
-              optout_time: format_date(row.optout_time, organization_id),
-              last_message_at: format_date(row.last_message_at, organization_id),
-              inserted_at: format_date(row.inserted_at, organization_id),
-              updated_at: format_date(row.updated_at, organization_id),
+              optin_time: Bigquery.format_date(row.optin_time, organization_id),
+              optout_time: Bigquery.format_date(row.optout_time, organization_id),
+              last_message_at: Bigquery.format_date(row.last_message_at, organization_id),
+              inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_milisecond(row.updated_at, organization_id),
               fields:
                 Enum.map(row.fields, fn {_key, field} ->
                   %{
                     label: field["label"],
-                    inserted_at: format_date(field["inserted_at"], organization_id),
+                    inserted_at: Bigquery.format_date(field["inserted_at"], organization_id),
                     type: field["type"],
                     value: field["value"]
                   }
                 end),
               settings: row.settings,
               user_name: if(!is_nil(row.user), do: row.user.name),
-              user_role: if(!is_nil(row.user), do: row.user.roles),
+              user_role: if(!is_nil(row.user), do: Bigquery.format_json(row.user.roles)),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
@@ -225,8 +213,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             id: row.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
-            inserted_at: format_date(row.inserted_at, organization_id),
-            updated_at: format_date(row.updated_at, organization_id),
+            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_milisecond(row.updated_at, organization_id),
             keywords: Bigquery.format_json(row.flow.keywords),
             status: row.status,
             revision: Bigquery.format_json(row.definition)
@@ -260,8 +248,8 @@ defmodule Glific.Jobs.BigQueryWorker do
               id: row.id,
               name: row.flow.name,
               uuid: row.flow.uuid,
-              inserted_at: format_date(row.inserted_at, organization_id),
-              updated_at: format_date(row.updated_at, organization_id),
+              inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_milisecond(row.updated_at, organization_id),
               results: Bigquery.format_json(row.results),
               contact_phone: row.contact.phone,
               contact_name: row.contact.name,
@@ -286,9 +274,9 @@ defmodule Glific.Jobs.BigQueryWorker do
       body: row.body,
       type: row.type,
       flow: row.flow,
-      inserted_at: format_date(row.inserted_at, organization_id),
-      updated_at: format_date(row.updated_at, organization_id),
-      sent_at: format_date(row.sent_at, organization_id),
+      inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+      updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+      sent_at: Bigquery.format_date(row.sent_at, organization_id),
       uuid: row.uuid,
       status: row.status,
       sender_phone: row.sender.phone,
