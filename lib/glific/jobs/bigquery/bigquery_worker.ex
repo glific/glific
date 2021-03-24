@@ -68,7 +68,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec format_date_with_milisecond(DateTime.t(), non_neg_integer()) :: String.t()
-  def format_date_with_milisecond(date, organization_id) do
+  defp format_date_with_milisecond(date, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
     date
@@ -272,7 +272,8 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _), do: :ok
 
-  def get_message_row(row, organization_id),
+  @spec get_message_row(Message.t(), non_neg_integer) :: map()
+  defp get_message_row(row, organization_id),
     do: %{
       id: row.id,
       body: row.body,
