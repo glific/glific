@@ -272,7 +272,7 @@ defmodule Glific.Jobs.BigQueryWorker do
 
   defp queue_table_data(_, _, _), do: :ok
 
-  @spec get_message_row(Message.t(), non_neg_integer) :: map()
+
   defp get_message_row(row, organization_id),
     do: %{
       id: row.id,
