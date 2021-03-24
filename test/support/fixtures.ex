@@ -15,6 +15,8 @@ defmodule Glific.Fixtures do
     Groups,
     Messages,
     Messages.MessageMedia,
+    Notifications,
+    Notifications.Notification,
     Partners,
     Partners.Organization,
     Repo,
@@ -616,5 +618,35 @@ defmodule Glific.Fixtures do
     {:ok, trigger} = Trigger.create_trigger(valid_attrs)
 
     trigger
+  end
+
+  @doc false
+  @spec notification_fixture(map()) :: Notification.t()
+  def notification_fixture(attrs) do
+    [_glific_admin, contact | _] = Contacts.list_contacts(attrs)
+
+    valid_attrs = %{
+      category: "Message",
+      message: "Cannot send message",
+      severity: "Error",
+      organization_id: attrs.organization_id,
+      entity: %{
+        id: contact.id,
+        name: contact.name,
+        phone: contact.phone,
+        bsp_status: contact.bsp_status,
+        status: contact.status,
+        last_message_at: contact.last_message_at
+      }
+    }
+
+    valid_attrs =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:organization_id, attrs.organization_id)
+
+    {:ok, notification} = Notifications.create_notification(valid_attrs)
+
+    notification
   end
 end
