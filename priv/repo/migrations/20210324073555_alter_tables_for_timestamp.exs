@@ -25,5 +25,13 @@ defmodule Glific.Repo.Migrations.AlterTablesForTimestamp do
       modify :updated_at, :utc_datetime_usec,
         comment: "Time when the record entry was last updated"
     end
+
+    alter table(:flow_revisions) do
+      modify :inserted_at, :utc_datetime_usec,
+        comment: "Time when the record entry was first made"
+
+      modify :updated_at, :utc_datetime_usec,
+        comment: "Time when the record entry was last updated"
+    end
   end
 end

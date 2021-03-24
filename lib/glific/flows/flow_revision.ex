@@ -28,8 +28,8 @@ defmodule Glific.Flows.FlowRevision do
           flow: Flow.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   schema "flow_revisions" do
@@ -48,7 +48,7 @@ defmodule Glific.Flows.FlowRevision do
     belongs_to :flow, Flow
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """
