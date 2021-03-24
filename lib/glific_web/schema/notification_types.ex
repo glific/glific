@@ -1,6 +1,6 @@
-defmodule GlificWeb.Schema.WebhookLogTypes do
+defmodule GlificWeb.Schema.NotificationTypes do
   @moduledoc """
-  GraphQL Representation of Glific's WebhookLog DataType
+  GraphQL Representation of Glific's Notification DataType
   """
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
@@ -14,15 +14,6 @@ defmodule GlificWeb.Schema.WebhookLogTypes do
     field :notification, :notification
     field :errors, list_of(:input_error)
   end
-
-  field :category, :string
-  field :entity, :map
-  field :message, :string
-  field :severity, :string, default: "Error"
-
-  belongs_to :organization, Organization
-
-  timestamps(type: :utc_datetime)
 
   object :notification do
     field :id, :id
