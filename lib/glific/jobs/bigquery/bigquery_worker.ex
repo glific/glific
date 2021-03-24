@@ -136,7 +136,8 @@ defmodule Glific.Jobs.BigQueryWorker do
           | acc
         ]
     end)
-    |> make_job(:messages, organization_id, attrs)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :messages, organization_id, attrs))
 
     :ok
   end
@@ -191,7 +192,8 @@ defmodule Glific.Jobs.BigQueryWorker do
           ]
       end
     )
-    |> make_job(:contacts, organization_id, attrs)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
 
     :ok
   end
@@ -224,7 +226,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         ]
       end
     )
-    |> make_job(:flows, organization_id, attrs)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flows, organization_id, attrs))
 
     :ok
   end
@@ -261,7 +264,8 @@ defmodule Glific.Jobs.BigQueryWorker do
           ]
       end
     )
-    |> make_job(:flow_results, organization_id, attrs)
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_results, organization_id, attrs))
 
     :ok
   end
