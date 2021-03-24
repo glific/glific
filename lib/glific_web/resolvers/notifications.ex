@@ -4,8 +4,10 @@ defmodule GlificWeb.Resolvers.Notifications do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Notifications
-  alias Glific.Notifications.Notification
+  alias Glific.{
+    Notifications,
+    Notifications.Notification
+  }
 
   @doc """
   Get the list of notifications filtered by args

@@ -33,8 +33,8 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.FlowTypes)
   import_types(__MODULE__.TriggerTypes)
   import_types(__MODULE__.WebhookLogTypes)
-  import_types(__MODULE__.LocationTypes)
   import_types(__MODULE__.NotificationTypes)
+  import_types(__MODULE__.LocationTypes)
 
   query do
     import_fields(:contact_queries)
