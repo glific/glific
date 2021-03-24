@@ -78,32 +78,64 @@ defmodule Glific.Stats do
   Top level function to generate stats for all active organizations
   by default. Can control behavior by setting function parameters
   """
-  @spec generate_stats(list, boolean, DateTime.t()) :: nil
-  def generate_stats(list \\ [], recent \\ true, time \\ DateTime.utc_now()) do
+  @spec generate_stats(list, boolean, Keyword.t()) :: nil
+  def generate_stats(list \\ [], recent \\ true, opts \\ []) do
     org_id_list = Partners.org_id_list(list, recent)
 
     # org_id_list can be empty here, if so we return an empty map
     if org_id_list == [],
       do: nil,
-      else: do_generate_stats(org_id_list, time)
+      else: do_generate_stats(org_id_list, opts)
   end
 
-  @spec do_generate_stats(list, DateTime.t()) :: nil
-  defp do_generate_stats(org_id_list, time) do
-    # lets shift the time by an hour, since thats what we are interested in (the hour/day/week/month just cogenempleted)
-    time = time |> Timex.shift(hours: -1)
-    date = DateTime.to_date(time)
+  @spec do_generate_stats(list, Keyword.t()) :: nil
+  defp do_generate_stats(org_id_list, opts) do
+    # lets shift the time by an hour if we are in charge of generating it
+    # since this is when the cron job is triggered, in the next hour
+    time = Keyword.get(opts, :time, Timex.shift(DateTime.utc_now(), hours: -1))
+
+    opts =
+      opts
+      |> Keyword.put(:time, time)
+      |> Keyword.put(:date, DateTime.to_date(time))
 
     rows =
       org_id_list
-      |> empty_results(time, date)
-      |> get_hourly_stats(org_id_list, time)
-      |> get_daily_stats(org_id_list, time)
-      |> get_weekly_stats(org_id_list, time, date)
-      |> get_monthly_stats(org_id_list, time, date)
+      |> empty_results(opts)
+      |> get_hourly_stats(org_id_list, opts)
+      |> get_daily_stats(org_id_list, opts)
+      |> get_weekly_stats(org_id_list, opts)
+      |> get_monthly_stats(org_id_list, opts)
+      |> reject_empty()
 
-    Repo.insert_all(Stat, Map.values(rows))
+    Repo.insert_all(Stat, rows)
     nil
+  end
+
+  @spec is_empty?(map()) :: boolean
+  defp is_empty?(stat) do
+    keys = [
+      :contacts,
+      :active,
+      :optin,
+      :optout,
+      :messages,
+      :inbound,
+      :outbound,
+      :hsm,
+      :flows_started,
+      :flows_completed
+    ]
+
+    Enum.all?(keys, fn k -> Map.get(stat, k) == 0 end)
+  end
+
+  @spec reject_empty(map()) :: list()
+  defp reject_empty(map) do
+    map
+    |> Enum.reject(fn {_k, v} -> is_empty?(v) end)
+    |> Enum.into(%{})
+    |> Map.values()
   end
 
   @spec is_daily?(DateTime.t()) :: boolean
@@ -121,8 +153,10 @@ defmodule Glific.Stats do
       Date.days_in_month(date) == time.day
   end
 
-  @spec empty_results(list(), DateTime.t(), Date.t()) :: map()
-  defp empty_results(org_id_list, time, date) do
+  @spec empty_results(list(), Keyword.t()) :: map()
+  defp empty_results(org_id_list, opts) do
+    {time, date} = {Keyword.get(opts, :time), Keyword.get(opts, :date)}
+
     Enum.reduce(
       org_id_list,
       %{},
@@ -219,18 +253,26 @@ defmodule Glific.Stats do
     |> get_flow_stats(org_id_list, {period, start, finish})
   end
 
-  @spec get_hourly_stats(map(), list(), DateTime.t()) :: map()
-  defp get_hourly_stats(stats, org_id_list, time) do
-    start = %{time | minute: 0, second: 0}
-    finish = %{time | minute: 59, second: 59}
+  @spec get_hourly_stats(map(), list(), Keyword.t()) :: map()
+  defp get_hourly_stats(stats, org_id_list, opts) do
+    # check if we should emit hourly stats
+    if Keyword.get(opts, :hour, true) do
+      time = Keyword.get(opts, :time)
+      start = %{time | minute: 0, second: 0}
+      finish = %{time | minute: 59, second: 59}
 
-    stats
-    |> get_periodic_stats(org_id_list, {:hour, start, finish})
+      stats
+      |> get_periodic_stats(org_id_list, {:hour, start, finish})
+    else
+      stats
+    end
   end
 
-  @spec get_daily_stats(map(), list(), DateTime.t()) :: map()
-  defp get_daily_stats(stats, org_id_list, time) do
-    if is_daily?(time) do
+  @spec get_daily_stats(map(), list(), Keyword.t()) :: map()
+  defp get_daily_stats(stats, org_id_list, opts) do
+    time = Keyword.get(opts, :time)
+
+    if Keyword.get(opts, :day, true) && is_daily?(time) do
       start = Timex.beginning_of_day(time)
       finish = Timex.end_of_day(time)
 
@@ -241,9 +283,11 @@ defmodule Glific.Stats do
     end
   end
 
-  @spec get_weekly_stats(map(), list(), DateTime.t(), Date.t()) :: map()
-  defp get_weekly_stats(stats, org_id_list, time, date) do
-    if is_weekly?(time, date) do
+  @spec get_weekly_stats(map(), list(), Keyword.t()) :: map()
+  defp get_weekly_stats(stats, org_id_list, opts) do
+    {time, date} = {Keyword.get(opts, :time), Keyword.get(opts, :date)}
+
+    if Keyword.get(opts, :week, true) && is_weekly?(time, date) do
       start = Timex.beginning_of_week(time)
       finish = Timex.end_of_week(time)
 
@@ -254,9 +298,11 @@ defmodule Glific.Stats do
     end
   end
 
-  @spec get_monthly_stats(map(), list(), DateTime.t(), Date.t()) :: map()
-  defp get_monthly_stats(stats, org_id_list, time, date) do
-    if is_monthly?(time, date) do
+  @spec get_monthly_stats(map(), list(), Keyword.t()) :: map()
+  defp get_monthly_stats(stats, org_id_list, opts) do
+    {time, date} = {Keyword.get(opts, :time), Keyword.get(opts, :date)}
+
+    if Keyword.get(opts, :month, true) && is_monthly?(time, date) do
       start = Timex.beginning_of_month(time)
       finish = Timex.end_of_month(time)
 
@@ -279,8 +325,8 @@ defmodule Glific.Stats do
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
 
-    stats
-    |> make_result(query, period, :contacts)
+    # dont generate summary contact stats for hourly snapshots
+    if(period == :hour, do: stats, else: make_result(stats, query, period, :contacts))
     |> make_result(time_query, period, :active)
     |> make_result(optin, period, :optin)
     |> make_result(optout, period, :optout)
