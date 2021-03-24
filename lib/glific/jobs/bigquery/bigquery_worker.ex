@@ -177,7 +177,7 @@ defmodule Glific.Jobs.BigQueryWorker do
                 end),
               settings: row.settings,
               user_name: if(!is_nil(row.user), do: row.user.name),
-              user_role: if(!is_nil(row.user), do: row.user.roles),
+              user_role: if(!is_nil(row.user), do: Bigquery.format_json(row.user.roles)),
               groups:
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
