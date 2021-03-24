@@ -218,7 +218,7 @@ defmodule Glific.BigqueryTest do
     job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
 
     Bigquery.handle_insert_query_response(
-      {:ok, "updated"},
+      {:ok, %{insertErrors: nil}},
       attrs.organization_id,
       table: "messages",
       max_id: 10

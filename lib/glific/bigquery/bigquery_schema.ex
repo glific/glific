@@ -349,7 +349,6 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
-
   @doc """
   Schema for flows table
   """
@@ -476,7 +475,6 @@ defmodule Glific.BigquerySchema do
       }
     ]
   end
-
 
   @doc """
   Procedure for flat fields

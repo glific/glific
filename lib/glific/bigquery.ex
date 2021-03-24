@@ -458,18 +458,25 @@ defmodule Glific.Bigquery do
     max_id = Keyword.get(opts, :max_id)
 
     cond do
-      res.insertErrors != nil
-        ->  raise("Bigquery Insert Error for table #{table} with res: #{inspect(res)}")
+      res.insertErrors != nil ->
+        raise("Bigquery Insert Error for table #{table} with res: #{inspect(res)}")
 
       ## Max id will be nil or 0 in case of update statement.
-      max_id not in [nil, 0]
-        ->
-          Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
-          Logger.info( "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}")
+      max_id not in [nil, 0] ->
+        Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
-     true
-        -> Logger.info( "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}")
+        Logger.info(
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+            table
+          }, res: #{inspect(res)}"
+        )
 
+      true ->
+        Logger.info(
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+            table
+          }, res: #{inspect(res)}"
+        )
     end
 
     :ok
@@ -535,8 +542,11 @@ defmodule Glific.Bigquery do
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
-    "DELETE FROM `#{credentials.dataset_id}.#{table}` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn from `#{credentials.dataset_id}.#{table}` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{timezone}')) a where a.rn <> 1 order by id);"
-
+    "DELETE FROM `#{credentials.dataset_id}.#{table}` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn from `#{
+      credentials.dataset_id
+    }.#{table}` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
+      timezone
+    }')) a where a.rn <> 1 order by id);"
   end
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::

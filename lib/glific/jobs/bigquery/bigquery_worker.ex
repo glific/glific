@@ -129,12 +129,12 @@ defmodule Glific.Jobs.BigQueryWorker do
     get_query("messages", organization_id, attrs)
     |> Repo.all()
     |> Enum.reduce([], fn row, acc ->
-        [
-          row
-          |> get_message_row(organization_id)
-          |> Bigquery.format_data_for_bigquery("messages")
-          | acc
-        ]
+      [
+        row
+        |> get_message_row(organization_id)
+        |> Bigquery.format_data_for_bigquery("messages")
+        | acc
+      ]
     end)
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :messages, organization_id, attrs))
@@ -387,8 +387,6 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
-
-
 
   @impl Oban.Worker
   @doc """

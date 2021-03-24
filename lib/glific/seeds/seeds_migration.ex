@@ -77,7 +77,7 @@ defmodule Glific.Seeds.SeedsMigration do
       bsp_status: :session_and_hsm,
       inserted_at: time,
       updated_at: time,
-      last_message_at:  DateTime.truncate(time, :second),
+      last_message_at: DateTime.truncate(time, :second),
       last_communication_at: DateTime.truncate(time, :second),
       optin_time: DateTime.truncate(time, :second)
     }
