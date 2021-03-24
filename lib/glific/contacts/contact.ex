@@ -104,7 +104,7 @@ defmodule Glific.Contacts.Contact do
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """

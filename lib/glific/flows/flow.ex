@@ -75,7 +75,7 @@ defmodule Glific.Flows.Flow do
 
     has_many :revisions, FlowRevision
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """
