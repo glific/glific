@@ -34,8 +34,9 @@ defmodule GlificWeb.Schema.NotificationTypes do
   input_object :notification_filter do
     @desc "Match the message"
     field :message, :string
-    # @desc "Match the status code"
-    # field :status_code, :integer
+
+    @desc "Match the category"
+    field :category, :string
   end
 
   object :notification_queries do
