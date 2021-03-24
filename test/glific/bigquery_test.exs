@@ -226,6 +226,22 @@ defmodule Glific.BigqueryTest do
 
     job_table2 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
     assert job_table2.table_id > job_table1.table_id
+
+    assert_raise RuntimeError, fn ->
+      Bigquery.handle_insert_query_response(
+      {:ok, %{insertErrors: %{error: "Some errors"}}},
+      attrs.organization_id,
+      table: "messages",
+      max_id: 10)
+    end
+
+     assert :ok == Bigquery.handle_insert_query_response(
+      {:ok, %{insertErrors: nil}},
+      attrs.organization_id,
+      table: "messages",
+      max_id: nil
+      )
+
   end
 
   test "handle_sync_errors/2 should raise error", attrs do
