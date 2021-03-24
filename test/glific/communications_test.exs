@@ -244,12 +244,8 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(attrs)
         |> Contacts.create_contact()
 
-      message = message_fixture(Map.merge(attrs, %{receiver_id: receiver.id}))
-      assert {:error, _msg} = Communications.Message.send_message(message)
-
-      message = Messages.get_message!(message.id)
-      assert message.status == :error
-      assert message.bsp_status == nil
+      attrs = Map.merge(attrs, %{receiver_id: receiver.id})
+      assert {:error, _msg} = Messages.create_and_send_message(attrs)
     end
 
     test "sending message to contact having incorrect provider status will return error", attrs do
@@ -259,8 +255,8 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(attrs)
         |> Contacts.create_contact()
 
-      message = message_fixture(Map.merge(attrs, %{receiver_id: receiver.id}))
-      assert {:error, _msg} = Communications.Message.send_message(message)
+      attrs = Map.merge(attrs, %{receiver_id: receiver.id})
+      assert {:error, _msg} = Messages.create_and_send_message(attrs)
     end
 
     test "sending message if last received message is more then 24 hours returns error", attrs do
@@ -274,8 +270,8 @@ defmodule Glific.CommunicationsTest do
         |> Map.merge(attrs)
         |> Contacts.create_contact()
 
-      message = message_fixture(Map.merge(attrs, %{receiver_id: receiver.id}))
-      assert {:error, _msg} = Communications.Message.send_message(message)
+      attrs = Map.merge(attrs, %{receiver_id: receiver.id})
+      assert {:error, _msg} = Messages.create_and_send_message(attrs)
     end
 
     test "update_bsp_status/2 will update the message status based on provider message ID",

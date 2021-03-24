@@ -11,6 +11,7 @@ defmodule Glific.Partners do
   alias Glific.{
     Bigquery,
     Caches,
+    Contacts.Contact,
     Flags,
     GCS,
     Partners.Credential,
@@ -763,4 +764,39 @@ defmodule Glific.Partners do
   end
 
   def credential_update_callback(_organization, _provider), do: :ok
+
+  @doc """
+  Given an empty list, determine which organizations have been active in the recent
+  past
+  """
+  @spec org_id_list(list(), boolean) :: list()
+  def org_id_list([], recent) do
+    active_organizations([])
+    |> recent_organizations(recent)
+    |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
+  end
+
+  def org_id_list(list, _recent) do
+    Enum.map(
+      list,
+      fn l ->
+        {:ok, int_l} = Glific.parse_maybe_integer(l)
+        int_l
+      end
+    )
+  end
+
+  @doc """
+  Wrapper query used by various statistics collection routines in Glific
+  to return counts on contact with its variations
+  """
+  @spec contact_organization_query(list()) :: Ecto.Query.t()
+  def contact_organization_query(org_id_list) do
+    Contact
+    # block messages sent to groups
+    |> where([c], c.status != :blocked)
+    |> where([c], c.organization_id in ^org_id_list)
+    |> group_by([c], c.organization_id)
+    |> select([c], [count(c.id), c.organization_id])
+  end
 end
