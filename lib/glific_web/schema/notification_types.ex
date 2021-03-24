@@ -8,7 +8,6 @@ defmodule GlificWeb.Schema.NotificationTypes do
   alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
-  alias Glific.Notifications
 
   object :notification_result do
     field :notification, :notification
@@ -27,7 +26,6 @@ defmodule GlificWeb.Schema.NotificationTypes do
     field :organization, :organization do
       resolve(dataloader(Repo))
     end
-
   end
 
   @desc "Filtering options for notifications"
