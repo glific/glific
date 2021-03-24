@@ -19,6 +19,11 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :import_result do
+    field :status, :string
+    field :errors, list_of(:input_error)
+  end
+
   object :contact do
     field :id, :id
     field :name, :string
@@ -190,6 +195,13 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:name, :string)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Contacts.optin_contact/3)
+    end
+
+    field :import_contacts, :import_result do
+      arg(:group_label, non_null(:string))
+      arg(:data, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.import_contacts/3)
     end
   end
 end
