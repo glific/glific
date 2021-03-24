@@ -457,15 +457,20 @@ defmodule Glific.Bigquery do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
 
-    Logger.info(
-      "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{
-        inspect(res)
-      }"
-    )
+    cond do
+      res.insertErrors != nil
+        ->  raise("Bigquery Insert Error for table #{table} with res: #{inspect(res)}")
 
-    ## Max id will be nil or 0 in case of update statement.
-    if not is_nil(max_id) and max_id != 0,
-      do: Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+      ## Max id will be nil or 0 in case of update statement.
+      max_id not in [nil, 0]
+        ->
+          Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+          Logger.info( "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}")
+
+     true
+        -> Logger.info( "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}")
+
+    end
 
     :ok
   end

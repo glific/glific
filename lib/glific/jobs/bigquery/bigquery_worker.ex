@@ -29,7 +29,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     Repo
   }
 
-  @update_minutes -3
+  @update_minutes -1
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
