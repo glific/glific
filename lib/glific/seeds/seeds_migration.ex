@@ -91,9 +91,9 @@ defmodule Glific.Seeds.SeedsMigration do
       bsp_status: :session_and_hsm,
       inserted_at: time,
       updated_at: time,
-      last_message_at: time,
-      last_communication_at: time,
-      optin_time: time
+      last_message_at: DateTime.truncate(time, :second),
+      last_communication_at: DateTime.truncate(time, :second),
+      optin_time: DateTime.truncate(time, :second)
     }
   end
 
@@ -152,7 +152,7 @@ defmodule Glific.Seeds.SeedsMigration do
         {"Five", "_5"}
       ]
 
-      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+      utc_now = DateTime.utc_now()
       simulator_phone_prefix = Contacts.simulator_phone_prefix()
 
       # lets delete any old simulators for this organization
@@ -198,7 +198,7 @@ defmodule Glific.Seeds.SeedsMigration do
 
     if !has_contact?(organization, name) do
       # lets precompute common values
-      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+      utc_now = DateTime.utc_now()
 
       organization
       |> get_common_attrs(language, utc_now)
