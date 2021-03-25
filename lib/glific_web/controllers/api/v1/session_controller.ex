@@ -6,9 +6,9 @@ defmodule GlificWeb.API.V1.SessionController do
   use GlificWeb, :controller
   require Logger
 
+  alias Glific.Users
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
-  alias Glific.Users
 
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
@@ -50,10 +50,6 @@ defmodule GlificWeb.API.V1.SessionController do
 
     user
     |> Users.update_user(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
-    |> case do
-      {:error, _changeset} -> {:error, conn}
-      {:ok, user} -> {:ok, user}
-    end
   end
 
   @doc false
