@@ -27,7 +27,7 @@ defmodule Glific.Users.User do
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           last_login_at: :utc_datetime | nil,
-          last_login_from: :String.t() | nil
+          last_login_from: String.t() | nil
         }
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
