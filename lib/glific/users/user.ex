@@ -28,7 +28,7 @@ defmodule Glific.Users.User do
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           last_login_at: :utc_datetime | nil,
-          last_login_from: :String.t() | nil,
+          last_login_from: :String.t() | nil
         }
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
@@ -100,14 +100,17 @@ defmodule Glific.Users.User do
           Changeset.t()
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
-    |> Changeset.cast(params, [:name, :roles, :password, :is_restricted, :last_login_at, :last_login_from])
+    |> Changeset.cast(params, [
+      :name,
+      :roles,
+      :password,
+      :is_restricted,
+      :last_login_at,
+      :last_login_from
+    ])
     |> Changeset.validate_required([:name, :roles])
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)
-  end
-
-  def update_last_login(user, login_from, _config) do
-    Users.update_user(user, %{last_login_at: DateTime.utc_now(), last_login_from: login_from})
   end
 
   defp maybe_normalize_user_id_field_value(value) when is_binary(value),
