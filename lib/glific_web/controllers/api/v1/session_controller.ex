@@ -21,9 +21,7 @@ defmodule GlificWeb.API.V1.SessionController do
       {:ok, conn} ->
         Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
 
-        conn
-        |> Pow.Plug.current_user()
-        |> update_last_login(conn)
+       update_last_login(conn.assigns[:current_user], conn)
 
         json(conn, %{
           data: %{
