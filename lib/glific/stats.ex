@@ -100,8 +100,7 @@ defmodule Glific.Stats do
       |> Keyword.put(:date, DateTime.to_date(time))
 
     rows =
-      org_id_list
-      |> empty_results(opts)
+      %{}
       |> get_hourly_stats(org_id_list, opts)
       |> get_daily_stats(org_id_list, opts)
       |> get_weekly_stats(org_id_list, opts)
@@ -130,8 +129,9 @@ defmodule Glific.Stats do
     Enum.all?(keys, fn k -> Map.get(stat, k) == 0 end)
   end
 
+  @doc false
   @spec reject_empty(map()) :: list()
-  defp reject_empty(map) do
+  def reject_empty(map) do
     map
     |> Enum.reject(fn {_k, v} -> is_empty?(v) end)
     |> Enum.into(%{})
@@ -152,60 +152,21 @@ defmodule Glific.Stats do
     is_daily?(time) && time.day == Date.days_in_month(date)
   end
 
-  @spec empty_results(list(), Keyword.t()) :: map()
-  defp empty_results(org_id_list, opts) do
-    {time, date} = {Keyword.get(opts, :time), Keyword.get(opts, :date)}
+  @spec empty_stats(map(), list(), tuple()) :: map()
+  defp empty_stats(stats, org_id_list, period_date) do
+    {period, date} = period_date
 
     Enum.reduce(
       org_id_list,
-      %{},
+      stats,
       fn id, acc ->
-        acc
-        |> Map.put({:hour, id}, empty_result(time, date, id, "hour"))
-        |> empty_daily_results(time, date, id)
-        |> empty_weekly_results(time, date, id)
-        |> empty_monthly_results(time, date, id)
+        Map.put(acc, {period_date, id}, empty_stat(date, id, period))
       end
     )
   end
 
-  @spec empty_daily_results(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
-  defp empty_daily_results(stats, time, date, org_id) do
-    if is_daily?(time) do
-      stats |> Map.put({:day, org_id}, empty_result(time, date, org_id, "day"))
-    else
-      stats
-    end
-  end
-
-  @spec empty_weekly_results(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
-  defp empty_weekly_results(stats, time, date, org_id) do
-    if is_weekly?(time, date) do
-      stats
-      |> Map.put(
-        {:week, org_id},
-        empty_result(time, Date.beginning_of_week(date), org_id, "week")
-      )
-    else
-      stats
-    end
-  end
-
-  @spec empty_monthly_results(map(), DateTime.t(), Date.t(), non_neg_integer()) :: map()
-  defp empty_monthly_results(stats, time, date, org_id) do
-    if is_monthly?(time, date) do
-      stats
-      |> Map.put(
-        {:month, org_id},
-        empty_result(time, Date.beginning_of_month(date), org_id, "month")
-      )
-    else
-      stats
-    end
-  end
-
-  @spec empty_result(DateTime.t(), Date.t(), non_neg_integer, String.t()) :: map()
-  defp empty_result(time, date, organization_id, period) do
+  @spec empty_stat(Date.t() | DateTime.t(), non_neg_integer, atom()) :: map()
+  defp empty_stat(date, organization_id, period) do
     now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     %{
@@ -219,9 +180,9 @@ defmodule Glific.Stats do
       hsm: 0,
       flows_started: 0,
       flows_completed: 0,
-      period: period,
-      date: date,
-      hour: if(period == "hour", do: time.hour, else: 0),
+      period: Atom.to_string(period),
+      date: if(period == :hour, do: DateTime.to_date(date), else: date),
+      hour: if(period == :hour, do: date.hour, else: 0),
       organization_id: organization_id,
       inserted_at: now,
       updated_at: now
@@ -234,22 +195,23 @@ defmodule Glific.Stats do
     |> Map.put(period_org, Map.put(result[period_org], key, value))
   end
 
-  @spec make_result(map(), Ecto.Query.t(), atom(), atom()) :: map()
-  defp make_result(result, query, period, key) do
+  @spec make_result(map(), Ecto.Query.t(), tuple(), atom()) :: map()
+  defp make_result(result, query, period_date, key) do
     query
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(
       result,
-      fn [cnt, org_id], result -> add(result, {period, org_id}, key, cnt) end
+      fn [cnt, org_id], result -> add(result, {period_date, org_id}, key, cnt) end
     )
   end
 
-  @spec get_periodic_stats(map(), list(), {atom(), DateTime.t(), DateTime.t()}) :: map()
-  defp get_periodic_stats(stats, org_id_list, {period, start, finish}) do
+  @spec get_periodic_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_periodic_stats(stats, org_id_list, {period_date, start, finish}) do
     stats
-    |> get_contact_stats(org_id_list, {period, start, finish})
-    |> get_message_stats(org_id_list, {period, start, finish})
-    |> get_flow_stats(org_id_list, {period, start, finish})
+    |> empty_stats(org_id_list, period_date)
+    |> get_contact_stats(org_id_list, {period_date, start, finish})
+    |> get_message_stats(org_id_list, {period_date, start, finish})
+    |> get_flow_stats(org_id_list, {period_date, start, finish})
   end
 
   @spec get_hourly_stats(map(), list(), Keyword.t()) :: map()
@@ -261,59 +223,64 @@ defmodule Glific.Stats do
       finish = %{time | minute: 59, second: 59}
 
       stats
-      |> get_periodic_stats(org_id_list, {:hour, start, finish})
+      |> get_periodic_stats(org_id_list, {{:hour, start}, start, finish})
     else
       stats
     end
   end
 
+  @doc false
   @spec get_daily_stats(map(), list(), Keyword.t()) :: map()
-  defp get_daily_stats(stats, org_id_list, opts) do
+  def get_daily_stats(stats, org_id_list, opts) do
     time = Keyword.get(opts, :time)
+    date = Keyword.get(opts, :date, DateTime.to_date(time))
 
     if Keyword.get(opts, :day, true) && is_daily?(time) do
       start = Timex.beginning_of_day(time)
       finish = Timex.end_of_day(time)
 
       stats
-      |> get_periodic_stats(org_id_list, {:day, start, finish})
+      |> get_periodic_stats(org_id_list, {{:day, date}, start, finish})
     else
       stats
     end
   end
 
+  @doc false
   @spec get_weekly_stats(map(), list(), Keyword.t()) :: map()
-  defp get_weekly_stats(stats, org_id_list, opts) do
-    {time, date} = {Keyword.get(opts, :time), Keyword.get(opts, :date)}
+  def get_weekly_stats(stats, org_id_list, opts) do
+    time = Keyword.get(opts, :time)
+    date = Keyword.get(opts, :date, DateTime.to_date(time))
 
     if Keyword.get(opts, :week, true) && is_weekly?(time, date) do
       start = Timex.beginning_of_week(time)
       finish = Timex.end_of_week(time)
 
       stats
-      |> get_periodic_stats(org_id_list, {:week, start, finish})
+      |> get_periodic_stats(org_id_list, {{:week, DateTime.to_date(start)}, start, finish})
     else
       stats
     end
   end
 
   @spec get_monthly_stats(map(), list(), Keyword.t()) :: map()
-  defp get_monthly_stats(stats, org_id_list, opts) do
-    {time, date} = {Keyword.get(opts, :time), Keyword.get(opts, :date)}
+  def get_monthly_stats(stats, org_id_list, opts) do
+    time = Keyword.get(opts, :time)
+    date = Keyword.get(opts, :date, DateTime.to_date(time))
 
     if Keyword.get(opts, :month, true) && is_monthly?(time, date) do
       start = Timex.beginning_of_month(time)
       finish = Timex.end_of_month(time)
 
       stats
-      |> get_periodic_stats(org_id_list, {:month, start, finish})
+      |> get_periodic_stats(org_id_list, {{:month, DateTime.to_date(start)}, start, finish})
     else
       stats
     end
   end
 
-  @spec get_contact_stats(map(), list(), {atom(), DateTime.t(), DateTime.t()}) :: map()
-  defp get_contact_stats(stats, org_id_list, {period, start, finish}) do
+  @spec get_contact_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_contact_stats(stats, org_id_list, {period_date, start, finish}) do
     query = Partners.contact_organization_query(org_id_list)
 
     time_query =
@@ -324,15 +291,17 @@ defmodule Glific.Stats do
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
 
+    {period, _date} = period_date
+
     # dont generate summary contact stats for hourly snapshots
-    if(period == :hour, do: stats, else: make_result(stats, query, period, :contacts))
-    |> make_result(time_query, period, :active)
-    |> make_result(optin, period, :optin)
-    |> make_result(optout, period, :optout)
+    if(period == :hour, do: stats, else: make_result(stats, query, period_date, :contacts))
+    |> make_result(time_query, period_date, :active)
+    |> make_result(optin, period_date, :optin)
+    |> make_result(optout, period_date, :optout)
   end
 
-  @spec get_message_stats(map(), list(), {atom(), DateTime.t(), DateTime.t()}) :: map()
-  defp get_message_stats(stats, org_id_list, {period, start, finish}) do
+  @spec get_message_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_message_stats(stats, org_id_list, {period_date, start, finish}) do
     query =
       Message
       |> where([m], m.organization_id in ^org_id_list)
@@ -346,32 +315,32 @@ defmodule Glific.Stats do
     hsm = query |> where([m], m.is_hsm == true)
 
     stats
-    |> make_result(query, period, :messages)
-    |> make_result(inbound, period, :inbound)
-    |> make_result(outbound, period, :outbound)
-    |> make_result(hsm, period, :hsm)
+    |> make_result(query, period_date, :messages)
+    |> make_result(inbound, period_date, :inbound)
+    |> make_result(outbound, period_date, :outbound)
+    |> make_result(hsm, period_date, :hsm)
   end
 
-  @spec get_flow_stats(map(), list(), {atom(), DateTime.t(), DateTime.t()}) :: map()
-  defp get_flow_stats(stats, org_id_list, {period, start, finish}) do
+  @spec get_flow_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_flow_stats(stats, org_id_list, {period_date, start, finish}) do
     query =
       FlowContext
       |> where([fc], fc.organization_id in ^org_id_list)
       |> group_by([fc], fc.organization_id)
       |> select([fc], [count(fc.id), fc.organization_id])
 
-    flow_start =
+    flows_started =
       query
       |> where([fc], fc.inserted_at >= ^start)
       |> where([fc], fc.inserted_at <= ^finish)
 
-    flow_completed =
+    flows_completed =
       query
       |> where([fc], fc.completed_at >= ^start)
       |> where([fc], fc.completed_at <= ^finish)
 
     stats
-    |> make_result(flow_start, period, :flow_start)
-    |> make_result(flow_completed, period, :flow_completed)
+    |> make_result(flows_started, period_date, :flows_started)
+    |> make_result(flows_completed, period_date, :flows_completed)
   end
 end
