@@ -16,6 +16,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
+    Seeds.SeedsStats,
     Settings,
     Settings.Language,
     Users,
@@ -37,11 +38,24 @@ defmodule Glific.Seeds.SeedsMigration do
         else: [organization]
 
     case phase do
-      :simulator -> add_simulators(organizations)
-      :optin -> optin_data(organizations)
-      :collection -> seed_collections(organizations)
-      :fix_message_number -> fix_message_number(organizations)
-      :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
+      :collection ->
+        seed_collections(organizations)
+
+      :fix_message_number ->
+        fix_message_number(organizations)
+
+      :optin ->
+        optin_data(organizations)
+
+      :opt_in_out ->
+        SeedsFlows.opt_in_out_flows(organizations)
+
+      :simulator ->
+        add_simulators(organizations)
+
+      :stats ->
+        org_id_list = Enum.map(organizations, fn o -> o.id end)
+        SeedsStats.seed_stats(org_id_list)
     end
   end
 
