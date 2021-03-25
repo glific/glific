@@ -596,9 +596,7 @@ defmodule Glific.Bigquery do
     timezone = Partners.organization(organization_id).timezone
     ## remove all the data for last 3 hours
     sql = """
-    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 4 HOUR), '#{
-      timezone
-    }');
+    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 4 HOUR), '#{timezone}');
     """
 
     query_body = %{query: sql, useLegacySql: false}
