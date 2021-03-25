@@ -8,7 +8,7 @@ defmodule GlificWeb.API.V1.SessionController do
 
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
-  alias Glific.Users.User
+  alias Glific.Users
 
   @doc false
   @spec create(Conn.t(), map()) :: Conn.t()
@@ -23,7 +23,7 @@ defmodule GlificWeb.API.V1.SessionController do
 
         conn
         |> Pow.Plug.current_user()
-        |> update_last_login(conn, config)
+        |> update_last_login(conn)
 
         json(conn, %{
           data: %{
@@ -42,19 +42,20 @@ defmodule GlificWeb.API.V1.SessionController do
     end
   end
 
-  defp update_last_login(user, conn, config) do
+  defp update_last_login(user, conn) do
     remote_ip =
       conn.remote_ip
       |> :inet_parse.ntoa()
       |> to_string()
 
     user
-    |> User.update_last_login(remote_ip, config)
+    |> Users.update_user(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
     |> case do
       {:error, _changeset} -> {:error, conn}
       {:ok, user} -> {:ok, user}
     end
   end
+
   @doc false
   @spec renew(Conn.t(), map()) :: Conn.t()
   def renew(conn, _params) do
