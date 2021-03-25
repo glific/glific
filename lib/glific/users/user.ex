@@ -100,13 +100,13 @@ defmodule Glific.Users.User do
           Changeset.t()
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
-    |> Changeset.cast(params, [:name, :roles, :password, :is_restricted])
+    |> Changeset.cast(params, [:name, :roles, :password, :is_restricted, :last_login_at, :last_login_from])
     |> Changeset.validate_required([:name, :roles])
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)
   end
 
-  def update_last_login(user, login_from, config) do
+  def update_last_login(user, login_from, _config) do
     Users.update_user(user, %{last_login_at: DateTime.utc_now(), last_login_from: login_from})
   end
 
