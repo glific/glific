@@ -27,20 +27,22 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    Repo.list_filter(args, Flow, &Repo.opts_with_inserted_at/2, &filter_with/2)
-    |> Enum.map(fn flow ->
-      flow
-      |> Map.put(:flow_info, get_flow_info(flow.id))
-    end)
-  end
+    organization_id = args.organization_id
+    status_list =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+      |> select([f, fr], %{id: fr.flow_id, revision_number: fr.revision_number, last_inserted_at: fr.inserted_at, revision_status: fr.status})
+      |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
+      |> Repo.all(skip_organization_id: true)
 
-  @spec get_flow_info(integer()) :: String.t()
-  defp get_flow_info(id) do
-    Repo.fetch_by(FlowRevision, %{flow_id: id, revision_number: 0})
-    |> case do
-      {:ok, flow_revision} -> %{info: flow_revision.status}
-      {:error, _} -> %{info: ""}
-    end
+    Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+    |> Enum.map(fn flow ->
+      Map.merge(
+        flow,
+        status_list |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+      )|>IO.inspect()
+    end)
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -110,6 +112,7 @@ defmodule Glific.Flows do
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
     IO.inspect(attrs)
+
     attrs =
       Map.merge(
         attrs,

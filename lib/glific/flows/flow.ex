@@ -56,6 +56,9 @@ defmodule Glific.Flows.Flow do
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
+    field :revision_status, :map, virtual: true
+    field :last_inserted_at, :map, virtual: true
+    field :revision_number, :map, virtual: true
 
     # This is the dynamic status that we use primarily during
     # flow execution. It tells us if we are using the draft version

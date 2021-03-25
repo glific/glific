@@ -34,6 +34,9 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :flow_type, :flow_type_enum
     field :inserted_at, :datetime
     field :updated_at, :datetime
+    field :revision_status, :string
+    field :last_inserted_at, :datetime
+    field :revision_number, :integer
   end
 
   input_object :flow_input do
