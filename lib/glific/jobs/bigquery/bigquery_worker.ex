@@ -277,11 +277,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("stats", organization_id, attrs) do
-    Logger.info(
-      "fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
-        organization_id
-      }"
-    )
+    Logger.info("fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{  organization_id}")
 
     get_query("stats", organization_id, attrs)
     |> Repo.all()
@@ -302,7 +298,7 @@ defmodule Glific.Jobs.BigQueryWorker do
               flows_started: row.flows_started,
               flows_completed: row.flows_completed,
               period: row.period,
-              date: Bigquery.format_date(row.date, organization_id),
+              date: Date.to_string(row.date),
               hour: row.hour,
               inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
               updated_at: Bigquery.format_date(row.updated_at, organization_id),
