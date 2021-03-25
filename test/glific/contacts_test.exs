@@ -481,7 +481,7 @@ defmodule Glific.ContactsTest do
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
-      {:error, message, _error} =
+      {:error, %{status: message, errors: _}} =
         Import.import_contacts(1, group.label, file_path: get_tmp_path())
 
       assert "All contacts could not be added" == message

@@ -1,10 +1,43 @@
 # Glific Contact Import
 
-## import_contacts(organization_id, group_label, opts \\ [])
+## Import Contacts API
+
+```graphql
+mutation importContacts($group_label : String, $data : String) {
+  importContacts(group_label: $group_label, data: $data) {
+      status
+
+      errors {
+      key
+      message
+    }
+  }
+}
+```
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "importContacts": {
+      "status": "All contacts added"
+    }
+  }
+}
+```
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+group_label | <a href="#string">String</a>  | required | The contacts are added to the group with this label
+group_label | <a href="#string">String</a>  | required | The <a href="#csvformat">csv data</a> as string.
+
+## function import_contacts(organization_id, group_label, opts \\ [])
 
 The `import_contacts` method can be used for performing bulk add/update/deletion of
 provider contacts in the database.
 
+### CSVFormat
 The function operates on csv style formatted data. The CSV data needs to be of the following format:
 (check the shell tab on right)
 
