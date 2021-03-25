@@ -30,7 +30,8 @@ defmodule Glific.Bigquery do
     "messages" => :message_schema,
     "contacts" => :contact_schema,
     "flows" => :flow_schema,
-    "flow_results" => :flow_result_schema
+    "flow_results" => :flow_result_schema,
+    "stats" => :stats_schema
   }
 
   @doc """

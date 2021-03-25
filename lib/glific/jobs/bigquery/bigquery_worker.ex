@@ -26,7 +26,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     Jobs,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
+    Stats.Stat
   }
 
   @update_minutes -1
@@ -119,6 +120,11 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
+  ## ignore the tables for updates.
+  defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
+  when table in ["flows", "stats"],
+  do: :ok
+
   defp queue_table_data("messages", organization_id, attrs) do
     Logger.info(
       "fetching data for messages to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
@@ -270,6 +276,48 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("stats", organization_id, attrs) do
+    Logger.info(
+      "fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+        organization_id
+      }"
+    )
+
+    get_query("stats", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+          [
+            %{
+              id: row.id,
+              contacts: row.contacts,
+              active: row.active,
+              optin: row.optin,
+              optout: row.optout,
+              messages: row.messages,
+              inbound: row.inbound,
+              outbound: row.outbound,
+              hsm: row.hsm,
+              flows_started: row.flows_started,
+              flows_completed: row.flows_completed,
+              period: row.period,
+              date: Bigquery.format_date(row.date, organization_id),
+              hour: row.hour,
+              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+              updated_at: Bigquery.format_date(row.updated_at, organization_id),
+            }
+            |> Bigquery.format_data_for_bigquery("stats")
+            | acc
+          ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :stats, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(_, _, _), do: :ok
 
   defp get_message_row(row, organization_id),
@@ -387,6 +435,14 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
+
+  defp get_query("stats", organization_id, attrs),
+    do:
+      Stat
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+
 
   @impl Oban.Worker
   @doc """
