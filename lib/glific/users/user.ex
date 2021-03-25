@@ -7,8 +7,7 @@ defmodule Glific.Users.User do
     Contacts.Contact,
     Enums.UserRoles,
     Groups.Group,
-    Partners.Organization,
-    Users
+    Partners.Organization
   }
 
   alias Ecto.Changeset
