@@ -28,7 +28,7 @@ defmodule Glific.Seeds.SeedsStats do
   end
 
   @doc false
-  @spec seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: list()
+  @spec seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: map()
   defp seed_monthly(stats, org_id_list, from, to) do
     start = Timex.end_of_month(from)
 
@@ -38,9 +38,9 @@ defmodule Glific.Seeds.SeedsStats do
     do_seed_monthly(stats, org_id_list, start, finish)
   end
 
-  @spec do_seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: list()
+  @spec do_seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: map()
   defp do_seed_monthly(stats, org_id_list, current, finish) do
-    if current.year >= finish.year && current.month > finish.month do
+    if DateTime.compare(current, finish) == :gt do
       stats
     else
       stats
@@ -50,16 +50,16 @@ defmodule Glific.Seeds.SeedsStats do
   end
 
   @doc false
-  @spec seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: list()
+  @spec seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: map()
   defp seed_daily(stats, org_id_list, from, to) do
     start = Timex.end_of_day(from)
 
     do_seed_daily(stats, org_id_list, start, to)
   end
 
-  @spec do_seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: list()
+  @spec do_seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: map()
   defp do_seed_daily(stats, org_id_list, current, finish) do
-    if current.year >= finish.year && current.month >= finish.month && current.day > finish.day do
+    if DateTime.compare(current, finish) == :gt do
       stats
     else
       stats
@@ -69,7 +69,7 @@ defmodule Glific.Seeds.SeedsStats do
   end
 
   @doc false
-  @spec seed_weekly(map(), list(), DateTime.t(), DateTime.t()) :: list()
+  @spec seed_weekly(map(), list(), DateTime.t(), DateTime.t()) :: map()
   defp seed_weekly(stats, org_id_list, from, to) do
     start = Timex.end_of_week(from)
 
@@ -78,9 +78,9 @@ defmodule Glific.Seeds.SeedsStats do
     do_seed_weekly(stats, org_id_list, start, finish)
   end
 
-  @spec do_seed_weekly(map(), list(), DateTime.t(), DateTime.t()) :: list()
+  @spec do_seed_weekly(map(), list(), DateTime.t(), DateTime.t()) :: map()
   defp do_seed_weekly(stats, org_id_list, current, finish) do
-    if current.year >= finish.year && current.month >= finish.month && current.day > finish.day do
+    if DateTime.compare(current, finish) == :gt do
       stats
     else
       stats

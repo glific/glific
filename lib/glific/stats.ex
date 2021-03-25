@@ -263,6 +263,7 @@ defmodule Glific.Stats do
     end
   end
 
+  @doc false
   @spec get_monthly_stats(map(), list(), Keyword.t()) :: map()
   def get_monthly_stats(stats, org_id_list, opts) do
     time = Keyword.get(opts, :time)
