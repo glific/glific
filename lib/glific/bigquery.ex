@@ -15,7 +15,8 @@ defmodule Glific.Bigquery do
     Jobs.BigqueryJob,
     Messages.Message,
     Partners,
-    Repo
+    Repo,
+    Stats.Stat
   }
 
   alias GoogleApi.BigQuery.V2.{
@@ -94,6 +95,7 @@ defmodule Glific.Bigquery do
       "contacts" -> Contact
       "flow_results" -> FlowResult
       "flows" -> FlowRevision
+      "stats" -> Stat
       "messages_delta" -> Message
       "contacts_delta" -> Contact
       "flow_results_delta" -> FlowResult
