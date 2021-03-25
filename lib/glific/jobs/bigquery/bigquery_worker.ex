@@ -439,7 +439,6 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
 
-
   @impl Oban.Worker
   @doc """
   Standard perform method to use Oban worker

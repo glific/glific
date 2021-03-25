@@ -476,10 +476,10 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
-    @doc """
-  Schema for flow results table
+  @doc """
+  Schema for stats_schema table
   """
-  @spec flow_result_schema :: list()
+  @spec stats_schema :: list()
   def stats_schema do
     [
       %{
