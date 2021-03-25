@@ -30,16 +30,16 @@ defmodule Glific.Flows do
     Repo.list_filter(args, Flow, &Repo.opts_with_inserted_at/2, &filter_with/2)
     |> Enum.map(fn flow ->
       flow
-      |> Map.put(:status, get_status(flow.id))
+      |> Map.put(:flow_info, get_flow_info(flow.id))
     end)
   end
 
-  @spec get_status(integer()) :: String.t()
-  defp get_status(id) do
+  @spec get_flow_info(integer()) :: String.t()
+  defp get_flow_info(id) do
     Repo.fetch_by(FlowRevision, %{flow_id: id, revision_number: 0})
     |> case do
-      {:ok, flow_revision} -> flow_revision.status
-      {:error, _} -> ""
+      {:ok, flow_revision} -> %{info: flow_revision.status}
+      {:error, _} -> %{info: ""}
     end
   end
 
@@ -109,6 +109,7 @@ defmodule Glific.Flows do
   """
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
+    IO.inspect(attrs)
     attrs =
       Map.merge(
         attrs,
