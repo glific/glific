@@ -41,11 +41,7 @@ defmodule GlificWeb.API.V1.SessionController do
   end
 
   defp update_last_login(user, conn) do
-
     remote_ip =
-      if is_nil(conn.remote_ip) ,
-      do: "",
-      else:
         conn.remote_ip
         |> :inet_parse.ntoa()
         |> to_string()
