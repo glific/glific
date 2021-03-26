@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Contacts, Contacts.Contact, Contacts.Simulator, Repo}
+  alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Contacts.Simulator, Repo}
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -48,6 +48,19 @@ defmodule GlificWeb.Resolvers.Contacts do
          {:ok, contact} <- Contacts.update_contact(contact, params) do
       {:ok, %{contact: contact}}
     end
+  end
+
+  @doc """
+  Import contacts to the database
+  """
+  @spec import_contacts(Absinthe.Resolution.t(), %{group_label: String.t(), data: String.t()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def import_contacts(_, %{group_label: group_label, data: data}, %{
+        context: %{current_user: user}
+      }) do
+    Import.import_contacts(user.organization_id, group_label, data: data)
   end
 
   @doc false

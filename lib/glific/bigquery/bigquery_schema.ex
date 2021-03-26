@@ -193,181 +193,6 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
-  @doc false
-  @spec contact_delta_schema :: list()
-  def contact_delta_schema do
-    [
-      %{
-        description: "Unique ID for the contact",
-        name: "id",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Phone number of the user; primary point of identification",
-        name: "phone",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description:
-          "Whatsapp connection status; current options are : processing, valid, invalid & failed",
-        name: "provider_status",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Provider status; current options are :valid, invalid or blocked",
-        name: "status",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Opted language of the user for templates and other communications",
-        name: "language",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Time when we recorded an opt-in from the user",
-        name: "optin_time",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Time when we recorded an opt-out from the user",
-        name: "optout_time",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      },
-      %{
-        description:
-          "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)",
-        name: "last_message_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Time when the record entry was last updated",
-        name: "updated_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "If contact is a user and their respective user name",
-        name: "user_name",
-        type: "string",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "If contact is a user and their respective role",
-        name: "user_role",
-        type: "string",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "NGO generated fields for the user generated as a map",
-        name: "fields",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            description: "Labels for NGO generated fields for the user",
-            name: "label",
-            type: "STRING",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Values of the NGO generated fields (mapped for each user and label)",
-            name: "value",
-            type: "string",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Type of the generated fields; example - string",
-            name: "type",
-            type: "STRING",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Time of entry of the recorded field",
-            name: "inserted_at",
-            type: "DATETIME",
-            mode: "NULLABLE"
-          }
-        ]
-      },
-      %{
-        description: "Store the settings of the user as a map (which is a jsonb object in psql).
-      Preferences is one field in the settings (for now). The NGO can use this field to target
-      the user with messages based on their preferences",
-        name: "settings",
-        type: "RECORD",
-        mode: "NULLABLE",
-        fields: [
-          %{
-            description: "Labels for the settings generated for the user",
-            name: "label",
-            type: "STRING",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Values of the generated user settings (mapped for each label)",
-            name: "values",
-            type: "RECORD",
-            mode: "REPEATED",
-            fields: [
-              %{
-                name: "key",
-                type: "STRING",
-                mode: "NULLABLE"
-              },
-              %{
-                name: "value",
-                type: "STRING",
-                mode: "NULLABLE"
-              }
-            ]
-          }
-        ]
-      },
-      %{
-        description: "Groups that the contact belongs to",
-        name: "groups",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            description: "Label of the group that the contact belongs to",
-            name: "label",
-            type: "STRING",
-            mode: "REQUIRED"
-          },
-          %{
-            description: "Description of the group that the contact belongs to",
-            name: "description",
-            type: "STRING",
-            mode: "NULLABLE"
-          }
-        ]
-      },
-      %{
-        description: "Tags associated with the contact",
-        name: "tags",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            description: "Labels for the associated tags",
-            name: "label",
-            type: "STRING",
-            mode: "REQUIRED"
-          }
-        ]
-      }
-    ]
-  end
-
   @doc """
   Schema for messages table
   """
@@ -524,75 +349,6 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
-  @doc false
-  @spec message_delta_schema :: list()
-  def message_delta_schema do
-    [
-      %{
-        description: "Unique ID generated for each message",
-        name: "id",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
-        description:
-          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker",
-        name: "type",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Delivery status of the message",
-        name: "status",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description:
-          "Either sender contact number or receiver contact number; created to quickly let us know who the beneficiary is",
-        name: "contact_phone",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Timestamp when message was sent from queue worker",
-        name: "sent_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Tags assigned to the messages, if any",
-        name: "tags_label",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Flow label associated with the message",
-        name: "flow_label",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Flow associated with the message",
-        name: "flow_name",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Flow UUID for joining with flow/flow_results",
-        name: "flow_uuid",
-        type: "STRING",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Time when the record entry was last updated",
-        name: "updated_at",
-        type: "DATETIME",
-        mode: "NULLABLE"
-      }
-    ]
-  end
-
   @doc """
   Schema for flows table
   """
@@ -720,46 +476,121 @@ defmodule Glific.BigquerySchema do
     ]
   end
 
-  @doc false
-  @spec flow_result_delta_schema :: list()
-  def flow_result_delta_schema do
+  @doc """
+  Schema for stats_schema table
+  """
+  @spec stats_schema :: list()
+  def stats_schema do
     [
       %{
-        description: "Flow Result ID",
+        description: "Stats ID",
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
       },
+
       %{
-        description:
-          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
-        name: "uuid",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "Phone number of the contact interacting with the flow",
-        name: "contact_phone",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "JSON object for storing the user responses",
-        name: "results",
-        type: "STRING",
-        mode: "REQUIRED"
-      },
-      %{
-        description: "ID of the flow context with which the user is associated to in the flow",
-        name: "flow_context_id",
+        description: "Total number of contacts",
+        name: "contacts",
         type: "INTEGER",
         mode: "NULLABLE"
       },
+
       %{
-        description: "Time when the flow results entry was last updated for a user",
+        description: "Total number of active contacts",
+        name: "active",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Number of opted in contacts",
+        name: "optin",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Number of opted out contacts",
+        name: "optout",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of messages",
+        name: "messages",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of inbound messages",
+        name: "inbound",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of outbound messages",
+        name: "outbound",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of HSM messages (outbound only)",
+        name: "hsm",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+       %{
+        description: "Total number of flows started today",
+        name: "flows_started",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of flows completed today",
+        name: "flows_completed",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "The period for this record: hour, day, week, month, summary",
+        name: "period",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+     %{
+        description: "All stats are measured with respect to UTC time, to keep things timezone agnostic.",
+        name: "date",
+        type: "DATE",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "The hour that this record represents, 0..23, only for PERIOD: hour",
+        name: "hour",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
         name: "updated_at",
         type: "DATETIME",
-        mode: "NULLABLE"
+        mode: "REQUIRED"
       }
     ]
   end

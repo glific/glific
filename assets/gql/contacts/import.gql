@@ -1,0 +1,9 @@
+#import "./ImportFields.frag.gql"
+
+mutation importContacts($group_label : String, $data : String) {
+  importContacts(group_label: $group_label, data: $data) {
+      status
+
+      ...ImportErrors
+  }
+}

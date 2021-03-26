@@ -23,6 +23,7 @@ defmodule Glific.Triggers do
   @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
   def execute_triggers(organization_id, now \\ DateTime.utc_now()) do
     # triggers are executed at most once per day
+    now = Timex.shift(now, minutes: 1)
     Trigger
     |> where([t], t.organization_id == ^organization_id and t.is_active == true)
     |> where(

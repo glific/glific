@@ -95,7 +95,7 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(integer, String.t(), []) :: tuple()
+  @spec import_contacts(integer, String.t(), [{atom(), String.t()}]) :: tuple()
   def import_contacts(organization_id, group_label, opts \\ []) do
     {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}")
 
@@ -117,12 +117,18 @@ defmodule Glific.Contacts.Import do
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
       case errors do
-        [] -> {:ok, "All contacts added"}
-        _ -> {:error, "All contacts could not be added", errors}
+        [] -> {:ok, %{status: "All contacts added"}}
+        _ -> {:error, %{status: "All contacts could not be added", errors: errors}}
       end
     else
       {:error, error} ->
-        {:error, "Could not fetch the organization with id #{organization_id}. Error -> #{error}"}
+        {:error,
+         %{
+           status: "All contacts could not be added",
+           errors: [
+             "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
+           ]
+         }}
     end
   end
 end
