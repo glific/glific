@@ -25,7 +25,10 @@ config :glific, GlificWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger,
-  level: :info
+  level: :emergency,
+  compile_time_purge_matching: [
+    [level_lower_than: :emergency]
+  ]
 
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
