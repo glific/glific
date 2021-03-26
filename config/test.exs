@@ -25,7 +25,7 @@ config :glific, GlificWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger,
-  level: :emergency,
+  level: :info,
   compile_time_purge_matching: [
     [level_lower_than: :emergency]
   ]
