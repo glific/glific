@@ -44,7 +44,7 @@ defmodule Glific.Flows do
     if is_nil(checked), do: %{}, else: checked
   end
 
-  @spec get_status_list(non_neg_integer()) :: map()
+  @spec get_status_list(non_neg_integer()) :: [Flow.t()]
   defp get_status_list(organization_id) do
     published_list =
       Flow
@@ -62,7 +62,7 @@ defmodule Glific.Flows do
     |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
     |> select([f, fr], %{
       id: fr.flow_id,
-      last_drafted_at: fr.inserted_at
+      last_changed_at: fr.inserted_at
     })
     |> where([f, fr], fr.revision_number == 0)
     |> Repo.all()

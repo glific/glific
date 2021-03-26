@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :inserted_at, :datetime
     field :updated_at, :datetime
     field :last_published_at, :datetime
-    field :last_drafted_at, :datetime
+    field :last_changed_at, :datetime
   end
 
   input_object :flow_input do

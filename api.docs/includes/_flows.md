@@ -11,6 +11,8 @@ query flows($filter: FlowFilter, $opts: Opts) {
     versionNumber
     flowType
     keywords
+    lastPublishedAt
+    lastChangedAt
   }
 }
 
@@ -41,7 +43,9 @@ query flows($filter: FlowFilter, $opts: Opts) {
         ],
         "name": "Help Workflow",
         "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
-        "versionNumber": "13.1.0"
+        "lastChangedAt": "2021-03-25T10:03:26Z",
+        "lastPublishedAt": "2021-03-25T10:03:26Z",
+        "versionNumber": "13.1.0",
       },
       {
         "flowType": "MESSAGE",
@@ -51,6 +55,8 @@ query flows($filter: FlowFilter, $opts: Opts) {
         ],
         "name": "Language Workflow",
         "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
+        "lastChangedAt": "2021-03-25T10:03:26Z",
+        "lastPublishedAt": "2021-03-25T10:03:26Z",
         "versionNumber": "13.1.0"
       }
     ]
@@ -649,6 +655,16 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>lastPublishedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>lastChangedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
