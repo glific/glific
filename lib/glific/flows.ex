@@ -27,7 +27,7 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    flow_revision_list = get_status_list(args.organization_id)
+    flow_revision_list = get_status_list()
 
     Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
     |> Enum.map(fn flow ->
@@ -44,11 +44,10 @@ defmodule Glific.Flows do
     if is_nil(checked), do: %{}, else: checked
   end
 
-  @spec get_status_list(non_neg_integer()) :: [Flow.t()]
-  defp get_status_list(organization_id) do
+  @spec get_status_list() :: [Flow.t()]
+  defp get_status_list() do
     published_list =
       Flow
-      |> where([f], f.organization_id == ^organization_id)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
       |> select([f, fr], %{
         id: fr.flow_id,
@@ -58,7 +57,6 @@ defmodule Glific.Flows do
       |> Repo.all()
 
     Flow
-    |> where([f], f.organization_id == ^organization_id)
     |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
     |> select([f, fr], %{
       id: fr.flow_id,
