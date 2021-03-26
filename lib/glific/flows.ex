@@ -58,20 +58,18 @@ defmodule Glific.Flows do
     |> add_dates()
   end
 
+  defp update_dates(row, value) do
+    if row.status == "published",
+      do: Map.put(value, :last_published_at, row.last_changed_at),
+      else: Map.put(value, :last_changed_at, row.last_changed_at)
+  end
   @spec add_dates(list()) :: map()
   defp add_dates(rows) do
     rows
     |> Enum.reduce(%{}, fn row, acc ->
       acc
       |> Map.put_new(row.id, %{})
-      |> Map.update!(
-        row.id,
-        fn value ->
-          if row.status == "published",
-            do: Map.put(value, :last_published_at, row.last_changed_at),
-            else: Map.put(value, :last_changed_at, row.last_changed_at)
-        end
-      )
+      |> Map.update!(row.id, &update_dates(row, &1))
     end)
   end
 

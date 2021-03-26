@@ -122,8 +122,8 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   ## ignore the tables for updates.
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
-  when table in ["flows", "stats"],
-  do: :ok
+       when table in ["flows", "stats"],
+       do: :ok
 
   defp queue_table_data("messages", organization_id, attrs) do
     Logger.info(
@@ -277,35 +277,39 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   defp queue_table_data("stats", organization_id, attrs) do
-    Logger.info("fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{  organization_id}")
+    Logger.info(
+      "fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+        organization_id
+      }"
+    )
 
     get_query("stats", organization_id, attrs)
     |> Repo.all()
     |> Enum.reduce(
       [],
       fn row, acc ->
-          [
-            %{
-              id: row.id,
-              contacts: row.contacts,
-              active: row.active,
-              optin: row.optin,
-              optout: row.optout,
-              messages: row.messages,
-              inbound: row.inbound,
-              outbound: row.outbound,
-              hsm: row.hsm,
-              flows_started: row.flows_started,
-              flows_completed: row.flows_completed,
-              period: row.period,
-              date: Date.to_string(row.date),
-              hour: row.hour,
-              inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
-              updated_at: Bigquery.format_date(row.updated_at, organization_id),
-            }
-            |> Bigquery.format_data_for_bigquery("stats")
-            | acc
-          ]
+        [
+          %{
+            id: row.id,
+            contacts: row.contacts,
+            active: row.active,
+            optin: row.optin,
+            optout: row.optout,
+            messages: row.messages,
+            inbound: row.inbound,
+            outbound: row.outbound,
+            hsm: row.hsm,
+            flows_started: row.flows_started,
+            flows_completed: row.flows_completed,
+            period: row.period,
+            date: Date.to_string(row.date),
+            hour: row.hour,
+            inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
+            updated_at: Bigquery.format_date(row.updated_at, organization_id)
+          }
+          |> Bigquery.format_data_for_bigquery("stats")
+          | acc
+        ]
       end
     )
     |> Enum.chunk_every(100)
