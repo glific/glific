@@ -50,7 +50,7 @@ defmodule GlificWeb.API.V1.SessionController do
         |> :inet_parse.ntoa()
         |> to_string()
 
-    Logger.error("Updating user login timestamp, user_phone: #{user["phone"]}, ip: #{remote_ip}")
+    Logger.error("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
 
     user
     |> Users.update_user(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
