@@ -26,8 +26,66 @@ defmodule Glific.Flows do
 
   """
   @spec list_flows(map()) :: [Flow.t()]
-  def list_flows(args),
-    do: Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+  def list_flows(args) do
+    flows = Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+
+    flows
+    # get all the flow ids
+    |> Enum.map(fn f -> f.id end)
+    # get their published_draft dates
+    |> get_published_draft_dates()
+    # merge with the original list of flows
+    |> merge_original(flows)
+  end
+
+  @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
+  defp merge_original(dates, flows) do
+    Enum.map(flows, fn f -> Map.merge(f, Map.get(dates, f.id, %{})) end)
+  end
+
+  @spec get_published_draft_dates([non_neg_integer]) :: map()
+  defp get_published_draft_dates(flow_ids) do
+    FlowRevision
+    |> where([fr], fr.status == "published")
+    |> or_where([fr], fr.revision_number == 0)
+    |> where([fr], fr.flow_id in ^flow_ids)
+    |> select([fr], %{
+      id: fr.flow_id,
+      status: fr.status,
+      last_changed_at: fr.inserted_at
+    })
+    |> Repo.all()
+    |> add_dates()
+  end
+
+  defp update_dates(row, value) do
+    if row.status == "published",
+      do: Map.put(value, :last_published_at, row.last_changed_at),
+      else: Map.put(value, :last_changed_at, row.last_changed_at)
+  end
+
+  @spec add_dates(list()) :: map()
+  defp add_dates(rows) do
+    rows
+    |> Enum.reduce(%{}, fn row, acc ->
+      acc
+      |> Map.put_new(row.id, %{})
+      |> Map.update!(row.id, &update_dates(row, &1))
+    end)
+  end
+
+  # appending lastPublishedAt and lastChangedAt field in  the flow
+  @spec get_status_flow(Flow.t()) :: map()
+  defp get_status_flow(flow) do
+    Map.merge(
+      flow,
+      Map.get(
+        get_published_draft_dates([flow.id]),
+        flow.id,
+        %{}
+      )
+    )
+  end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -79,7 +137,11 @@ defmodule Glific.Flows do
 
   """
   @spec get_flow!(integer) :: Flow.t()
-  def get_flow!(id), do: Repo.get!(Flow, id)
+  def get_flow!(id) do
+    with flow <- Repo.get!(Flow, id) do
+      get_status_flow(flow)
+    end
+  end
 
   @doc """
   Creates a flow.
@@ -116,6 +178,8 @@ defmodule Glific.Flows do
           flow_id: flow.id,
           organization_id: flow.organization_id
         })
+
+      flow = get_status_flow(flow)
 
       {:ok, flow}
     end
