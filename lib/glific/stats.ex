@@ -257,10 +257,18 @@ defmodule Glific.Stats do
     if Keyword.get(opts, :week, true) && is_weekly?(time, date) do
       start = Timex.beginning_of_week(time)
       finish = Timex.end_of_week(time)
+      summary = Keyword.get(opts, :summary, true)
 
-      stats
+      if(summary,
+        do:
+          get_periodic_stats(
+            stats,
+            org_id_list,
+            {{:summary, DateTime.to_date(start)}, start, finish}
+          ),
+        else: stats
+      )
       |> get_periodic_stats(org_id_list, {{:week, DateTime.to_date(start)}, start, finish})
-      |> get_periodic_stats(org_id_list, {{:summary, DateTime.to_date(start)}, start, finish})
     else
       stats
     end
@@ -275,8 +283,17 @@ defmodule Glific.Stats do
     if Keyword.get(opts, :month, true) && is_monthly?(time, date) do
       start = Timex.beginning_of_month(time)
       finish = Timex.end_of_month(time)
+      summary = Keyword.get(opts, :summary, true)
 
-      stats
+      if(summary,
+        do:
+          get_periodic_stats(
+            stats,
+            org_id_list,
+            {{:summary, DateTime.to_date(start)}, start, finish}
+          ),
+        else: stats
+      )
       |> get_periodic_stats(org_id_list, {{:month, DateTime.to_date(start)}, start, finish})
     else
       stats

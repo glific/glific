@@ -21,7 +21,7 @@ defmodule GlificWeb.API.V1.SessionController do
       {:ok, conn} ->
         Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
 
-       update_last_login(conn.assigns[:current_user], conn)
+        update_last_login(conn.assigns[:current_user], conn)
 
         json(conn, %{
           data: %{
@@ -42,9 +42,9 @@ defmodule GlificWeb.API.V1.SessionController do
 
   defp update_last_login(user, conn) do
     remote_ip =
-        conn.remote_ip
-        |> :inet_parse.ntoa()
-        |> to_string()
+      conn.remote_ip
+      |> :inet_parse.ntoa()
+      |> to_string()
 
     Logger.error("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
 

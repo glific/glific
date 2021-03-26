@@ -15,7 +15,9 @@ defmodule Glific.Repo.Migrations.Stats do
     # The summary total is the grand total in the DB, and keeps track of contact data only
     create table(:stats) do
       # contact related data
-      add :contacts, :integer, comment: "Total number of contacts in the system. This is the only absolute number in non-summary records"
+      add :contacts, :integer,
+        comment:
+          "Total number of contacts in the system. This is the only absolute number in non-summary records"
 
       add :active, :integer, comment: "Total number of active contacts"
       add :optin, :integer, comment: "Number of opted in contacts"
