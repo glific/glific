@@ -33,7 +33,7 @@ defmodule Glific.Flows do
     |> Enum.map(fn flow ->
       Map.merge(
         flow,
-        flow_revision_list |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+        get_published(flow_revision_list, flow)
       )
     end)
   end
@@ -46,29 +46,35 @@ defmodule Glific.Flows do
 
   @spec get_status_list :: [Flow.t()]
   defp get_status_list do
-    published_list =
+    flow_list =
       Flow
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+      |> where([f, fr], fr.status == "published")
+      |> or_where([f, fr], fr.revision_number == 0)
       |> select([f, fr], %{
         id: fr.flow_id,
-        last_published_at: fr.inserted_at
+        name: f.name,
+        status: fr.status,
+        last_changed_at: fr.inserted_at
       })
-      |> where([f, fr], fr.status == "published")
       |> Repo.all()
 
-    Flow
-    |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
-    |> select([f, fr], %{
-      id: fr.flow_id,
-      last_changed_at: fr.inserted_at
-    })
-    |> where([f, fr], fr.revision_number == 0)
-    |> Repo.all()
+    updated_list =
+      flow_list
+      |> Enum.map(fn flow ->
+        if flow.status == "published",
+          do: Map.merge(flow, %{last_published_at: flow.last_changed_at}),
+          else: flow
+      end)
+
+    Enum.uniq_by(updated_list, fn x -> x.id end)
     |> Enum.map(fn flow ->
-      Map.merge(
-        flow,
-        get_published(published_list, flow)
-      )
+      with drafted_flow <-
+             Enum.find(updated_list, fn status ->
+               status.id == flow.id && status.status == "draft"
+             end) do
+        if is_nil(drafted_flow), do: flow, else: Map.merge(flow, drafted_flow)
+      end
     end)
   end
 
