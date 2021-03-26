@@ -27,26 +27,49 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    organization_id = args.organization_id
-
-    status_list =
-      Flow
-      |> where([f], f.organization_id == ^organization_id)
-      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
-      |> select([f, fr], %{
-        id: fr.flow_id,
-        revision_number: fr.revision_number,
-        last_inserted_at: fr.inserted_at,
-        revision_status: fr.status
-      })
-      |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
-      |> Repo.all(skip_organization_id: true)
+    flow_revision_list = get_status_list(args.organization_id)
 
     Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
     |> Enum.map(fn flow ->
       Map.merge(
         flow,
-        status_list |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+        flow_revision_list |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+      )
+    end)
+  end
+
+  @spec get_published(map(), Flow.t()) :: map()
+  defp get_published(published_list, flow) do
+    checked = published_list |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+    if is_nil(checked), do: %{}, else: checked
+  end
+
+  @spec get_status_list(non_neg_integer()) :: map()
+  defp get_status_list(organization_id) do
+    published_list =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+      |> select([f, fr], %{
+        id: fr.flow_id,
+        last_published_at: fr.inserted_at
+      })
+      |> where([f, fr], fr.status == "published")
+      |> Repo.all()
+
+    Flow
+    |> where([f], f.organization_id == ^organization_id)
+    |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
+    |> select([f, fr], %{
+      id: fr.flow_id,
+      last_drafted_at: fr.inserted_at
+    })
+    |> where([f, fr], fr.revision_number == 0)
+    |> Repo.all()
+    |> Enum.map(fn flow ->
+      Map.merge(
+        flow,
+        get_published(published_list, flow)
       )
     end)
   end
