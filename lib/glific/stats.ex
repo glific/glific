@@ -337,7 +337,7 @@ defmodule Glific.Stats do
   end
 
   @spec get_flow_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
-  defp get_flow_stats(stats, org_id_list, {{:summary, _}, start, finish}), do: stats
+  defp get_flow_stats(stats, _org_id_list, {{:summary, _}, _start, _finish}), do: stats
 
   defp get_flow_stats(stats, org_id_list, {period_date, start, finish}) do
     query =
