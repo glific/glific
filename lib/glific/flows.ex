@@ -27,64 +27,58 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    flow_revision_list = get_status_list()
+    flows = Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
 
-    Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
-    |> Enum.map(fn flow ->
-      Map.merge(
-        flow,
-        get_published(flow_revision_list, flow)
+    flows
+    # get all the flow ids
+    |> Enum.map(fn f -> f.id end)
+    # get their published_draft dates
+    |> get_published_draft_dates()
+    # merge with the original list of flows
+    |> merge_original(flows)
+  end
+
+  @spec merge_original(map(), [Flow.t()]) :: [Flow.t()]
+  defp merge_original(dates, flows) do
+    Enum.map(flows, fn f -> Map.merge(f, Map.get(dates, f.id, %{})) end)
+  end
+
+  @spec get_published_draft_dates([non_neg_integer]) :: map()
+  defp get_published_draft_dates(flow_ids) do
+    FlowRevision
+    |> where([fr], fr.status == "published")
+    |> or_where([fr], fr.revision_number == 0)
+    |> where([fr], fr.flow_id in ^flow_ids)
+    |> select([fr], %{
+      id: fr.flow_id,
+      status: fr.status,
+      last_changed_at: fr.inserted_at
+    })
+    |> Repo.all()
+    |> add_dates()
+  end
+
+  @spec add_dates(list()) :: map()
+  defp add_dates(rows) do
+    rows
+    |> Enum.reduce(%{}, fn row, acc ->
+      acc
+      |> Map.put_new(row.id, %{})
+      |> Map.update!(
+        row.id,
+        fn value ->
+          if row.status == "published",
+            do: Map.put(value, :last_published_at, row.last_changed_at),
+            else: Map.put(value, :last_changed_at, row.last_changed_at)
+        end
       )
-    end)
-  end
-
-  @spec get_published([Flow.t()], Flow.t()) :: any()
-  defp get_published(published_list, flow) do
-    checked = published_list |> Enum.find(fn status -> status.id == flow.id end)
-    if is_nil(checked), do: %{}, else: checked
-  end
-
-  @spec get_status_list :: [Flow.t()]
-  defp get_status_list do
-    flow_list =
-      Flow
-      |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
-      |> where([f, fr], fr.status == "published")
-      |> or_where([f, fr], fr.revision_number == 0)
-      |> select([f, fr], %{
-        id: fr.flow_id,
-        name: f.name,
-        status: fr.status,
-        last_changed_at: fr.inserted_at
-      })
-      |> Repo.all()
-
-    updated_list =
-      flow_list
-      |> Enum.map(fn flow ->
-        if flow.status == "published",
-          do: Map.merge(flow, %{last_published_at: flow.last_changed_at}),
-          else: flow
-      end)
-
-    Enum.uniq_by(updated_list, fn x -> x.id end)
-    |> Enum.map(fn flow ->
-      with drafted_flow <-
-             Enum.find(updated_list, fn status ->
-               status.id == flow.id && status.status == "draft"
-             end) do
-        if is_nil(drafted_flow), do: flow, else: Map.merge(flow, drafted_flow)
-      end
     end)
   end
 
   # appending lastPublishedAt and lastChangedAt field in  the flow
   @spec get_status_flow(Flow.t()) :: map()
   defp get_status_flow(flow) do
-    Map.merge(
-      flow,
-      get_status_list() |> Enum.find(fn status -> status.id == flow.id end)
-    )
+    Map.merge(flow, get_published_draft_dates([flow.id]))
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
