@@ -39,6 +39,8 @@ defmodule GlificWeb.RouterTest do
 
   # lets do a simple tags listing to test the forward call on the normal channel
   describe "test tags via /api and http" do
+
+    @tag :pending
     test "gets a list of tags", %{conn: conn, access_token: token} do
       query = """
       query listTags {

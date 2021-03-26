@@ -477,6 +477,132 @@ defmodule Glific.BigquerySchema do
   end
 
   @doc """
+  Schema for stats_schema table
+  """
+  @spec stats_schema :: list()
+  def stats_schema do
+    [
+      %{
+        description: "Stats ID",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+
+      %{
+        description: "Total number of contacts",
+        name: "contacts",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of active contacts",
+        name: "active",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Number of opted in contacts",
+        name: "optin",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Number of opted out contacts",
+        name: "optout",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of messages",
+        name: "messages",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of inbound messages",
+        name: "inbound",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of outbound messages",
+        name: "outbound",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of HSM messages (outbound only)",
+        name: "hsm",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+       %{
+        description: "Total number of flows started today",
+        name: "flows_started",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of flows completed today",
+        name: "flows_completed",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Total number of users active",
+        name: "users",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "The period for this record: hour, day, week, month, summary",
+        name: "period",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+     %{
+        description: "All stats are measured with respect to UTC time, to keep things timezone agnostic.",
+        name: "date",
+        type: "DATE",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "The hour that this record represents, 0..23, only for PERIOD: hour",
+        name: "hour",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
