@@ -63,6 +63,7 @@ defmodule Glific.Flows do
       do: Map.put(value, :last_published_at, row.last_changed_at),
       else: Map.put(value, :last_changed_at, row.last_changed_at)
   end
+
   @spec add_dates(list()) :: map()
   defp add_dates(rows) do
     rows
@@ -76,7 +77,13 @@ defmodule Glific.Flows do
   # appending lastPublishedAt and lastChangedAt field in  the flow
   @spec get_status_flow(Flow.t()) :: map()
   defp get_status_flow(flow) do
-    Map.merge(flow, get_published_draft_dates([flow.id]))
+    Map.merge(flow,
+      Map.get(
+        get_published_draft_dates([flow.id]),
+        flow.id,
+        %{}
+      )
+    )
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
