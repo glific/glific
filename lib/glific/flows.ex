@@ -122,7 +122,14 @@ defmodule Glific.Flows do
 
   """
   @spec get_flow!(integer) :: Flow.t()
-  def get_flow!(id), do: Repo.get!(Flow, id)
+  def get_flow!(id) do
+    with  flow <-  Repo.get!(Flow, id) do
+      Map.merge(
+        flow,
+        get_status_list() |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+      )
+    end
+  end
 
   @doc """
   Creates a flow.
@@ -159,6 +166,12 @@ defmodule Glific.Flows do
           flow_id: flow.id,
           organization_id: flow.organization_id
         })
+
+      flow =
+        Map.merge(
+          flow,
+          get_status_list() |> Enum.find(fn status_item -> Map.get(status_item, :id) == flow.id end)
+        )
 
       {:ok, flow}
     end
