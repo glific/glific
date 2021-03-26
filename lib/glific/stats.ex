@@ -12,8 +12,8 @@ defmodule Glific.Stats do
     Messages.Message,
     Partners,
     Repo,
-    Users.User,
-    Stats.Stat
+    Stats.Stat,
+    Users.User
   }
 
   @doc """
