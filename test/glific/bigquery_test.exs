@@ -229,19 +229,20 @@ defmodule Glific.BigqueryTest do
 
     assert_raise RuntimeError, fn ->
       Bigquery.handle_insert_query_response(
-      {:ok, %{insertErrors: %{error: "Some errors"}}},
-      attrs.organization_id,
-      table: "messages",
-      max_id: 10)
+        {:ok, %{insertErrors: %{error: "Some errors"}}},
+        attrs.organization_id,
+        table: "messages",
+        max_id: 10
+      )
     end
 
-     assert :ok == Bigquery.handle_insert_query_response(
-      {:ok, %{insertErrors: nil}},
-      attrs.organization_id,
-      table: "messages",
-      max_id: nil
-      )
-
+    assert :ok ==
+             Bigquery.handle_insert_query_response(
+               {:ok, %{insertErrors: nil}},
+               attrs.organization_id,
+               table: "messages",
+               max_id: nil
+             )
   end
 
   test "handle_sync_errors/2 should raise error", attrs do
