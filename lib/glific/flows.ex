@@ -72,6 +72,15 @@ defmodule Glific.Flows do
     end)
   end
 
+  # appending lastPublishedAt and lastChangedAt field in  the flow
+  @spec get_status_flow(Flow.t()) :: map()
+  defp get_status_flow(flow) do
+    Map.merge(
+      flow,
+      get_status_list() |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+    )
+  end
+
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -123,11 +132,8 @@ defmodule Glific.Flows do
   """
   @spec get_flow!(integer) :: Flow.t()
   def get_flow!(id) do
-    with  flow <-  Repo.get!(Flow, id) do
-      Map.merge(
-        flow,
-        get_status_list() |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
-      )
+    with flow <- Repo.get!(Flow, id) do
+      get_status_flow(flow)
     end
   end
 
@@ -167,11 +173,7 @@ defmodule Glific.Flows do
           organization_id: flow.organization_id
         })
 
-      flow =
-        Map.merge(
-          flow,
-          get_status_list() |> Enum.find(fn status_item -> Map.get(status_item, :id) == flow.id end)
-        )
+      flow = get_status_flow(flow)
 
       {:ok, flow}
     end
