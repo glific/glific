@@ -43,12 +43,14 @@ defmodule GlificWeb.API.V1.SessionController do
   defp update_last_login(user, conn) do
 
     remote_ip =
-      if is_nil(conn[:remote_ip]) ,
+      if is_nil(conn.remote_ip) ,
       do: "",
       else:
         conn.remote_ip
         |> :inet_parse.ntoa()
         |> to_string()
+
+    Logger.error("Updating user login timestamp, user_phone: #{user["phone"]}, ip: #{remote_ip}")
 
     user
     |> Users.update_user(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
