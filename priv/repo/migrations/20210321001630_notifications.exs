@@ -23,9 +23,9 @@ defmodule Glific.Repo.Migrations.Notifications do
       add :category, :string,
         comment: "The category that this falls under: Flow, Message, BigQuery, etc"
 
-      add :message, :string, comment: "The specific error message that caused this notification"
+      add :message, :text, comment: "The specific error message that caused this notification"
 
-      add :severity, :string,
+      add :severity, :text,
         default: "Error",
         comment: "The severity level. We'll include a few info notifications"
 

@@ -12,7 +12,8 @@ defmodule Glific.Stats do
     Messages.Message,
     Partners,
     Repo,
-    Stats.Stat
+    Stats.Stat,
+    Users.User
   }
 
   @doc """
@@ -212,6 +213,7 @@ defmodule Glific.Stats do
     |> get_contact_stats(org_id_list, {period_date, start, finish})
     |> get_message_stats(org_id_list, {period_date, start, finish})
     |> get_flow_stats(org_id_list, {period_date, start, finish})
+    |> get_user_stats(org_id_list, {period_date, start, finish})
   end
 
   @spec get_hourly_stats(map(), list(), Keyword.t()) :: map()
@@ -255,8 +257,17 @@ defmodule Glific.Stats do
     if Keyword.get(opts, :week, true) && is_weekly?(time, date) do
       start = Timex.beginning_of_week(time)
       finish = Timex.end_of_week(time)
+      summary = Keyword.get(opts, :summary, true)
 
-      stats
+      if(summary,
+        do:
+          get_periodic_stats(
+            stats,
+            org_id_list,
+            {{:summary, DateTime.to_date(start)}, start, finish}
+          ),
+        else: stats
+      )
       |> get_periodic_stats(org_id_list, {{:week, DateTime.to_date(start)}, start, finish})
     else
       stats
@@ -272,8 +283,17 @@ defmodule Glific.Stats do
     if Keyword.get(opts, :month, true) && is_monthly?(time, date) do
       start = Timex.beginning_of_month(time)
       finish = Timex.end_of_month(time)
+      summary = Keyword.get(opts, :summary, true)
 
-      stats
+      if(summary,
+        do:
+          get_periodic_stats(
+            stats,
+            org_id_list,
+            {{:summary, DateTime.to_date(start)}, start, finish}
+          ),
+        else: stats
+      )
       |> get_periodic_stats(org_id_list, {{:month, DateTime.to_date(start)}, start, finish})
     else
       stats
@@ -284,15 +304,18 @@ defmodule Glific.Stats do
   defp get_contact_stats(stats, org_id_list, {period_date, start, finish}) do
     query = Partners.contact_organization_query(org_id_list)
 
+    {period, _date} = period_date
+
     time_query =
-      query
-      |> where([c], c.last_message_at >= ^start)
-      |> where([c], c.last_message_at <= ^finish)
+      if period == :summary,
+        do: query,
+        else:
+          query
+          |> where([c], c.last_message_at >= ^start)
+          |> where([c], c.last_message_at <= ^finish)
 
     optin = time_query |> where([c], not is_nil(c.optin_time))
     optout = time_query |> where([c], not is_nil(c.optout_time))
-
-    {period, _date} = period_date
 
     # dont generate summary contact stats for hourly snapshots
     if(period == :hour, do: stats, else: make_result(stats, query, period_date, :contacts))
@@ -308,12 +331,20 @@ defmodule Glific.Stats do
       |> where([m], m.organization_id in ^org_id_list)
       |> group_by([m], m.organization_id)
       |> select([m], [count(m.id), m.organization_id])
-      |> where([m], m.inserted_at >= ^start)
-      |> where([m], m.inserted_at <= ^finish)
 
-    inbound = query |> where([m], m.flow == :inbound)
-    outbound = query |> where([m], m.flow == :outbound)
-    hsm = query |> where([m], m.is_hsm == true)
+    {period, _date} = period_date
+
+    time_query =
+      if period == :summary,
+        do: query,
+        else:
+          query
+          |> where([m], m.inserted_at >= ^start)
+          |> where([m], m.inserted_at <= ^finish)
+
+    inbound = time_query |> where([m], m.flow == :inbound)
+    outbound = time_query |> where([m], m.flow == :outbound)
+    hsm = time_query |> where([m], m.is_hsm == true)
 
     stats
     |> make_result(query, period_date, :messages)
@@ -323,6 +354,8 @@ defmodule Glific.Stats do
   end
 
   @spec get_flow_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_flow_stats(stats, _org_id_list, {{:summary, _}, _start, _finish}), do: stats
+
   defp get_flow_stats(stats, org_id_list, {period_date, start, finish}) do
     query =
       FlowContext
@@ -343,5 +376,27 @@ defmodule Glific.Stats do
     stats
     |> make_result(flows_started, period_date, :flows_started)
     |> make_result(flows_completed, period_date, :flows_completed)
+  end
+
+  @spec get_user_stats(map(), list(), {tuple(), DateTime.t(), DateTime.t()}) :: map()
+  defp get_user_stats(stats, org_id_list, {period_date, start, finish}) do
+    query =
+      User
+      |> where([u], u.organization_id in ^org_id_list)
+      |> group_by([u], u.id)
+      |> select([u], [count(u.id), u.organization_id])
+
+    {period, _date} = period_date
+
+    time_query =
+      if period == :summary,
+        do: query,
+        else:
+          query
+          |> where([u], u.last_login_at >= ^start)
+          |> where([u], u.last_login_at <= ^finish)
+
+    stats
+    |> make_result(time_query, period_date, :users)
   end
 end

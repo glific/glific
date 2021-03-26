@@ -549,6 +549,12 @@ defmodule Glific.BigquerySchema do
         mode: "NULLABLE"
       },
       %{
+        description: "Total number of users active",
+        name: "users",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
         description: "The period for this record: hour, day, week, month, summary",
         name: "period",
         type: "STRING",

@@ -301,6 +301,7 @@ defmodule Glific.Jobs.BigQueryWorker do
             hsm: row.hsm,
             flows_started: row.flows_started,
             flows_completed: row.flows_completed,
+            users: row.users,
             period: row.period,
             date: Date.to_string(row.date),
             hour: row.hour,

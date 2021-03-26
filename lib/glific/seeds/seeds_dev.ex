@@ -357,6 +357,8 @@ if Code.ensure_loaded?(Faker) do
           confirm_password: password,
           roles: roles,
           contact_id: contact.id,
+          last_login_at: utc_now,
+          last_login_from: "127.0.0.1",
           organization_id: organization.id
         })
 
