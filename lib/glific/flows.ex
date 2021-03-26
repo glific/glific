@@ -44,8 +44,8 @@ defmodule Glific.Flows do
     if is_nil(checked), do: %{}, else: checked
   end
 
-  @spec get_status_list() :: [Flow.t()]
-  defp get_status_list() do
+  @spec get_status_list :: [Flow.t()]
+  defp get_status_list do
     published_list =
       Flow
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
