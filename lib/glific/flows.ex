@@ -40,7 +40,7 @@ defmodule Glific.Flows do
 
   @spec get_published(map(), Flow.t()) :: map()
   defp get_published(published_list, flow) do
-    checked = published_list |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+    checked = published_list |> Enum.find(fn status -> status.id == flow.id end)
     if is_nil(checked), do: %{}, else: checked
   end
 
@@ -77,7 +77,7 @@ defmodule Glific.Flows do
   defp get_status_flow(flow) do
     Map.merge(
       flow,
-      get_status_list() |> Enum.find(fn status -> Map.get(status, :id) == flow.id end)
+      get_status_list() |> Enum.find(fn status -> status.id == flow.id end)
     )
   end
 
