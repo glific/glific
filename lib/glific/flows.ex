@@ -38,7 +38,7 @@ defmodule Glific.Flows do
     end)
   end
 
-  @spec get_published(map(), Flow.t()) :: map()
+  @spec get_published([Flow.t()], Flow.t()) :: any()
   defp get_published(published_list, flow) do
     checked = published_list |> Enum.find(fn status -> status.id == flow.id end)
     if is_nil(checked), do: %{}, else: checked
