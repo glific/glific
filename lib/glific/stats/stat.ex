@@ -21,6 +21,7 @@ defmodule Glific.Stats.Stat do
           hsm: non_neg_integer(),
           flows_started: non_neg_integer(),
           flows_completed: non_neg_integer(),
+          users: non_neg_integer(),
           period: String.t() | nil,
           date: Date.t() | nil,
           hour: non_neg_integer(),
@@ -46,6 +47,7 @@ defmodule Glific.Stats.Stat do
     :hsm,
     :flows_started,
     :flows_completed,
+    :users,
     :hour,
     :organization_id
   ]
@@ -66,6 +68,9 @@ defmodule Glific.Stats.Stat do
     # flow fields
     field :flows_started, :integer, default: 0
     field :flows_completed, :integer, default: 0
+
+    # user fields
+    field :users, :integer, default: 0
 
     # time fields
     field :period, :string, default: "hour"
