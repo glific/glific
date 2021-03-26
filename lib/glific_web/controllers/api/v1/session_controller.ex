@@ -50,7 +50,10 @@ defmodule GlificWeb.API.V1.SessionController do
 
     user
     # we are not using update_user call here, since it destroys all tokens
-    |> User.update_fields_changeset(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
+    |> User.update_fields_changeset(%{
+      last_login_at: DateTime.utc_now(),
+      last_login_from: remote_ip
+    })
     |> Repo.update()
   end
 

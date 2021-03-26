@@ -288,7 +288,7 @@ defmodule Glific.BigqueryTest do
   end
 
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
-    attrs do
+       attrs do
     # we need to figure out how to check that this function did the right thing
     Bigquery.handle_duplicate_removal_job_error(
       {:ok, "successful"},
