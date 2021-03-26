@@ -77,7 +77,8 @@ defmodule Glific.Flows do
   # appending lastPublishedAt and lastChangedAt field in  the flow
   @spec get_status_flow(Flow.t()) :: map()
   defp get_status_flow(flow) do
-    Map.merge(flow,
+    Map.merge(
+      flow,
       Map.get(
         get_published_draft_dates([flow.id]),
         flow.id,
