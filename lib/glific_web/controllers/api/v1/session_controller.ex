@@ -6,7 +6,7 @@ defmodule GlificWeb.API.V1.SessionController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.Users
+  alias Glific.{Repo, Users.User}
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
 
@@ -46,10 +46,12 @@ defmodule GlificWeb.API.V1.SessionController do
       |> :inet_parse.ntoa()
       |> to_string()
 
-    Logger.error("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
+    Logger.info("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
 
     user
-    |> Users.update_user(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
+    # we are not using update_user call here, since it destroys all tokens
+    |> User.update_fields_changeset(%{last_login_at: DateTime.utc_now(), last_login_from: remote_ip})
+    |> Repo.update()
   end
 
   @doc false
