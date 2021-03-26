@@ -1,8 +1,6 @@
 defmodule Glific.TriggersTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
-  import ExUnit.CaptureLog
-  require Logger
 
   alias Glific.{
     Fixtures,
