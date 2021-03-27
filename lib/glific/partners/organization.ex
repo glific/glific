@@ -34,10 +34,12 @@ defmodule Glific.Partners.Organization do
     :session_limit,
     :organization_id,
     :signature_phrase,
-    :last_communication_at
-    # commenting this out, since the tests were giving me an error
-    # about cast_embed etc
-    # :out_of_office
+    :last_communication_at,
+    :stripe_customer_id,
+    :billing_name,
+    :billing_email,
+    :billing_currency,
+    :is_delinquent
   ]
 
   @type t() :: %__MODULE__{
@@ -64,6 +66,11 @@ defmodule Glific.Partners.Organization do
           session_limit: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           signature_phrase: binary | nil,
+          stripe_customer_id: String.t() | nil,
+          billing_name: String.t(),
+          billing_email: String.t(),
+          billing_currency: String.t(),
+          is_delinquent: boolean,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           last_communication_at: :utc_datetime | nil
@@ -112,6 +119,13 @@ defmodule Glific.Partners.Organization do
     field :signature_phrase, Glific.Encrypted.Binary
 
     field :last_communication_at, :utc_datetime
+
+    field :stripe_customer_id, :string
+
+    field :billing_name, :string, default: ""
+    field :billing_email, :string, default: ""
+    field :billing_currency, :string, default: ""
+    field :is_delinquent, :boolean, default: false
 
     timestamps(type: :utc_datetime)
   end

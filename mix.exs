@@ -136,7 +136,8 @@ defmodule Glific.MixProject do
       {:observer_cli, "~> 1.6"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.2"},
-      {:tzdata, "~> 1.1"}
+      {:tzdata, "~> 1.1"},
+      {:stripity_stripe, "~> 2.0"},
     ]
   end
 
