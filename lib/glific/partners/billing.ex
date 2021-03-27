@@ -13,28 +13,23 @@ defmodule Glific.Partners.Billing do
   def create(organization) do
     case check_required(organization) do
       {:error, error} -> {:error, error}
-
       _ -> do_create(organization)
     end
   end
-
-  @spec non_nil(String.t() | nil, String.t()) :: String.t()
-  defp non_nil(nil, value), do: value
-  defp non_nil(value, _), do: value
 
   @spec do_create(Organization.t()) :: {:ok, Organization.t()} | {:error, String.t()}
   defp do_create(organization) do
     {:ok, stripe_customer} =
       %{
-      name: organization.billing_name,
-      email: organization.billing_email,
-      # currency: organization.billing_currency,
-      metadata: %{
-        "id" => Integer.to_string(organization.id),
-        "name" => organization.name
+        name: organization.billing_name,
+        email: organization.billing_email,
+        # currency: organization.billing_currency,
+        metadata: %{
+          "id" => Integer.to_string(organization.id),
+          "name" => organization.name
+        }
       }
-    }
-    |> Stripe.Customer.create()
+      |> Stripe.Customer.create()
 
     Partners.update_organization(
       organization,
@@ -46,7 +41,6 @@ defmodule Glific.Partners.Billing do
   defp check_stripe_key(errors) do
     case Application.fetch_env(:stripity_stripe, :api_key) do
       {:ok, _} -> errors
-
       _ -> ["Stripe API Key not present" | errors]
     end
   end
@@ -62,12 +56,13 @@ defmodule Glific.Partners.Billing do
     [:billing_name, :billing_email, :billing_currency]
     |> Enum.reduce(
       [],
-    fn field, acc ->
-      value = Map.get(organization, field)
-      if is_nil(value) || value == "" do
-        ["#{field} is not set" | acc]
+      fn field, acc ->
+        value = Map.get(organization, field)
+
+        if is_nil(value) || value == "" do
+          ["#{field} is not set" | acc]
+        end
       end
-    end
     )
     |> check_stripe_key()
     |> format_errors()
