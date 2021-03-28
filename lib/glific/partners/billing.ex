@@ -118,12 +118,12 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Once the organization has entered a new payment card we create a subscription for it.
-  We'll do updating the card in a seperate function
+  Update organization and stripe customer with the current payment method as returned
+  by stripe
   """
-  @spec create_subscription(Organization.t(), String.t()) ::
+  @spec update_payment_method(Organization.t(), String.t()) ::
           {:ok, Organization.t()} | {:error, String.t()}
-  def create_subscription(organization, stripe_payment_method_id) do
+  def update_payment_method(organization, stripe_payment_method_id) do
     # first update the contact with default payment id
     {:ok, _customer} =
       Stripe.Customer.update(
@@ -135,18 +135,54 @@ defmodule Glific.Partners.Billing do
         }
       )
 
+    Partners.update_organization(
+      organization,
+      %{stripe_payment_method_id: stripe_payment_method_id}
+    )
+  end
+
+  @doc """
+  Once the organization has entered a new payment card we create a subscription for it.
+  We'll do updating the card in a seperate function
+  """
+  @spec create_subscription(Organization.t(), String.t()) ::
+          {:ok, Organization.t()} | {:pending, map()} | {:error, String.t()}
+  def create_subscription(organization, stripe_payment_method_id) do
     # now create and attach the subscriptions to this organization
     params = subscription_params(organization, stripe_payment_method_id)
+    opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    case Stripe.Subscription.create(params) do
+    update_payment_method(organization, stripe_payment_method_id)
+
+    case Stripe.Subscription.create(params, opts) do
+      # subscription is active, we need to update the same information via the
+      # webhook call 'invoice.paid' also, so might need to refactor this at
+      # a later date
       {:ok, subscription} ->
-        Partners.update_organization(
-          organization,
-          %{
-            stripe_payment_method_id: stripe_payment_method_id,
-            strip_subscription_id: subscription.id
+        {:ok, organization} =
+          Partners.update_organization(
+            organization,
+            %{
+              strip_subscription_id: subscription.id,
+              is_delinquent: subscription.status == "active"
+            }
+          )
+
+        # if subscription requires client intervention (most likely for India, we need this)
+        # we need to send back info to the frontend
+        if subscription.status == "incomplete" &&
+             !is_nil(subscription.pending_setup_intent) &&
+             subscription.pending_setup_intent.status == "required_action" do
+          {
+            :pending,
+            %{
+              organization: organization,
+              client_secret: subscription.pending_setup_intent.client_secret
+            }
           }
-        )
+        else
+          {:ok, organization}
+        end
 
       {:error, stripe_error} ->
         {:error, inspect(stripe_error)}
