@@ -40,7 +40,7 @@ defmodule Glific.Partners.Organization do
     :stripe_subscription_id,
     :stripe_current_period_start,
     :stripe_current_period_end,
-    :strip_last_usage_recorded,
+    :stripe_last_usage_recorded,
     :billing_name,
     :billing_email,
     :billing_currency,

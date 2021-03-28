@@ -26,7 +26,6 @@ defmodule Glific.Repo.Migrations.Stripe do
 
       add :is_delinquent, :boolean,
         comment: "Is this account delinquent? Invoice table will have more info"
-
     end
 
     create unique_index(:organizations, :stripe_customer_id)

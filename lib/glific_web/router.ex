@@ -106,6 +106,10 @@ defmodule GlificWeb.Router do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
 
+  scope "/webhook/stripe" do
+    post "/", StripeController, :stripe_webhooks
+  end
+
   scope "/flow-editor", GlificWeb.Flows do
     get "/globals", FlowEditorController, :globals
 
