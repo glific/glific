@@ -137,6 +137,7 @@ defmodule Glific.Partners.Billing do
 
     # now create and attach the subscriptions to this organization
     params = subscription_params(organization, stripe_payment_method_id)
+
     case Stripe.Subscription.create(params) do
       {:ok, subscription} ->
         Partners.update_organization(
