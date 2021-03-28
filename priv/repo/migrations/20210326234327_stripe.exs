@@ -10,6 +10,8 @@ defmodule Glific.Repo.Migrations.Stripe do
   defp organizations() do
     alter table(:organizations) do
       add :stripe_customer_id, :string
+      add :stripe_payment_method_id, :string
+      add :stripe_subscription_id, :string
 
       add :billing_name, :string,
         comment: "Billing Contact Name, used to create the Stripe Customer"

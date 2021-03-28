@@ -36,6 +36,8 @@ defmodule Glific.Partners.Organization do
     :signature_phrase,
     :last_communication_at,
     :stripe_customer_id,
+    :stripe_payment_method_id,
+    :stripe_subscription_id,
     :billing_name,
     :billing_email,
     :billing_currency,
@@ -67,9 +69,11 @@ defmodule Glific.Partners.Organization do
           organization_id: non_neg_integer | nil,
           signature_phrase: binary | nil,
           stripe_customer_id: String.t() | nil,
-          billing_name: String.t(),
-          billing_email: String.t(),
-          billing_currency: String.t(),
+          stripe_payment_method_id: String.t() | nil,
+          stripe_subscription_id: String.t() | nil,
+          billing_name: String.t() | nil,
+          billing_email: String.t() | nil,
+          billing_currency: String.t() | nil,
           is_delinquent: boolean,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
@@ -121,10 +125,12 @@ defmodule Glific.Partners.Organization do
     field :last_communication_at, :utc_datetime
 
     field :stripe_customer_id, :string
+    field :stripe_payment_method_id, :string
+    field :stripe_subscription_id, :string
 
-    field :billing_name, :string, default: ""
-    field :billing_email, :string, default: ""
-    field :billing_currency, :string, default: ""
+    field :billing_name, :string
+    field :billing_email, :string
+    field :billing_currency, :string
     field :is_delinquent, :boolean, default: false
 
     timestamps(type: :utc_datetime)
