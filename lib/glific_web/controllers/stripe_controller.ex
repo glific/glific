@@ -13,7 +13,6 @@ defmodule StripeController do
     case handle_webhook(stripe_event) do
       {:ok, _} -> handle_success(conn)
       {:error, error} -> handle_error(conn, error)
-      _ -> handle_error(conn, "error")
     end
   end
 
@@ -44,6 +43,6 @@ defmodule StripeController do
 
   defp handle_webhook(%{type: "invoice.payment_failed"} = stripe_event) do
     # handle invoice payment_failed webhook
-    {:ok, "success, #{stripe_event}"}
+    {:error, "success, #{stripe_event}"}
   end
 end

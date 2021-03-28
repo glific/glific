@@ -22,7 +22,7 @@ defmodule GlificWeb.StripeWebhook do
     else
       {:error, error} ->
         conn
-        |> Conn.send_resp(:bad_request, error.message)
+        |> Conn.send_resp(:bad_request, inspect(error))
         |> Conn.halt()
     end
   end
