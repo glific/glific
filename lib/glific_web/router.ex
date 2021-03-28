@@ -107,7 +107,7 @@ defmodule GlificWeb.Router do
   end
 
   scope "/webhook/stripe" do
-    post "/", StripeController, :stripe_webhooks
+    post "/", StripeController, :stripe_webhook
   end
 
   scope "/flow-editor", GlificWeb.Flows do
