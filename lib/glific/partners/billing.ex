@@ -159,33 +159,48 @@ defmodule Glific.Partners.Billing do
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
       {:ok, subscription} ->
-        {:ok, organization} =
-          Partners.update_organization(
-            organization,
-            %{
-              strip_subscription_id: subscription.id,
-              is_delinquent: subscription.status == "active"
-            }
-          )
-
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
-        if subscription.status == "incomplete" &&
-             !is_nil(subscription.pending_setup_intent) &&
-             subscription.pending_setup_intent.status == "required_action" do
-          {
-            :pending,
-            %{
-              organization: organization,
-              client_secret: subscription.pending_setup_intent.client_secret
+        cond do
+          subscription.status == "incomplete" &&
+            !is_nil(subscription.pending_setup_intent) &&
+              subscription.pending_setup_intent.status == "required_action" ->
+            {
+              :pending,
+              %{
+                organization: organization,
+                client_secret: subscription.pending_setup_intent.client_secret
+              }
             }
-          }
-        else
-          {:ok, organization}
+
+          subscription.status == "active" ->
+            Partners.update_organization(
+              organization,
+              %{
+                stripe_subscription_id: subscription.id,
+                stripe_current_period_start:
+                  DateTime.from_unix!(subscription.current_period_start),
+                stripe_current_period_end: DateTime.from_unix!(subscription.current_period_end),
+                stripe_last_usage_recorded:
+                  DateTime.from_unix!(subscription.current_period_start),
+                is_delinquent: false
+              }
+            )
+
+          true ->
+            {:error, "Not handling #{inspect(subscription)} value"}
+            {:ok, organization}
         end
 
       {:error, stripe_error} ->
         {:error, inspect(stripe_error)}
     end
   end
+
+  # events that we need to handle, delete comment once handled :)
+  # invoice.upcoming
+  # invoice.created - send final usage record here, also send on a weekly basis, to avoid error
+  # invoice.paid
+  # invoice.payment_failed
+  # invoice.payment_action_required
 end

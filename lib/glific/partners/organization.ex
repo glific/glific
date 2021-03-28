@@ -38,6 +38,9 @@ defmodule Glific.Partners.Organization do
     :stripe_customer_id,
     :stripe_payment_method_id,
     :stripe_subscription_id,
+    :stripe_current_period_start,
+    :stripe_current_period_end,
+    :strip_last_usage_recorded,
     :billing_name,
     :billing_email,
     :billing_currency,
@@ -71,6 +74,9 @@ defmodule Glific.Partners.Organization do
           stripe_customer_id: String.t() | nil,
           stripe_payment_method_id: String.t() | nil,
           stripe_subscription_id: String.t() | nil,
+          stripe_current_period_start: DateTime.t() | nil,
+          stripe_current_period_end: DateTime.t() | nil,
+          stripe_last_usage_recorded: DateTime.t() | nil,
           billing_name: String.t() | nil,
           billing_email: String.t() | nil,
           billing_currency: String.t() | nil,
@@ -127,6 +133,9 @@ defmodule Glific.Partners.Organization do
     field :stripe_customer_id, :string
     field :stripe_payment_method_id, :string
     field :stripe_subscription_id, :string
+    field :stripe_current_period_start, :utc_datetime
+    field :stripe_current_period_end, :utc_datetime
+    field :stripe_last_usage_recorded, :utc_datetime
 
     field :billing_name, :string
     field :billing_email, :string
