@@ -110,34 +110,20 @@ defmodule Glific.Providers.Gupshup.Worker do
            "template_type" => template_type
          } = _attrs
        ) do
-    template_payload =
-      get_template_payload(payload, template_uuid, params, template_type, message)
+    common_payload = %{
+      "source" => payload["source"],
+      "destination" => payload["destination"],
+      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
+      "src.name" => payload["src.name"]
+    }
+
+    template_payload = get_template_payload(common_payload, template_type, message)
 
     ApiClient.send_template(
       org_id,
       template_payload
     )
     |> handle_response(message)
-  end
-
-  defp get_template_payload(payload, template_uuid, params, template_type, message)
-       when template_type in ["image", "video"] do
-    %{
-      "source" => payload["source"],
-      "destination" => payload["destination"],
-      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
-      "src.name" => payload["src.name"],
-      "message" => message
-    }
-  end
-
-  defp get_template_payload(payload, template_uuid, params, _template_type, _message) do
-    %{
-      "source" => payload["source"],
-      "destination" => payload["destination"],
-      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
-      "src.name" => payload["src.name"]
-    }
   end
 
   defp process_gupshup(org_id, payload, message, _attrs) do
@@ -147,6 +133,14 @@ defmodule Glific.Providers.Gupshup.Worker do
     )
     |> handle_response(message)
   end
+
+  defp get_template_payload(common_payload, template_type, message)
+       when template_type in ["image", "video"] do
+    common_payload
+    |> Map.merge(%{"message" => message})
+  end
+
+  defp get_template_payload(common_payload, _template_type, _message), do: common_payload
 
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
