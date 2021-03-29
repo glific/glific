@@ -12,7 +12,8 @@ defmodule Glific.Partners.Billing do
 
   alias Glific.{
     Partners.Organization,
-    Repo
+    Repo,
+    Stats
   }
 
   # define all the required fields for
@@ -183,6 +184,11 @@ defmodule Glific.Partners.Billing do
     |> format_errors()
   end
 
+  @spec stripe_ids() :: map()
+  defp stripe_ids() do
+    stripe_ids(Application.get_env(:glific, :environment))
+  end
+
   @spec stripe_ids(atom()) :: map()
   defp stripe_ids(:prod) do
     %{}
@@ -195,13 +201,13 @@ defmodule Glific.Partners.Billing do
       monthly: "price_0IZKpSZVZ2O8W9Ys0tU8WArK",
       users: "price_0IZLSKZVZ2O8W9YsB9arj9uR",
       messages: "price_0IZLWnZVZ2O8W9YsF6GiMmGX",
-      hours: "price_0IZLfSZVZ2O8W9Ysy3SjpmPJ"
+      consulting_hours: "price_0IZLfSZVZ2O8W9Ysy3SjpmPJ"
     }
   end
 
   @spec subscription_params(Billing.t(), Organization.t(), String.t()) :: map()
   defp subscription_params(billing, organization, stripe_payment_method_id) do
-    prices = stripe_ids(Application.get_env(:glific, :environment))
+    prices = stripe_ids()
 
     %{
       customer: billing.stripe_customer_id,
@@ -222,7 +228,7 @@ defmodule Glific.Partners.Billing do
           price: prices.messages
         },
         %{
-          price: prices.hours
+          price: prices.consulting_hours
         }
       ],
       metadata: %{
@@ -295,19 +301,13 @@ defmodule Glific.Partners.Billing do
             }
 
           subscription.status == "active" ->
-            period_start = DateTime.from_unix!(subscription.current_period_start)
-            period_end = DateTime.from_unix!(subscription.current_period_end)
+            params =
+              %{}
+              |> Map.merge(subscription |> subscription_details())
+              |> Map.merge(subscription |> subscription_dates())
+              |> Map.merge(subscription |> subscription_items())
 
-            update_billing(
-              billing,
-              %{
-                stripe_subscription_id: subscription.id,
-                stripe_current_period_start: period_start,
-                stripe_current_period_end: period_end,
-                stripe_last_usage_recorded: period_start,
-                is_delinquent: false
-              }
-            )
+            update_billing(billing, params)
 
           true ->
             {:error, "Not handling #{inspect(subscription)} value"}
@@ -317,6 +317,88 @@ defmodule Glific.Partners.Billing do
       {:error, stripe_error} ->
         {:error, inspect(stripe_error)}
     end
+  end
+
+  # return a map which maps glific product ids to subscription item ids
+  @spec subscription_details(Stripe.Subscription.t()) :: map()
+  defp subscription_details(subscription),
+    do: %{
+      stripe_subscription_id: subscription.id,
+      is_delinquent: false
+    }
+
+  @spec subscription_dates(Stripe.Subscription.t()) :: map()
+  defp subscription_dates(subscription) do
+    period_start = DateTime.from_unix!(subscription.current_period_start)
+    period_end = DateTime.from_unix!(subscription.current_period_end)
+
+    %{
+      stripe_current_period_start: period_start,
+      stripe_current_period_end: period_end,
+      stripe_last_usage_recorded: period_start
+    }
+  end
+
+  # return a map which maps glific product ids to subscription item ids
+  @spec subscription_items(Stripe.Subscription.t()) :: map()
+  defp subscription_items(%{items: items} = _subscription) do
+    items.data
+    |> Enum.reduce(
+      %{},
+      fn item, acc ->
+        Map.put(acc, item.price.id, item.id)
+      end
+    )
+  end
+
+  @doc """
+  Record the usage for a specific organization
+  """
+  @spec record_usage(Organization.t()) :: :ok | {:error, String.t()}
+  def record_usage(organization) do
+    # get the billing record
+    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+
+    start_date = DateTime.to_date(billing.stripe_last_usage_recorded)
+    now = DateTime.utc_now()
+    time = DateTime.to_unix(now)
+
+    # go to the end of the previous day
+    end_date = DateTime.to_date(Timex.shift(now, days: -1))
+
+    usage = Stats.usage(organization.id, start_date, end_date)
+
+    prices = stripe_ids()
+    subscription_items = billing.stripe_subscription_items
+
+    record_subscription_item(
+      subscription_items[prices.messages],
+      usage.messages,
+      time,
+      start_date
+    )
+
+    record_subscription_item(subscription_items[prices.users], usage.users, time, start_date)
+
+    {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: now})
+
+    :ok
+  end
+
+  # record the usage against a subscription item in stripe
+  @spec record_subscription_item(String.t(), pos_integer, pos_integer, Date.t()) :: nil
+  defp record_subscription_item(subscription_item_id, quantity, time, start_date) do
+    {:ok, _} =
+      Stripe.SubscriptionItem.Usage.create(
+        subscription_item_id,
+        %{
+          quantity: quantity,
+          timestamp: time
+        },
+        idempotency_key: Date.to_string(start_date)
+      )
+
+    nil
   end
 
   # events that we need to handle, delete comment once handled :)

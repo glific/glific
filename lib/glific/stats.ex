@@ -399,4 +399,21 @@ defmodule Glific.Stats do
     stats
     |> make_result(time_query, period_date, :users)
   end
+
+  @doc """
+  Get the details of the usage for this organization, from start_date to end_date both inclusive
+  """
+  @spec usage(non_neg_integer, Date.t(), Date.t()) :: %{atom => pos_integer}
+  def usage(organization_id, start_date, end_date) do
+    Stat
+    |> where([s], s.organization_id == ^organization_id)
+    |> where([s], s.period == "day")
+    |> where([s], s.date >= ^start_date and s.date <= ^end_date)
+    |> group_by([s], s.organization_id)
+    |> select([s], %{
+      messages: sum(s.messages),
+      users: max(s.users)
+    })
+    |> Repo.one!()
+  end
 end
