@@ -56,29 +56,34 @@ defmodule Glific.Messages do
 
     Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
+        )
 
       {:receiver, receiver}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :receiver),
           where: ilike(c.name, ^"%#{receiver}%")
+        )
 
       {:contact, contact}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.name, ^"%#{contact}%")
+        )
 
       {:either, phone}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
+        )
 
       {:user, user}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :user),
           where: ilike(c.name, ^"%#{user}%")
+        )
 
       {:tags_included, tags_included}, query ->
         message_ids =
@@ -99,7 +104,7 @@ defmodule Glific.Messages do
         query |> where([m], m.id not in ^message_ids)
 
       {:bsp_status, bsp_status}, query ->
-        from q in query, where: q.bsp_status == ^bsp_status
+        from(q in query, where: q.bsp_status == ^bsp_status)
 
       _, query ->
         query
@@ -410,8 +415,7 @@ defmodule Glific.Messages do
     contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
-    with true <- session_template.number_parameters == length(parameters),
-         {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
+    with true <- session_template.number_parameters == length(parameters) do
       updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
       message_params = %{
@@ -423,6 +427,7 @@ defmodule Glific.Messages do
         receiver_id: receiver_id,
         template_uuid: session_template.uuid,
         template_id: template_id,
+        template_type: session_template.type,
         params: parameters,
         media_id: media_id,
         is_optin_flow: Map.get(attrs, :is_optin_flow, false)

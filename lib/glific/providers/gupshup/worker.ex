@@ -103,20 +103,41 @@ defmodule Glific.Providers.Gupshup.Worker do
          org_id,
          payload,
          message,
-         %{"is_hsm" => true, "params" => params, "template_uuid" => template_uuid} = _attrs
+         %{
+           "is_hsm" => true,
+           "params" => params,
+           "template_uuid" => template_uuid,
+           "template_type" => template_type
+         } = _attrs
        ) do
-    template_payload = %{
-      "source" => payload["source"],
-      "destination" => payload["destination"],
-      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
-      "src.name" => payload["src.name"]
-    }
+    template_payload =
+      get_template_payload(payload, template_uuid, params, template_type, message)
 
     ApiClient.send_template(
       org_id,
       template_payload
     )
     |> handle_response(message)
+  end
+
+  defp get_template_payload(payload, template_uuid, params, template_type, message)
+       when template_type in ["image", "video"] do
+    %{
+      "source" => payload["source"],
+      "destination" => payload["destination"],
+      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
+      "src.name" => payload["src.name"],
+      "message" => message
+    }
+  end
+
+  defp get_template_payload(payload, template_uuid, params, _template_type, _message) do
+    %{
+      "source" => payload["source"],
+      "destination" => payload["destination"],
+      "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
+      "src.name" => payload["src.name"]
+    }
   end
 
   defp process_gupshup(org_id, payload, message, _attrs) do
