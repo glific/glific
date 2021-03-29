@@ -16,6 +16,8 @@ defmodule Glific.Partners.Billing do
     Stats
   }
 
+  alias Stripe.SubscriptionItem.Usage
+
   # define all the required fields for
   @required_fields [
     :billing_name,
@@ -184,8 +186,8 @@ defmodule Glific.Partners.Billing do
     |> format_errors()
   end
 
-  @spec stripe_ids() :: map()
-  defp stripe_ids() do
+  @spec stripe_ids :: map()
+  defp stripe_ids do
     stripe_ids(Application.get_env(:glific, :environment))
   end
 
@@ -389,7 +391,7 @@ defmodule Glific.Partners.Billing do
   @spec record_subscription_item(String.t(), pos_integer, pos_integer, Date.t()) :: nil
   defp record_subscription_item(subscription_item_id, quantity, time, start_date) do
     {:ok, _} =
-      Stripe.SubscriptionItem.Usage.create(
+      Usage.create(
         subscription_item_id,
         %{
           quantity: quantity,

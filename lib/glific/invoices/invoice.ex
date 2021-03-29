@@ -4,7 +4,7 @@ defmodule Glific.Invoices.Invoice do
   """
   use Ecto.Schema
 
-  alias Glific.{Partners.Organization, Invoices.Invoice}
+  alias Glific.{Invoices.Invoice, Partners.Organization}
 
   import Ecto.Changeset
 
