@@ -51,7 +51,36 @@ defmodule Glific.Repo.Migrations.Stripe do
     create unique_index(:billings, :stripe_customer_id)
   end
 
-  # add the invoice table here
   defp invoices do
+    create table(:invoices) do
+      add :invoice_id, :string, null: false, unique: true, comment: "Stripe's Invoice ID"
+
+      add :invoice_start_date, :utc_datetime_usec,
+        null: false,
+        comment: "The beginning date of the invoice"
+
+      add :invoice_end_date, :utc_datetime_usec,
+        null: false,
+        comment: "The end date of the invoice"
+
+      add :status, :string, null: false, comment: "The status of the invoice"
+      add :amount, :integer, null: false, comment: "The amount to be paid"
+
+      add :user_usage, :integer,
+        default: 0,
+        comment: "The reported number of users in the last billing cycle"
+
+      add :message_usage, :integer,
+        default: 0,
+        comment: "The reported number of messages sent in the last billing cycle"
+
+      add :consulting_hours, :integer, default: 0, comment: "The reported consulting hours"
+
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Related organization id"
+
+      timestamps(type: :utc_datetime)
+    end
   end
 end
