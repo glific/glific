@@ -33,16 +33,21 @@ defmodule StripeController do
   @spec handle_webhook(map()) :: {:ok | :error, String.t()}
   defp handle_webhook(%{type: "invoice.created"} = stripe_event) do
     # handle invoice created webhook
-    {:ok, "success, #{stripe_event}"}
+    {:ok, "success, #{inspect(stripe_event)}"}
   end
 
   defp handle_webhook(%{type: "invoice.payment_succeeded"} = stripe_event) do
     # handle invoice payment_succeeded webhook
-    {:ok, "success, #{stripe_event}"}
+    {:ok, "success, #{inspect(stripe_event)}"}
   end
 
   defp handle_webhook(%{type: "invoice.payment_failed"} = stripe_event) do
     # handle invoice payment_failed webhook
-    {:error, "success, #{stripe_event}"}
+    {:error, "success, #{inspect(stripe_event)}"}
+  end
+
+  defp handle_webhook(stripe_event) do
+    # handle default case. We ignore these web hooks.
+    {:ok, "success, #{inspect(stripe_event)}"}
   end
 end
