@@ -135,7 +135,7 @@ defmodule Glific.Providers.Gupshup.Worker do
   end
 
   defp get_template_payload(common_payload, template_type, message)
-       when template_type in ["image", "video"] do
+       when template_type in ["image", "video", "document"] do
     common_payload
     |> Map.merge(%{"message" => message})
   end
