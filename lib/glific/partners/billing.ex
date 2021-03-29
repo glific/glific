@@ -299,7 +299,7 @@ defmodule Glific.Partners.Billing do
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
         }
-                            })
+      })
 
     :ok
   end
