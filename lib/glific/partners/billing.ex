@@ -4,26 +4,140 @@ defmodule Glific.Partners.Billing do
   interface.
   """
 
-  alias Glific.{Partners, Partners.Organization}
+  use Ecto.Schema
+  import Ecto.Changeset
+  import Ecto.Query, warn: false
+
+  alias __MODULE__
+
+  alias Glific.{
+    Partners.Organization,
+    Repo
+  }
+
+  # define all the required fields for
+  @required_fields [
+    :billing_name,
+    :billing_email,
+    :organization_id
+  ]
+
+  # define all the optional fields for organization
+  @optional_fields [
+    :stripe_customer_id,
+    :stripe_payment_method_id,
+    :stripe_subscription_id,
+    :stripe_subscription_items,
+    :stripe_current_period_start,
+    :stripe_current_period_end,
+    :stripe_last_usage_recorded,
+    :billing_currency,
+    :is_delinquent,
+    :is_active
+  ]
+
+  @type t() :: %__MODULE__{
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          stripe_customer_id: String.t() | nil,
+          stripe_payment_method_id: String.t() | nil,
+          stripe_subscription_id: String.t() | nil,
+          stripe_subscription_items: map(),
+          stripe_current_period_start: DateTime.t() | nil,
+          stripe_current_period_end: DateTime.t() | nil,
+          stripe_last_usage_recorded: DateTime.t() | nil,
+          billing_name: String.t() | nil,
+          billing_email: String.t() | nil,
+          billing_currency: String.t() | nil,
+          is_delinquent: boolean,
+          is_active: boolean() | true,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
+        }
+
+  schema "billing" do
+    field :stripe_customer_id, :string
+    field :stripe_payment_method_id, :string
+
+    field :stripe_subscription_id, :string
+    field :stripe_subscription_items, :map, default: %{}
+
+    field :stripe_current_period_start, :utc_datetime
+    field :stripe_current_period_end, :utc_datetime
+    field :stripe_last_usage_recorded, :utc_datetime
+
+    field :billing_name, :string
+    field :billing_email, :string
+    field :billing_currency, :string
+
+    field :is_delinquent, :boolean, default: false
+    field :is_active, :boolean, default: true
+
+    belongs_to :organization, Organization
+
+    timestamps(type: :utc_datetime)
+  end
 
   @doc """
-  Create a billing customer in Stripe, given an organization
+  Standard changeset pattern we use for all data types
   """
-  @spec create(Organization.t()) :: {:ok, Organization.t()} | {:error, String.t()}
-  def create(organization) do
-    case check_required(organization) do
+  @spec changeset(Billing.t(), map()) :: Ecto.Changeset.t()
+  def changeset(billing, attrs) do
+    billing
+    |> cast(attrs, @required_fields ++ @optional_fields)
+    |> validate_required(@required_fields)
+    |> unique_constraint(:stripe_customer_id)
+  end
+
+  @doc """
+  Create a billing record
+  """
+  @spec create_billing(map()) :: {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
+  def create_billing(attrs \\ %{}) do
+    %Billing{}
+    |> Billing.changeset(attrs)
+    |> Repo.insert(skip_billing_id: true)
+  end
+
+  @doc """
+  Upate the billing record
+  """
+  @spec update_billing(Billing.t(), map()) ::
+          {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
+  def update_billing(%Billing{} = billing, attrs) do
+    billing
+    |> Billing.changeset(attrs)
+    |> Repo.update(skip_billing_id: true)
+  end
+
+  @doc """
+  Delete the billing record
+  """
+  @spec delete_billing(Billing.t()) ::
+          {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
+  def delete_billing(%Billing{} = billing) do
+    Repo.delete(billing)
+  end
+
+  @doc """
+  Create a billing record in glific, a billing customer in Stripe, given an organization
+  """
+  @spec create(Organization.t(), map()) ::
+          {:ok, Billing.t()} | {:error, Ecto.Changeset.t() | String.t()}
+  def create(organization, attrs) do
+    case check_required(attrs) do
       {:error, error} -> {:error, error}
-      _ -> do_create(organization)
+      _ -> do_create(organization, attrs)
     end
   end
 
-  @spec do_create(Organization.t()) :: {:ok, Organization.t()} | {:error, String.t()}
-  defp do_create(organization) do
+  @spec do_create(Organization.t(), map()) :: {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
+  defp do_create(organization, attrs) do
     {:ok, stripe_customer} =
       %{
-        name: organization.billing_name,
-        email: organization.billing_email,
-        # currency: organization.billing_currency,
+        name: attrs.billing_name,
+        email: attrs.billing_email,
+        # currency: attrs.billing_currency,
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -31,9 +145,10 @@ defmodule Glific.Partners.Billing do
       }
       |> Stripe.Customer.create()
 
-    Partners.update_organization(
-      organization,
-      %{stripe_customer_id: stripe_customer.id}
+    create_billing(
+      attrs
+      |> Map.put(:organization_id, organization.id)
+      |> Map.put(:stripe_customer_id, stripe_customer.id)
     )
   end
 
@@ -51,13 +166,13 @@ defmodule Glific.Partners.Billing do
 
   # We dont know what to do with billing currency as yet, but we'll figure it out soon
   # In Stripe, one contact can only have one currency
-  @spec check_required(Organization.t()) :: :ok | {:error, String.t()}
-  defp check_required(organization) do
+  @spec check_required(map()) :: :ok | {:error, String.t()}
+  defp check_required(attrs) do
     [:billing_name, :billing_email, :billing_currency]
     |> Enum.reduce(
       [],
       fn field, acc ->
-        value = Map.get(organization, field)
+        value = attrs.field
 
         if is_nil(value) || value == "" do
           ["#{field} is not set" | acc]
@@ -84,12 +199,12 @@ defmodule Glific.Partners.Billing do
     }
   end
 
-  @spec subscription_params(Organization.t(), String.t()) :: map()
-  defp subscription_params(organization, stripe_payment_method_id) do
+  @spec subscription_params(Billing.t(), Organization.t(), String.t()) :: map()
+  defp subscription_params(billing, organization, stripe_payment_method_id) do
     prices = stripe_ids(Application.get_env(:glific, :environment))
 
     %{
-      customer: organization.stripe_customer_id,
+      customer: billing.stripe_customer_id,
       default_payment_method: stripe_payment_method_id,
       items: [
         %{
@@ -111,7 +226,7 @@ defmodule Glific.Partners.Billing do
         }
       ],
       metadata: %{
-        "id" => Integer.to_string(organization.id),
+        "id" => Integer.to_string(billing.organization_id),
         "name" => organization.name
       }
     }
@@ -122,12 +237,15 @@ defmodule Glific.Partners.Billing do
   by stripe
   """
   @spec update_payment_method(Organization.t(), String.t()) ::
-          {:ok, Organization.t()} | {:error, String.t()}
+          {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
   def update_payment_method(organization, stripe_payment_method_id) do
+    # get the billing record
+    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+
     # first update the contact with default payment id
     {:ok, _customer} =
       Stripe.Customer.update(
-        organization.stripe_customer_id,
+        billing.stripe_customer_id,
         %{
           invoice_settings: %{
             default_payment_method: stripe_payment_method_id
@@ -135,8 +253,8 @@ defmodule Glific.Partners.Billing do
         }
       )
 
-    Partners.update_organization(
-      organization,
+    update_billing(
+      billing,
       %{stripe_payment_method_id: stripe_payment_method_id}
     )
   end
@@ -148,11 +266,14 @@ defmodule Glific.Partners.Billing do
   @spec create_subscription(Organization.t(), String.t()) ::
           {:ok, Organization.t()} | {:pending, map()} | {:error, String.t()}
   def create_subscription(organization, stripe_payment_method_id) do
+    # get the billing record
+    billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+
     # now create and attach the subscriptions to this organization
-    params = subscription_params(organization, stripe_payment_method_id)
+    params = subscription_params(billing, organization, stripe_payment_method_id)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    update_payment_method(organization, stripe_payment_method_id)
+    {:ok, _} = update_payment_method(organization, stripe_payment_method_id)
 
     case Stripe.Subscription.create(params, opts) do
       # subscription is active, we need to update the same information via the
@@ -174,15 +295,16 @@ defmodule Glific.Partners.Billing do
             }
 
           subscription.status == "active" ->
-            Partners.update_organization(
-              organization,
+            period_start = DateTime.from_unix!(subscription.current_period_start)
+            period_end = DateTime.from_unix!(subscription.current_period_end)
+
+            update_billing(
+              billing,
               %{
                 stripe_subscription_id: subscription.id,
-                stripe_current_period_start:
-                  DateTime.from_unix!(subscription.current_period_start),
-                stripe_current_period_end: DateTime.from_unix!(subscription.current_period_end),
-                stripe_last_usage_recorded:
-                  DateTime.from_unix!(subscription.current_period_start),
+                stripe_current_period_start: period_start,
+                stripe_current_period_end: period_end,
+                stripe_last_usage_recorded: period_start,
                 is_delinquent: false
               }
             )

@@ -34,17 +34,7 @@ defmodule Glific.Partners.Organization do
     :session_limit,
     :organization_id,
     :signature_phrase,
-    :last_communication_at,
-    :stripe_customer_id,
-    :stripe_payment_method_id,
-    :stripe_subscription_id,
-    :stripe_current_period_start,
-    :stripe_current_period_end,
-    :stripe_last_usage_recorded,
-    :billing_name,
-    :billing_email,
-    :billing_currency,
-    :is_delinquent
+    :last_communication_at
   ]
 
   @type t() :: %__MODULE__{
@@ -71,19 +61,9 @@ defmodule Glific.Partners.Organization do
           session_limit: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           signature_phrase: binary | nil,
-          stripe_customer_id: String.t() | nil,
-          stripe_payment_method_id: String.t() | nil,
-          stripe_subscription_id: String.t() | nil,
-          stripe_current_period_start: DateTime.t() | nil,
-          stripe_current_period_end: DateTime.t() | nil,
-          stripe_last_usage_recorded: DateTime.t() | nil,
-          billing_name: String.t() | nil,
-          billing_email: String.t() | nil,
-          billing_currency: String.t() | nil,
-          is_delinquent: boolean,
+          last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
-          last_communication_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil
         }
 
   schema "organizations" do
@@ -129,18 +109,6 @@ defmodule Glific.Partners.Organization do
     field :signature_phrase, Glific.Encrypted.Binary
 
     field :last_communication_at, :utc_datetime
-
-    field :stripe_customer_id, :string
-    field :stripe_payment_method_id, :string
-    field :stripe_subscription_id, :string
-    field :stripe_current_period_start, :utc_datetime
-    field :stripe_current_period_end, :utc_datetime
-    field :stripe_last_usage_recorded, :utc_datetime
-
-    field :billing_name, :string
-    field :billing_email, :string
-    field :billing_currency, :string
-    field :is_delinquent, :boolean, default: false
 
     timestamps(type: :utc_datetime)
   end
