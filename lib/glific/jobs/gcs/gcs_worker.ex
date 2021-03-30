@@ -196,6 +196,7 @@ defmodule Glific.Jobs.GcsWorker do
         # We will disabling GCS when billing account is disabled
         if error["reason"] == "accountDisabled" do
           Partners.disable_credential(org_id, "google_cloud_storage")
+
           Notifications.create_notification(%{
             category: "GCS",
             message: "Billing account is disabled for GCS",
