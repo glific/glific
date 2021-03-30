@@ -35,12 +35,7 @@ defmodule Glific.Seeds.SeedsStats do
     start = Timex.end_of_month(from)
 
     # we only compute till the end of the previous month
-    finish =
-      to
-      |> Timex.end_of_month()
-      |> Timex.shift(months: -1)
-      |> Timex.end_of_month()
-
+    finish = next_month(to, -1)
     do_seed_monthly(stats, org_id_list, start, finish)
   end
 
@@ -55,8 +50,12 @@ defmodule Glific.Seeds.SeedsStats do
     end
   end
 
-  defp next_month(time),
-    do: Timex.end_of_month(Timex.shift(time, months: 1))
+  @spec next_month(DateTime.t(), integer) :: DateTime.t()
+  defp next_month(time, offset \\ 1),
+    do:
+      time
+      |> Timex.shift(months: offset)
+      |> Timex.end_of_month()
 
   @doc false
   @spec seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: map()
