@@ -17,9 +17,9 @@ defmodule Glific.StatsTest do
     count
   end
 
-  test "Create a stat" do
+  test "Create a stat", attrs do
     attrs = %{
-      organization_id: 1,
+      organization_id: attrs.organization_id,
       period: "hour",
       hour: 0,
       date: DateTime.to_date(DateTime.utc_now())
@@ -29,9 +29,9 @@ defmodule Glific.StatsTest do
     assert stat.period == "hour"
   end
 
-  test "Update a stat" do
+  test "Update a stat", attrs do
     attrs = %{
-      organization_id: 1,
+      organization_id: attrs.organization_id,
       period: "hour",
       hour: 0,
       date: DateTime.to_date(DateTime.utc_now())
@@ -43,7 +43,7 @@ defmodule Glific.StatsTest do
     assert stat.period == "day"
   end
 
-  test "Call all the functions in stats, and ensure that the DB size increases" do
+  test "Call all the functions in stats, and ensure that the DB size increases", attrs do
     initial = get_stats_count()
 
     time = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -68,7 +68,7 @@ defmodule Glific.StatsTest do
     assert month > week
 
     # now lets list all the stat entries
-    stats = Stats.list_stats(%{filter: %{organization_id: 1}})
+    stats = Stats.list_stats(%{filter: %{organization_id: attrs.organization_id}})
     checks = %{"hour" => false, "day" => false, "week" => false, "month" => false}
 
     stats
@@ -81,11 +81,21 @@ defmodule Glific.StatsTest do
     # now lets set a filter that wont match
     assert Stats.list_stats(%{
              filter: %{
-               organization_id: 1,
+               organization_id: attrs.organization_id,
                period: "week",
                hour: 24,
                date: DateTime.to_date(time)
              }
            }) == []
+  end
+
+  test "count stats", attrs do
+    inital = Stats.count_stats(%{filter: %{organization_id: attrs.organization_id}})
+    assert inital == 0
+
+    time = DateTime.utc_now() |> DateTime.truncate(:second)
+    Stats.generate_stats([], false, time: time)
+
+    assert Stats.count_stats(%{filter: %{organization_id: attrs.organization_id}}) > inital
   end
 end

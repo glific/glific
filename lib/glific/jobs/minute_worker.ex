@@ -18,6 +18,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.GcsWorker,
     Partners,
     Searches.CollectionCount,
+    Stats,
     Templates,
     Triggers
   }
@@ -167,6 +168,7 @@ defmodule Glific.Jobs.MinuteWorker do
         FlowContext.delete_old_flow_contexts()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
+        Stats.generate_stats()
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
