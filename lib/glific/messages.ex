@@ -415,7 +415,8 @@ defmodule Glific.Messages do
     contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
 
-    with true <- session_template.number_parameters == length(parameters) do
+    with true <- session_template.number_parameters == length(parameters),
+         {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
       message_params = %{
