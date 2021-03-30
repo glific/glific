@@ -347,7 +347,7 @@ defmodule Glific.Stats do
     hsm = time_query |> where([m], m.is_hsm == true)
 
     stats
-    |> make_result(query, period_date, :messages)
+    |> make_result(time_query, period_date, :messages)
     |> make_result(inbound, period_date, :inbound)
     |> make_result(outbound, period_date, :outbound)
     |> make_result(hsm, period_date, :hsm)

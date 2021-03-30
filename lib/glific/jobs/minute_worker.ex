@@ -164,11 +164,13 @@ defmodule Glific.Jobs.MinuteWorker do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "hourly_tasks" ->
+        # lets do this first, before we delete any records, so we have a better picture
+        # of the DB
+        Stats.generate_stats()
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
-        Stats.generate_stats()
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
