@@ -56,34 +56,29 @@ defmodule Glific.Messages do
 
     Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
-        from(q in query,
+        from q in query,
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
-        )
 
       {:receiver, receiver}, query ->
-        from(q in query,
+        from q in query,
           join: c in assoc(q, :receiver),
           where: ilike(c.name, ^"%#{receiver}%")
-        )
 
       {:contact, contact}, query ->
-        from(q in query,
+        from q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.name, ^"%#{contact}%")
-        )
 
       {:either, phone}, query ->
-        from(q in query,
+        from q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
-        )
 
       {:user, user}, query ->
-        from(q in query,
+        from q in query,
           join: c in assoc(q, :user),
           where: ilike(c.name, ^"%#{user}%")
-        )
 
       {:tags_included, tags_included}, query ->
         message_ids =
@@ -104,7 +99,7 @@ defmodule Glific.Messages do
         query |> where([m], m.id not in ^message_ids)
 
       {:bsp_status, bsp_status}, query ->
-        from(q in query, where: q.bsp_status == ^bsp_status)
+        from q in query, where: q.bsp_status == ^bsp_status
 
       _, query ->
         query
