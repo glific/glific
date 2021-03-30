@@ -31,7 +31,7 @@ defmodule Glific.Seeds.SeedsStats do
 
   @doc false
   @spec seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: map()
-  def seed_monthly(stats, org_id_list, from, to) do
+  defp seed_monthly(stats, org_id_list, from, to) do
     start = Timex.end_of_month(from)
 
     # we only compute till the end of the previous month
@@ -45,7 +45,7 @@ defmodule Glific.Seeds.SeedsStats do
   end
 
   @spec do_seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: map()
-  def do_seed_monthly(stats, org_id_list, current, finish) do
+  defp do_seed_monthly(stats, org_id_list, current, finish) do
     if DateTime.compare(current, finish) == :gt do
       stats
     else
