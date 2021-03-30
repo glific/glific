@@ -31,25 +31,32 @@ defmodule Glific.Seeds.SeedsStats do
 
   @doc false
   @spec seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: map()
-  defp seed_monthly(stats, org_id_list, from, to) do
+  def seed_monthly(stats, org_id_list, from, to) do
     start = Timex.end_of_month(from)
 
     # we only compute till the end of the previous month
-    finish = Timex.shift(Timex.end_of_month(to), months: -1)
+    finish =
+      to
+      |> Timex.end_of_month()
+      |> Timex.shift(months: -1)
+      |> Timex.end_of_month()
 
     do_seed_monthly(stats, org_id_list, start, finish)
   end
 
   @spec do_seed_monthly(map(), list(), DateTime.t(), DateTime.t()) :: map()
-  defp do_seed_monthly(stats, org_id_list, current, finish) do
+  def do_seed_monthly(stats, org_id_list, current, finish) do
     if DateTime.compare(current, finish) == :gt do
       stats
     else
       stats
       |> Stats.get_monthly_stats(org_id_list, time: current, summary: false)
-      |> do_seed_monthly(org_id_list, Timex.shift(current, months: 1), finish)
+      |> do_seed_monthly(org_id_list, next_month(current), finish)
     end
   end
+
+  defp next_month(time),
+    do: Timex.end_of_month(Timex.shift(time, months: 1))
 
   @doc false
   @spec seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: map()
