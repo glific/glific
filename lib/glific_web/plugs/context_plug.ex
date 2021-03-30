@@ -1,4 +1,4 @@
-defmodule GlificWeb.Context do
+defmodule GlificWeb.ContextPlug do
   @moduledoc """
   Setting the absinthe context, so we can store the current user there
   """
