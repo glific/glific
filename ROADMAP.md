@@ -12,10 +12,13 @@ The focus of all versions of v1.x will be on stability, scale, and automation.
 ## v1.5
 - Localization of Glific FrontEnd in Hindi. Use web based platform for translating Glific Interface
 
+## v1.6
+- Data retention policies enforced
+- Data privacy policies implemented
 
 ## v2.x
 
-The focus of v2.x will be on new features to enhace the capability of the platform
+The focus of v2.x will be on new features to enhance the capability of the platform
 
 ### Media management
 - Ability to add media directly from glific app and store on cloud storage
