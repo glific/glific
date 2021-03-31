@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for media in HSM templates
 - Display collection's contact status information
 - Display flow status by last saved date - draft/publish
-- Display specific error messages in case of a message are not sent
-- Added more options for collection from the chat screen
+- Display specific error messages if a message is not sent (like 24 hour window expire, contact not opted etc)
+- Added view details and add a contact option for collection from the chat screen
 - Added Organization phone number in settings
 
 ### Fixed
