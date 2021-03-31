@@ -4,34 +4,33 @@ defmodule Glific.Partners.Invoice do
   """
   use Ecto.Schema
   import Ecto.Changeset
-
-  alias Glific.{Partners.Organization, Repo}
-  alias __MODULE__
-
   import Ecto.Query, warn: false
+
+  alias Glific.{Partners.Billing, Partners.Organization, Repo}
+  alias __MODULE__
 
   @required_fields [
     :invoice_id,
-    :invoice_start_date,
-    :invoice_end_date,
+    :start_date,
+    :end_date,
     :status,
     :amount,
     :organization_id,
     :line_items
   ]
-  @optional_fields [:user_usage, :message_usage, :consulting_hours]
+  @optional_fields [:users, :messages, :consulting_hours]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           invoice_id: String.t() | nil,
-          invoice_start_date: :utc_datetime_usec | nil,
-          invoice_end_date: :utc_datetime_usec | nil,
+          start_date: :utc_datetime_usec | nil,
+          end_date: :utc_datetime_usec | nil,
           status: String.t() | nil,
           amount: integer,
           line_items: map(),
-          user_usage: integer,
-          message_usage: integer,
+          users: integer,
+          messages: integer,
           consulting_hours: integer,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -41,12 +40,12 @@ defmodule Glific.Partners.Invoice do
 
   schema "invoices" do
     field :invoice_id, :string
-    field :invoice_start_date, :utc_datetime_usec
-    field :invoice_end_date, :utc_datetime_usec
+    field :start_date, :utc_datetime_usec
+    field :end_date, :utc_datetime_usec
     field :status, :string
     field :amount, :integer, default: 0
-    field :user_usage, :integer, default: 0
-    field :message_usage, :integer, default: 0
+    field :users, :integer, default: 0
+    field :messages, :integer, default: 0
     field :consulting_hours, :integer, default: 0
     field :line_items, :map, default: %{}
 
@@ -71,17 +70,56 @@ defmodule Glific.Partners.Invoice do
   Create an invoice record
   """
   @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
-  def create_invoice(attrs \\ %{}) do
+  def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
+    attrs = %{
+      invoice_id: invoice.id,
+      organization_id: organization_id,
+      status: "open",
+      amount: invoice.amount_due,
+      start_date: DateTime.from_unix!(invoice.period_start),
+      end_date: DateTime.from_unix!(invoice.period_end)
+    }
+
+    line_items =
+      invoice.lines.data
+      |> Enum.reduce(%{}, fn line, acc -> Map.put(acc, line.price.id, line.price.nickname) end)
+
+    attrs = Map.put(attrs, :line_items, line_items)
+
+    create_invoice(attrs)
+  end
+
+  def create_invoice(attrs) do
     %Invoice{}
     |> Invoice.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Fetch an invoice record
+  Fetch an invoice record by stripe invoice id
   """
-  @spec fetch_invoice!(non_neg_integer) :: Invoice.t()
-  def fetch_invoice!(invoice_id), do: Repo.get_by!(Invoice, invoice_id: invoice_id)
+  @spec fetch_invoice(non_neg_integer) :: Invoice.t()
+  def fetch_invoice(invoice_id), do: Repo.get_by(Invoice, invoice_id: invoice_id)
+
+  @doc """
+  Return the count of invoices, based on filters
+  """
+  @spec count_invoices(map()) :: integer
+  def count_invoices(args),
+    do: Repo.count_filter(args, Invoice, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:status, status}, query ->
+        from q in query, where: q.status == ^status
+
+        _, query ->
+          query
+    end)
+  end
 
   @doc """
   Update an invoice record
@@ -91,5 +129,33 @@ defmodule Glific.Partners.Invoice do
     invoice
     |> Invoice.changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Update the status of an invoice
+  """
+  @spec update_invoice_status(non_neg_integer, String.t()) :: {:ok | :error, String.t()}
+  def update_invoice_status(invoice_id, status) do
+    case fetch_invoice(invoice_id) do
+      %{id: _} = invoice ->
+        update_invoice(invoice, %{status: status})
+        billing = Billing.get_billing(%{organization_id: invoice.organization_id})
+
+        unpaid_invoice_count =
+          count_invoices(%{
+            filter: %{status: "payment_failed", organization_id: invoice.organization_id}
+          })
+
+        is_delinquent =
+          if status == "payment_failed" or unpaid_invoice_count != 0, do: true, else: false
+
+        case Billing.update_billing(billing, %{is_delinquent: is_delinquent}) do
+          {:ok, _} ->
+            {:ok, "Invoice status updated for ${invoice_id}"}
+
+          {:error, error} ->
+            {:error, "Error updating status for #{invoice_id}, Errors: #{inspect(error)}"}
+        end
+    end
   end
 end
