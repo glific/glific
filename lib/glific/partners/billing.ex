@@ -103,6 +103,12 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
+  Retrieve a billing record by clauses
+  """
+  @spec get_billing(map()) :: Billing.t() | nil
+  def get_billing(clauses), do: Repo.get_by(Billing, clauses)
+
+  @doc """
   Upate the billing record
   """
   @spec update_billing(Billing.t(), map()) ::

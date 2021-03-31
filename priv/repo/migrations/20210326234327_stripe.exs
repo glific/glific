@@ -53,22 +53,22 @@ defmodule Glific.Repo.Migrations.Stripe do
     create table(:invoices) do
       add :invoice_id, :string, null: false, unique: true, comment: "Stripe's Invoice ID"
 
-      add :invoice_start_date, :utc_datetime_usec,
+      add :start_date, :utc_datetime_usec,
         null: false,
         comment: "The beginning date of the invoice"
 
-      add :invoice_end_date, :utc_datetime_usec,
+      add :end_date, :utc_datetime_usec,
         null: false,
         comment: "The end date of the invoice"
 
       add :status, :string, null: false, comment: "The status of the invoice"
       add :amount, :integer, null: false, comment: "The amount to be paid"
 
-      add :user_usage, :integer,
+      add :users, :integer,
         default: 0,
         comment: "The reported number of users in the last billing cycle"
 
-      add :message_usage, :integer,
+      add :messages, :integer,
         default: 0,
         comment: "The reported number of messages sent in the last billing cycle"
 
