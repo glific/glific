@@ -74,6 +74,10 @@ defmodule Glific.Repo.Migrations.Stripe do
 
       add :consulting_hours, :integer, default: 0, comment: "The reported consulting hours"
 
+      add :line_items, :jsonb,
+        default: "{}",
+        comment: "A map of price-ids and their descriptions for line items in an invoice"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Related organization id"
