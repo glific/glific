@@ -221,7 +221,7 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec upload_file_on_gcs(map()) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
-  def upload_file_on_gcs(%{"local_name" => local_name} = media) do
+  defp upload_file_on_gcs(%{"local_name" => local_name} = media) do
     remote_name = Glific.Clients.gcs_file_name(media)
 
     Logger.info(
