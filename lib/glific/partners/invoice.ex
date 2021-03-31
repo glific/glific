@@ -115,6 +115,9 @@ defmodule Glific.Partners.Invoice do
     Enum.reduce(filter, query, fn
       {:status, status}, query ->
         from q in query, where: q.status == ^status
+
+        _, query ->
+          query
     end)
   end
 
