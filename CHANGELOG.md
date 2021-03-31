@@ -10,9 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stats Table - Centralize all stats on an hourly basis
 - Notifications - Notification system to report out-of-band errors to NGOs (Flows, BigQuery etc)
 - Support for media in HSM templates
+- Display collection's contact status information
+- Display flow status by last saved date - draft/publish
+- Display specific error messages in case of a message are not sent
+- Added more options for collection from the chat screen
+- Added Organization phone number in settings
 
 ### Fixed
 - An updated version of the BigQuery implementation, with a new version of the DataStudio Report
+- Message subscription enhancement
+- Bug fixes for links with underscores
 
 ## [1.2.0] -- 2021-03-19
 
