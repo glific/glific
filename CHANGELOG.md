@@ -9,9 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Stats Table - Centralize all stats on an hourly basis
 - Notifications - Notification system to report out-of-band errors to NGOs (Flows, BigQuery etc)
+- Support for media in HSM templates
 
 ### Fixed
-- Another version of the BigQuery implementation, with a new version of the DataStudio Report
+- An updated version of the BigQuery implementation, with a new version of the DataStudio Report
 
 ## [1.2.0] -- 2021-03-19
 
