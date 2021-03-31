@@ -177,7 +177,7 @@ defmodule Glific.Jobs.GcsWorker do
         get_public_link(response)
         |> update_gcs_url(media["id"])
 
-        File.rm(local_name)
+        # File.rm(local_name)
         :ok
 
       {:error, error} ->
@@ -221,13 +221,13 @@ defmodule Glific.Jobs.GcsWorker do
 
   @spec upload_file_on_gcs(map()) ::
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
-  defp upload_file_on_gcs(%{"local_name" => local_name} = media) do
+  def upload_file_on_gcs(%{"local_name" => local_name} = media) do
     remote_name = Glific.Clients.gcs_file_name(media)
 
     Logger.info(
       "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
     )
-
+IO.inspect(remote_name)
     CloudStorage.put(
       Glific.Media,
       :original,
@@ -235,7 +235,7 @@ defmodule Glific.Jobs.GcsWorker do
         %Waffle.File{path: local_name, file_name: remote_name},
         Integer.to_string(media["organization_id"])
       }
-    )
+    )|>IO.inspect()
   end
 
   @spec update_gcs_url(String.t(), integer()) ::

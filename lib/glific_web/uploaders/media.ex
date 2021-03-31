@@ -43,9 +43,14 @@ defmodule Glific.Media do
   # end
 
   # Override the storage directory:
-  # def storage_dir(version, {file, scope}) do
-  #   "uploads/user/avatars/#{scope.id}"
-  # end
+  def storage_dir(_version, {file, _scope}) do
+    with true <- String.contains?(file.file_name, "/"),
+         remote_path <- Regex.replace(~r{/[^/]+$}, file.file_name, "") do
+      "uploads/#{remote_path}"
+    else
+      _ -> "uploads"
+    end
+  end
 
   # Provide a default URL if there hasn't been a file uploaded
   # def default_url(version, scope) do
