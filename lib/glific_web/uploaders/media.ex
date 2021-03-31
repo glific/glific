@@ -29,7 +29,7 @@ defmodule Glific.Media do
 
   # Whitelist file extensions:
   def validate({file, _}) do
-    ~w(.jpg .jpeg .gif .png) |> Enum.member?(Path.extname(file.file_name))
+    ~w(.jpg .jpeg .gif .png .pdf) |> Enum.member?(Path.extname(file.file_name))
   end
 
   # Define a thumbnail transformation:
@@ -37,10 +37,12 @@ defmodule Glific.Media do
   #   {:convert, "-strip -thumbnail 250x250^ -gravity center -extent 250x250 -format png", :png}
   # end
 
-  # Override the persisted filenames:
-  # def filename(version, _) do
-  #   version
-  # end
+  # we want to retain our filename which potentially has
+  # directory structure in it, and hence over-riding the default from
+  # waffle. So using rootname instead of basename
+  def filename(_, {file, _}) do
+    Path.rootname(file.file_name, Path.extname(file.file_name))
+  end
 
   # Override the storage directory:
   # def storage_dir(version, {file, scope}) do
