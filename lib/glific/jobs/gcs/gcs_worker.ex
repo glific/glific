@@ -177,7 +177,7 @@ defmodule Glific.Jobs.GcsWorker do
         get_public_link(response)
         |> update_gcs_url(media["id"])
 
-        # File.rm(local_name)
+        File.rm(local_name)
         :ok
 
       {:error, error} ->
@@ -227,7 +227,7 @@ defmodule Glific.Jobs.GcsWorker do
     Logger.info(
       "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
     )
-IO.inspect(remote_name)
+
     CloudStorage.put(
       Glific.Media,
       :original,
@@ -235,7 +235,7 @@ IO.inspect(remote_name)
         %Waffle.File{path: local_name, file_name: remote_name},
         Integer.to_string(media["organization_id"])
       }
-    )|>IO.inspect()
+    )
   end
 
   @spec update_gcs_url(String.t(), integer()) ::
