@@ -21,6 +21,7 @@ defmodule Glific.Jobs.GcsWorker do
     Jobs,
     Messages.Message,
     Messages.MessageMedia,
+    Notifications,
     Partners,
     Repo
   }
@@ -153,13 +154,7 @@ defmodule Glific.Jobs.GcsWorker do
     download_file_to_temp(media["url"], local_name, media["organization_id"])
     |> case do
       {:ok, _} ->
-        {:ok, response} = upload_file_on_gcs(media)
-
-        get_public_link(response)
-        |> update_gcs_url(media["id"])
-
-        File.rm(local_name)
-        :ok
+        uploading_to_gcs(local_name, media)
 
       {:error, :timeout} ->
         {:error,
@@ -173,6 +168,49 @@ defmodule Glific.Jobs.GcsWorker do
     end
 
     :ok
+  end
+
+  defp uploading_to_gcs(local_name, media) do
+    upload_file_on_gcs(media)
+    |> case do
+      {:ok, response} ->
+        get_public_link(response)
+        |> update_gcs_url(media["id"])
+
+        File.rm(local_name)
+        :ok
+
+      {:error, error} ->
+        handle_upload_error(media["organization_id"], error)
+    end
+
+    :ok
+  end
+
+  defp handle_upload_error(org_id, error) do
+    Jason.decode(error.body)
+    |> case do
+      {:ok, data} ->
+        [error] = get_in(data, ["error", "errors"])
+
+        # We will disabling GCS when billing account is disabled
+        if error["reason"] == "accountDisabled" do
+          Partners.disable_credential(org_id, "google_cloud_storage")
+
+          Notifications.create_notification(%{
+            category: "GCS",
+            message: "Billing account is disabled for GCS",
+            severity: "Error",
+            organization_id: org_id,
+            entity: %{
+              error: "#{inspect(error)}"
+            }
+          })
+        end
+
+      _ ->
+        raise("Error while uploading file to GCS #{inspect(error)}")
+    end
   end
 
   @spec get_public_link(map()) :: String.t()
