@@ -28,11 +28,11 @@ defmodule Glific.Partners.Invoice do
           invoice_start_date: :utc_datetime_usec | nil,
           invoice_end_date: :utc_datetime_usec | nil,
           status: String.t() | nil,
-          amount: :integer | nil,
+          amount: integer,
           line_items: map(),
-          user_usage: :integer | nil,
-          message_usage: :integer | nil,
-          consulting_hours: :integer | nil,
+          user_usage: integer,
+          message_usage: integer,
+          consulting_hours: integer,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -44,7 +44,7 @@ defmodule Glific.Partners.Invoice do
     field :invoice_start_date, :utc_datetime_usec
     field :invoice_end_date, :utc_datetime_usec
     field :status, :string
-    field :amount, :integer
+    field :amount, :integer, default: 0
     field :user_usage, :integer, default: 0
     field :message_usage, :integer, default: 0
     field :consulting_hours, :integer, default: 0

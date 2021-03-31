@@ -58,7 +58,7 @@ defmodule StripeController do
 
     case Invoice.create_invoice(attrs) do
       {:ok, invoice} -> {:ok, "success, #{invoice.id}"}
-      {:error, error} -> {:error, error}
+      {:error, error} -> {:error, "#{inspect(error)}"}
     end
   end
 
