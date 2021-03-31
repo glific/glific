@@ -181,6 +181,7 @@ defmodule Glific.Stats do
       hsm: 0,
       flows_started: 0,
       flows_completed: 0,
+      users: 0,
       period: Atom.to_string(period),
       date: if(period == :hour, do: DateTime.to_date(date), else: date),
       hour: if(period == :hour, do: date.hour, else: 0),
