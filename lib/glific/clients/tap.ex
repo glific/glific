@@ -20,7 +20,7 @@ defmodule Glific.Clients.Tap do
       |> join(:inner, [_c, cg], g in Group, on: cg.group_id == g.id)
       |> select([_c, _cg, g], g.label)
       |> order_by([_c, _cg, g], g.label)
-      |> last()
+      |> first()
       |> Repo.one()
 
     if is_nil(group_name),
