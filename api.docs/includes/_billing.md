@@ -151,6 +151,63 @@ Type | Description
 | ---- | -----------
 <a href="#billingresult">BillingResult</a> | The updated billing object
 
+## Create Billing Subscription
+
+```graphql
+mutation createBillingSubscription($id: ID!, $input:PaymentMethodInput!) {
+  createBillingSubscription(input: $input) {
+    billing {
+      currency
+      email
+      id
+      name
+      stripePaymentMethodId
+      stripeCustomerId
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa",
+  }
+}```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createBillingSubscription": {
+      "errors": null,
+      "billing": {
+        "currency": "USD",
+        "email": "akhilesh@gmail.com",
+        "id": "1",
+        "name": "akhilesh",
+        "stripeCustomerId": "cus_JDpMYdepEhvKnd",
+        "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa"
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#paymentmethodinput">PaymentMethodInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#billingresult">BillingResult</a> | The updated billing object
+
 
 ## Delete a Billing
 
