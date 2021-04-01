@@ -85,6 +85,7 @@ defmodule Glific.Repo.Migrations.Stripe do
 
       timestamps(type: :utc_datetime)
     end
+
     create index(:invoices, :organization_id)
     create index(:invoices, :stripe_customer_id)
   end
