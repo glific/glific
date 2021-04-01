@@ -40,7 +40,8 @@ defmodule Glific.Appsignal do
     Elixir.Oban.Pro.Plugins.Lifeline,
     Elixir.Oban.Plugins.Pruner
   ]
-  # ignore the stager and lifeline plugin
+
+  # ignore some internal Oban plugins which execute quite often
   defp record_event(:plugin, _m, %{plugin: plugin}, _t) when plugin in @ignore_plugins,
     do: nil
 
