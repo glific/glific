@@ -30,7 +30,7 @@ query billing($id: ID!) {
         "id": "2",
         "name": "john",
         "email": "john@gmail.com",
-        "stripe_customer_id": "4242424242424242",
+        "stripe_customer_id": "cus_JDpMYdepEhvKnd",
         "currency": "USD",
       }
     }
@@ -240,12 +240,12 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>stripe_customer_id</strong></td>
+<td colspan="2" valign="top"><strong>currency</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>currency</strong></td>
+<td colspan="2" valign="top"><strong>stripe_customer_id</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -297,43 +297,6 @@ Parameter | Type | Default | Description
 </tbody>
 </table>
 
-## Billing Inputs ##
-
-
-### BillingFilter ###
-
-Filtering options for Billings
-
-<table>
-<thead>
-<tr>
-<th colspan="2" align="left">Field</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>name</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>
-
-Match the name
-
-</td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>email</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td>
-
-Match the email
-
-</td>
-</tr>
-</tbody>
-</table>
-
 ### BillingInput ###
 
 <table>
@@ -354,6 +317,12 @@ Match the email
 
 <tr>
 <td colspan="2" valign="top"><strong>email</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>currency</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
