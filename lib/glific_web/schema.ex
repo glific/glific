@@ -35,6 +35,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.WebhookLogTypes)
   import_types(__MODULE__.NotificationTypes)
   import_types(__MODULE__.LocationTypes)
+  import_types(__MODULE__.BillingTypes)
 
   query do
     import_fields(:contact_queries)

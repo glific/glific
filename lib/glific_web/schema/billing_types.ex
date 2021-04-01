@@ -40,6 +40,7 @@ defmodule GlificWeb.Schema.BillingTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Billings.billing/3)
     end
+  end
 
   object :billing_mutations do
     field :create_billing, :billing_result do
