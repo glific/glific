@@ -35,10 +35,6 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message, attrs)
   end
 
-  defp check_caption(caption) when caption == nil, do: ""
-
-  defp check_caption(caption), do: caption
-
   @doc false
 
   @impl Glific.Providers.MessageBehaviour
@@ -94,6 +90,12 @@ defmodule Glific.Providers.Gupshup.Message do
     }
     |> send_message(message, attrs)
   end
+
+  @doc false
+  @spec check_caption(nil | String.t()) :: String.t()
+  defp check_caption(caption) when caption == nil, do: ""
+
+  defp check_caption(caption), do: caption
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
