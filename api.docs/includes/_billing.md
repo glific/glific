@@ -151,11 +151,11 @@ Type | Description
 | ---- | -----------
 <a href="#billingresult">BillingResult</a> | The updated billing object
 
-## Create Billing Subscription
+## Update Payment Method
 
 ```graphql
-mutation createBillingSubscription($id: ID!, $input:PaymentMethodInput!) {
-  createBillingSubscription(input: $input) {
+mutation updatePaymentMethod($id: ID!, $input:PaymentMethodInput!) {
+  updatePaymentMethod(input: $input) {
     billing {
       currency
       email
@@ -182,7 +182,7 @@ mutation createBillingSubscription($id: ID!, $input:PaymentMethodInput!) {
 ```json
 {
   "data": {
-    "createBillingSubscription": {
+    "updatePaymentMethod": {
       "errors": null,
       "billing": {
         "currency": "USD",
