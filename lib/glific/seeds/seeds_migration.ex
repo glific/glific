@@ -293,6 +293,9 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
+  @doc """
+  Sync bigquery schema with local db changes.
+  """
   @spec sync_schema_with_bigquery(list) :: :ok
   def sync_schema_with_bigquery(org_id_list),
   do: Enum.each(org_id_list, &Bigquery.sync_schema_with_bigquery(&1))
