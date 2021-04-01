@@ -163,6 +163,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         if Contacts.is_simulator_contact?(row.phone),
           do: acc,
           else: [
+            # We are sending nil, as setting is a record type and need to structure the data first(like field)
             %{
               id: row.id,
               name: row.name,
@@ -184,7 +185,6 @@ defmodule Glific.Jobs.BigQueryWorker do
                     value: field["value"]
                   }
                 end),
-              #We are sending nil, as setting is a record type and need to structure the data first(like field)
               settings: nil,
               user_name: if(!is_nil(row.user), do: row.user.name),
               user_role: if(!is_nil(row.user), do: Bigquery.format_json(row.user.roles)),

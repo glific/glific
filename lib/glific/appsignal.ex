@@ -35,8 +35,14 @@ defmodule Glific.Appsignal do
     |> @span.set_sample_data("meta.args", meta.args)
   end
 
-  # ignore the stager plugin
-  defp record_event(:plugin, _measurement, %{plugin: Elixir.Oban.Plugins.Stager}, _time),
+  @ignore_plugins [
+    Elixir.Oban.Plugins.Stager,
+    Elixir.Oban.Pro.Plugins.Lifeline,
+    Elixir.Oban.Plugins.Pruner
+  ]
+
+  # ignore some internal Oban plugins which execute quite often
+  defp record_event(:plugin, _m, %{plugin: plugin}, _t) when plugin in @ignore_plugins,
     do: nil
 
   defp record_event(:plugin, measurement, meta, time) do
