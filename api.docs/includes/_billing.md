@@ -250,6 +250,11 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>stripe_payment_method_id</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>stripe_current_period_start</strong></td>
 <td valign="top"><a href="#time">Time</a></td>
 <td></td>
@@ -327,5 +332,25 @@ Parameter | Type | Default | Description
 <td></td>
 </tr>
 
+</tbody>
+</table>
+
+### PaymentMethodInput
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>stripe_payment_method_id</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
