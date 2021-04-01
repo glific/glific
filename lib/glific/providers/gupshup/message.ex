@@ -30,10 +30,14 @@ defmodule Glific.Providers.Gupshup.Message do
       type: :image,
       originalUrl: message_media.source_url,
       previewUrl: message_media.url,
-      caption: message_media.caption
+      caption: check_caption(message_media.caption)
     }
     |> send_message(message, attrs)
   end
+
+  defp check_caption(caption) when caption == nil, do: ""
+
+  defp check_caption(caption), do: caption
 
   @doc false
 
@@ -58,7 +62,7 @@ defmodule Glific.Providers.Gupshup.Message do
     %{
       type: :video,
       url: message_media.source_url,
-      caption: message_media.caption
+      caption: check_caption(message_media.caption)
     }
     |> send_message(message, attrs)
   end
