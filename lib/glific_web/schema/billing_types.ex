@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.BillingTypes do
     @desc "get the details of one billing"
     field :billing, :billing_result do
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.billing/3)
     end
   end
@@ -50,7 +50,7 @@ defmodule GlificWeb.Schema.BillingTypes do
       resolve(&Resolvers.Billings.create_billing/3)
     end
 
-    field :create_billing_subscription, :billing_result do
+    field :create_billing_subscription, :organization_result do
       arg(:input, non_null(:payment_method_input))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.create_subscription/3)

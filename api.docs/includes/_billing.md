@@ -186,9 +186,9 @@ mutation updatePaymentMethod($id: ID!, $input:PaymentMethodInput!) {
       "errors": null,
       "billing": {
         "currency": "USD",
-        "email": "akhilesh@gmail.com",
+        "email": "john@gmail.com",
         "id": "1",
-        "name": "akhilesh",
+        "name": "john",
         "stripeCustomerId": "cus_JDpMYdepEhvKnd",
         "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa"
       }
@@ -207,6 +207,69 @@ input | <a href="#paymentmethodinput">PaymentMethodInput</a> | required ||
 Type | Description
 | ---- | -----------
 <a href="#billingresult">BillingResult</a> | The updated billing object
+
+## Create Billing subscription
+
+```graphql
+mutation createBillingSubscription($id: ID!, $input:PaymentMethodInput!) {
+  createBillingSubscription(input: $input) {
+    organization {
+      id
+      name
+      isActive
+      timezone
+      defaultLanguage {
+        id
+        label
+      }
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa",
+  }
+}```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "createBillingSubscription": {
+      "errors": null,
+      "organization": {
+        "organization": {
+          "defaultLanguage": {
+            "id": "1",
+            "label": "Hindi"
+          },
+          "id": "1",
+          "name": "Default Organization",
+          "isActive": true,
+          "timezone": "Asia/Kolkata"
+        }
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#paymentmethodinput">PaymentMethodInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#organizationresult">OrganizationResult</a> | Current user's organization
 
 
 ## Delete a Billing
