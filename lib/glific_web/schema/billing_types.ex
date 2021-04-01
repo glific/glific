@@ -4,9 +4,7 @@ defmodule GlificWeb.Schema.BillingTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -42,22 +40,6 @@ defmodule GlificWeb.Schema.BillingTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Billings.billing/3)
     end
-
-    @desc "Get a list of all billings filtered by various criteria"
-    field :billings, list_of(:billing) do
-      arg(:filter, :billing_filter)
-      arg(:opts, :opts)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Billings.billings/3)
-    end
-
-    @desc "Get a count of all billings filtered by various criteria"
-    field :count_billings, :integer do
-      arg(:filter, :billing_filter)
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Billings.count_billings/3)
-    end
-  end
 
   object :billing_mutations do
     field :create_billing, :billing_result do
