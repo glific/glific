@@ -17,15 +17,10 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :id, :id
     field :name, :string
     field :email, :string
-  end
-
-  @desc "Filtering options for billings"
-  input_object :billing_filter do
-    @desc "Match the email"
-    field :name, :string
-
-    @desc "Match the email"
-    field :email, :string
+    field :stripe_customer_id, :string
+    field :currency, :string
+    field :stripe_current_period_start, :datetime
+    field :stripe_current_period_end, :datetime
   end
 
   input_object :billing_input do

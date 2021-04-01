@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Billings do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Partners.Billing, Repo}
+  alias Glific.{Partners, Partners.Billing, Repo}
 
   @doc """
   Get a specific billing by id
@@ -12,7 +12,8 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec billing(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def billing(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, billing} <- Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
+    with {:ok, billing} <-
+           Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{billing: billing}}
   end
 
@@ -20,7 +21,8 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec create_billing(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_billing(_, %{input: params}, _) do
-    with {:ok, billing} <- Billing.create_billing(params) do
+    with organization <- Partners.organization(params.organization_id),
+         {:ok, billing} <- Billing.create(organization, params) do
       {:ok, %{billing: billing}}
     end
   end
@@ -29,7 +31,8 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec update_billing(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_billing(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    with {:ok, billing} <- Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
+    with {:ok, billing} <-
+           Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
          {:ok, billing} <- Billing.update_billing(billing, params) do
       {:ok, %{billing: billing}}
     end
@@ -39,7 +42,8 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec delete_billing(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_billing(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, billing} <- Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
+    with {:ok, billing} <-
+           Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
          {:ok, billing} <- Billing.delete_billing(billing) do
       {:ok, billing}
     end

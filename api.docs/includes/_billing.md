@@ -9,6 +9,8 @@ query billing($id: ID!) {
       id
       name
       email
+      stripe_customer_id
+      currency
     }
   }
 }
@@ -28,6 +30,8 @@ query billing($id: ID!) {
         "id": "2",
         "name": "john",
         "email": "john@gmail.com",
+        "stripe_customer_id": "4242424242424242",
+        "currency": "USD",
       }
     }
   }
@@ -233,6 +237,26 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>email</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>stripe_customer_id</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>currency</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>stripe_current_period_start</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>stripe_current_period_end</strong></td>
+<td valign="top"><a href="#time">Time</a></td>
 <td></td>
 </tr>
 <tr>
