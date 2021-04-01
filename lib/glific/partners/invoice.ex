@@ -155,7 +155,7 @@ defmodule Glific.Partners.Invoice do
 
         case Billing.update_billing(billing, %{is_delinquent: is_delinquent}) do
           {:ok, _} ->
-            {:ok, "Invoice status updated for ${invoice_id}"}
+            {:ok, "Invoice status updated for #{invoice_id}"}
 
           {:error, error} ->
             {:error, "Error updating status for #{invoice_id}, Errors: #{inspect(error)}"}
