@@ -26,6 +26,7 @@ defmodule GlificWeb.Schema.BillingTypes do
   input_object :billing_input do
     field :name, :string
     field :email, :string
+    field :currency, :string
   end
 
   object :billing_queries do
