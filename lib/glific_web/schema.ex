@@ -70,6 +70,8 @@ defmodule GlificWeb.Schema do
     import_fields(:notification_queries)
 
     import_fields(:location_queries)
+
+    import_fields(:billing_queries)
   end
 
   mutation do
@@ -110,6 +112,8 @@ defmodule GlificWeb.Schema do
     import_fields(:flow_mutations)
 
     import_fields(:trigger_mutations)
+
+    import_fields(:billing_mutations)
   end
 
   subscription do
