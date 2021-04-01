@@ -166,7 +166,8 @@ defmodule Glific.Jobs.MinuteWorker do
       "hourly_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
         # of the DB
-        Stats.generate_stats()
+        # we generate for all organizations, not the most recent ones
+        Stats.generate_stats([] , false)
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
