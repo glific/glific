@@ -43,7 +43,7 @@ defmodule StripeController do
        ) do
     case Invoice.create_invoice(%{stripe_invoice: invoice, organization_id: organization_id}) do
       {:ok, invoice} -> {:ok, "success, #{invoice.id}"}
-      {:error, error} -> {:error, "#{inspect(error)}"}
+      {:error, error} -> {:error, inspect(error)}
     end
   end
 
@@ -61,6 +61,6 @@ defmodule StripeController do
 
   defp handle_webhook(stripe_event, _organization_id) do
     # handle default case. We ignore these web hooks.
-    {:ok, "success, #{inspect(stripe_event)}"}
+    {:ok, "success, ignoring #{stripe_event.type}"}
   end
 end

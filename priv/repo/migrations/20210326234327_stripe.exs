@@ -51,6 +51,7 @@ defmodule Glific.Repo.Migrations.Stripe do
 
   defp invoices do
     create table(:invoices) do
+      add :stripe_customer_id, :string
       add :invoice_id, :string, null: false, unique: true, comment: "Stripe's Invoice ID"
 
       add :start_date, :utc_datetime_usec,
@@ -84,5 +85,7 @@ defmodule Glific.Repo.Migrations.Stripe do
 
       timestamps(type: :utc_datetime)
     end
+    create index(:invoices, :organization_id)
+    create index(:invoices, :stripe_customer_id)
   end
 end

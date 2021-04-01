@@ -10,6 +10,7 @@ defmodule Glific.Partners.Invoice do
   alias __MODULE__
 
   @required_fields [
+    :customer_id,
     :invoice_id,
     :start_date,
     :end_date,
@@ -23,6 +24,7 @@ defmodule Glific.Partners.Invoice do
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
+          customer_id: String.t() | nil,
           invoice_id: String.t() | nil,
           start_date: :utc_datetime_usec | nil,
           end_date: :utc_datetime_usec | nil,
@@ -39,6 +41,7 @@ defmodule Glific.Partners.Invoice do
         }
 
   schema "invoices" do
+    field :customer_id, :string
     field :invoice_id, :string
     field :start_date, :utc_datetime_usec
     field :end_date, :utc_datetime_usec
@@ -72,6 +75,7 @@ defmodule Glific.Partners.Invoice do
   @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
     attrs = %{
+      customer_id: invoice.customer,
       invoice_id: invoice.id,
       organization_id: organization_id,
       status: "open",
@@ -116,8 +120,8 @@ defmodule Glific.Partners.Invoice do
       {:status, status}, query ->
         from q in query, where: q.status == ^status
 
-        _, query ->
-          query
+      _, query ->
+        query
     end)
   end
 
