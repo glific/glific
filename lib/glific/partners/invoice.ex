@@ -97,7 +97,7 @@ defmodule Glific.Partners.Invoice do
     {:ok, invoice} = create_invoice(attrs)
 
     # Update the usage of invoice
-    Billing.record_usage(org, DateTime.to_date(start_date), DateTime.to_date(end_date))
+    Billing.record_usage(org, start_date, end_date)
 
     {:ok, invoice}
   end
@@ -169,6 +169,10 @@ defmodule Glific.Partners.Invoice do
           {:error, error} ->
             {:error, "Error updating status for #{invoice_id}, Errors: #{inspect(error)}"}
         end
+
+      _ ->
+        # Need to log this so we know what happended and why
+        {:ok, "Could not find invoice for #{invoice_id}"}
     end
   end
 end

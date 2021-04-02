@@ -391,20 +391,29 @@ defmodule Glific.Partners.Billing do
   @doc """
   Record the usage for a specific organization
   """
-  @spec record_usage(Organization.t(), Date.t(), Date.t()) :: :ok
+  @spec record_usage(Organization.t(), DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization, start_date, end_date) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
-    now = DateTime.utc_now()
-    time = DateTime.to_unix(Timex.shift(end_date, days: -1))
+    start_usage_date =
+      start_date
+      |> DateTime.to_date()
 
-    case Stats.usage(organization.id, start_date, end_date) do
-      nil ->
-        :ok
+    end_usage_datetime =
+      end_date
+      |> Timex.shift(days: -1)
+      |> Timex.end_of_day()
 
+    end_usage_date =
+      end_usage_datetime
+      |> DateTime.to_date()
+
+    time = DateTime.to_unix(end_usage_datetime)
+
+    case Stats.usage(organization.id, start_usage_date, end_usage_date) |> IO.inspect(label: "USAGE") do
       _usage ->
-        usage = %{messages: 275, users: 17}
+        usage = %{messages: Enum.random(150..500), users: Enum.random(0..100)}
 
         prices = stripe_ids()
         subscription_items = billing.stripe_subscription_items
@@ -423,7 +432,7 @@ defmodule Glific.Partners.Billing do
           "users: #{organization.id}, #{Date.to_string(start_date)}"
         )
 
-        {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: now})
+        {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: end_usage_datetime})
     end
 
     :ok
