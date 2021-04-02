@@ -415,6 +415,6 @@ defmodule Glific.Stats do
       messages: sum(s.messages),
       users: max(s.users)
     })
-    |> Repo.one!()
+    |> Repo.one()
   end
 end

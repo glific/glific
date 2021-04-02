@@ -403,7 +403,8 @@ defmodule Glific.Partners.Billing do
     # go to the end of the previous day
     end_date = DateTime.to_date(Timex.shift(now, days: -1))
 
-    usage = Stats.usage(organization.id, start_date, end_date)
+    _usage = Stats.usage(organization.id, start_date, end_date) |> IO.inspect()
+    usage = %{messages: 275, users: 17}
 
     prices = stripe_ids()
     subscription_items = billing.stripe_subscription_items
@@ -412,10 +413,15 @@ defmodule Glific.Partners.Billing do
       subscription_items[prices.messages],
       usage.messages,
       time,
-      start_date
+      "messages:  #{organization.id}, #{Date.to_string(start_date)}"
     )
 
-    record_subscription_item(subscription_items[prices.users], usage.users, time, start_date)
+    record_subscription_item(
+      subscription_items[prices.users],
+      usage.users,
+      time,
+      "users: #{organization.id}, #{Date.to_string(start_date)}"
+    )
 
     {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: now})
 
@@ -423,8 +429,8 @@ defmodule Glific.Partners.Billing do
   end
 
   # record the usage against a subscription item in stripe
-  @spec record_subscription_item(String.t(), pos_integer, pos_integer, Date.t()) :: nil
-  defp record_subscription_item(subscription_item_id, quantity, time, start_date) do
+  @spec record_subscription_item(String.t(), pos_integer, pos_integer, String.t()) :: nil
+  defp record_subscription_item(subscription_item_id, quantity, time, idempotency) do
     {:ok, _} =
       Usage.create(
         subscription_item_id,
@@ -432,7 +438,7 @@ defmodule Glific.Partners.Billing do
           quantity: quantity,
           timestamp: time
         },
-        idempotency_key: Date.to_string(start_date)
+        idempotency_key: idempotency
       )
 
     nil
