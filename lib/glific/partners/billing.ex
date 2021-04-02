@@ -204,12 +204,12 @@ defmodule Glific.Partners.Billing do
 
   defp stripe_ids(_env) do
     %{
-      product: "prod_JELeXovfL1NOtY",
-      setup: "price_0Ibsx3ZVZ2O8W9YsSsfQVPKB",
-      monthly: "price_0Ibsx3ZVZ2O8W9YshmjZnyFc",
-      users: "price_0IbszlZVZ2O8W9YsMpb2cEff",
-      messages: "price_0Ibt0YZVZ2O8W9YshIRfGUOr",
-      consulting_hours: "price_0Ibt2EZVZ2O8W9YsznpoefDF"
+      product: "prod_JBiFSE44OOhpgO",
+      setup: "price_0IZKpSZVZ2O8W9YsDAlqiu5P",
+      monthly: "price_0IZKpSZVZ2O8W9Ys0tU8WArK",
+      users: "price_0IZLSKZVZ2O8W9YsB9arj9uR",
+      messages: "price_0IZLWnZVZ2O8W9YsF6GiMmGX",
+      consulting_hours: "price_0IZLfSZVZ2O8W9Ysy3SjpmPJ"
     }
   end
 
@@ -397,7 +397,8 @@ defmodule Glific.Partners.Billing do
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
     now = DateTime.utc_now()
-    time = DateTime.to_unix(Timex.shift(end_date, days: -1))
+    end_date_time = DateTime.new!(end_date, ~T[11:59:00.000], "Etc/UTC")
+    time = DateTime.to_unix(Timex.shift(end_date_time, days: -1))
 
     case Stats.usage(organization.id, start_date, end_date) do
       nil ->
