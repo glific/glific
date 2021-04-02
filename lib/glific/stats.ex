@@ -404,7 +404,7 @@ defmodule Glific.Stats do
   @doc """
   Get the details of the usage for this organization, from start_date to end_date both inclusive
   """
-  @spec usage(non_neg_integer, Date.t(), Date.t()) :: %{atom => pos_integer}
+  @spec usage(non_neg_integer, Date.t(), Date.t()) :: %{atom => pos_integer} | nil
   def usage(organization_id, start_date, end_date) do
     Stat
     |> where([s], s.organization_id == ^organization_id)

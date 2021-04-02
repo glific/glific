@@ -391,39 +391,41 @@ defmodule Glific.Partners.Billing do
   @doc """
   Record the usage for a specific organization
   """
-  @spec record_usage(Organization.t()) :: :ok | {:error, String.t()}
-  def record_usage(organization) do
+  @spec record_usage(Organization.t(), Date.t(), Date.t()) :: :ok
+  def record_usage(organization, start_date, end_date) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
-    start_date = DateTime.to_date(billing.stripe_last_usage_recorded)
     now = DateTime.utc_now()
     time = DateTime.to_unix(now)
 
-    # go to the end of the previous day
-    end_date = DateTime.to_date(Timex.shift(now, days: -1))
+    case Stats.usage(organization.id, start_date, end_date) do
+      nil ->
+        :ok
 
-    _usage = Stats.usage(organization.id, start_date, end_date) |> IO.inspect()
-    usage = %{messages: 275, users: 17}
+      usage ->
+        _usage = Stats.usage(organization.id, start_date, end_date) |> IO.inspect()
+        usage = %{messages: 275, users: 17}
 
-    prices = stripe_ids()
-    subscription_items = billing.stripe_subscription_items
+        prices = stripe_ids()
+        subscription_items = billing.stripe_subscription_items
 
-    record_subscription_item(
-      subscription_items[prices.messages],
-      usage.messages,
-      time,
-      "messages:  #{organization.id}, #{Date.to_string(start_date)}"
-    )
+        record_subscription_item(
+          subscription_items[prices.messages],
+          usage.messages,
+          time,
+          "messages:  #{organization.id}, #{Date.to_string(start_date)}"
+        )
 
-    record_subscription_item(
-      subscription_items[prices.users],
-      usage.users,
-      time,
-      "users: #{organization.id}, #{Date.to_string(start_date)}"
-    )
+        record_subscription_item(
+          subscription_items[prices.users],
+          usage.users,
+          time,
+          "users: #{organization.id}, #{Date.to_string(start_date)}"
+        )
 
-    {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: now})
+        {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: now})
+    end
 
     :ok
   end
