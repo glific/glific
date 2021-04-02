@@ -403,8 +403,7 @@ defmodule Glific.Partners.Billing do
       nil ->
         :ok
 
-      usage ->
-        _usage = Stats.usage(organization.id, start_date, end_date) |> IO.inspect()
+      _usage ->
         usage = %{messages: 275, users: 17}
 
         prices = stripe_ids()
