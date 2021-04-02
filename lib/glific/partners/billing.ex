@@ -397,7 +397,7 @@ defmodule Glific.Partners.Billing do
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
     now = DateTime.utc_now()
-    time = DateTime.to_unix(now)
+    time = DateTime.to_unix(Timex.shift(end_date, days: -1))
 
     case Stats.usage(organization.id, start_date, end_date) do
       nil ->
