@@ -6,7 +6,7 @@ defmodule Glific.Partners.Invoice do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
-  alias Glific.{Partners.Billing, Partners.Organization, Repo}
+  alias Glific.{Partners, Partners.Billing, Partners.Organization, Repo}
   alias __MODULE__
 
   @required_fields [
@@ -74,14 +74,18 @@ defmodule Glific.Partners.Invoice do
   """
   @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
+    start_date = DateTime.from_unix!(invoice.period_start)
+    end_date = DateTime.from_unix!(invoice.period_end)
+    org = Partners.get_organization!(organization_id)
+
     attrs = %{
       customer_id: invoice.customer,
       invoice_id: invoice.id,
       organization_id: organization_id,
       status: "open",
       amount: invoice.amount_due,
-      start_date: DateTime.from_unix!(invoice.period_start),
-      end_date: DateTime.from_unix!(invoice.period_end)
+      start_date: start_date,
+      end_date: end_date
     }
 
     line_items =
@@ -90,7 +94,12 @@ defmodule Glific.Partners.Invoice do
 
     attrs = Map.put(attrs, :line_items, line_items)
 
-    create_invoice(attrs)
+    {:ok, invoice} = create_invoice(attrs)
+
+    # Update the usage of invoice
+    Billing.record_usage(org, DateTime.to_date(start_date), DateTime.to_date(end_date))
+
+    {:ok, invoice}
   end
 
   def create_invoice(attrs) do
