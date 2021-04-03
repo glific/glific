@@ -102,7 +102,18 @@ defmodule Glific.Partners.Invoice do
 
     attrs = Map.put(attrs, :line_items, line_items)
 
-    {:ok, invoice} = create_invoice(attrs)
+    invoice =
+    case fetch_invoice(invoice.id) do
+      nil ->
+        {:ok, invoice} = create_invoice(attrs)
+        invoice
+
+      invoice ->
+        update_invoice(
+          invoice,
+          %{status: invoice.status, line_items: line_items}
+        )
+    end
 
     if invoice.status == "open" && ! setup do
       stripe_ids = Billing.get_stripe_ids()

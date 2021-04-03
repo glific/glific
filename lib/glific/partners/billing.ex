@@ -212,12 +212,12 @@ defmodule Glific.Partners.Billing do
 
   defp stripe_ids(_env) do
     %{
-      product: "prod_JELeXovfL1NOtY",
-      setup: "price_0Ibsx3ZVZ2O8W9YsSsfQVPKB",
-      monthly: "price_0Ibsx3ZVZ2O8W9YshmjZnyFc",
-      users: "price_0IbszlZVZ2O8W9YsMpb2cEff",
-      messages: "price_0Ibt0YZVZ2O8W9YshIRfGUOr",
-      consulting_hours: "price_0Ibt2EZVZ2O8W9YsznpoefDF"
+      product: "prod_JETOZDWSMNMzwq",
+      setup: "price_0Ic0S6ZVZ2O8W9YsphGSSTpn",
+      monthly: "price_0Ic0S6ZVZ2O8W9Ys6BcEGNEm",
+      users: "price_0Ic0S6ZVZ2O8W9YsfnQRPyB5",
+      messages: "price_0Ic0S6ZVZ2O8W9YstRMIqHjg",
+      consulting_hours: "price_0Ic0S6ZVZ2O8W9YsnZujHtBY"
     }
   end
 
