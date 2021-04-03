@@ -485,6 +485,14 @@ defmodule Glific.Partners.Billing do
     Invoice.finalize(invoice_id, %{})
   end
 
+  @doc """
+   Update a stripe invoice
+  """
+  @spec update_invoice(String.t(), map()) :: {:ok, t()} | {:error, Stripe.Error.t()}
+  def update_invoice(invoice_id, params) do
+    Invoice.update(invoice_id, params)
+  end
+
   # events that we need to handle, delete comment once handled :)
   # invoice.upcoming
   # invoice.created - send final usage record here, also send on a weekly basis, to avoid error
