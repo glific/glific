@@ -80,38 +80,44 @@ defmodule Glific.Partners.Invoice do
       customer_id: invoice.customer,
       invoice_id: invoice.id,
       organization_id: organization_id,
-      status: "open",
+      status: invoice.status,
       amount: invoice.amount_due,
       start_date: DateTime.from_unix!(invoice.period_start),
       end_date: DateTime.from_unix!(invoice.period_end)
     }
 
-    line_items =
+    {line_items, setup} =
       invoice.lines.data
-      |> Enum.reduce(%{}, fn line, acc ->
-        Map.put(acc, line.price.id, %{
-          nickname: line.price.nickname,
-          start_date: DateTime.from_unix!(line.period.start),
-          end_date: DateTime.from_unix!(line.period.end)
-        })
+      |> Enum.reduce(
+      {%{}, false},
+      fn line, {acc, setup} ->
+        acc = Map.put(acc, line.price.id, %{
+              nickname: line.price.nickname,
+              start_date: DateTime.from_unix!(line.period.start),
+              end_date: DateTime.from_unix!(line.period.end)
+                })
+        setup = setup || String.contains?(line.price.nickname, "Setup")
+        {acc, setup}
       end)
 
     attrs = Map.put(attrs, :line_items, line_items)
 
     {:ok, invoice} = create_invoice(attrs)
 
-    stripe_ids = Billing.get_stripe_ids()
+    if invoice.status == "open" && ! setup do
+      stripe_ids = Billing.get_stripe_ids()
 
-    case line_items[stripe_ids.setup] do
-      nil ->
-        Billing.record_usage(
-          org,
-          line_items[stripe_ids.messages].start_date,
-          line_items[stripe_ids.messages].end_date
-        )
+      case line_items[stripe_ids.setup] do
+        nil ->
+          Billing.record_usage(
+            org,
+            line_items[stripe_ids.messages].start_date,
+            line_items[stripe_ids.messages].end_date
+          )
 
-      _ ->
-        :ok
+        _ ->
+          :ok
+      end
     end
 
     {:ok, invoice}
