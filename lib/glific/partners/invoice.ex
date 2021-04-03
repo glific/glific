@@ -76,10 +76,6 @@ defmodule Glific.Partners.Invoice do
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
     org = Partners.get_organization!(organization_id)
 
-    if !invoice.auto_advance do
-      Billing.update_invoice(invoice.id, %{auto_advance: true})
-    end
-
     attrs = %{
       customer_id: invoice.customer,
       invoice_id: invoice.id,
@@ -137,6 +133,8 @@ defmodule Glific.Partners.Invoice do
 
       setup ->
         Billing.finalize_invoice(invoice.invoice_id)
+
+      true -> {:ok}
     end
 
     {:ok, invoice}

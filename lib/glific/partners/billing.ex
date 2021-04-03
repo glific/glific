@@ -317,6 +317,8 @@ defmodule Glific.Partners.Billing do
     {:ok, _invoice} =
       Stripe.Invoice.create(%{
         customer: billing.stripe_customer_id,
+        auto_advance: true,
+        collection_method: "charge_automatically",
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -483,14 +485,6 @@ defmodule Glific.Partners.Billing do
   @spec finalize_invoice(String.t()) :: {:ok, t()} | {:error, Stripe.Error.t()}
   def finalize_invoice(invoice_id) do
     Invoice.finalize(invoice_id, %{})
-  end
-
-  @doc """
-   Update a stripe invoice
-  """
-  @spec update_invoice(String.t(), map()) :: {:ok, t()} | {:error, Stripe.Error.t()}
-  def update_invoice(invoice_id, params) do
-    Invoice.update(invoice_id, params)
   end
 
   # events that we need to handle, delete comment once handled :)
