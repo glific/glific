@@ -16,7 +16,7 @@ defmodule Glific.Partners.Billing do
     Stats
   }
 
-  alias Stripe.SubscriptionItem.Usage
+  alias Stripe.{Invoice, SubscriptionItem.Usage}
 
   # define all the required fields for
   @required_fields [
@@ -475,6 +475,14 @@ defmodule Glific.Partners.Billing do
       )
 
     nil
+  end
+
+  @doc """
+   Finalize a draft invoice
+  """
+  @spec finalize_invoice(String.t()) :: {:ok, t()} | {:error, Stripe.Error.t()}
+  def finalize_invoice(invoice_id) do
+    Invoice.finalize(invoice_id, %{})
   end
 
   # events that we need to handle, delete comment once handled :)

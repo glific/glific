@@ -89,46 +89,50 @@ defmodule Glific.Partners.Invoice do
     {line_items, setup} =
       invoice.lines.data
       |> Enum.reduce(
-      {%{}, false},
-      fn line, {acc, setup} ->
-        acc = Map.put(acc, line.price.id, %{
+        {%{}, false},
+        fn line, {acc, setup} ->
+          acc =
+            Map.put(acc, line.price.id, %{
               nickname: line.price.nickname,
               start_date: DateTime.from_unix!(line.period.start),
               end_date: DateTime.from_unix!(line.period.end)
-                })
-        setup = setup || String.contains?(line.price.nickname, "Setup")
-        {acc, setup}
-      end)
+            })
+
+          setup = setup || String.contains?(line.price.nickname, "Setup")
+          {acc, setup}
+        end
+      )
 
     attrs = Map.put(attrs, :line_items, line_items)
 
     invoice =
-    case fetch_invoice(invoice.id) do
-      nil ->
-        {:ok, invoice} = create_invoice(attrs)
-        invoice
-
-      invoice ->
-        update_invoice(
-          invoice,
-          %{status: invoice.status, line_items: line_items}
-        )
-    end
-
-    if invoice.status == "open" && ! setup do
-      stripe_ids = Billing.get_stripe_ids()
-
-      case line_items[stripe_ids.setup] do
+      case fetch_invoice(invoice.id) do
         nil ->
-          Billing.record_usage(
-            org,
-            line_items[stripe_ids.messages].start_date,
-            line_items[stripe_ids.messages].end_date
-          )
+          {:ok, invoice} = create_invoice(attrs)
+          invoice
 
-        _ ->
-          :ok
+        invoice ->
+          {:ok, invoice} =
+            update_invoice(
+              invoice,
+              %{status: invoice.status, line_items: line_items}
+            )
+
+          invoice
       end
+
+    cond do
+      invoice.status == "open" && !setup ->
+        stripe_ids = Billing.get_stripe_ids()
+
+        Billing.record_usage(
+          org,
+          line_items[stripe_ids.messages].start_date,
+          line_items[stripe_ids.messages].end_date
+        )
+
+      setup ->
+        Billing.finalize_invoice(invoice.invoice_id)
     end
 
     {:ok, invoice}
