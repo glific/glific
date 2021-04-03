@@ -128,7 +128,7 @@ defmodule Glific.Partners.Invoice do
   @doc """
   Fetch an invoice record by stripe invoice id
   """
-  @spec fetch_invoice(non_neg_integer) :: Invoice.t()
+  @spec fetch_invoice(non_neg_integer) :: Invoice.t() | nil
   def fetch_invoice(invoice_id), do: Repo.get_by(Invoice, invoice_id: invoice_id)
 
   @doc """
@@ -187,7 +187,7 @@ defmodule Glific.Partners.Invoice do
             {:error, "Error updating status for #{invoice_id}, Errors: #{inspect(error)}"}
         end
 
-      _ ->
+      nil ->
         # Need to log this so we know what happended and why
         {:ok, "Could not find invoice for #{invoice_id}"}
     end
