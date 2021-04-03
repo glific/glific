@@ -134,7 +134,8 @@ defmodule Glific.Partners.Invoice do
       setup ->
         Billing.finalize_invoice(invoice.invoice_id)
 
-      true -> {:ok}
+      true ->
+        :ok
     end
 
     {:ok, invoice}
