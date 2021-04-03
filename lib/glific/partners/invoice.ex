@@ -74,8 +74,6 @@ defmodule Glific.Partners.Invoice do
   """
   @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
-    start_date = DateTime.from_unix!(invoice.period_start)
-    end_date = DateTime.from_unix!(invoice.period_end)
     org = Partners.get_organization!(organization_id)
 
     attrs = %{
@@ -84,8 +82,8 @@ defmodule Glific.Partners.Invoice do
       organization_id: organization_id,
       status: "open",
       amount: invoice.amount_due,
-      start_date: start_date,
-      end_date: end_date
+      start_date: DateTime.from_unix!(invoice.period_start),
+      end_date: DateTime.from_unix!(invoice.period_end)
     }
 
     line_items =

@@ -428,7 +428,6 @@ defmodule Glific.Partners.Billing do
   def record_usage(organization, start_date, end_date) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
-    now = DateTime.to_unix(DateTime.utc_now())
 
     {start_usage_date, end_usage_date, end_usage_datetime, time} =
       format_dates(start_date, end_date)
