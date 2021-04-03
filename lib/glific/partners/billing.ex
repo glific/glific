@@ -154,7 +154,6 @@ defmodule Glific.Partners.Billing do
       %{
         name: attrs.name,
         email: attrs.email,
-        # currency: attrs.currency,
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -201,17 +200,15 @@ defmodule Glific.Partners.Billing do
   end
 
   @spec stripe_ids :: map()
-  defp stripe_ids do
-    stripe_ids(Application.get_env(:glific, :environment))
-  end
+  defp stripe_ids,
+    do: stripe_ids(Application.get_env(:glific, :environment))
 
   @spec stripe_ids(atom()) :: map()
-  defp stripe_ids(:prod) do
-    %{}
-  end
+  defp stripe_ids(:prod),
+    do: %{}
 
-  defp stripe_ids(_env) do
-    %{
+  defp stripe_ids(_env),
+    do: %{
       product: "prod_JETOZDWSMNMzwq",
       setup: "price_0Ic0S6ZVZ2O8W9YsphGSSTpn",
       monthly: "price_0Ic0S6ZVZ2O8W9Ys6BcEGNEm",
@@ -219,15 +216,13 @@ defmodule Glific.Partners.Billing do
       messages: "price_0Ic0S6ZVZ2O8W9YstRMIqHjg",
       consulting_hours: "price_0Ic0S6ZVZ2O8W9YsnZujHtBY"
     }
-  end
 
   @doc """
   Fetch the stripe id's
   """
   @spec get_stripe_ids :: map()
-  def get_stripe_ids do
-    stripe_ids()
-  end
+  def get_stripe_ids,
+    do: stripe_ids()
 
   @spec subscription_params(Organization.t(), Billing.t()) :: map()
   defp subscription_params(organization, billing) do
@@ -480,12 +475,11 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-   Finalize a draft invoice
+  Finalize a draft invoice
   """
   @spec finalize_invoice(String.t()) :: {:ok, t()} | {:error, Stripe.Error.t()}
-  def finalize_invoice(invoice_id) do
-    Invoice.finalize(invoice_id, %{})
-  end
+  def finalize_invoice(invoice_id),
+    do: Invoice.finalize(invoice_id, %{})
 
   # events that we need to handle, delete comment once handled :)
   # invoice.upcoming
