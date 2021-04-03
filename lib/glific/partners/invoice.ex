@@ -90,14 +90,31 @@ defmodule Glific.Partners.Invoice do
 
     line_items =
       invoice.lines.data
-      |> Enum.reduce(%{}, fn line, acc -> Map.put(acc, line.price.id, line.price.nickname) end)
+      |> Enum.reduce(%{}, fn line, acc ->
+        Map.put(acc, line.price.id, %{
+          nickname: line.price.nickname,
+          start_date: DateTime.from_unix!(line.period.start),
+          end_date: DateTime.from_unix!(line.period.end)
+        })
+      end)
 
     attrs = Map.put(attrs, :line_items, line_items)
 
     {:ok, invoice} = create_invoice(attrs)
 
-    # Update the usage of invoice
-    Billing.record_usage(org, start_date, end_date)
+    stripe_ids = Billing.get_stripe_ids()
+
+    case line_items[stripe_ids.setup] do
+      nil ->
+        Billing.record_usage(
+          org,
+          line_items[stripe_ids.messages].start_date,
+          line_items[stripe_ids.messages].end_date
+        )
+
+      _ ->
+        :ok
+    end
 
     {:ok, invoice}
   end
@@ -150,7 +167,7 @@ defmodule Glific.Partners.Invoice do
   @spec update_invoice_status(non_neg_integer, String.t()) :: {:ok | :error, String.t()}
   def update_invoice_status(invoice_id, status) do
     case fetch_invoice(invoice_id) do
-      %{id: _} = invoice ->
+      %Invoice{id: _} = invoice ->
         update_invoice(invoice, %{status: status})
         billing = Billing.get_billing(%{organization_id: invoice.organization_id})
 

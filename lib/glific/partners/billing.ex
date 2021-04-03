@@ -213,6 +213,14 @@ defmodule Glific.Partners.Billing do
     }
   end
 
+  @doc """
+  Fetch the stripe id's
+  """
+  @spec get_stripe_ids :: map()
+  def get_stripe_ids do
+    stripe_ids()
+  end
+
   @spec subscription_params(Organization.t(), Billing.t()) :: map()
   defp subscription_params(organization, billing) do
     prices = stripe_ids()
@@ -395,6 +403,7 @@ defmodule Glific.Partners.Billing do
   def record_usage(organization, start_date, end_date) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
+    now = DateTime.to_unix(DateTime.utc_now())
 
     start_usage_date =
       start_date
@@ -411,7 +420,8 @@ defmodule Glific.Partners.Billing do
 
     time = DateTime.to_unix(end_usage_datetime)
 
-    case Stats.usage(organization.id, start_usage_date, end_usage_date) |> IO.inspect(label: "USAGE") do
+    case Stats.usage(organization.id, start_usage_date, end_usage_date)
+         |> IO.inspect(label: "USAGE") do
       _usage ->
         usage = %{messages: Enum.random(150..500), users: Enum.random(0..100)}
 
@@ -422,14 +432,14 @@ defmodule Glific.Partners.Billing do
           subscription_items[prices.messages],
           usage.messages,
           time,
-          "messages:  #{organization.id}, #{Date.to_string(start_date)}"
+          "messages:  #{organization.id}, #{Date.to_string(start_date)} #{now}"
         )
 
         record_subscription_item(
           subscription_items[prices.users],
           usage.users,
           time,
-          "users: #{organization.id}, #{Date.to_string(start_date)}"
+          "users: #{organization.id}, #{Date.to_string(start_date)} #{now}"
         )
 
         {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: end_usage_datetime})
