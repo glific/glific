@@ -6,7 +6,7 @@ defmodule Glific.Partners.Invoice do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
-  alias Glific.{Partners, Partners.Billing, Partners.Organization, Repo}
+  alias Glific.{Partners.Billing, Partners.Organization, Repo}
   alias __MODULE__
 
   @required_fields [
@@ -69,14 +69,9 @@ defmodule Glific.Partners.Invoice do
     |> foreign_key_constraint(:organization_id)
   end
 
-  @doc """
-  Create an invoice record
-  """
-  @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
-  def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
-    org = Partners.get_organization!(organization_id)
-
-    attrs = %{
+  @spec invoice_attrs(map(), non_neg_integer) :: map()
+  defp invoice_attrs(invoice, organization_id),
+    do: %{
       customer_id: invoice.customer,
       invoice_id: invoice.id,
       organization_id: organization_id,
@@ -86,6 +81,8 @@ defmodule Glific.Partners.Invoice do
       end_date: DateTime.from_unix!(invoice.period_end)
     }
 
+  @spec line_items(map(), map()) :: {map(), boolean}
+  defp line_items(attrs, invoice) do
     {line_items, setup} =
       invoice.lines.data
       |> Enum.reduce(
@@ -103,8 +100,14 @@ defmodule Glific.Partners.Invoice do
         end
       )
 
-    attrs = Map.put(attrs, :line_items, line_items)
+    {
+      Map.put(attrs, :line_items, line_items),
+      setup
+    }
+  end
 
+  @spec invoice({map(), boolean}, map()) :: {Invoice.t(), boolean}
+  defp invoice({attrs, setup}, invoice) do
     invoice =
       case fetch_invoice(invoice.id) do
         nil ->
@@ -115,24 +118,44 @@ defmodule Glific.Partners.Invoice do
           {:ok, invoice} =
             update_invoice(
               invoice,
-              %{status: invoice.status, line_items: line_items}
+              %{status: invoice.status, line_items: attrs.line_items}
             )
 
           invoice
       end
 
+    {invoice, setup}
+  end
+
+  @spec finalize({Invoice.t(), boolean}) :: Invoice.t()
+  defp finalize({invoice, setup}) do
     if setup do
       Billing.finalize_invoice(invoice.invoice_id)
     else
       stripe_ids = Billing.get_stripe_ids()
-      billing = Billing.get_billing(%{organization_id: organization_id, is_active: true})
+      billing = Billing.get_billing(%{organization_id: invoice.organization_id, is_active: true})
 
       Billing.record_usage(
-        org,
+        invoice.organization_id,
         billing.stripe_last_usage_recorded,
-        line_items[stripe_ids.messages].end_date
+        invoice.line_items[stripe_ids.messages].end_date
       )
     end
+
+    invoice
+  end
+
+  @doc """
+  Create an invoice record
+  """
+  @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
+  def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
+    invoice =
+      invoice
+      |> invoice_attrs(organization_id)
+      |> line_items(invoice)
+      |> invoice(invoice)
+      |> finalize()
 
     {:ok, invoice}
   end
@@ -184,8 +207,6 @@ defmodule Glific.Partners.Invoice do
   """
   @spec update_usage(map(), non_neg_integer) :: {:ok | :error, String.t()}
   def update_usage(invoice, organization_id) do
-    org = Partners.get_organization!(organization_id)
-
     line_items =
       invoice.lines.data
       |> Enum.reduce(
@@ -205,7 +226,7 @@ defmodule Glific.Partners.Invoice do
     stripe_ids = Billing.get_stripe_ids()
 
     Billing.record_usage(
-      org,
+      organization_id,
       line_items[stripe_ids.messages].start_date,
       DateTime.now!("Etc/UTC")
     )
