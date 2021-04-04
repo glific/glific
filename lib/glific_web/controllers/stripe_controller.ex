@@ -48,10 +48,10 @@ defmodule StripeController do
   end
 
   defp handle_webhook(
-    %{type: "invoice.upcoming", data: %{object: invoice}} = _stripe_event,
-    organization_id
-  ),
-  do: Invoice.update_usage(invoice, organization_id)
+         %{type: "invoice.upcoming", data: %{object: invoice}} = _stripe_event,
+         organization_id
+       ),
+       do: Invoice.update_usage(invoice, organization_id)
 
   defp handle_webhook(
          %{type: "invoice.payment_succeeded", data: %{object: invoice}} = _stripe_event,

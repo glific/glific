@@ -124,7 +124,7 @@ defmodule Glific.Partners.Invoice do
     cond do
       invoice.status == "open" && !setup ->
         stripe_ids = Billing.get_stripe_ids()
-        billing = Billing.get_billing( %{organization_id: organization_id, is_active: true})
+        billing = Billing.get_billing(%{organization_id: organization_id, is_active: true})
 
         Billing.record_usage(
           org,
@@ -187,37 +187,39 @@ defmodule Glific.Partners.Invoice do
   @doc """
   Update an upcoming invoice usage record
   """
-  @spec update_usage(map(), non_neg_integer) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_usage(map(), non_neg_integer) :: {:ok | :error, String.t()}
   def update_usage(invoice, organization_id) do
     org = Partners.get_organization!(organization_id)
 
     {line_items, setup} =
-    invoice.lines.data
-    |> Enum.reduce(
-      {%{}, false},
-      fn line, {acc, setup} ->
-        acc =
-          Map.put(acc, line.price.id, %{
-            nickname: line.price.nickname,
-            start_date: DateTime.from_unix!(line.period.start),
-            end_date: DateTime.now("Etc/UTC")
-          })
-        setup = setup || String.contains?(line.price.nickname, "Setup")
-        {acc, setup}
-      end
-    )
+      invoice.lines.data
+      |> Enum.reduce(
+        {%{}, false},
+        fn line, {acc, setup} ->
+          acc =
+            Map.put(acc, line.price.id, %{
+              nickname: line.price.nickname,
+              start_date: DateTime.from_unix!(line.period.start),
+              end_date: DateTime.now("Etc/UTC")
+            })
+
+          setup = setup || String.contains?(line.price.nickname, "Setup")
+          {acc, setup}
+        end
+      )
 
     if !setup do
-    stripe_ids = Billing.get_stripe_ids()
+      stripe_ids = Billing.get_stripe_ids()
 
-    Billing.record_usage(
-      org,
-      line_items[stripe_ids.messages].start_date,
-      line_items[stripe_ids.messages].end_date
-    )
+      Billing.record_usage(
+        org,
+        line_items[stripe_ids.messages].start_date,
+        line_items[stripe_ids.messages].end_date
+      )
+
+      {:ok, "Usage recorded for upcoming invoice"}
     end
   end
-
 
   @doc """
   Update the status of an invoice
