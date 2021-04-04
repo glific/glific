@@ -186,11 +186,11 @@ defmodule Glific.Partners.Invoice do
   def update_usage(invoice, organization_id) do
     org = Partners.get_organization!(organization_id)
 
-    {line_items, setup} =
+    line_items =
       invoice.lines.data
       |> Enum.reduce(
-        {%{}, false},
-        fn line, {acc, setup} ->
+        %{},
+        fn line, acc ->
           acc =
             Map.put(acc, line.price.id, %{
               nickname: line.price.nickname,
@@ -198,22 +198,19 @@ defmodule Glific.Partners.Invoice do
               end_date: DateTime.utc_now()
             })
 
-          setup = setup || String.contains?(line.price.nickname, "Setup")
-          {acc, setup}
+          acc
         end
       )
 
-    if !setup do
-      stripe_ids = Billing.get_stripe_ids()
+    stripe_ids = Billing.get_stripe_ids()
 
-      Billing.record_usage(
-        org,
-        line_items[stripe_ids.messages].start_date,
-        DateTime.now!("Etc/UTC")
-      )
+    Billing.record_usage(
+      org,
+      line_items[stripe_ids.messages].start_date,
+      DateTime.now!("Etc/UTC")
+    )
 
-      {:ok, "Usage recorded for upcoming invoice"}
-    end
+    {:ok, "Usage recorded for upcoming invoice"}
   end
 
   @doc """
