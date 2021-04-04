@@ -121,22 +121,17 @@ defmodule Glific.Partners.Invoice do
           invoice
       end
 
-    cond do
-      invoice.status == "open" && !setup ->
-        stripe_ids = Billing.get_stripe_ids()
-        billing = Billing.get_billing(%{organization_id: organization_id, is_active: true})
+    if setup do
+      Billing.finalize_invoice(invoice.invoice_id)
+    else
+      stripe_ids = Billing.get_stripe_ids()
+      billing = Billing.get_billing(%{organization_id: organization_id, is_active: true})
 
-        Billing.record_usage(
-          org,
-          billing.stripe_last_usage_recorded,
-          line_items[stripe_ids.messages].end_date
-        )
-
-      setup ->
-        Billing.finalize_invoice(invoice.invoice_id)
-
-      true ->
-        :ok
+      Billing.record_usage(
+        org,
+        billing.stripe_last_usage_recorded,
+        line_items[stripe_ids.messages].end_date
+      )
     end
 
     {:ok, invoice}
@@ -200,7 +195,7 @@ defmodule Glific.Partners.Invoice do
             Map.put(acc, line.price.id, %{
               nickname: line.price.nickname,
               start_date: DateTime.from_unix!(line.period.start),
-              end_date: DateTime.now("Etc/UTC")
+              end_date: DateTime.utc_now()
             })
 
           setup = setup || String.contains?(line.price.nickname, "Setup")
@@ -214,7 +209,7 @@ defmodule Glific.Partners.Invoice do
       Billing.record_usage(
         org,
         line_items[stripe_ids.messages].start_date,
-        line_items[stripe_ids.messages].end_date
+        DateTime.now!("Etc/UTC")
       )
 
       {:ok, "Usage recorded for upcoming invoice"}
