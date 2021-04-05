@@ -273,16 +273,16 @@ defmodule Glific.Partners.Billing do
         }
       )
 
-      {:ok, _res} = Stripe.PaymentMethodView.attach(%{
+    {:ok, _res} =
+      Stripe.PaymentMethod.attach(%{
         customer: billing.stripe_customer_id,
-        payment_method: stripe_payment_method_id,
+        payment_method: stripe_payment_method_id
       })
 
-      update_billing(
-        billing,
-        %{stripe_payment_method_id: stripe_payment_method_id}
-      )
-
+    update_billing(
+      billing,
+      %{stripe_payment_method_id: stripe_payment_method_id}
+    )
   end
 
   @doc """
@@ -301,7 +301,6 @@ defmodule Glific.Partners.Billing do
 
     subscription(organization, billing)
   end
-
 
   @spec setup(Organization.t(), Billing.t()) :: :ok
   defp setup(organization, billing) do
