@@ -307,7 +307,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json["error"]["status"] == 500
     end
 
-
   end
 
   describe "rate limit tests" do
@@ -329,7 +328,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       {:ok, user} =
         valid_user_attrs
         |> Users.create_user()
-
 
       invalid_params = %{
         "user" => %{
