@@ -14,6 +14,7 @@ defmodule Glific.Bigquery do
     Jobs,
     Jobs.BigqueryJob,
     Messages.Message,
+    Notifications,
     Partners,
     Repo,
     Stats.Stat
@@ -502,6 +503,16 @@ defmodule Glific.Bigquery do
       "PERMISSION_DENIED" ->
         Partners.disable_credential(organization_id, "bigquery")
 
+        Notifications.create_notification(%{
+          category: "Bigquery",
+          message: "Billing account is disabled for Bigquery",
+          severity: "Error",
+          organization_id: organization_id,
+          entity: %{
+            error: "#{inspect(response)}"
+          }
+        })
+
       _ ->
         raise("Bigquery Insert Error for table #{table}  #{response}")
     end
@@ -531,8 +542,9 @@ defmodule Glific.Bigquery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
+        ## timeout takes some time to delete the old records. So incresing the timeout limit.
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false}
+          body: %{query: sql, useLegacySql: false, timeoutMs: 40_000}
         )
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
@@ -563,10 +575,8 @@ defmodule Glific.Bigquery do
       )
 
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
-    Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
+    Logger.error("Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}")
 
-    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{
-            inspect(error)
-          }"
+    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
   end
 end

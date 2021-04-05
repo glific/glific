@@ -8,6 +8,7 @@ defmodule Glific.Seeds.SeedsMigration do
   import Ecto.Query
 
   alias Glific.{
+    Bigquery,
     Contacts,
     Contacts.Contact,
     Groups.Group,
@@ -56,6 +57,10 @@ defmodule Glific.Seeds.SeedsMigration do
       :stats ->
         org_id_list = Enum.map(organizations, fn o -> o.id end)
         SeedsStats.seed_stats(org_id_list)
+
+      :sync_bigquery ->
+        Enum.map(organizations, fn o -> o.id end)
+        |> sync_schema_with_bigquery()
     end
   end
 
@@ -287,6 +292,13 @@ defmodule Glific.Seeds.SeedsMigration do
 
     :ok
   end
+
+  @doc """
+  Sync bigquery schema with local db changes.
+  """
+  @spec sync_schema_with_bigquery(list) :: :ok
+  def sync_schema_with_bigquery(org_id_list),
+  do: Enum.each(org_id_list, &Bigquery.sync_schema_with_bigquery(&1))
 
   @doc """
   Reset message number for a list of organizations or for a org_id

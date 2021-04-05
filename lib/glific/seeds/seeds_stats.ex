@@ -14,7 +14,9 @@ defmodule Glific.Seeds.SeedsStats do
     from_week = Timex.parse!("2021-01-04T00:00:00+00:00", "{ISO:Extended}")
     from_month = Timex.parse!("2020-06-01T00:00:00+00:00", "{ISO:Extended}")
 
-    to = Timex.parse!("2021-03-28T00:00:00+00:00", "{ISO:Extended}")
+    to =
+      DateTime.utc_now()
+      |> Timex.beginning_of_day()
 
     rows =
       %{}
@@ -33,8 +35,7 @@ defmodule Glific.Seeds.SeedsStats do
     start = Timex.end_of_month(from)
 
     # we only compute till the end of the previous month
-    finish = Timex.shift(Timex.end_of_month(to), months: -1)
-
+    finish = next_month(to, -1)
     do_seed_monthly(stats, org_id_list, start, finish)
   end
 
@@ -44,10 +45,17 @@ defmodule Glific.Seeds.SeedsStats do
       stats
     else
       stats
-      |> Stats.get_monthly_stats(org_id_list, time: current)
-      |> do_seed_monthly(org_id_list, Timex.shift(current, months: 1), finish)
+      |> Stats.get_monthly_stats(org_id_list, time: current, summary: false)
+      |> do_seed_monthly(org_id_list, next_month(current), finish)
     end
   end
+
+  @spec next_month(DateTime.t(), integer) :: DateTime.t()
+  defp next_month(time, offset \\ 1),
+    do:
+      time
+      |> Timex.shift(months: offset)
+      |> Timex.end_of_month()
 
   @doc false
   @spec seed_daily(map(), list(), DateTime.t(), DateTime.t()) :: map()
@@ -84,7 +92,7 @@ defmodule Glific.Seeds.SeedsStats do
       stats
     else
       stats
-      |> Stats.get_weekly_stats(org_id_list, time: current)
+      |> Stats.get_weekly_stats(org_id_list, time: current, summary: false)
       |> do_seed_weekly(org_id_list, Timex.shift(current, days: 7), finish)
     end
   end

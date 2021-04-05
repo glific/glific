@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] -- 2021-03-31
+
+### Added
+- Stats Table - Centralize all stats on an hourly basis
+- Notifications - Notification system to report out-of-band errors to NGOs (Flows, BigQuery etc)
+- Support for media in HSM templates
+- Display collection's contact status information
+- Display flow status by last saved date - draft/publish
+- Display specific error messages if a message is not sent (like 24 hour window expire, contact not opted etc)
+- Added view details and add a contact option for collection from the chat screen
+- Added Organization phone number in settings
+
+### Fixed
+- An updated version of the BigQuery implementation, with a new version of the DataStudio Report
+- Message subscription enhancement
+- Bug fixes for links with underscores
+
 ## [1.2.0] -- 2021-03-19
 
 ### Added

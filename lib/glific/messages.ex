@@ -423,6 +423,7 @@ defmodule Glific.Messages do
         receiver_id: receiver_id,
         template_uuid: session_template.uuid,
         template_id: template_id,
+        template_type: session_template.type,
         params: parameters,
         media_id: media_id,
         is_optin_flow: Map.get(attrs, :is_optin_flow, false)
