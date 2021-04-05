@@ -228,8 +228,18 @@ defmodule Glific.Partners.Billing do
   defp subscription_params(billing, organization) do
     prices = stripe_ids()
 
+    anchor_timestamp =
+      DateTime.utc_now()
+      # |> Timex.end_of_month
+      |> Timex.shift(days: 1)
+      |> Timex.beginning_of_day()
+      |> DateTime.to_unix()
+
     %{
       customer: billing.stripe_customer_id,
+      billing_cycle_anchor: anchor_timestamp,
+      # Temporary for existing customers.
+      prorate: false,
       items: [
         %{
           price: prices.monthly,
@@ -343,6 +353,7 @@ defmodule Glific.Partners.Billing do
       {:ok, subscription} ->
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
+
         cond do
           subscription.status == "incomplete" &&
             !is_nil(subscription.pending_setup_intent) &&
