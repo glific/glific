@@ -282,7 +282,6 @@ defmodule Glific.Partners.Billing do
         billing,
         %{stripe_payment_method_id: stripe_payment_method_id}
       )
-
   end
 
   @doc """
@@ -301,7 +300,6 @@ defmodule Glific.Partners.Billing do
 
     subscription(organization, billing)
   end
-
 
   @spec setup(Organization.t(), Billing.t()) :: :ok
   defp setup(organization, billing) do
@@ -336,7 +334,6 @@ defmodule Glific.Partners.Billing do
     # now create and attach the subscriptions to this organization
     params = subscription_params(organization, billing)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
-
 
     case Stripe.Subscription.create(params, opts) do
       # subscription is active, we need to update the same information via the
