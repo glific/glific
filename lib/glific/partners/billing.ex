@@ -224,8 +224,8 @@ defmodule Glific.Partners.Billing do
   def get_stripe_ids,
     do: stripe_ids()
 
-  @spec subscription_params(Organization.t(), Billing.t()) :: map()
-  defp subscription_params(organization, billing) do
+  @spec subscription_params(Billing.t(), Organization.t()) :: map()
+  defp subscription_params(billing, organization) do
     prices = stripe_ids()
 
     %{
@@ -273,16 +273,16 @@ defmodule Glific.Partners.Billing do
         }
       )
 
-      {:ok, _res} = Stripe.PaymentMethodView.attach(%{
+    {:ok, _res} =
+      Stripe.PaymentMethod.attach(%{
         customer: billing.stripe_customer_id,
-        payment_method: stripe_payment_method_id,
+        payment_method: stripe_payment_method_id
       })
 
-      update_billing(
-        billing,
-        %{stripe_payment_method_id: stripe_payment_method_id}
-      )
-
+    update_billing(
+      billing,
+      %{stripe_payment_method_id: stripe_payment_method_id}
+    )
   end
 
   @doc """
@@ -346,9 +346,9 @@ defmodule Glific.Partners.Billing do
 
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Organization.t()} | {:pending, map()} | {:error, String.t()}
-  defp subscription(organization, billing) do
+  defp subscription(billing, organization) do
     # now create and attach the subscriptions to this organization
-    params = subscription_params(organization, billing)
+    params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
     case Stripe.Subscription.create(params, opts) do
@@ -509,8 +509,8 @@ defmodule Glific.Partners.Billing do
   @doc """
   Update the usage record for all active subscriptions on a daily and weekly basis
   """
-  @spec update_usage() :: :ok
-  def update_usage() do
+  @spec update_usage :: :ok
+  def update_usage do
     record_date = DateTime.utc_now() |> end_of_previous_day()
 
     # if usage date is monday, we need to record previous weeks usage
