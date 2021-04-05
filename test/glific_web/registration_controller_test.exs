@@ -73,7 +73,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "with password less than minimum characters should give error",
          %{conn: conn} do
-
       receiver = Fixtures.contact_fixture()
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
@@ -97,6 +96,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "with wrong otp", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
+
       invalid_params =
         @valid_params
         |> put_in(["user", "phone"], receiver.phone)
@@ -133,7 +133,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
-
       receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
@@ -306,7 +305,6 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       assert json = json_response(conn, 500)
       assert json["error"]["status"] == 500
     end
-
   end
 
   describe "rate limit tests" do
@@ -338,15 +336,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       }
 
       for _i <- 0..@max_unauth_requests,
-      do: post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+          do: post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
 
       assert conn.status == 429
       assert conn.resp_body == "Rate limit exceeded"
-
     end
-
   end
-
 end
