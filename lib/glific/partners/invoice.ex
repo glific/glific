@@ -133,6 +133,14 @@ defmodule Glific.Partners.Invoice do
     invoice
   end
 
+  @spec finalize(Invoice.t()) :: Invoice.t()
+  defp update_prorations(invoice) do
+    billing = Billing.get_billing(%{organization_id: invoice.organization_id})
+    Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
+
+    invoice
+  end
+
   @doc """
   Create an invoice record
   """
@@ -144,6 +152,8 @@ defmodule Glific.Partners.Invoice do
       |> line_items(invoice)
       |> invoice(invoice)
       |> finalize()
+      # Temporary, for the existing customers prorations to be updated.
+      |> update_prorations()
 
     {:ok, invoice}
   end
