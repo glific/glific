@@ -17,6 +17,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
     Partners,
+    Partners.Billing,
     Searches.CollectionCount,
     Stats,
     Templates,
@@ -157,16 +158,19 @@ defmodule Glific.Jobs.MinuteWorker do
 
   defp perform(%Oban.Job{args: %{"job" => job}} = _args, services)
        when job in [
+              "daily_tasks",
               "hourly_tasks",
               "five_minute_tasks",
               "update_hsms"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
+      "daily_tasks" ->
+        Billing.update_usage()
+
       "hourly_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
-        # of the DB
-        # we generate for all organizations, not the most recent ones
+        # of the DB we generate for all organizations, not the most recent ones
         Stats.generate_stats([], false)
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()

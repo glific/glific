@@ -291,23 +291,28 @@ defmodule Glific.Partners.Billing do
 
     {:ok, _} = update_payment_method(organization, stripe_payment_method_id)
 
-    setup(organization, billing)
-
-    attach_payment_method(organization, billing)
-
-    subscription(organization, billing)
+    billing
+    |> setup(organization)
+    |> attach_payment_method()
+    |> subscription(organization)
   end
 
-  def attach_payment_method(organization, billing) do
-    {:ok, _res} = Stripe.PaymentMethodView.attach(
-      %{
+  @doc """
+  Attach a payment method to a customer
+  """
+  @spec attach_payment_method(Billing.t()) :: Billing.t()
+  def attach_payment_method(billing) do
+    {:ok, _res} =
+      Stripe.PaymentMethod.attach(%{
         customer: billing.stripe_customer_id,
-        payment_method: billing.stripe_payment_method_id,
+        payment_method: billing.stripe_payment_method_id
       })
+
+    billing
   end
 
-  @spec setup(Organization.t(), Billing.t()) :: :ok
-  defp setup(organization, billing) do
+  @spec setup(Billing.t(), Organization.t()) :: Billing.t()
+  defp setup(billing, organization) do
     {:ok, _invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
@@ -330,16 +335,15 @@ defmodule Glific.Partners.Billing do
         }
       })
 
-    :ok
+    billing
   end
 
-  @spec subscription(Organization.t(), Billing.t()) ::
+  @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Organization.t()} | {:pending, map()} | {:error, String.t()}
   defp subscription(organization, billing) do
     # now create and attach the subscriptions to this organization
     params = subscription_params(organization, billing)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
-
 
     case Stripe.Subscription.create(params, opts) do
       # subscription is active, we need to update the same information via the
@@ -395,7 +399,7 @@ defmodule Glific.Partners.Billing do
     %{
       stripe_current_period_start: period_start,
       stripe_current_period_end: period_end,
-      stripe_last_usage_recorded: period_start
+      stripe_last_usage_recorded: nil
     }
   end
 
@@ -412,25 +416,29 @@ defmodule Glific.Partners.Billing do
     |> (fn v -> %{stripe_subscription_items: v} end).()
   end
 
+  defp end_of_previous_day(date),
+    do:
+      date
+      |> Timex.shift(days: -1)
+      |> Timex.end_of_day()
+
   # get dates and times in the right format for other functions
   @spec format_dates(DateTime.t(), DateTime.t()) ::
           {Date.t(), Date.t(), DateTime.t(), non_neg_integer}
   defp format_dates(start_date, end_date) do
-    end_usage_datetime =
-      end_date
-      |> Timex.shift(days: -1)
-      |> Timex.end_of_day()
+    end_date = end_date |> Timex.end_of_day()
 
     {
       start_date |> DateTime.to_date(),
-      end_usage_datetime |> DateTime.to_date(),
-      end_usage_datetime,
-      end_usage_datetime |> DateTime.to_unix()
+      end_date |> DateTime.to_date(),
+      end_date,
+      end_date |> DateTime.to_unix()
     }
   end
 
   @doc """
-  Record the usage for a specific organization
+  Record the usage for a specific organization from start_date to end_date
+  both dates inclusive
   """
   @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization_id, start_date, end_date) do
@@ -491,6 +499,63 @@ defmodule Glific.Partners.Billing do
   @spec finalize_invoice(String.t()) :: {:ok, t()} | {:error, Stripe.Error.t()}
   def finalize_invoice(invoice_id),
     do: Invoice.finalize(invoice_id, %{})
+
+  @doc """
+  Update the usage record for all active subscriptions on a daily and weekly basis
+  """
+  @spec update_usage() :: :ok
+  def update_usage() do
+    record_date = DateTime.utc_now() |> end_of_previous_day()
+
+    # if usage date is monday, we need to record previous weeks usage
+    # else we'll record daily usage for subscriptions expiring this week
+    if Date.day_of_week(record_date) == 7,
+      do: update_weekly_usage(record_date),
+      else: update_daily_usage(record_date)
+  end
+
+  @spec update_weekly_usage(DateTime.t()) :: :ok
+  defp update_weekly_usage(end_date) do
+    # get all active billings
+    %Billing{}
+    |> where([b], b.is_active == true)
+    |> where([b], b.stripe_current_period_end >= ^end_date)
+    |> Repo.all()
+    |> Enum.each(&update_weekly_usage(&1, end_date))
+  end
+
+  @spec update_weekly_usage(Billing.t(), DateTime.t()) :: :ok
+  defp update_weekly_usage(billing, end_date) do
+    start_date =
+      if is_nil(billing.stripe_last_usage_recorded),
+        do: billing.stripe_current_period_start,
+        else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
+
+    record_usage(billing.organization_id, start_date, end_date)
+  end
+
+  @spec update_daily_usage(DateTime.t()) :: :ok
+  defp update_daily_usage(end_date) do
+    end_of_week_date = Timex.end_of_week(end_date)
+
+    # get all active billings that are expiring this week
+    %Billing{}
+    |> where([b], b.is_active == true)
+    |> where([b], b.stripe_current_period_end >= ^end_date)
+    |> where([b], b.stripe_current_period_end <= ^end_of_week_date)
+    |> Repo.all()
+    |> Enum.each(&update_daily_usage(&1, end_date))
+  end
+
+  @spec update_daily_usage(Billing.t(), DateTime.t()) :: :ok
+  defp update_daily_usage(billing, end_date) do
+    start_date =
+      if is_nil(billing.stripe_last_usage_recorded),
+        do: billing.stripe_current_period_start,
+        else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
+
+    record_usage(billing.organization_id, start_date, end_date)
+  end
 
   # events that we need to handle, delete comment once handled :)
   # invoice.upcoming
