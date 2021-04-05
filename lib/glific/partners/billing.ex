@@ -499,10 +499,12 @@ defmodule Glific.Partners.Billing do
     record_date = DateTime.utc_now() |> end_of_previous_day()
 
     # if record date is sunday, we need to record previous weeks usage
-    # else we'll record daily usage for subscriptions expiring this week
-    if Date.day_of_week(record_date) == 7,
-      do: period_usage(record_date, :weekly),
-      else: period_usage(record_date, :daily)
+    # else we'll record daily usage for subscriptions near end of month
+    if Date.day_of_week(record_date) == 7 ||
+         Timex.days_in_month(record_date) - record_date.day <= 3,
+       do: period_usage(record_date)
+
+    :ok
   end
 
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
@@ -510,7 +512,7 @@ defmodule Glific.Partners.Billing do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
         # if we dont have last_usage, set it from the subscription period date
-        do: billing.stripe_current_period_start,
+        do: Timex.beginning_of_month(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period
         else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
@@ -519,25 +521,12 @@ defmodule Glific.Partners.Billing do
   end
 
   # daily usage and weekly usage are the same
-  # we only consider subscriptions expiring this week for daily usage
-  @spec period_usage(DateTime.t(), atom()) :: :ok
-  defp period_usage(end_date, period) do
+  @spec period_usage(DateTime.t()) :: :ok
+  defp period_usage(end_date) do
     %Billing{}
     |> where([b], b.is_active == true)
-    |> where([b], b.stripe_current_period_end >= ^end_date)
-    |> period_query(end_date, period)
     |> Repo.all()
     |> Enum.each(&update_period_usage(&1, end_date))
-  end
-
-  @spec period_query(Ecto.Query.t(), DateTime.t(), atom()) :: Ecto.Query.t()
-  defp period_query(query, _end_date, :weekly), do: query
-
-  defp period_query(query, end_date, :daily) do
-    end_of_week_date = Timex.end_of_week(end_date)
-
-    query
-    |> where([b], b.stripe_current_period_end <= ^end_of_week_date)
   end
 
   # events that we need to handle, delete comment once handled :)
