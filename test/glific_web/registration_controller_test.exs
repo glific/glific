@@ -310,4 +310,45 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
   end
 
+  describe "rate limit tests" do
+    @password "secret12345"
+    @max_unauth_requests 5
+
+    test "with invalid request", %{conn: conn} do
+      receiver = Fixtures.contact_fixture()
+
+      valid_user_attrs = %{
+        "phone" => receiver.phone,
+        "name" => receiver.name,
+        "password" => @password,
+        "password_confirmation" => @password,
+        "contact_id" => receiver.id,
+        "organization_id" => Fixtures.get_org_id()
+      }
+
+      {:ok, user} =
+        valid_user_attrs
+        |> Users.create_user()
+
+
+      invalid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "password" => @new_password,
+          "otp" => "incorrect otp"
+        }
+      }
+
+      for _i <- 0..@max_unauth_requests,
+      do: post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+
+      assert conn.status == 429
+      assert conn.resp_body == "Rate limit exceeded"
+
+    end
+
+  end
+
 end
