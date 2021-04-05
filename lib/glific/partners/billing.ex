@@ -498,7 +498,7 @@ defmodule Glific.Partners.Billing do
   def update_usage do
     record_date = DateTime.utc_now() |> end_of_previous_day()
 
-    # if usage date is monday, we need to record previous weeks usage
+    # if record date is sunday, we need to record previous weeks usage
     # else we'll record daily usage for subscriptions expiring this week
     if Date.day_of_week(record_date) == 7,
       do: update_weekly_usage(record_date),
@@ -512,11 +512,11 @@ defmodule Glific.Partners.Billing do
     |> where([b], b.is_active == true)
     |> where([b], b.stripe_current_period_end >= ^end_date)
     |> Repo.all()
-    |> Enum.each(&update_weekly_usage(&1, end_date))
+    |> Enum.each(&update_period_usage(&1, end_date))
   end
 
-  @spec update_weekly_usage(Billing.t(), DateTime.t()) :: :ok
-  defp update_weekly_usage(billing, end_date) do
+  @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
+  defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
         do: billing.stripe_current_period_start,
@@ -535,17 +535,7 @@ defmodule Glific.Partners.Billing do
     |> where([b], b.stripe_current_period_end >= ^end_date)
     |> where([b], b.stripe_current_period_end <= ^end_of_week_date)
     |> Repo.all()
-    |> Enum.each(&update_daily_usage(&1, end_date))
-  end
-
-  @spec update_daily_usage(Billing.t(), DateTime.t()) :: :ok
-  defp update_daily_usage(billing, end_date) do
-    start_date =
-      if is_nil(billing.stripe_last_usage_recorded),
-        do: billing.stripe_current_period_start,
-        else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
-
-    record_usage(billing.organization_id, start_date, end_date)
+    |> Enum.each(&update_period_usage(&1, end_date))
   end
 
   # events that we need to handle, delete comment once handled :)
