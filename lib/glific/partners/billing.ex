@@ -262,10 +262,11 @@ defmodule Glific.Partners.Billing do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
-    {:ok, _res} = Stripe.PaymentMethod.attach(%{
-      customer: billing.stripe_customer_id,
-      payment_method: stripe_payment_method_id,
-    })
+    {:ok, _res} =
+      Stripe.PaymentMethod.attach(%{
+        customer: billing.stripe_customer_id,
+        payment_method: stripe_payment_method_id
+      })
 
     # first update the contact with default payment id
     {:ok, _customer} =
@@ -278,10 +279,10 @@ defmodule Glific.Partners.Billing do
         }
       )
 
-      update_billing(
-        billing,
-        %{stripe_payment_method_id: stripe_payment_method_id}
-      )
+    update_billing(
+      billing,
+      %{stripe_payment_method_id: stripe_payment_method_id}
+    )
   end
 
   @doc """
@@ -298,7 +299,6 @@ defmodule Glific.Partners.Billing do
 
     billing
     |> setup(organization)
-    |> attach_payment_method()
     |> subscription(organization)
   end
 
