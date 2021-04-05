@@ -10,7 +10,7 @@ defmodule GlificWeb.RateLimitPlug do
   # number of API calls via graphql / @time_period
   @max_requests 30
   # number of unauthenticated API calls / @time_period
-  @max_unauth_requests 5
+  @max_unauth_requests 10
 
   # @rate_limit API calls / minute
   # in seconds
