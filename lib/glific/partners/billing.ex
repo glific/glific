@@ -501,41 +501,43 @@ defmodule Glific.Partners.Billing do
     # if record date is sunday, we need to record previous weeks usage
     # else we'll record daily usage for subscriptions expiring this week
     if Date.day_of_week(record_date) == 7,
-      do: update_weekly_usage(record_date),
-      else: update_daily_usage(record_date)
-  end
-
-  @spec update_weekly_usage(DateTime.t()) :: :ok
-  defp update_weekly_usage(end_date) do
-    # get all active billings
-    %Billing{}
-    |> where([b], b.is_active == true)
-    |> where([b], b.stripe_current_period_end >= ^end_date)
-    |> Repo.all()
-    |> Enum.each(&update_period_usage(&1, end_date))
+      do: period_usage(record_date, :weekly),
+      else: period_usage(record_date, :daily)
   end
 
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
   defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
+        # if we dont have last_usage, set it from the subscription period date
         do: billing.stripe_current_period_start,
+        # We know the last time recorded usage, we bump the date
+        # to the next day for this period
         else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
 
     record_usage(billing.organization_id, start_date, end_date)
   end
 
-  @spec update_daily_usage(DateTime.t()) :: :ok
-  defp update_daily_usage(end_date) do
-    end_of_week_date = Timex.end_of_week(end_date)
-
-    # get all active billings that are expiring this week
+  # daily usage and weekly usage are the same
+  # we only consider subscriptions expiring this week for daily usage
+  @spec period_usage(DateTime.t(), atom()) :: :ok
+  defp period_usage(end_date, period) do
     %Billing{}
     |> where([b], b.is_active == true)
     |> where([b], b.stripe_current_period_end >= ^end_date)
-    |> where([b], b.stripe_current_period_end <= ^end_of_week_date)
+    |> period_query(end_date, period)
     |> Repo.all()
     |> Enum.each(&update_period_usage(&1, end_date))
+  end
+
+  @spec period_query(Ecto.Query.t(), DateTime.t(), atom()) :: Ecto.Query.t()
+  defp period_query(query, _end_date, :weekly), do: query
+
+  defp period_query(query, end_date, :daily) do
+    end_of_week_date = Timex.end_of_week(end_date)
+
+    query
+    |> where([b], b.stripe_current_period_end <= ^end_of_week_date)
   end
 
   # events that we need to handle, delete comment once handled :)
