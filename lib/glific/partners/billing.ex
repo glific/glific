@@ -273,10 +273,16 @@ defmodule Glific.Partners.Billing do
         }
       )
 
-    update_billing(
-      billing,
-      %{stripe_payment_method_id: stripe_payment_method_id}
-    )
+      {:ok, _res} = Stripe.PaymentMethodView.attach(%{
+        customer: billing.stripe_customer_id,
+        payment_method: stripe_payment_method_id,
+      })
+
+      update_billing(
+        billing,
+        %{stripe_payment_method_id: stripe_payment_method_id}
+      )
+
   end
 
   @doc """

@@ -115,13 +115,10 @@ defmodule Glific.Partners.Invoice do
           invoice
 
         invoice ->
-          {:ok, invoice} =
-            update_invoice(
-              invoice,
-              %{status: invoice.status, line_items: attrs.line_items}
-            )
-
-          invoice
+          update_invoice(
+            invoice,
+            %{status: invoice.status, line_items: attrs.line_items}
+          )
       end
 
     {invoice, setup}
@@ -131,15 +128,6 @@ defmodule Glific.Partners.Invoice do
   defp finalize({invoice, setup}) do
     if setup do
       Billing.finalize_invoice(invoice.invoice_id)
-    else
-      stripe_ids = Billing.get_stripe_ids()
-      billing = Billing.get_billing(%{organization_id: invoice.organization_id, is_active: true})
-
-      Billing.record_usage(
-        invoice.organization_id,
-        billing.stripe_last_usage_recorded,
-        invoice.line_items[stripe_ids.messages].end_date
-      )
     end
 
     invoice
@@ -195,43 +183,29 @@ defmodule Glific.Partners.Invoice do
   @doc """
   Update an invoice record
   """
-  @spec update_invoice(Invoice.t(), map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
+  @spec update_invoice(Invoice.t(), map()) :: Invoice.t() | {:error, Ecto.Changeset.t()}
   def update_invoice(%Invoice{} = invoice, attrs) do
+    {:ok, invoice} =
+      invoice
+      |> Invoice.changeset(attrs)
+      |> Repo.update()
+
     invoice
-    |> Invoice.changeset(attrs)
-    |> Repo.update()
   end
 
-  @doc """
-  Update an upcoming invoice usage record
-  """
-  @spec update_usage(map(), non_neg_integer) :: {:ok | :error, String.t()}
-  def update_usage(invoice, organization_id) do
-    line_items =
-      invoice.lines.data
-      |> Enum.reduce(
-        %{},
-        fn line, acc ->
-          acc =
-            Map.put(acc, line.price.id, %{
-              nickname: line.price.nickname,
-              start_date: DateTime.from_unix!(line.period.start),
-              end_date: DateTime.utc_now()
-            })
+  @spec update_delinquency(Invoice.t()) :: {:ok, Billing.t()} | {:error, map()}
+  defp update_delinquency(invoice) do
+    billing = Billing.get_billing(%{organization_id: invoice.organization_id})
 
-          acc
-        end
-      )
+    unpaid_invoice_count =
+      count_invoices(%{
+        filter: %{status: "payment_failed", organization_id: invoice.organization_id}
+      })
 
-    stripe_ids = Billing.get_stripe_ids()
+    is_delinquent =
+      if invoice.status == "payment_failed" or unpaid_invoice_count != 0, do: true, else: false
 
-    Billing.record_usage(
-      organization_id,
-      line_items[stripe_ids.messages].start_date,
-      DateTime.now!("Etc/UTC")
-    )
-
-    {:ok, "Usage recorded for upcoming invoice"}
+    Billing.update_billing(billing, %{is_delinquent: is_delinquent})
   end
 
   @doc """
@@ -241,18 +215,12 @@ defmodule Glific.Partners.Invoice do
   def update_invoice_status(invoice_id, status) do
     case fetch_invoice(invoice_id) do
       %Invoice{id: _} = invoice ->
-        update_invoice(invoice, %{status: status})
-        billing = Billing.get_billing(%{organization_id: invoice.organization_id})
+        result =
+          invoice
+          |> update_invoice(%{status: status})
+          |> update_delinquency
 
-        unpaid_invoice_count =
-          count_invoices(%{
-            filter: %{status: "payment_failed", organization_id: invoice.organization_id}
-          })
-
-        is_delinquent =
-          if status == "payment_failed" or unpaid_invoice_count != 0, do: true, else: false
-
-        case Billing.update_billing(billing, %{is_delinquent: is_delinquent}) do
+        case result do
           {:ok, _} ->
             {:ok, "Invoice status updated for #{invoice_id}"}
 
