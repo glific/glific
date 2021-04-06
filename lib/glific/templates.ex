@@ -341,7 +341,7 @@ defmodule Glific.Templates do
       db_templates
       |> Map.values()
       |> Enum.filter(fn db_template ->
-        db_template.shortcode == template["elementName"]
+        db_template.uuid == template["id"]
       end)
 
     approved_db_templates =
