@@ -18,8 +18,16 @@ defmodule Glific.Flows.ContactSetting do
   def set_contact_language(context, language) do
     # get the language id
     [language | _] = Settings.get_language_by_label_or_locale(language)
-    {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
-    Map.put(context, :contact, contact)
+
+    Settings.get_language_by_label_or_locale(language)
+    |> case do
+      [language | _] ->
+        {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
+        Map.put(context, :contact, contact)
+
+      [] ->
+        context
+    end
   end
 
   @doc """
