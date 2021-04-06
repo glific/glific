@@ -13,6 +13,11 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :subscription_result do
+    field :subscription, :json
+    field :errors, list_of(:input_error)
+  end
+
   object :billing do
     field :id, :id
     field :name, :string
@@ -50,7 +55,7 @@ defmodule GlificWeb.Schema.BillingTypes do
       resolve(&Resolvers.Billings.create_billing/3)
     end
 
-    field :create_billing_subscription, :json do
+    field :create_billing_subscription, :subscription_result do
       arg(:input, non_null(:payment_method_input))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.create_subscription/3)
