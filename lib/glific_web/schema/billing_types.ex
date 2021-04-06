@@ -50,7 +50,7 @@ defmodule GlificWeb.Schema.BillingTypes do
       resolve(&Resolvers.Billings.create_billing/3)
     end
 
-    field :create_billing_subscription, :organization_result do
+    field :create_billing_subscription, :json do
       arg(:input, non_null(:payment_method_input))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.create_subscription/3)
