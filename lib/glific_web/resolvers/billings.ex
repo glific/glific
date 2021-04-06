@@ -55,7 +55,7 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec create_subscription(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
-          {:ok, any} | {:error, any}
+          {:ok | :error | :pending, any}
   def create_subscription(_, %{input: params}, _) do
     with organization <- Partners.organization(params.organization_id),
          {:ok, subscription} <-
