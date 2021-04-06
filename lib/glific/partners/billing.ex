@@ -445,8 +445,6 @@ defmodule Glific.Partners.Billing do
   @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization_id, start_date, end_date) do
     # get the billing record
-    billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
-
     {start_usage_date, end_usage_date, end_usage_datetime, time} =
       format_dates(start_date, end_date)
 
@@ -455,6 +453,7 @@ defmodule Glific.Partners.Billing do
       # to test for invoices
       _usage ->
         usage = %{messages: Enum.random(10..500), users: Enum.random(1..50)}
+        billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
 
         prices = stripe_ids()
         subscription_items = billing.stripe_subscription_items
@@ -518,6 +517,15 @@ defmodule Glific.Partners.Billing do
     :ok
   end
 
+  # daily usage and weekly usage are the same
+  @spec period_usage(DateTime.t()) :: :ok
+  defp period_usage(end_date) do
+    %Billing{}
+    |> where([b], b.is_active == true)
+    |> Repo.all()
+    |> Enum.each(&update_period_usage(&1, end_date))
+  end
+
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
   defp update_period_usage(billing, end_date) do
     start_date =
@@ -529,15 +537,6 @@ defmodule Glific.Partners.Billing do
         else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
 
     record_usage(billing.organization_id, start_date, end_date)
-  end
-
-  # daily usage and weekly usage are the same
-  @spec period_usage(DateTime.t()) :: :ok
-  defp period_usage(end_date) do
-    %Billing{}
-    |> where([b], b.is_active == true)
-    |> Repo.all()
-    |> Enum.each(&update_period_usage(&1, end_date))
   end
 
   # events that we need to handle, delete comment once handled :)
