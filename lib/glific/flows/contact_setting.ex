@@ -17,8 +17,6 @@ defmodule Glific.Flows.ContactSetting do
   @spec set_contact_language(FlowContext.t(), String.t()) :: FlowContext.t()
   def set_contact_language(context, language) do
     # get the language id
-    [language | _] = Settings.get_language_by_label_or_locale(language)
-
     Settings.get_language_by_label_or_locale(language)
     |> case do
       [language | _] ->
