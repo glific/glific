@@ -35,7 +35,7 @@ defmodule Glific.Flows.ContactSettingTest do
     # ensure that sending incorrect language label, raises an error
     language_label = "Incorrect label"
 
-    assert_raise MatchError, fn ->
+    assert_raise RuntimeError, fn ->
       ContactSetting.set_contact_language(flow_context, language_label)
     end
   end
