@@ -306,6 +306,12 @@ defmodule Glific.Flows.Action do
        else: errors
   end
 
+  def validate(%{type: "set_contact_language"} = action, errors, _flow) do
+    if is_nil(action.text) || action.text == "",
+      do: [{Message, "Language is a required field"}] ++ errors,
+      else: errors
+  end
+
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
@@ -341,7 +347,12 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_language"} = action, context, messages) do
-    context = ContactSetting.set_contact_language(context, action.text)
+    # make sure we have a valid language to set
+    context =
+      if is_nil(action.text) || action.text == "",
+        do: context,
+        else: ContactSetting.set_contact_language(context, action.text)
+
     {:ok, context, messages}
   end
 
