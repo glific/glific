@@ -60,7 +60,7 @@ defmodule GlificWeb.Resolvers.Billings do
 
     with organization <- Partners.organization(params.organization_id),
         {:ok, subscription} <- Billing.create_subscription(organization, params.stripe_payment_method_id)
-        do subscription
+        do {:ok, subscription}
     end
   end
 

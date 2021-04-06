@@ -375,11 +375,10 @@ defmodule Glific.Partners.Billing do
 
             update_billing(billing, params)
 
-            {:ok, %{subscription: %{status: subscription.status } }}
+            {:ok, subscription}
 
           true ->
             {:error, "Not handling #{inspect(subscription)} value"}
-
         end
 
       {:error, stripe_error} ->
