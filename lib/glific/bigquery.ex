@@ -575,8 +575,14 @@ defmodule Glific.Bigquery do
       )
 
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
-    Logger.error("Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}")
+    Logger.error(
+      "Error while removing duplicate entries from the table #{table} on bigquery. #{
+        inspect(error)
+      }"
+    )
 
-    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
+    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{
+            inspect(error)
+          }"
   end
 end

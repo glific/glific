@@ -79,4 +79,14 @@ defmodule GlificWeb.Tenants do
       organization -> organization.id
     end
   end
+
+  @doc """
+  Given a conn object, get the remote ip of the user as a string
+  """
+  @spec remote_ip(Plug.Conn.t()) :: String.t()
+  def remote_ip(conn) do
+    conn.remote_ip
+    |> :inet_parse.ntoa()
+    |> to_string()
+  end
 end

@@ -28,12 +28,13 @@ defmodule GlificWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug GlificWeb.APIAuthPlug, otp_app: :glific
+    plug GlificWeb.RateLimitPlug
     # plug :debug_response
   end
 
   pipeline :api_protected do
     plug Pow.Plug.RequireAuthenticated, error_handler: GlificWeb.APIAuthErrorHandler
-    plug GlificWeb.Context
+    plug GlificWeb.ContextPlug
   end
 
   pipeline :auth_protected do
