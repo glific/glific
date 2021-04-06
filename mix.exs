@@ -138,7 +138,7 @@ defmodule Glific.MixProject do
       {:ex_phone_number, "~> 0.2"},
       {:tzdata, "~> 1.1"},
       {:stripity_stripe, "~> 2.0"},
-      {:remote_ip, "~> 1.0"},
+      {:remote_ip, "~> 1.0"}
     ]
   end
 
