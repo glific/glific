@@ -12,6 +12,7 @@ defmodule Glific.MessagesTest do
     Messages,
     Messages.Message,
     Messages.MessageMedia,
+    Partners,
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
@@ -603,6 +604,29 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "test message"
+    end
+
+    test "create and send message should send message to contact should return error", attrs do
+      updated_attrs = %{
+        is_active: false,
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup"
+      }
+
+      {:ok, cred} =
+        Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "gupshup"})
+
+      Partners.update_credential(cred, updated_attrs)
+
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:error, message} = Messages.create_and_send_message(message_attrs)
+      assert message == "Could not send message to contact: Check Gupshup Setting"
     end
 
     test "send hsm message incorrect parameters",

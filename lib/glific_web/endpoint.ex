@@ -77,5 +77,9 @@ defmodule GlificWeb.Endpoint do
   plug GlificWeb.SubdomainPlug
   plug GlificWeb.EnsurePlug
 
+  # gigalixir puts us behind a proxy, hence using this to get the right
+  # IP
+  plug RemoteIp
+
   plug GlificWeb.Router
 end

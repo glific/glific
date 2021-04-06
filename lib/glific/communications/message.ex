@@ -55,11 +55,12 @@ defmodule Glific.Communications.Message do
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
     _ ->
-      log_error(message, "Could not send message to contact: An exception was thrown")
+      log_error(message, "Could not send message to contact: Check Gupshup Setting")
   end
 
   @spec log_error(Message.t(), String.t()) :: {:error, String.t()}
   defp log_error(message, reason) do
+    message = Repo.preload(message, [:receiver])
     Messages.notify(message, reason)
 
     {:ok, _} = Messages.update_message(message, %{status: :error})

@@ -41,10 +41,7 @@ defmodule GlificWeb.API.V1.SessionController do
   end
 
   defp update_last_login(user, conn) do
-    remote_ip =
-      conn.remote_ip
-      |> :inet_parse.ntoa()
-      |> to_string()
+    remote_ip = GlificWeb.Tenants.remote_ip(conn)
 
     Logger.info("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
 

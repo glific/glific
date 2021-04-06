@@ -486,10 +486,7 @@ defmodule Glific.Contacts do
         {:error, "Contact status is not valid."}
 
       contact.bsp_status not in [:session_and_hsm, :session] ->
-        {:error, "Cannot send session message to contact, invalid bsp status."}
-
-      Glific.in_past_time(contact.last_message_at, :hours, 24) == false ->
-        {:error, "Cannot send session message to contact, not messaged in 24 hour window."}
+        {:error, "Sorry! 24 hrs window closed. Your message cannot be sent at this time."}
 
       true ->
         {:ok, nil}

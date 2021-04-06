@@ -35,12 +35,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     }
 
     test "with valid params", %{conn: conn} do
-      {:ok, receiver} =
-        Repo.fetch_by(Contact, %{
-          name: "Default receiver",
-          organization_id: conn.assigns[:organization_id]
-        })
-
+      receiver = Fixtures.contact_fixture()
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
 
       valid_params = %{
@@ -78,11 +73,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "with password less than minimum characters should give error",
          %{conn: conn} do
-      {:ok, receiver} =
-        Repo.fetch_by(Contact, %{
-          name: "Default receiver",
-          organization_id: conn.assigns[:organization_id]
-        })
+      receiver = Fixtures.contact_fixture()
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
 
@@ -104,8 +95,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with wrong otp", %{conn: conn} do
+      receiver = Fixtures.contact_fixture()
+
       invalid_params =
         @valid_params
+        |> put_in(["user", "phone"], receiver.phone)
         |> put_in(["user", "otp"], "wrong_otp")
 
       conn = post(conn, Routes.api_v1_registration_path(conn, :create, invalid_params))
@@ -115,11 +109,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "with invalid params", %{conn: conn} do
-      {:ok, receiver} =
-        Repo.fetch_by(Contact, %{
-          name: "Default receiver",
-          organization_id: conn.assigns[:organization_id]
-        })
+      receiver = Fixtures.contact_fixture()
 
       {:ok, otp} = RegistrationController.create_and_send_verification_code(receiver)
 
@@ -138,17 +128,12 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       assert json["error"]["message"] == "Couldn't create user"
       assert json["error"]["status"] == 500
-      # assert json["error"]["errors"]["phone"] == ["has invalid format"]
     end
   end
 
   describe "send_otp/2" do
     test "send otp", %{conn: conn} do
-      {:ok, receiver} =
-        Repo.fetch_by(Contact, %{
-          name: "Default receiver",
-          organization_id: conn.assigns[:organization_id]
-        })
+      receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
@@ -182,11 +167,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     end
 
     test "send otp to optout contact will return an error", %{conn: conn} do
-      {:ok, receiver} =
-        Repo.fetch_by(Contact, %{
-          name: "Default receiver",
-          organization_id: conn.assigns[:organization_id]
-        })
+      receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_out(receiver.phone, receiver.organization_id, DateTime.utc_now())
       invalid_params = %{"user" => %{"phone" => receiver.phone}}
@@ -201,11 +182,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     test "send otp with registration 'false' flag to existing user should succeed", %{conn: conn} do
       # create a user for a contact
-      {:ok, receiver} =
-        Repo.fetch_by(Contact, %{
-          name: "Default receiver",
-          organization_id: conn.assigns[:organization_id]
-        })
+      receiver = Fixtures.contact_fixture()
 
       Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
 
@@ -234,7 +211,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
     def user_fixture do
       # create a user for a contact
-      {:ok, receiver} = Repo.fetch_by(Contact, %{name: "Default receiver"})
+      receiver = Fixtures.contact_fixture()
 
       valid_user_attrs = %{
         "phone" => receiver.phone,
@@ -327,6 +304,44 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
       assert json = json_response(conn, 500)
       assert json["error"]["status"] == 500
+    end
+  end
+
+  describe "rate limit tests" do
+    @password "secret12345"
+    @max_unauth_requests 5
+
+    test "with invalid request", %{conn: conn} do
+      receiver = Fixtures.contact_fixture()
+
+      valid_user_attrs = %{
+        "phone" => receiver.phone,
+        "name" => receiver.name,
+        "password" => @password,
+        "password_confirmation" => @password,
+        "contact_id" => receiver.id,
+        "organization_id" => Fixtures.get_org_id()
+      }
+
+      {:ok, user} =
+        valid_user_attrs
+        |> Users.create_user()
+
+      invalid_params = %{
+        "user" => %{
+          "phone" => user.phone,
+          "password" => @new_password,
+          "otp" => "incorrect otp"
+        }
+      }
+
+      for _i <- 0..@max_unauth_requests,
+          do: post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+
+      conn = post(conn, Routes.api_v1_registration_path(conn, :reset_password, invalid_params))
+
+      assert conn.status == 429
+      assert conn.resp_body == "Rate limit exceeded"
     end
   end
 end
