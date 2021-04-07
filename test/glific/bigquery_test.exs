@@ -289,6 +289,11 @@ defmodule Glific.BigqueryTest do
       }
     ]) do
       assert true = is_nil(Bigquery.fetch_bigquery_credentials(attrs.organization_id))
+
+      {:ok, cred} =
+        Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
+
+      assert cred.is_active == false
     end
   end
 

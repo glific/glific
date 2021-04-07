@@ -212,17 +212,19 @@ defmodule Glific.Partners do
 
     Enum.reduce(filter, query, fn
       {:email, email}, query ->
-        from q in query, where: ilike(q.email, ^"%#{email}%")
+        from(q in query, where: ilike(q.email, ^"%#{email}%"))
 
       {:bsp, bsp}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :bsp),
           where: ilike(c.name, ^"%#{bsp}%")
+        )
 
       {:default_language, default_language}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :default_language),
           where: ilike(c.label, ^"%#{default_language}%")
+        )
 
       _, query ->
         query
@@ -719,13 +721,25 @@ defmodule Glific.Partners do
           {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
         )
         |> case do
-          {:ok, token} -> token
+          {:ok, token} ->
+            token
+
           {:error, error} ->
             Logger.info("Error while fetching token #{error} for org_id #{organization_id}")
-            nil
+            handle_token_error(organization_id, provider_shortcode, error)
         end
     end
   end
+
+  @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
+  defp handle_token_error(organization_id, provider_shortcode, error) when is_binary(error) do
+    if String.contains?(error, "account not found"),
+      do: disable_credential(organization_id, provider_shortcode)
+
+    nil
+  end
+
+  defp handle_token_error(_organization_id, _provider_shortcode, _error), do: nil
 
   @doc """
   Disable a specific credential for the organization
