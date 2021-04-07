@@ -83,11 +83,11 @@ defmodule Glific.Bigquery do
         project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
 
-        if !is_nil(token) do
+        if is_nil(token) do
+          token
+        else
           conn = Connection.new(token.token)
           {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
-        else
-          token
         end
     end
   end
