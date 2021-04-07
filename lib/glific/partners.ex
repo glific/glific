@@ -715,12 +715,16 @@ defmodule Glific.Partners do
 
         Goth.Config.add_config(config)
 
-        {:ok, token} =
-          Goth.Token.for_scope(
-            {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-          )
-
-        token
+        Goth.Token.for_scope(
+          {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
+        )
+        |> case do
+          {:ok, token} -> token
+          {:error, error} ->
+            Logger.info("Error while fetching token #{error}")
+            disable_credential(organization_id, "bigquery")
+            nil
+        end
     end
   end
 
