@@ -85,7 +85,7 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 ID | <a href="#id">ID</a> | nil ||
 
-## Create a Billing
+## Create a billing record
 
 ```graphql
 mutation createBilling($input:BillingInput!) {
@@ -139,7 +139,7 @@ Type | Description
 | ---- | -----------
 <a href="#billingresult">BillingResult</a> | The created billing object
 
-## Update a Billing
+## Update the billing details
 
 ```graphql
 mutation updateBilling($id: ID!, $input:BillingInput!) {
@@ -252,22 +252,10 @@ Type | Description
 ## Create Billing subscription
 
 ```graphql
-mutation createBillingSubscription($id: ID!, $input:PaymentMethodInput!) {
+mutation createBillingSubscription($input:PaymentMethodInput!) {
   createBillingSubscription(input: $input) {
-    organization {
-      id
-      name
-      isActive
-      timezone
-      defaultLanguage {
-        id
-        label
-      }
-    }
-    errors {
-      key
-      message
-    }
+    subscription
+    errors
   }
 }
 
@@ -284,18 +272,7 @@ mutation createBillingSubscription($id: ID!, $input:PaymentMethodInput!) {
   "data": {
     "createBillingSubscription": {
       "errors": null,
-      "organization": {
-        "organization": {
-          "defaultLanguage": {
-            "id": "1",
-            "label": "Hindi"
-          },
-          "id": "1",
-          "name": "Default Organization",
-          "isActive": true,
-          "timezone": "Asia/Kolkata"
-        }
-      }
+      "subscription": "{\"status\": \"active\"}"
     }
   }
 }
@@ -310,10 +287,10 @@ input | <a href="#paymentmethodinput">PaymentMethodInput</a> | required ||
 ### Return Parameters
 Type | Description
 | ---- | -----------
-<a href="#organizationresult">OrganizationResult</a> | Current user's organization
+<a href="#subscriptionResults">subscriptionResults</a> 
 
 
-## Delete a Billing
+## Delete a billing record
 
 ```graphql
 mutation deleteBilling($id: ID!) {
