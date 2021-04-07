@@ -355,9 +355,8 @@ defmodule Glific.Partners.Billing do
         # we need to send back info to the frontend
 
         cond do
-          subscription.status == "incomplete" &&
-            !is_nil(subscription.pending_setup_intent) &&
-              subscription.pending_setup_intent.status == "required_action" ->
+          !is_nil(subscription.pending_setup_intent) &&
+              subscription.pending_setup_intent.status == "requires_action" ->
             {
               :pending,
               %{
