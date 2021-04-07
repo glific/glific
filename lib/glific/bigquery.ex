@@ -544,7 +544,7 @@ defmodule Glific.Bigquery do
 
         ## timeout takes some time to delete the old records. So incresing the timeout limit.
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 40_000}
+          body: %{query: sql, useLegacySql: false, timeoutMs: 60_000}
         )
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
