@@ -1,6 +1,6 @@
 # Billings
 
-## Get a specific Billing by ID
+## Get a specific billing by ID
 
 ```graphql
 query billing($id: ID!) {
@@ -44,7 +44,7 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 ID | <a href="#id">ID</a> | nil ||
 
-## Get the organization Billing object
+## Get the organization billing object
 
 ```graphql
 query get_organization_billing() {
