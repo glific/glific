@@ -21,7 +21,7 @@ defmodule Glific.GCS do
     Logger.debug("fetching gcs token for org_id: #{organization_id}")
     organization_id = String.to_integer(organization_id)
     token = Partners.get_goth_token(organization_id, "google_cloud_storage")
-    token.token
+    if !is_nil(token), do: token.token
   end
 
   @doc """

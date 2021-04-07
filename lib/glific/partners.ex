@@ -722,7 +722,7 @@ defmodule Glific.Partners do
           {:ok, token} -> token
           {:error, error} ->
             Logger.info("Error while fetching token #{error}")
-            disable_credential(organization_id, "bigquery")
+            disable_credential(organization_id, provider_shortcode)
             nil
         end
     end
