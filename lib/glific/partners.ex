@@ -721,7 +721,7 @@ defmodule Glific.Partners do
         |> case do
           {:ok, token} -> token
           {:error, error} ->
-            Logger.info("Error while fetching token #{error}")
+            Logger.info("Error while fetching token #{error} for org_id #{organization_id}")
             nil
         end
     end
