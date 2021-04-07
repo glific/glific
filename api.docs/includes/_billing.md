@@ -44,6 +44,47 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 ID | <a href="#id">ID</a> | nil ||
 
+## Get the organization Billing object
+
+```graphql
+query get_organization_billing() {
+  get_organization_billing() {
+    billing {
+      id
+      name
+      email
+      stripe_customer_id
+      currency
+    }
+  }
+}
+
+```
+> We pick the organization id from the current user. 
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "billing": {
+      "billing": {
+        "id": "2",
+        "name": "john",
+        "email": "john@gmail.com",
+        "stripe_customer_id": "cus_JDpMYdepEhvKnd",
+        "currency": "USD",
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+ID | <a href="#id">ID</a> | nil ||
+
 ## Create a Billing
 
 ```graphql
