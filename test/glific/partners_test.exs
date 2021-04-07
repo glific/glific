@@ -773,7 +773,12 @@ defmodule Glific.PartnersTest do
         {
           Goth.Token,
           [:passthrough],
-          [for_scope: fn _url -> {:error, "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"} end]
+          [
+            for_scope: fn _url ->
+              {:error,
+               "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
+            end
+          ]
         }
       ]) do
         valid_attrs = %{
@@ -787,9 +792,7 @@ defmodule Glific.PartnersTest do
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        Partners.get_goth_token(organization_id, "google_cloud_storage")
-        {:ok, cred} = Partners.get_credential(%{organization_id: organization_id, shortcode: "google_cloud_storage"})
-        cred.is_active == false
+        assert true == is_nil(Partners.get_goth_token(organization_id, "google_cloud_storage"))
       end
     end
 
@@ -799,7 +802,12 @@ defmodule Glific.PartnersTest do
         {
           Goth.Token,
           [:passthrough],
-          [for_scope: fn _url -> {:error, "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"} end]
+          [
+            for_scope: fn _url ->
+              {:error,
+               "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
+            end
+          ]
         }
       ]) do
         valid_attrs = %{
@@ -813,9 +821,7 @@ defmodule Glific.PartnersTest do
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        Partners.get_goth_token(organization_id, "bigquery")
-        {:ok, cred} = Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})
-        cred.is_active == false
+        assert true == is_nil(Partners.get_goth_token(organization_id, "bigquery"))
       end
     end
 

@@ -719,28 +719,11 @@ defmodule Glific.Partners do
           {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
         )
         |> case do
-          {:ok, token} ->
-            token
-
-          {:error, token_error} ->
-            Logger.info("Error while fetching token #{token_error}")
-            handle_token_error(token_error, organization_id, provider_shortcode)
+          {:ok, token} -> token
+          {:error, error} ->
+            Logger.info("Error while fetching token #{error}")
+            nil
         end
-    end
-  end
-
-  @spec handle_token_error(String.t(), non_neg_integer(), String.t()) :: nil
-  defp handle_token_error(token_error, organization_id, provider_shortcode) do
-    with error <- String.replace(token_error, "Could not retrieve token, response: ", ""),
-         error_msg <- Jason.decode!(error) do
-      case error_msg["error_description"] do
-        "Invalid grant: account not found" ->
-          disable_credential(organization_id, provider_shortcode)
-          nil
-
-        _ ->
-          nil
-      end
     end
   end
 
