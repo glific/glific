@@ -268,7 +268,7 @@ defmodule Glific.Templates do
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
         Map.has_key?(db_templates, template["id"]) ->
-          update_hsm(template, organization, languages)
+          do_update_hsm(template, db_templates)
 
         true ->
           true
@@ -327,45 +327,6 @@ defmodule Glific.Templates do
     end
 
     :ok
-  end
-
-  @spec update_hsm(map(), Organization.t(), map()) ::
-          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp update_hsm(template, organization, languages) do
-    # get updated db templates to handle multiple approved translations
-    db_templates =
-      list_session_templates(%{filter: %{is_hsm: true}})
-      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
-
-    db_template_translations =
-      db_templates
-      |> Map.values()
-      |> Enum.filter(fn db_template ->
-        db_template.uuid == template["id"]
-      end)
-
-    approved_db_templates =
-      db_template_translations
-      |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
-
-    with true <- template["status"] == "APPROVED",
-         true <- length(db_template_translations) > 1,
-         true <- length(approved_db_templates) >= 1 do
-      [approved_db_template] = approved_db_templates
-
-      case update_hsm_translation(template, approved_db_template, organization, languages) do
-        {:ok, _} ->
-          # delete old entry
-          db_templates[template["id"]]
-          |> Repo.delete()
-
-        {:error, error} ->
-          {:error, error}
-      end
-    else
-      _ ->
-        do_update_hsm(template, db_templates)
-    end
   end
 
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
