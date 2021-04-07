@@ -361,6 +361,7 @@ defmodule Glific.Partners.Billing do
             {
               :pending,
               %{
+                status: :pending,
                 organization: organization,
                 client_secret: subscription.pending_setup_intent.client_secret
               }
@@ -374,8 +375,8 @@ defmodule Glific.Partners.Billing do
               |> Map.merge(subscription |> subscription_items())
 
             update_billing(billing, params)
-
-            {:ok, subscription}
+            ## we can add more field as per our need
+            {:ok, %{ status: :active}}
 
           true ->
             {:error, "Not handling #{inspect(subscription)} value"}

@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.BillingTypes do
 
   object :subscription_result do
     field :subscription, :json
-    field :errors, list_of(:input_error)
+    field :errors, :string
   end
 
   object :billing do

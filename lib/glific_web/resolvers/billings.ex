@@ -66,11 +66,17 @@ defmodule GlificWeb.Resolvers.Billings do
         }) ::
           {:ok | :error | :pending, any}
   def create_subscription(_, %{input: params}, _) do
-    with organization <- Partners.organization(params.organization_id),
-         {:ok, subscription} <-
-           Billing.create_subscription(organization, params.stripe_payment_method_id) do
-      {:ok, %{subscription: subscription}}
+    organization = Partners.organization(params.organization_id)
+    Billing.create_subscription(organization, params.stripe_payment_method_id)
+    |> case do
+      {:error, error}
+        -> {:error, error}
+
+      ## this is for pending and ok responses.
+      {_status, subscription}
+        -> {:ok, %{subscription: subscription}}
     end
+
   end
 
   @doc false
