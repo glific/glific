@@ -376,7 +376,7 @@ defmodule Glific.Partners.Billing do
 
             update_billing(billing, params)
             ## we can add more field as per our need
-            {:ok, %{ status: :active}}
+            {:ok, %{status: :active}}
 
           true ->
             {:error, "Not handling #{inspect(subscription)} value"}

@@ -56,7 +56,6 @@ defmodule GlificWeb.Schema.BillingTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.get_organization_billing/3)
     end
-
   end
 
   object :billing_mutations do
