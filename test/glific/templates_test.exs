@@ -731,9 +731,8 @@ defmodule Glific.TemplatesTest do
 
     test "update_hsms/1 should update the status HSM template", attrs do
       otp_hsm_1 = otp_hsm_fixture(1, "PENDING")
-      # otp_hsm_2 = otp_hsm_fixture(2, "APPROVED")
 
-      # should update tranlations of already approved HSM
+      # should update status of pending template
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -764,12 +763,6 @@ defmodule Glific.TemplatesTest do
 
       assert hsm.status == "APPROVED"
       assert hsm.is_active == true
-      # commenting out translations test as we are no longer using translations in templates
-      # assert hsm.translations["#{otp_hsm_1.language_id}"] != nil
-      # assert hsm.translations["#{otp_hsm_1.language_id}"]["uuid"] == otp_hsm_1.uuid
-
-      # should delete old entry
-      # assert {:error, _} = Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
     end
 
     test "update_hsms/1 should update multiple templates of with same shortcode", attrs do
@@ -778,7 +771,7 @@ defmodule Glific.TemplatesTest do
       otp_hsm_1 = otp_hsm_fixture(l1.id, "PENDING")
       otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
 
-      # should update tranlations of already approved HSM
+      # should update status of pending template
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -805,7 +798,7 @@ defmodule Glific.TemplatesTest do
                     "templateType" => "TEXT",
                     "modifiedOn" =>
                       DateTime.to_unix(Timex.shift(otp_hsm_2.updated_at, hours: 1), :millisecond),
-                    "status" => "APPROVED",
+                    "status" => "REJECTED",
                     "meta" => Jason.encode!(%{example: otp_hsm_2.example}),
                     "languageCode" => l2.locale
                   }
@@ -825,8 +818,8 @@ defmodule Glific.TemplatesTest do
       assert {:ok, %SessionTemplate{} = hsm2} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_2.uuid})
 
-      assert hsm2.status == "APPROVED"
-      assert hsm2.is_active == true
+      assert hsm2.status == "REJECTED"
+      assert hsm2.is_active == false
     end
   end
 end
