@@ -266,7 +266,7 @@ defmodule Glific.BigquerySchema do
           "Either sender contact name or receiver contact name; created to quickly let us know who the beneficiary is",
         name: "contact_name",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "User ID; this will be null for automated messages and messages received",
@@ -465,7 +465,7 @@ defmodule Glific.BigquerySchema do
         description: "Name of the contact interacting with the flow",
         name: "contact_name",
         type: "STRING",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "ID of the flow context with which the user is associated to in the flow",
