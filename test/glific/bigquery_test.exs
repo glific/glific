@@ -275,6 +275,28 @@ defmodule Glific.BigqueryTest do
     assert true == is_map(value)
   end
 
+  test "fetch_bigquery_credentials/2 should return nil and disable credentials", attrs do
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          for_scope: fn _url ->
+            {:error,
+             "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
+          end
+        ]
+      }
+    ]) do
+      assert true = is_nil(Bigquery.fetch_bigquery_credentials(attrs.organization_id))
+
+      {:ok, cred} =
+        Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
+
+      cred.is_active == false
+    end
+  end
+
   test "handle_duplicate_removal_job_error/2 should raise error about deletion in case of error",
        attrs do
     assert_raise RuntimeError, fn ->
