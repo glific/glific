@@ -400,7 +400,7 @@ defmodule Glific.Jobs.BigQueryWorker do
     do:
       query
       |> where([tb], tb.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
-      |> where([tb], tb.updated_at != tb.inserted_at)
+      |> where([tb], fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0)
 
   defp apply_action_clause(query, _attrs), do: query
 
