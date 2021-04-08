@@ -155,4 +155,28 @@ defmodule Glific.Users do
         do: user,
         else: nil
       )
+
+  @doc """
+  Promote the first user of the system to admin automatically.
+  Ignore NGO or SaaS users which are automatically created
+  """
+  @spec promote_first_user(User.t()) :: User.t()
+  def promote_first_user(user) do
+    User
+    |> where([u], u.id != ^user.id)
+    |> where([u], not ilike(u.name, "NGO %"))
+    |> where([u], not ilike(u.name, "SaaS %"))
+    |> select([u], [u.id])
+    |> Repo.all()
+    |> maybe_promote_user(user)
+  end
+
+  @spec maybe_promote_user(list(), User.t()) :: User.t()
+  defp maybe_promote_user([], user) do
+    # this is the first user, since the list of valid org users is empty
+    {:ok, user} = update_user(user, %{roles: [:admin]})
+    user
+  end
+
+  defp maybe_promote_user(_list, user), do: user
 end
