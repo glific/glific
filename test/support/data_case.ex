@@ -43,7 +43,7 @@ defmodule Glific.DataCase do
     end
 
     Repo.put_organization_id(1)
-    Repo.put_current_user(Fixtures.user_fixture(%{roles: ["manager"]}))
+    Repo.put_current_user(Fixtures.user_fixture(%{name: "NGO Test Admin", roles: ["manager"]}))
 
     organization_id = 1
     organization_id |> Partners.get_organization!() |> Partners.fill_cache()
