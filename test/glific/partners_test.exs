@@ -3,7 +3,7 @@ defmodule Glific.PartnersTest do
   use Glific.DataCase
   import Mock
 
-  alias Glific.{Fixtures, Partners}
+  alias Glific.{Fixtures, Notifications.Notification, Partners}
 
   describe "provider" do
     alias Glific.Partners.Provider
@@ -767,7 +767,107 @@ defmodule Glific.PartnersTest do
       end
     end
 
-    test "disable_credentails/2 should disable the crednetails",
+    test "get_token/1 on returning account not found error in goth token should disable GCS",
+         %{organization_id: organization_id} = _attrs do
+      with_mocks([
+        {
+          Goth.Token,
+          [:passthrough],
+          [
+            for_scope: fn _url ->
+              {:error,
+               "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
+            end
+          ]
+        }
+      ]) do
+        valid_attrs = %{
+          shortcode: "google_cloud_storage",
+          secrets: %{
+            "service_account" => "{\"private_key\":\"test\"}"
+          },
+          is_active: true,
+          organization_id: organization_id
+        }
+
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+        assert true == is_nil(Partners.get_goth_token(organization_id, "google_cloud_storage"))
+
+        {:ok, cred} =
+          Partners.get_credential(%{
+            organization_id: organization_id,
+            shortcode: "google_cloud_storage"
+          })
+
+        assert cred.is_active == false
+      end
+    end
+
+    test "get_token/1 on return any other error in goth token should return nil",
+         %{organization_id: organization_id} = _attrs do
+      with_mocks([
+        {
+          Goth.Token,
+          [:passthrough],
+          [
+            for_scope: fn _url ->
+              {:error, %HTTPoison.Error{id: nil, reason: :connect_timeout}}
+            end
+          ]
+        }
+      ]) do
+        valid_attrs = %{
+          shortcode: "google_cloud_storage",
+          secrets: %{
+            "service_account" => "{\"private_key\":\"test\"}"
+          },
+          is_active: true,
+          organization_id: organization_id
+        }
+
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+        assert_raise RuntimeError, fn ->
+          Partners.get_goth_token(organization_id, "google_cloud_storage")
+        end
+      end
+    end
+
+    test "get_token/1 on return error in goth token should disable BigQuery",
+         %{organization_id: organization_id} = _attrs do
+      with_mocks([
+        {
+          Goth.Token,
+          [:passthrough],
+          [
+            for_scope: fn _url ->
+              {:error,
+               "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
+            end
+          ]
+        }
+      ]) do
+        valid_attrs = %{
+          shortcode: "bigquery",
+          secrets: %{
+            "service_account" => "{\"private_key\":\"test\"}"
+          },
+          is_active: true,
+          organization_id: organization_id
+        }
+
+        {:ok, _credential} = Partners.create_credential(valid_attrs)
+
+        assert true == is_nil(Partners.get_goth_token(organization_id, "bigquery"))
+
+        {:ok, cred} =
+          Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})
+
+        assert cred.is_active == false
+      end
+    end
+
+    test "disable_credentails/2 should disable the credentails and create notification",
          %{organization_id: organization_id} = _attrs do
       provider = provider_fixture()
 
@@ -791,6 +891,11 @@ defmodule Glific.PartnersTest do
           provider_id: provider.id
         })
 
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{
+          organization_id: organization_id,
+        })
+      assert notification.message == "Disabling shortcode 1"
       assert credential.is_active == false
     end
   end
