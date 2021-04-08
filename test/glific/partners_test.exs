@@ -896,7 +896,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id,
         })
       assert notification.message == "Disable shortcode 1 credential"
-      assert credential.is_active == falses
+      assert credential.is_active == false
     end
   end
 end
