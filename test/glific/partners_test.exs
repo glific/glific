@@ -895,7 +895,7 @@ defmodule Glific.PartnersTest do
         Repo.fetch_by(Notification, %{
           organization_id: organization_id,
         })
-      assert notification.message == "Disable shortcode 1 credential"
+      assert notification.message == "Disabling shortcode 1"
       assert credential.is_active == false
     end
   end
