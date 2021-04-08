@@ -3,7 +3,7 @@ defmodule Glific.PartnersTest do
   use Glific.DataCase
   import Mock
 
-  alias Glific.{Fixtures, Partners}
+  alias Glific.{Fixtures, Notifications.Notification, Partners}
 
   describe "provider" do
     alias Glific.Partners.Provider
@@ -827,8 +827,9 @@ defmodule Glific.PartnersTest do
         }
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
-
-        assert true == is_nil(Partners.get_goth_token(organization_id, "google_cloud_storage"))
+        assert_raise RuntimeError, fn ->
+          Partners.get_goth_token(organization_id, "google_cloud_storage")
+        end
       end
     end
 
@@ -866,7 +867,7 @@ defmodule Glific.PartnersTest do
       end
     end
 
-    test "disable_credentails/2 should disable the credentails",
+    test "disable_credentails/2 should disable the credentails and create notification",
          %{organization_id: organization_id} = _attrs do
       provider = provider_fixture()
 
@@ -890,7 +891,12 @@ defmodule Glific.PartnersTest do
           provider_id: provider.id
         })
 
-      assert credential.is_active == false
+      {:ok, notification} =
+        Repo.fetch_by(Notification, %{
+          organization_id: organization_id,
+        })
+      assert notification.message == "Disable shortcode 1 credential"
+      assert credential.is_active == falses
     end
   end
 end
