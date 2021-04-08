@@ -1,6 +1,7 @@
 # Users
 
 ## Get All Roles
+
 ```graphql
 query {
   roles
@@ -10,24 +11,20 @@ query {
 > The above query returns JSON structured like this:
 
 ```json
-
 {
   "data": {
-    "roles": [
-         "none",
-         "staff",
-         "manager",
-         "admin"
-    ]
+    "roles": ["none", "staff", "manager", "admin"]
   }
 }
 ```
+
 This returns all the roles
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#string">Role</a>] | List of roles
+
+| Type                         | Description   |
+| ---------------------------- | ------------- |
+| [<a href="#string">Role</a>] | List of roles |
 
 ## Get All Users
 
@@ -67,9 +64,7 @@ query users($filter: UserFilter, $opts: Opts) {
         "id": "1",
         "name": "John Doe",
         "phone": "+919820198765",
-        "roles": [
-          "admin"
-        ]
+        "roles": ["admin"]
       },
       {
         "groups": [
@@ -80,28 +75,27 @@ query users($filter: UserFilter, $opts: Opts) {
         "id": "2",
         "name": "Jane Doe",
         "phone": "+918820198765",
-        "roles": [
-          "staff",
-          "admin"
-        ]
+        "roles": ["staff", "admin"]
       }
     ]
   }
 }
 ```
+
 This returns all the users filtered by the input <a href="#userfilter">UserFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#userfilter">UserFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                 | Default | Description                         |
+| --------- | ------------------------------------ | ------- | ----------------------------------- |
+| filter    | <a href="#userfilter">UserFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>             | nil     | limit / offset / sort order options |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#user">User</a>] | List of users
+
+| Type                       | Description   |
+| -------------------------- | ------------- |
+| [<a href="#user">User</a>] | List of users |
 
 ## Get a specific User by ID
 
@@ -113,6 +107,11 @@ query user($id: ID!) {
       name
       phone
       roles
+      language {
+        isActive
+        label
+        labelLocale
+      }
     }
   }
 }
@@ -132,9 +131,12 @@ query user($id: ID!) {
         "id": "1",
         "name": "John Doe",
         "phone": "+919820198765",
-        "roles": [
-          "admin"
-        ]
+        "roles": ["admin"],
+        "language": {
+          "isActive": true,
+          "label": "English",
+          "labelLocale": "English"
+        }
       }
     }
   }
@@ -143,14 +145,15 @@ query user($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-ID | <a href="#id">ID</a> | nil ||
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#userresult">UserResult</a> | Queried User
+
+| Type                                 | Description  |
+| ------------------------------------ | ------------ |
+| <a href="#userresult">UserResult</a> | Queried User |
 
 ## Get Current User
 
@@ -182,16 +185,14 @@ query currentUser {
         "id": "1",
         "name": "John Doe",
         "phone": "+919820198765",
-        "roles": [
-          "Admin"
-        ],
+        "roles": ["Admin"],
         "organization": {
           "activeLanguages": [
             {
               "label": "English"
             }
           ]
-        },
+        }
       }
     }
   }
@@ -199,9 +200,10 @@ query currentUser {
 ```
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#userresult">UserResult</a> | Current User
+
+| Type                                 | Description  |
+| ------------------------------------ | ------------ |
+| <a href="#userresult">UserResult</a> | Current User |
 
 ## Count all Users
 
@@ -229,15 +231,15 @@ query countUsers($filter: UserFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#userfilter">UserFilter</a> | nil | filter the list
+| Parameter | Type                                 | Default | Description     |
+| --------- | ------------------------------------ | ------- | --------------- |
+| filter    | <a href="#userfilter">UserFilter</a> | nil     | filter the list |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#int">Int</a> | Count of filtered users
 
+| Type                   | Description             |
+| ---------------------- | ----------------------- |
+| <a href="#int">Int</a> | Count of filtered users |
 
 ## Update a User
 
@@ -294,9 +296,7 @@ mutation updateUser($id: ID!, $input: UserInput!) {
         "id": "2",
         "name": "Updated Name",
         "phone": "919876543210",
-        "roles": [
-          "admin"
-        ]
+        "roles": ["admin"]
       }
     }
   }
@@ -323,17 +323,17 @@ mutation updateUser($id: ID!, $input: UserInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#userinput">UserInput</a> | required ||
-groupIds | [<a href="#id">ID</a>] | required ||
+| Parameter | Type                               | Default  | Description |
+| --------- | ---------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!              | required |             |
+| input     | <a href="#userinput">UserInput</a> | required |             |
+| groupIds  | [<a href="#id">ID</a>]             | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#userresult">UserResult</a> | The updated user object
 
+| Type                                 | Description             |
+| ------------------------------------ | ----------------------- |
+| <a href="#userresult">UserResult</a> | The updated user object |
 
 ## Update Current User Details
 
@@ -437,16 +437,16 @@ mutation updateCurrentUser($input:CurrentUserInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#currentuserinput">CurrentUserInput</a> | required ||
+| Parameter | Type                                             | Default  | Description |
+| --------- | ------------------------------------------------ | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                            | required |             |
+| input     | <a href="#currentuserinput">CurrentUserInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#userresult">UserResult</a> | The updated user object
 
+| Type                                 | Description             |
+| ------------------------------------ | ----------------------- |
+| <a href="#userresult">UserResult</a> | The updated user object |
 
 ## Delete a User
 
@@ -496,14 +496,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#userresult">UserResult</a> | An error object or empty
+
+| Type                                 | Description              |
+| ------------------------------------ | ------------------------ |
+| <a href="#userresult">UserResult</a> | An error object or empty |
 
 ## User Objects
 
@@ -527,6 +528,11 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>contact</strong></td>
 <td valign="top"><a href="#contact">Contact</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>language</strong></td>
+<td valign="top"><a href="#language">Language</a></td>
 <td></td>
 </tr>
 <tr>
@@ -617,7 +623,7 @@ Type | Description
 </tbody>
 </table>
 
-## User Inputs ##
+## User Inputs
 
 ### UserFilter
 
