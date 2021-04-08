@@ -400,11 +400,11 @@ defmodule Glific.Seeds.SeedsMigration do
 
   @spec bigquery_enabled_org_ids() :: list()
   defp bigquery_enabled_org_ids do
-     Glific.Partners.Credential
-      |> join(:left, [c], p in Glific.Partners.Provider, as: :p, on: c.provider_id == p.id)
-      |> where([_c, p], p.shortcode == ^"bigquery")
-      |> where([c, _p], c.is_active)
-      |> select([c, _p], c.organization_id)
-      |> Repo.all()
+    Glific.Partners.Credential
+    |> join(:left, [c], p in Glific.Partners.Provider, as: :p, on: c.provider_id == p.id)
+    |> where([_c, p], p.shortcode == ^"bigquery")
+    |> where([c, _p], c.is_active)
+    |> select([c, _p], c.organization_id)
+    |> Repo.all()
   end
 end

@@ -827,6 +827,7 @@ defmodule Glific.PartnersTest do
         }
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
+
         assert_raise RuntimeError, fn ->
           Partners.get_goth_token(organization_id, "google_cloud_storage")
         end
@@ -893,8 +894,9 @@ defmodule Glific.PartnersTest do
 
       {:ok, notification} =
         Repo.fetch_by(Notification, %{
-          organization_id: organization_id,
+          organization_id: organization_id
         })
+
       assert notification.message == "Disabling shortcode 1"
       assert credential.is_active == false
     end
