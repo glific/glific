@@ -59,7 +59,7 @@ defmodule Glific.Seeds.SeedsMigration do
         SeedsStats.seed_stats(org_id_list)
 
       :sync_bigquery ->
-        Enum.map(organizations, fn o -> o.id end)
+        bigquery_enabled_org_ids()
         |> sync_schema_with_bigquery()
     end
   end
@@ -396,5 +396,15 @@ defmodule Glific.Seeds.SeedsMigration do
       WHERE
         organization_id = #{org_id};
     """
+  end
+
+  @spec bigquery_enabled_org_ids() :: list()
+  defp bigquery_enabled_org_ids() do
+     Glific.Partners.Credential
+      |> join(:left, [c], p in Glific.Partners.Provider, as: :p, on: c.provider_id == p.id)
+      |> where([_c, p], p.shortcode == ^"bigquery")
+      |> where([c, _p], c.is_active)
+      |> select([c, _p], c.organization_id)
+      |> Repo.all()
   end
 end
