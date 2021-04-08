@@ -24,6 +24,9 @@ defmodule GlificWeb.Schema.LanguageTypes do
 
     @desc "Match the locale"
     field :locale, :string
+
+    @desc "Match the localized"
+    field :localized, :boolean
   end
 
   input_object :language_input do

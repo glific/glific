@@ -39,6 +39,9 @@ defmodule Glific.Settings do
       {:locale, locale}, query ->
         from q in query, where: ilike(q.locale, ^"%#{locale}%")
 
+      {:localized, localized}, query ->
+        from q in query, where: q.localized == ^localized
+
       _, query ->
         query
     end)
