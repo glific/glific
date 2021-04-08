@@ -4,22 +4,29 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v1.1.5">
+    <meta name="generator" content="ExDoc v0.24.1">
+    <meta name="project" content="Glific v1.3.3">
 
-    <title>Glific.Flows.FlowContext — Glific v1.1.5</title>
-    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <title>Glific.Flows.FlowContext — Glific v1.3.3</title>
+    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
 
-    <script src="dist/sidebar_items-70cc72f525.js"></script>
+    <script src="dist/sidebar_items-35501c8f01.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+    <script async src="dist/app-f27ff079945e43879c46.js"></script>
 
 
   </head>
   <body data-type="modules">
-    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
 
 <div class="main">
 
@@ -36,7 +43,7 @@
       <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -51,16 +58,16 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion">
-        v1.1.5
+        v1.3.3
       </strong>
     </div>
 
   </div>
 
   <ul class="sidebar-listNav">
-    <li><a id="extras-list" href="#full-list">Pages</a></li>
+    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
-      <li><a id="modules-list" href="#full-list">Modules</a></li>
+      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
 
   </ul>
@@ -73,7 +80,7 @@ Glific
     <div id="content" class="content-inner">
 
       <h1>
-Glific.Flows.FlowContext <small class="app-vsn">(Glific v1.1.5)</small>
+Glific.Flows.FlowContext <small class="app-vsn">(Glific v1.3.3)</small>
 
           <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
@@ -219,7 +226,7 @@ we'll get the genserver to cache this</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="#reset_all_contexts/1">reset_all_contexts(context)</a>
+    <a href="#reset_all_contexts/2">reset_all_contexts(context, message)</a>
 
   </div>
 
@@ -333,7 +340,7 @@ Types
     </a>
     <h1 class="signature">t()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L44" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L45" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -404,7 +411,7 @@ Functions
     </a>
     <h1 class="signature">active_context(contact_id, parent_id \\ nil)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L409" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L429" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -433,7 +440,7 @@ Functions
     </a>
     <h1 class="signature">changeset(context, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L106" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L107" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -464,7 +471,7 @@ Functions
     </a>
     <h1 class="signature">create_flow_context(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L119" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L120" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -495,7 +502,7 @@ Functions
     </a>
     <h1 class="signature">delete_completed_flow_contexts(back \\ 2)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L570" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L590" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -526,7 +533,7 @@ Functions
     </a>
     <h1 class="signature">delete_old_flow_contexts(back \\ 30)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L587" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L607" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -555,7 +562,7 @@ Functions
     </a>
     <h1 class="signature">execute(context, messages)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L298" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L318" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -585,7 +592,7 @@ Functions
     </a>
     <h1 class="signature">get_result_value(context, value)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L559" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L579" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -616,7 +623,7 @@ Functions
     </a>
     <h1 class="signature">init_context(flow, contact, status, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L390" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L410" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -650,7 +657,7 @@ Functions
     </a>
     <h1 class="signature">load_context(context, flow)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L445" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L465" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -682,7 +689,7 @@ we'll get the genserver to cache this</p>
     </a>
     <h1 class="signature">mark_flows_complete(contact_id, after_insert_date \\ nil)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L340" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L360" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -713,7 +720,7 @@ we'll get the genserver to cache this</p>
     </a>
     <h1 class="signature">match_outbound(context, body, go_back \\ 6)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L261" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L281" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -733,16 +740,16 @@ we'll get the genserver to cache this</p>
 <p>Count the number of times we have sent the same message in the recent past</p>
   </section>
 </section>
-<section class="detail" id="reset_all_contexts/1">
+<section class="detail" id="reset_all_contexts/2">
 
   <div class="detail-header">
-    <a href="#reset_all_contexts/1" class="detail-link" title="Link to this function">
+    <a href="#reset_all_contexts/2" class="detail-link" title="Link to this function">
       <span class="icon-link" aria-hidden="true"></span>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">reset_all_contexts(context)</h1>
+    <h1 class="signature">reset_all_contexts(context, message)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L139" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L158" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -755,7 +762,7 @@ we'll get the genserver to cache this</p>
       <h2>Specs</h2>
       <div class="specs">
 
-          <pre>reset_all_contexts(<a href="#t:t/0">t</a>()) :: <a href="#t:t/0">t</a>() | nil</pre>
+          <pre>reset_all_contexts(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="#t:t/0">t</a>() | nil</pre>
 
       </div>
 
@@ -772,7 +779,7 @@ prevent an infinite loop from happening if flows are connected in a cycle</p>
     </a>
     <h1 class="signature">reset_context(context)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L170" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L190" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -804,7 +811,7 @@ if one exists</p>
     </a>
     <h1 class="signature">seed_context(flow, contact, status, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L357" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L377" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -838,7 +845,7 @@ if one exists</p>
     </a>
     <h1 class="signature">set_node(context, node)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L288" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L308" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -867,7 +874,7 @@ if one exists</p>
     </a>
     <h1 class="signature">step_forward(context, message)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L495" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L515" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -897,7 +904,7 @@ if one exists</p>
     </a>
     <h1 class="signature">update_recent(context, body, type)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L203" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L223" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -926,7 +933,7 @@ if one exists</p>
     </a>
     <h1 class="signature">update_results(context, key, json)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L233" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L253" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -955,7 +962,7 @@ if one exists</p>
     </a>
     <h1 class="signature">update_results(context, key, input, category)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L225" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L245" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -984,7 +991,7 @@ if one exists</p>
     </a>
     <h1 class="signature">wakeup_flows(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L512" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L532" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -1015,7 +1022,7 @@ if one exists</p>
     </a>
     <h1 class="signature">wakeup_one(context, message \\ nil)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L528" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/flow_context.ex#L548" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -1044,7 +1051,7 @@ if one exists</p>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
             <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">

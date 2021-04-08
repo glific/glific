@@ -4,22 +4,29 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v1.1.5">
+    <meta name="generator" content="ExDoc v0.24.1">
+    <meta name="project" content="Glific v1.3.3">
 
-    <title>Glific.Messages — Glific v1.1.5</title>
-    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <title>Glific.Messages — Glific v1.3.3</title>
+    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
 
-    <script src="dist/sidebar_items-70cc72f525.js"></script>
+    <script src="dist/sidebar_items-35501c8f01.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+    <script async src="dist/app-f27ff079945e43879c46.js"></script>
 
 
   </head>
   <body data-type="modules">
-    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
 
 <div class="main">
 
@@ -36,7 +43,7 @@
       <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -51,16 +58,16 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion">
-        v1.1.5
+        v1.3.3
       </strong>
     </div>
 
   </div>
 
   <ul class="sidebar-listNav">
-    <li><a id="extras-list" href="#full-list">Pages</a></li>
+    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
-      <li><a id="modules-list" href="#full-list">Modules</a></li>
+      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
 
   </ul>
@@ -73,7 +80,7 @@ Glific
     <div id="content" class="content-inner">
 
       <h1>
-Glific.Messages <small class="app-vsn">(Glific v1.1.5)</small>
+Glific.Messages <small class="app-vsn">(Glific v1.3.3)</small>
 
           <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
@@ -287,6 +294,16 @@ at the beginning of the list</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="#notify/2">notify(attrs, reason \\ &quot;Cannot send the message to the contact.&quot;)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Create and insert a notification for this error when sending a message.
+Add as much detail, so we can reverse-engineer why the sending failed.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="#tag_in_message?/2">tag_in_message?(message, tag_id)</a>
 
   </div>
@@ -338,7 +355,7 @@ Functions
     </a>
     <h1 class="signature">change_message(message, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L209" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L212" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -359,8 +376,8 @@ Functions
   <a href="#change_message/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message</span><span class="p" data-group-id="2242240935-1">(</span><span class="n">message</span><span class="p" data-group-id="2242240935-1">)</span><span class="w">
-</span><span class="p" data-group-id="2242240935-2">%</span><span class="nc" data-group-id="2242240935-2">Ecto.Changeset</span><span class="p" data-group-id="2242240935-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2242240935-3">%</span><span class="nc" data-group-id="2242240935-3">Message</span><span class="p" data-group-id="2242240935-3">{</span><span class="p" data-group-id="2242240935-3">}</span><span class="p" data-group-id="2242240935-2">}</span></code></pre>
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message</span><span class="p" data-group-id="0977355078-1">(</span><span class="n">message</span><span class="p" data-group-id="0977355078-1">)</span><span class="w">
+</span><span class="p" data-group-id="0977355078-2">%</span><span class="nc" data-group-id="0977355078-2">Ecto.Changeset</span><span class="p" data-group-id="0977355078-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0977355078-3">%</span><span class="nc" data-group-id="0977355078-3">Message</span><span class="p" data-group-id="0977355078-3">{</span><span class="p" data-group-id="0977355078-3">}</span><span class="p" data-group-id="0977355078-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="change_message_media/2">
@@ -374,7 +391,7 @@ Functions
     </a>
     <h1 class="signature">change_message_media(message_media, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L626" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L667" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -396,8 +413,8 @@ Functions
   <a href="#change_message_media/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_media</span><span class="p" data-group-id="2894466210-1">(</span><span class="n">message_media</span><span class="p" data-group-id="2894466210-1">)</span><span class="w">
-</span><span class="p" data-group-id="2894466210-2">%</span><span class="nc" data-group-id="2894466210-2">Ecto.Changeset</span><span class="p" data-group-id="2894466210-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2894466210-3">%</span><span class="nc" data-group-id="2894466210-3">MessageMedia</span><span class="p" data-group-id="2894466210-3">{</span><span class="p" data-group-id="2894466210-3">}</span><span class="p" data-group-id="2894466210-2">}</span></code></pre>
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_media</span><span class="p" data-group-id="7689843874-1">(</span><span class="n">message_media</span><span class="p" data-group-id="7689843874-1">)</span><span class="w">
+</span><span class="p" data-group-id="7689843874-2">%</span><span class="nc" data-group-id="7689843874-2">Ecto.Changeset</span><span class="p" data-group-id="7689843874-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7689843874-3">%</span><span class="nc" data-group-id="7689843874-3">MessageMedia</span><span class="p" data-group-id="7689843874-3">{</span><span class="p" data-group-id="7689843874-3">}</span><span class="p" data-group-id="7689843874-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="clear_messages/1">
@@ -409,7 +426,7 @@ Functions
     </a>
     <h1 class="signature">clear_messages(contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L853" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L885" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -438,7 +455,7 @@ Functions
     </a>
     <h1 class="signature">count_messages(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L46" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L49" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -469,7 +486,7 @@ Functions
     </a>
     <h1 class="signature">count_messages_media(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L539" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L580" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -498,7 +515,7 @@ Functions
     </a>
     <h1 class="signature">create_and_send_hsm_message(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L366" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L406" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -528,7 +545,7 @@ Functions
     </a>
     <h1 class="signature">create_and_send_message_to_group(message_params, group)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L485" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L526" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -558,7 +575,7 @@ Functions
     </a>
     <h1 class="signature">create_and_send_session_template(template_id, receiver_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L330" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L370" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -596,7 +613,7 @@ Functions
     </a>
     <h1 class="signature">create_group_message(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L447" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L488" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -627,7 +644,7 @@ sent, but is used for display purposes in the group listings</p>
     </a>
     <h1 class="signature">create_message(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L136" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L139" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -649,11 +666,11 @@ sent, but is used for display purposes in the group listings</p>
   <a href="#create_message/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="1537838371-1">(</span><span class="p" data-group-id="1537838371-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1537838371-2">}</span><span class="p" data-group-id="1537838371-1">)</span><span class="w">
-</span><span class="p" data-group-id="1537838371-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1537838371-4">%</span><span class="nc" data-group-id="1537838371-4">Message</span><span class="p" data-group-id="1537838371-4">{</span><span class="p" data-group-id="1537838371-4">}</span><span class="p" data-group-id="1537838371-3">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="8775232307-1">(</span><span class="p" data-group-id="8775232307-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8775232307-2">}</span><span class="p" data-group-id="8775232307-1">)</span><span class="w">
+</span><span class="p" data-group-id="8775232307-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8775232307-4">%</span><span class="nc" data-group-id="8775232307-4">Message</span><span class="p" data-group-id="8775232307-4">{</span><span class="p" data-group-id="8775232307-4">}</span><span class="p" data-group-id="8775232307-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="1537838371-5">(</span><span class="p" data-group-id="1537838371-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1537838371-6">}</span><span class="p" data-group-id="1537838371-5">)</span><span class="w">
-</span><span class="p" data-group-id="1537838371-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1537838371-8">%</span><span class="nc" data-group-id="1537838371-8">Ecto.Changeset</span><span class="p" data-group-id="1537838371-8">{</span><span class="p" data-group-id="1537838371-8">}</span><span class="p" data-group-id="1537838371-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="8775232307-5">(</span><span class="p" data-group-id="8775232307-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8775232307-6">}</span><span class="p" data-group-id="8775232307-5">)</span><span class="w">
+</span><span class="p" data-group-id="8775232307-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8775232307-8">%</span><span class="nc" data-group-id="8775232307-8">Ecto.Changeset</span><span class="p" data-group-id="8775232307-8">{</span><span class="p" data-group-id="8775232307-8">}</span><span class="p" data-group-id="8775232307-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_message_media/1">
@@ -667,7 +684,7 @@ sent, but is used for display purposes in the group listings</p>
     </a>
     <h1 class="signature">create_message_media(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L572" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L613" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -689,11 +706,11 @@ sent, but is used for display purposes in the group listings</p>
   <a href="#create_message_media/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="8797732784-1">(</span><span class="p" data-group-id="8797732784-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8797732784-2">}</span><span class="p" data-group-id="8797732784-1">)</span><span class="w">
-</span><span class="p" data-group-id="8797732784-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8797732784-4">%</span><span class="nc" data-group-id="8797732784-4">MessageMedia</span><span class="p" data-group-id="8797732784-4">{</span><span class="p" data-group-id="8797732784-4">}</span><span class="p" data-group-id="8797732784-3">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="1818398580-1">(</span><span class="p" data-group-id="1818398580-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1818398580-2">}</span><span class="p" data-group-id="1818398580-1">)</span><span class="w">
+</span><span class="p" data-group-id="1818398580-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1818398580-4">%</span><span class="nc" data-group-id="1818398580-4">MessageMedia</span><span class="p" data-group-id="1818398580-4">{</span><span class="p" data-group-id="1818398580-4">}</span><span class="p" data-group-id="1818398580-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="8797732784-5">(</span><span class="p" data-group-id="8797732784-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8797732784-6">}</span><span class="p" data-group-id="8797732784-5">)</span><span class="w">
-</span><span class="p" data-group-id="8797732784-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8797732784-8">%</span><span class="nc" data-group-id="8797732784-8">Ecto.Changeset</span><span class="p" data-group-id="8797732784-8">{</span><span class="p" data-group-id="8797732784-8">}</span><span class="p" data-group-id="8797732784-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="1818398580-5">(</span><span class="p" data-group-id="1818398580-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1818398580-6">}</span><span class="p" data-group-id="1818398580-5">)</span><span class="w">
+</span><span class="p" data-group-id="1818398580-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1818398580-8">%</span><span class="nc" data-group-id="1818398580-8">Ecto.Changeset</span><span class="p" data-group-id="1818398580-8">{</span><span class="p" data-group-id="1818398580-8">}</span><span class="p" data-group-id="1818398580-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_temp_message/3">
@@ -707,7 +724,7 @@ sent, but is used for display purposes in the group listings</p>
     </a>
     <h1 class="signature">create_temp_message(organization_id, body, attrs \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L832" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L864" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -739,7 +756,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature">delete_message(message)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L195" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L198" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -761,11 +778,11 @@ Completed, Failure, Success etc</p>
   <a href="#delete_message/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="3001603883-1">(</span><span class="n">message</span><span class="p" data-group-id="3001603883-1">)</span><span class="w">
-</span><span class="p" data-group-id="3001603883-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3001603883-3">%</span><span class="nc" data-group-id="3001603883-3">Message</span><span class="p" data-group-id="3001603883-3">{</span><span class="p" data-group-id="3001603883-3">}</span><span class="p" data-group-id="3001603883-2">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="6571809262-1">(</span><span class="n">message</span><span class="p" data-group-id="6571809262-1">)</span><span class="w">
+</span><span class="p" data-group-id="6571809262-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6571809262-3">%</span><span class="nc" data-group-id="6571809262-3">Message</span><span class="p" data-group-id="6571809262-3">{</span><span class="p" data-group-id="6571809262-3">}</span><span class="p" data-group-id="6571809262-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="3001603883-4">(</span><span class="n">message</span><span class="p" data-group-id="3001603883-4">)</span><span class="w">
-</span><span class="p" data-group-id="3001603883-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3001603883-6">%</span><span class="nc" data-group-id="3001603883-6">Ecto.Changeset</span><span class="p" data-group-id="3001603883-6">{</span><span class="p" data-group-id="3001603883-6">}</span><span class="p" data-group-id="3001603883-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="6571809262-4">(</span><span class="n">message</span><span class="p" data-group-id="6571809262-4">)</span><span class="w">
+</span><span class="p" data-group-id="6571809262-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6571809262-6">%</span><span class="nc" data-group-id="6571809262-6">Ecto.Changeset</span><span class="p" data-group-id="6571809262-6">{</span><span class="p" data-group-id="6571809262-6">}</span><span class="p" data-group-id="6571809262-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_message_media/1">
@@ -777,7 +794,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature">delete_message_media(message_media)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L612" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L653" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -799,11 +816,11 @@ Completed, Failure, Success etc</p>
   <a href="#delete_message_media/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="7199850997-1">(</span><span class="n">message_media</span><span class="p" data-group-id="7199850997-1">)</span><span class="w">
-</span><span class="p" data-group-id="7199850997-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7199850997-3">%</span><span class="nc" data-group-id="7199850997-3">MessageMedia</span><span class="p" data-group-id="7199850997-3">{</span><span class="p" data-group-id="7199850997-3">}</span><span class="p" data-group-id="7199850997-2">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="8077374253-1">(</span><span class="n">message_media</span><span class="p" data-group-id="8077374253-1">)</span><span class="w">
+</span><span class="p" data-group-id="8077374253-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8077374253-3">%</span><span class="nc" data-group-id="8077374253-3">MessageMedia</span><span class="p" data-group-id="8077374253-3">{</span><span class="p" data-group-id="8077374253-3">}</span><span class="p" data-group-id="8077374253-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="7199850997-4">(</span><span class="n">message_media</span><span class="p" data-group-id="7199850997-4">)</span><span class="w">
-</span><span class="p" data-group-id="7199850997-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7199850997-6">%</span><span class="nc" data-group-id="7199850997-6">Ecto.Changeset</span><span class="p" data-group-id="7199850997-6">{</span><span class="p" data-group-id="7199850997-6">}</span><span class="p" data-group-id="7199850997-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="8077374253-4">(</span><span class="n">message_media</span><span class="p" data-group-id="8077374253-4">)</span><span class="w">
+</span><span class="p" data-group-id="8077374253-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8077374253-6">%</span><span class="nc" data-group-id="8077374253-6">Ecto.Changeset</span><span class="p" data-group-id="8077374253-6">{</span><span class="p" data-group-id="8077374253-6">}</span><span class="p" data-group-id="8077374253-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_message!/1">
@@ -815,7 +832,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature">get_message!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L121" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L124" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -836,10 +853,10 @@ Completed, Failure, Success etc</p>
   <a href="#get_message!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="3713287331-1">(</span><span class="mi">123</span><span class="p" data-group-id="3713287331-1">)</span><span class="w">
-</span><span class="p" data-group-id="3713287331-2">%</span><span class="nc" data-group-id="3713287331-2">Message</span><span class="p" data-group-id="3713287331-2">{</span><span class="p" data-group-id="3713287331-2">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="4130832691-1">(</span><span class="mi">123</span><span class="p" data-group-id="4130832691-1">)</span><span class="w">
+</span><span class="p" data-group-id="4130832691-2">%</span><span class="nc" data-group-id="4130832691-2">Message</span><span class="p" data-group-id="4130832691-2">{</span><span class="p" data-group-id="4130832691-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="3713287331-3">(</span><span class="mi">456</span><span class="p" data-group-id="3713287331-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="4130832691-3">(</span><span class="mi">456</span><span class="p" data-group-id="4130832691-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -852,7 +869,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature">get_message_media!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L557" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L598" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -873,10 +890,10 @@ Completed, Failure, Success etc</p>
   <a href="#get_message_media!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="2811932670-1">(</span><span class="mi">123</span><span class="p" data-group-id="2811932670-1">)</span><span class="w">
-</span><span class="p" data-group-id="2811932670-2">%</span><span class="nc" data-group-id="2811932670-2">MessageMedia</span><span class="p" data-group-id="2811932670-2">{</span><span class="p" data-group-id="2811932670-2">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="2518369779-1">(</span><span class="mi">123</span><span class="p" data-group-id="2518369779-1">)</span><span class="w">
+</span><span class="p" data-group-id="2518369779-2">%</span><span class="nc" data-group-id="2518369779-2">MessageMedia</span><span class="p" data-group-id="2518369779-2">{</span><span class="p" data-group-id="2518369779-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="2811932670-3">(</span><span class="mi">456</span><span class="p" data-group-id="2811932670-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="2518369779-3">(</span><span class="mi">456</span><span class="p" data-group-id="2518369779-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -891,7 +908,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature">list_conversations(args, count \\ false)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L662" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L694" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -922,7 +939,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature">list_messages(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L37" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L40" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -943,8 +960,8 @@ at the beginning of the list</p>
   <a href="#list_messages/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages</span><span class="p" data-group-id="7464022107-1">(</span><span class="n">map</span><span class="p" data-group-id="7464022107-2">(</span><span class="p" data-group-id="7464022107-2">)</span><span class="p" data-group-id="7464022107-1">)</span><span class="w">
-</span><span class="p" data-group-id="7464022107-3">[</span><span class="p" data-group-id="7464022107-4">%</span><span class="nc" data-group-id="7464022107-4">Message</span><span class="p" data-group-id="7464022107-4">{</span><span class="p" data-group-id="7464022107-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="7464022107-3">]</span></code></pre>
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages</span><span class="p" data-group-id="4195073596-1">(</span><span class="n">map</span><span class="p" data-group-id="4195073596-2">(</span><span class="p" data-group-id="4195073596-2">)</span><span class="p" data-group-id="4195073596-1">)</span><span class="w">
+</span><span class="p" data-group-id="4195073596-3">[</span><span class="p" data-group-id="4195073596-4">%</span><span class="nc" data-group-id="4195073596-4">Message</span><span class="p" data-group-id="4195073596-4">{</span><span class="p" data-group-id="4195073596-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="4195073596-3">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="list_messages_media/1">
@@ -958,7 +975,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature">list_messages_media(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L520" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L561" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -979,8 +996,8 @@ at the beginning of the list</p>
   <a href="#list_messages_media/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_media</span><span class="p" data-group-id="6124687934-1">(</span><span class="n">map</span><span class="p" data-group-id="6124687934-2">(</span><span class="p" data-group-id="6124687934-2">)</span><span class="p" data-group-id="6124687934-1">)</span><span class="w">
-</span><span class="p" data-group-id="6124687934-3">[</span><span class="p" data-group-id="6124687934-4">%</span><span class="nc" data-group-id="6124687934-4">MessageMedia</span><span class="p" data-group-id="6124687934-4">{</span><span class="p" data-group-id="6124687934-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="6124687934-3">]</span></code></pre>
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_media</span><span class="p" data-group-id="1798615865-1">(</span><span class="n">map</span><span class="p" data-group-id="1798615865-2">(</span><span class="p" data-group-id="1798615865-2">)</span><span class="p" data-group-id="1798615865-1">)</span><span class="w">
+</span><span class="p" data-group-id="1798615865-3">[</span><span class="p" data-group-id="1798615865-4">%</span><span class="nc" data-group-id="1798615865-4">MessageMedia</span><span class="p" data-group-id="1798615865-4">{</span><span class="p" data-group-id="1798615865-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1798615865-3">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="mark_contact_messages_as_read/2">
@@ -992,7 +1009,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature">mark_contact_messages_as_read(contact_id, organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L992" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L1029" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -1012,6 +1029,38 @@ at the beginning of the list</p>
 <p>Mark that the user has read all messages sent by a given contact</p>
   </section>
 </section>
+<section class="detail" id="notify/2">
+
+    <span id="notify/1"></span>
+
+  <div class="detail-header">
+    <a href="#notify/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">notify(attrs, reason \\ &quot;Cannot send the message to the contact.&quot;)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L268" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>notify(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: nil</pre>
+
+      </div>
+
+<p>Create and insert a notification for this error when sending a message.
+Add as much detail, so we can reverse-engineer why the sending failed.</p>
+  </section>
+</section>
 <section class="detail" id="tag_in_message?/2">
 
   <div class="detail-header">
@@ -1021,7 +1070,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature">tag_in_message?(message, tag_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L505" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L546" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -1050,7 +1099,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature">update_message(message, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L176" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L179" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -1072,11 +1121,11 @@ at the beginning of the list</p>
   <a href="#update_message/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="1477118595-1">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1477118595-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="1477118595-2">}</span><span class="p" data-group-id="1477118595-1">)</span><span class="w">
-</span><span class="p" data-group-id="1477118595-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1477118595-4">%</span><span class="nc" data-group-id="1477118595-4">Message</span><span class="p" data-group-id="1477118595-4">{</span><span class="p" data-group-id="1477118595-4">}</span><span class="p" data-group-id="1477118595-3">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="2728360911-1">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2728360911-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2728360911-2">}</span><span class="p" data-group-id="2728360911-1">)</span><span class="w">
+</span><span class="p" data-group-id="2728360911-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2728360911-4">%</span><span class="nc" data-group-id="2728360911-4">Message</span><span class="p" data-group-id="2728360911-4">{</span><span class="p" data-group-id="2728360911-4">}</span><span class="p" data-group-id="2728360911-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="1477118595-5">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1477118595-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1477118595-6">}</span><span class="p" data-group-id="1477118595-5">)</span><span class="w">
-</span><span class="p" data-group-id="1477118595-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1477118595-8">%</span><span class="nc" data-group-id="1477118595-8">Ecto.Changeset</span><span class="p" data-group-id="1477118595-8">{</span><span class="p" data-group-id="1477118595-8">}</span><span class="p" data-group-id="1477118595-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="2728360911-5">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2728360911-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2728360911-6">}</span><span class="p" data-group-id="2728360911-5">)</span><span class="w">
+</span><span class="p" data-group-id="2728360911-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2728360911-8">%</span><span class="nc" data-group-id="2728360911-8">Ecto.Changeset</span><span class="p" data-group-id="2728360911-8">{</span><span class="p" data-group-id="2728360911-8">}</span><span class="p" data-group-id="2728360911-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_message_media/2">
@@ -1088,7 +1137,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature">update_message_media(message_media, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L592" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/messages.ex#L633" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -1110,11 +1159,11 @@ at the beginning of the list</p>
   <a href="#update_message_media/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="1500991813-1">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1500991813-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="1500991813-2">}</span><span class="p" data-group-id="1500991813-1">)</span><span class="w">
-</span><span class="p" data-group-id="1500991813-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1500991813-4">%</span><span class="nc" data-group-id="1500991813-4">MessageMedia</span><span class="p" data-group-id="1500991813-4">{</span><span class="p" data-group-id="1500991813-4">}</span><span class="p" data-group-id="1500991813-3">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="4712937772-1">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4712937772-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4712937772-2">}</span><span class="p" data-group-id="4712937772-1">)</span><span class="w">
+</span><span class="p" data-group-id="4712937772-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4712937772-4">%</span><span class="nc" data-group-id="4712937772-4">MessageMedia</span><span class="p" data-group-id="4712937772-4">{</span><span class="p" data-group-id="4712937772-4">}</span><span class="p" data-group-id="4712937772-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="1500991813-5">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1500991813-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1500991813-6">}</span><span class="p" data-group-id="1500991813-5">)</span><span class="w">
-</span><span class="p" data-group-id="1500991813-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1500991813-8">%</span><span class="nc" data-group-id="1500991813-8">Ecto.Changeset</span><span class="p" data-group-id="1500991813-8">{</span><span class="p" data-group-id="1500991813-8">}</span><span class="p" data-group-id="1500991813-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="4712937772-5">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4712937772-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4712937772-6">}</span><span class="p" data-group-id="4712937772-5">)</span><span class="w">
+</span><span class="p" data-group-id="4712937772-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4712937772-8">%</span><span class="nc" data-group-id="4712937772-8">Ecto.Changeset</span><span class="p" data-group-id="4712937772-8">{</span><span class="p" data-group-id="4712937772-8">}</span><span class="p" data-group-id="4712937772-7">}</span></code></pre>
   </section>
 </section>
 
@@ -1125,7 +1174,7 @@ at the beginning of the list</p>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
             <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">

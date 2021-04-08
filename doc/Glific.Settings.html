@@ -4,22 +4,29 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v1.1.5">
+    <meta name="generator" content="ExDoc v0.24.1">
+    <meta name="project" content="Glific v1.3.3">
 
-    <title>Glific.Settings — Glific v1.1.5</title>
-    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <title>Glific.Settings — Glific v1.3.3</title>
+    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
 
-    <script src="dist/sidebar_items-70cc72f525.js"></script>
+    <script src="dist/sidebar_items-35501c8f01.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+    <script async src="dist/app-f27ff079945e43879c46.js"></script>
 
 
   </head>
   <body data-type="modules">
-    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
 
 <div class="main">
 
@@ -36,7 +43,7 @@
       <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -51,16 +58,16 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion">
-        v1.1.5
+        v1.3.3
       </strong>
     </div>
 
   </div>
 
   <ul class="sidebar-listNav">
-    <li><a id="extras-list" href="#full-list">Pages</a></li>
+    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
-      <li><a id="modules-list" href="#full-list">Modules</a></li>
+      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
 
   </ul>
@@ -73,7 +80,7 @@ Glific
     <div id="content" class="content-inner">
 
       <h1>
-Glific.Settings <small class="app-vsn">(Glific v1.1.5)</small>
+Glific.Settings <small class="app-vsn">(Glific v1.3.3)</small>
 
           <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L1" title="View Source" class="view-source" rel="help">
             <span class="icon-code" aria-hidden="true"></span>
@@ -218,7 +225,7 @@ Functions
     </a>
     <h1 class="signature">change_language(language, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L133" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L136" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -239,8 +246,8 @@ Functions
   <a href="#change_language/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_language</span><span class="p" data-group-id="2912535409-1">(</span><span class="n">language</span><span class="p" data-group-id="2912535409-1">)</span><span class="w">
-</span><span class="p" data-group-id="2912535409-2">%</span><span class="nc" data-group-id="2912535409-2">Ecto.Changeset</span><span class="p" data-group-id="2912535409-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2912535409-3">%</span><span class="nc" data-group-id="2912535409-3">Language</span><span class="p" data-group-id="2912535409-3">{</span><span class="p" data-group-id="2912535409-3">}</span><span class="p" data-group-id="2912535409-2">}</span></code></pre>
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_language</span><span class="p" data-group-id="0626665103-1">(</span><span class="n">language</span><span class="p" data-group-id="0626665103-1">)</span><span class="w">
+</span><span class="p" data-group-id="0626665103-2">%</span><span class="nc" data-group-id="0626665103-2">Ecto.Changeset</span><span class="p" data-group-id="0626665103-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0626665103-3">%</span><span class="nc" data-group-id="0626665103-3">Language</span><span class="p" data-group-id="0626665103-3">{</span><span class="p" data-group-id="0626665103-3">}</span><span class="p" data-group-id="0626665103-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="count_languages/1">
@@ -285,7 +292,7 @@ Functions
     </a>
     <h1 class="signature">create_language(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L79" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L82" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -307,11 +314,11 @@ Functions
   <a href="#create_language/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="6314095270-1">(</span><span class="p" data-group-id="6314095270-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6314095270-2">}</span><span class="p" data-group-id="6314095270-1">)</span><span class="w">
-</span><span class="p" data-group-id="6314095270-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6314095270-4">%</span><span class="nc" data-group-id="6314095270-4">Language</span><span class="p" data-group-id="6314095270-4">{</span><span class="p" data-group-id="6314095270-4">}</span><span class="p" data-group-id="6314095270-3">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="8741667248-1">(</span><span class="p" data-group-id="8741667248-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8741667248-2">}</span><span class="p" data-group-id="8741667248-1">)</span><span class="w">
+</span><span class="p" data-group-id="8741667248-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8741667248-4">%</span><span class="nc" data-group-id="8741667248-4">Language</span><span class="p" data-group-id="8741667248-4">{</span><span class="p" data-group-id="8741667248-4">}</span><span class="p" data-group-id="8741667248-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="6314095270-5">(</span><span class="p" data-group-id="6314095270-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6314095270-6">}</span><span class="p" data-group-id="6314095270-5">)</span><span class="w">
-</span><span class="p" data-group-id="6314095270-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6314095270-8">%</span><span class="nc" data-group-id="6314095270-8">Ecto.Changeset</span><span class="p" data-group-id="6314095270-8">{</span><span class="p" data-group-id="6314095270-8">}</span><span class="p" data-group-id="6314095270-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="8741667248-5">(</span><span class="p" data-group-id="8741667248-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8741667248-6">}</span><span class="p" data-group-id="8741667248-5">)</span><span class="w">
+</span><span class="p" data-group-id="8741667248-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8741667248-8">%</span><span class="nc" data-group-id="8741667248-8">Ecto.Changeset</span><span class="p" data-group-id="8741667248-8">{</span><span class="p" data-group-id="8741667248-8">}</span><span class="p" data-group-id="8741667248-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_language/1">
@@ -323,7 +330,7 @@ Functions
     </a>
     <h1 class="signature">delete_language(language)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L117" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L120" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -345,11 +352,11 @@ Functions
   <a href="#delete_language/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="9242039002-1">(</span><span class="n">language</span><span class="p" data-group-id="9242039002-1">)</span><span class="w">
-</span><span class="p" data-group-id="9242039002-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9242039002-3">%</span><span class="nc" data-group-id="9242039002-3">Language</span><span class="p" data-group-id="9242039002-3">{</span><span class="p" data-group-id="9242039002-3">}</span><span class="p" data-group-id="9242039002-2">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="3338863912-1">(</span><span class="n">language</span><span class="p" data-group-id="3338863912-1">)</span><span class="w">
+</span><span class="p" data-group-id="3338863912-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3338863912-3">%</span><span class="nc" data-group-id="3338863912-3">Language</span><span class="p" data-group-id="3338863912-3">{</span><span class="p" data-group-id="3338863912-3">}</span><span class="p" data-group-id="3338863912-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="9242039002-4">(</span><span class="n">language</span><span class="p" data-group-id="9242039002-4">)</span><span class="w">
-</span><span class="p" data-group-id="9242039002-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9242039002-6">%</span><span class="nc" data-group-id="9242039002-6">Ecto.Changeset</span><span class="p" data-group-id="9242039002-6">{</span><span class="p" data-group-id="9242039002-6">}</span><span class="p" data-group-id="9242039002-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="3338863912-4">(</span><span class="n">language</span><span class="p" data-group-id="3338863912-4">)</span><span class="w">
+</span><span class="p" data-group-id="3338863912-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3338863912-6">%</span><span class="nc" data-group-id="3338863912-6">Ecto.Changeset</span><span class="p" data-group-id="3338863912-6">{</span><span class="p" data-group-id="3338863912-6">}</span><span class="p" data-group-id="3338863912-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_language!/1">
@@ -361,7 +368,7 @@ Functions
     </a>
     <h1 class="signature">get_language!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L64" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L67" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -382,10 +389,10 @@ Functions
   <a href="#get_language!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="1910614355-1">(</span><span class="mi">123</span><span class="p" data-group-id="1910614355-1">)</span><span class="w">
-</span><span class="p" data-group-id="1910614355-2">%</span><span class="nc" data-group-id="1910614355-2">Language</span><span class="p" data-group-id="1910614355-2">{</span><span class="p" data-group-id="1910614355-2">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="9905664171-1">(</span><span class="mi">123</span><span class="p" data-group-id="9905664171-1">)</span><span class="w">
+</span><span class="p" data-group-id="9905664171-2">%</span><span class="nc" data-group-id="9905664171-2">Language</span><span class="p" data-group-id="9905664171-2">{</span><span class="p" data-group-id="9905664171-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="1910614355-3">(</span><span class="mi">456</span><span class="p" data-group-id="1910614355-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="9905664171-3">(</span><span class="mi">456</span><span class="p" data-group-id="9905664171-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -398,7 +405,7 @@ Functions
     </a>
     <h1 class="signature">get_language_by_label_or_locale(term)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L169" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L172" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -427,7 +434,7 @@ Functions
     </a>
     <h1 class="signature">language_upsert(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L142" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L145" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -480,8 +487,8 @@ it returns the existing contact, else it creates a new one</p>
   <a href="#list_languages/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_languages</span><span class="p" data-group-id="7273945743-1">(</span><span class="p" data-group-id="7273945743-1">)</span><span class="w">
-</span><span class="p" data-group-id="7273945743-2">[</span><span class="p" data-group-id="7273945743-3">%</span><span class="nc" data-group-id="7273945743-3">Language</span><span class="p" data-group-id="7273945743-3">{</span><span class="p" data-group-id="7273945743-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="7273945743-2">]</span></code></pre>
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_languages</span><span class="p" data-group-id="8253724716-1">(</span><span class="p" data-group-id="8253724716-1">)</span><span class="w">
+</span><span class="p" data-group-id="8253724716-2">[</span><span class="p" data-group-id="8253724716-3">%</span><span class="nc" data-group-id="8253724716-3">Language</span><span class="p" data-group-id="8253724716-3">{</span><span class="p" data-group-id="8253724716-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="8253724716-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="locale_id_map/0">
@@ -493,7 +500,7 @@ it returns the existing contact, else it creates a new one</p>
     </a>
     <h1 class="signature">locale_id_map()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L157" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L160" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -522,7 +529,7 @@ it returns the existing contact, else it creates a new one</p>
     </a>
     <h1 class="signature">update_language(language, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L98" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/settings.ex#L101" class="view-source" rel="help" title="View Source">
        <span class="icon-code" aria-hidden="true"></span>
        <span class="sr-only">View Source</span>
      </a>
@@ -544,11 +551,11 @@ it returns the existing contact, else it creates a new one</p>
   <a href="#update_language/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
   Examples
 </h2>
-<pre><code class="nohighlight makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="2308603861-1">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2308603861-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2308603861-2">}</span><span class="p" data-group-id="2308603861-1">)</span><span class="w">
-</span><span class="p" data-group-id="2308603861-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2308603861-4">%</span><span class="nc" data-group-id="2308603861-4">Language</span><span class="p" data-group-id="2308603861-4">{</span><span class="p" data-group-id="2308603861-4">}</span><span class="p" data-group-id="2308603861-3">}</span><span class="w">
+<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="0048754172-1">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0048754172-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0048754172-2">}</span><span class="p" data-group-id="0048754172-1">)</span><span class="w">
+</span><span class="p" data-group-id="0048754172-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0048754172-4">%</span><span class="nc" data-group-id="0048754172-4">Language</span><span class="p" data-group-id="0048754172-4">{</span><span class="p" data-group-id="0048754172-4">}</span><span class="p" data-group-id="0048754172-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="2308603861-5">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2308603861-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2308603861-6">}</span><span class="p" data-group-id="2308603861-5">)</span><span class="w">
-</span><span class="p" data-group-id="2308603861-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2308603861-8">%</span><span class="nc" data-group-id="2308603861-8">Ecto.Changeset</span><span class="p" data-group-id="2308603861-8">{</span><span class="p" data-group-id="2308603861-8">}</span><span class="p" data-group-id="2308603861-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="0048754172-5">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0048754172-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0048754172-6">}</span><span class="p" data-group-id="0048754172-5">)</span><span class="w">
+</span><span class="p" data-group-id="0048754172-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0048754172-8">%</span><span class="nc" data-group-id="0048754172-8">Ecto.Changeset</span><span class="p" data-group-id="0048754172-8">{</span><span class="p" data-group-id="0048754172-8">}</span><span class="p" data-group-id="0048754172-7">}</span></code></pre>
   </section>
 </section>
 
@@ -559,7 +566,7 @@ it returns the existing contact, else it creates a new one</p>
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
             <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">

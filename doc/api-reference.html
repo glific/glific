@@ -4,22 +4,29 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.23.0">
-    <meta name="project" content="Glific v1.1.5">
+    <meta name="generator" content="ExDoc v0.24.1">
+    <meta name="project" content="Glific v1.3.3">
 
-    <title>API Reference — Glific v1.1.5</title>
-    <link rel="stylesheet" href="dist/elixir-9f91ebe876dc01d67920.css" />
+    <title>API Reference — Glific v1.3.3</title>
+    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
 
-    <script src="dist/sidebar_items-70cc72f525.js"></script>
+    <script src="dist/sidebar_items-35501c8f01.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-60a0c9f10e9e52eae31f.js"></script>
+    <script async src="dist/app-f27ff079945e43879c46.js"></script>
 
 
   </head>
   <body data-type="extras">
-    <script>try { if(localStorage.getItem('night-mode') === 'true') document.body.className += ' night-mode'; } catch (e) { }</script>
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
 
 <div class="main">
 
@@ -36,7 +43,7 @@
       <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
     </button>
     <label class="search-label">
-      <input name="q" type="text" id="search-list" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
 
@@ -51,16 +58,16 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion">
-        v1.1.5
+        v1.3.3
       </strong>
     </div>
 
   </div>
 
   <ul class="sidebar-listNav">
-    <li><a id="extras-list" href="#full-list">Pages</a></li>
+    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
-      <li><a id="modules-list" href="#full-list">Modules</a></li>
+      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
 
 
   </ul>
@@ -73,7 +80,7 @@ Glific
     <div id="content" class="content-inner">
 
 <h1>
-  API Reference <small class="app-vsn">Glific v1.1.5</small>
+  API Reference <small class="app-vsn">Glific v1.3.3</small>
 </h1>
 
   <section class="details-list">
@@ -202,6 +209,15 @@ in a similar manner to plugins wordpress.</p></div>
 <div class="summary-row">
   <div class="summary-signature">
     <a href="Glific.Clients.ReapBenefit.html">Glific.Clients.ReapBenefit</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tweak GCS Bucket name based on group that the contact is in (if any)</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Sol.html">Glific.Clients.Sol</a>
 
   </div>
 
@@ -970,6 +986,15 @@ These maps of available variables will be required by frontend team</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Notifications.html">Glific.Notifications</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The notifications manager and API to interface with the notification sub-system</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Partners.html">Glific.Partners</a>
 
   </div>
@@ -1269,6 +1294,15 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Seeds.SeedsStats.html">Glific.Seeds.SeedsStats</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>One shot migration of data to seed the stats table</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Settings.html">Glific.Settings</a>
 
   </div>
@@ -1283,6 +1317,15 @@ they are created</p></div>
   </div>
 
     <div class="summary-synopsis"><p>Ecto schema and minimal interface for the languages table</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Stats.html">Glific.Stats</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The stats manager and API to interface with the stat sub-system</p></div>
 
 </div>
 <div class="summary-row">
@@ -1489,7 +1532,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Context.html">GlificWeb.Context</a>
+    <a href="GlificWeb.ContextPlug.html">GlificWeb.ContextPlug</a>
 
   </div>
 
@@ -1643,6 +1686,15 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.RateLimitPlug.html">GlificWeb.RateLimitPlug</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Enforcing rate limits on our AP's both authenticated and non-authenticated</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Resolvers.Contacts.html">GlificWeb.Resolvers.Contacts</a>
 
   </div>
@@ -1707,6 +1759,16 @@ one or more calls to resolve the incoming queries.</p></div>
   </div>
 
     <div class="summary-synopsis"><p>Message Resolver which sits between the GraphQL schema and Glific Message Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Notifications.html">GlificWeb.Resolvers.Notifications</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Notification Resolver which sits between the GraphQL schema and Glific Notification Context API. This layer basically stiches together
 one or more calls to resolve the incoming queries.</p></div>
 
 </div>
@@ -1979,6 +2041,15 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Schema.NotificationTypes.html">GlificWeb.Schema.NotificationTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Notification DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Schema.OrganizationTypes.html">GlificWeb.Schema.OrganizationTypes</a>
 
   </div>
@@ -2103,11 +2174,29 @@ original copyright and license (MIT) belong to the contributors to Triplex.</p><
   </section>
 
 
+<div class="bottom-actions">
+  <div class="bottom-actions-item">
+
+  </div>
+  <div class="bottom-actions-item">
+
+      <a href="readme.html" class="bottom-actions-button" rel="next">
+        <span class="subheader">
+          Next Page →
+        </span>
+        <span class="title">
+Glific - Two Way Open Source Communication Platform
+        </span>
+      </a>
+
+  </div>
+</div>
+
       <footer class="footer">
         <p>
           <span class="line">
             Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.23.0) for the
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
             <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
           </span>
           <span class="line">

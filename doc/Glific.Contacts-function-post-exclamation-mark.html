@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.24.1">
+    <meta name="project" content="Glific v1.3.3">
+
+    <title>Glific.Contacts.post-exclamation-mark — Glific v1.3.3</title>
+    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+
+    <script src="dist/sidebar_items-35501c8f01.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+
+
+  </head>
+  <body data-type="modules">
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://glific.io" class="sidebar-projectName">
+Glific
+      </a>
+      <strong class="sidebar-projectVersion">
+        v1.3.3
+      </strong>
+    </div>
+
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+<h1>Glific.Contacts.post-exclamation-mark</h1>
+
+<div class="deprecated">
+  You're seeing just the function <code>post-exclamation-mark</code>, go back to <a href="Glific.Contacts.html">Glific.Contacts</a> module for more information.
+</div>
+
+<section class="detail" id="post!/4">
+
+  <div class="detail-header">
+    <a href="#post!/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">post!(client, url, body, opts)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/contacts.ex#L7" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>post!(<a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:client/0">Tesla.Env.client</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:url/0">Tesla.Env.url</a>(), <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:body/0">Tesla.Env.body</a>(), [<a href="#t:option/0">option</a>()]) ::
+  <a href="https://hexdocs.pm/tesla/1.4.0/Tesla.Env.html#t:t/0">Tesla.Env.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+
+      </div>
+
+<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir"><span class="n">post!</span><span class="p" data-group-id="4885966798-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4885966798-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4885966798-2">}</span><span class="p" data-group-id="4885966798-1">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="4885966798-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4885966798-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4885966798-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4885966798-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4885966798-5">]</span><span class="p" data-group-id="4885966798-3">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="4885966798-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4885966798-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4885966798-7">}</span><span class="p" data-group-id="4885966798-6">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="4885966798-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4885966798-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4885966798-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4885966798-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4885966798-10">]</span><span class="p" data-group-id="4885966798-8">)</span></code></pre>
+  </section>
+</section>
+
+
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
+          </span>
+          <span class="line">
+            Designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
+</html>
