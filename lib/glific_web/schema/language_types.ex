@@ -14,6 +14,7 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :label_locale, :string
     field :locale, :string
     field :is_active, :boolean
+    field :localized, :boolean
   end
 
   @desc "Filtering options for languages"
@@ -23,6 +24,9 @@ defmodule GlificWeb.Schema.LanguageTypes do
 
     @desc "Match the locale"
     field :locale, :string
+
+    @desc "Match the localized"
+    field :localized, :boolean
   end
 
   input_object :language_input do
@@ -31,6 +35,7 @@ defmodule GlificWeb.Schema.LanguageTypes do
     field :locale, non_null(:string)
     field :is_active, :boolean
     field :is_reserved, :boolean
+    field :localized, :boolean
   end
 
   object :language_result do
