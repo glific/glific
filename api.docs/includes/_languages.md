@@ -10,6 +10,7 @@ query languages($opts: Opts) {
     labelLocale
     locale
     isActive
+    localized
   }
 }
 
@@ -33,14 +34,16 @@ query languages($opts: Opts) {
         "isActive": false,
         "label": "Hindi",
         "labelLocale": "हिंदी",
-        "locale": "hi"
+        "locale": "hi",
+        "localized": true
       },
       {
         "id": "2",
         "isActive": false,
         "label": "English",
         "labelLocale": "English",
-        "locale": "en_US"
+        "locale": "en_US",
+        "localized": true
       }
     ]
   }
@@ -392,6 +395,12 @@ Type | Description
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<tr>
+<td colspan="2" valign="top"><strong>localized</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
