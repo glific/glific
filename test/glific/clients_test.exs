@@ -4,6 +4,7 @@ defmodule Glific.ClientsTest do
   alias Glific.{
     Clients,
     Clients.ReapBenefit,
+    Clients.Sol,
     Contacts,
     Fixtures
   }
@@ -47,6 +48,17 @@ defmodule Glific.ClientsTest do
       })
 
     assert String.contains?(directory, "/")
+
+    # ensure sol works
+    contact = Fixtures.contact_fixture()
+    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+    assert String.contains?(directory, "/")
+    assert String.contains?(directory, contact.name)
+
+    contact = Fixtures.contact_fixture(%{name: ""})
+    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+    assert String.contains?(directory, "/")
+    assert String.contains?(directory, "NO NAME")
 
     # also test reap_benefit separately
     directory = ReapBenefit.gcs_file_name(%{"flow_id" => 1, "remote_name" => "foo"})
