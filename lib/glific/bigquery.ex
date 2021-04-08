@@ -82,8 +82,13 @@ defmodule Glific.Bigquery do
         {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
         project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
-        conn = Connection.new(token.token)
-        {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+
+        if is_nil(token) do
+          token
+        else
+          conn = Connection.new(token.token)
+          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+        end
     end
   end
 
