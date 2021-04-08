@@ -2,6 +2,7 @@ defmodule Glific.SettingsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Fixtures,
     Seeds.SeedsDev,
     Settings,
     Settings.Language
