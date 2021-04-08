@@ -14,6 +14,7 @@ defmodule Glific.Partners do
     Contacts.Contact,
     Flags,
     GCS,
+    Notifications,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
@@ -739,7 +740,8 @@ defmodule Glific.Partners do
     nil
   end
 
-  defp handle_token_error(_organization_id, _provider_shortcode, _error), do: nil
+  defp handle_token_error(_organization_id, _provider_shortcode, error), do:
+  raise("Error fetching goth token' #{inspect(error)}")
 
   @doc """
   Disable a specific credential for the organization
@@ -758,6 +760,15 @@ defmodule Glific.Partners do
         |> Repo.update_all(set: [is_active: false])
 
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
+        Notifications.create_notification(%{
+          category: shortcode,
+          message: "Disable #{shortcode} credential",
+          severity: "Error",
+          organization_id: organization_id,
+          entity: %{
+            error: "Wrong credentials"
+          }
+        })
 
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
