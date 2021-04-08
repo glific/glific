@@ -7,7 +7,8 @@ defmodule Glific.Users.User do
     Contacts.Contact,
     Enums.UserRoles,
     Groups.Group,
-    Partners.Organization
+    Partners.Organization,
+    Settings.Language
   }
 
   alias Ecto.Changeset
@@ -20,16 +21,20 @@ defmodule Glific.Users.User do
           fingerprint: String.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          language_id: non_neg_integer | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           roles: [String.t()] | nil,
           is_restricted: boolean(),
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          last_login_at: :utc_datetime | nil,
+          last_login_from: String.t() | nil
         }
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
-  @optional_fields [:name, :roles, :is_restricted]
+  @optional_fields [:name, :roles, :is_restricted, :last_login_from, :last_login_at, :language_id]
 
   schema "users" do
     field :name, :string
@@ -42,7 +47,11 @@ defmodule Glific.Users.User do
     # to identify the same user from different browsers and/or machines
     field :fingerprint, :string, virtual: true
 
+    field :last_login_from, :string, default: nil
+    field :last_login_at, :utc_datetime
+
     belongs_to :contact, Contact
+    belongs_to :language, Language
     belongs_to :organization, Organization
 
     pow_user_fields()
@@ -94,7 +103,14 @@ defmodule Glific.Users.User do
           Changeset.t()
   def update_fields_changeset(user_or_changeset, params) do
     user_or_changeset
-    |> Changeset.cast(params, [:name, :roles, :password, :is_restricted])
+    |> Changeset.cast(params, [
+      :name,
+      :roles,
+      :password,
+      :is_restricted,
+      :last_login_at,
+      :last_login_from
+    ])
     |> Changeset.validate_required([:name, :roles])
     |> password_changeset(params, @pow_config)
     |> Changeset.unique_constraint(:contact_id)

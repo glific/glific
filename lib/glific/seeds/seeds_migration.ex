@@ -8,6 +8,7 @@ defmodule Glific.Seeds.SeedsMigration do
   import Ecto.Query
 
   alias Glific.{
+    Bigquery,
     Contacts,
     Contacts.Contact,
     Groups.Group,
@@ -16,6 +17,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
+    Seeds.SeedsStats,
     Settings,
     Settings.Language,
     Users,
@@ -37,11 +39,28 @@ defmodule Glific.Seeds.SeedsMigration do
         else: [organization]
 
     case phase do
-      :simulator -> add_simulators(organizations)
-      :optin -> optin_data(organizations)
-      :collection -> seed_collections(organizations)
-      :fix_message_number -> fix_message_number(organizations)
-      :opt_in_out -> SeedsFlows.opt_in_out_flows(organizations)
+      :collection ->
+        seed_collections(organizations)
+
+      :fix_message_number ->
+        fix_message_number(organizations)
+
+      :optin ->
+        optin_data(organizations)
+
+      :opt_in_out ->
+        SeedsFlows.opt_in_out_flows(organizations)
+
+      :simulator ->
+        add_simulators(organizations)
+
+      :stats ->
+        org_id_list = Enum.map(organizations, fn o -> o.id end)
+        SeedsStats.seed_stats(org_id_list)
+
+      :sync_bigquery ->
+        bigquery_enabled_org_ids()
+        |> sync_schema_with_bigquery()
     end
   end
 
@@ -77,9 +96,9 @@ defmodule Glific.Seeds.SeedsMigration do
       bsp_status: :session_and_hsm,
       inserted_at: time,
       updated_at: time,
-      last_message_at: time,
-      last_communication_at: time,
-      optin_time: time
+      last_message_at: DateTime.truncate(time, :second),
+      last_communication_at: DateTime.truncate(time, :second),
+      optin_time: DateTime.truncate(time, :second)
     }
   end
 
@@ -138,7 +157,7 @@ defmodule Glific.Seeds.SeedsMigration do
         {"Five", "_5"}
       ]
 
-      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+      utc_now = DateTime.utc_now()
       simulator_phone_prefix = Contacts.simulator_phone_prefix()
 
       # lets delete any old simulators for this organization
@@ -184,7 +203,7 @@ defmodule Glific.Seeds.SeedsMigration do
 
     if !has_contact?(organization, name) do
       # lets precompute common values
-      utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
+      utc_now = DateTime.utc_now()
 
       organization
       |> get_common_attrs(language, utc_now)
@@ -275,32 +294,117 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @doc """
+  Sync bigquery schema with local db changes.
+  """
+  @spec sync_schema_with_bigquery(list) :: :ok
+  def sync_schema_with_bigquery(org_id_list),
+    do: Enum.each(org_id_list, &Bigquery.sync_schema_with_bigquery(&1))
+
+  @doc """
   Reset message number for a list of organizations or for a org_id
   """
   @spec fix_message_number(list | integer()) :: :ok
   def fix_message_number(org_id) when is_integer(org_id) do
-    query = """
-    UPDATE
-      messages m
-    SET
-      message_number = m2.row_num
-    FROM (
-      SELECT
-        id,
-        contact_id,
-        ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
-      FROM
-        messages m2
-      WHERE
-        m2.organization_id = #{org_id} ) m2
-    WHERE
-      m.organization_id = #{org_id} AND m.id = m2.id;
-    """
+    # set a large query timeout for this
+    [
+      fix_message_number_query_for_contacts(org_id),
+      set_last_message_number_for_contacts(org_id),
+      fix_message_number_query_for_groups(org_id),
+      set_last_message_number_for_collection(org_id)
+    ]
+    |> Enum.each(&Repo.query!(&1, [], timeout: 900_000))
 
-    Repo.query!(query)
     :ok
   end
 
   def fix_message_number(organizations) when is_list(organizations),
     do: organizations |> Enum.each(fn org -> fix_message_number(org.id) end)
+
+  @spec fix_message_number_query_for_contacts(integer()) :: String.t()
+  defp fix_message_number_query_for_contacts(org_id) do
+    """
+    UPDATE
+      messages m
+      SET
+        message_number = m2.row_num
+      FROM (
+        SELECT
+          id,
+          contact_id,
+          ROW_NUMBER() OVER (PARTITION BY contact_id ORDER BY inserted_at ASC) AS row_num
+        FROM
+          messages m2
+        WHERE
+          m2.organization_id = #{org_id} and m2.sender_id != m2.receiver_id ) m2
+      WHERE
+        m.organization_id = #{org_id} and m.sender_id != m.receiver_id and m.id = m2.id;
+    """
+  end
+
+  @spec fix_message_number_query_for_groups(integer()) :: String.t()
+  defp fix_message_number_query_for_groups(org_id) do
+    """
+    UPDATE
+      messages m
+      SET
+        message_number = m2.row_num
+      FROM (
+        SELECT
+          id,
+          group_id,
+          ROW_NUMBER() OVER (PARTITION BY group_id ORDER BY inserted_at ASC) AS row_num
+        FROM
+          messages m2
+        WHERE
+          m2.organization_id = #{org_id} and m2.sender_id = m2.receiver_id ) m2
+      WHERE
+        m.organization_id = #{org_id} and m.sender_id = m.receiver_id and m.id = m2.id;
+    """
+  end
+
+  @spec set_last_message_number_for_contacts(integer()) :: String.t()
+  defp set_last_message_number_for_contacts(org_id) do
+    """
+    UPDATE
+      contacts c
+    SET
+      last_message_number = (
+        SELECT
+          max(message_number) as message_number
+        FROM
+          messages
+        WHERE
+          contact_id = c.id)
+      WHERE
+        organization_id = #{org_id};
+    """
+  end
+
+  @spec set_last_message_number_for_collection(integer()) :: String.t()
+  defp set_last_message_number_for_collection(org_id) do
+    """
+    UPDATE
+      groups g
+    SET
+      last_message_number = (
+        SELECT
+          max(message_number) as message_number
+        FROM
+          messages
+        WHERE
+          group_id = g.id and messages.receiver_id = messages.sender_id)
+      WHERE
+        organization_id = #{org_id};
+    """
+  end
+
+  @spec bigquery_enabled_org_ids() :: list()
+  defp bigquery_enabled_org_ids do
+    Glific.Partners.Credential
+    |> join(:left, [c], p in Glific.Partners.Provider, as: :p, on: c.provider_id == p.id)
+    |> where([_c, p], p.shortcode == ^"bigquery")
+    |> where([c, _p], c.is_active)
+    |> select([c, _p], c.organization_id)
+    |> Repo.all()
+  end
 end

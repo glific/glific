@@ -39,8 +39,8 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         last_message_at: DateTime.utc_now() |> DateTime.truncate(:second),
         last_communication_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
       }
     end
 
@@ -208,8 +208,8 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization_id,
         flow_context_id: context_id,
         results: create_results_entry(flow_id),
-        inserted_at: DateTime.utc_now() |> DateTime.truncate(:second),
-        updated_at: DateTime.utc_now() |> DateTime.add(120, :second) |> DateTime.truncate(:second)
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now() |> DateTime.add(120, :second)
       }
     end
 

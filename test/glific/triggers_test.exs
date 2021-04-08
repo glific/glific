@@ -1,12 +1,13 @@
 defmodule Glific.TriggersTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
-  import ExUnit.CaptureLog
-  require Logger
 
   alias Glific.{
     Fixtures,
+    Flows,
+    Groups,
     Messages,
+    Repo,
     Seeds.SeedsDev,
     Triggers,
     Triggers.Trigger
@@ -25,8 +26,8 @@ defmodule Glific.TriggersTest do
 
   describe "triggers" do
     test "execute_triggers/2 should execute a trigger", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
-      end_date = Timex.shift(DateTime.utc_now(), days: 1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
+      end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
       _trigger =
         Fixtures.trigger_fixture(%{
@@ -34,6 +35,16 @@ defmodule Glific.TriggersTest do
           organization_id: attrs.organization_id,
           end_date: end_date
         })
+
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      Repo.update_all(Trigger,
+        set: [
+          start_at: Timex.shift(time, days: -1),
+          last_trigger_at: Timex.shift(time, days: -1),
+          next_trigger_at: Timex.shift(time, days: -1)
+        ]
+      )
 
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)
@@ -46,25 +57,27 @@ defmodule Glific.TriggersTest do
       assert Trigger.get_trigger!(tr.id) == tr
     end
 
-    @tag :pending
-    test "execute_triggers/2 should execute a trigger and capture log", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
-      end_date = Timex.shift(DateTime.utc_now(), days: 1)
+    test "create_trigger/1 with invalid data returns error", attrs do
+      [flow | _tail] = Flows.list_flows(%{organization_id: attrs.organization_id})
+      [group | _tail] = Groups.list_groups(%{organization_id: attrs.organization_id})
 
-      _trigger =
-        Fixtures.trigger_fixture(%{
-          start_at: start_at,
-          organization_id: attrs.organization_id,
-          end_date: end_date
-        })
+      arc = %{
+        days: [],
+        end_date: Timex.shift(Date.utc_today(), days: 2),
+        flow_id: flow.id,
+        group_id: group.id,
+        is_active: false,
+        is_repeating: false,
+        organization_id: 1,
+        start_date: Timex.shift(Date.utc_today(), days: -1),
+        start_time: Time.utc_now()
+      }
 
-      assert capture_log(fn ->
-               Triggers.execute_triggers(attrs.organization_id)
-             end) =~ "executing trigger: test trigger for org_id: #{attrs.organization_id}"
+      assert {:error, %Ecto.Changeset{}} = Trigger.create_trigger(arc)
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 2)
 
       _trigger =
@@ -75,6 +88,16 @@ defmodule Glific.TriggersTest do
           end_date: end_date
         })
 
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      Repo.update_all(Trigger,
+        set: [
+          start_at: Timex.shift(time, days: -1),
+          last_trigger_at: nil,
+          next_trigger_at: Timex.shift(time, days: -1)
+        ]
+      )
+
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
@@ -82,7 +105,7 @@ defmodule Glific.TriggersTest do
     end
 
     test "execute_triggers/2 should execute a trigger with frequency as daily", attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 5)
 
       _trigger =
@@ -95,6 +118,16 @@ defmodule Glific.TriggersTest do
           end_date: end_date
         })
 
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      Repo.update_all(Trigger,
+        set: [
+          start_at: Timex.shift(time, days: -1),
+          last_trigger_at: Timex.shift(time, days: -1),
+          next_trigger_at: Timex.shift(time, days: -1)
+        ]
+      )
+
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)
       msg_count2 = Messages.count_messages(%{filter: attrs})
@@ -103,7 +136,7 @@ defmodule Glific.TriggersTest do
 
     test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined",
          attrs do
-      start_at = Timex.shift(DateTime.utc_now(), days: -1)
+      start_at = Timex.shift(DateTime.utc_now(), days: 1)
       end_date = Timex.shift(DateTime.utc_now(), days: 5)
 
       _trigger =
@@ -116,6 +149,16 @@ defmodule Glific.TriggersTest do
           last_trigger_at: start_at,
           end_date: end_date
         })
+
+      time = DateTime.truncate(DateTime.utc_now(), :second)
+
+      Repo.update_all(Trigger,
+        set: [
+          start_at: Timex.shift(time, days: -1),
+          last_trigger_at: Timex.shift(time, days: -1),
+          next_trigger_at: Timex.shift(time, days: -1)
+        ]
+      )
 
       msg_count1 = Messages.count_messages(%{filter: attrs})
       Triggers.execute_triggers(attrs.organization_id)

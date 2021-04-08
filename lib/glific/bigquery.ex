@@ -14,8 +14,10 @@ defmodule Glific.Bigquery do
     Jobs,
     Jobs.BigqueryJob,
     Messages.Message,
+    Notifications,
     Partners,
-    Repo
+    Repo,
+    Stats.Stat
   }
 
   alias GoogleApi.BigQuery.V2.{
@@ -28,12 +30,10 @@ defmodule Glific.Bigquery do
 
   @bigquery_tables %{
     "messages" => :message_schema,
-    "messages_delta" => :message_delta_schema,
     "contacts" => :contact_schema,
-    "contacts_delta" => :contact_delta_schema,
     "flows" => :flow_schema,
     "flow_results" => :flow_result_schema,
-    "flow_results_delta" => :flow_result_delta_schema
+    "stats" => :stats_schema
   }
 
   @doc """
@@ -82,8 +82,13 @@ defmodule Glific.Bigquery do
         {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
         project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
-        conn = Connection.new(token.token)
-        {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+
+        if is_nil(token) do
+          token
+        else
+          conn = Connection.new(token.token)
+          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+        end
     end
   end
 
@@ -96,6 +101,7 @@ defmodule Glific.Bigquery do
       "contacts" -> Contact
       "flow_results" -> FlowResult
       "flows" -> FlowRevision
+      "stats" -> Stat
       "messages_delta" -> Message
       "contacts_delta" -> Contact
       "flow_results_delta" -> FlowResult
@@ -460,13 +466,28 @@ defmodule Glific.Bigquery do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
 
-    Logger.info(
-      "Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{
-        inspect(res)
-      }"
-    )
+    cond do
+      res.insertErrors != nil ->
+        raise("Bigquery Insert Error for table #{table} with res: #{inspect(res)}")
 
-    Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+      ## Max id will be nil or 0 in case of update statement.
+      max_id not in [nil, 0] ->
+        Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+
+        Logger.info(
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+            table
+          }, res: #{inspect(res)}"
+        )
+
+      true ->
+        Logger.info(
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+            table
+          }, res: #{inspect(res)}"
+        )
+    end
+
     :ok
   end
 
@@ -487,6 +508,16 @@ defmodule Glific.Bigquery do
       "PERMISSION_DENIED" ->
         Partners.disable_credential(organization_id, "bigquery")
 
+        Notifications.create_notification(%{
+          category: "Bigquery",
+          message: "Billing account is disabled for Bigquery",
+          severity: "Error",
+          organization_id: organization_id,
+          entity: %{
+            error: "#{inspect(response)}"
+          }
+        })
+
       _ ->
         raise("Bigquery Insert Error for table #{table}  #{response}")
     end
@@ -505,111 +536,58 @@ defmodule Glific.Bigquery do
   @doc """
     Merge delta and main tables.
   """
-  @spec make_merge_job(String.t(), non_neg_integer) :: :ok
-  def make_merge_job(table, organization_id) do
+  @spec make_job_to_remove_duplicate(String.t(), non_neg_integer) :: :ok
+  def make_job_to_remove_duplicate(table, organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = credentials} ->
-        Logger.info("merge #{table} table on bigquery for org_id: #{organization_id}")
-        sql = generate_merge_query(table, credentials)
-
-        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false}
+        Logger.info(
+          "remove duplicates for  #{table} table on bigquery, org_id: #{organization_id}"
         )
-        |> handle_merge_job_error(table, credentials, organization_id)
+
+        sql = generate_duplicate_removal_query(table, credentials, organization_id)
+
+        ## timeout takes some time to delete the old records. So incresing the timeout limit.
+        GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
+          body: %{query: sql, useLegacySql: false, timeoutMs: 60_000}
+        )
+        |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
       _ ->
         :ok
     end
   end
 
-  @spec generate_merge_query(String.t(), map()) :: String.t()
-  defp generate_merge_query("contacts", credentials),
-    do:
-      [
-        "provider_status",
-        "status",
-        "language",
-        "optin_time",
-        "optout_time",
-        "last_message_at",
-        "updated_at",
-        "fields",
-        "settings",
-        "groups",
-        "tags"
-      ]
-      |> format_update_fields
-      |> do_generate_merge_query("contacts_delta", "contacts", credentials)
-
-  defp generate_merge_query("messages", credentials),
-    do:
-      ["type", "status", "sent_at", "tags_label", "flow_label", "flow_name", "flow_uuid"]
-      |> format_update_fields
-      |> do_generate_merge_query("messages_delta", "messages", credentials)
-
-  defp generate_merge_query("flow_results", credentials),
-    do:
-      ["results"]
-      |> format_update_fields
-      |> do_generate_merge_query("flow_results_delta", "flow_results", credentials)
-
-  defp generate_merge_query(_, _), do: :ok
-
-  @spec do_generate_merge_query(String.t(), String.t(), String.t(), map()) :: String.t()
-  defp do_generate_merge_query(fileds_to_update, source, target, credentials) do
-    "MERGE `#{credentials.dataset_id}.#{target}` target  USING ( SELECT * EXCEPT(row_num) FROM  ( SELECT *, ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
-      credentials.dataset_id
-    }.#{source}` delta ) WHERE row_num = 1) source ON target.id = source.id WHEN MATCHED THEN UPDATE SET #{
-      fileds_to_update
-    };"
-  end
-
-  @spec format_update_fields(list()) :: String.t()
-  defp format_update_fields(list) do
-    list
-    |> Enum.map(fn field -> "target.#{field} = source.#{field}" end)
-    |> Enum.join(",")
-  end
-
-  @spec clean_delta_tables(String.t(), map(), non_neg_integer) :: :ok
-  defp clean_delta_tables(table, credentials, organization_id) do
+  @spec generate_duplicate_removal_query(String.t(), map(), non_neg_integer) :: String.t()
+  defp generate_duplicate_removal_query(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
-    ## remove all the data for last 3 hours
-    sql = """
-    DELETE FROM `#{credentials.dataset_id}.#{table}_delta` WHERE EXISTS(SELECT * FROM  ( SELECT updated_at,
-    ROW_NUMBER() OVER(PARTITION BY delta.id ORDER BY delta.updated_at DESC) AS row_num FROM `#{
+
+    "DELETE FROM `#{credentials.dataset_id}.#{table}` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn from `#{
       credentials.dataset_id
-    }.#{table}_delta` delta )
-    WHERE row_num > 0 AND updated_at <= DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
+    }.#{table}` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
       timezone
-    }'))
-    """
+    }')) a where a.rn <> 1 order by id);"
+  end
 
-    query_body = %{query: sql, useLegacySql: false}
+  @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
+          :ok
+  defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
+    do:
+      Logger.info(
+        "duplicate entries have been removed from #{table} on bigquery for org_id: #{
+          organization_id
+        }. #{inspect(response)}"
+      )
 
-    GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(credentials.conn, credentials.project_id,
-      body: query_body
+  defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
+    Logger.error(
+      "Error while removing duplicate entries from the table #{table} on bigquery. #{
+        inspect(error)
+      }"
     )
-    |> case do
-      {:ok, response} ->
-        Logger.info("#{table}_delta has been cleaned on bigquery. #{inspect(response)}")
 
-      error ->
-        raise("error while cleaning up #{table}_delta on bigquery. #{inspect(error)}")
-    end
-
-    :ok
-  end
-
-  @spec handle_merge_job_error(tuple() | nil, String.t(), map(), non_neg_integer) :: :ok
-  defp handle_merge_job_error({:ok, response}, table, credentials, organization_id) do
-    Logger.info("#{table} has been merged on bigquery. #{inspect(response)}")
-    clean_delta_tables(table, credentials, organization_id)
-  end
-
-  defp handle_merge_job_error({:error, error}, table, _, _) do
-    Logger.error("Error while merging table #{table} on bigquery. #{inspect(error)}")
-    raise "Error while merging table #{table} on bigquery. #{inspect(error)}"
+    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{
+            inspect(error)
+          }"
   end
 end

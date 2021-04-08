@@ -156,7 +156,6 @@ defmodule Glific.Repo.Migrations.GlificCore do
     end
 
     create unique_index(:organizations, :shortcode)
-    create unique_index(:organizations, :provider_phone)
     create unique_index(:organizations, :email)
     create unique_index(:organizations, :contact_id)
   end
@@ -351,9 +350,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
           "Timestamp of most recent message sent by the user to ensure we can send a valid message to the user (< 24hr)"
 
       settings_comment = """
-      Store the settings of the user as a map (which is a jsonb object in psql). 
+      Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
-      the user with messages based on their preferences. The user can select one or 
+      the user with messages based on their preferences. The user can select one or
       more options from the preferenes list. All settings are checkboxes or multi-select.
       Merge this with fields, when we have type information
       """
@@ -491,10 +490,8 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:messages, [:sender_id])
-    create index(:messages, [:receiver_id])
     create index(:messages, [:contact_id])
-    create index(:messages, [:user_id])
+    create index(:messages, [:user_id], where: "user_id IS NOT NULL")
     create index(:messages, :organization_id)
   end
 

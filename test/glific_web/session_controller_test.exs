@@ -11,14 +11,14 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
 
   @valid_params %{
     "user" => %{
-      "phone" => "+919820198765",
+      "phone" => "+919820198766",
       "name" => "Jane Doe",
       "password" => @password
     }
   }
   @invalid_params %{
     "user" => %{
-      "phone" => "+919820198765",
+      "phone" => "+919820198766",
       "name" => "Jane Doe",
       # less that 8 characters
       "password" => "invalid"
@@ -31,7 +31,7 @@ defmodule GlificWeb.API.V1.SessionControllerTest do
     user =
       %User{}
       |> User.changeset(%{
-        phone: "+919820198765",
+        phone: "+919820198766",
         name: "Jane Jana",
         password: @password,
         password_confirmation: @password,

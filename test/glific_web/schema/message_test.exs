@@ -393,7 +393,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert get_in(query_data, [:data, "createAndSendMessage"]) == nil
 
     message = get_in(query_data, [:errors, Access.at(0)])[:message]
-    assert message == "Cannot send the message to the contact."
+    assert message == "Contact status is not valid."
   end
 
   test "send session message", %{staff: user} do

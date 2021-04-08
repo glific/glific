@@ -56,7 +56,7 @@ defmodule Glific.Flows.FlowResult do
     belongs_to :flow, Flow
     belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """

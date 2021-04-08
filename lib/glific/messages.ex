@@ -4,6 +4,8 @@ defmodule Glific.Messages do
   """
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Communications,
     Contacts,
@@ -16,6 +18,7 @@ defmodule Glific.Messages do
     Messages.Message,
     Messages.MessageMedia,
     Messages.MessageVariables,
+    Notifications,
     Partners,
     Repo,
     Tags,
@@ -233,10 +236,10 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message(boolean(), map()) ::
+  @spec create_and_send_message({:ok | :error, any()}, map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp create_and_send_message(
-         true = _is_valid_contact,
+         {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
     {:ok, message} =
@@ -252,9 +255,45 @@ defmodule Glific.Messages do
     Communications.Message.send_message(message, attrs)
   end
 
-  @doc false
-  defp create_and_send_message(false, _) do
-    {:error, "Cannot send the message to the contact."}
+  defp create_and_send_message({:error, reason}, attrs) do
+    notify(attrs, reason)
+    {:error, reason}
+  end
+
+  @doc """
+  Create and insert a notification for this error when sending a message.
+  Add as much detail, so we can reverse-engineer why the sending failed.
+  """
+  @spec notify(map(), String.t()) :: nil
+  def notify(attrs, reason \\ "Cannot send the message to the contact.") do
+    contact = attrs.receiver
+
+    Logger.error(
+      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
+        reason
+      }"
+    )
+
+    {:ok, _} =
+      Notifications.create_notification(%{
+        category: "Message",
+        message: reason,
+        severity: "Error",
+        organization_id: attrs.organization_id,
+        entity: %{
+          id: contact.id,
+          name: contact.name,
+          phone: contact.phone,
+          bsp_status: contact.bsp_status,
+          status: contact.status,
+          last_message_at: contact.last_message_at,
+          is_hsm: Map.get(attrs, :is_hsm),
+          flow_id: Map.get(attrs, :flow_id),
+          group_id: Map.get(attrs, :group_id)
+        }
+      })
+
+    nil
   end
 
   @spec parse_message_body(map()) :: String.t() | nil
@@ -284,9 +323,10 @@ defmodule Glific.Messages do
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
           {:ok, Message.t()}
   def create_and_send_otp_verification_message(contact, otp) do
-    if Contacts.can_send_message_to?(contact, false),
-      do: create_and_send_otp_session_message(contact, otp),
-      else: create_and_send_otp_template_message(contact, otp)
+    case Contacts.can_send_message_to?(contact, false) do
+      {:ok, _} -> create_and_send_otp_session_message(contact, otp)
+      _ -> create_and_send_otp_template_message(contact, otp)
+    end
   end
 
   @doc false
@@ -383,6 +423,7 @@ defmodule Glific.Messages do
         receiver_id: receiver_id,
         template_uuid: session_template.uuid,
         template_id: template_id,
+        template_type: session_template.type,
         params: parameters,
         media_id: media_id,
         is_optin_flow: Map.get(attrs, :is_optin_flow, false)
@@ -645,15 +686,6 @@ defmodule Glific.Messages do
     |> Repo.aggregate(:count)
   end
 
-  @spec add_order_by(Ecto.Query.t(), list()) :: Ecto.Query.t()
-  defp add_order_by(query, ids) do
-    if length(ids) == 1,
-      # if messages for one contact, order by message number
-      do: query |> order_by([m], desc: m.message_number),
-      # else order by most recent messages
-      else: query |> order_by([m], desc: m.inserted_at)
-  end
-
   @doc """
   Given a list of message ids builds a conversation list with most recent conversations
   at the beginning of the list
@@ -667,7 +699,7 @@ defmodule Glific.Messages do
         {:ids, ids}, query ->
           query
           |> where([m], m.id in ^ids)
-          |> add_order_by(ids)
+          |> order_by([m], desc: m.inserted_at)
 
         {:filter, filter}, query ->
           query |> conversations_with(filter)
@@ -868,34 +900,39 @@ defmodule Glific.Messages do
 
     FlowContext.mark_flows_complete(contact.id)
 
-    query =
-      Message
-      |> where([m], m.contact_id == ^contact.id)
-      |> where([m], m.organization_id == ^contact.organization_id)
-      |> check_simulator(contact, contact.phone)
+    Message
+    |> where([m], m.contact_id == ^contact.id)
+    |> where([m], m.organization_id == ^contact.organization_id)
+    |> Repo.delete_all()
 
-    Repo.delete_all(query)
-
+    reset_contact_fields(contact)
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     :ok
   end
 
-  @spec check_simulator(Ecto.Query.t(), Contact.t(), String.t()) :: Ecto.Query.t()
-  defp check_simulator(query, contact, phone) do
-    if Contacts.is_simulator_contact?(phone) do
-      Contacts.update_contact(
-        contact,
-        %{fields: %{}}
-      )
+  @spec reset_contact_fields(Contact.t()) :: nil
+  defp reset_contact_fields(contact) do
+    simulator = Contacts.is_simulator_contact?(contact.phone)
 
-      with {:ok, last_message} <- send_default_message(contact) do
-        query
-        |> where([m], m.id != ^last_message.id)
-      end
-    else
-      query
-    end
+    values = %{
+      last_message_number: 0,
+      is_org_read: true,
+      is_org_replied: true,
+      is_contact_replied: true
+    }
+
+    values =
+      if simulator,
+        do: values |> Map.put(:fields, %{}),
+        else: values
+
+    Contacts.update_contact(contact, values)
+
+    if simulator,
+      do: {:ok, _last_message} = send_default_message(contact)
+
+    nil
   end
 
   @spec send_default_message(Contact.t(), String.t()) ::

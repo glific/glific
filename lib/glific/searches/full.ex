@@ -46,12 +46,10 @@ defmodule Glific.Search.Full do
     |> apply_filters(args.filter)
   end
 
-  defp run_helper(query, _, args) do
-    query
-    |> apply_filters(args.filter)
-    |> offset(^args.contact_opts.offset)
-    |> limit(^args.contact_opts.limit)
-  end
+  defp run_helper(query, _, args),
+    do:
+      query
+      |> apply_filters(args.filter)
 
   @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp apply_filters(query, filter) when is_nil(filter), do: query

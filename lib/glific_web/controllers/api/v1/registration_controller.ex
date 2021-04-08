@@ -149,7 +149,7 @@ defmodule GlificWeb.API.V1.RegistrationController do
   defp can_send_otp_to_phone?(organization_id, phone) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
-         true <- Contacts.can_send_message_to?(contact, true),
+         {:ok, _} <- Contacts.can_send_message_to?(contact, true),
          do: {:ok, contact}
   end
 

@@ -11,8 +11,8 @@ defmodule Glific.Clients.ReapBenefit do
   In the case of RB we retrive the flow name of the object (id any)
   and set that as the directory name
   """
-  @spec gcs_params(map(), String.t()) :: {String.t(), String.t()}
-  def gcs_params(media, bucket) do
+  @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(media) do
     if media["flow_id"] do
       flow_name =
         Flow
@@ -21,10 +21,10 @@ defmodule Glific.Clients.ReapBenefit do
         |> Repo.one()
 
       if flow_name in [nil, ""],
-        do: {media["remote_name"], bucket},
-        else: {flow_name <> "/" <> media["remote_name"], bucket}
+        do: media["remote_name"],
+        else: flow_name <> "/" <> media["remote_name"]
     else
-      {media["remote_name"], bucket}
+      media["remote_name"]
     end
   end
 end

@@ -21,14 +21,14 @@ defmodule Glific.GCS do
     Logger.debug("fetching gcs token for org_id: #{organization_id}")
     organization_id = String.to_integer(organization_id)
     token = Partners.get_goth_token(organization_id, "google_cloud_storage")
-    token.token
+    if !is_nil(token), do: token.token
   end
 
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec refresh_gsc_setup(non_neg_integer) :: :ok
-  def refresh_gsc_setup(organization_id) do
+  @spec refresh_gcs_setup(non_neg_integer) :: :ok
+  def refresh_gcs_setup(organization_id) do
     Logger.info("refresh GCS setup for org_id: #{organization_id}")
 
     organization_id

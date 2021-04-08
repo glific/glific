@@ -4,6 +4,7 @@ defmodule Glific.ClientsTest do
   alias Glific.{
     Clients,
     Clients.ReapBenefit,
+    Clients.Sol,
     Contacts,
     Fixtures
   }
@@ -18,47 +19,53 @@ defmodule Glific.ClientsTest do
     assert Enum.count(map) > 1
   end
 
-  test "gcs_params with contact id" do
-    {directory, _bucket} =
-      Clients.gcs_params(
-        %{"organization_id" => 1, "contact_id" => 2, "remote_name" => "remote"},
-        "default"
-      )
+  test "gcs_file_name with contact id" do
+    directory =
+      Clients.gcs_file_name(%{
+        "organization_id" => 1,
+        "contact_id" => 2,
+        "remote_name" => "remote"
+      })
 
     assert !String.contains?(directory, "/")
 
-    {directory, _bucket} =
-      Clients.gcs_params(
-        %{"organization_id" => 43, "contact_id" => 1, "remote_name" => "remote"},
-        "default"
-      )
+    directory =
+      Clients.gcs_file_name(%{
+        "organization_id" => 43,
+        "contact_id" => 1,
+        "remote_name" => "remote"
+      })
 
     assert !String.contains?(directory, "/")
 
     cg = Fixtures.contact_group_fixture(%{organization_id: 1})
 
-    {directory, _bucket} =
-      Clients.gcs_params(
-        %{"organization_id" => 1, "contact_id" => cg.contact_id, "remote_name" => "remote"},
-        "default"
-      )
+    directory =
+      Clients.gcs_file_name(%{
+        "organization_id" => 1,
+        "contact_id" => cg.contact_id,
+        "remote_name" => "remote"
+      })
 
     assert String.contains?(directory, "/")
 
+    # ensure sol works
+    contact = Fixtures.contact_fixture()
+    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+    assert String.contains?(directory, "/")
+    assert String.contains?(directory, contact.name)
+
+    contact = Fixtures.contact_fixture(%{name: ""})
+    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+    assert String.contains?(directory, "/")
+    assert String.contains?(directory, "NO NAME")
+
     # also test reap_benefit separately
-    {directory, _bucket} =
-      ReapBenefit.gcs_params(
-        %{"flow_id" => 1, "remote_name" => "foo"},
-        "default"
-      )
+    directory = ReapBenefit.gcs_file_name(%{"flow_id" => 1, "remote_name" => "foo"})
 
     assert directory == "Help Workflow/foo"
 
-    {directory, _bucket} =
-      ReapBenefit.gcs_params(
-        %{"flow_id" => 23, "remote_name" => "foo"},
-        "default"
-      )
+    directory = ReapBenefit.gcs_file_name(%{"flow_id" => 23, "remote_name" => "foo"})
 
     assert directory == "foo"
   end

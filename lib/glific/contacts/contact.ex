@@ -66,8 +66,8 @@ defmodule Glific.Contacts.Contact do
           last_communication_at: :utc_datetime | nil,
           settings: map() | nil,
           fields: map() | nil,
-          inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          inserted_at: :utc_datetime_usec | nil,
+          updated_at: :utc_datetime_usec | nil
         }
 
   schema "contacts" do
@@ -91,7 +91,7 @@ defmodule Glific.Contacts.Contact do
     field :optin_method, :string
     field :optin_message_id, :string
 
-    field :last_message_number, :integer, default: -1
+    field :last_message_number, :integer, default: 0
 
     field :optout_time, :utc_datetime
     field :last_message_at, :utc_datetime
@@ -104,7 +104,7 @@ defmodule Glific.Contacts.Contact do
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """

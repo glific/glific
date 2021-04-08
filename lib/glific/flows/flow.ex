@@ -56,6 +56,8 @@ defmodule Glific.Flows.Flow do
     field :uuid_map, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
+    field :last_published_at, :utc_datetime, virtual: true
+    field :last_changed_at, :utc_datetime, virtual: true
 
     # This is the dynamic status that we use primarily during
     # flow execution. It tells us if we are using the draft version
@@ -75,7 +77,7 @@ defmodule Glific.Flows.Flow do
 
     has_many :revisions, FlowRevision
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   @doc """

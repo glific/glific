@@ -30,6 +30,7 @@ includes:
   - message_group
   - user_group
   - flows
+  - import
   - types
   - scalars
   - enums

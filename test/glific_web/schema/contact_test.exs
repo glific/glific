@@ -28,6 +28,7 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
   load_gql(:contact_location, GlificWeb.Schema, "assets/gql/contacts/contact_location.gql")
   load_gql(:optin_contact, GlificWeb.Schema, "assets/gql/contacts/optin_contact.gql")
+  load_gql(:import_contacts, GlificWeb.Schema, "assets/gql/contacts/import.gql")
   load_gql(:sim_get, GlificWeb.Schema, "assets/gql/contacts/simulator_get.gql")
   load_gql(:sim_rel, GlificWeb.Schema, "assets/gql/contacts/simulator_release.gql")
 
@@ -162,6 +163,77 @@ defmodule GlificWeb.Schema.ContactTest do
 
     message = get_in(query_data, [:data, "createContact", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+  end
+
+  test "import contacts and test possible scenarios and errors", %{manager: user} do
+    test_name = "test"
+    test_phone = "test phone"
+    group_label = "Test Label"
+    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,"
+
+    # Test success for creating a contact without opt-in
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{"group_label" => group_label, "data" => data}
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    assert count == 1
+
+    # Test success for creating a contact with opt-in
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    test_name = "test2"
+    test_phone = "test phone2"
+    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,2021-03-09"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{"group_label" => group_label, "data" => data}
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    assert count == 1
+
+    # Test success for updating a contact
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    test_name = "test2"
+    test_phone = "test phone2"
+    data = "name,phone,language,opt_in\n#{test_name} updated,#{test_phone},english,2021-03-09"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{"group_label" => group_label, "data" => data}
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}})
+    assert count == 1
+
+    # Test success for deleting a created contact
+    data = "name,phone,language,opt_in,delete\n#{test_name},#{test_phone},english,,1"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{"group_label" => group_label, "data" => data}
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    assert count == 0
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do

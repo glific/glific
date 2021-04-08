@@ -42,7 +42,7 @@ defmodule Glific.Groups.Group do
     field :description, :string
     field :is_restricted, :boolean, default: false
 
-    field :last_message_number, :integer, default: -1
+    field :last_message_number, :integer, default: 0
 
     field :last_communication_at, :utc_datetime
 

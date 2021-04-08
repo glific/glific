@@ -97,8 +97,8 @@ if Code.ensure_loaded?(Faker) do
       contact_entries =
         for contact_entry <- contacts do
           %{
-            inserted_at: utc_now,
-            updated_at: utc_now,
+            inserted_at: DateTime.utc_now(),
+            updated_at: DateTime.utc_now(),
             organization_id: organization.id,
             last_message_at: utc_now,
             last_communication_at: utc_now,
@@ -357,6 +357,8 @@ if Code.ensure_loaded?(Faker) do
           confirm_password: password,
           roles: roles,
           contact_id: contact.id,
+          last_login_at: utc_now,
+          last_login_from: "127.0.0.1",
           organization_id: organization.id
         })
 

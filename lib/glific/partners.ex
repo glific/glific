@@ -11,8 +11,10 @@ defmodule Glific.Partners do
   alias Glific.{
     Bigquery,
     Caches,
+    Contacts.Contact,
     Flags,
     GCS,
+    Notifications,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
@@ -211,17 +213,19 @@ defmodule Glific.Partners do
 
     Enum.reduce(filter, query, fn
       {:email, email}, query ->
-        from q in query, where: ilike(q.email, ^"%#{email}%")
+        from(q in query, where: ilike(q.email, ^"%#{email}%"))
 
       {:bsp, bsp}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :bsp),
           where: ilike(c.name, ^"%#{bsp}%")
+        )
 
       {:default_language, default_language}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :default_language),
           where: ilike(c.label, ^"%#{default_language}%")
+        )
 
       _, query ->
         query
@@ -352,7 +356,7 @@ defmodule Glific.Partners do
   @spec fill_cache(Organization.t()) :: Organization.t()
   def fill_cache(organization) do
     # For this process, lets set the organization id
-    Glific.Repo.put_organization_id(organization.id)
+    Repo.put_organization_id(organization.id)
 
     organization =
       organization
@@ -414,7 +418,7 @@ defmodule Glific.Partners do
         {:error, error}
 
       {_, organization} ->
-        Glific.Repo.put_organization_id(organization.id)
+        Repo.put_organization_id(organization.id)
         organization
     end
   end
@@ -714,14 +718,30 @@ defmodule Glific.Partners do
 
         Goth.Config.add_config(config)
 
-        {:ok, token} =
-          Goth.Token.for_scope(
-            {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-          )
+        Goth.Token.for_scope(
+          {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
+        )
+        |> case do
+          {:ok, token} ->
+            token
 
-        token
+          {:error, error} ->
+            Logger.info("Error while fetching token #{error} for org_id #{organization_id}")
+            handle_token_error(organization_id, provider_shortcode, error)
+        end
     end
   end
+
+  @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
+  defp handle_token_error(organization_id, provider_shortcode, error) when is_binary(error) do
+    if String.contains?(error, "account not found"),
+      do: disable_credential(organization_id, provider_shortcode)
+
+    nil
+  end
+
+  defp handle_token_error(_organization_id, _provider_shortcode, error),
+    do: raise("Error fetching goth token' #{inspect(error)}")
 
   @doc """
   Disable a specific credential for the organization
@@ -741,6 +761,16 @@ defmodule Glific.Partners do
 
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
+        Notifications.create_notification(%{
+          category: shortcode,
+          message: "Disabling #{shortcode}",
+          severity: "Critical",
+          organization_id: organization_id,
+          entity: %{
+            error: "You have entered wrong credentials"
+          }
+        })
+
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
@@ -758,9 +788,44 @@ defmodule Glific.Partners do
   end
 
   def credential_update_callback(organization, "google_cloud_storage") do
-    GCS.refresh_gsc_setup(organization.id)
+    GCS.refresh_gcs_setup(organization.id)
     :ok
   end
 
   def credential_update_callback(_organization, _provider), do: :ok
+
+  @doc """
+  Given an empty list, determine which organizations have been active in the recent
+  past
+  """
+  @spec org_id_list(list(), boolean) :: list()
+  def org_id_list([], recent) do
+    active_organizations([])
+    |> recent_organizations(recent)
+    |> Enum.reduce([], fn {id, _map}, acc -> [id | acc] end)
+  end
+
+  def org_id_list(list, _recent) do
+    Enum.map(
+      list,
+      fn l ->
+        {:ok, int_l} = Glific.parse_maybe_integer(l)
+        int_l
+      end
+    )
+  end
+
+  @doc """
+  Wrapper query used by various statistics collection routines in Glific
+  to return counts on contact with its variations
+  """
+  @spec contact_organization_query(list()) :: Ecto.Query.t()
+  def contact_organization_query(org_id_list) do
+    Contact
+    # block messages sent to groups
+    |> where([c], c.status != :blocked)
+    |> where([c], c.organization_id in ^org_id_list)
+    |> group_by([c], c.organization_id)
+    |> select([c], [count(c.id), c.organization_id])
+  end
 end

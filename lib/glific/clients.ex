@@ -9,21 +9,35 @@ defmodule Glific.Clients do
 
   alias Glific.{Contacts.Contact, Flows.Action}
 
+  @dev %{
+    id: 1,
+    name: "Glific",
+    gcs_file_name: Glific.Clients.Tap,
+    blocked?: Glific.Clients.Stir,
+    broadcast: Glific.Clients.Weunlearn
+  }
+
+  @sol %{
+    id: 1,
+    name: "Slam Out Loud",
+    gcs_file_name: Glific.Clients.Sol
+  }
+
   @tap %{
     id: 12,
     name: "The Apprentice Project",
-    gcs_params: Glific.Clients.Tap
+    gcs_file_name: Glific.Clients.Tap
   }
 
   @stir %{
     id: 13,
-    name: "STiR Education",
-    blocked?: Glific.Clients.Stir
+    name: "STiR Education"
+    # blocked?: Glific.Clients.Stir
   }
 
   @reap_benefit %{
-    id: 15,
-    gcs_params: Glific.Clients.ReapBenefit
+    id: 15
+    # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
   @weunlearn %{
@@ -31,15 +45,8 @@ defmodule Glific.Clients do
     # broadcast: Glific.Clients.Weunlearn
   }
 
-  @dev %{
-    id: 1,
-    name: "Glific",
-    gcs_params: Glific.Clients.Tap,
-    blocked?: Glific.Clients.Stir,
-    broadcast: Glific.Clients.Weunlearn
-  }
-
   @plugins %{
+    @sol[:id] => @sol,
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,
@@ -62,13 +69,13 @@ defmodule Glific.Clients do
   @doc """
   Overwrite the default GCS storage bucket
   """
-  @spec gcs_params(map(), String.t()) :: {String.t(), String.t()}
-  def gcs_params(media, bucket) do
-    module_name = get_in(plugins(), [media["organization_id"], :gcs_params])
+  @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(media) do
+    module_name = get_in(plugins(), [media["organization_id"], :gcs_file_name])
 
     if module_name,
-      do: apply(module_name, :gcs_params, [media, bucket]),
-      else: {media["remote_name"], bucket}
+      do: apply(module_name, :gcs_file_name, [media]),
+      else: media["remote_name"]
   end
 
   @doc """

@@ -12,6 +12,7 @@ defmodule Glific.MessagesTest do
     Messages,
     Messages.Message,
     Messages.MessageMedia,
+    Partners,
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
@@ -326,12 +327,12 @@ defmodule Glific.MessagesTest do
       {:ok, message1} =
         Repo.fetch_by(Message, %{body: "message 1", organization_id: organization_id})
 
-      assert message6.message_number == 5
-      assert message5.message_number == 4
-      assert message4.message_number == 3
-      assert message3.message_number == 2
-      assert message2.message_number == 1
-      assert message1.message_number == 0
+      assert message6.message_number == 6
+      assert message5.message_number == 5
+      assert message4.message_number == 4
+      assert message3.message_number == 3
+      assert message2.message_number == 2
+      assert message1.message_number == 1
     end
 
     test "update_message/2 with valid data updates the message", attrs do
@@ -445,14 +446,14 @@ defmodule Glific.MessagesTest do
       assert {:ok, message1} =
                Repo.fetch_by(Message, %{
                  contact_id: contact1_id,
-                 message_number: 0,
+                 message_number: 1,
                  body: valid_attrs.body
                })
 
       assert {:ok, message2} =
                Repo.fetch_by(Message, %{
                  contact_id: contact2_id,
-                 message_number: 0,
+                 message_number: 1,
                  body: valid_attrs.body
                })
 
@@ -603,6 +604,29 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "test message"
+    end
+
+    test "create and send message should send message to contact should return error", attrs do
+      updated_attrs = %{
+        is_active: false,
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup"
+      }
+
+      {:ok, cred} =
+        Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "gupshup"})
+
+      Partners.update_credential(cred, updated_attrs)
+
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:error, message} = Messages.create_and_send_message(message_attrs)
+      assert message == "Could not send message to contact: Check Gupshup Setting"
     end
 
     test "send hsm message incorrect parameters",

@@ -43,30 +43,28 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    if Contacts.can_send_message_to?(message.receiver, message.is_hsm, attrs) do
-      {:ok, _} =
-        apply(
-          Communications.provider_handler(message.organization_id),
-          @type_to_token[message.type],
-          [message, attrs]
-        )
+    {:ok, _} =
+      apply(
+        Communications.provider_handler(message.organization_id),
+        @type_to_token[message.type],
+        [message, attrs]
+      )
 
-      publish_message(message)
-    else
-      log_error(message)
-    end
+    publish_message(message)
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
     _ ->
-      log_error(message)
+      log_error(message, "Could not send message to contact: Check Gupshup Setting")
   end
 
-  @spec log_error(Message.t()) :: {:error, String.t()}
-  defp log_error(message) do
-    Logger.error("Could not send message: message_id: '#{message.id}'")
-    {:ok, _} = Messages.update_message(message, %{status: :contact_opt_out, bsp_status: nil})
-    {:error, "Cannot send the message to the contact."}
+  @spec log_error(Message.t(), String.t()) :: {:error, String.t()}
+  defp log_error(message, reason) do
+    message = Repo.preload(message, [:receiver])
+    Messages.notify(message, reason)
+
+    {:ok, _} = Messages.update_message(message, %{status: :error})
+    {:error, reason}
   end
 
   @spec publish_message(Message.t()) :: {:ok, Message.t()}

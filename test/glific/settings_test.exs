@@ -2,6 +2,7 @@ defmodule Glific.SettingsTest do
   use Glific.DataCase
 
   alias Glific.{
+    Fixtures,
     Seeds.SeedsDev,
     Settings,
     Settings.Language
@@ -83,6 +84,26 @@ defmodule Glific.SettingsTest do
 
     test "create_language/1 with more invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Settings.create_language(@invalid_more_attrs)
+    end
+
+    test "list_languages/1 with language filtered",
+         %{organization_id: _organization_id} = attrs do
+      language1 = Fixtures.language_fixture(attrs)
+      language2 = Fixtures.language_fixture(Map.merge(%{localized: true}, attrs))
+
+      languages =
+        Settings.list_languages(%{
+          filter: %{localized: true}
+        })
+
+      assert language2 in languages
+
+      non_localized_languages =
+        Settings.list_languages(%{
+          filter: %{localized: false}
+        })
+
+      assert language1 in non_localized_languages
     end
 
     test "update_language/2 with valid data updates the language" do

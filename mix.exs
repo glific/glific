@@ -8,7 +8,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "1.1.5",
+      version: "1.3.3",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -76,6 +76,7 @@ defmodule Glific.MixProject do
       {:phoenix, "~> 1.5"},
       {:phoenix_ecto, "~> 4.1"},
       {:ecto_sql, "~> 3.4"},
+      {:ecto_psql_extras, "~> 0.2"},
       {:postgrex, ">= 0.0.0"},
       {:floki, ">= 0.27.0", only: @test_envs},
       {:phoenix_html, "~> 2.11"},
@@ -135,6 +136,7 @@ defmodule Glific.MixProject do
       {:observer_cli, "~> 1.6"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.2"},
+      {:remote_ip, "~> 1.0"},
       {:tzdata, "~> 1.1"}
     ]
   end

@@ -6,6 +6,7 @@ defmodule GlificWeb.API.V1.SessionController do
   use GlificWeb, :controller
   require Logger
 
+  alias Glific.{Repo, Users.User}
   alias GlificWeb.APIAuthPlug
   alias Plug.Conn
 
@@ -19,6 +20,8 @@ defmodule GlificWeb.API.V1.SessionController do
     |> case do
       {:ok, conn} ->
         Logger.info("Logged in user: user_id: '#{conn.assigns[:current_user].id}'")
+
+        update_last_login(conn.assigns[:current_user], conn)
 
         json(conn, %{
           data: %{
@@ -35,6 +38,20 @@ defmodule GlificWeb.API.V1.SessionController do
         |> put_status(401)
         |> json(%{error: %{status: 401, message: "Invalid phone or password"}})
     end
+  end
+
+  defp update_last_login(user, conn) do
+    remote_ip = GlificWeb.Tenants.remote_ip(conn)
+
+    Logger.info("Updating user login timestamp, user_phone: #{user.phone}, ip: #{remote_ip}")
+
+    user
+    # we are not using update_user call here, since it destroys all tokens
+    |> User.update_fields_changeset(%{
+      last_login_at: DateTime.utc_now(),
+      last_login_from: remote_ip
+    })
+    |> Repo.update()
   end
 
   @doc false

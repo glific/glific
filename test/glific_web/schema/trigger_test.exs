@@ -64,7 +64,8 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers field returns list of triggers in desc order", %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
+    time = Timex.shift(DateTime.utc_now(), days: 1)
+    valid_attrs_2 = Map.merge(attrs, %{start_at: time})
     tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
@@ -77,7 +78,8 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers field should return following limit and offset", %{staff: user} = attrs do
     _tr_1 = Fixtures.trigger_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
+    time = Timex.shift(DateTime.utc_now(), days: 1)
+    valid_attrs_2 = Map.merge(attrs, %{start_at: time})
     _tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result =
@@ -97,8 +99,8 @@ defmodule GlificWeb.Schema.TriggerTest do
 
   test "triggers field returns list of triggers in various filters",
        %{staff: user} = attrs do
-    _tr_1 = Fixtures.trigger_fixture(attrs)
-    valid_attrs_2 = Map.merge(attrs, %{start_at: ~U[2021-03-01 09:22:51Z]})
+    time = Timex.shift(DateTime.utc_now(), days: 1)
+    valid_attrs_2 = Map.merge(attrs, %{start_at: time})
     tr_2 = Fixtures.trigger_fixture(valid_attrs_2)
 
     result = auth_query_gql_by(:list, user, variables: %{"flow" => %{"name" => "help"}})
@@ -144,7 +146,10 @@ defmodule GlificWeb.Schema.TriggerTest do
     [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
     [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
 
-    start_date = "2020-12-30"
+    start_time = Timex.shift(DateTime.utc_now(), days: 1)
+    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    end_time = Timex.shift(DateTime.utc_now(), days: 5)
+    {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
     start_time = "13:15:19"
 
     result =
@@ -156,7 +161,7 @@ defmodule GlificWeb.Schema.TriggerTest do
             "groupId" => group.id,
             "startDate" => start_date,
             "startTime" => start_time,
-            "endDate" => "2020-12-29",
+            "endDate" => end_date,
             "isActive" => false,
             "isRepeating" => false
           }
@@ -169,7 +174,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert flow_name == flow.name
 
     ## we are ignoring the enddate's time
-    assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == "2020-12-29"
+    assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == end_date
 
     ## start date should be converted into UTC
     {:ok, start_at, _} =
@@ -183,18 +188,53 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert time == start_at
   end
 
+  test "create a trigger with time prior to current timestamp should raise an error",
+       %{manager: user} = attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{organization_id: attrs.organization_id})
+    [group | _tail] = Glific.Groups.list_groups(%{organization_id: attrs.organization_id})
+
+    start_time = Timex.shift(DateTime.utc_now(), days: -1)
+    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    end_time = Timex.shift(DateTime.utc_now(), days: 5)
+    {:ok, end_date} = Timex.format(end_time, "%Y-%m-%d", :strftime)
+    start_time = "13:15:19"
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => false,
+            "isRepeating" => false
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message == "Trigger start_at should always be greater than current time"
+  end
+
   test "update a trigger and test possible scenarios and errors", %{manager: user} = attrs do
     trigger =
       Fixtures.trigger_fixture(attrs)
       |> Repo.preload(:flow)
+
+    start_time = Timex.shift(DateTime.utc_now(), days: 1)
+    {:ok, start_date} = Timex.format(start_time, "%Y-%m-%d", :strftime)
+    start_time = "13:15:19"
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => trigger.id,
           "input" => %{
-            "startDate" => "2020-12-30",
-            "startTime" => "13:15:19",
+            "startDate" => start_date,
+            "startTime" => start_time,
             "isActive" => true,
             "flowId" => trigger.flow_id
           }
