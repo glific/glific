@@ -399,7 +399,7 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @spec bigquery_enabled_org_ids() :: list()
-  defp bigquery_enabled_org_ids() do
+  defp bigquery_enabled_org_ids do
      Glific.Partners.Credential
       |> join(:left, [c], p in Glific.Partners.Provider, as: :p, on: c.provider_id == p.id)
       |> where([_c, p], p.shortcode == ^"bigquery")
