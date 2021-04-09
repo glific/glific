@@ -6,10 +6,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     Flows,
     Flows.FlowLabel,
     Groups,
-    Repo,
     Settings,
-    Templates,
-    Users.User
+    Templates
   }
 
   alias GlificWeb.Flows.FlowEditorController
@@ -20,13 +18,6 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     label_locale: "English",
     locale: "en_US",
     is_active: true
-  }
-  @valid_params %{
-    "user" => %{
-      "phone" => "+919820198766",
-      "name" => "Jane Doe",
-      "password" => @password
-    }
   }
 
   @valid_attrs %{
@@ -43,21 +34,20 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     |> Plug.Conn.put_req_header("authorization", token)
   end
 
-  setup %{conn: conn, organization_id: organization_id} do
-    contact = Fixtures.contact_fixture()
+  defp get_params do
+    user = Fixtures.user_fixture()
 
-    %User{}
-    |> User.changeset(%{
-      phone: "+919820198766",
-      name: "Jane Jana",
-      password: @password,
-      password_confirmation: @password,
-      contact_id: contact.id,
-      organization_id: organization_id
-    })
-    |> Repo.insert!()
+    %{
+      "user" => %{
+        "phone" => user.phone,
+        "name" => user.name,
+        "password" => @password
+      }
+    }
+  end
 
-    params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+  defp get_token(valid_params, organization_id, conn) do
+    params = put_in(valid_params, ["user", "organization_id"], organization_id)
     authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
     :timer.sleep(100)
 
@@ -65,8 +55,12 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   end
 
   describe "flow_editor_routes" do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
     test "globals", %{conn: conn, access_token: token} do
-      IO.inspect(token)
       conn =
         get_auth_token(conn, token)
         |> get("/flow-editor/globals", %{})
@@ -74,26 +68,57 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert json_response(conn, 200) == %{"results" => []}
     end
 
-    test "groups", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "groups", %{conn: conn, access_token: token} do
       groups = Groups.list_groups(%{filter: %{organization_id: conn.assigns[:organization_id]}})
-      conn = get(conn, "/flow-editor/groups", %{})
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/groups", %{})
+
       assert length(json_response(conn, 200)["results"]) == length(groups)
     end
 
-    test "groups_post", %{conn: conn} do
-      conn = post(conn, "/flow-editor/groups", %{"name" => "test group"})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "groups_post", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> post("/flow-editor/groups", %{"name" => "test group"})
 
       assert json_response(conn, 200)["name"] ==
                "ALERT: PLEASE CREATE NEW GROUP FROM THE ORGANIZATION SETTINGS"
     end
 
-    test "fields", %{conn: conn} do
-      conn = get(conn, "/flow-editor/fields", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "fields", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/fields", %{})
+
       assert length(json_response(conn, 200)["results"]) > 0
     end
 
-    test "fields_post", %{conn: conn} do
-      conn = post(conn, "/flow-editor/fields", %{"label" => "Some Field name"})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "fields_post", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> post("/flow-editor/fields", %{"label" => "Some Field name"})
 
       assert json_response(conn, 200) == %{
                "key" => "some_field_name",
@@ -103,42 +128,99 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
              }
     end
 
-    test "labels", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "labels", %{conn: conn, access_token: token} do
       flows = FlowLabel.get_all_flowlabel(conn.assigns[:organization_id])
-      conn = get(conn, "/flow-editor/labels", %{})
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/labels", %{})
+
       assert length(json_response(conn, 200)["results"]) == length(flows)
     end
 
-    test "labels_post", %{conn: conn} do
-      conn = post(conn, "/flow-editor/labels", %{"name" => "Test Lable"})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "labels_post", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> post("/flow-editor/labels", %{"name" => "Test Lable"})
+
       results = json_response(conn, 200)
       assert results["name"] == "Test Lable"
     end
 
-    test "channels", %{conn: conn} do
-      conn = get(conn, "/flow-editor/channels", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "channels", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/channels", %{})
+
       data = json_response(conn, 200)
       assert [map] = data["results"]
       assert map["name"] == "WhatsApp"
     end
 
-    test "classifiers", %{conn: conn} do
-      conn = get(conn, "/flow-editor/classifiers", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "classifiers", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/classifiers", %{})
+
       assert json_response(conn, 200)["results"] == []
     end
 
-    test "ticketers", %{conn: conn} do
-      conn = get(conn, "/flow-editor/ticketers", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "ticketers", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/ticketers", %{})
+
       assert json_response(conn, 200)["results"] == []
     end
 
-    test "resthooks", %{conn: conn} do
-      conn = get(conn, "/flow-editor/resthooks", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "resthooks", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/resthooks", %{})
+
       assert json_response(conn, 200)["results"] == []
     end
 
-    test "templates", %{conn: conn} do
-      conn = get(conn, "/flow-editor/templates", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "templates", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/templates", %{})
+
       templates = json_response(conn, 200)["results"]
 
       assert length(
@@ -158,28 +240,59 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       language
     end
 
-    test "languages", %{conn: conn} do
-      conn = get(conn, "/flow-editor/languages", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "languages", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/languages", %{})
+
       languages = json_response(conn, 200)["results"]
 
       assert length(Glific.Partners.organization(conn.assigns[:organization_id]).languages) ==
                length(languages)
     end
 
-    test "environment", %{conn: conn} do
-      conn = get(conn, "/flow-editor/environment", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "environment", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/environment", %{})
+
       assert json_response(conn, 200) == %{}
     end
 
-    test "recipients", %{conn: conn} do
-      conn = get(conn, "/flow-editor/recipients", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "recipients", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/recipients", %{})
+
       # we have already create quite a few users and contacts, so this will
       # have a gew recipients
       assert json_response(conn, 200)["results"] != []
     end
 
-    test "completion", %{conn: conn} do
-      conn = get(conn, "/flow-editor/completion", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "completion", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/completion", %{})
 
       completion =
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
@@ -188,15 +301,23 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert json_response(conn, 200) == completion
     end
 
-    test "activity", %{conn: conn} do
-      conn = get(conn, "/flow-editor/activity", %{})
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "activity", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/activity", %{})
+
       response = json_response(conn, 200)
       assert Map.has_key?(response, "nodes")
       assert Map.has_key?(response, "segments")
     end
 
     test "listing templates in Flow should return the list of approved templates",
-         %{conn: conn} = attrs do
+         %{conn: conn, access_token: _token} = attrs do
       language = language_fixture()
 
       attrs =
@@ -216,63 +337,110 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert length(results["results"]) == length(approved_templates)
     end
 
-    test "get all the flows", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "get all the flows", %{conn: conn, access_token: token} do
       flows = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
-      conn = get(conn, "/flow-editor/flows", %{})
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/flows", %{})
 
       results = json_response(conn, 200)["results"]
       assert length(flows) == length(results)
     end
 
-    test "Flow with UUID should return the latest difination", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "Flow with UUID should return the latest difination", %{conn: conn, access_token: token} do
       [flow | _tail] =
         Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
-      conn = get(conn, "/flow-editor/flows/#{flow.uuid}", %{})
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/flows/#{flow.uuid}", %{})
+
       results = json_response(conn, 200)["results"]
       assert results == Flows.Flow.get_latest_definition(flow.id)
     end
 
-    test "Get a list of all flow revisions", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "Get a list of all flow revisions", %{conn: conn, access_token: token} do
       [flow | _tail] =
         Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
-      conn = get(conn, "/flow-editor/revisions/#{flow.uuid}", %{})
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/revisions/#{flow.uuid}", %{})
+
       results = json_response(conn, 200)["results"]
       assert length(Flows.get_flow_revision_list(flow.uuid)[:results]) == length(results)
     end
 
-    test "Get a specific revision for a flow", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "Get a specific revision for a flow", %{conn: conn, access_token: token} do
       [flow | _tail] =
         Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
       [revision | _tail] = Flows.get_flow_revision_list(flow.uuid)[:results]
 
-      conn = get(conn, "/flow-editor/revisions/#{flow.uuid}/#{revision.id}", %{})
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/revisions/#{flow.uuid}/#{revision.id}", %{})
+
       results = json_response(conn, 200)["definition"]
       assert Flows.get_flow_revision(flow.uuid, revision.id)[:definition] == results
     end
 
-    test "Save a revision for a flow", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "Save a revision for a flow", %{conn: conn, access_token: token} do
       [flow | _tail] =
         Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
       flow = Glific.Repo.preload(flow, :revisions)
       [revision | _tail] = flow.revisions
 
-      conn = post(conn, "/flow-editor/revisions", revision.definition)
+      conn =
+        get_auth_token(conn, token)
+        |> post("/flow-editor/revisions", revision.definition)
+
       revision_id = json_response(conn, 200)["revision"]
 
       assert Glific.Repo.get!(Flows.FlowRevision, revision_id) != nil
     end
 
-    test "functions", %{conn: conn} do
+    setup %{conn: conn, organization_id: organization_id} do
+      valid_params = get_params()
+      get_token(valid_params, organization_id, conn)
+    end
+
+    test "functions", %{conn: conn, access_token: token} do
       functions =
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
         |> Jason.decode!()
 
-      conn = get(conn, "/flow-editor/functions", %{})
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/functions", %{})
+
       assert json_response(conn, 200) == functions
     end
   end
