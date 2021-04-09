@@ -201,8 +201,9 @@ defmodule Glific.Partners.Billing do
 
   @spec stripe_ids :: map()
   defp stripe_ids,
-    do: Application.fetch_env!(:glific, :stripe_ids)
-        |> Enum.into(%{})
+    do:
+      Application.fetch_env!(:glific, :stripe_ids)
+      |> Enum.into(%{})
 
   @doc """
   Fetch the stripe id's
@@ -260,9 +261,16 @@ defmodule Glific.Partners.Billing do
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
     # first update the contact with default payment id
-    with {:ok, _res} <- Stripe.PaymentMethod.attach(%{customer: billing.stripe_customer_id, payment_method: stripe_payment_method_id}),
-         {:ok, _customer} <-  Stripe.Customer.update(billing.stripe_customer_id,%{invoice_settings: %{ default_payment_method: stripe_payment_method_id}}),
-         do: update_billing( billing, %{stripe_payment_method_id: stripe_payment_method_id})
+    with {:ok, _res} <-
+           Stripe.PaymentMethod.attach(%{
+             customer: billing.stripe_customer_id,
+             payment_method: stripe_payment_method_id
+           }),
+         {:ok, _customer} <-
+           Stripe.Customer.update(billing.stripe_customer_id, %{
+             invoice_settings: %{default_payment_method: stripe_payment_method_id}
+           }),
+         do: update_billing(billing, %{stripe_payment_method_id: stripe_payment_method_id})
   end
 
   @doc """
@@ -275,16 +283,16 @@ defmodule Glific.Partners.Billing do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
-   update_payment_method(organization, stripe_payment_method_id)
-   |> case do
-    {:ok, _}
-      ->    billing
-            |> setup(organization)
-            |> subscription(organization)
+    update_payment_method(organization, stripe_payment_method_id)
+    |> case do
+      {:ok, _} ->
+        billing
+        |> setup(organization)
+        |> subscription(organization)
 
-    {:error, error}
-      -> {:error, "Errro while updating the card. #{inspect(error)}"}
-   end
+      {:error, error} ->
+        {:error, "Errro while updating the card. #{inspect(error)}"}
+    end
   end
 
   @spec setup(Billing.t(), Organization.t()) :: Billing.t()
@@ -328,18 +336,14 @@ defmodule Glific.Partners.Billing do
       {:ok, subscription} ->
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
-
-
-
         cond do
           !is_nil(subscription.pending_setup_intent) &&
               subscription.pending_setup_intent.status == "requires_action" ->
-
             params =
-            %{}
-            |> Map.merge(subscription |> subscription_details())
-            |> Map.merge(subscription |> subscription_dates())
-            |> Map.merge(subscription |> subscription_items())
+              %{}
+              |> Map.merge(subscription |> subscription_details())
+              |> Map.merge(subscription |> subscription_dates())
+              |> Map.merge(subscription |> subscription_items())
 
             update_billing(billing, params)
 
