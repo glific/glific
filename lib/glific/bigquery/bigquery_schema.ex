@@ -597,7 +597,7 @@ defmodule Glific.BigquerySchema do
       BEGIN
       EXECUTE IMMEDIATE
       '''
-      CREATE OR REPLACE VIEW `#{project_id}.#{dataset_id}.flat_fields` AS SELECT id, (SELECT label from UNNEST(`groups`)) AS group_category,
+      CREATE OR REPLACE VIEW `#{project_id}.#{dataset_id}.flat_fields` AS SELECT id, (SELECT STRING_AGG(DISTINCT label) from UNNEST(`groups`)) AS group_category,
       '''
       || (
         SELECT STRING_AGG(DISTINCT "(SELECT value FROM UNNEST(fields) WHERE label = '" || label || "') AS " || REPLACE(label, ' ', '_')
