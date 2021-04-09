@@ -201,21 +201,8 @@ defmodule Glific.Partners.Billing do
 
   @spec stripe_ids :: map()
   defp stripe_ids,
-    do: stripe_ids(Application.get_env(:glific, :environment))
-
-  @spec stripe_ids(atom()) :: map()
-  defp stripe_ids(:prod),
-    do: %{}
-
-  defp stripe_ids(_env),
-    do: %{
-      product: "prod_JETOZDWSMNMzwq",
-      setup: "price_0Ic0S6ZVZ2O8W9YsphGSSTpn",
-      monthly: "price_0Ic0S6ZVZ2O8W9Ys6BcEGNEm",
-      users: "price_0Ic0S6ZVZ2O8W9YsfnQRPyB5",
-      messages: "price_0Ic0S6ZVZ2O8W9YstRMIqHjg",
-      consulting_hours: "price_0Ic0S6ZVZ2O8W9YsnZujHtBY"
-    }
+    do: Application.fetch_env!(:glific, :stripe_ids)
+        |> Enum.into(%{})
 
   @doc """
   Fetch the stripe id's
@@ -354,9 +341,20 @@ defmodule Glific.Partners.Billing do
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
 
+
+
         cond do
           !is_nil(subscription.pending_setup_intent) &&
               subscription.pending_setup_intent.status == "requires_action" ->
+
+            params =
+            %{}
+            |> Map.merge(subscription |> subscription_details())
+            |> Map.merge(subscription |> subscription_dates())
+            |> Map.merge(subscription |> subscription_items())
+
+            update_billing(billing, params)
+
             {
               :pending,
               %{
