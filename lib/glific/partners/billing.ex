@@ -339,7 +339,6 @@ defmodule Glific.Partners.Billing do
       {:ok, subscription} ->
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
-        IO.inspect(subscription)
         cond do
           !is_nil(subscription.pending_setup_intent) &&
               subscription.pending_setup_intent.status == "requires_action" ->
@@ -416,8 +415,6 @@ defmodule Glific.Partners.Billing do
         -> %{stripe_subscription_status: "pending"}
     end
   end
-
-
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
