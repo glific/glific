@@ -5,7 +5,11 @@ defmodule StripeController do
 
   use GlificWeb, :controller
 
-  alias Glific.Partners.Invoice
+  alias Glific.Partners.
+  {
+    Billing,
+    Invoice
+  }
 
   @doc """
   The top level API used by the router. Use pattern matching to handle specific events
@@ -58,6 +62,12 @@ defmodule StripeController do
          _organization_id
        ),
        do: Invoice.update_invoice_status(invoice.id, "payment_failed")
+
+  defp handle_webhook(
+         %{type: "customer.subscription.updated", data: %{object: subscription}} = _stripe_event,
+         organization_id
+       ),
+       do: Billing.update_subscription_status(subscription, organization_id, nil)
 
   defp handle_webhook(stripe_event, _organization_id) do
     # handle default case. We ignore these web hooks.

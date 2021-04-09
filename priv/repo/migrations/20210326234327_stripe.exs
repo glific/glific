@@ -15,6 +15,7 @@ defmodule Glific.Repo.Migrations.Stripe do
 
       # subscription and price level info
       add :stripe_subscription_id, :string
+      add :stripe_subscription_status, :string
 
       add :stripe_subscription_items, :jsonb,
         default: "{}",
@@ -29,6 +30,7 @@ defmodule Glific.Repo.Migrations.Stripe do
       add :email, :string, comment: "Billing Email Address, used to create the Stripe Customer"
 
       add :currency, :string, comment: "Currency the account will pay bills"
+
 
       add :is_delinquent, :boolean,
         comment: "Is this account delinquent? Invoice table will have more info"

@@ -32,6 +32,7 @@ defmodule Glific.Partners.Billing do
     :stripe_subscription_id,
     :stripe_subscription_items,
     :stripe_current_period_start,
+    :stripe_subscription_status,
     :stripe_current_period_end,
     :stripe_last_usage_recorded,
     :currency,
@@ -45,6 +46,7 @@ defmodule Glific.Partners.Billing do
           stripe_customer_id: String.t() | nil,
           stripe_payment_method_id: String.t() | nil,
           stripe_subscription_id: String.t() | nil,
+          stripe_subscription_status: String.t() | nil,
           stripe_subscription_items: map(),
           stripe_current_period_start: DateTime.t() | nil,
           stripe_current_period_end: DateTime.t() | nil,
@@ -63,6 +65,7 @@ defmodule Glific.Partners.Billing do
     field :stripe_payment_method_id, :string
 
     field :stripe_subscription_id, :string
+    field :stripe_subscription_status, :string
     field :stripe_subscription_items, :map, default: %{}
 
     field :stripe_current_period_start, :utc_datetime
@@ -336,16 +339,11 @@ defmodule Glific.Partners.Billing do
       {:ok, subscription} ->
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
+        IO.inspect(subscription)
         cond do
           !is_nil(subscription.pending_setup_intent) &&
               subscription.pending_setup_intent.status == "requires_action" ->
-            params =
-              %{}
-              |> Map.merge(subscription |> subscription_details())
-              |> Map.merge(subscription |> subscription_dates())
-              |> Map.merge(subscription |> subscription_items())
-
-            update_billing(billing, params)
+              update_subscription_status(subscription, organization.id, billing)
 
             {
               :pending,
@@ -357,13 +355,7 @@ defmodule Glific.Partners.Billing do
             }
 
           subscription.status == "active" ->
-            params =
-              %{}
-              |> Map.merge(subscription |> subscription_details())
-              |> Map.merge(subscription |> subscription_dates())
-              |> Map.merge(subscription |> subscription_items())
-
-            update_billing(billing, params)
+            update_subscription_status(subscription, organization.id, billing)
             ## we can add more field as per our need
             {:ok, %{status: :active}}
 
@@ -407,6 +399,51 @@ defmodule Glific.Partners.Billing do
       end
     )
     |> (fn v -> %{stripe_subscription_items: v} end).()
+  end
+
+   # return a map which maps glific product ids to subscription item ids
+  @spec subscription_status(Stripe.Subscription.t()) :: map()
+  defp subscription_status(subscription) do
+    cond do
+      !is_nil(subscription.pending_setup_intent) &&
+          subscription.pending_setup_intent.status == "requires_action"
+        ->  %{stripe_subscription_status: "pending"}
+
+      subscription.status == "active"
+        -> %{stripe_subscription_status: "active"}
+
+      true
+        -> %{stripe_subscription_status: "pending"}
+    end
+  end
+
+
+
+  @doc """
+  Update subscription details. We will also use this method while updating the details form webhook.
+  """
+  @spec update_subscription_status(Stripe.Subscription.t(), non_neg_integer(), Billing.t() | nil)
+  :: {:ok, Stripe.Subscription.t()} | {:error, String.t()}
+
+  def update_subscription_status(subscription, organization_id, nil) do
+    {:ok, billing} =
+      Repo.fetch_by(Billing, %{
+        stripe_subscription_id: subscription.id,
+        organization_id: organization_id
+    })
+    update_subscription_status(subscription, organization_id, billing)
+  end
+
+  def update_subscription_status(subscription, _organization_id, billing) do
+    params =
+      %{}
+      |> Map.merge(subscription |> subscription_details())
+      |> Map.merge(subscription |> subscription_dates())
+      |> Map.merge(subscription |> subscription_items())
+      |> Map.merge(subscription |> subscription_status())
+
+      update_billing(billing, params)
+      {:ok, subscription}
   end
 
   defp end_of_previous_day(date),

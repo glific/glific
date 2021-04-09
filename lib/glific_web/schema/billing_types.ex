@@ -28,6 +28,7 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :stripe_payment_method_id, :string
     field :stripe_subscription_id, :string
     field :stripe_subscription_items, :json
+    field :stripe_subscription_status, :string
     field :stripe_last_usage_recorded, :datetime
     field :stripe_current_period_start, :datetime
     field :stripe_current_period_end, :datetime
