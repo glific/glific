@@ -565,9 +565,9 @@ defmodule Glific.Flows.FlowContext do
         else: message
 
     {:ok, context} =
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message)
+    context
+    |> FlowContext.load_context(flow)
+    |> FlowContext.step_forward(message)
 
     {:ok, context, []}
   end

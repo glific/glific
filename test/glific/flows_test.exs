@@ -5,8 +5,10 @@ defmodule Glific.FLowsTest do
     Fixtures,
     Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Flows.FlowRevision,
     Groups,
+    Messages,
     Messages.Message,
     Repo,
     Seeds.SeedsDev
@@ -368,7 +370,7 @@ defmodule Glific.FLowsTest do
     end
   end
 
-  test "test validate on help workflow" do
+  test "test validate on test workflow" do
     SeedsDev.seed_test_flows()
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
@@ -393,5 +395,37 @@ defmodule Glific.FLowsTest do
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))
+  end
+
+  test "test not setting other option on test workflow",
+    %{organization_id: organization_id} = _attrs do
+    SeedsDev.seed_test_flows()
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    Flows.update_flow(flow, %{respond_other: true})
+
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    contact = Fixtures.contact_fixture()
+
+    opts = [
+      contact_id: contact.id,
+      sender_id: contact.id,
+      receiver_id: contact.id,
+      flow: :inbound,
+    ]
+
+    message = Messages.create_temp_message(organization_id, "some random message", opts)
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
+    message_count = Repo.aggregate(Message, :count)
+    context |> FlowContext.load_context(flow) |> FlowContext.execute([message])
+    new_count = Repo.aggregate(Message, :count)
+
+    assert message_count < new_count
+    # since we should have recd 2 messages, hello and hello
+    assert message_count + 2 == new_count
+
   end
 end
