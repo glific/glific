@@ -10,6 +10,8 @@ defmodule Glific.Partners.Billing do
 
   alias __MODULE__
 
+  require Logger
+
   alias Glific.{
     Partners.Organization,
     Repo,
@@ -294,7 +296,8 @@ defmodule Glific.Partners.Billing do
         |> subscription(organization)
 
       {:error, error} ->
-        {:error, "Errro while updating the card. #{inspect(error)}"}
+        Logger.info("Errro while updating the card. #{inspect(error)}")
+        {:error, "Your card was declined."}
     end
   end
 
