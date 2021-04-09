@@ -22,7 +22,16 @@ defmodule Glific.Flows.Flow do
   }
 
   @required_fields [:name, :uuid, :organization_id]
-  @optional_fields [:flow_type, :keywords, :version_number, :uuid_map, :nodes, :ignore_keywords]
+  @optional_fields [
+    :flow_type,
+    :keywords,
+    :version_number,
+    :uuid_map,
+    :nodes,
+    :ignore_keywords,
+    :respond_other,
+    :respond_no_response
+  ]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -32,6 +41,8 @@ defmodule Glific.Flows.Flow do
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
+          respond_other: boolean() | nil,
+          respond_no_response: boolean() | nil,
           flow_type: String.t() | nil,
           status: String.t(),
           definition: map() | nil,
@@ -66,6 +77,8 @@ defmodule Glific.Flows.Flow do
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
+    field :respond_other, :boolean, default: false
+    field :respond_no_response, :boolean, default: false
 
     # we use this to store the latest definition and versionfrom flow_revisions for this flow
     field :definition, :map, virtual: true
@@ -165,7 +178,8 @@ defmodule Glific.Flows.Flow do
       end)
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from floweditor to the Glific data types. While we are doing
+  this we also fix the map, if the variables to resolve Other/No Response is true
   """
   @spec process(map(), Flow.t()) :: Flow.t()
   def process(json, flow) do
@@ -220,7 +234,10 @@ defmodule Glific.Flows.Flow do
   # in some cases floweditor wraps the json under a "definition" key
   @spec clean_definition(map()) :: map()
   defp clean_definition(json),
-    do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
+    do:
+      json
+      |> Map.get("definition", json)
+      |> Map.delete("_ui")
 
   @doc """
   load the latest revision, specifically json definition from the
@@ -280,6 +297,8 @@ defmodule Glific.Flows.Flow do
           uuid: f.uuid,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
+          respond_other: f.respond_other,
+          respond_no_response: f.respond_no_response,
           organization_id: f.organization_id,
           definition: fr.definition,
           version: fr.version

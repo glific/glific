@@ -1,6 +1,5 @@
 defmodule Glific.Repo.Migrations.V131AlterGlificTables do
   use Ecto.Migration
-  @global_schema Application.fetch_env!(:glific, :global_schema)
 
   def change do
     session_templates()
