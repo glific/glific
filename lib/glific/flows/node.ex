@@ -80,12 +80,9 @@ defmodule Glific.Flows.Node do
       if Map.has_key?(json, "router") do
         {router, uuid_map} = Router.process(json["router"], uuid_map, node)
 
-        node =
-          node
-          |> Map.put(:router, router)
-          |> fix_node(flow, uuid_map)
-
-        {node, uuid_map}
+        node
+        |> Map.put(:router, router)
+        |> fix_node(flow, uuid_map)
       else
         {node, uuid_map}
       end
@@ -94,18 +91,18 @@ defmodule Glific.Flows.Node do
     {node, uuid_map}
   end
 
-  @spec fix_node(Node.t(), Flow.t(), map()) :: Node.t()
+  @spec fix_node(Node.t(), Flow.t(), map()) :: {Node.t(), map()}
   defp fix_node(node, flow, uuid_map) do
-    exits = fix_exits(node.exits, node.router, flow, uuid_map)
+    {exits, uuid_map} = fix_exits(node.exits, node.router, flow, uuid_map)
 
-    if exits == node.exits,
-      do: node,
-      else: Map.put(node, :exits, exits)
+    if node.exits == exits || node.exits == Enum.reverse(exits),
+      do: {node, uuid_map},
+      else: {Map.put(node, :exits, exits), uuid_map}
   end
 
-  @spec fix_exits([Exit.t()], Router.t(), Flow.t(), map()) :: [Exit.t()]
-  defp fix_exits(exits, _router, %{respond_other: false, respond_no_response: false}, _uuid_map),
-    do: exits
+  @spec fix_exits([Exit.t()], Router.t(), Flow.t(), map()) :: {[Exit.t()], map()}
+  defp fix_exits(exits, _router, %{respond_other: false, respond_no_response: false}, uuid_map),
+    do: {exits, uuid_map}
 
   defp fix_exits(
          exits,
@@ -114,28 +111,32 @@ defmodule Glific.Flows.Node do
          uuid_map
        ),
        do:
-         exits
-         |> fix_exit(router.other_exit_uuid, other, uuid_map)
-         |> fix_exit(router.no_response_exit_uuid, no_response, uuid_map)
+         {exits, uuid_map}
+         |> fix_exit(router.other_exit_uuid, other)
+         |> fix_exit(router.no_response_exit_uuid, no_response)
 
-  @spec fix_exit([Exit.t()], Ecto.UUID.t(), boolean, map()) :: [Exit.t()]
-  defp fix_exit(exits, _exit_uuid, false, _uuid_map), do: exits
-  defp fix_exit(exits, nil, _exit_flag, _uuid_map), do: exits
+  @spec fix_exit({[Exit.t()], map()}, Ecto.UUID.t(), boolean) :: {[Exit.t()], map()}
+  defp fix_exit({exits, uuid_map}, _exit_uuid, false), do: {exits, uuid_map}
+  defp fix_exit({exits, uuid_map}, nil, _exit_flag), do: {exits, uuid_map}
 
-  defp fix_exit(exits, exit_uuid, _exit_flag, uuid_map) do
-    exits
-    |> Enum.map(fn e ->
-      if e.uuid == exit_uuid &&
-           e.destination_node_uuid == nil do
+  defp fix_exit({exits, uuid_map}, exit_uuid, _exit_flag) do
+    Enum.reduce(
+      exits,
+      {[], uuid_map},
+      fn e, {exits, uuid_map} ->
         lookup = uuid_map[{:reverse, e.node_uuid}]
 
-        if is_nil(lookup),
-          do: e,
-          else: Map.put(e, :destination_node_uuid, elem(lookup, 1))
-      else
-        e
+        if e.uuid == exit_uuid &&
+             e.destination_node_uuid == nil &&
+             lookup != nil do
+          e = Map.put(e, :destination_node_uuid, elem(lookup, 1))
+          uuid_map = Map.put(uuid_map, e.uuid, {:exit, e})
+          {[e | exits], uuid_map}
+        else
+          {[e | exits], uuid_map}
+        end
       end
-    end)
+    )
   end
 
   @doc """
