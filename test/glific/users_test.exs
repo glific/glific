@@ -240,4 +240,21 @@ defmodule Glific.UsersTest do
       assert auth_user.id == user.id
     end
   end
+
+  test "promoting a user works for first user", attrs do
+    user = user_fixture(Map.put(attrs, :roles, [:none]))
+
+    assert user.roles == [:none]
+
+    user = Users.promote_first_user(user)
+    assert user.roles == [:admin]
+
+    user = user_fixture(Map.put(@valid_attrs_1, :roles, [:none]))
+
+    assert user.roles == [:none]
+
+    user = Users.promote_first_user(user)
+    assert user.roles == [:none]
+  end
+
 end

@@ -36,6 +36,10 @@ defmodule GlificWeb.Schema.UserTypes do
       resolve(dataloader(Repo))
     end
 
+    field :language, :language do
+      resolve(dataloader(Repo))
+    end
+
     field :groups, list_of(:group) do
       resolve(dataloader(Repo))
     end

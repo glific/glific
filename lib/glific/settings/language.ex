@@ -9,7 +9,7 @@ defmodule Glific.Settings.Language do
   alias Glific.Settings.Language
 
   @required_fields [:label, :label_locale, :locale]
-  @optional_fields [:description, :is_active]
+  @optional_fields [:description, :is_active, :localized]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -19,6 +19,7 @@ defmodule Glific.Settings.Language do
           locale: String.t() | nil,
           description: String.t() | nil,
           is_active: boolean(),
+          localized: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -31,6 +32,7 @@ defmodule Glific.Settings.Language do
     field :description, :string
 
     field :is_active, :boolean, default: true
+    field :localized, :boolean, default: false
 
     timestamps(type: :utc_datetime)
   end

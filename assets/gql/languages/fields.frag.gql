@@ -4,6 +4,7 @@ fragment LanguageFields on LanguageResult {
     label
     label_locale
     locale
+    localized
   }
 }
 
