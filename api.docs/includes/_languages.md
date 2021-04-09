@@ -10,6 +10,7 @@ query languages($opts: Opts) {
     labelLocale
     locale
     isActive
+    localized
   }
 }
 
@@ -33,14 +34,16 @@ query languages($opts: Opts) {
         "isActive": false,
         "label": "Hindi",
         "labelLocale": "हिंदी",
-        "locale": "hi"
+        "locale": "hi",
+        "localized": true
       },
       {
         "id": "2",
         "isActive": false,
         "label": "English",
         "labelLocale": "English",
-        "locale": "en_US"
+        "locale": "en_US",
+        "localized": true
       }
     ]
   }
@@ -379,6 +382,51 @@ Type | Description
 
 ## Language Inputs ##
 
+### LanguageFilter ###
+
+Filtering options for languages
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>label</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the label
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>locale</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the locale
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>localized</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>
+
+Match the localized
+
+</td>
+</tr>
+</tbody>
+</table>
+
+
+
 ### LanguageInput
 
 <table>
@@ -392,6 +440,12 @@ Type | Description
 <tbody>
 <tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<tr>
+<td colspan="2" valign="top"><strong>localized</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>

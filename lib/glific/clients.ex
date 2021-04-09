@@ -9,6 +9,20 @@ defmodule Glific.Clients do
 
   alias Glific.{Contacts.Contact, Flows.Action}
 
+  @dev %{
+    id: 1,
+    name: "Glific",
+    gcs_file_name: Glific.Clients.Tap,
+    blocked?: Glific.Clients.Stir,
+    broadcast: Glific.Clients.Weunlearn
+  }
+
+  @sol %{
+    id: 1,
+    name: "Slam Out Loud",
+    gcs_file_name: Glific.Clients.Sol
+  }
+
   @tap %{
     id: 12,
     name: "The Apprentice Project",
@@ -31,15 +45,8 @@ defmodule Glific.Clients do
     # broadcast: Glific.Clients.Weunlearn
   }
 
-  @dev %{
-    id: 1,
-    name: "Glific",
-    gcs_file_name: Glific.Clients.Tap,
-    blocked?: Glific.Clients.Stir,
-    broadcast: Glific.Clients.Weunlearn
-  }
-
   @plugins %{
+    @sol[:id] => @sol,
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,

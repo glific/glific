@@ -766,8 +766,8 @@ defmodule Glific.TemplatesTest do
     end
 
     test "update_hsms/1 should update multiple templates of with same shortcode", attrs do
-      [l1, l2 | _] = Glific.Settings.list_languages()
-
+      l1 = Glific.Settings.get_language!(1)
+      l2 = Glific.Settings.get_language!(2)
       otp_hsm_1 = otp_hsm_fixture(l1.id, "PENDING")
       otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
 

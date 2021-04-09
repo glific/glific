@@ -7,7 +7,8 @@ defmodule Glific.Users.User do
     Contacts.Contact,
     Enums.UserRoles,
     Groups.Group,
-    Partners.Organization
+    Partners.Organization,
+    Settings.Language
   }
 
   alias Ecto.Changeset
@@ -20,6 +21,8 @@ defmodule Glific.Users.User do
           fingerprint: String.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          language_id: non_neg_integer | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           roles: [String.t()] | nil,
@@ -31,7 +34,7 @@ defmodule Glific.Users.User do
         }
 
   @required_fields [:phone, :name, :password, :contact_id, :organization_id]
-  @optional_fields [:name, :roles, :is_restricted, :last_login_from, :last_login_at]
+  @optional_fields [:name, :roles, :is_restricted, :last_login_from, :last_login_at, :language_id]
 
   schema "users" do
     field :name, :string
@@ -48,6 +51,7 @@ defmodule Glific.Users.User do
     field :last_login_at, :utc_datetime
 
     belongs_to :contact, Contact
+    belongs_to :language, Language
     belongs_to :organization, Organization
 
     pow_user_fields()

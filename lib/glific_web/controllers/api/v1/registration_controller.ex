@@ -73,7 +73,10 @@ defmodule GlificWeb.API.V1.RegistrationController do
     |> Pow.Plug.create_user(updated_user_params)
     |> case do
       {:ok, user, conn} ->
-        {:ok, _} = add_staff_tag_to_user_contact(organization_id, user)
+        {:ok, _} =
+          user
+          |> Users.promote_first_user()
+          |> add_staff_tag_to_user_contact()
 
         response_data = %{
           data: %{
@@ -93,17 +96,17 @@ defmodule GlificWeb.API.V1.RegistrationController do
   end
 
   @doc false
-  @spec add_staff_tag_to_user_contact(integer, User.t()) :: {:ok, String.t()}
-  defp add_staff_tag_to_user_contact(organization_id, user) do
+  @spec add_staff_tag_to_user_contact(User.t()) :: {:ok, String.t()}
+  defp add_staff_tag_to_user_contact(user) do
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: user.phone, organization_id: organization_id}),
+           Repo.fetch_by(Contact, %{phone: user.phone, organization_id: user.organization_id}),
          {:ok, tag} <-
-           Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: organization_id}),
+           Repo.fetch_by(Tags.Tag, %{label: "Staff", organization_id: user.organization_id}),
          {:ok, _} <-
            Tags.create_contact_tag(%{
              contact_id: contact.id,
              tag_id: tag.id,
-             organization_id: organization_id
+             organization_id: user.organization_id
            }),
          do: {:ok, "Staff tag added to the user contatct"}
   end
@@ -145,11 +148,19 @@ defmodule GlificWeb.API.V1.RegistrationController do
     {:ok, code}
   end
 
+  # see if we can send an hsm or session message to this contact
+  @spec can_send_message_to?(Contact.t()) :: boolean
+  defp can_send_message_to?(contact) do
+    hsm = Contacts.can_send_message_to?(contact, true)
+    session = Contacts.can_send_message_to?(contact, false)
+    elem(hsm, 0) == :ok || elem(session, 0) == :ok
+  end
+
   @spec can_send_otp_to_phone?(integer, String.t()) :: {:ok, Contact.t()} | {:error, any} | false
   defp can_send_otp_to_phone?(organization_id, phone) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}),
-         {:ok, _} <- Contacts.can_send_message_to?(contact, true),
+         true <- can_send_message_to?(contact),
          do: {:ok, contact}
   end
 

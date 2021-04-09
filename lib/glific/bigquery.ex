@@ -82,8 +82,13 @@ defmodule Glific.Bigquery do
         {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
         project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
-        conn = Connection.new(token.token)
-        {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+
+        if is_nil(token) do
+          token
+        else
+          conn = Connection.new(token.token)
+          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+        end
     end
   end
 
@@ -169,23 +174,35 @@ defmodule Glific.Bigquery do
   @spec flat_fields_procedure(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp flat_fields_procedure(conn, dataset_id, project_id) do
-    Routines.bigquery_routines_insert(
-      conn,
-      project_id,
-      dataset_id,
-      [
-        body: %{
-          routineReference: %{
-            routineId: "flat_fields",
-            datasetId: dataset_id,
-            projectId: project_id
-          },
-          routineType: "PROCEDURE",
-          definitionBody: BigquerySchema.flat_fields_procedure(project_id, dataset_id)
-        }
-      ],
-      []
-    )
+    routine_id = "flat_fields"
+    defination = BigquerySchema.flat_fields_procedure(project_id, dataset_id)
+
+    {:ok, _res} =
+      create_or_update_procedure(
+        %{conn: conn, dataset_id: dataset_id, project_id: project_id},
+        routine_id,
+        defination
+      )
+  end
+
+  @spec create_or_update_procedure(map(), String.t(), String.t()) ::
+          {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
+  defp create_or_update_procedure(
+         %{conn: conn, dataset_id: dataset_id, project_id: project_id} = _cred,
+         routine_id,
+         defination
+       ) do
+    body = [
+      body: %{
+        routineReference: %{routineId: routine_id, datasetId: dataset_id, projectId: project_id},
+        routineType: "PROCEDURE",
+        definitionBody: defination
+      }
+    ]
+
+    with {:error, _response} <-
+           Routines.bigquery_routines_insert(conn, project_id, dataset_id, body),
+         do: Routines.bigquery_routines_update(conn, project_id, dataset_id, routine_id, body)
   end
 
   @spec create_tables(Tesla.Client.t(), binary, binary) :: :ok
