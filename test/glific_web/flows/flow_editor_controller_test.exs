@@ -43,35 +43,34 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     |> Plug.Conn.put_req_header("authorization", token)
   end
 
-  setup %{organization_id: organization_id} do
+  setup %{conn: conn, organization_id: organization_id} do
     contact = Fixtures.contact_fixture()
 
-    user =
-      %User{}
-      |> User.changeset(%{
-        phone: "+919820198766",
-        name: "Jane Jana",
-        password: @password,
-        password_confirmation: @password,
-        contact_id: contact.id,
-        organization_id: organization_id
-      })
-      |> Repo.insert!()
+    %User{}
+    |> User.changeset(%{
+      phone: "+919820198766",
+      name: "Jane Jana",
+      password: @password,
+      password_confirmation: @password,
+      contact_id: contact.id,
+      organization_id: organization_id
+    })
+    |> Repo.insert!()
 
-    {:ok, user: user}
+    params = put_in(@valid_params, ["user", "organization_id"], organization_id)
+    authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
+    :timer.sleep(100)
+
+    {:ok, access_token: authed_conn.private[:api_access_token]}
   end
 
   describe "flow_editor_routes" do
-    setup %{conn: conn, organization_id: organization_id} do
-      params = put_in(@valid_params, ["user", "organization_id"], organization_id)
-      authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
-      :timer.sleep(100)
+    test "globals", %{conn: conn, access_token: token} do
+      IO.inspect(token)
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/globals", %{})
 
-      {:ok, access_token: authed_conn.private[:api_access_token]}
-    end
-
-    test "globals", %{conn: conn} do
-      conn = get(conn, "/flow-editor/globals", %{})
       assert json_response(conn, 200) == %{"results" => []}
     end
 
@@ -217,12 +216,10 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       assert length(results["results"]) == length(approved_templates)
     end
 
-    test "get all the flows", %{conn: conn, access_token: token} do
+    test "get all the flows", %{conn: conn} do
       flows = Flows.list_flows(%{filter: %{organization_id: conn.assigns[:organization_id]}})
 
-      conn =
-        get_auth_token(conn, token)
-        |> get("/flow-editor/flows", %{})
+      conn = get(conn, "/flow-editor/flows", %{})
 
       results = json_response(conn, 200)["results"]
       assert length(flows) == length(results)
