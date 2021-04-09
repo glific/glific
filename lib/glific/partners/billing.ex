@@ -337,24 +337,19 @@ defmodule Glific.Partners.Billing do
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
       {:ok, subscription} ->
+        update_subscription_details(subscription, organization.id, billing)
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
         cond do
-          !is_nil(subscription.pending_setup_intent) &&
-              subscription.pending_setup_intent.status == "requires_action" ->
-              update_subscription_status(subscription, organization.id, billing)
-
-            {
-              :pending,
-              %{
-                status: :pending,
-                organization: organization,
-                client_secret: subscription.pending_setup_intent.client_secret
-              }
-            }
+          subscription_requires_auth?(subscription) ->
+            {:pending,
+             %{
+               status: :pending,
+               organization: organization,
+               client_secret: subscription.pending_setup_intent.client_secret
+             }}
 
           subscription.status == "active" ->
-            update_subscription_status(subscription, organization.id, billing)
             ## we can add more field as per our need
             {:ok, %{status: :active}}
 
@@ -400,38 +395,44 @@ defmodule Glific.Partners.Billing do
     |> (fn v -> %{stripe_subscription_items: v} end).()
   end
 
-   # return a map which maps glific product ids to subscription item ids
+  # return a map which maps glific product ids to subscription item ids
   @spec subscription_status(Stripe.Subscription.t()) :: map()
   defp subscription_status(subscription) do
     cond do
-      !is_nil(subscription.pending_setup_intent) &&
-          subscription.pending_setup_intent.status == "requires_action"
-        ->  %{stripe_subscription_status: "pending"}
+      subscription_requires_auth?(subscription) ->
+        %{stripe_subscription_status: "pending"}
 
-      subscription.status == "active"
-        -> %{stripe_subscription_status: "active"}
+      subscription.status == "active" ->
+        %{stripe_subscription_status: "active"}
 
-      true
-        -> %{stripe_subscription_status: "pending"}
+      true ->
+        %{stripe_subscription_status: "pending"}
     end
   end
+
+  # function to check if the subscription requires another authentcation i.e 3D
+  @spec subscription_requires_auth?(Stripe.Subscription.t()) :: boolean()
+  defp subscription_requires_auth?(subscription),
+    do:
+      !is_nil(subscription.pending_setup_intent) &&
+        subscription.pending_setup_intent.status == "requires_action"
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
   """
-  @spec update_subscription_status(Stripe.Subscription.t(), non_neg_integer(), Billing.t() | nil)
-  :: {:ok, Stripe.Subscription.t()} | {:error, String.t()}
-
-  def update_subscription_status(subscription, organization_id, nil) do
+  @spec update_subscription_details(Stripe.Subscription.t(), non_neg_integer(), Billing.t() | nil) ::
+          {:ok, Stripe.Subscription.t()} | {:error, String.t()}
+  def update_subscription_details(subscription, organization_id, nil) do
     {:ok, billing} =
       Repo.fetch_by(Billing, %{
         stripe_subscription_id: subscription.id,
         organization_id: organization_id
-    })
-    update_subscription_status(subscription, organization_id, billing)
+      })
+
+    update_subscription_details(subscription, organization_id, billing)
   end
 
-  def update_subscription_status(subscription, _organization_id, billing) do
+  def update_subscription_details(subscription, _organization_id, billing) do
     params =
       %{}
       |> Map.merge(subscription |> subscription_details())
@@ -439,8 +440,8 @@ defmodule Glific.Partners.Billing do
       |> Map.merge(subscription |> subscription_items())
       |> Map.merge(subscription |> subscription_status())
 
-      update_billing(billing, params)
-      {:ok, subscription}
+    update_billing(billing, params)
+    {:ok, subscription}
   end
 
   defp end_of_previous_day(date),

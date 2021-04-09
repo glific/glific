@@ -67,7 +67,7 @@ defmodule StripeController do
          %{type: "customer.subscription.updated", data: %{object: subscription}} = _stripe_event,
          organization_id
        ),
-       do: Billing.update_subscription_status(subscription, organization_id, nil)
+       do: Billing.update_subscription_details(subscription, organization_id, nil)
 
   defp handle_webhook(stripe_event, _organization_id) do
     # handle default case. We ignore these web hooks.
