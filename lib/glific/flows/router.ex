@@ -222,6 +222,7 @@ defmodule Glific.Flows.Router do
       # Once we have the content, we send it over to EEx to execute
       |> execute_eex()
 
+
     msg = Messages.create_temp_message(context.organization_id, content)
     {msg, []}
   end
@@ -237,6 +238,10 @@ defmodule Glific.Flows.Router do
   rescue
     EEx.SyntaxError ->
       Logger.error("EEx threw a SyntaxError: #{content}")
+      "Invalid Code"
+
+     _ ->
+      Logger.error("EEx threw a Error: #{content}")
       "Invalid Code"
   end
 
