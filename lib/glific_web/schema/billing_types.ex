@@ -38,6 +38,8 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :name, :string
     field :email, :string
     field :currency, :string
+    field :stripe_subscription_status, :string
+    field :stripe_subscription_id, :string
   end
 
   input_object :payment_method_input do
