@@ -419,7 +419,7 @@
     "nodes" : {
       "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc" : {
         "position" : {
-          "top" : 60,
+          "top" : 20,
           "left" : 180
         },
         "type" : "execute_actions"
