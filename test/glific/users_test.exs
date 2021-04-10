@@ -256,5 +256,4 @@ defmodule Glific.UsersTest do
     user = Users.promote_first_user(user)
     assert user.roles == [:none]
   end
-
 end

@@ -35,6 +35,19 @@ defmodule Glific.Flows.Exit do
     embeds_one :destination_node, Node
   end
 
+  @spec add_reverse(map(), Exit.t()) :: map()
+  defp add_reverse(uuid_map, %{destination_node_uuid: nil}), do: uuid_map
+
+  defp add_reverse(uuid_map, %{node_uuid: src, destination_node_uuid: dst}) do
+    # we are only interested in one node leading to the destination, if there are multiple
+    # we'll take the last update
+    Map.put(
+      uuid_map,
+      {:reverse, dst},
+      {:source, src}
+    )
+  end
+
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
@@ -48,7 +61,12 @@ defmodule Glific.Flows.Exit do
       destination_node_uuid: json["destination_uuid"]
     }
 
-    {exit, Map.put(uuid_map, exit.uuid, {:exit, exit})}
+    uuid_map =
+      uuid_map
+      |> Map.put(exit.uuid, {:exit, exit})
+      |> add_reverse(exit)
+
+    {exit, uuid_map}
   end
 
   @doc """

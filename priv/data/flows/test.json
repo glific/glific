@@ -3,6 +3,27 @@
   "expire_after_minutes" : 10080,
   "nodes" : [
     {
+      "exits" : [
+        {
+          "uuid" : "07de70d4-a403-4e52-86d0-ffc61a20bc49",
+          "destination_uuid" : "4c93f93c-0677-42c1-ab8f-fda7023bc0e8"
+        }
+      ],
+      "uuid" : "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc",
+      "actions" : [
+        {
+          "quick_replies" : [
+          ],
+          "attachments" : [
+          ],
+          "type" : "send_msg",
+          "all_urns" : false,
+          "uuid" : "fb500222-04db-4c0f-9781-36bf081e4926",
+          "text" : "hello"
+        }
+      ]
+    },
+    {
       "uuid" : "4c93f93c-0677-42c1-ab8f-fda7023bc0e8",
       "exits" : [
         {
@@ -81,29 +102,6 @@
       },
       "actions" : [
 
-      ]
-    },
-    {
-      "exits" : [
-        {
-          "uuid" : "07de70d4-a403-4e52-86d0-ffc61a20bc49",
-          "destination_uuid" : "4c93f93c-0677-42c1-ab8f-fda7023bc0e8"
-        }
-      ],
-      "uuid" : "1826c405-38f8-4d4e-a7d3-400c4d5ba1dc",
-      "actions" : [
-        {
-          "quick_replies" : [
-
-          ],
-          "attachments" : [
-
-          ],
-          "type" : "send_msg",
-          "all_urns" : false,
-          "uuid" : "fb500222-04db-4c0f-9781-36bf081e4926",
-          "text" : "hello"
-        }
       ]
     },
     {
