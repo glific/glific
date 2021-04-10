@@ -417,8 +417,7 @@ defmodule Glific.FLowsTest do
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
     {:ok, flow} = Flows.update_flow(flow, %{respond_other: true})
 
-    {:ok, flow} =
-      Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
     {:ok, context} = FlowContext.seed_context(flow, contact, "published")
 

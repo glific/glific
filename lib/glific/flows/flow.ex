@@ -10,7 +10,6 @@ defmodule Glific.Flows.Flow do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts.Contact,
     Enums.FlowType,
     Flows,
     Flows.FlowContext,
@@ -202,38 +201,6 @@ defmodule Glific.Flows.Flow do
     |> Map.put(:localization, Localization.process(json["localization"]))
     |> Map.put(:nodes, Enum.reverse(nodes))
     |> Map.put(:start_node, start_node)
-  end
-
-  @doc """
-  Build the context so we can execute the flow
-  """
-  @spec context(Flow.t(), Contact.t()) :: {:ok, FlowContext.t()} | {:error, String.t()}
-  def context(%Flow{nodes: nodes}, _contact) when nodes == [],
-    do: {:error, "An empty flow cannot have a context or be executed"}
-
-  def context(flow, contact) do
-    # get the first node
-    node = flow.start_node
-
-    attrs = %{
-      contact: contact,
-      contact_id: contact.id,
-      flow_id: flow.id,
-      uuid_map: flow.uuid_map,
-      node_uuid: node.uuid
-    }
-
-    {:ok, context} =
-      %FlowContext{}
-      |> FlowContext.changeset(attrs)
-      |> Repo.insert()
-
-    context =
-      context
-      |> Repo.preload(:contact)
-      |> Map.put(:node, node)
-
-    {:ok, context}
   end
 
   # in some cases floweditor wraps the json under a "definition" key
