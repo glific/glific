@@ -11,7 +11,6 @@ config :glific, Glific.Repo,
   database: "glific_test#{System.get_env("MIX_TEST_PARTITION")}",
   hostname: "localhost",
   pool_size: 20,
-  log: :debug,
   pool: Ecto.Adapters.SQL.Sandbox,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
@@ -25,6 +24,7 @@ config :glific, GlificWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger,
+  # level: :debug
   level: :emergency,
   compile_time_purge_matching: [
     [level_lower_than: :emergency]

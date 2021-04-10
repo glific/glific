@@ -412,7 +412,6 @@ defmodule Glific.FLowsTest do
 
     message = Messages.create_temp_message(organization_id, "some random message", opts)
 
-
     message_count = Repo.aggregate(Message, :count)
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
