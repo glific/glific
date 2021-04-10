@@ -47,6 +47,7 @@ defmodule Glific.Flows.Flow do
           status: String.t(),
           definition: map() | nil,
           localization: Localization.t() | nil,
+          start_node: Node.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
@@ -65,6 +66,7 @@ defmodule Glific.Flows.Flow do
     field :uuid, Ecto.UUID
 
     field :uuid_map, :map, virtual: true
+    field :start_node, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
     field :last_published_at, :utc_datetime, virtual: true
@@ -181,8 +183,8 @@ defmodule Glific.Flows.Flow do
   Process a json structure from floweditor to the Glific data types. While we are doing
   this we also fix the map, if the variables to resolve Other/No Response is true
   """
-  @spec process(map(), Flow.t()) :: Flow.t()
-  def process(json, flow) do
+  @spec process(map(), Flow.t(), Ecto.UUID.t()) :: Flow.t()
+  def process(json, flow, start_node_uuid) do
     {nodes, uuid_map} =
       Enum.reduce(
         json["nodes"],
@@ -193,10 +195,13 @@ defmodule Glific.Flows.Flow do
         end
       )
 
+    {:node, start_node} = Map.get(uuid_map, start_node_uuid)
+
     flow
     |> Map.put(:uuid_map, uuid_map)
     |> Map.put(:localization, Localization.process(json["localization"]))
     |> Map.put(:nodes, Enum.reverse(nodes))
+    |> Map.put(:start_node, start_node)
   end
 
   @doc """
@@ -208,7 +213,7 @@ defmodule Glific.Flows.Flow do
 
   def context(flow, contact) do
     # get the first node
-    node = hd(flow.nodes)
+    node = flow.start_node
 
     attrs = %{
       contact: contact,
@@ -311,9 +316,27 @@ defmodule Glific.Flows.Flow do
       |> Repo.one!()
       |> Map.put(:status, status)
 
+    start_node_uuid = start_node(flow.definition["_ui"])
+
     flow.definition
     |> clean_definition()
-    |> process(flow)
+    |> process(flow, start_node_uuid)
+  end
+
+  @spec start_node(map()) :: Ecto.UUID.t()
+  defp start_node(json) do
+    {node_uuid, _top} =
+      json["nodes"]
+      |> Enum.reduce(
+        {nil, 1_000_000},
+        fn {node_uuid, node}, {uuid, top} ->
+          if get_in(node, ["position", "top"]) < top,
+            do: {node_uuid, get_in(node, ["position", "top"])},
+            else: {uuid, top}
+        end
+      )
+
+    node_uuid
   end
 
   @doc """
@@ -356,7 +379,7 @@ defmodule Glific.Flows.Flow do
     reachable_nodes =
       all_exits
       |> Enum.reduce(
-        MapSet.new([hd(flow.nodes).uuid]),
+        MapSet.new([flow.start_node.uuid]),
         fn e, acc ->
           {:exit, exit} = flow.uuid_map[e]
           MapSet.put(acc, exit.destination_node_uuid)

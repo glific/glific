@@ -95,6 +95,9 @@ defmodule Glific.Flows.Node do
   defp fix_node(node, flow, uuid_map) do
     {exits, uuid_map} = fix_exits(node.exits, node.router, flow, uuid_map)
 
+    # we have no idea of the list was reversed zero, once or twice
+    # this depends on the various boolean conditions, and hence the equality checks
+    # for both the original and the reversed list
     if node.exits == exits || node.exits == Enum.reverse(exits),
       do: {node, uuid_map},
       else: {Map.put(node, :exits, exits), uuid_map}

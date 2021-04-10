@@ -413,14 +413,16 @@ defmodule Glific.FLowsTest do
     message = Messages.create_temp_message(organization_id, "some random message", opts)
 
     message_count = Repo.aggregate(Message, :count)
+    IO.inspect(Repo.query("select * from messages"))
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
     {:ok, flow} = Flows.update_flow(flow, %{respond_other: true})
-    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"}) |> IO.inspect()
 
     {:ok, context} = FlowContext.seed_context(flow, contact, "published")
 
     context |> FlowContext.load_context(flow) |> FlowContext.execute([message])
+    IO.inspect(Repo.query("select * from messages"))
     new_count = Repo.aggregate(Message, :count)
 
     assert message_count < new_count

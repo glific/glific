@@ -383,7 +383,7 @@ defmodule Glific.Flows.FlowContext do
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
     )
 
-    node = hd(flow.nodes)
+    node = flow.start_node
 
     create_flow_context(%{
       contact_id: contact.id,
