@@ -79,34 +79,51 @@ defmodule Glific.Flows.Node do
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
         {router, uuid_map} = Router.process(json["router"], uuid_map, node)
+        node = Map.put(node, :router, router)
 
-        node
-        |> Map.put(:router, router)
-        |> fix_node(flow, uuid_map)
+        {
+          node,
+          Map.put(uuid_map, node.uuid, {:node, node})
+        }
       else
-        {node, uuid_map}
+        {
+          node,
+          Map.put(uuid_map, node.uuid, {:node, node})
+        }
       end
 
-    uuid_map = Map.put(uuid_map, node.uuid, {:node, node})
     {node, uuid_map}
   end
 
+  @doc """
+  If the node has a router component, and the flow has enabled us to fix
+  other/no response pathways, do the needful for that node
+  """
   @spec fix_node(Node.t(), Flow.t(), map()) :: {Node.t(), map()}
-  defp fix_node(node, flow, uuid_map) do
+  def fix_node(%{router: nil} = node, _flow, uuid_map), do: {node, uuid_map}
+
+  def fix_node(node, %{respond_other: false, respond_no_response: false}, uuid_map),
+    do: {node, uuid_map}
+
+  def fix_node(node, flow, uuid_map) do
     {exits, uuid_map} = fix_exits(node.exits, node.router, flow, uuid_map)
 
     # we have no idea of the list was reversed zero, once or twice
     # this depends on the various boolean conditions, and hence the equality checks
     # for both the original and the reversed list
-    if node.exits == exits || node.exits == Enum.reverse(exits),
-      do: {node, uuid_map},
-      else: {Map.put(node, :exits, exits), uuid_map}
+    if node.exits == exits || node.exits == Enum.reverse(exits) do
+      {node, uuid_map}
+    else
+      node = Map.put(node, :exits, exits)
+
+      {
+        node,
+        Map.put(uuid_map, node.uuid, {:node, node})
+      }
+    end
   end
 
   @spec fix_exits([Exit.t()], Router.t(), Flow.t(), map()) :: {[Exit.t()], map()}
-  defp fix_exits(exits, _router, %{respond_other: false, respond_no_response: false}, uuid_map),
-    do: {exits, uuid_map}
-
   defp fix_exits(
          exits,
          router,

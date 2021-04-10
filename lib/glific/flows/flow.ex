@@ -194,13 +194,29 @@ defmodule Glific.Flows.Flow do
         end
       )
 
+    {nodes, uuid_map} = fix_nodes(nodes, uuid_map, flow)
     {:node, start_node} = Map.get(uuid_map, start_node_uuid)
 
     flow
     |> Map.put(:uuid_map, uuid_map)
     |> Map.put(:localization, Localization.process(json["localization"]))
-    |> Map.put(:nodes, Enum.reverse(nodes))
+    |> Map.put(:nodes, nodes)
     |> Map.put(:start_node, start_node)
+  end
+
+  @spec fix_nodes(Node.t(), map(), Flow.t()) :: {[Node.t()], map()}
+  defp fix_nodes(nodes, uuid_map, %{respond_other: false, respond_no_response: false}),
+    do: {Enum.reverse(nodes), uuid_map}
+
+  defp fix_nodes(nodes, uuid_map, flow) do
+    Enum.reduce(
+      nodes,
+      {[], uuid_map},
+      fn node, {nodes, uuid_map} ->
+        {node, uuid_map} = Node.fix_node(node, flow, uuid_map)
+        {[node | nodes], uuid_map}
+      end
+    )
   end
 
   # in some cases floweditor wraps the json under a "definition" key
