@@ -257,7 +257,7 @@ defmodule Glific.Flows.Router do
       Logger.error("EEx threw a SyntaxError: #{content}")
       "Invalid Code"
 
-     _ ->
+    _ ->
       Logger.error("EEx threw a Error: #{content}")
       "Invalid Code"
   end
