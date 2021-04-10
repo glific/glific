@@ -200,7 +200,8 @@ defmodule Glific.Flows do
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
-    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+    Caches.remove(flow.organization_id,  keys_to_cache_flow(flow, "draft"))
+    Caches.remove(flow.organization_id,  keys_to_cache_flow(flow, "published"))
     clean_cached_flow_keywords_map(flow.organization_id)
 
     attrs =

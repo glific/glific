@@ -370,20 +370,6 @@ defmodule Glific.FLowsTest do
     end
   end
 
-  test "test validate on test workflow" do
-    SeedsDev.seed_test_flows()
-
-    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
-
-    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
-    assert is_list(errors)
-
-    Enum.each(
-      errors,
-      fn e -> assert expected_error(elem(e, 1)) end
-    )
-  end
-
   defp expected_error(str) do
     errors = [
       "Your flow has dangling nodes",
@@ -397,14 +383,23 @@ defmodule Glific.FLowsTest do
     Enum.any?(errors, &String.contains?(str, &1))
   end
 
-  test "test not setting other option on test workflow",
-    %{organization_id: organization_id} = _attrs do
+  test "test validate and response_other on test workflow" do
     SeedsDev.seed_test_flows()
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
-    Flows.update_flow(flow, %{respond_other: true})
 
-    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    assert is_list(errors)
+
+    Enum.each(
+      errors,
+      fn e -> assert expected_error(elem(e, 1)) end
+    )
+  end
+
+  test "test not setting other option on test workflow",
+       %{organization_id: organization_id} = _attrs do
+    SeedsDev.seed_test_flows()
 
     contact = Fixtures.contact_fixture()
 
@@ -412,20 +407,25 @@ defmodule Glific.FLowsTest do
       contact_id: contact.id,
       sender_id: contact.id,
       receiver_id: contact.id,
-      flow: :inbound,
+      flow: :inbound
     ]
 
     message = Messages.create_temp_message(organization_id, "some random message", opts)
 
-    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
 
     message_count = Repo.aggregate(Message, :count)
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    {:ok, flow} = Flows.update_flow(flow, %{respond_other: true})
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
     context |> FlowContext.load_context(flow) |> FlowContext.execute([message])
     new_count = Repo.aggregate(Message, :count)
 
     assert message_count < new_count
     # since we should have recd 2 messages, hello and hello
     assert message_count + 2 == new_count
-
   end
 end
