@@ -221,17 +221,18 @@ defmodule Glific.Partners.Billing do
   defp subscription_params(billing, organization) do
     prices = stripe_ids()
 
+    # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
       DateTime.utc_now()
-      # |> Timex.end_of_month
+      |> Timex.end_of_month()
       |> Timex.shift(days: 1)
       |> Timex.beginning_of_day()
       |> DateTime.to_unix()
 
     %{
       customer: billing.stripe_customer_id,
-      billing_cycle_anchor: anchor_timestamp,
       # Temporary for existing customers.
+      billing_cycle_anchor: anchor_timestamp,
       prorate: false,
       items: [
         %{
@@ -248,15 +249,12 @@ defmodule Glific.Partners.Billing do
           price: prices.consulting_hours
         }
       ],
-
-
       metadata: %{
         "id" => Integer.to_string(billing.organization_id),
         "name" => organization.name
       }
     }
   end
-
 
   @doc """
   Update organization and stripe customer with the current payment method as returned
@@ -483,8 +481,7 @@ defmodule Glific.Partners.Billing do
     case Stats.usage(organization_id, start_usage_date, end_usage_date) do
       # temp fix for testing, since we dont really have any data streaming into our DB
       # to test for invoices
-      _usage ->
-        usage = %{messages: Enum.random(10..500), users: Enum.random(1..50)}
+      usage ->
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
 
         prices = stripe_ids()

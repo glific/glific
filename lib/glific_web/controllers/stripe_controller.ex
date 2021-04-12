@@ -5,8 +5,7 @@ defmodule StripeController do
 
   use GlificWeb, :controller
 
-  alias Glific.Partners.
-  {
+  alias Glific.Partners.{
     Billing,
     Invoice
   }

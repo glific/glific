@@ -31,7 +31,6 @@ defmodule Glific.Repo.Migrations.Stripe do
 
       add :currency, :string, comment: "Currency the account will pay bills"
 
-
       add :is_delinquent, :boolean,
         comment: "Is this account delinquent? Invoice table will have more info"
 
