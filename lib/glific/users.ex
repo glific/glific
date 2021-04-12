@@ -67,7 +67,10 @@ defmodule Glific.Users do
   """
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
-    attrs = get_default_language(attrs)
+    attrs =
+      attrs
+      |> Glific.atomize_keys()
+      |> get_default_language()
 
     %User{}
     |> User.changeset(attrs)
