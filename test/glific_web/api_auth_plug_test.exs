@@ -21,7 +21,8 @@ defmodule GlificWeb.APIAuthPlugTest do
       Repo.insert!(%User{
         phone: "+919820198766",
         contact_id: contact.id,
-        organization_id: contact.organization_id
+        organization_id: contact.organization_id,
+        language_id: 1
       })
 
     {:ok, conn: conn, user: user}

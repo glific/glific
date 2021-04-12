@@ -59,7 +59,7 @@ defmodule Glific.TemplatesTest do
     @valid_language_attrs %{
       label: "English",
       label_locale: "English",
-      locale: "en_US",
+      locale: "en",
       is_active: true
     }
     @valid_language_attrs_1 %{
@@ -298,7 +298,7 @@ defmodule Glific.TemplatesTest do
                   "data" => "Your train ticket no. {{1}}",
                   "elementName" => "ticket_update_status",
                   "id" => whatspp_hsm_uuid,
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
                   "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -406,7 +406,7 @@ defmodule Glific.TemplatesTest do
                   "data" => "Your train ticket no. {{1}}",
                   "elementName" => "ticket_update_status",
                   "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
                   "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -459,7 +459,7 @@ defmodule Glific.TemplatesTest do
                   "data" => "Your train ticket no. {{1}}",
                   "elementName" => "ticket_update_status",
                   "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
                   "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -531,7 +531,7 @@ defmodule Glific.TemplatesTest do
                     "data" => "Your train ticket no. {{1}}",
                     "elementName" => "ticket_update_status",
                     "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
-                    "languageCode" => "en_US",
+                    "languageCode" => "en",
                     "languagePolicy" => "deterministic",
                     "master" => false,
                     "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -676,7 +676,7 @@ defmodule Glific.TemplatesTest do
                 "template" => %{
                   "elementName" => "common_otp",
                   "id" => Ecto.UUID.generate(),
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "status" => status
                 }
               })

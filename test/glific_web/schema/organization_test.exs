@@ -105,7 +105,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
-    language_locale = "en_US"
+    language_locale = "en"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
@@ -176,7 +176,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
-    language_locale = "en_US"
+    language_locale = "en"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =

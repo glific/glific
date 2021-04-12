@@ -4,8 +4,9 @@ defmodule Glific.Repo.Seeds.V133AlterGlificData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
-    Settings.Language,
-    Repo
+    Repo,
+    Settings,
+    Settings.Language
   }
 
   def up(_repo) do
