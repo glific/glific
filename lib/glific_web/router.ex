@@ -110,13 +110,8 @@ defmodule GlificWeb.Router do
   scope "/flow-editor", GlificWeb.Flows do
     pipe_through [:api, :api_protected]
 
-    get "/globals", FlowEditorController, :globals
-
     get "/groups", FlowEditorController, :groups
     post "/groups", FlowEditorController, :groups_post
-
-    get "/fields", FlowEditorController, :fields
-    post "/fields", FlowEditorController, :fields_post
 
     get "/labels", FlowEditorController, :labels
     post "/labels", FlowEditorController, :labels_post
@@ -137,17 +132,29 @@ defmodule GlificWeb.Router do
 
     get "/recipients", FlowEditorController, :recipients
 
-    get "/completion", FlowEditorController, :completion
-
     get "/activity", FlowEditorController, :activity
-
-    get "/functions", FlowEditorController, :functions
 
     get "/flows/*vars", FlowEditorController, :flows
 
     get "/revisions/*vars", FlowEditorController, :revisions
 
     post "/revisions/*vars", FlowEditorController, :save_revisions
+
+  end
+
+  ## currently we are not able to authenticate these fields.
+  ## We might need to do some major chnages on the flow editors's temba componnents.
+  ## We will come back to this later.
+   scope "/flow-editor", GlificWeb.Flows do
+    get "/globals", FlowEditorController, :globals
+
+    get "/fields", FlowEditorController, :fields
+
+    post "/fields", FlowEditorController, :fields_post
+
+    get "/completion", FlowEditorController, :completion
+
+    get "/functions", FlowEditorController, :functions
 
     get "/validate-media", FlowEditorController, :validate_media
   end
