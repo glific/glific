@@ -182,7 +182,7 @@ defmodule Glific.Providers.Gupshup.Message do
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  defp send_message(%{error: error} = payload, _message, _attrs), do: {:error, error}
+  defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
     request_body =
