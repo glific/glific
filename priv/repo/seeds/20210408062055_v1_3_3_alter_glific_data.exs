@@ -10,6 +10,7 @@ defmodule Glific.Repo.Seeds.V133AlterGlificData do
 
   def up(_repo) do
     update_language_localized()
+    update_locale()
   end
 
   defp update_language_localized() do
@@ -19,5 +20,10 @@ defmodule Glific.Repo.Seeds.V133AlterGlificData do
         Repo.update!(Ecto.Changeset.change(language, %{localized: true}))
       end
     end)
+  end
+
+  defp update_locale() do
+    en = Repo.get_by(Language, %{locale: "en_US"})
+    Settings.update_language(en, %{locale: "en"})
   end
 end
