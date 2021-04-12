@@ -11,8 +11,7 @@ defmodule Glific.Repo.Migrations.V1_4_0_AlterGlificTables do
   defp users do
     alter table(:users) do
       add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema),
-        null: true,
-        default: 1,
+        null: false,
         comment: "Foreign key for the language"
     end
   end

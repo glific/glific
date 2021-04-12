@@ -10,6 +10,7 @@ defmodule Glific.Users do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Partners,
     Repo,
     Users.User
   }
@@ -66,9 +67,17 @@ defmodule Glific.Users do
   """
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
+    attrs = get_default_language(attrs)
+
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec get_default_language(map()) :: map()
+  defp get_default_language(attrs) do
+    org = Partners.get_organization!(attrs.organization_id)
+    attrs |> Map.merge(%{language_id: org.default_language_id})
   end
 
   @doc """
