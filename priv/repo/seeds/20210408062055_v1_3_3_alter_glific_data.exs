@@ -4,13 +4,11 @@ defmodule Glific.Repo.Seeds.V133AlterGlificData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
-    Partners,
     Partners.Organization,
     Repo,
     Settings,
     Settings.Language,
-    Users,
-    Users.User
+    Users
   }
 
   def up(_repo) do
