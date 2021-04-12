@@ -74,6 +74,7 @@ defmodule GlificWeb.Schema.UserTypes do
     field :roles, list_of(:role_label)
     field :group_ids, list_of(:id)
     field :is_restricted, :boolean
+    field :language_id, :id
   end
 
   object :user_queries do
