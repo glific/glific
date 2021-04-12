@@ -17,6 +17,7 @@ defmodule Glific.Providers.Gupshup.Message do
   @spec send_text(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body, isHSM: message.is_hsm}
+    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -32,6 +33,7 @@ defmodule Glific.Providers.Gupshup.Message do
       previewUrl: message_media.url,
       caption: check_caption(message_media.caption)
     }
+    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -60,6 +62,7 @@ defmodule Glific.Providers.Gupshup.Message do
       url: message_media.source_url,
       caption: check_caption(message_media.caption)
     }
+    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -162,9 +165,25 @@ defmodule Glific.Providers.Gupshup.Message do
     }
   end
 
+  defp check_size(%{text: text} = attrs) do
+    if String.length(text) < 4096,
+      do: attrs,
+      else: attrs |> Map.merge(%{error: "Message size greater than 4096 characters"})
+  end
+
+  defp check_size(%{caption: caption} = attrs) do
+    if String.length(caption) < 4096,
+      do: attrs,
+      else: attrs |> Map.merge(%{error: "Message size greater than 4096 characters"})
+  end
+
+  defp check_size(attrs), do: attrs
+
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  defp send_message(%{error: error} = payload, _message, _attrs), do: {:error, error}
+
   defp send_message(payload, message, attrs) do
     request_body =
       %{"channel" => @channel}
