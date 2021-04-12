@@ -2,6 +2,7 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
+  require Logger
   import Ecto.Query, warn: false
 
   use Tesla
@@ -287,6 +288,9 @@ defmodule Glific.Templates do
 
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id
+
+    Logger.info("Language id for template #{template["elementName"]}
+      org_id: #{organization.id} has been updated as #{language_id}")
 
     is_active =
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
