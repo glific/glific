@@ -79,13 +79,84 @@ defmodule Glific.Flows.Node do
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
         {router, uuid_map} = Router.process(json["router"], uuid_map, node)
-        {Map.put(node, :router, router), uuid_map}
+        node = Map.put(node, :router, router)
+
+        {
+          node,
+          Map.put(uuid_map, node.uuid, {:node, node})
+        }
       else
-        {node, uuid_map}
+        {
+          node,
+          Map.put(uuid_map, node.uuid, {:node, node})
+        }
       end
 
-    uuid_map = Map.put(uuid_map, node.uuid, {:node, node})
     {node, uuid_map}
+  end
+
+  @doc """
+  If the node has a router component, and the flow has enabled us to fix
+  other/no response pathways, do the needful for that node
+  """
+  @spec fix_node(Node.t(), Flow.t(), map()) :: {Node.t(), map()}
+  def fix_node(%{router: nil} = node, _flow, uuid_map), do: {node, uuid_map}
+
+  def fix_node(node, %{respond_other: false, respond_no_response: false}, uuid_map),
+    do: {node, uuid_map}
+
+  def fix_node(node, flow, uuid_map) do
+    {exits, uuid_map} = fix_exits(node.exits, node.router, flow, uuid_map)
+
+    # we have no idea of the list was reversed zero, once or twice
+    # this depends on the various boolean conditions, and hence the equality checks
+    # for both the original and the reversed list
+    if node.exits == exits || node.exits == Enum.reverse(exits) do
+      {node, uuid_map}
+    else
+      node = Map.put(node, :exits, exits)
+
+      {
+        node,
+        Map.put(uuid_map, node.uuid, {:node, node})
+      }
+    end
+  end
+
+  @spec fix_exits([Exit.t()], Router.t(), Flow.t(), map()) :: {[Exit.t()], map()}
+  defp fix_exits(
+         exits,
+         router,
+         %{respond_other: other, respond_no_response: no_response},
+         uuid_map
+       ),
+       do:
+         {exits, uuid_map}
+         |> fix_exit(router.other_exit_uuid, other)
+         |> fix_exit(router.no_response_exit_uuid, no_response)
+
+  @spec fix_exit({[Exit.t()], map()}, Ecto.UUID.t(), boolean) :: {[Exit.t()], map()}
+  defp fix_exit({exits, uuid_map}, _exit_uuid, false), do: {exits, uuid_map}
+  defp fix_exit({exits, uuid_map}, nil, _exit_flag), do: {exits, uuid_map}
+
+  defp fix_exit({exits, uuid_map}, exit_uuid, _exit_flag) do
+    Enum.reduce(
+      exits,
+      {[], uuid_map},
+      fn e, {exits, uuid_map} ->
+        lookup = uuid_map[{:reverse, e.node_uuid}]
+
+        if e.uuid == exit_uuid &&
+             e.destination_node_uuid == nil &&
+             lookup != nil do
+          e = Map.put(e, :destination_node_uuid, elem(lookup, 1))
+          uuid_map = Map.put(uuid_map, e.uuid, {:exit, e})
+          {[e | exits], uuid_map}
+        else
+          {[e | exits], uuid_map}
+        end
+      end
+    )
   end
 
   @doc """

@@ -31,6 +31,8 @@ defmodule Glific.Flows.Router do
           default_category_uuid: Ecto.UUID.t() | nil,
           default_category: Category.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
+          other_exit_uuid: Ecto.UUID.t() | nil,
+          no_response_exit_uuid: Ecto.UUID.t() | nil,
           wait: Wait.t() | nil,
           node: Node.t() | nil,
           cases: [Case.t()] | nil,
@@ -53,6 +55,11 @@ defmodule Glific.Flows.Router do
 
     embeds_many :cases, Case
     embeds_many :categories, Category
+
+    # in case we need to figure out the node for other/no response
+    # lets cache the exit uuids
+    field :other_exit_uuid, Ecto.UUID
+    field :no_response_exit_uuid, Ecto.UUID
   end
 
   @doc """
@@ -97,9 +104,20 @@ defmodule Glific.Flows.Router do
       |> Map.put(:categories, categories)
       |> Map.put(:default_category_uuid, json["default_category_uuid"])
       |> Map.put(:cases, cases)
-      |> Map.put(:wait, wait),
+      |> Map.put(:wait, wait)
+      |> Map.put(:other_exit_uuid, get_category_exit_uuid(categories, "Other"))
+      |> Map.put(:no_response_exit_uuid, get_category_exit_uuid(categories, "No Response")),
       uuid_map
     }
+  end
+
+  @spec get_category_exit_uuid([Category.t()], String.t()) :: Ecto.UUID.t() | nil
+  defp get_category_exit_uuid(categories, name) do
+    category = Enum.find(categories, fn c -> c.name == name end)
+
+    if is_nil(category),
+      do: nil,
+      else: category.exit_uuid
   end
 
   @spec validate_eex(Keyword.t(), String.t()) :: Keyword.t()
@@ -237,6 +255,10 @@ defmodule Glific.Flows.Router do
   rescue
     EEx.SyntaxError ->
       Logger.error("EEx threw a SyntaxError: #{content}")
+      "Invalid Code"
+
+    _ ->
+      Logger.error("EEx threw a Error: #{content}")
       "Invalid Code"
   end
 

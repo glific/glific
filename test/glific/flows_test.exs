@@ -5,8 +5,10 @@ defmodule Glific.FLowsTest do
     Fixtures,
     Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Flows.FlowRevision,
     Groups,
+    Messages,
     Messages.Message,
     Repo,
     Seeds.SeedsDev
@@ -368,7 +370,20 @@ defmodule Glific.FLowsTest do
     end
   end
 
-  test "test validate on help workflow" do
+  defp expected_error(str) do
+    errors = [
+      "Your flow has dangling nodes",
+      "Could not find Contact:",
+      "Could not find Group:",
+      "The next message after a long wait for time should be an HSM template",
+      "Could not find Sub Flow:",
+      "Could not parse"
+    ]
+
+    Enum.any?(errors, &String.contains?(str, &1))
+  end
+
+  test "test validate and response_other on test workflow" do
     SeedsDev.seed_test_flows()
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
@@ -382,16 +397,35 @@ defmodule Glific.FLowsTest do
     )
   end
 
-  defp expected_error(str) do
-    errors = [
-      "Your flow has dangling nodes",
-      "Could not find Contact:",
-      "Could not find Group:",
-      "The next message after a long wait for time should be an HSM template",
-      "Could not find Sub Flow:",
-      "Could not parse"
+  test "test not setting other option on test workflow",
+       %{organization_id: organization_id} = _attrs do
+    SeedsDev.seed_test_flows()
+
+    contact = Fixtures.contact_fixture()
+
+    opts = [
+      contact_id: contact.id,
+      sender_id: contact.id,
+      receiver_id: contact.id,
+      flow: :inbound
     ]
 
-    Enum.any?(errors, &String.contains?(str, &1))
+    message = Messages.create_temp_message(organization_id, "some random message", opts)
+
+    message_count = Repo.aggregate(Message, :count)
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    {:ok, flow} = Flows.update_flow(flow, %{respond_other: true})
+
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
+    context |> FlowContext.load_context(flow) |> FlowContext.execute([message])
+    new_count = Repo.aggregate(Message, :count)
+
+    assert message_count < new_count
+    # since we should have recd 2 messages, hello and hello
+    assert message_count + 2 == new_count
   end
 end

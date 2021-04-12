@@ -10,7 +10,6 @@ defmodule Glific.Flows.Flow do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts.Contact,
     Enums.FlowType,
     Flows,
     Flows.FlowContext,
@@ -22,7 +21,16 @@ defmodule Glific.Flows.Flow do
   }
 
   @required_fields [:name, :uuid, :organization_id]
-  @optional_fields [:flow_type, :keywords, :version_number, :uuid_map, :nodes, :ignore_keywords]
+  @optional_fields [
+    :flow_type,
+    :keywords,
+    :version_number,
+    :uuid_map,
+    :nodes,
+    :ignore_keywords,
+    :respond_other,
+    :respond_no_response
+  ]
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -32,10 +40,13 @@ defmodule Glific.Flows.Flow do
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
+          respond_other: boolean() | nil,
+          respond_no_response: boolean() | nil,
           flow_type: String.t() | nil,
           status: String.t(),
           definition: map() | nil,
           localization: Localization.t() | nil,
+          start_node: Node.t() | nil,
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
@@ -54,6 +65,7 @@ defmodule Glific.Flows.Flow do
     field :uuid, Ecto.UUID
 
     field :uuid_map, :map, virtual: true
+    field :start_node, :map, virtual: true
     field :nodes, :map, virtual: true
     field :localization, :map, virtual: true
     field :last_published_at, :utc_datetime, virtual: true
@@ -66,6 +78,8 @@ defmodule Glific.Flows.Flow do
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
+    field :respond_other, :boolean, default: false
+    field :respond_no_response, :boolean, default: false
 
     # we use this to store the latest definition and versionfrom flow_revisions for this flow
     field :definition, :map, virtual: true
@@ -165,10 +179,11 @@ defmodule Glific.Flows.Flow do
       end)
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from floweditor to the Glific data types. While we are doing
+  this we also fix the map, if the variables to resolve Other/No Response is true
   """
-  @spec process(map(), Flow.t()) :: Flow.t()
-  def process(json, flow) do
+  @spec process(map(), Flow.t(), Ecto.UUID.t()) :: Flow.t()
+  def process(json, flow, start_node_uuid) do
     {nodes, uuid_map} =
       Enum.reduce(
         json["nodes"],
@@ -179,48 +194,38 @@ defmodule Glific.Flows.Flow do
         end
       )
 
+    {nodes, uuid_map} = fix_nodes(nodes, uuid_map, flow)
+    {:node, start_node} = Map.get(uuid_map, start_node_uuid)
+
     flow
     |> Map.put(:uuid_map, uuid_map)
     |> Map.put(:localization, Localization.process(json["localization"]))
-    |> Map.put(:nodes, Enum.reverse(nodes))
+    |> Map.put(:nodes, nodes)
+    |> Map.put(:start_node, start_node)
   end
 
-  @doc """
-  Build the context so we can execute the flow
-  """
-  @spec context(Flow.t(), Contact.t()) :: {:ok, FlowContext.t()} | {:error, String.t()}
-  def context(%Flow{nodes: nodes}, _contact) when nodes == [],
-    do: {:error, "An empty flow cannot have a context or be executed"}
+  @spec fix_nodes(Node.t(), map(), Flow.t()) :: {[Node.t()], map()}
+  defp fix_nodes(nodes, uuid_map, %{respond_other: false, respond_no_response: false}),
+    do: {Enum.reverse(nodes), uuid_map}
 
-  def context(flow, contact) do
-    # get the first node
-    node = hd(flow.nodes)
-
-    attrs = %{
-      contact: contact,
-      contact_id: contact.id,
-      flow_id: flow.id,
-      uuid_map: flow.uuid_map,
-      node_uuid: node.uuid
-    }
-
-    {:ok, context} =
-      %FlowContext{}
-      |> FlowContext.changeset(attrs)
-      |> Repo.insert()
-
-    context =
-      context
-      |> Repo.preload(:contact)
-      |> Map.put(:node, node)
-
-    {:ok, context}
+  defp fix_nodes(nodes, uuid_map, flow) do
+    Enum.reduce(
+      nodes,
+      {[], uuid_map},
+      fn node, {nodes, uuid_map} ->
+        {node, uuid_map} = Node.fix_node(node, flow, uuid_map)
+        {[node | nodes], uuid_map}
+      end
+    )
   end
 
   # in some cases floweditor wraps the json under a "definition" key
   @spec clean_definition(map()) :: map()
   defp clean_definition(json),
-    do: elem(Map.pop(json, "definition", json), 0) |> Map.delete("_ui")
+    do:
+      json
+      |> Map.get("definition", json)
+      |> Map.delete("_ui")
 
   @doc """
   load the latest revision, specifically json definition from the
@@ -280,6 +285,8 @@ defmodule Glific.Flows.Flow do
           uuid: f.uuid,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
+          respond_other: f.respond_other,
+          respond_no_response: f.respond_no_response,
           organization_id: f.organization_id,
           definition: fr.definition,
           version: fr.version
@@ -292,9 +299,27 @@ defmodule Glific.Flows.Flow do
       |> Repo.one!()
       |> Map.put(:status, status)
 
+    start_node_uuid = start_node(flow.definition["_ui"])
+
     flow.definition
     |> clean_definition()
-    |> process(flow)
+    |> process(flow, start_node_uuid)
+  end
+
+  @spec start_node(map()) :: Ecto.UUID.t()
+  defp start_node(json) do
+    {node_uuid, _top} =
+      json["nodes"]
+      |> Enum.reduce(
+        {nil, 1_000_000},
+        fn {node_uuid, node}, {uuid, top} ->
+          if get_in(node, ["position", "top"]) < top,
+            do: {node_uuid, get_in(node, ["position", "top"])},
+            else: {uuid, top}
+        end
+      )
+
+    node_uuid
   end
 
   @doc """
@@ -337,7 +362,7 @@ defmodule Glific.Flows.Flow do
     reachable_nodes =
       all_exits
       |> Enum.reduce(
-        MapSet.new([hd(flow.nodes).uuid]),
+        MapSet.new([flow.start_node.uuid]),
         fn e, acc ->
           {:exit, exit} = flow.uuid_map[e]
           MapSet.put(acc, exit.destination_node_uuid)

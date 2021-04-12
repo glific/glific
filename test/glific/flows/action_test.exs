@@ -521,10 +521,12 @@ defmodule Glific.Flows.ActionTest do
     result = Action.execute(action, context, [])
     assert elem(result, 1) == context
 
+    node = %{uuid: Ecto.UUID.generate()}
     # here we need a real context
     flow =
       Repo.get(Flow, 1)
-      |> Map.put(:nodes, [%{uuid: Ecto.UUID.generate()}])
+      |> Map.put(:nodes, [node])
+      |> Map.put(:start_node, node)
       |> Map.put(:uuid_map, %{})
 
     {:ok, context} = FlowContext.seed_context(flow, contact, "published")
