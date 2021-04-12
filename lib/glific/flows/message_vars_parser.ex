@@ -14,6 +14,9 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) when binding in [nil, %{}], do: input
 
   def parse(input, binding) do
+    IO.inspect(input, label: "INPUT")
+    IO.inspect(binding, label: "BINDING")
+
     binding = stringify_keys(binding)
 
     input
