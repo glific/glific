@@ -255,7 +255,7 @@ defmodule Glific.Flows.FlowContext do
   @spec update_results(FlowContext.t(), map()) :: FlowContext.t()
   def update_results(context, result) do
     results =
-      if is_nil(context.results),
+      if context.results == %{} || is_nil(context.results),
         do: result,
         else: Map.merge(context.results, result)
 
