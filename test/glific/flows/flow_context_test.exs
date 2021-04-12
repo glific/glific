@@ -3,7 +3,8 @@ defmodule Glific.Flows.FlowContextTest do
 
   alias Glific.{
     Fixtures,
-    Messages
+    Messages,
+    Repo
   }
 
   alias Glific.Flows.{
@@ -11,6 +12,7 @@ defmodule Glific.Flows.FlowContextTest do
     Category,
     Flow,
     FlowContext,
+    FlowResult,
     Node
   }
 
@@ -85,12 +87,25 @@ defmodule Glific.Flows.FlowContextTest do
     json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
     {category, _uuid_map} = Category.process(json, %{})
     FlowContext.update_results(flow_context, "test_key", "test_input", category.name)
-    flow_context = Glific.Repo.get!(FlowContext, flow_context.id)
+    flow_context = Repo.get!(FlowContext, flow_context.id)
 
     assert flow_context.results["test_key"] == %{
              "input" => "test_input",
              "category" => category.name
            }
+
+    flow_context =
+      flow_context_fixture()
+      |> FlowContext.update_results(%{"one more key" => %{"value" => 42}})
+      |> FlowContext.update_results(%{"integer value" => 23})
+
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert flow_context.results["one more key"] == %{"value" => 42}
+    assert flow_context.results["integer value"] == 23
+
+    {:ok, flow_result} = Repo.fetch_by(FlowResult, %{flow_context_id: flow_context.id})
+    assert flow_result.results["one more key"] == %{"value" => 42}
+    assert flow_result.results["integer value"] == 23
   end
 
   test "set_node/2 will set the node object for the context" do
@@ -155,7 +170,7 @@ defmodule Glific.Flows.FlowContextTest do
     json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
     {category, _uuid_map} = Category.process(json, %{})
     FlowContext.update_results(flow_context, "test_key", "test_input", category.name)
-    flow_context = Glific.Repo.get!(FlowContext, flow_context.id)
+    flow_context = Repo.get!(FlowContext, flow_context.id)
 
     # now results value will always return the input if there is a map.
     assert FlowContext.get_result_value(flow_context, "@results.test_key") == "test_input"
@@ -174,7 +189,7 @@ defmodule Glific.Flows.FlowContextTest do
 
     FlowContext.delete_completed_flow_contexts()
 
-    assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
+    assert {:error, _} = Repo.fetch(FlowContext, flow_context.id)
   end
 
   test "delete_old_flow_contexts will delete all contexts older than 30 days" do
@@ -188,7 +203,7 @@ defmodule Glific.Flows.FlowContextTest do
 
     FlowContext.delete_old_flow_contexts()
 
-    assert {:error, _} = Glific.Repo.fetch(FlowContext, flow_context.id)
+    assert {:error, _} = Repo.fetch(FlowContext, flow_context.id)
   end
 
   test "reset_all_contexts/1 will resets all the context for the contact",

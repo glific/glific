@@ -139,13 +139,12 @@ defmodule GlificWeb.Router do
     get "/revisions/*vars", FlowEditorController, :revisions
 
     post "/revisions/*vars", FlowEditorController, :save_revisions
-
   end
 
   ## currently we are not able to authenticate these fields.
   ## We might need to do some major chnages on the flow editors's temba componnents.
   ## We will come back to this later.
-   scope "/flow-editor", GlificWeb.Flows do
+  scope "/flow-editor", GlificWeb.Flows do
     get "/globals", FlowEditorController, :globals
 
     get "/fields", FlowEditorController, :fields

@@ -242,21 +242,22 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
           FlowContext.t()
-  def update_results(context, key, input, category),
-    do: update_results(context, key, %{"input" => input, "category" => category})
+  def update_results(context, key, input, category) do
+    update_results(
+      context,
+      %{key => %{"input" => input, "category" => category}}
+    )
+  end
 
   @doc """
   Update the contact results with each element of the json map
   """
-  @spec update_results(FlowContext.t(), String.t(), map() | String.t()) ::
-          FlowContext.t()
-  def update_results(context, key, json) do
+  @spec update_results(FlowContext.t(), map()) :: FlowContext.t()
+  def update_results(context, result) do
     results =
-      if is_nil(context.results),
-        do: %{},
-        else:
-          context.results
-          |> Map.put(key, json)
+      if context.results == %{} || is_nil(context.results),
+        do: result,
+        else: Map.merge(context.results, result)
 
     {:ok, context} = update_flow_context(context, %{results: results})
 
