@@ -11,7 +11,7 @@ The focus of all versions of v1.x will be on stability, scale, and automation.
 
 ## v1.5
 - Localization of Glific FrontEnd in Hindi. Use web based platform for translating Glific Interface
-
+- Glific Console to manage multiple organizations from single dashboard
 
 ## v2.x
 
@@ -31,6 +31,11 @@ The focus of v2.x will be on new features to enhace the capability of the platfo
 - Integrate with SMS natively as a fallback channel.
 - Integrate with external IVR systems seamlessly within Glific.
 - Find NGOs who want to experiment with secure messaging via Signal for a small group of 'end-users'
+
+### Third party integration
+- Integrate with a CRM - CiviCRM, Zoho, Salesforce
+- Integrate with a ticketing system
+- Integrate with an audio transcription systems
 
 ### Extensibility
 - Allow NGOs to integrate and run code within Glific. Similar to Salesforce Apex
