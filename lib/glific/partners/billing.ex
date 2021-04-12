@@ -248,12 +248,15 @@ defmodule Glific.Partners.Billing do
           price: prices.consulting_hours
         }
       ],
+
+
       metadata: %{
         "id" => Integer.to_string(billing.organization_id),
         "name" => organization.name
       }
     }
   end
+
 
   @doc """
   Update organization and stripe customer with the current payment method as returned

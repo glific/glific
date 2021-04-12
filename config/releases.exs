@@ -84,3 +84,13 @@ config :glific, Glific.Vault,
       {Cloak.Ciphers.AES.GCM,
        tag: "AES.GCM.V2", key: Base.decode64!(System.get_env("OLD_CIPHER_KEY"))}
   ]
+
+config :glific,
+  stripe_ids: [
+        product: System.get_env("STRIPE_PRODUCT_ID"),
+        setup: System.get_env("STRIPE_SETUP_ID"),
+        monthly: System.get_env("STRIPE_MONTHLY_ID"),
+        users: System.get_env("STRIPE_USERS_ID"),
+        messages: System.get_env("STRIPE_MESSAGES_ID"),
+        consulting_hours: System.get_env("STRIPE_CONSULTING_HOURS_ID")
+  ]
