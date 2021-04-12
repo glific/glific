@@ -223,16 +223,16 @@ defmodule Glific.Flows.FlowContext do
     # but lets remove the parent result field to keep the map simple
     child_results = Map.delete(child.results, "parent")
 
+    IO.inspect(child_results, label: "CHILD")
     if child_results == %{} do
       parent
     else
-      results =
-        parent.results
-        |> Map.put("child #{child.flow_id}", child_results)
-        |> Map.put("child", child_results)
+      child_results = %{
+        "child #{child.flow_id}" => child_results,
+        "child" => child_results
+      }
 
-      {:ok, parent} = update_flow_context(parent, %{results: results})
-      parent
+      update_results(parent, child_results)
     end
   end
 
@@ -272,11 +272,14 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the contact results with each element of the json map
   """
-  @spec update_results(FlowContext.t(), map()) :: FlowContext.t()
+  @spec update_results(FlowContext.t(), map() | nil) :: FlowContext.t()
+  def update_results(context, %{}), do: context
+
   def update_results(context, result) do
+    IO.inspect(result, label: "RESULT")
     results =
       if context.results == %{} || is_nil(context.results),
-        do: result,
+        do: %{},
         else: Map.merge(context.results, result)
 
     {:ok, context} = update_flow_context(context, %{results: results})
