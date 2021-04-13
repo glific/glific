@@ -182,8 +182,6 @@ defmodule Glific.Providers.Gupshup.Message do
       else: attrs |> Map.merge(%{error: "Message size greater than 4096 characters"})
   end
 
-  defp check_size(attrs), do: attrs
-
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
