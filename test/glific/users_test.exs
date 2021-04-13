@@ -136,6 +136,19 @@ defmodule Glific.UsersTest do
       assert user.phone == "some phone"
     end
 
+    test "update_user/2 with valid with only name updates the user", attrs do
+      user = user_fixture(attrs)
+
+      assert {:ok, %User{} = user} = Users.update_user(user, %{name: "some updated name"})
+      assert user.name == "some updated name"
+
+      # would be great if we can check that the user tokens were deleted
+      # but we never create them, so that code does not really run
+
+      # Check phone doesn't get updated
+      assert user.phone == "some phone"
+    end
+
     test "update_user/2 with invalid data returns error changeset", attrs do
       user = user_fixture(attrs)
       assert {:error, %Ecto.Changeset{}} = Users.update_user(user, @invalid_attrs)
