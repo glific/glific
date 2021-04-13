@@ -94,3 +94,7 @@ config :glific,
     messages: System.get_env("STRIPE_MESSAGES_ID"),
     consulting_hours: System.get_env("STRIPE_CONSULTING_HOURS_ID")
   ]
+
+config :stripity_stripe,
+  api_key: System.get_env("STRIPE_API_KEY"),
+  signing_secret: System.get_env("STRIPE_SIGNING_SECRET")
