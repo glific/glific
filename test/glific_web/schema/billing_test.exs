@@ -21,25 +21,6 @@ defmodule GlificWeb.Schema.BillingTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/billings/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/billings/delete.gql")
 
-  test "create a billing", %{user: user} do
-    name = "Billing name"
-    {:ok, _billing} = Repo.fetch_by(Billing, %{name: name, organization_id: user.organization_id})
-
-    result =
-      auth_query_gql_by(:create, user,
-        variables: %{
-          "input" => %{
-            "name" => "Billing user",
-            "email" => "billing@gmail.com",
-            "currency" => "inr"
-          }
-        }
-      )
-
-    assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createBilling", "billing", "email"])
-    assert label == "billing@gmail.com"
-  end
 
   test "delete a billing", %{user: user} do
     name = "Billing name"
