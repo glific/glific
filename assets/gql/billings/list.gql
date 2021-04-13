@@ -1,0 +1,10 @@
+query billings($filter: BillingFilter, $opts: Opts) {
+  billings(filter: $filter, opts: $opts) {
+    id
+    label
+    language {
+      id
+      label
+    }
+  }
+}

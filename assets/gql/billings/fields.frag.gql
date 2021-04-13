@@ -1,0 +1,21 @@
+fragment BillingFields on BillingResult {
+  billing {
+    id
+    label
+    shortcode
+    keywords
+
+    language {
+      id
+      label
+      locale
+    }
+  }
+}
+
+fragment ErrorFields on BillingResult {
+  errors {
+    key
+    message
+  }
+}

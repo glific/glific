@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createBilling($input:BillingInput!) {
+  createBilling(input: $input) {
+    ...BillingFields
+
+    ...ErrorFields
+  }
+}

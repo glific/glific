@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query billing($id: ID!) {
+  billing(id: $id) {
+    ...BillingFields
+
+    ...ErrorFields
+  }
+}
