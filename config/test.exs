@@ -60,9 +60,36 @@ config :phoenix, :json_library, Jason
 
 config :pow, Pow.Ecto.Schema.Password, iterations: 1
 
+# There is an issue with CI, Will move this to test.secret.exs in the future
+# import_config "test.secret.exs"
+config :glific,
+  provider_url: "https://api.gupshup.io/sm/api/v1",
+  provider_key: "random_abcdefghigklmnop"
+
 config :appsignal, :config,
   otp_app: :glific,
   active: false,
   env: :test
 
-import_config "test.secret.exs"
+config :glific, Glific.Vault,
+  cloak_repo: [Glific.Repo],
+  ciphers: [
+    default:
+      {Cloak.Ciphers.AES.GCM,
+       tag: "AES.GCM.V1", key: Base.decode64!("random_BliS4zyqMG065ZrRJ8BhhruZ")}
+  ]
+
+config :glific,
+stripe_ids: [
+      product: "random_prod_JG5ns5",
+      setup: "random_price_1IfMxsEMShkCs",
+      monthly: "random_price_1IfMurEMShkC",
+      users: "random_price_1IfNdDEMShk",
+      messages: "random_price_1IfNf2EMSh",
+      consulting_hours: "random_price_1IfNe9EMShk"
+]
+
+config :stripity_stripe,
+  api_key:
+    "random_sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cC",
+  signing_secret: "random_whsec_F6xvua5ZhjS98FkK"
