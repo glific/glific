@@ -39,7 +39,12 @@ defmodule Glific.Processor.ConsumerWorker do
     end
   end
 
-  defp load_state(organization_id) do
+  @doc """
+  Sets the immutable state for a specific organization. Making this public, so we can call it from
+  the test suite
+  """
+  @spec load_state(non_neg_integer) :: map()
+  def load_state(organization_id) do
     {:ok, cache_reload_key} = Caches.get(organization_id, :cache_reload_key)
 
     %{
@@ -92,7 +97,7 @@ defmodule Glific.Processor.ConsumerWorker do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    # Since conatct and language are the required fiels in many places, lets preload them
+    # Since contact and language are the required fiels in many places, lets preload them
     message = Repo.preload(message, [:location, :media, contact: [:language]])
 
     {message, state}

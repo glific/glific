@@ -428,4 +428,58 @@ defmodule Glific.FLowsTest do
     # since we should have recd 2 messages, hello and hello
     assert message_count + 2 == new_count
   end
+
+  test "test executing the new contact workflow and ensuring parent and child are set",
+       %{organization_id: organization_id} = _attrs do
+    contact = Fixtures.contact_fixture()
+
+    message_count = Repo.aggregate(Message, :count)
+    context_count = Repo.aggregate(FlowContext, :count)
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "New Contact Workflow"})
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
+    {:ok, context, _msgs} =
+      context
+      |> FlowContext.load_context(flow)
+      |> FlowContext.execute([])
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "submitted",
+              "messageId" => Faker.String.base64(36)
+            })
+        }
+    end)
+
+    state = Glific.Processor.ConsumerWorker.load_state(organization_id)
+
+    message = Fixtures.message_fixture(%{body: "1", sender_id: contact.id})
+    Glific.Processor.ConsumerWorker.process_message(message, state)
+
+    message = Fixtures.message_fixture(%{body: "2", sender_id: contact.id})
+    Glific.Processor.ConsumerWorker.process_message(message, state)
+
+    db_context = Repo.get!(FlowContext, context.id)
+    assert !is_nil(db_context.results)
+    assert !is_nil(db_context.results["child"])
+
+    child_context =
+      FlowContext
+      |> where([fc], is_nil(fc.completed_at))
+      |> where([fc], fc.parent_id == ^context.id)
+      |> Repo.one!()
+
+    assert !is_nil(child_context.results)
+    assert !is_nil(child_context.results["parent"])
+
+    assert message_count < Repo.aggregate(Message, :count)
+    assert context_count < Repo.aggregate(FlowContext, :count)
+  end
 end
