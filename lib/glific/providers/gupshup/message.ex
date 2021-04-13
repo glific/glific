@@ -168,18 +168,19 @@ defmodule Glific.Providers.Gupshup.Message do
     }
   end
 
+  @max_size 4096
   @doc false
   @spec check_size(map()) :: map()
   defp check_size(%{text: text} = attrs) do
-    if String.length(text) < 4096,
+    if String.length(text) < @max_size,
       do: attrs,
-      else: attrs |> Map.merge(%{error: "Message size greater than 4096 characters"})
+      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
 
   defp check_size(%{caption: caption} = attrs) do
-    if String.length(caption) < 4096,
+    if String.length(caption) < @max_size,
       do: attrs,
-      else: attrs |> Map.merge(%{error: "Message size greater than 4096 characters"})
+      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
 
   @doc false

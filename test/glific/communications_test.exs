@@ -119,7 +119,7 @@ defmodule Glific.CommunicationsTest do
          attrs do
       message =
         attrs
-        |> Map.merge(%{body: Fixtures.randomizer(4097)})
+        |> Map.merge(%{body: Faker.Lorem.sentence(4097)})
         |> message_fixture()
 
       {:error, error_msg} = Communications.Message.send_message(message)
@@ -130,7 +130,7 @@ defmodule Glific.CommunicationsTest do
          attrs do
       message_media =
         message_media_fixture(%{
-          caption: Fixtures.randomizer(4097),
+          caption: Faker.Lorem.sentence(4097),
           organization_id: attrs.organization_id
         })
 
