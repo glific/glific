@@ -94,4 +94,35 @@ defmodule Glific.BillingTest do
       assert invoice.line_items["price_id"].nickname == "nickname"
     end
   end
+
+  test "fetch_invoice/1 fetches the invoice ", %{organization_id: organization_id} do
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+    {:ok, invoice} = Invoice.create_invoice(attrs)
+
+    result = Invoice.fetch_invoice(invoice.invoice_id)
+
+    assert result == invoice
+  end
+
+  test "update_invoice/1 updates the invoice ", %{organization_id: organization_id} do
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+    {:ok, invoice} = Invoice.create_invoice(attrs)
+
+    result = Invoice.update_invoice(invoice, %{status: "closed"})
+
+    assert result.id == invoice.id
+    assert result.status == "closed"
+  end
+
+  test "count_invoices/1 returns invoice counts based on the filter args ", %{organization_id: organization_id} do
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+
+    result = Invoice.count_invoices(%{filter: %{organization_id: organization_id}})
+    assert result == 0
+
+    {:ok, invoice} = Invoice.create_invoice(attrs)
+
+    result = Invoice.count_invoices(%{filter: %{status: invoice.status, organization_id: invoice.organization_id}})
+    assert result == 1
+  end
 end
