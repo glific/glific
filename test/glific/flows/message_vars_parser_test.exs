@@ -17,21 +17,28 @@ defmodule Glific.Flows.MessageVarParserTest do
                "organization" => %{"name" => "Glific"}
              })
 
-    # binding with 2 dots will replace the variable
+    # binding with 2 or 2 dots will replace the variable
     parsed_test =
-      MessageVarParser.parse("hello @contact.fileds.name", %{
-        "contact" => %{"fileds" => %{"name" => "Glific"}}
+      MessageVarParser.parse("hello @contact.fields.name", %{
+        "contact" => %{"fields" => %{"name" => "Glific"}}
+      })
+
+    assert parsed_test == "hello Glific"
+
+    parsed_test =
+      MessageVarParser.parse("hello @contact.fields.name.category", %{
+        "contact" => %{"fields" => %{"name" => %{"category" => "Glific"}}}
       })
 
     assert parsed_test == "hello Glific"
 
     # if variable is not defined then it won't effect the input
     parsed_test =
-      MessageVarParser.parse("hello @contact.fileds.name", %{
-        "results" => %{"fileds" => %{"name" => "Glific"}}
+      MessageVarParser.parse("hello @contact.fields.name", %{
+        "results" => %{"fields" => %{"name" => "Glific"}}
       })
 
-    assert parsed_test == "hello @contact.fileds.name"
+    assert parsed_test == "hello @contact.fields.name"
 
     # atom keys will be convert into string automatically
     parsed_test = MessageVarParser.parse("hello @contact.name", %{"contact" => %{name: "Glific"}})

@@ -17,6 +17,7 @@ defmodule Glific.Flows.MessageVarParser do
     binding = stringify_keys(binding)
 
     input
+    |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
   end
