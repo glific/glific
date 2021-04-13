@@ -255,7 +255,8 @@ defmodule Glific.Flows.Flow do
 
     FlowContext.init_context(flow, context.contact, context.status,
       parent_id: context.id,
-      delay: context.delay
+      delay: context.delay,
+      results: %{parent: context.results}
     )
   end
 

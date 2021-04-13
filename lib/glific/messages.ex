@@ -869,7 +869,8 @@ defmodule Glific.Messages do
         [
           organization_id: organization_id,
           body: body,
-          clean_body: Glific.string_clean(body)
+          clean_body: Glific.string_clean(body),
+          type: :text
         ],
         attrs
       )

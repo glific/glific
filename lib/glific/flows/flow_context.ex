@@ -208,12 +208,31 @@ defmodule Glific.Flows.FlowContext do
 
         parent
         |> load_context(Flow.get_flow(context.organization_id, parent.flow_uuid, context.status))
+        |> merge_child_results(context)
         |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
       end
     end
 
     # return the orginal context, which is now completed
     context
+  end
+
+  @spec merge_child_results(FlowContext.t(), FlowContext.t()) :: FlowContext.t()
+  defp merge_child_results(parent, child) do
+    # merge the child results into parent
+    # but lets remove the parent result field to keep the map simple
+    child_results = Map.delete(child.results, "parent")
+
+    if child_results == %{} do
+      parent
+    else
+      child_results = %{
+        "child #{child.flow_id}" => child_results,
+        "child" => child_results
+      }
+
+      update_results(parent, child_results)
+    end
   end
 
   @doc """
@@ -252,7 +271,7 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the contact results with each element of the json map
   """
-  @spec update_results(FlowContext.t(), map()) :: FlowContext.t()
+  @spec update_results(FlowContext.t(), map() | nil) :: FlowContext.t()
   def update_results(context, result) do
     results =
       if context.results == %{} || is_nil(context.results),
@@ -379,6 +398,7 @@ defmodule Glific.Flows.FlowContext do
     parent_id = Keyword.get(opts, :parent_id)
     current_delay = Keyword.get(opts, :delay, 0)
     wakeup_at = Keyword.get(opts, :wakeup_at)
+    results = Keyword.get(opts, :results, %{})
 
     Logger.info(
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
@@ -393,7 +413,7 @@ defmodule Glific.Flows.FlowContext do
       flow_uuid: flow.uuid,
       status: status,
       node: node,
-      results: %{},
+      results: results,
       flow_id: flow.id,
       flow: flow,
       organization_id: flow.organization_id,
