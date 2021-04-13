@@ -55,6 +55,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     SeedsMigration.migrate_data(:collection, organization)
 
+    SeedsMigration.migrate_data(:localized_language, organization)
+
+    SeedsMigration.migrate_data(:user_default_language, organization)
+
     saved_searches(organization)
 
     flow_labels(organization)
