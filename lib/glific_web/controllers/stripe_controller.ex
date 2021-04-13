@@ -11,6 +11,7 @@ defmodule StripeController do
   }
 
   alias Glific.Repo
+  require Logger
 
   @doc """
   The top level API used by the router. Use pattern matching to handle specific events
@@ -23,6 +24,8 @@ defmodule StripeController do
       ) do
 
     organization_id = get_organization_id(stripe_event) || organization_id
+
+    Logger.info("Stripe webhook called with event #{stripe_event.type} and organization_id #{organization_id}")
     case handle_webhook(stripe_event, organization_id) do
       {:ok, _} -> handle_success(conn)
       {:error, error} -> handle_error(conn, error)
