@@ -61,6 +61,9 @@ defmodule Glific.Seeds.SeedsMigration do
       :sync_bigquery ->
         bigquery_enabled_org_ids()
         |> sync_schema_with_bigquery()
+
+      :localized_language ->
+        ["en", "hi"] |> update_localized_language()
     end
   end
 
@@ -406,5 +409,13 @@ defmodule Glific.Seeds.SeedsMigration do
     |> where([c, _p], c.is_active)
     |> select([c, _p], c.organization_id)
     |> Repo.all()
+  end
+
+  @spec update_localized_language(list()) :: list()
+  defp update_localized_language(language_list) do
+    Glific.Settings.Language
+    |> where([l], l.locale in ^language_list)
+    |> update([l], set: [localized: true])
+    |> Repo.update_all([], skip_organization_id: true)
   end
 end
