@@ -19,6 +19,7 @@ defmodule Glific.Fixtures do
     Notifications.Notification,
     Partners,
     Partners.Organization,
+    Partners.Billing,
     Repo,
     Settings,
     Tags,
@@ -649,5 +650,21 @@ defmodule Glific.Fixtures do
     {:ok, notification} = Notifications.create_notification(valid_attrs)
 
     notification
+  end
+
+  @doc false
+  @spec billing_fixture(map()) :: Billing.t()
+  def billing_fixture(organization_id) do
+    attrs = %{
+      organization_id: organization_id,
+      name: "Billing name",
+      email: "Billing person email",
+      currency: "inr",
+      stripe_subscription_id: "Stripe subscription id",
+      is_delinquent: false
+    }
+
+    {:ok, billing} = Billing.create_billing(attrs)
+    billing
   end
 end

@@ -3,9 +3,10 @@ defmodule Glific.BillingTest do
   use ExUnit.Case
   import Mock
 
-  alias Glific.Partners.{
-    Billing,
-    Invoice
+  alias Glific.{
+    Fixtures,
+    Partners.Billing,
+    Partners.Invoice
   }
 
   @current_datetime_unix DateTime.utc_now() |> DateTime.to_unix()
@@ -37,19 +38,6 @@ defmodule Glific.BillingTest do
     }
   }
 
-  def billing_fixture() do
-    attrs = %{
-      name: "Billing name",
-      email: "Billing person email",
-      currency: "inr",
-      stripe_subscription_id: "Stripe subscription id",
-      is_delinquent: false
-    }
-
-    {:ok, billing} = Billing.create_billing(attrs)
-    billing
-  end
-
   test "create_invoice/1 with valid data", %{organization_id: organization_id} do
     attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
 
@@ -64,7 +52,7 @@ defmodule Glific.BillingTest do
   end
 
   test "create_invoice/1 with valid stripe event data creates invoice when not present", %{organization_id: organization_id} do
-    billing_fixture()
+    Fixtures.billing_fixture(organization_id)
 
     with_mocks([
       {
@@ -128,7 +116,7 @@ defmodule Glific.BillingTest do
   end
 
   test "update_invoice_status/1 updates invoice status and delinquency", %{organization_id: organization_id} do
-    billing = billing_fixture()
+    billing = Fixtures.billing_fixture(organization_id)
     attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
     {:ok, invoice} = Invoice.create_invoice(attrs)
 
