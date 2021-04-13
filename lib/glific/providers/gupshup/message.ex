@@ -14,7 +14,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_text(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body, isHSM: message.is_hsm}
     |> check_size()
@@ -23,7 +24,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_image(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_image(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
     message_media = message.media
 
@@ -53,7 +55,8 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_video(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_video(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_video(message, attrs \\ %{}) do
     message_media = message.media
 
@@ -165,6 +168,8 @@ defmodule Glific.Providers.Gupshup.Message do
     }
   end
 
+  @doc false
+  @spec check_size(map()) :: map()
   defp check_size(%{text: text} = attrs) do
     if String.length(text) < 4096,
       do: attrs,
@@ -181,7 +186,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
