@@ -14,6 +14,7 @@ if Code.ensure_loaded?(Faker) do
       Groups.Group,
       Messages.Message,
       Messages.MessageMedia,
+      Partners.Billing,
       Partners.Organization,
       Partners.Provider,
       Repo,
@@ -822,6 +823,17 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_billing(Organization.t()) :: nil
+    def seed_billing(organization) do
+      Repo.insert!(%Billing{
+        name: "Billing name",
+        email: "Billing person email",
+        currency: "inr",
+        organization_id: organization.id
+      })
+    end
+
+    @doc false
     @spec hsm_templates(Organization.t()) :: nil
     def hsm_templates(organization) do
       [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
@@ -950,6 +962,8 @@ if Code.ensure_loaded?(Faker) do
       seed_messages_media(organization)
 
       hsm_templates(organization)
+
+      seed_billing(organization)
     end
   end
 end
