@@ -64,7 +64,7 @@ config :pow, Pow.Ecto.Schema.Password, iterations: 1
 # import_config "test.secret.exs"
 config :glific,
   provider_url: "https://api.gupshup.io/sm/api/v1",
-  provider_key: "abcdefghigklmnop"
+  provider_key: "random_abcdefghigklmnop"
 
 config :appsignal, :config,
   otp_app: :glific,
@@ -78,3 +78,18 @@ config :glific, Glific.Vault,
       {Cloak.Ciphers.AES.GCM,
        tag: "AES.GCM.V1", key: Base.decode64!("BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY=")}
   ]
+
+config :glific,
+stripe_ids: [
+      product: "random_prod_JG5ns5",
+      setup: "random_price_1IfMxsEMShkCs",
+      monthly: "random_price_1IfMurEMShkC",
+      users: "random_price_1IfNdDEMShk",
+      messages: "random_price_1IfNf2EMSh",
+      consulting_hours: "random_price_1IfNe9EMShk"
+]
+
+config :stripity_stripe,
+  api_key:
+    "random_sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cC",
+  signing_secret: "random_whsec_F6xvua5ZhjS98FkK"

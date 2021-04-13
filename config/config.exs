@@ -41,7 +41,6 @@ config :glific, Oban,
   repo: Glific.Repo,
   queues: [
     default: 10,
-    # dialogflow: 10,
     gupshup: 10,
     webhook: 10,
     crontab: 10,
@@ -63,6 +62,7 @@ config :glific, Oban,
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
         {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
         {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+        {"3 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
         {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
         {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
       ]

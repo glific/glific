@@ -35,9 +35,6 @@ defmodule Glific.Partners.Organization do
     :organization_id,
     :signature_phrase,
     :last_communication_at
-    # commenting this out, since the tests were giving me an error
-    # about cast_embed etc
-    # :out_of_office
   ]
 
   @type t() :: %__MODULE__{
@@ -64,9 +61,9 @@ defmodule Glific.Partners.Organization do
           session_limit: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           signature_phrase: binary | nil,
+          last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil,
-          last_communication_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil
         }
 
   schema "organizations" do
