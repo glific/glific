@@ -79,10 +79,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # An optional description
       add :description, :string, null: true, comment: "Optional description for the language"
 
-      # The locale name of the language dialect, e.g. en_US, or hi
+      # The locale name of the language dialect, e.g. en, or hi
       add :locale, :string,
         null: false,
-        comment: "The locale name of the language dialect, e.g. en_US, or hi"
+        comment: "The locale name of the language dialect, e.g. en, or hi"
 
       # Is this language being currently used in the sysem
       add :is_active, :boolean,

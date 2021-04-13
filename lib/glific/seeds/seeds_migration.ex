@@ -67,11 +67,11 @@ defmodule Glific.Seeds.SeedsMigration do
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
-    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+    [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     organizations
-    |> seed_simulators(en_us)
-    |> seed_users(en_us)
+    |> seed_simulators(en)
+    |> seed_users(en)
 
     :ok
   end

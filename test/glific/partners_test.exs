@@ -185,7 +185,7 @@ defmodule Glific.PartnersTest do
     @valid_default_language_attrs %{
       label: "English",
       label_locale: "English",
-      locale: "en_US",
+      locale: "en",
       is_active: true
     }
 
