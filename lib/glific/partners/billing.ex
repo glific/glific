@@ -432,7 +432,6 @@ defmodule Glific.Partners.Billing do
         stripe_subscription_id: subscription.id,
         organization_id: organization_id
       })
-
     update_subscription_details(subscription, organization_id, billing)
   end
 

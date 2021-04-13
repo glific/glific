@@ -10,6 +10,8 @@ defmodule StripeController do
     Invoice
   }
 
+  alias Glific.Repo
+
   @doc """
   The top level API used by the router. Use pattern matching to handle specific events
   """
@@ -19,9 +21,27 @@ defmodule StripeController do
           conn,
         _params
       ) do
+
+    organization_id = get_organization_id(stripe_event) || organization_id
     case handle_webhook(stripe_event, organization_id) do
       {:ok, _} -> handle_success(conn)
       {:error, error} -> handle_error(conn, error)
+    end
+  end
+
+  ## We might need to move this to stripe webhook plug.
+  ## I am just not sure that how it will impact on other request and if the
+  ## customer id is present in all endpoints.
+  @spec get_organization_id(any()) :: integer()
+  defp get_organization_id(stripe_event) do
+    object = stripe_event.object
+    with true <- is_struct(stripe_event.object),
+    {:ok, billing} <- Repo.fetch_by(Billing, %{stripe_customer_id: object.customer}, skip_organization_id: true)
+    do
+      Repo.put_process_state(billing.organization_id)
+      billing.organization_id
+    else
+      _ -> nil
     end
   end
 
