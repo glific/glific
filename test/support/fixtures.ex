@@ -199,7 +199,7 @@ defmodule Glific.Fixtures do
       label: "some label",
       shortcode: "somelabel",
       description: "some fixed description",
-      locale: "en_US",
+      locale: "en",
       is_active: true,
       is_reserved: true
     }

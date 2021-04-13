@@ -14,7 +14,7 @@ defmodule Glific.RepoTest do
     @valid_attrs %{
       label: "Faker English",
       label_locale: "Faker English",
-      locale: "faker_en_US",
+      locale: "faker_en",
       is_active: true
     }
 
@@ -94,7 +94,7 @@ defmodule Glific.RepoTest do
                Repo.fetch_by(Language, %{label: "Faker Hindi (India)"})
 
       assert {:ok, en} ==
-               Repo.fetch_by(Language, %{locale: "faker_en_US"})
+               Repo.fetch_by(Language, %{locale: "faker_en"})
 
       assert :error ==
                elem(

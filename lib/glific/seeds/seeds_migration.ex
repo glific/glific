@@ -33,45 +33,45 @@ defmodule Glific.Seeds.SeedsMigration do
   """
   @spec migrate_data(atom(), Organization.t() | nil) :: :ok
   def migrate_data(phase, organization \\ nil) do
-    organizations =
-      if is_nil(organization),
-        do: Partners.list_organizations(),
-        else: [organization]
+    organizations = get_organizations(organization)
 
-    case phase do
-      :collection ->
-        seed_collections(organizations)
-
-      :fix_message_number ->
-        fix_message_number(organizations)
-
-      :optin ->
-        optin_data(organizations)
-
-      :opt_in_out ->
-        SeedsFlows.opt_in_out_flows(organizations)
-
-      :simulator ->
-        add_simulators(organizations)
-
-      :stats ->
-        org_id_list = Enum.map(organizations, fn o -> o.id end)
-        SeedsStats.seed_stats(org_id_list)
-
-      :sync_bigquery ->
-        bigquery_enabled_org_ids()
-        |> sync_schema_with_bigquery()
-    end
+    do_migrate_data(phase, organizations)
   end
+
+  @doc false
+  @spec get_organizations(nil | Organization.t()) :: [Organization.t()]
+  defp get_organizations(nil), do: Partners.list_organizations()
+  defp get_organizations(organization), do: [organization]
+
+  @doc false
+  @spec do_migrate_data(atom(), [Organization.t()]) :: any()
+  defp do_migrate_data(:collection, organizations), do: seed_collections(organizations)
+  defp do_migrate_data(:fix_message_number, organizations), do: fix_message_number(organizations)
+  defp do_migrate_data(:optin, organizations), do: optin_data(organizations)
+  defp do_migrate_data(:opt_in_out, organizations), do: SeedsFlows.opt_in_out_flows(organizations)
+  defp do_migrate_data(:simulator, organizations), do: add_simulators(organizations)
+
+  defp do_migrate_data(:stats, organizations) do
+    org_id_list = Enum.map(organizations, fn o -> o.id end)
+    SeedsStats.seed_stats(org_id_list)
+  end
+
+  defp do_migrate_data(:sync_bigquery, _organizations) do
+    bigquery_enabled_org_ids()
+    |> sync_schema_with_bigquery()
+  end
+
+  defp do_migrate_data(:localized_language, _organizations), do: update_localized_language()
+  defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
 
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
-    [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+    [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
     organizations
-    |> seed_simulators(en_us)
-    |> seed_users(en_us)
+    |> seed_simulators(en)
+    |> seed_users(en)
 
     :ok
   end
@@ -406,5 +406,22 @@ defmodule Glific.Seeds.SeedsMigration do
     |> where([c, _p], c.is_active)
     |> select([c, _p], c.organization_id)
     |> Repo.all()
+  end
+
+  @spec update_localized_language() :: :ok
+  defp update_localized_language do
+    Glific.Settings.Language
+    |> where([l], l.locale in ["en", "hi"])
+    |> update([l], set: [localized: true])
+    |> Repo.update_all([])
+  end
+
+  @spec update_user_default_language() :: :ok
+  defp update_user_default_language do
+    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+
+    Glific.Users.User
+    |> update([u], set: [language_id: ^en.id])
+    |> Repo.update_all([])
   end
 end

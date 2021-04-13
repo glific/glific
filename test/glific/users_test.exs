@@ -13,6 +13,7 @@ defmodule Glific.UsersTest do
     @valid_attrs %{
       name: "some name",
       phone: "some phone",
+      language_id: 1,
       password: @password,
       password_confirmation: @password,
       roles: ["admin"]
@@ -20,36 +21,42 @@ defmodule Glific.UsersTest do
     @valid_attrs_1 %{
       name: "some name 1",
       phone: "some phone 1",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_2 %{
       name: "some name 2",
       phone: "some phone 2",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_3 %{
       name: "some name 3",
       phone: "some phone 3",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
       phone: "some phone 4",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
       phone: "some phone 5",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @update_attrs %{
       name: "some updated name",
       phone: "some updated phone",
+      language_id: 1,
       password: @password,
       password_confirmation: @password,
       roles: [:staff, :admin],
@@ -58,6 +65,7 @@ defmodule Glific.UsersTest do
     @invalid_attrs %{
       name: nil,
       phone: nil,
+      language_id: 1,
       password: nil,
       password_confirmation: nil
     }

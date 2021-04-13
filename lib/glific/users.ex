@@ -11,6 +11,7 @@ defmodule Glific.Users do
 
   alias Glific.{
     Repo,
+    Settings.Language,
     Users.User
   }
 
@@ -66,9 +67,20 @@ defmodule Glific.Users do
   """
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
+    attrs =
+      attrs
+      |> Glific.atomize_keys()
+      |> get_default_language()
+
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
+  end
+
+  @spec get_default_language(map()) :: map()
+  defp get_default_language(attrs) do
+    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+    attrs |> Map.merge(%{language_id: en.id})
   end
 
   @doc """

@@ -16,7 +16,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   @valid_language_attrs %{
     label: "English",
     label_locale: "English",
-    locale: "en_US",
+    locale: "en",
     is_active: true
   }
 

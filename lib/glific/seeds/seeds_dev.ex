@@ -36,13 +36,13 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization(organization)
 
       [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       Repo.insert!(%Tag{
         label: "This is for testing",
         shortcode: "testing-only",
         description: "Marking message for testing purpose in English Language",
-        language: en_us,
+        language: en,
         organization: organization
       })
 
@@ -63,7 +63,7 @@ if Code.ensure_loaded?(Faker) do
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       contacts = [
         %{
@@ -88,7 +88,7 @@ if Code.ensure_loaded?(Faker) do
         %{
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: en_us.id
+          language_id: en.id
         }
       ]
 
@@ -331,7 +331,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     defp create_contact_user(
-           {organization, en_us, utc_now},
+           {organization, en, utc_now},
            {name, phone, roles}
          ) do
       password = "12345678"
@@ -340,7 +340,7 @@ if Code.ensure_loaded?(Faker) do
         Repo.insert!(%Contact{
           phone: phone,
           name: name,
-          language_id: en_us.id,
+          language_id: en.id,
           optin_time: utc_now,
           optin_status: true,
           optin_method: "BSP",
@@ -370,28 +370,28 @@ if Code.ensure_loaded?(Faker) do
     def seed_users(organization \\ nil) do
       organization = get_organization(organization)
 
-      {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
+      {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       create_contact_user(
-        {organization, en_us, utc_now},
+        {organization, en, utc_now},
         {"NGO Staff", "919820112345", ["staff"]}
       )
 
       create_contact_user(
-        {organization, en_us, utc_now},
+        {organization, en, utc_now},
         {"NGO Manager", "9101234567890", ["manager"]}
       )
 
       create_contact_user(
-        {organization, en_us, utc_now},
+        {organization, en, utc_now},
         {"NGO Admin", "919999988888", ["admin"]}
       )
 
       {_, user} =
         create_contact_user(
-          {organization, en_us, utc_now},
+          {organization, en, utc_now},
           {"NGO Person who left", "919988776655", ["none"]}
         )
 
@@ -499,7 +499,7 @@ if Code.ensure_loaded?(Faker) do
     @spec seed_session_templates(Organization.t() | nil) :: nil
     def seed_session_templates(organization \\ nil) do
       organization = get_organization(organization)
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
       [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
 
       translations = %{
@@ -517,7 +517,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "account_balance",
         is_hsm: true,
         number_parameters: 1,
-        language_id: en_us.id,
+        language_id: en.id,
         translations: translations,
         organization_id: organization.id,
         status: "REJECTED",
@@ -546,7 +546,7 @@ if Code.ensure_loaded?(Faker) do
         is_hsm: true,
         is_active: true,
         number_parameters: 2,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "APPROVED",
@@ -572,7 +572,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "personalized_bill",
         is_hsm: true,
         number_parameters: 1,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "APPROVED",
@@ -598,7 +598,7 @@ if Code.ensure_loaded?(Faker) do
         is_hsm: true,
         number_parameters: 3,
         translations: translations,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         status: "PENDING",
         category: "ALERT_UPDATE",
@@ -622,7 +622,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "bill",
         is_hsm: true,
         number_parameters: 1,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "PENDING",
@@ -825,7 +825,7 @@ if Code.ensure_loaded?(Faker) do
     @spec hsm_templates(Organization.t()) :: nil
     def hsm_templates(organization) do
       [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       translations = %{
         hi.id => %{
@@ -842,7 +842,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "missed_message",
         is_hsm: true,
         number_parameters: 0,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         body: """
         I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
@@ -868,7 +868,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "otp",
         is_hsm: true,
         number_parameters: 3,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "REJECTED",
@@ -901,7 +901,7 @@ if Code.ensure_loaded?(Faker) do
         type: :text,
         shortcode: "user-registration",
         is_reserved: true,
-        language_id: en_us.id,
+        language_id: en.id,
         translations: translations,
         status: "REJECTED",
         category: "ALERT_UPDATE",

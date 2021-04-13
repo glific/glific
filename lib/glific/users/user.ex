@@ -109,7 +109,8 @@ defmodule Glific.Users.User do
       :password,
       :is_restricted,
       :last_login_at,
-      :last_login_from
+      :last_login_from,
+      :language_id
     ])
     |> Changeset.validate_required([:name, :roles])
     |> password_changeset(params, @pow_config)
