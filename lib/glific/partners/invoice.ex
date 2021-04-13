@@ -135,10 +135,12 @@ defmodule Glific.Partners.Invoice do
 
   @spec finalize(Invoice.t()) :: Invoice.t()
   defp update_prorations(invoice) do
-    billing = Billing.get_billing(%{organization_id: invoice.organization_id})
-    Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
-
-    invoice
+    with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
+         {:ok, _} <- Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true}) do
+      invoice
+    else
+      {:error, error} -> {:error, "Error occurred while updating prorations. #{inspect(error)}"}
+    end
   end
 
   @doc """
@@ -155,7 +157,10 @@ defmodule Glific.Partners.Invoice do
       # Temporary, for the existing customers prorations to be updated.
       |> update_prorations()
 
-    {:ok, invoice}
+    case invoice do
+      {:error, error} -> {:error, "Error occurred while creating invoice. #{inspect(error)}"}
+      invoice -> {:ok, invoice}
+    end
   end
 
   def create_invoice(attrs) do
