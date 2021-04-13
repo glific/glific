@@ -7,16 +7,16 @@ defmodule Glific.Providers.MessageBehaviour do
               message :: Glific.Messages.Message.t(),
               attrs :: map()
             ) ::
-              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
 
   @callback send_image(message :: Glific.Messages.Message.t(), attrs :: map()) ::
-              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
 
   @callback send_audio(message :: Glific.Messages.Message.t(), attrs :: map()) ::
               {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
 
   @callback send_video(message :: Glific.Messages.Message.t(), attrs :: map()) ::
-              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
 
   @callback send_document(message :: Glific.Messages.Message.t(), attrs :: map()) ::
               {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
