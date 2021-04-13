@@ -64,6 +64,9 @@ defmodule Glific.Seeds.SeedsMigration do
 
       :localized_language ->
         ["en", "hi"] |> update_localized_language()
+
+      :user_default_language ->
+        update_user_default_language()
     end
   end
 
@@ -411,11 +414,20 @@ defmodule Glific.Seeds.SeedsMigration do
     |> Repo.all()
   end
 
-  @spec update_localized_language(list()) :: list()
+  @spec update_localized_language(list()) :: :ok
   defp update_localized_language(language_list) do
     Glific.Settings.Language
     |> where([l], l.locale in ^language_list)
     |> update([l], set: [localized: true])
+    |> Repo.update_all([], skip_organization_id: true)
+  end
+
+  @spec update_localized_language(list()) :: :ok
+  defp update_user_default_language() do
+    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+
+    Glific.Users.User
+    |> update([u], set: [language_id: ^en.id])
     |> Repo.update_all([], skip_organization_id: true)
   end
 end
