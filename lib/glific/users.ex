@@ -10,8 +10,8 @@ defmodule Glific.Users do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Partners,
     Repo,
+    Settings.Language,
     Users.User
   }
 
@@ -79,8 +79,8 @@ defmodule Glific.Users do
 
   @spec get_default_language(map()) :: map()
   defp get_default_language(attrs) do
-    org = Partners.get_organization!(attrs.organization_id)
-    attrs |> Map.merge(%{language_id: org.default_language_id})
+    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+    attrs |> Map.merge(%{language_id: en.id})
   end
 
   @doc """

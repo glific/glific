@@ -413,7 +413,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Glific.Settings.Language
     |> where([l], l.label in ["English", "Hindi"])
     |> update([l], set: [localized: true])
-    |> Repo.update_all([], skip_organization_id: true)
+    |> Repo.update_all([])
   end
 
   @spec update_user_default_language() :: :ok
@@ -422,6 +422,6 @@ defmodule Glific.Seeds.SeedsMigration do
 
     Glific.Users.User
     |> update([u], set: [language_id: ^en.id])
-    |> Repo.update_all([], skip_organization_id: true)
+    |> Repo.update_all([])
   end
 end
