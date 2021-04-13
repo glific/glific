@@ -97,7 +97,7 @@ defmodule Glific.Processor.ConsumerWorker do
   defp process_message(message, state) do
     body = Glific.string_clean(message.body)
 
-    # Since contact and language are the required fiels in many places, lets preload them
+    # Since contact and language are the required fields in many places, lets preload them
     message = Repo.preload(message, [:location, :media, contact: [:language]])
 
     {message, state}
