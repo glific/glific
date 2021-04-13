@@ -22,10 +22,14 @@ defmodule StripeController do
           conn,
         _params
       ) do
-
     organization_id = get_organization_id(stripe_event) || organization_id
 
-    Logger.info("Stripe webhook called with event #{stripe_event.type} and organization_id #{organization_id}")
+    Logger.info(
+      "Stripe webhook called with event #{stripe_event.type} and organization_id #{
+        organization_id
+      }"
+    )
+
     case handle_webhook(stripe_event, organization_id) do
       {:ok, _} -> handle_success(conn)
       {:error, error} -> handle_error(conn, error)
@@ -38,9 +42,12 @@ defmodule StripeController do
   @spec get_organization_id(any()) :: integer() | nil
   defp get_organization_id(stripe_event) do
     object = stripe_event.object
+
     with true <- is_struct(stripe_event.object),
-    {:ok, billing} <- Repo.fetch_by(Billing, %{stripe_customer_id: object.customer}, skip_organization_id: true)
-    do
+         {:ok, billing} <-
+           Repo.fetch_by(Billing, %{stripe_customer_id: object.customer},
+             skip_organization_id: true
+           ) do
       Repo.put_process_state(billing.organization_id)
       billing.organization_id
     else
