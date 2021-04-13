@@ -43,12 +43,13 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    with {:ok, _} <- apply(
-      Communications.provider_handler(message.organization_id),
-      @type_to_token[message.type],
-      [message, attrs]
-    ), do: publish_message(message)
-
+    with {:ok, _} <-
+           apply(
+             Communications.provider_handler(message.organization_id),
+             @type_to_token[message.type],
+             [message, attrs]
+           ),
+         do: publish_message(message)
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
