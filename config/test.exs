@@ -80,16 +80,15 @@ config :glific, Glific.Vault,
   ]
 
 config :glific,
-stripe_ids: [
-      product: "random_prod_JG5ns5",
-      setup: "random_price_1IfMxsEMShkCs",
-      monthly: "random_price_1IfMurEMShkC",
-      users: "random_price_1IfNdDEMShk",
-      messages: "random_price_1IfNf2EMSh",
-      consulting_hours: "random_price_1IfNe9EMShk"
-]
+  stripe_ids: [
+    product: "random_prod_JG5ns5",
+    setup: "random_price_1IfMxsEMShkCs",
+    monthly: "random_price_1IfMurEMShkC",
+    users: "random_price_1IfNdDEMShk",
+    messages: "random_price_1IfNf2EMSh",
+    consulting_hours: "random_price_1IfNe9EMShk"
+  ]
 
 config :stripity_stripe,
-  api_key:
-    "random_sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cC",
+  api_key: "random_sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cC",
   signing_secret: "random_whsec_F6xvua5ZhjS98FkK"
