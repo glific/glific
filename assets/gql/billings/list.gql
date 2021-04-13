@@ -1,10 +1,11 @@
 query billings($filter: BillingFilter, $opts: Opts) {
   billings(filter: $filter, opts: $opts) {
     id
-    label
-    language {
-      id
-      label
-    }
+    email
+    stripe_customer_id
+    stripe_payment_method_id
+    currency
+    stripe_current_period_start
+    stripe_current_period_end
   }
 }
