@@ -422,7 +422,7 @@ defmodule Glific.Seeds.SeedsMigration do
     |> Repo.update_all([], skip_organization_id: true)
   end
 
-  @spec update_localized_language(list()) :: :ok
+  @spec update_user_default_language() :: :ok
   defp update_user_default_language() do
     {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
 
