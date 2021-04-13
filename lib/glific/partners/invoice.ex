@@ -95,7 +95,7 @@ defmodule Glific.Partners.Invoice do
               end_date: DateTime.from_unix!(line.period.end)
             })
 
-          setup = setup || String.contains?(line.price.nickname, "Setup")
+          setup = setup || String.contains?(String.downcase(line.price.nickname), "setup")
           {acc, setup}
         end
       )
@@ -107,9 +107,9 @@ defmodule Glific.Partners.Invoice do
   end
 
   @spec invoice({map(), boolean}, map()) :: {Invoice.t(), boolean}
-  defp invoice({attrs, setup}, invoice) do
+  defp invoice({attrs, setup}, _) do
     invoice =
-      case fetch_invoice(invoice.id) do
+      case fetch_invoice(%{invoice_id: attrs.invoice_id}) do
         nil ->
           {:ok, invoice} = create_invoice(attrs)
           invoice
@@ -117,7 +117,7 @@ defmodule Glific.Partners.Invoice do
         invoice ->
           update_invoice(
             invoice,
-            %{status: invoice.status, line_items: attrs.line_items}
+            %{status: attrs.status, line_items: attrs.line_items}
           )
       end
 
@@ -127,7 +127,14 @@ defmodule Glific.Partners.Invoice do
   @spec finalize({Invoice.t(), boolean}) :: Invoice.t()
   defp finalize({invoice, setup}) do
     if setup do
-      Billing.finalize_invoice(invoice.invoice_id)
+      # Finalizing a draft invoice
+      case Stripe.Invoice.finalize(invoice.invoice_id, %{}) do
+        {:ok, _} ->
+          invoice
+
+        {:error, error} ->
+          {:error, "Error occurred while finalizing setup invoice. #{inspect(error)}"}
+      end
     end
 
     invoice
@@ -170,10 +177,10 @@ defmodule Glific.Partners.Invoice do
   end
 
   @doc """
-  Fetch an invoice record by stripe invoice id
+  Fetch an invoice record by clauses
   """
-  @spec fetch_invoice(non_neg_integer) :: Invoice.t() | nil
-  def fetch_invoice(invoice_id), do: Repo.get_by(Invoice, invoice_id: invoice_id)
+  @spec fetch_invoice(map()) :: Invoice.t() | nil
+  def fetch_invoice(clauses), do: Repo.get_by(Invoice, clauses)
 
   @doc """
   Return the count of invoices, based on filters
@@ -228,7 +235,7 @@ defmodule Glific.Partners.Invoice do
   """
   @spec update_invoice_status(non_neg_integer, String.t()) :: {:ok | :error, String.t()}
   def update_invoice_status(invoice_id, status) do
-    case fetch_invoice(invoice_id) do
+    case fetch_invoice(%{invoice_id: invoice_id}) do
       %Invoice{id: _} = invoice ->
         result =
           invoice

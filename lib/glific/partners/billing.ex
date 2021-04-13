@@ -18,7 +18,7 @@ defmodule Glific.Partners.Billing do
     Stats
   }
 
-  alias Stripe.{Invoice, SubscriptionItem.Usage}
+  alias Stripe.SubscriptionItem.Usage
 
   # define all the required fields for
   @required_fields [
@@ -522,13 +522,6 @@ defmodule Glific.Partners.Billing do
 
     nil
   end
-
-  @doc """
-  Finalize a draft invoice
-  """
-  @spec finalize_invoice(String.t()) :: {:ok, t()} | {:error, Stripe.Error.t()}
-  def finalize_invoice(invoice_id),
-    do: Invoice.finalize(invoice_id, %{})
 
   @doc """
   Update the usage record for all active subscriptions on a daily and weekly basis

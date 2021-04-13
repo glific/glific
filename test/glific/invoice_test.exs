@@ -22,7 +22,7 @@ defmodule Glific.InvoiceTest do
   @valid_stripe_event_data %{
     stripe_invoice: %{
       customer: "Random customer id",
-      id: "Random invoice id",
+      id: "Random invoice id 2",
       status: "open",
       amount_due: "1000",
       period_start: @current_datetime_unix,
@@ -31,6 +31,29 @@ defmodule Glific.InvoiceTest do
         data: [
           %{
             price: %{id: "price_id", nickname: "nickname"},
+            period: %{start: @current_datetime_unix, end: @current_datetime_unix}
+          }
+        ]
+      }
+    }
+  }
+
+  @valid_stripe_event_data_with_setup %{
+    stripe_invoice: %{
+      customer: "Random customer id",
+      id: "Random invoice id 2",
+      status: "open",
+      amount_due: "1000",
+      period_start: @current_datetime_unix,
+      period_end: @current_datetime_unix,
+      lines: %{
+        data: [
+          %{
+            price: %{id: "price_id", nickname: "nickname"},
+            period: %{start: @current_datetime_unix, end: @current_datetime_unix}
+          },
+          %{
+            price: %{id: "price_id_2", nickname: "setup"},
             period: %{start: @current_datetime_unix, end: @current_datetime_unix}
           }
         ]
@@ -86,11 +109,99 @@ defmodule Glific.InvoiceTest do
     end
   end
 
+  test "create_invoice/1 with valid stripe event data updates invoice status if invoice allready present",
+       %{
+         organization_id: organization_id
+       } do
+    Fixtures.billing_fixture(organization_id)
+
+    with_mocks([
+      {
+        Stripe.Subscription,
+        [:passthrough],
+        [update: fn _, _ -> {:ok, "Success"} end]
+      }
+    ]) do
+      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+      {:ok, invoice} = Invoice.create_invoice(attrs)
+
+      stripe_invoice_data =
+        Map.merge(@valid_stripe_event_data.stripe_invoice, %{
+          status: "paid",
+          id: invoice.invoice_id
+        })
+
+      attrs =
+        Map.merge(@valid_stripe_event_data, %{
+          organization_id: organization_id,
+          stripe_invoice: stripe_invoice_data
+        })
+
+      {:ok, result} = Invoice.create_invoice(attrs)
+
+      assert result.id == invoice.id
+      assert result.status == "paid"
+    end
+  end
+
+  test "create_invoice/1 with valid stripe event data finalizes setup invoice",
+       %{
+         organization_id: organization_id
+       } do
+    Fixtures.billing_fixture(organization_id)
+
+    with_mocks([
+      {
+        Stripe.Subscription,
+        [:passthrough],
+        [update: fn _, _ -> {:ok, "Success"} end]
+      },
+      {
+        Stripe.Invoice,
+        [:passthrough],
+        [finalize: fn _, _ -> {:ok, "Success"} end]
+      }
+    ]) do
+      attrs =
+        Map.merge(@valid_stripe_event_data_with_setup, %{
+          organization_id: organization_id
+        })
+
+      {:ok, result} = Invoice.create_invoice(attrs)
+
+      assert called(Stripe.Invoice.finalize(result.invoice_id, %{}))
+    end
+  end
+
+  test "create_invoice/1 with valid stripe event data enables prorations",
+       %{
+         organization_id: organization_id
+       } do
+    billing = Fixtures.billing_fixture(organization_id)
+
+    with_mocks([
+      {
+        Stripe.Subscription,
+        [:passthrough],
+        [update: fn _, _ -> {:ok, "Success"} end]
+      }
+    ]) do
+      attrs =
+        Map.merge(@valid_stripe_event_data, %{
+          organization_id: organization_id
+        })
+
+      Invoice.create_invoice(attrs)
+
+      assert called(Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true}))
+    end
+  end
+
   test "fetch_invoice/1 fetches the invoice ", %{organization_id: organization_id} do
     attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
     {:ok, invoice} = Invoice.create_invoice(attrs)
 
-    result = Invoice.fetch_invoice(invoice.invoice_id)
+    result = Invoice.fetch_invoice(%{invoice_id: invoice.invoice_id})
 
     assert result == invoice
   end
@@ -133,13 +244,13 @@ defmodule Glific.InvoiceTest do
     assert {:ok, "Invoice status updated for #{invoice.invoice_id}"} ==
              Invoice.update_invoice_status(invoice.invoice_id, "paid")
 
-    assert Invoice.fetch_invoice(invoice.invoice_id).status == "paid"
+    assert Invoice.fetch_invoice(%{invoice_id: invoice.invoice_id}).status == "paid"
 
     # Ensure delinquency is true if status updated to the payment_failed
     assert {:ok, "Invoice status updated for #{invoice.invoice_id}"} ==
              Invoice.update_invoice_status(invoice.invoice_id, "payment_failed")
 
-    assert Invoice.fetch_invoice(invoice.invoice_id).status == "payment_failed"
+    assert Invoice.fetch_invoice(%{invoice_id: invoice.invoice_id}).status == "payment_failed"
     assert Billing.get_billing(%{id: billing.id}).is_delinquent == true
 
     # Ensure delinquency is true if any invoice exists with status as payment_failed
@@ -149,7 +260,7 @@ defmodule Glific.InvoiceTest do
     assert {:ok, "Invoice status updated for #{invoice.invoice_id}"} ==
              Invoice.update_invoice_status(invoice.invoice_id, "paid")
 
-    assert Invoice.fetch_invoice(invoice.invoice_id).status == "paid"
+    assert Invoice.fetch_invoice(%{invoice_id: invoice.invoice_id}).status == "paid"
     assert Billing.get_billing(%{id: billing.id}).is_delinquent == true
   end
 end
