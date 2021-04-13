@@ -411,7 +411,7 @@ defmodule Glific.Seeds.SeedsMigration do
   @spec update_localized_language() :: :ok
   defp update_localized_language do
     Glific.Settings.Language
-    |> where([l], l.label in ["English", "Hindi"])
+    |> where([l], l.local in ["en", "hi"])
     |> update([l], set: [localized: true])
     |> Repo.update_all([])
   end
