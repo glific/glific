@@ -232,7 +232,7 @@ defmodule Glific.Flows.Webhook do
       else
         # update the context with the results from webhook return values
         {
-          FlowContext.update_results(context, result_name, result),
+          FlowContext.update_results(context, %{result_name => result}),
           Messages.create_temp_message(context.organization_id, "Success")
         }
       end

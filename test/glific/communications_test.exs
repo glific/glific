@@ -115,6 +115,34 @@ defmodule Glific.CommunicationsTest do
       assert message.flow == :outbound
     end
 
+    test "send message should return error when characters limit is reached when sending text message",
+         attrs do
+      message =
+        attrs
+        |> Map.merge(%{body: Faker.Lorem.sentence(4097)})
+        |> message_fixture()
+
+      {:error, error_msg} = Communications.Message.send_message(message)
+      assert error_msg == "Message size greater than 4096 characters"
+    end
+
+    test "send message should return error when characters limit is reached when sending media message",
+         attrs do
+      message_media =
+        message_media_fixture(%{
+          caption: Faker.Lorem.sentence(4097),
+          organization_id: attrs.organization_id
+        })
+
+      message =
+        attrs
+        |> Map.merge(%{type: :image, media_id: message_media.id})
+        |> message_fixture()
+
+      {:error, error_msg} = Communications.Message.send_message(message)
+      assert error_msg == "Message size greater than 4096 characters"
+    end
+
     test "send message will remove the Not replied tag from messages",
          %{organization_id: _organization_id, global_schema: global_schema} = attrs do
       message_1 = Fixtures.message_fixture(Map.merge(attrs, %{flow: :inbound}))
