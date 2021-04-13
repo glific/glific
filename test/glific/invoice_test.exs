@@ -42,7 +42,8 @@ defmodule Glific.BillingTest do
       name: "Billing name",
       email: "Billing person email",
       currency: "inr",
-      stripe_subscription_id: "Stripe subscription id"
+      stripe_subscription_id: "Stripe subscription id",
+      is_delinquent: false
     }
 
     {:ok, billing} = Billing.create_billing(attrs)
@@ -62,7 +63,7 @@ defmodule Glific.BillingTest do
     assert invoice.status == @valid_attrs.status
   end
 
-  test "create_invoice/1 with valid stripe event data", %{organization_id: organization_id} do
+  test "create_invoice/1 with valid stripe event data creates invoice when not present", %{organization_id: organization_id} do
     billing_fixture()
 
     with_mocks([
@@ -124,5 +125,27 @@ defmodule Glific.BillingTest do
 
     result = Invoice.count_invoices(%{filter: %{status: invoice.status, organization_id: invoice.organization_id}})
     assert result == 1
+  end
+
+  test "update_invoice_status/1 updates invoice status and delinquency", %{organization_id: organization_id} do
+    billing = billing_fixture()
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+    {:ok, invoice} = Invoice.create_invoice(attrs)
+
+    assert {:ok, "Invoice status updated for #{invoice.invoice_id}"} == Invoice.update_invoice_status(invoice.invoice_id, "paid")
+    assert Invoice.fetch_invoice(invoice.invoice_id).status == "paid"
+
+    #Ensure delinquency is true if status updated to the payment_failed
+    assert {:ok, "Invoice status updated for #{invoice.invoice_id}"} == Invoice.update_invoice_status(invoice.invoice_id, "payment_failed")
+    assert Invoice.fetch_invoice(invoice.invoice_id).status == "payment_failed"
+    assert Billing.get_billing(%{id: billing.id}).is_delinquent == true
+
+    #Ensure delinquency is true if any invoice exists with status as payment_failed
+    attrs = Map.merge(attrs, %{invoice_id: "random", status: "payment_failed"})
+    Invoice.create_invoice(attrs)
+
+    assert {:ok, "Invoice status updated for #{invoice.invoice_id}"} == Invoice.update_invoice_status(invoice.invoice_id, "paid")
+    assert Invoice.fetch_invoice(invoice.invoice_id).status == "paid"
+    assert Billing.get_billing(%{id: billing.id}).is_delinquent == true
   end
 end
