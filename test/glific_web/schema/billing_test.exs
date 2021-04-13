@@ -21,7 +21,6 @@ defmodule GlificWeb.Schema.BillingTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/billings/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/billings/delete.gql")
 
-
   test "delete a billing", %{user: user} do
     name = "Billing name"
     {:ok, billing} = Repo.fetch_by(Billing, %{name: name, organization_id: user.organization_id})
