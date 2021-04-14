@@ -21,9 +21,9 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec get_organization_billing(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def get_organization_billing(_, _, %{context: %{current_user: user}}) do
-    ## here we are assuming that there will be a single billing entry for the organization.
+    ## here we are assuming that there will be a single active billing entry for the organization.
     with {:ok, billing} <-
-           Repo.fetch_by(Billing, %{organization_id: user.organization_id}),
+           Repo.fetch_by(Billing, %{is_active: true, organization_id: user.organization_id}),
          do: {:ok, %{billing: billing}}
   end
 
