@@ -1,0 +1,6 @@
+mutation createBillingSubscription($input:PaymentMethodInput!) {
+  createBillingSubscription(input: $input) {
+    subscription
+    errors
+  }
+}
