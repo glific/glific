@@ -16,7 +16,7 @@ defmodule Glific.BillingTest do
   describe "billings" do
     @valid_attrs %{
       name: "Billing name",
-      email: "Billing person email",
+      email: "Billing@gmail.com",
       currency: "inr"
     }
 
@@ -25,7 +25,7 @@ defmodule Glific.BillingTest do
 
       assert {:ok, %Billing{} = billing} = Billing.create_billing(attrs)
       assert billing.name == "Billing name"
-      assert billing.email == "Billing person email"
+      assert billing.email == "Billing@gmail.com"
       assert billing.currency == "inr"
     end
 
@@ -33,9 +33,13 @@ defmodule Glific.BillingTest do
       use_cassette "create_billing" do
         attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
 
-        Partners.get_organization!(organization_id)
-        |> Billing.create(attrs)
-        |> IO.inspect()
+        assert {:ok, %Billing{} = billing} =
+                 Partners.get_organization!(organization_id)
+                 |> Billing.create(attrs)
+
+        assert billing.name == "Billing name"
+        assert billing.email == "Billing@gmail.com"
+        assert billing.currency == "inr"
       end
     end
 
@@ -45,7 +49,7 @@ defmodule Glific.BillingTest do
       assert {:ok, %Billing{} = billing} = Billing.create_billing(attrs)
       assert {:ok, %Billing{} = billing} = Billing.update_billing(billing, %{currency: "usd"})
       assert billing.name == "Billing name"
-      assert billing.email == "Billing person email"
+      assert billing.email == "Billing@gmail.com"
       assert billing.currency == "usd"
     end
   end

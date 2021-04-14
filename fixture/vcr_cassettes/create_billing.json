@@ -1,0 +1,50 @@
+[
+  {
+    "request": {
+      "body": "email=Billing%40gmail.com&metadata%5Bid%5D=1&metadata%5Bname%5D=Glific&name=Billing+name",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cCIoKaQ3kBfVgwmSMGL1suMx2ZDgGr38oNhTWwv8nOIbJvb2b00ylFxIT2Z",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2pqqbej8gq0vh0mspg000149",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/customers"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"cus_JIdWXmS88kCpUz\",\n  \"object\": \"customer\",\n  \"address\": null,\n  \"balance\": 0,\n  \"created\": 1618381861,\n  \"currency\": null,\n  \"default_source\": null,\n  \"delinquent\": false,\n  \"description\": null,\n  \"discount\": null,\n  \"email\": \"Billing@gmail.com\",\n  \"invoice_prefix\": \"0287C410\",\n  \"invoice_settings\": {\n    \"custom_fields\": null,\n    \"default_payment_method\": null,\n    \"footer\": null\n  },\n  \"livemode\": false,\n  \"metadata\": {\n    \"id\": \"1\",\n    \"name\": \"Glific\"\n  },\n  \"name\": \"Billing name\",\n  \"next_invoice_sequence\": 1,\n  \"phone\": null,\n  \"preferred_locales\": [\n\n  ],\n  \"shipping\": null,\n  \"sources\": {\n    \"object\": \"list\",\n    \"data\": [\n\n    ],\n    \"has_more\": false,\n    \"total_count\": 0,\n    \"url\": \"/v1/customers/cus_JIdWXmS88kCpUz/sources\"\n  },\n  \"subscriptions\": {\n    \"object\": \"list\",\n    \"data\": [\n\n    ],\n    \"has_more\": false,\n    \"total_count\": 0,\n    \"url\": \"/v1/customers/cus_JIdWXmS88kCpUz/subscriptions\"\n  },\n  \"tax_exempt\": \"none\",\n  \"tax_ids\": {\n    \"object\": \"list\",\n    \"data\": [\n\n    ],\n    \"has_more\": false,\n    \"total_count\": 0,\n    \"url\": \"/v1/customers/cus_JIdWXmS88kCpUz/tax_ids\"\n  }\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 14 Apr 2021 06:31:02 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1131",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "2pqqbej8gq0vh0mspg000149",
+        "original-request": "req_GhSYpBJFnlAF6e",
+        "request-id": "req_GhSYpBJFnlAF6e",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "0",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]
