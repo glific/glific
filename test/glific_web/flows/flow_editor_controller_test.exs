@@ -35,12 +35,11 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   end
 
   defp get_params do
-    phone = "919917443883"
-    user = Fixtures.user_fixture(%{phone: phone})
+    user = Fixtures.user_fixture()
 
     %{
       "user" => %{
-        "phone" => phone,
+        "phone" => user.phone,
         "name" => user.name,
         "password" => @password
       }
