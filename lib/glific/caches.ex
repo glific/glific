@@ -75,4 +75,19 @@ defmodule Glific.Caches do
       Enum.map(keys, fn key ->
         {:ok, _} = Cachex.del(@cache_bucket, {organization_id, key})
       end)
+
+  @doc """
+  Set a global value, ttl is in number of hours
+  For global keys, we expect relatively short ttls
+  """
+  @spec put_global(any, any, non_neg_integer) :: {:ok | :error, boolean()}
+  def put_global(key, value, ttl),
+    do: Cachex.put(@cache_bucket, {:global, key}, value, ttl: :timer.hours(ttl))
+
+  @doc """
+  Retrieve a global value from the cache global scope
+  """
+  @spec get_global(any()) :: {:ok | :error, any()}
+  def get_global(key),
+    do: Cachex.get(@cache_bucket, {:global, key})
 end

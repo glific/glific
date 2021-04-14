@@ -874,6 +874,7 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    # we suffix fix with ever increasing sizes to bypass the caching we've added
     @valid_media_url "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
 
     test "validate media/2 check for size error", _attrs do
@@ -894,7 +895,7 @@ defmodule Glific.MessagesTest do
                message: "Size is too big for the image. Maximum size limit is 5120KB"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_1",
                  "image"
                )
     end
@@ -916,7 +917,7 @@ defmodule Glific.MessagesTest do
                message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_2",
                  "image"
                )
     end
@@ -939,7 +940,7 @@ defmodule Glific.MessagesTest do
                message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_3",
                  "video"
                )
     end
@@ -962,7 +963,7 @@ defmodule Glific.MessagesTest do
                message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_4",
                  "text"
                )
     end
@@ -980,6 +981,17 @@ defmodule Glific.MessagesTest do
           }
       end)
 
+      # we want this cached
+      assert %{is_valid: true, message: "success"} ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+
+      {:ok, value} = Glific.Caches.get_global({:validate_media, @valid_media_url, "image"})
+      assert value == %{is_valid: true, message: "success"}
+
+      # this time it should be fetching from the cache
       assert %{is_valid: true, message: "success"} ==
                Messages.validate_media(
                  @valid_media_url,
