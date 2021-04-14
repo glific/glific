@@ -81,7 +81,7 @@ defmodule Glific.Caches do
   For global keys, we expect relatively short ttls
   """
   @spec put_global(any, any, non_neg_integer) :: {:ok | :error, boolean()}
-  def put_global(key, value, ttl) do
+  def put_global(key, value, ttl),
     do: Cachex.put(@cache_bucket, {:global, key}, value, ttl: :timer.hours(ttl))
 
   @doc """
