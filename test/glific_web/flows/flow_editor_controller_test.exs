@@ -35,7 +35,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   end
 
   defp get_params do
-    user = Fixtures.user_fixture()
+    phone = "919917443883"
+    user = Fixtures.user_fixture(%{phone: phone})
 
     %{
       "user" => %{
@@ -49,7 +50,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   defp get_token(valid_params, organization_id, conn) do
     params = put_in(valid_params, ["user", "organization_id"], organization_id)
     authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
-    {:ok, access_token: authed_conn.private[:api_access_token]}
+    {:ok, access_token: authed_conn.private[:api_access_token], conn: conn}
   end
 
   describe "flow_editor_routes" do
