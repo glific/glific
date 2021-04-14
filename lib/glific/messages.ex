@@ -968,7 +968,7 @@ defmodule Glific.Messages do
     # We can cache this across all organizations
     # We set a timeout of 60 minutes for this cache entry
     case Caches.get_global({:validate_media, url, type}) do
-      {:ok, false} ->
+      {:ok, nil} ->
         value = do_validate_media(url, type)
         Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
         value
