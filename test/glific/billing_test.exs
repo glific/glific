@@ -48,12 +48,22 @@ defmodule Glific.BillingTest do
       assert billing.currency == "usd"
     end
 
-    test "delete_billing/2 with valid data updates the tag", attrs do
-
+    test "delete_billing/1 with valid data updates the tag", attrs do
       billing = Fixtures.billing_fixture(attrs)
       assert {:ok, %Billing{}} = Billing.delete_billing(billing)
-      Billing.get_billing(%{name: "test billing name"}) |> IO.inspect()
+      Billing.get_billing(%{name: "test billing name"})
       assert true == is_nil(Billing.get_billing(%{name: "test billing name"}))
+    end
+
+    test "get_billing/1 with valid data updates the tag", attrs do
+      _billing =
+        attrs
+        |> Map.merge(%{name: "some name"})
+        |> Fixtures.billing_fixture()
+
+      billing = Billing.get_billing(%{name: "some name"})
+      assert billing.name == "some name"
+
     end
   end
 end
