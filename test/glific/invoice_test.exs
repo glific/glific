@@ -77,7 +77,7 @@ defmodule Glific.InvoiceTest do
   test "create_invoice/1 with valid stripe event data creates invoice when not present", %{
     organization_id: organization_id
   } do
-    Fixtures.billing_fixture(organization_id)
+    Fixtures.billing_fixture(%{organization_id: organization_id})
 
     with_mocks([
       {
@@ -113,7 +113,7 @@ defmodule Glific.InvoiceTest do
        %{
          organization_id: organization_id
        } do
-    Fixtures.billing_fixture(organization_id)
+    Fixtures.billing_fixture(%{organization_id: organization_id})
 
     with_mocks([
       {
@@ -148,7 +148,7 @@ defmodule Glific.InvoiceTest do
        %{
          organization_id: organization_id
        } do
-    Fixtures.billing_fixture(organization_id)
+    Fixtures.billing_fixture(%{organization_id: organization_id})
 
     with_mocks([
       {
@@ -177,7 +177,7 @@ defmodule Glific.InvoiceTest do
        %{
          organization_id: organization_id
        } do
-    billing = Fixtures.billing_fixture(organization_id)
+    billing = Fixtures.billing_fixture(%{organization_id: organization_id})
 
     with_mocks([
       {
@@ -237,7 +237,7 @@ defmodule Glific.InvoiceTest do
   test "update_invoice_status/1 updates invoice status and delinquency", %{
     organization_id: organization_id
   } do
-    billing = Fixtures.billing_fixture(organization_id)
+    billing = Fixtures.billing_fixture(%{organization_id: organization_id})
     attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
     {:ok, invoice} = Invoice.create_invoice(attrs)
 
