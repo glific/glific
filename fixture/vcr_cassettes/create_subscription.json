@@ -1,0 +1,242 @@
+[
+  {
+    "request": {
+      "body": "customer=test_cus_JIdQjmJcjq",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cCIoKaQ3kBfVgwmSMGL1suMx2ZDgGr38oNhTWwv8nOIbJvb2b00ylFxIT2Z",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2pqqqba6qjfvhmpdq8003202",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/payment_methods/some_stripe_payment_method_id/attach"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"some_stripe_payment_method_id\",\n  \"object\": \"payment_method\",\n  \"billing_details\": {\n    \"address\": {\n      \"city\": null,\n      \"country\": null,\n      \"line1\": null,\n      \"line2\": null,\n      \"postal_code\": null,\n      \"state\": null\n    },\n    \"email\": null,\n    \"name\": null,\n    \"phone\": null\n  },\n  \"card\": {\n    \"brand\": \"visa\",\n    \"checks\": {\n      \"address_line1_check\": null,\n      \"address_postal_code_check\": null,\n      \"cvc_check\": \"pass\"\n    },\n    \"country\": \"US\",\n    \"exp_month\": 4,\n    \"exp_year\": 2024,\n    \"fingerprint\": \"I1hrHXYeMwNxrzEj\",\n    \"funding\": \"credit\",\n    \"generated_from\": null,\n    \"last4\": \"4242\",\n    \"networks\": {\n      \"available\": [\n        \"visa\"\n      ],\n      \"preferred\": null\n    },\n    \"three_d_secure_usage\": {\n      \"supported\": true\n    },\n    \"wallet\": null\n  },\n  \"created\": 1618389040,\n  \"customer\": \"test_cus_JIdQjmJcjq\",\n  \"livemode\": false,\n  \"metadata\": {\n  },\n  \"type\": \"card\"\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 14 Apr 2021 08:47:31 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "945",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "2pqqqba6qjfvhmpdq8003202",
+        "original-request": "req_WMXliOpbYJeXH3",
+        "request-id": "req_WMXliOpbYJeXH3",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "0",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "invoice_settings%5Bdefault_payment_method%5D=some_stripe_payment_method_id",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cCIoKaQ3kBfVgwmSMGL1suMx2ZDgGr38oNhTWwv8nOIbJvb2b00ylFxIT2Z",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2pqqqbbmu7pthmpdq8003212",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/customers/test_cus_JIdQjmJcjq"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"test_cus_JIdQjmJcjq\",\n  \"object\": \"customer\",\n  \"address\": null,\n  \"balance\": 0,\n  \"created\": 1618388684,\n  \"currency\": \"inr\",\n  \"default_source\": null,\n  \"delinquent\": false,\n  \"description\": null,\n  \"discount\": null,\n  \"email\": \"billing@gmail.com\",\n  \"invoice_prefix\": \"C16A7C74\",\n  \"invoice_settings\": {\n    \"custom_fields\": null,\n    \"default_payment_method\": \"some_stripe_payment_method_id\",\n    \"footer\": null\n  },\n  \"livemode\": false,\n  \"metadata\": {\n    \"id\": \"1\",\n    \"name\": \"Glific\"\n  },\n  \"name\": \"AkhileshNegi\",\n  \"next_invoice_sequence\": 1,\n  \"phone\": null,\n  \"preferred_locales\": [\n\n  ],\n  \"shipping\": null,\n  \"sources\": {\n    \"object\": \"list\",\n    \"data\": [\n\n    ],\n    \"has_more\": false,\n    \"total_count\": 0,\n    \"url\": \"/v1/customers/test_cus_JIdQjmJcjq/sources\"\n  },\n  \"subscriptions\": {\n    \"object\": \"list\",\n    \"data\": [\n      {\n        \"id\": \"sub_JIfSbiCNyC6VHD\",\n        \"object\": \"subscription\",\n        \"application_fee_percent\": null,\n        \"billing_cycle_anchor\": 1619827200,\n        \"billing_thresholds\": null,\n        \"cancel_at\": null,\n        \"cancel_at_period_end\": false,\n        \"canceled_at\": null,\n        \"collection_method\": \"charge_automatically\",\n        \"created\": 1618389043,\n        \"current_period_end\": 1619827200,\n        \"current_period_start\": 1618389043,\n        \"customer\": \"test_cus_JIdQjmJcjq\",\n        \"days_until_due\": null,\n        \"default_payment_method\": null,\n        \"default_source\": null,\n        \"default_tax_rates\": [\n\n        ],\n        \"discount\": null,\n        \"ended_at\": null,\n        \"items\": {\n          \"object\": \"list\",\n          \"data\": [\n            {\n              \"id\": \"si_JIfSiwgMq1vYjZ\",\n              \"object\": \"subscription_item\",\n              \"billing_thresholds\": null,\n              \"created\": 1618389044,\n              \"metadata\": {\n              },\n              \"plan\": {\n                \"id\": \"price_1IfMurEMShkCsLFnO3hoNK1c\",\n                \"object\": \"plan\",\n                \"active\": true,\n                \"aggregate_usage\": null,\n                \"amount\": 750000,\n                \"amount_decimal\": \"750000\",\n                \"billing_scheme\": \"per_unit\",\n                \"created\": 1618222969,\n                \"currency\": \"inr\",\n                \"interval\": \"month\",\n                \"interval_count\": 1,\n                \"livemode\": false,\n                \"metadata\": {\n                },\n                \"nickname\": \"Monthly\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"tiers\": null,\n                \"tiers_mode\": null,\n                \"transform_usage\": null,\n                \"trial_period_days\": null,\n                \"usage_type\": \"licensed\"\n              },\n              \"price\": {\n                \"id\": \"price_1IfMurEMShkCsLFnO3hoNK1c\",\n                \"object\": \"price\",\n                \"active\": true,\n                \"billing_scheme\": \"per_unit\",\n                \"created\": 1618222969,\n                \"currency\": \"inr\",\n                \"livemode\": false,\n                \"lookup_key\": null,\n                \"metadata\": {\n                },\n                \"nickname\": \"Monthly\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"recurring\": {\n                  \"aggregate_usage\": null,\n                  \"interval\": \"month\",\n                  \"interval_count\": 1,\n                  \"trial_period_days\": null,\n                  \"usage_type\": \"licensed\"\n                },\n                \"tiers_mode\": null,\n                \"transform_quantity\": null,\n                \"type\": \"recurring\",\n                \"unit_amount\": 750000,\n                \"unit_amount_decimal\": \"750000\"\n              },\n              \"quantity\": 1,\n              \"subscription\": \"sub_JIfSbiCNyC6VHD\",\n              \"tax_rates\": [\n\n              ]\n            },\n            {\n              \"id\": \"si_JIfSE9QEy10ulb\",\n              \"object\": \"subscription_item\",\n              \"billing_thresholds\": null,\n              \"created\": 1618389044,\n              \"metadata\": {\n              },\n              \"plan\": {\n                \"id\": \"price_1IfNdDEMShkCsLFncPmeG9bn\",\n                \"object\": \"plan\",\n                \"active\": true,\n                \"aggregate_usage\": \"sum\",\n                \"amount\": null,\n                \"amount_decimal\": null,\n                \"billing_scheme\": \"tiered\",\n                \"created\": 1618225719,\n                \"currency\": \"inr\",\n                \"interval\": \"month\",\n                \"interval_count\": 1,\n                \"livemode\": false,\n                \"metadata\": {\n                },\n                \"nickname\": \"Users\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"tiers\": [\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 0,\n                    \"unit_amount_decimal\": \"0\",\n                    \"up_to\": 10\n                  },\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 15000,\n                    \"unit_amount_decimal\": \"15000\",\n                    \"up_to\": null\n                  }\n                ],\n                \"tiers_mode\": \"graduated\",\n                \"transform_usage\": null,\n                \"trial_period_days\": null,\n                \"usage_type\": \"metered\"\n              },\n              \"price\": {\n                \"id\": \"price_1IfNdDEMShkCsLFncPmeG9bn\",\n                \"object\": \"price\",\n                \"active\": true,\n                \"billing_scheme\": \"tiered\",\n                \"created\": 1618225719,\n                \"currency\": \"inr\",\n                \"livemode\": false,\n                \"lookup_key\": null,\n                \"metadata\": {\n                },\n                \"nickname\": \"Users\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"recurring\": {\n                  \"aggregate_usage\": \"sum\",\n                  \"interval\": \"month\",\n                  \"interval_count\": 1,\n                  \"trial_period_days\": null,\n                  \"usage_type\": \"metered\"\n                },\n                \"tiers_mode\": \"graduated\",\n                \"transform_quantity\": null,\n                \"type\": \"recurring\",\n                \"unit_amount\": null,\n                \"unit_amount_decimal\": null\n              },\n              \"subscription\": \"sub_JIfSbiCNyC6VHD\",\n              \"tax_rates\": [\n\n              ]\n            },\n            {\n              \"id\": \"si_JIfSEhO5NbfGM8\",\n              \"object\": \"subscription_item\",\n              \"billing_thresholds\": null,\n              \"created\": 1618389044,\n              \"metadata\": {\n              },\n              \"plan\": {\n                \"id\": \"price_1IfNf2EMShkCsLFnMcNQ0dZZ\",\n                \"object\": \"plan\",\n                \"active\": true,\n                \"aggregate_usage\": \"sum\",\n                \"amount\": null,\n                \"amount_decimal\": null,\n                \"billing_scheme\": \"tiered\",\n                \"created\": 1618225832,\n                \"currency\": \"inr\",\n                \"interval\": \"month\",\n                \"interval_count\": 1,\n                \"livemode\": false,\n                \"metadata\": {\n                },\n                \"nickname\": \"Messages\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"tiers\": [\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 0,\n                    \"unit_amount_decimal\": \"0\",\n                    \"up_to\": 250\n                  },\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 1000,\n                    \"unit_amount_decimal\": \"1000\",\n                    \"up_to\": 1000\n                  },\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 500,\n                    \"unit_amount_decimal\": \"500\",\n                    \"up_to\": null\n                  }\n                ],\n                \"tiers_mode\": \"graduated\",\n                \"transform_usage\": null,\n                \"trial_period_days\": null,\n                \"usage_type\": \"metered\"\n              },\n              \"price\": {\n                \"id\": \"price_1IfNf2EMShkCsLFnMcNQ0dZZ\",\n                \"object\": \"price\",\n                \"active\": true,\n                \"billing_scheme\": \"tiered\",\n                \"created\": 1618225832,\n                \"currency\": \"inr\",\n                \"livemode\": false,\n                \"lookup_key\": null,\n                \"metadata\": {\n                },\n                \"nickname\": \"Messages\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"recurring\": {\n                  \"aggregate_usage\": \"sum\",\n                  \"interval\": \"month\",\n                  \"interval_count\": 1,\n                  \"trial_period_days\": null,\n                  \"usage_type\": \"metered\"\n                },\n                \"tiers_mode\": \"graduated\",\n                \"transform_quantity\": null,\n                \"type\": \"recurring\",\n                \"unit_amount\": null,\n                \"unit_amount_decimal\": null\n              },\n              \"subscription\": \"sub_JIfSbiCNyC6VHD\",\n              \"tax_rates\": [\n\n              ]\n            },\n            {\n              \"id\": \"si_JIfSpnlR21ezgD\",\n              \"object\": \"subscription_item\",\n              \"billing_thresholds\": null,\n              \"created\": 1618389044,\n              \"metadata\": {\n              },\n              \"plan\": {\n                \"id\": \"price_1IfNe9EMShkCsLFnnfPEFO08\",\n                \"object\": \"plan\",\n                \"active\": true,\n                \"aggregate_usage\": \"sum\",\n                \"amount\": null,\n                \"amount_decimal\": null,\n                \"billing_scheme\": \"tiered\",\n                \"created\": 1618225777,\n                \"currency\": \"inr\",\n                \"interval\": \"month\",\n                \"interval_count\": 1,\n                \"livemode\": false,\n                \"metadata\": {\n                },\n                \"nickname\": \"Consulting hours\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"tiers\": [\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 300000,\n                    \"unit_amount_decimal\": \"300000\",\n                    \"up_to\": 10\n                  },\n                  {\n                    \"flat_amount\": null,\n                    \"flat_amount_decimal\": null,\n                    \"unit_amount\": 250000,\n                    \"unit_amount_decimal\": \"250000\",\n                    \"up_to\": null\n                  }\n                ],\n                \"tiers_mode\": \"graduated\",\n                \"transform_usage\": null,\n                \"trial_period_days\": null,\n                \"usage_type\": \"metered\"\n              },\n              \"price\": {\n                \"id\": \"price_1IfNe9EMShkCsLFnnfPEFO08\",\n                \"object\": \"price\",\n                \"active\": true,\n                \"billing_scheme\": \"tiered\",\n                \"created\": 1618225777,\n                \"currency\": \"inr\",\n                \"livemode\": false,\n                \"lookup_key\": null,\n                \"metadata\": {\n                },\n                \"nickname\": \"Consulting hours\",\n                \"product\": \"prod_JG5ns5s9yPRiOq\",\n                \"recurring\": {\n                  \"aggregate_usage\": \"sum\",\n                  \"interval\": \"month\",\n                  \"interval_count\": 1,\n                  \"trial_period_days\": null,\n                  \"usage_type\": \"metered\"\n                },\n                \"tiers_mode\": \"graduated\",\n                \"transform_quantity\": null,\n                \"type\": \"recurring\",\n                \"unit_amount\": null,\n                \"unit_amount_decimal\": null\n              },\n              \"subscription\": \"sub_JIfSbiCNyC6VHD\",\n              \"tax_rates\": [\n\n              ]\n            }\n          ],\n          \"has_more\": false,\n          \"total_count\": 4,\n          \"url\": \"/v1/subscription_items?subscription=sub_JIfSbiCNyC6VHD\"\n        },\n        \"latest_invoice\": null,\n        \"livemode\": false,\n        \"metadata\": {\n          \"id\": \"1\",\n          \"name\": \"Glific\"\n        },\n        \"next_pending_invoice_item_invoice\": null,\n        \"pause_collection\": null,\n        \"pending_invoice_item_interval\": null,\n        \"pending_setup_intent\": null,\n        \"pending_update\": null,\n        \"plan\": null,\n        \"quantity\": null,\n        \"schedule\": null,\n        \"start_date\": 1618389043,\n        \"status\": \"active\",\n        \"tax_percent\": null,\n        \"transfer_data\": null,\n        \"trial_end\": null,\n        \"trial_start\": null\n      }\n    ],\n    \"has_more\": false,\n    \"total_count\": 1,\n    \"url\": \"/v1/customers/test_cus_JIdQjmJcjq/subscriptions\"\n  },\n  \"tax_exempt\": \"none\",\n  \"tax_ids\": {\n    \"object\": \"list\",\n    \"data\": [\n\n    ],\n    \"has_more\": false,\n    \"total_count\": 0,\n    \"url\": \"/v1/customers/test_cus_JIdQjmJcjq/tax_ids\"\n  }\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 14 Apr 2021 08:47:32 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "13094",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "2pqqqbbmu7pthmpdq8003212",
+        "original-request": "req_hkWi7TroBodYqk",
+        "request-id": "req_hkWi7TroBodYqk",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "0",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "currency=inr&customer=test_cus_JIdQjmJcjq&metadata%5Bid%5D=1&metadata%5Bname%5D=Glific&price=price_1IfMxsEMShkCsLFnZ9K1QdaH",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cCIoKaQ3kBfVgwmSMGL1suMx2ZDgGr38oNhTWwv8nOIbJvb2b00ylFxIT2Z",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2pqqqbd2jlgn1mpdq8001ir6",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/invoiceitems"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"ii_1Ig4NkEMShkCsLFn3XzPGiT7\",\n  \"object\": \"invoiceitem\",\n  \"amount\": 0,\n  \"currency\": \"inr\",\n  \"customer\": \"test_cus_JIdQjmJcjq\",\n  \"date\": 1618390052,\n  \"description\": \"Glific Basic Plan\",\n  \"discountable\": true,\n  \"discounts\": [\n\n  ],\n  \"invoice\": null,\n  \"livemode\": false,\n  \"metadata\": {\n    \"id\": \"1\",\n    \"name\": \"Glific\"\n  },\n  \"period\": {\n    \"end\": 1618390052,\n    \"start\": 1618390052\n  },\n  \"plan\": null,\n  \"price\": {\n    \"id\": \"price_1IfMxsEMShkCsLFnZ9K1QdaH\",\n    \"object\": \"price\",\n    \"active\": true,\n    \"billing_scheme\": \"per_unit\",\n    \"created\": 1618223156,\n    \"currency\": \"inr\",\n    \"livemode\": false,\n    \"lookup_key\": null,\n    \"metadata\": {\n    },\n    \"nickname\": \"No Setup\",\n    \"product\": \"prod_JG5ns5s9yPRiOq\",\n    \"recurring\": null,\n    \"tiers_mode\": null,\n    \"transform_quantity\": null,\n    \"type\": \"one_time\",\n    \"unit_amount\": 0,\n    \"unit_amount_decimal\": \"0\"\n  },\n  \"proration\": false,\n  \"quantity\": 1,\n  \"subscription\": null,\n  \"tax_rates\": [\n\n  ],\n  \"unit_amount\": 0,\n  \"unit_amount_decimal\": \"0\"\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 14 Apr 2021 08:47:33 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "1046",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "2pqqqbd2jlgn1mpdq8001ir6",
+        "original-request": "req_RBTYTsJGKOEAfE",
+        "request-id": "req_RBTYTsJGKOEAfE",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "0",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "auto_advance=true&collection_method=charge_automatically&customer=test_cus_JIdQjmJcjq&metadata%5Bid%5D=1&metadata%5Bname%5D=Glific",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cCIoKaQ3kBfVgwmSMGL1suMx2ZDgGr38oNhTWwv8nOIbJvb2b00ylFxIT2Z",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2pqqqbe41k1h1mpdq8003222",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/invoices"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"in_1Ig4NlEMShkCsLFnIpESh9NZ\",\n  \"object\": \"invoice\",\n  \"account_country\": \"IN\",\n  \"account_name\": \"COLOREDCOW CONSULTING PRIVATE LIMITED\",\n  \"account_tax_ids\": null,\n  \"amount_due\": 0,\n  \"amount_paid\": 0,\n  \"amount_remaining\": 0,\n  \"application_fee_amount\": null,\n  \"attempt_count\": 0,\n  \"attempted\": false,\n  \"auto_advance\": true,\n  \"billing_reason\": \"manual\",\n  \"charge\": null,\n  \"collection_method\": \"charge_automatically\",\n  \"created\": 1618390053,\n  \"currency\": \"inr\",\n  \"custom_fields\": null,\n  \"customer\": \"test_cus_JIdQjmJcjq\",\n  \"customer_address\": null,\n  \"customer_email\": \"billing@gmail.com\",\n  \"customer_name\": \"AkhileshNegi\",\n  \"customer_phone\": null,\n  \"customer_shipping\": null,\n  \"customer_tax_exempt\": \"none\",\n  \"customer_tax_ids\": [\n\n  ],\n  \"default_payment_method\": null,\n  \"default_source\": null,\n  \"default_tax_rates\": [\n\n  ],\n  \"description\": \"Thank you for your support!\",\n  \"discount\": null,\n  \"discounts\": [\n\n  ],\n  \"due_date\": null,\n  \"ending_balance\": null,\n  \"footer\": null,\n  \"hosted_invoice_url\": null,\n  \"invoice_pdf\": null,\n  \"last_finalization_error\": null,\n  \"lines\": {\n    \"object\": \"list\",\n    \"data\": [\n      {\n        \"id\": \"il_1Ig4NkEMShkCsLFnSVXn69n0\",\n        \"object\": \"line_item\",\n        \"amount\": 0,\n        \"currency\": \"inr\",\n        \"description\": \"Glific Basic Plan\",\n        \"discount_amounts\": [\n\n        ],\n        \"discountable\": true,\n        \"discounts\": [\n\n        ],\n        \"invoice_item\": \"ii_1Ig4NkEMShkCsLFn3XzPGiT7\",\n        \"livemode\": false,\n        \"metadata\": {\n          \"id\": \"1\",\n          \"name\": \"Glific\"\n        },\n        \"period\": {\n          \"end\": 1618390052,\n          \"start\": 1618390052\n        },\n        \"plan\": null,\n        \"price\": {\n          \"id\": \"price_1IfMxsEMShkCsLFnZ9K1QdaH\",\n          \"object\": \"price\",\n          \"active\": true,\n          \"billing_scheme\": \"per_unit\",\n          \"created\": 1618223156,\n          \"currency\": \"inr\",\n          \"livemode\": false,\n          \"lookup_key\": null,\n          \"metadata\": {\n          },\n          \"nickname\": \"No Setup\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"recurring\": null,\n          \"tiers_mode\": null,\n          \"transform_quantity\": null,\n          \"type\": \"one_time\",\n          \"unit_amount\": 0,\n          \"unit_amount_decimal\": \"0\"\n        },\n        \"proration\": false,\n        \"quantity\": 1,\n        \"subscription\": null,\n        \"tax_amounts\": [\n\n        ],\n        \"tax_rates\": [\n\n        ],\n        \"type\": \"invoiceitem\"\n      }\n    ],\n    \"has_more\": false,\n    \"total_count\": 1,\n    \"url\": \"/v1/invoices/in_1Ig4NlEMShkCsLFnIpESh9NZ/lines\"\n  },\n  \"livemode\": false,\n  \"metadata\": {\n    \"id\": \"1\",\n    \"name\": \"Glific\"\n  },\n  \"next_payment_attempt\": 1618393653,\n  \"number\": null,\n  \"on_behalf_of\": null,\n  \"paid\": false,\n  \"payment_intent\": null,\n  \"payment_settings\": {\n    \"payment_method_options\": null,\n    \"payment_method_types\": null\n  },\n  \"period_end\": 1619827200,\n  \"period_start\": 1618389043,\n  \"post_payment_credit_notes_amount\": 0,\n  \"pre_payment_credit_notes_amount\": 0,\n  \"receipt_number\": null,\n  \"starting_balance\": 0,\n  \"statement_descriptor\": null,\n  \"status\": \"draft\",\n  \"status_transitions\": {\n    \"finalized_at\": null,\n    \"marked_uncollectible_at\": null,\n    \"paid_at\": null,\n    \"voided_at\": null\n  },\n  \"subscription\": null,\n  \"subtotal\": 0,\n  \"tax\": null,\n  \"tax_percent\": null,\n  \"total\": 0,\n  \"total_discount_amounts\": [\n\n  ],\n  \"total_tax_amounts\": [\n\n  ],\n  \"transfer_data\": null,\n  \"webhooks_delivered_at\": 1618390053\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 14 Apr 2021 08:47:33 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "3523",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "2pqqqbe41k1h1mpdq8003222",
+        "original-request": "req_GhoqP33ypCQVtR",
+        "request-id": "req_GhoqP33ypCQVtR",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "1",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "billing_cycle_anchor=1619827200&customer=test_cus_JIdQjmJcjq&items%5B0%5D%5Bprice%5D=price_1IfMurEMShkCsLFnO3hoNK1c&items%5B0%5D%5Bquantity%5D=1&items%5B1%5D%5Bprice%5D=price_1IfNdDEMShkCsLFncPmeG9bn&items%5B2%5D%5Bprice%5D=price_1IfNf2EMShkCsLFnMcNQ0dZZ&items%5B3%5D%5Bprice%5D=price_1IfNe9EMShkCsLFnnfPEFO08&metadata%5Bid%5D=1&metadata%5Bname%5D=Glific&prorate=false",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cCIoKaQ3kBfVgwmSMGL1suMx2ZDgGr38oNhTWwv8nOIbJvb2b00ylFxIT2Z",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2pqqqbff88dr1mpdq8003232",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/subscriptions?expand[]=latest_invoice.payment_intent&expand[]=pending_setup_intent"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"sub_JIfjlyyYnWBQwS\",\n  \"object\": \"subscription\",\n  \"application_fee_percent\": null,\n  \"billing_cycle_anchor\": 1619827200,\n  \"billing_thresholds\": null,\n  \"cancel_at\": null,\n  \"cancel_at_period_end\": false,\n  \"canceled_at\": null,\n  \"collection_method\": \"charge_automatically\",\n  \"created\": 1618390054,\n  \"current_period_end\": 1619827200,\n  \"current_period_start\": 1618390054,\n  \"customer\": \"test_cus_JIdQjmJcjq\",\n  \"days_until_due\": null,\n  \"default_payment_method\": null,\n  \"default_source\": null,\n  \"default_tax_rates\": [\n\n  ],\n  \"discount\": null,\n  \"ended_at\": null,\n  \"items\": {\n    \"object\": \"list\",\n    \"data\": [\n      {\n        \"id\": \"si_JIfjFtOVbjmntS\",\n        \"object\": \"subscription_item\",\n        \"billing_thresholds\": null,\n        \"created\": 1618390054,\n        \"metadata\": {\n        },\n        \"plan\": {\n          \"id\": \"price_1IfMurEMShkCsLFnO3hoNK1c\",\n          \"object\": \"plan\",\n          \"active\": true,\n          \"aggregate_usage\": null,\n          \"amount\": 750000,\n          \"amount_decimal\": \"750000\",\n          \"billing_scheme\": \"per_unit\",\n          \"created\": 1618222969,\n          \"currency\": \"inr\",\n          \"interval\": \"month\",\n          \"interval_count\": 1,\n          \"livemode\": false,\n          \"metadata\": {\n          },\n          \"nickname\": \"Monthly\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"tiers\": null,\n          \"tiers_mode\": null,\n          \"transform_usage\": null,\n          \"trial_period_days\": null,\n          \"usage_type\": \"licensed\"\n        },\n        \"price\": {\n          \"id\": \"price_1IfMurEMShkCsLFnO3hoNK1c\",\n          \"object\": \"price\",\n          \"active\": true,\n          \"billing_scheme\": \"per_unit\",\n          \"created\": 1618222969,\n          \"currency\": \"inr\",\n          \"livemode\": false,\n          \"lookup_key\": null,\n          \"metadata\": {\n          },\n          \"nickname\": \"Monthly\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"recurring\": {\n            \"aggregate_usage\": null,\n            \"interval\": \"month\",\n            \"interval_count\": 1,\n            \"trial_period_days\": null,\n            \"usage_type\": \"licensed\"\n          },\n          \"tiers_mode\": null,\n          \"transform_quantity\": null,\n          \"type\": \"recurring\",\n          \"unit_amount\": 750000,\n          \"unit_amount_decimal\": \"750000\"\n        },\n        \"quantity\": 1,\n        \"subscription\": \"sub_JIfjlyyYnWBQwS\",\n        \"tax_rates\": [\n\n        ]\n      },\n      {\n        \"id\": \"si_JIfjuIQthmZDuJ\",\n        \"object\": \"subscription_item\",\n        \"billing_thresholds\": null,\n        \"created\": 1618390054,\n        \"metadata\": {\n        },\n        \"plan\": {\n          \"id\": \"price_1IfNdDEMShkCsLFncPmeG9bn\",\n          \"object\": \"plan\",\n          \"active\": true,\n          \"aggregate_usage\": \"sum\",\n          \"amount\": null,\n          \"amount_decimal\": null,\n          \"billing_scheme\": \"tiered\",\n          \"created\": 1618225719,\n          \"currency\": \"inr\",\n          \"interval\": \"month\",\n          \"interval_count\": 1,\n          \"livemode\": false,\n          \"metadata\": {\n          },\n          \"nickname\": \"Users\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"tiers\": [\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 0,\n              \"unit_amount_decimal\": \"0\",\n              \"up_to\": 10\n            },\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 15000,\n              \"unit_amount_decimal\": \"15000\",\n              \"up_to\": null\n            }\n          ],\n          \"tiers_mode\": \"graduated\",\n          \"transform_usage\": null,\n          \"trial_period_days\": null,\n          \"usage_type\": \"metered\"\n        },\n        \"price\": {\n          \"id\": \"price_1IfNdDEMShkCsLFncPmeG9bn\",\n          \"object\": \"price\",\n          \"active\": true,\n          \"billing_scheme\": \"tiered\",\n          \"created\": 1618225719,\n          \"currency\": \"inr\",\n          \"livemode\": false,\n          \"lookup_key\": null,\n          \"metadata\": {\n          },\n          \"nickname\": \"Users\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"recurring\": {\n            \"aggregate_usage\": \"sum\",\n            \"interval\": \"month\",\n            \"interval_count\": 1,\n            \"trial_period_days\": null,\n            \"usage_type\": \"metered\"\n          },\n          \"tiers_mode\": \"graduated\",\n          \"transform_quantity\": null,\n          \"type\": \"recurring\",\n          \"unit_amount\": null,\n          \"unit_amount_decimal\": null\n        },\n        \"subscription\": \"sub_JIfjlyyYnWBQwS\",\n        \"tax_rates\": [\n\n        ]\n      },\n      {\n        \"id\": \"si_JIfjbnh1zih63M\",\n        \"object\": \"subscription_item\",\n        \"billing_thresholds\": null,\n        \"created\": 1618390054,\n        \"metadata\": {\n        },\n        \"plan\": {\n          \"id\": \"price_1IfNf2EMShkCsLFnMcNQ0dZZ\",\n          \"object\": \"plan\",\n          \"active\": true,\n          \"aggregate_usage\": \"sum\",\n          \"amount\": null,\n          \"amount_decimal\": null,\n          \"billing_scheme\": \"tiered\",\n          \"created\": 1618225832,\n          \"currency\": \"inr\",\n          \"interval\": \"month\",\n          \"interval_count\": 1,\n          \"livemode\": false,\n          \"metadata\": {\n          },\n          \"nickname\": \"Messages\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"tiers\": [\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 0,\n              \"unit_amount_decimal\": \"0\",\n              \"up_to\": 250\n            },\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 1000,\n              \"unit_amount_decimal\": \"1000\",\n              \"up_to\": 1000\n            },\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 500,\n              \"unit_amount_decimal\": \"500\",\n              \"up_to\": null\n            }\n          ],\n          \"tiers_mode\": \"graduated\",\n          \"transform_usage\": null,\n          \"trial_period_days\": null,\n          \"usage_type\": \"metered\"\n        },\n        \"price\": {\n          \"id\": \"price_1IfNf2EMShkCsLFnMcNQ0dZZ\",\n          \"object\": \"price\",\n          \"active\": true,\n          \"billing_scheme\": \"tiered\",\n          \"created\": 1618225832,\n          \"currency\": \"inr\",\n          \"livemode\": false,\n          \"lookup_key\": null,\n          \"metadata\": {\n          },\n          \"nickname\": \"Messages\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"recurring\": {\n            \"aggregate_usage\": \"sum\",\n            \"interval\": \"month\",\n            \"interval_count\": 1,\n            \"trial_period_days\": null,\n            \"usage_type\": \"metered\"\n          },\n          \"tiers_mode\": \"graduated\",\n          \"transform_quantity\": null,\n          \"type\": \"recurring\",\n          \"unit_amount\": null,\n          \"unit_amount_decimal\": null\n        },\n        \"subscription\": \"sub_JIfjlyyYnWBQwS\",\n        \"tax_rates\": [\n\n        ]\n      },\n      {\n        \"id\": \"si_JIfjyMvpoLSt2y\",\n        \"object\": \"subscription_item\",\n        \"billing_thresholds\": null,\n        \"created\": 1618390054,\n        \"metadata\": {\n        },\n        \"plan\": {\n          \"id\": \"price_1IfNe9EMShkCsLFnnfPEFO08\",\n          \"object\": \"plan\",\n          \"active\": true,\n          \"aggregate_usage\": \"sum\",\n          \"amount\": null,\n          \"amount_decimal\": null,\n          \"billing_scheme\": \"tiered\",\n          \"created\": 1618225777,\n          \"currency\": \"inr\",\n          \"interval\": \"month\",\n          \"interval_count\": 1,\n          \"livemode\": false,\n          \"metadata\": {\n          },\n          \"nickname\": \"Consulting hours\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"tiers\": [\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 300000,\n              \"unit_amount_decimal\": \"300000\",\n              \"up_to\": 10\n            },\n            {\n              \"flat_amount\": null,\n              \"flat_amount_decimal\": null,\n              \"unit_amount\": 250000,\n              \"unit_amount_decimal\": \"250000\",\n              \"up_to\": null\n            }\n          ],\n          \"tiers_mode\": \"graduated\",\n          \"transform_usage\": null,\n          \"trial_period_days\": null,\n          \"usage_type\": \"metered\"\n        },\n        \"price\": {\n          \"id\": \"price_1IfNe9EMShkCsLFnnfPEFO08\",\n          \"object\": \"price\",\n          \"active\": true,\n          \"billing_scheme\": \"tiered\",\n          \"created\": 1618225777,\n          \"currency\": \"inr\",\n          \"livemode\": false,\n          \"lookup_key\": null,\n          \"metadata\": {\n          },\n          \"nickname\": \"Consulting hours\",\n          \"product\": \"prod_JG5ns5s9yPRiOq\",\n          \"recurring\": {\n            \"aggregate_usage\": \"sum\",\n            \"interval\": \"month\",\n            \"interval_count\": 1,\n            \"trial_period_days\": null,\n            \"usage_type\": \"metered\"\n          },\n          \"tiers_mode\": \"graduated\",\n          \"transform_quantity\": null,\n          \"type\": \"recurring\",\n          \"unit_amount\": null,\n          \"unit_amount_decimal\": null\n        },\n        \"subscription\": \"sub_JIfjlyyYnWBQwS\",\n        \"tax_rates\": [\n\n        ]\n      }\n    ],\n    \"has_more\": false,\n    \"total_count\": 4,\n    \"url\": \"/v1/subscription_items?subscription=sub_JIfjlyyYnWBQwS\"\n  },\n  \"latest_invoice\": null,\n  \"livemode\": false,\n  \"metadata\": {\n    \"id\": \"1\",\n    \"name\": \"Glific\"\n  },\n  \"next_pending_invoice_item_invoice\": null,\n  \"pause_collection\": null,\n  \"pending_invoice_item_interval\": null,\n  \"pending_setup_intent\": null,\n  \"pending_update\": null,\n  \"plan\": null,\n  \"quantity\": null,\n  \"schedule\": null,\n  \"start_date\": 1618390054,\n  \"status\": \"active\",\n  \"tax_percent\": null,\n  \"transfer_data\": null,\n  \"trial_end\": null,\n  \"trial_start\": null\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 14 Apr 2021 08:47:34 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "9880",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "2pqqqbff88dr1mpdq8003232",
+        "original-request": "req_rnqtRQx6482Hwy",
+        "request-id": "req_rnqtRQx6482Hwy",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "0",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]
