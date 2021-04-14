@@ -7,6 +7,7 @@ defmodule Glific.Messages do
   require Logger
 
   alias Glific.{
+    Caches,
     Communications,
     Contacts,
     Contacts.Contact,
@@ -960,7 +961,25 @@ defmodule Glific.Messages do
   def validate_media(url, _type) when url in ["", nil],
     do: %{is_valid: false, message: "Please provide a media URL"}
 
+  # cache ttl is 1 hour
+  @ttl_limit 1
+
   def validate_media(url, type) do
+    # We can cache this across all organizations
+    # We set a timeout of 60 minutes for this cache entry
+    case Caches.get_global({:validate_media, url, type}) do
+      {:ok, nil} ->
+        value = do_validate_media(url, type)
+        Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
+        value
+
+      {:ok, value} ->
+        value
+    end
+  end
+
+  @spec do_validate_media(String.t(), String.t()) :: map()
+  defp do_validate_media(url, type) do
     size_limit = %{
       "image" => 5120,
       "video" => 16_384,
