@@ -40,7 +40,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
 
     %{
       "user" => %{
-        "phone" => user.phone,
+        "phone" => phone,
         "name" => user.name,
         "password" => @password
       }
