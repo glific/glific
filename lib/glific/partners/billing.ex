@@ -297,7 +297,7 @@ defmodule Glific.Partners.Billing do
         |> subscription(organization)
 
       {:error, error} ->
-        Logger.info("Error while updating the card. #{inspect(error)}")
+        Logger.info("Errro while updating the card. #{inspect(error)}")
         {:error, "Your card was declined."}
     end
   end
