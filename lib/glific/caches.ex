@@ -77,10 +77,11 @@ defmodule Glific.Caches do
       end)
 
   @doc """
-  Set a global value, ttl_limit is in number of hours
+  Set a global value, ttl is in number of hours
+  For global keys, we expect relatively short ttls
   """
   @spec put_global(any, any, non_neg_integer) :: {:ok | :error, boolean()}
-  def put_global(key, value, ttl \\ @ttl_limit),
+  def put_global(key, value, ttl) do
     do: Cachex.put(@cache_bucket, {:global, key}, value, ttl: :timer.hours(ttl))
 
   @doc """
