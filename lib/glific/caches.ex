@@ -86,7 +86,7 @@ defmodule Glific.Caches do
   @doc """
   Retrieve a global value from the cache global scope
   """
-  @spec get_global(any()) :: {:ok, any()} | {:ok, false}
+  @spec get_global(any()) :: {:ok | :error, any()}
   def get_global(key),
     do: Cachex.get(@cache_bucket, {:global, key})
 end
