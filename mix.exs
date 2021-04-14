@@ -139,7 +139,8 @@ defmodule Glific.MixProject do
       {:tzdata, "~> 1.1"},
       {:stripity_stripe, "~> 2.0"},
       {:stripe_mock, "~> 0.1.0"},
-      {:remote_ip, "~> 1.0"}
+      {:remote_ip, "~> 1.0"},
+      {:exvcr, "~> 0.12.2"}
     ]
   end
 
