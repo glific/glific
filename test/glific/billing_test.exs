@@ -24,6 +24,11 @@ defmodule Glific.BillingTest do
       currency: "inr"
     }
 
+    @invalid_attrs %{
+      name: "test billing name",
+      currency: "inr"
+    }
+
     test "create/1 with valid data should create billing", %{organization_id: organization_id} do
       use_cassette "create_billing" do
         attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
@@ -36,6 +41,16 @@ defmodule Glific.BillingTest do
         assert billing.email == "testbilling@gmail.com"
         assert billing.currency == "inr"
       end
+    end
+
+    test "create/1 with invalid data should return error", %{organization_id: organization_id} do
+      attrs = Map.merge(@invalid_attrs, %{organization_id: organization_id})
+
+      {:error, error_message} =
+        Partners.get_organization!(organization_id)
+        |> Billing.create(attrs)
+
+      assert error_message == "email is not set"
     end
 
     test "update_billing/2 should update billling", %{organization_id: organization_id} do
