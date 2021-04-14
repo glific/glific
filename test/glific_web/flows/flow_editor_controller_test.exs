@@ -49,6 +49,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
   defp get_token(valid_params, organization_id, conn) do
     params = put_in(valid_params, ["user", "organization_id"], organization_id)
     authed_conn = post(conn, Routes.api_v1_session_path(conn, :create, params))
+    :timer.sleep(100)
     {:ok, access_token: authed_conn.private[:api_access_token]}
   end
 
