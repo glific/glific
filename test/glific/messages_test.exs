@@ -983,20 +983,20 @@ defmodule Glific.MessagesTest do
 
       # we want this cached
       assert %{is_valid: true, message: "success"} ==
-        Messages.validate_media(
-          @valid_media_url,
-          "image"
-        )
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
 
       {:ok, value} = Glific.Caches.get_global({:validate_media, @valid_media_url, "image"})
       assert value == %{is_valid: true, message: "success"}
 
       # this time it should be fetching from the cache
       assert %{is_valid: true, message: "success"} ==
-        Messages.validate_media(
-          @valid_media_url,
-          "image"
-        )
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
     end
 
     test "change_message_media/1 returns a message_media changeset", attrs do
