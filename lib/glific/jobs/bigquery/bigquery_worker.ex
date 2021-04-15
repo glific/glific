@@ -93,7 +93,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       Bigquery.get_table_struct(bigquery_job.table)
       |> select([m], m.id)
       |> where([m], m.id > ^table_id)
-      |> add_organization_id(table_id, organization_id)
+      |> add_organization_id(bigquery_job.table, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(100)
       |> Repo.all()
@@ -292,6 +292,11 @@ defmodule Glific.Jobs.BigQueryWorker do
       }"
     )
 
+    stat_atom =
+      if stat == "stats",
+        do: :stats,
+        else: :stats_all
+
     get_query(stat, organization_id, attrs)
     |> Repo.all()
     |> Enum.reduce(
@@ -332,7 +337,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :stats, organization_id, attrs))
+    |> Enum.each(&make_job(&1, stat_atom, organization_id, attrs))
 
     :ok
   end
