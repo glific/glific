@@ -477,6 +477,28 @@ defmodule Glific.BigquerySchema do
   end
 
   @doc """
+  Schema for the stats_global_schema table
+  """
+  @spec stats_all_schema :: list()
+  def stats_all_schema do
+    stats_schema ++
+      [
+        %{
+          description: "Organization ID",
+          name: "organization_id",
+          type: "INTEGER",
+          mode: "REQUIRED"
+        },
+        %{
+          description: "Organization Name",
+          name: "organization_name",
+          type: "STRING",
+          mode: "NULLABLE"
+        }
+      ]
+  end
+
+  @doc """
   Schema for stats_schema table
   """
   @spec stats_schema :: list()

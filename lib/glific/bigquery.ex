@@ -36,6 +36,12 @@ defmodule Glific.Bigquery do
     "stats" => :stats_schema
   }
 
+  defp bigquery_tables(organization_id) do
+    if organization_id == Application.fetch_env!(:glific, :saas_organization_id),
+      do: Map.put(@biguery_tables, "stats_all", :stats_all_schema),
+    else: @bigquery_tables
+  end
+
   @doc """
   Creating a dataset with messages and contacts as tables
   """
@@ -119,8 +125,8 @@ defmodule Glific.Bigquery do
       ) do
     Logger.info("refresh Bigquery schema for org_id: #{organization_id}")
     insert_bigquery_jobs(organization_id)
-    create_tables(conn, dataset_id, project_id)
-    alter_tables(conn, dataset_id, project_id)
+    create_tables(conn, organization_id, dataset_id, project_id)
+    alter_tables(conn, organization_id, dataset_id, project_id)
     contacts_messages_view(conn, dataset_id, project_id)
     alter_contacts_messages_view(conn, dataset_id, project_id)
     flat_fields_procedure(conn, dataset_id, project_id)
@@ -129,7 +135,8 @@ defmodule Glific.Bigquery do
   @doc false
   @spec insert_bigquery_jobs(non_neg_integer) :: :ok
   def insert_bigquery_jobs(organization_id) do
-    @bigquery_tables
+    organization_id
+    |> bigquery_tables()
     |> Map.keys()
     |> Enum.each(&create_bigquery_job(&1, organization_id))
 
@@ -205,11 +212,12 @@ defmodule Glific.Bigquery do
          do: Routines.bigquery_routines_update(conn, project_id, dataset_id, routine_id, body)
   end
 
-  @spec create_tables(Tesla.Client.t(), binary, binary) :: :ok
-  defp create_tables(conn, dataset_id, project_id) do
-    @bigquery_tables
-    |> Enum.each(fn {table_id, _schema} ->
-      apply(BigquerySchema, @bigquery_tables[table_id], [])
+  @spec create_tables(Tesla.Client.t(), non_neg_integer, binary, binary) :: :ok
+  defp create_tables(conn, organization_id, dataset_id, project_id) do
+    organization_id
+    |> bigquery_tables()
+    |> Enum.each(fn {table_id, schema_fn} ->
+      apply(BigquerySchema, schema_fn, [])
       |> create_table(%{
         conn: conn,
         dataset_id: dataset_id,
@@ -223,13 +231,14 @@ defmodule Glific.Bigquery do
   Alter bigquery table schema,
   if required this function should be called from iex
   """
-  @spec alter_tables(Tesla.Client.t(), String.t(), String.t()) :: :ok
-  def alter_tables(conn, dataset_id, project_id) do
+  @spec alter_tables(Tesla.Client.t(), non_neg_integer, String.t(), String.t()) :: :ok
+  def alter_tables(conn, organization_id, dataset_id, project_id) do
     case Datasets.bigquery_datasets_get(conn, project_id, dataset_id) do
       {:ok, _} ->
-        @bigquery_tables
-        |> Enum.each(fn {table_id, _schema} ->
-          apply(BigquerySchema, @bigquery_tables[table_id], [])
+        organization_id
+        |> bigquery_tables()
+        |> Enum.each(fn {table_id, schema_fn} ->
+          apply(BigquerySchema, schema_fn, [])
           |> alter_table(%{
             conn: conn,
             dataset_id: dataset_id,
@@ -248,7 +257,6 @@ defmodule Glific.Bigquery do
   @doc """
   Format dates for the bigquery.
   """
-
   @spec format_date(DateTime.t() | nil, non_neg_integer()) :: String.t()
   def format_date(nil, _),
     do: nil
@@ -283,7 +291,7 @@ defmodule Glific.Bigquery do
   end
 
   @doc """
-    Format Data for bigquery error
+  Format Data for bigquery
   """
   @spec format_data_for_bigquery(map(), String.t()) :: map()
   def format_data_for_bigquery(data, _table),

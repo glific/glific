@@ -22,6 +22,7 @@ config :glific,
 
 # The SaaS Admin root account phone number
 config :glific, :saas_phone, "+91111222333"
+config :glific, :saas_organization_id, 1
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

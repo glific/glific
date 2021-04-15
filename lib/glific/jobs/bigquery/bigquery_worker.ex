@@ -122,7 +122,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   ## ignore the tables for updates.
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
-       when table in ["flows", "stats"],
+       when table in ["flows", "stats", "stats_all"],
        do: :ok
 
   defp queue_table_data("messages", organization_id, attrs) do
@@ -277,18 +277,26 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("stats", organization_id, attrs) do
+  defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
-      "fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+      "fetching data for #{stat} to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
         organization_id
       }"
     )
 
-    get_query("stats", organization_id, attrs)
+    get_query(stat, organization_id, attrs)
     |> Repo.all()
     |> Enum.reduce(
       [],
       fn row, acc ->
+        additional =
+          if stat == "stats_all",
+            do: %{
+              organization_id: row.organization_id,
+              organization_name: row.organization.name
+            },
+            else: %{}
+
         [
           %{
             id: row.id,
@@ -309,7 +317,8 @@ defmodule Glific.Jobs.BigQueryWorker do
             inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
             updated_at: Bigquery.format_date(row.updated_at, organization_id)
           }
-          |> Bigquery.format_data_for_bigquery("stats")
+          |> Map.merge(additional)
+          |> Bigquery.format_data_for_bigquery(stat)
           | acc
         ]
       end
@@ -447,6 +456,13 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
+
+  defp get_query("stats_all", organization_id, attrs),
+    do:
+      Stat
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:organization])
 
   @impl Oban.Worker
   @doc """
