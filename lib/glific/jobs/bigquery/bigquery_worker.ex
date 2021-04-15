@@ -77,26 +77,29 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}{ss}")
   end
 
+  @spec insert_data(String.t(), non_neg_integer, non_neg_integer) :: list()
+  defp insert_data(table_name, table_id, organization_id) do
+    Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
+
+    Bigquery.get_table_struct(table_name)
+    |> select([m], m.id)
+    |> where([m], m.id > ^table_id)
+    |> add_organization_id(table_name, organization_id)
+    |> order_by([m], asc: m.id)
+    |> limit(100)
+    |> Repo.all(skip_organization_id: true)
+  end
+
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
   ## We are not using this code. We will remove this code later
-  defp insert_for_table(%{table: table} = _bigquery_job, _organization_id)
+  defp insert_for_table(%{table: table} = _job, _organization_id)
        when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
        do: :ok
 
-  defp insert_for_table(bigquery_job, organization_id) do
-    table_id = bigquery_job.table_id
-    Logger.info("Checking for bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
-
-    data =
-      Bigquery.get_table_struct(bigquery_job.table)
-      |> select([m], m.id)
-      |> where([m], m.id > ^table_id)
-      |> add_organization_id(bigquery_job.table, organization_id)
-      |> order_by([m], asc: m.id)
-      |> limit(100)
-      |> Repo.all(skip_organization_id: true)
+  defp insert_for_table(%{table: table, table_id: table_id} = _job, organization_id) do
+    data = insert_data(table, table_id, organization_id)
 
     max_id = if is_list(data), do: List.last(data), else: table_id
 
@@ -105,7 +108,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         nil
 
       max_id > table_id ->
-        queue_table_data(bigquery_job.table, organization_id, %{
+        queue_table_data(table, organization_id, %{
           min_id: table_id,
           max_id: max_id,
           action: :insert
@@ -115,7 +118,7 @@ defmodule Glific.Jobs.BigQueryWorker do
         nil
     end
 
-    queue_table_data(bigquery_job.table, organization_id, %{action: :update, max_id: nil})
+    queue_table_data(table, organization_id, %{action: :update, max_id: nil})
 
     :ok
   end

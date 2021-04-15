@@ -98,22 +98,23 @@ defmodule Glific.Bigquery do
     end
   end
 
+  @table_lookup %{
+    "messages" => Message,
+    "contacts" => Contact,
+    "flow_results" => FlowResult,
+    "flows" => FlowRevision,
+    "stats" => Stat,
+    "stats_all" => Stat,
+    "messages_delta" => Message,
+    "contacts_delta" => Contact,
+    "flow_results_delta" => FlowResult
+  }
+
   # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
-  @spec get_table_struct(String.t()) :: any()
-  def get_table_struct(table) do
-    case table do
-      "messages" -> Message
-      "contacts" -> Contact
-      "flow_results" -> FlowResult
-      "flows" -> FlowRevision
-      "stats" -> Stat
-      "stats_all" -> Stat
-      "messages_delta" -> Message
-      "contacts_delta" -> Contact
-      "flow_results_delta" -> FlowResult
-    end
-  end
+  @spec get_table_struct(String.t()) :: atom()
+  def get_table_struct(table_name),
+    do: Map.fetch!(@table_lookup, table_name)
 
   @doc """
   Refresh the biquery schema and update all the older versions.
