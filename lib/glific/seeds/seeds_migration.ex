@@ -422,6 +422,6 @@ defmodule Glific.Seeds.SeedsMigration do
 
     Glific.Users.User
     |> update([u], set: [language_id: ^en.id])
-    |> Repo.update_all([])
+    |> Repo.update_all([], skip_organization_id: true)
   end
 end
