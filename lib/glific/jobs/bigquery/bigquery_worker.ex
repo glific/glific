@@ -77,17 +77,21 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}{ss}")
   end
 
-  @spec insert_data(String.t(), non_neg_integer, non_neg_integer) :: list()
-  defp insert_data(table_name, table_id, organization_id) do
+  @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
+  def insert_max_id(table_name, table_id, organization_id) do
     Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
 
-    Bigquery.get_table_struct(table_name)
-    |> select([m], m.id)
-    |> where([m], m.id > ^table_id)
-    |> add_organization_id(table_name, organization_id)
-    |> order_by([m], asc: m.id)
-    |> limit(100)
-    |> Repo.all(skip_organization_id: true)
+    max_id =
+      Bigquery.get_table_struct(table_name)
+      |> where([m], m.id > ^table_id)
+      |> add_organization_id(table_name, organization_id)
+      |> order_by([m], asc: m.id)
+      |> limit(100)
+      |> Repo.aggregate(:max, :id, skip_organization_id: true)
+
+    if is_nil(max_id),
+      do: table_id,
+      else: max_id
   end
 
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
@@ -99,24 +103,15 @@ defmodule Glific.Jobs.BigQueryWorker do
        do: :ok
 
   defp insert_for_table(%{table: table, table_id: table_id} = _job, organization_id) do
-    data = insert_data(table, table_id, organization_id)
+    max_id = insert_max_id(table, table_id, organization_id)
 
-    max_id = if is_list(data), do: List.last(data), else: table_id
-
-    cond do
-      is_nil(max_id) ->
-        nil
-
-      max_id > table_id ->
+    if max_id > table_id,
+      do:
         queue_table_data(table, organization_id, %{
           min_id: table_id,
           max_id: max_id,
           action: :insert
         })
-
-      true ->
-        nil
-    end
 
     queue_table_data(table, organization_id, %{action: :update, max_id: nil})
 
