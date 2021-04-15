@@ -96,7 +96,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> add_organization_id(bigquery_job.table, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(100)
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     max_id = if is_list(data), do: List.last(data), else: table_id
 
@@ -298,7 +298,8 @@ defmodule Glific.Jobs.BigQueryWorker do
         else: :stats_all
 
     get_query(stat, organization_id, attrs)
-    |> Repo.all()
+    # for stats_all we specifically want to skip organization_id
+    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(
       [],
       fn row, acc ->
