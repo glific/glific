@@ -103,4 +103,13 @@ defmodule GlificWeb.Schema.BillingTest do
     billing = get_in(query_data, [:data, "billing", "billing"])
     assert billing["stripe_customer_id"] == stripe_customer_id
   end
+
+  test "fetch active billing organization", %{user: user} do
+    stripe_customer_id = "test_cus_JIdQjmJcjq"
+    result = auth_query_gql_by(:list, user, variables: %{})
+    assert {:ok, query_data} = result
+    billing = get_in(query_data, [:data, "getOrganizationBilling", "billing"])
+    assert billing["stripe_customer_id"] == stripe_customer_id
+    assert billing["is_active"] == true
+  end
 end
