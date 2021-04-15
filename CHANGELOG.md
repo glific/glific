@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] -- 2021-04-15
+
+### Added
+- Made frontend interface localizable. Using lokalise.com to manage transalations
+- Integrated Stripe Billing into code base, so we can switch to credit card payments
+- Lazy loading of javascript on frontend
+- Support for variables lookup between parent and children flows
+- Preview of HSM templates
+
 ## [1.3.0] -- 2021-03-31
 
 ### Added
