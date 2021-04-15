@@ -3,16 +3,11 @@ Major features that we are planning to address in future major releases.
 
 The focus of all versions of v1.x will be on stability, scale, and automation.
 
-## v1.3
-- Triggers
-
 ## v1.4
 - NGO Billing for SaaS platform via Stripe subscriptions
-
-## v1.5
 - Localization of Glific FrontEnd in Hindi. Use web based platform for translating Glific Interface
 
-## v1.6
+## v1.5
 - Data retention policies enforced
 - Data privacy policies implemented
 - Glific Console to manage multiple organizations from single dashboard
