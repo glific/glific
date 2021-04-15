@@ -8,7 +8,7 @@ defmodule GlificWeb.RateLimitPlug do
   @behaviour Plug
 
   # number of API calls via graphql / @time_period
-  @max_requests 60
+  @max_requests Application.fetch_env!(:glific, :max_rate_limit_request)
   # number of unauthenticated API calls / @time_period
   @max_unauth_requests 5
 

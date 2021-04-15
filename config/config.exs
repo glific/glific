@@ -71,6 +71,8 @@ config :glific, Oban,
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 
+config :glific, :max_rate_limit_request, 60
+
 config :glific, :pow,
   user: Glific.Users.User,
   repo: Glific.Repo,
