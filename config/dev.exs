@@ -4,8 +4,8 @@ import Config
 config :glific, Glific.Repo,
   username: "postgres",
   password: "postgres",
-  database: "glific_dev",
-  # database: "glific_prod",
+  # database: "glific_dev",
+  database: "glific_old_prod",
   # log: false,
   hostname: "localhost",
   show_sensitive_data_on_connection_error: true,
@@ -22,7 +22,7 @@ config :glific,
 
 # The SaaS Admin root account phone number
 config :glific, :saas_phone, "+91111222333"
-config :glific, :saas_organization_id, 1
+config :glific, :saas_organization_id, 2
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

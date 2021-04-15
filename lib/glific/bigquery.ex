@@ -108,6 +108,7 @@ defmodule Glific.Bigquery do
       "flow_results" -> FlowResult
       "flows" -> FlowRevision
       "stats" -> Stat
+      "stats_all" -> Stat
       "messages_delta" -> Message
       "contacts_delta" -> Contact
       "flow_results_delta" -> FlowResult

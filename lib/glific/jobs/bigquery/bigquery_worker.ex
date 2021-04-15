@@ -92,7 +92,8 @@ defmodule Glific.Jobs.BigQueryWorker do
     data =
       Bigquery.get_table_struct(bigquery_job.table)
       |> select([m], m.id)
-      |> where([m], m.organization_id == ^organization_id and m.id > ^table_id)
+      |> where([m], m.id > ^table_id)
+      |> add_organization_id(table_id, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(100)
       |> Repo.all()
@@ -118,6 +119,13 @@ defmodule Glific.Jobs.BigQueryWorker do
 
     :ok
   end
+
+  @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
+  defp add_organization_id(query, "stats_all", _organization_id),
+    do: query
+
+  defp add_organization_id(query, _table, organization_id),
+    do: query |> where([m], m.organization_id == ^organization_id)
 
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   ## ignore the tables for updates.
