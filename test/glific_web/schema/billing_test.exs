@@ -112,4 +112,7 @@ defmodule GlificWeb.Schema.BillingTest do
     assert billing["stripe_customer_id"] == stripe_customer_id
     assert billing["is_active"] == true
   end
+
+  test "update payment method", %{user: user} do
+  end
 end
