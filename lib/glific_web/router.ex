@@ -7,8 +7,6 @@ defmodule GlificWeb.Router do
   use Plug.ErrorHandler
   use Appsignal.Plug
 
-  import Oban.Web.Router
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -57,11 +55,7 @@ defmodule GlificWeb.Router do
     live "/", PageLive, :index
   end
 
-  scope "/" do
-    pipe_through [:browser, :auth]
-
-    oban_dashboard("/oban")
-  end
+  use GlificWeb.InjectOban
 
   # Enables LiveDashboard only for development
   #

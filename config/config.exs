@@ -36,38 +36,49 @@ config :glific, Glific.Repo, migration_timestamps: [type: :utc_datetime]
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 # Configure Oban, its queues and crontab entries
+
+oban_queues = [
+  default: 10,
+  gupshup: 10,
+  webhook: 10,
+  crontab: 10,
+  bigquery: 5,
+  gcs: 5
+]
+
+oban_crontab = [
+  {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+  {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+  {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+  {"3 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
+  {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
+  {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
+]
+
+oban_plugins_prod =
+  if Mix.env() == :prod,
+    do: [
+      Oban.Pro.Plugins.Lifeline,
+      Oban.Web.Plugins.Stats
+    ],
+    else: []
+
+oban_plugins =
+  [
+    # Prune jobs after 5 mins, gives us some time to go investigate if needed
+    {Oban.Plugins.Pruner, max_age: 300},
+    {Oban.Plugins.Cron, crontab: oban_crontab}
+  ] ++ oban_plugins_prod
+
 config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
-  queues: [
-    default: 10,
-    gupshup: 10,
-    webhook: 10,
-    crontab: 10,
-    bigquery: 5,
-    gcs: 5
-  ],
-  plugins: [
-    # Prune jobs after 5 mins, gives us some time to go investigate if needed
-    {Oban.Plugins.Pruner, max_age: 300},
-    Oban.Pro.Plugins.Lifeline,
-    Oban.Web.Plugins.Stats,
-    {
-      Oban.Plugins.Cron,
-      crontab: [
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-        {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-        {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
-        {"3 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
-      ]
-    }
-  ]
+  queues: oban_queues,
+  plugins: oban_plugins
 
 config :tesla, adapter: Tesla.Adapter.Hackney
 
