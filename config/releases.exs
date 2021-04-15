@@ -65,6 +65,8 @@ saas_phone =
 # The SaaS Admin root account phone number
 config :glific, :saas_phone, System.get_env("SAAS_PHONE")
 
+config :glific, :max_rate_limit_request, System.get_env("MAX_RATE_LIMIT_REQUEST")
+
 # AppSignal configs
 config :appsignal, :config,
   otp_app: :glific,
