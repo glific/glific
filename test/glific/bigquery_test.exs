@@ -343,7 +343,7 @@ defmodule Glific.BigqueryTest do
       ]
     }
 
-    assert :ok == Bigquery.create_tables(conn, "test_dataset", "test_table")
+    assert :ok == Bigquery.create_tables(conn, 1, "test_dataset", "test_table")
   end
 
   test "alter_tables/3 should throw error tables" do
@@ -374,7 +374,7 @@ defmodule Glific.BigqueryTest do
       ]
     }
 
-    assert :ok == Bigquery.alter_tables(conn, "test_dataset", "test_table")
+    assert :ok == Bigquery.alter_tables(conn, 1, "test_dataset", "test_table")
   end
 
   @unix_time 1_464_096_368

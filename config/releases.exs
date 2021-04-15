@@ -59,18 +59,18 @@ config :glific,
 # both these variables will go into the saas table coming in Glific v1.5
 saas_phone =
   System.get_env("SAAS_PHONE") ||
-  raise """
-  environment variable SAAS_PHONE is missing.
-  """
+    raise """
+    environment variable SAAS_PHONE is missing.
+    """
 
 # The SaaS Admin root account phone number
 config :glific, :saas_phone, System.get_env("SAAS_PHONE")
 
 saas_organization_id =
   System.get_env("SAAS_ORGANIZATION_ID") ||
-  raise """
-  environment variable SAAS_PHONE is missing.
-  """
+    raise """
+    environment variable SAAS_PHONE is missing.
+    """
 
 # The SaaS Admin root account phone number
 config :glific, :saas_organization_id, System.get_env("SAAS_PHONE")

@@ -38,8 +38,8 @@ defmodule Glific.Bigquery do
 
   defp bigquery_tables(organization_id) do
     if organization_id == Application.fetch_env!(:glific, :saas_organization_id),
-      do: Map.put(@biguery_tables, "stats_all", :stats_all_schema),
-    else: @bigquery_tables
+      do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
+      else: @bigquery_tables
   end
 
   @doc """

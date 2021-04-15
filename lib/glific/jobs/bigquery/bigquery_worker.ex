@@ -457,7 +457,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
 
-  defp get_query("stats_all", organization_id, attrs),
+  defp get_query("stats_all", _organization_id, attrs),
     do:
       Stat
       |> apply_action_clause(attrs)

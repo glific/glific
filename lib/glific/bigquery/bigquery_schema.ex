@@ -481,7 +481,7 @@ defmodule Glific.BigquerySchema do
   """
   @spec stats_all_schema :: list()
   def stats_all_schema do
-    stats_schema ++
+    stats_schema() ++
       [
         %{
           description: "Organization ID",
