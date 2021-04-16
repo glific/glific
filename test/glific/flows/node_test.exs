@@ -274,5 +274,4 @@ defmodule Glific.Flows.NodeTest do
     # execute node
     {:ok, _context, []} = Node.execute(node, context, [])
   end
-
 end
