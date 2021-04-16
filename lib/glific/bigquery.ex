@@ -387,14 +387,13 @@ defmodule Glific.Bigquery do
             tableId: "contacts_messages"
           },
           view: %{
-            query:
-              """
-              SELECT messages.id, contact_phone, phone, name, optin_time. language,
-                flow_label, messages.tags_label, messages.inserted_at, media_url
-              FROM `#{project_id}.#{dataset_id}.messages` AS messages
-              JOIN `#{project_id}.#{dataset_id}.contacts` AS contacts
-                ON messages.contact_phone = contacts.phone
-              """,
+            query: """
+            SELECT messages.id, contact_phone, phone, name, optin_time. language,
+              flow_label, messages.tags_label, messages.inserted_at, media_url
+            FROM `#{project_id}.#{dataset_id}.messages` AS messages
+            JOIN `#{project_id}.#{dataset_id}.contacts` AS contacts
+              ON messages.contact_phone = contacts.phone
+            """,
             useLegacySql: false
           }
         }
