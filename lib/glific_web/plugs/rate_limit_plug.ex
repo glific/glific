@@ -58,7 +58,10 @@ defmodule GlificWeb.RateLimitPlug do
 
   defp check_rate(conn, user, options) do
     interval_milliseconds = (options[:time_period] || @time_period) * 1000
-    max_requests = options[:max_requests] || Application.fetch_env!(:glific, :max_rate_limit_request)
+
+    max_requests =
+      options[:max_requests] || Application.fetch_env!(:glific, :max_rate_limit_request)
+
     bucket_name = options[:bucket_name] || bucket_name(conn, user)
 
     ExRated.check_rate(bucket_name, interval_milliseconds, max_requests)
