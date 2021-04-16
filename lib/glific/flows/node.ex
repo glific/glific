@@ -202,9 +202,15 @@ defmodule Glific.Flows.Node do
 
     # if node has an action, execute the first action
     cond do
+      # we special case wait for time, since it has a router, which basically
+      # is an empty shell and just exits along the normal path
+      !Enum.empty?(node.actions) && hd(node.actions).type == "wait_for_time" ->
+        execute_node_actions(node, context, messages)
+
       # if both are non-empty, it means that we have either a
-      #    * sub-flow option
-      #    * calling a web hook
+      #   * sub-flow option
+      #   * calling a web hook
+
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
         execute_node_router(node, context, messages)
 
