@@ -23,6 +23,7 @@ defmodule GlificWeb.Schema.BillingTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/billings/create.gql")
   load_gql(:create_subscription, GlificWeb.Schema, "assets/gql/billings/create_subscription.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/billings/update.gql")
+  load_gql(:payment_method, GlificWeb.Schema, "assets/gql/billings/payment_method.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/billings/delete.gql")
 
   test "delete a billing", %{user: user} do
@@ -102,5 +103,33 @@ defmodule GlificWeb.Schema.BillingTest do
     assert {:ok, query_data} = result
     billing = get_in(query_data, [:data, "billing", "billing"])
     assert billing["stripe_customer_id"] == stripe_customer_id
+  end
+
+  test "fetch active billing organization", %{user: user} do
+    stripe_customer_id = "test_cus_JIdQjmJcjq"
+    result = auth_query_gql_by(:list, user, variables: %{})
+    assert {:ok, query_data} = result
+    billing = get_in(query_data, [:data, "getOrganizationBilling", "billing"])
+    assert billing["stripe_customer_id"] == stripe_customer_id
+    assert billing["is_active"] == true
+  end
+
+  test "update payment method", %{user: user} do
+    use_cassette "update_payment_method" do
+      payment_method_id = "pm_1IgT1nEMShkCsLFnOd4GdL9I"
+
+      result =
+        auth_query_gql_by(:payment_method, user,
+          variables: %{
+            "input" => %{
+              "stripe_payment_method_id" => payment_method_id
+            }
+          }
+        )
+
+      assert {:ok, query_data} = result
+      billing = get_in(query_data, [:data, "updatePaymentMethod", "billing"])
+      assert billing["stripe_payment_method_id"] == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
+    end
   end
 end

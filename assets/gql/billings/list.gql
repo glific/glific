@@ -1,11 +1,14 @@
-query billings($filter: BillingFilter, $opts: Opts) {
-  billings(filter: $filter, opts: $opts) {
+query billing {
+  getOrganizationBilling {
+    billing {
     id
     email
     stripe_customer_id
     stripe_payment_method_id
     currency
+    is_active
     stripe_current_period_start
     stripe_current_period_end
+    }
   }
 }

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updatePaymentMethod($input:PaymentMethodInput!) {
+  updatePaymentMethod(input: $input) {
+    ...BillingFields
+
+    ...ErrorFields
+  }
+}

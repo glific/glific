@@ -261,7 +261,7 @@ defmodule Glific.Partners.Billing do
   by stripe
   """
   @spec update_payment_method(Organization.t(), String.t()) ::
-          {:ok, Billing.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Billing.t()} | {:error, map()}
   def update_payment_method(organization, stripe_payment_method_id) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
@@ -275,8 +275,13 @@ defmodule Glific.Partners.Billing do
          {:ok, _customer} <-
            Stripe.Customer.update(billing.stripe_customer_id, %{
              invoice_settings: %{default_payment_method: stripe_payment_method_id}
-           }),
-         do: update_billing(billing, %{stripe_payment_method_id: stripe_payment_method_id})
+           }) do
+      update_billing(billing, %{stripe_payment_method_id: stripe_payment_method_id})
+      |> case do
+        {:ok, billing} -> {:ok, billing}
+        {:error, _} -> {:error, %{message: "Error while saving details"}}
+      end
+    end
   end
 
   @doc """
@@ -297,8 +302,8 @@ defmodule Glific.Partners.Billing do
         |> subscription(organization)
 
       {:error, error} ->
-        Logger.info("Errro while updating the card. #{inspect(error)}")
-        {:error, "Your card was declined."}
+        Logger.info("Error while updating the card. #{inspect(error)}")
+        {:error, error.message}
     end
   end
 

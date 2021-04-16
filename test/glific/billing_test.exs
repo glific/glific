@@ -93,5 +93,19 @@ defmodule Glific.BillingTest do
         assert subscription == %{status: :active}
       end
     end
+
+    test "update_payment_method/1 with valid data should update payment method", %{
+      organization_id: organization_id
+    } do
+      use_cassette "update_payment_method" do
+        payment_method_id = "pm_1IgT1nEMShkCsLFnOd4GdL9I"
+
+        assert {:ok, subscription} =
+                 Partners.get_organization!(organization_id)
+                 |> Billing.update_payment_method(payment_method_id)
+
+        assert subscription.stripe_payment_method_id == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
+      end
+    end
   end
 end
