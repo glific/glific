@@ -17,7 +17,9 @@ defmodule Glific.Flows.ContactSetting do
   @spec set_contact_language(FlowContext.t(), String.t()) :: FlowContext.t()
   def set_contact_language(context, language) do
     # get the language id
-    Settings.get_language_by_label_or_locale(language)
+    language
+    |> fix_language()
+    |> Settings.get_language_by_label_or_locale()
     |> case do
       [language | _] ->
         {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
@@ -27,6 +29,10 @@ defmodule Glific.Flows.ContactSetting do
         raise("Error! No language found with label #{inspect(language)}")
     end
   end
+
+  @spec fix_language(String.t()) :: String.t()
+  defp fix_language("en_US"), do: "en"
+  defp fix_language(language), do: language
 
   @doc """
   Set the name for a contact
