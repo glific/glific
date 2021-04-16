@@ -432,15 +432,21 @@ defmodule Glific.Partners.Billing do
   @spec update_subscription_details(Stripe.Subscription.t(), non_neg_integer(), Billing.t() | nil) ::
           {:ok, Stripe.Subscription.t()} | {:error, String.t()}
   def update_subscription_details(subscription, organization_id, nil) do
-      Repo.fetch_by(Billing, %{
-        stripe_subscription_id: subscription.id,
-        organization_id: organization_id
-      })
-      |> case do
-        {:ok, billing}
-         ->  update_subscription_details(subscription, organization_id, billing)
-         _ -> Logger.info("Error while updating the subscription details for subscription #{subscription.id} and organization_id: #{organization_id}")
-      end
+    Repo.fetch_by(Billing, %{
+      stripe_subscription_id: subscription.id,
+      organization_id: organization_id
+    })
+    |> case do
+      {:ok, billing} ->
+        update_subscription_details(subscription, organization_id, billing)
+
+      _ ->
+        Logger.info(
+          "Error while updating the subscription details for subscription #{subscription.id} and organization_id: #{
+            organization_id
+          }"
+        )
+    end
   end
 
   def update_subscription_details(subscription, _organization_id, billing) do

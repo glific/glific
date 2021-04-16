@@ -106,8 +106,6 @@ defmodule GlificWeb.Router do
   end
 
   scope "/flow-editor", GlificWeb.Flows do
-    pipe_through [:api, :api_protected]
-
     get "/groups", FlowEditorController, :groups
     post "/groups", FlowEditorController, :groups_post
 
