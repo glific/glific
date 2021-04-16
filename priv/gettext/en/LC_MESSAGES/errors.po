@@ -1,55 +1,54 @@
-## `msgid`s in this file come from POT (.pot) files.
-##
-## Do not add, change, or remove `msgid`s manually here as
-## they're tied to the ones in the corresponding POT file
-## (with the same domain).
-##
-## Use `mix gettext.extract --merge` or `mix gettext.merge`
-## to merge POT files into PO files.
 msgid ""
 msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: lokalise.com\n"
+"Project-Id-Version: Glific Backend\n"
+"PO-Revision-Date: 2021-04-17 01:54\n"
+"Last-Translator: lokalise.com\n"
+"Language-Team: lokalise.com\n\n"
 "Language: en\n"
 
-## From Ecto.Changeset.cast/4
+#, fuzzy
 msgid "can't be blank"
 msgstr ""
 
-## From Ecto.Changeset.unique_constraint/3
+#, fuzzy
 msgid "has already been taken"
 msgstr ""
 
-## From Ecto.Changeset.put_change/3
+#, fuzzy
 msgid "is invalid"
 msgstr ""
 
-## From Ecto.Changeset.validate_acceptance/3
+#, fuzzy
 msgid "must be accepted"
 msgstr ""
 
-## From Ecto.Changeset.validate_format/3
+#, fuzzy
 msgid "has invalid format"
 msgstr ""
 
-## From Ecto.Changeset.validate_subset/3
+#, fuzzy
 msgid "has an invalid entry"
 msgstr ""
 
-## From Ecto.Changeset.validate_exclusion/3
+#, fuzzy
 msgid "is reserved"
 msgstr ""
 
-## From Ecto.Changeset.validate_confirmation/3
+#, fuzzy
 msgid "does not match confirmation"
 msgstr ""
 
-## From Ecto.Changeset.no_assoc_constraint/3
+#, fuzzy
 msgid "is still associated with this entry"
 msgstr ""
 
 msgid "are still associated with this entry"
-msgstr ""
+msgstr "are still associated with this entry"
 
-## From Ecto.Changeset.validate_length/3
 msgid "should be %{count} character(s)"
 msgid_plural "should be %{count} character(s)"
 msgstr[0] ""
@@ -80,18 +79,113 @@ msgid_plural "should have at most %{count} item(s)"
 msgstr[0] ""
 msgstr[1] ""
 
-## From Ecto.Changeset.validate_number/3
 msgid "must be less than %{number}"
-msgstr ""
+msgstr "must be less than %{number}"
 
 msgid "must be greater than %{number}"
-msgstr ""
+msgstr "must be greater than %{number}"
 
 msgid "must be less than or equal to %{number}"
-msgstr ""
+msgstr "must be less than or equal to %{number}"
 
 msgid "must be greater than or equal to %{number}"
-msgstr ""
+msgstr "must be greater than or equal to %{number}"
 
 msgid "must be equal to %{number}"
-msgstr ""
+msgstr "must be equal to %{number}"
+
+msgid "Auth Credentials mismatch"
+msgstr "Auth Credentials mismatch"
+
+msgid "Cannot send hsm message to contact, invalid BSP status."
+msgstr "Cannot send hsm message to contact, invalid BSP status."
+
+msgid "Cannot send hsm message to contact, not opted in."
+msgstr "Cannot send hsm message to contact, not opted in."
+
+msgid "Chatbase returned an unexpected result"
+msgstr "Chatbase returned an unexpected result"
+
+msgid "Contact status is not valid."
+msgstr "Contact status is not valid."
+
+msgid "Could not find category for: %{body}"
+msgstr "Could not find category for: %{body}"
+
+msgid "Could not find invoice for %{invoice_id}"
+msgstr "Could not find invoice for %{invoice_id}"
+
+msgid "Error in decoding webhook body. Please check the json body in floweditor"
+msgstr "Error in decoding webhook body. Please check the json body in floweditor"
+
+msgid "Error occurred while creating invoice: %{error}"
+msgstr "Error occurred while creating invoice: %{error}"
+
+msgid "Error occurred while finalizing setup invoice: %{error}"
+msgstr "Error occurred while finalizing setup invoice: %{error}"
+
+msgid "Error occurred while updating prorations: %{error}"
+msgstr "Error occurred while updating prorations: %{error}"
+
+msgid "Error occurred while updating status for ${invoice_id}: %{error}"
+msgstr "Error occurred while updating status for ${invoice_id}: %{error}"
+
+msgid "Error updating opted-in contacts: %{message}"
+msgstr "Error updating opted-in contacts: %{message}"
+
+msgid "Error updating opted-in contacts: %{reason}"
+msgstr "Error updating opted-in contacts: %{reason}"
+
+msgid "Error updating opted-in contacts: Invalid BSP API key"
+msgstr "Error updating opted-in contacts: Invalid BSP API key"
+
+msgid "Error while fetching the BSP balance"
+msgstr "Error while fetching the BSP balance"
+
+msgid "Invalid BSP API key"
+msgstr "Invalid BSP API key"
+
+msgid "Invalid BSP provider"
+msgstr "Invalid BSP provider"
+
+msgid "Invoice status updated for %{invoice_id}"
+msgstr "Invoice status updated for %{invoice_id}"
+
+msgid "No active BSP available"
+msgstr "No active BSP available"
+
+msgid "Not handling %{return} value"
+msgstr "Not handling %{return} value"
+
+msgid "Please provide media for media template."
+msgstr "Please provide media for media template."
+
+msgid "Please provide the right number of parameters for the template."
+msgstr "Please provide the right number of parameters for the template."
+
+msgid "Signature is in a wrong format or is missing %{schema}"
+msgstr "Signature is in a wrong format or is missing %{schema}"
+
+msgid "Signature is incorrect"
+msgstr "Signature is incorrect"
+
+msgid "Signature is too old"
+msgstr "Signature is too old"
+
+msgid "Something went wrong."
+msgstr "Something went wrong."
+
+msgid "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
+msgstr "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
+
+msgid "Trigger start_at should always be greater than current time"
+msgstr "Trigger start_at should always be greater than current time"
+
+msgid "Unauthorized"
+msgstr "Unauthorized"
+
+msgid "Unsupported node type"
+msgstr "Unsupported node type"
+
+msgid "We have finished the flow"
+msgstr "We have finished the flow"
