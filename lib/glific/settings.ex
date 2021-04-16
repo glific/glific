@@ -169,6 +169,10 @@ defmodule Glific.Settings do
   Get language from label or shortcode
   """
   @spec get_language_by_label_or_locale(String.t()) :: list()
+  def get_language_by_label_or_locale("en_US") do
+    get_language_by_label_or_locale("en")
+  end
+
   def get_language_by_label_or_locale(term) do
     Language
     |> where([l], l.is_active == true)
