@@ -107,8 +107,8 @@ defmodule Glific.MixProject do
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
       {:oban, "~> 2.0"},
-      {:oban_web, "~> 2.5", organization: "oban"},
-      {:oban_pro, "~> 0.6", organization: "oban"},
+      {:oban_web, "~> 2.5", organization: "oban", only: :prod},
+      {:oban_pro, "~> 0.6", organization: "oban", only: :prod},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},
@@ -152,8 +152,13 @@ defmodule Glific.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      setup: ["deps.get", "common"],
+      no_oban: [
+        "deps.clean oban_web oban_pro --unlock",
+        "deps.get --only dev",
+        "common"
+      ],
+      common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create --quiet",
         "ecto.migrate",
