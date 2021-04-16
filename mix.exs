@@ -152,9 +152,13 @@ defmodule Glific.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
-      no_oban: ["deps.get --only dev", "compile", "ecto.reset", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      setup: ["deps.get", "common"],
+      no_oban: [
+        "deps.clean oban_web oban_pro --unlock",
+        "deps.get --only dev",
+        "common"
+      ],
+      common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create --quiet",
         "ecto.migrate",
