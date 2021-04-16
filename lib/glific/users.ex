@@ -161,8 +161,10 @@ defmodule Glific.Users do
     |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
     |> case do
       # Prevent timing attack
-      nil -> %User{password_hash: nil}
-      user -> user
+      nil ->
+        %User{password_hash: nil}
+
+      user -> user |> Repo.preload(:language)
     end
     |> verify_password(params["password"])
   end
