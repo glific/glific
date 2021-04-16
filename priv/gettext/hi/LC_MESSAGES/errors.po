@@ -1,0 +1,184 @@
+msgid ""
+msgstr ""
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: lokalise.com\n"
+"Project-Id-Version: Glific Backend\n"
+"PO-Revision-Date: 2021-04-17 01:54\n"
+"Last-Translator: lokalise.com\n"
+"Language-Team: lokalise.com\n\n"
+"Language: hi\n"
+
+msgid "can't be blank"
+msgstr ""
+
+msgid "has already been taken"
+msgstr ""
+
+msgid "is invalid"
+msgstr ""
+
+msgid "must be accepted"
+msgstr ""
+
+msgid "has invalid format"
+msgstr ""
+
+msgid "has an invalid entry"
+msgstr ""
+
+msgid "is reserved"
+msgstr ""
+
+msgid "does not match confirmation"
+msgstr ""
+
+msgid "is still associated with this entry"
+msgstr ""
+
+#, fuzzy
+msgid "are still associated with this entry"
+msgstr ""
+
+msgid "should be %{count} character(s)"
+msgid_plural "should be %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have %{count} item(s)"
+msgid_plural "should have %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at least %{count} character(s)"
+msgid_plural "should be at least %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have at least %{count} item(s)"
+msgid_plural "should have at least %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should be at most %{count} character(s)"
+msgid_plural "should be at most %{count} character(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "should have at most %{count} item(s)"
+msgid_plural "should have at most %{count} item(s)"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "must be less than %{number}"
+msgstr "%{number} से कम होना चाहिए"
+
+msgid "must be greater than %{number}"
+msgstr "%{number} से अधिक होना चाहिए"
+
+msgid "must be less than or equal to %{number}"
+msgstr "%{number} से कम या बराबर होना चाहिए"
+
+msgid "must be greater than or equal to %{number}"
+msgstr "%{number} से अधिक या बराबर होना चाहिए"
+
+msgid "must be equal to %{number}"
+msgstr "%{number} बराबर होना चाहिए"
+
+msgid "Auth Credentials mismatch"
+msgstr "प्रामाणिक साख बेमेल"
+
+msgid "Cannot send hsm message to contact, invalid BSP status."
+msgstr "बीएसपी स्थिति से संपर्क करने के लिए hsm संदेश नहीं भेजा जा सकता।"
+
+msgid "Cannot send hsm message to contact, not opted in."
+msgstr "संपर्क करने के लिए hsm संदेश नहीं भेजा जा सकता, नहीं चुना गया।"
+
+msgid "Chatbase returned an unexpected result"
+msgstr "चैटबेस ने अप्रत्याशित परिणाम दिया"
+
+msgid "Contact status is not valid."
+msgstr "संपर्क स्थिति मान्य नहीं है।"
+
+msgid "Could not find category for: %{body}"
+msgstr "के लिए श्रेणी नहीं मिल सका: %{body}"
+
+msgid "Could not find invoice for %{invoice_id}"
+msgstr "%{invoice_id} लिए चालान नहीं मिला"
+
+msgid "Error in decoding webhook body. Please check the json body in floweditor"
+msgstr "Webhook बॉडी को डिकोड करने में त्रुटि। कृपया फ्लोसीटर में जसन बॉडी की जाँच करें"
+
+msgid "Error occurred while creating invoice: %{error}"
+msgstr "चालान बनाते समय त्रुटि आई: %{error}"
+
+#, fuzzy
+msgid "Error occurred while finalizing setup invoice: %{error}"
+msgstr ""
+
+msgid "Error occurred while updating prorations: %{error}"
+msgstr "प्रोरेशन अपडेट करते समय त्रुटि आई: %{error}"
+
+msgid "Error occurred while updating status for ${invoice_id}: %{error}"
+msgstr "प्रोरेशन अपडेट करते समय त्रुटि आई: %{error}"
+
+msgid "Error updating opted-in contacts: %{message}"
+msgstr "ऑप्ट-इन संपर्कों को अपडेट करने में त्रुटि: %{message}"
+
+msgid "Error updating opted-in contacts: %{reason}"
+msgstr "ऑप्ट-इन संपर्कों को अपडेट करने में त्रुटि: %{reason}"
+
+msgid "Error updating opted-in contacts: Invalid BSP API key"
+msgstr "ऑप्ट-इन संपर्कों को अपडेट करने में त्रुटि: अमान्य बीएसपी एपीआई कुंजी"
+
+msgid "Error while fetching the BSP balance"
+msgstr "बीएसपी संतुलन लाने में त्रुटि"
+
+msgid "Invalid BSP API key"
+msgstr "अमान्य बीएसपी एपीआई कुंजी"
+
+msgid "Invalid BSP provider"
+msgstr "अमान्य बीएसपी प्रदाता"
+
+msgid "Invoice status updated for %{invoice_id}"
+msgstr "%{invoice_id} लिए चालान स्थिति अपडेट की गई"
+
+msgid "No active BSP available"
+msgstr "कोई सक्रिय बीएसपी उपलब्ध नहीं है"
+
+msgid "Not handling %{return} value"
+msgstr "%{return} मान को हैंडल नहीं कर रहा है"
+
+msgid "Please provide media for media template."
+msgstr "कृपया टेम्पलेट के लिए मापदंडों की सही संख्या प्रदान करें।"
+
+msgid "Please provide the right number of parameters for the template."
+msgstr "कृपया टेम्पलेट के लिए मापदंडों की सही संख्या प्रदान करें।"
+
+msgid "Signature is in a wrong format or is missing %{schema}"
+msgstr "हस्ताक्षर गलत प्रारूप में है या %{schema}"
+
+msgid "Signature is incorrect"
+msgstr "हस्ताक्षर बहुत पुराना है"
+
+msgid "Signature is too old"
+msgstr "हस्ताक्षर बहुत पुराना है"
+
+msgid "Something went wrong."
+msgstr "कुछ गलत हो गया।"
+
+msgid "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
+msgstr "माफ़ करना! 24 बजे की खिड़की बंद। इस समय आपका संदेश नहीं भेजा जा सकता है।"
+
+msgid "Trigger start_at should always be greater than current time"
+msgstr "ट्रिगर start_at हमेशा वर्तमान समय से अधिक होना चाहिए"
+
+msgid "Unauthorized"
+msgstr "अनधिकृत"
+
+msgid "Unsupported node type"
+msgstr "असमर्थित नोड प्रकार"
+
+msgid "We have finished the flow"
+msgstr "हमने प्रवाह समाप्त कर दिया है"
