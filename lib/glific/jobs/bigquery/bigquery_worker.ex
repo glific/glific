@@ -97,11 +97,6 @@ defmodule Glific.Jobs.BigQueryWorker do
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
-  ## We are not using this code. We will remove this code later
-  defp insert_for_table(%{table: table} = _job, _organization_id)
-       when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
-       do: :ok
-
   defp insert_for_table(%{table: table, table_id: table_id} = _job, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
 
@@ -125,8 +120,8 @@ defmodule Glific.Jobs.BigQueryWorker do
   defp add_organization_id(query, _table, organization_id),
     do: query |> where([m], m.organization_id == ^organization_id)
 
-  @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   ## ignore the tables for updates.
+  @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
        when table in ["flows", "stats", "stats_all"],
        do: :ok

@@ -281,9 +281,11 @@ defmodule Glific.Bigquery do
   end
 
   @doc """
-    Format all the json values
+  Format all the json values
   """
-  @spec format_json(map()) :: iodata
+  @spec format_json(map() | nil) :: iodata
+  def format_json(nil), do: nil
+
   def format_json(definition) do
     Jason.encode(definition)
     |> case do
