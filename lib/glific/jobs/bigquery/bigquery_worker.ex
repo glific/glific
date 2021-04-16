@@ -86,7 +86,7 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([m], m.id > ^table_id)
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
-      |> limit(100)
+      |> limit(500)
       |> Repo.aggregate(:max, :id, skip_organization_id: true)
 
     if is_nil(max_id),

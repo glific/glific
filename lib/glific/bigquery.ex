@@ -388,10 +388,13 @@ defmodule Glific.Bigquery do
           },
           view: %{
             query:
-              "SELECT messages.id, contact_phone, phone, name, optin_time, language, flow_label, messages.tags_label, messages.inserted_at, media_url
-              FROM `#{project_id}.#{dataset_id}.messages` as messages
-              JOIN `#{project_id}.#{dataset_id}.contacts` as contacts
-              ON messages.contact_phone = contacts.phone",
+              """
+              SELECT messages.id, contact_phone, phone, name, optin_time. language,
+                flow_label, messages.tags_label, messages.inserted_at, media_url
+              FROM `#{project_id}.#{dataset_id}.messages` AS messages
+              JOIN `#{project_id}.#{dataset_id}.contacts` AS contacts
+                ON messages.contact_phone = contacts.phone
+              """,
             useLegacySql: false
           }
         }
@@ -586,11 +589,17 @@ defmodule Glific.Bigquery do
   defp generate_duplicate_removal_query(table, credentials, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
-    "DELETE FROM `#{credentials.dataset_id}.#{table}` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn from `#{
-      credentials.dataset_id
-    }.#{table}` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), '#{
-      timezone
-    }')) a where a.rn <> 1 order by id);"
+    """
+    DELETE FROM `#{credentials.dataset_id}.#{table}`
+    WHERE struct(id, updated_at) IN (
+      SELECT STRUCT(id, updated_at)  FROM (
+        SELECT id, updated_at, ROW_NUMBER() OVER (
+          PARTITION BY delta.id ORDER BY delta.updated_at DESC
+        ) AS rn
+        FROM `#{credentials.dataset_id}.#{table}` delta
+        WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
+          '#{timezone}')) a WHERE a.rn <> 1 ORDER BY id);
+    """
   end
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
