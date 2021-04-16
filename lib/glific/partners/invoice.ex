@@ -5,6 +5,7 @@ defmodule Glific.Partners.Invoice do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   alias Glific.{Partners.Billing, Partners.Organization, Repo}
   alias __MODULE__
@@ -133,7 +134,10 @@ defmodule Glific.Partners.Invoice do
           invoice
 
         {:error, error} ->
-          {:error, "Error occurred while finalizing setup invoice. #{inspect(error)}"}
+          {:error,
+           dgettext("errors", "Error occurred while finalizing setup invoice: %{error}",
+             error: inspect(error)
+           )}
       end
     end
 
@@ -146,7 +150,11 @@ defmodule Glific.Partners.Invoice do
          {:ok, _} <- Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true}) do
       invoice
     else
-      {:error, error} -> {:error, "Error occurred while updating prorations. #{inspect(error)}"}
+      {:error, error} ->
+        {:error,
+         dgettext("errors", "Error occurred while updating prorations: %{error}",
+           error: inspect(error)
+         )}
     end
   end
 
@@ -165,8 +173,14 @@ defmodule Glific.Partners.Invoice do
       |> update_prorations()
 
     case invoice do
-      {:error, error} -> {:error, "Error occurred while creating invoice. #{inspect(error)}"}
-      invoice -> {:ok, invoice}
+      {:error, error} ->
+        {:error,
+         dgettext("errors", "Error occurred while creating invoice: %{error}",
+           error: inspect(error)
+         )}
+
+      invoice ->
+        {:ok, invoice}
     end
   end
 
@@ -247,12 +261,19 @@ defmodule Glific.Partners.Invoice do
             {:ok, "Invoice status updated for #{invoice_id}"}
 
           {:error, error} ->
-            {:error, "Error updating status for #{invoice_id}, Errors: #{inspect(error)}"}
+            {:error,
+             dgettext(
+               "errors",
+               "Error occurred while updating status for ${invoice_id}: %{error}",
+               invoice_id: invoice_id,
+               error: inspect(error)
+             )}
         end
 
       nil ->
         # Need to log this so we know what happended and why
-        {:ok, "Could not find invoice for #{invoice_id}"}
+        {:ok,
+         dgettext("errors", "Could not find invoice for %{invoice_id}", invoice_id: invoice_id)}
     end
   end
 end

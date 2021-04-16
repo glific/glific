@@ -7,6 +7,7 @@ defmodule Glific.Partners.Billing do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   alias __MODULE__
 
@@ -379,7 +380,8 @@ defmodule Glific.Partners.Billing do
             {:ok, %{status: :active}}
 
           true ->
-            {:error, "Not handling #{inspect(subscription)} value"}
+            {:error,
+             dgettext("errors", "Not handling %{return} value", return: inspect(subscription))}
         end
 
       {:error, stripe_error} ->
