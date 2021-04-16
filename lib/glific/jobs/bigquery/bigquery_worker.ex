@@ -77,52 +77,53 @@ defmodule Glific.Jobs.BigQueryWorker do
     |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}{ss}")
   end
 
+  @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
+  defp insert_max_id(table_name, table_id, organization_id) do
+    Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
+
+    max_id =
+      Bigquery.get_table_struct(table_name)
+      |> where([m], m.id > ^table_id)
+      |> add_organization_id(table_name, organization_id)
+      |> order_by([m], asc: m.id)
+      |> limit(500)
+      |> Repo.aggregate(:max, :id, skip_organization_id: true)
+
+    if is_nil(max_id),
+      do: table_id,
+      else: max_id
+  end
+
   @spec insert_for_table(Jobs.BigqueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
-  ## We are not using this code. We will remove this code later
-  defp insert_for_table(%{table: table} = _bigquery_job, _organization_id)
-       when table in ["messages_delta", "contacts_delta", "flow_results_delta"],
-       do: :ok
+  defp insert_for_table(%{table: table, table_id: table_id} = _job, organization_id) do
+    max_id = insert_max_id(table, table_id, organization_id)
 
-  defp insert_for_table(bigquery_job, organization_id) do
-    table_id = bigquery_job.table_id
-    Logger.info("Checking for bigquery job: #{bigquery_job.table}, org_id: #{organization_id}")
-
-    data =
-      Bigquery.get_table_struct(bigquery_job.table)
-      |> select([m], m.id)
-      |> where([m], m.organization_id == ^organization_id and m.id > ^table_id)
-      |> order_by([m], asc: m.id)
-      |> limit(100)
-      |> Repo.all()
-
-    max_id = if is_list(data), do: List.last(data), else: table_id
-
-    cond do
-      is_nil(max_id) ->
-        nil
-
-      max_id > table_id ->
-        queue_table_data(bigquery_job.table, organization_id, %{
+    if max_id > table_id,
+      do:
+        queue_table_data(table, organization_id, %{
           min_id: table_id,
           max_id: max_id,
           action: :insert
         })
 
-      true ->
-        nil
-    end
-
-    queue_table_data(bigquery_job.table, organization_id, %{action: :update, max_id: nil})
+    queue_table_data(table, organization_id, %{action: :update, max_id: nil})
 
     :ok
   end
 
-  @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
+  @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
+  defp add_organization_id(query, "stats_all", _organization_id),
+    do: query
+
+  defp add_organization_id(query, _table, organization_id),
+    do: query |> where([m], m.organization_id == ^organization_id)
+
   ## ignore the tables for updates.
+  @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
   defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
-       when table in ["flows", "stats"],
+       when table in ["flows", "stats", "stats_all"],
        do: :ok
 
   defp queue_table_data("messages", organization_id, attrs) do
@@ -277,18 +278,32 @@ defmodule Glific.Jobs.BigQueryWorker do
     :ok
   end
 
-  defp queue_table_data("stats", organization_id, attrs) do
+  defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
-      "fetching data for stats to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+      "fetching data for #{stat} to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
         organization_id
       }"
     )
 
-    get_query("stats", organization_id, attrs)
-    |> Repo.all()
+    stat_atom =
+      if stat == "stats",
+        do: :stats,
+        else: :stats_all
+
+    get_query(stat, organization_id, attrs)
+    # for stats_all we specifically want to skip organization_id
+    |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(
       [],
       fn row, acc ->
+        additional =
+          if stat == "stats_all",
+            do: %{
+              organization_id: row.organization_id,
+              organization_name: row.organization.name
+            },
+            else: %{}
+
         [
           %{
             id: row.id,
@@ -309,13 +324,14 @@ defmodule Glific.Jobs.BigQueryWorker do
             inserted_at: Bigquery.format_date(row.inserted_at, organization_id),
             updated_at: Bigquery.format_date(row.updated_at, organization_id)
           }
-          |> Bigquery.format_data_for_bigquery("stats")
+          |> Map.merge(additional)
+          |> Bigquery.format_data_for_bigquery(stat)
           | acc
         ]
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :stats, organization_id, attrs))
+    |> Enum.each(&make_job(&1, stat_atom, organization_id, attrs))
 
     :ok
   end
@@ -447,6 +463,13 @@ defmodule Glific.Jobs.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
+
+  defp get_query("stats_all", _organization_id, attrs),
+    do:
+      Stat
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:organization])
 
   @impl Oban.Worker
   @doc """
