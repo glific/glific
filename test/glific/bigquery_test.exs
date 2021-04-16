@@ -177,7 +177,17 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  @delete_query "DELETE FROM `test_dataset.messages` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn from `test_dataset.messages` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), 'Asia/Kolkata')) a where a.rn <> 1 order by id);"
+  @delete_query """
+  DELETE FROM `test_dataset.messages`
+  WHERE struct(id, updated_at) IN (
+    SELECT STRUCT(id, updated_at)  FROM (
+      SELECT id, updated_at, ROW_NUMBER() OVER (
+        PARTITION BY delta.id ORDER BY delta.updated_at DESC
+      ) AS rn
+      FROM `test_dataset.messages` delta
+      WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
+        'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+  """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
     Tesla.Mock.mock(fn
