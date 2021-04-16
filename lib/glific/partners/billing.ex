@@ -133,6 +133,21 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
+  Upate the stripecustomer details record
+  """
+  @spec update_stripe_customer(Billing.t(), map()) ::
+          {:ok, Billing.t()} | {:error, Stripe.Error.t()}
+  def update_stripe_customer(%Billing{} = billing, attrs) do
+    with {:ok, _customer} <-
+           Stripe.Customer.update(
+             billing.stripe_customer_id,
+             Map.take(attrs, [:email, :name])
+           ) do
+      {:ok, billing}
+    end
+  end
+
+  @doc """
   Delete the billing record
   """
   @spec delete_billing(Billing.t()) ::
@@ -277,12 +292,13 @@ defmodule Glific.Partners.Billing do
              invoice_settings: %{default_payment_method: stripe_payment_method_id}
            }) do
       update_billing(billing, %{stripe_payment_method_id: stripe_payment_method_id})
-      |> case do
-        {:ok, billing} -> {:ok, billing}
-        {:error, _} -> {:error, %{message: "Error while saving details"}}
-      end
+      |> send_update_response()
     end
   end
+
+  @spec send_update_response(tuple()) :: {:ok, Billing.t()} | {:error, map()}
+  defp send_update_response({:ok, billing}), do: {:ok, billing}
+  defp send_update_response({:error, _}), do: {:error, %{message: "Error while saving details"}}
 
   @doc """
   Once the organization has entered a new payment card we create a subscription for it.

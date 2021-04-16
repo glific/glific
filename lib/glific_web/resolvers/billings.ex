@@ -43,6 +43,7 @@ defmodule GlificWeb.Resolvers.Billings do
   def update_billing(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, billing} <-
            Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
+         {:ok, billing} <- Billing.update_stripe_customer(billing, params),
          {:ok, billing} <- Billing.update_billing(billing, params) do
       {:ok, %{billing: billing}}
     end
