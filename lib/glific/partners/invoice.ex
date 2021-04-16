@@ -258,7 +258,12 @@ defmodule Glific.Partners.Invoice do
 
         case result do
           {:ok, _} ->
-            {:ok, "Invoice status updated for #{invoice_id}"}
+            {:ok,
+             dgettext(
+               "errors",
+               "Invoice status updated for %{invoice_id}",
+               invoice_id: invoice_id
+             )}
 
           {:error, error} ->
             {:error,
