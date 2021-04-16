@@ -66,14 +66,10 @@ saas_phone =
 # The SaaS Admin root account phone number
 config :glific, :saas_phone, System.get_env("SAAS_PHONE")
 
-saas_organization_id =
-  System.get_env("SAAS_ORGANIZATION_ID") ||
-    raise """
-    environment variable SAAS_ORGANIZATION_ID is missing.
-    """
+saas_organization_id = System.get_env("SAAS_ORGANIZATION_ID") || 2
 
-# The SaaS Admin root account phone number
-config :glific, :saas_organization_id, System.get_env("SAAS_PHONE")
+# The SaaS organization, that we can store the stats_global table in
+config :glific, :saas_organization_id, saas_organization_id
 
 config :glific, :max_rate_limit_request, System.get_env("MAX_RATE_LIMIT_REQUEST")
 
