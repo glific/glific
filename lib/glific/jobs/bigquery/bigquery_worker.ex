@@ -78,7 +78,7 @@ defmodule Glific.Jobs.BigQueryWorker do
   end
 
   @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
-  def insert_max_id(table_name, table_id, organization_id) do
+  defp insert_max_id(table_name, table_id, organization_id) do
     Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
 
     max_id =
