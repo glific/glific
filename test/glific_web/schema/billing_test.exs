@@ -36,21 +36,25 @@ defmodule GlificWeb.Schema.BillingTest do
 
   test "update a billing", %{user: user} do
     name = "Billing name"
-    {:ok, billing} = Repo.fetch_by(Billing, %{name: name, organization_id: user.organization_id})
 
-    result =
-      auth_query_gql_by(:update, user,
-        variables: %{
-          "id" => billing.id,
-          "input" => %{
-            "currency" => "usd"
+    use_cassette "update_billing" do
+      {:ok, billing} =
+        Repo.fetch_by(Billing, %{name: name, organization_id: user.organization_id})
+
+      result =
+        auth_query_gql_by(:update, user,
+          variables: %{
+            "id" => billing.id,
+            "input" => %{
+              "email" => "testingbilling@gmail.com"
+            }
           }
-        }
-      )
+        )
 
-    assert {:ok, query_data} = result
-    currency = get_in(query_data, [:data, "updateBilling", "billing", "currency"])
-    assert currency == "usd"
+      assert {:ok, query_data} = result
+      email = get_in(query_data, [:data, "updateBilling", "billing", "email"])
+      assert email == "testingbilling@gmail.com"
+    end
   end
 
   test "create a billing", %{user: user} do
