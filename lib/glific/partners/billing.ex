@@ -133,6 +133,21 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
+  Upate the stripecustomer details record
+  """
+  @spec update_stripe_customer(Billing.t(), map()) ::
+          {:ok, Billing.t()} | {:error, Stripe.Error.t()}
+  def update_stripe_customer(%Billing{} = billing, attrs) do
+    with {:ok, _customer} <-
+           Stripe.Customer.update(
+             billing.stripe_customer_id,
+             Map.take(attrs, [:email, :name])
+           ) do
+      {:ok, billing}
+    end
+  end
+
+  @doc """
   Delete the billing record
   """
   @spec delete_billing(Billing.t()) ::
