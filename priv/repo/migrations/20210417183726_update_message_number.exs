@@ -76,12 +76,12 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 is_contact_replied = true
               WHERE id = NEW.contact_id;
 
-            IF (NEW.bsp_context_id IS NOT NULL) THEN
+            IF (NEW.context_id IS NOT NULL) THEN
               SELECT id INTO var_context_id
               FROM messages
-              WHERE bsp_message_id = NEW.bsp_context_id;
+              WHERE bsp_message_id = NEW.context_id;
 
-              NEW.bsp_context_message_id = var_context_id;
+              NEW.context_message_id = var_context_id;
             END IF;
 
             NEW.message_number = var_message_number + 1;

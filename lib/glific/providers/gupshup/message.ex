@@ -111,7 +111,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
-      bsp_context_id: get_in(payload, ["context", "gsId"]),
+      context_id: get_in(payload, ["context", "gsId"]),
       body: message_payload["text"],
       sender: %{
         phone: payload["sender"]["phone"],
@@ -129,7 +129,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
-      bsp_context_id: get_in(payload, ["context", "gsId"]),
+      context_id: get_in(payload, ["context", "gsId"]),
       caption: message_payload["caption"],
       url: message_payload["url"],
       source_url: message_payload["url"],
@@ -149,7 +149,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
-      bsp_context_id: get_in(payload, ["context", "gsId"]),
+      context_id: get_in(payload, ["context", "gsId"]),
       longitude: message_payload["longitude"],
       latitude: message_payload["latitude"],
       sender: %{

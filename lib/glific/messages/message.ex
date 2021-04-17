@@ -51,9 +51,9 @@ defmodule Glific.Messages.Message do
           clean_body: String.t() | nil,
           publish?: boolean,
           bsp_message_id: String.t() | nil,
-          bsp_context_id: String.t() | nil,
-          bsp_context_message_id: non_neg_integer | nil,
-          bsp_context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          context_id: String.t() | nil,
+          context_message_id: non_neg_integer | nil,
+          context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
@@ -79,8 +79,8 @@ defmodule Glific.Messages.Message do
     :status,
     :bsp_status,
     :bsp_message_id,
-    :bsp_context_id,
-    :bsp_context_message_id,
+    :context_id,
+    :context_message_id,
     :errors,
     :media_id,
     :group_id,
@@ -113,8 +113,8 @@ defmodule Glific.Messages.Message do
     field :bsp_message_id, :string
     field :bsp_status, MessageStatus
 
-    field :bsp_context_id, :string
-    belongs_to :bsp_context_message, Message, foreign_key: :bsp_context_message_id
+    field :context_id, :string
+    belongs_to :context_message, Message, foreign_key: :context_message_id
 
     field :errors, :map, default: %{}
     field :send_at, :utc_datetime
