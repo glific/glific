@@ -19,6 +19,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
     DECLARE now TIMESTAMP WITH TIME ZONE;
     DECLARE var_message_at TIMESTAMP WITH TIME ZONE;
     DECLARE var_message_number BIGINT;
+    DECLARE var_context_id BIGINT;
 
     BEGIN
       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -32,6 +33,9 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
 
         IF(NEW.group_id > 0 AND NEW.sender_id = NEW.receiver_id) THEN
           SELECT last_message_number INTO var_message_number FROM groups WHERE id = NEW.group_id LIMIT 1;
+          IF (var_message_number IS NULL) THEN
+            var_message_number = 0;
+          END IF;
 
           NEW.message_number = var_message_number + 1;
 
@@ -72,8 +76,16 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 is_contact_replied = true
               WHERE id = NEW.contact_id;
 
-              NEW.message_number = var_message_number + 1;
-              NEW.session_uuid = session_uuid_value;
+            IF (NEW.bsp_context_id IS NOT NULL) THEN
+              SELECT id INTO var_context_id
+              FROM messages
+              WHERE bsp_message_id = NEW.bsp_context_id;
+
+              NEW.bsp_context_message_id = var_context_id;
+            END IF;
+
+            NEW.message_number = var_message_number + 1;
+            NEW.session_uuid = session_uuid_value;
           ELSE
             UPDATE contacts
               SET
