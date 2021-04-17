@@ -149,11 +149,6 @@ msgid "Error occurred while updating prorations: %{error}"
 msgstr ""
 
 #, elixir-format
-#: lib/glific/partners/invoice.ex:270
-msgid "Error occurred while updating status for ${invoice_id}: %{error}"
-msgstr ""
-
-#, elixir-format
 #: lib/glific/providers/gupshup/contacts.ex:88
 msgid "Error updating opted-in contacts: %{message}"
 msgstr ""
@@ -253,4 +248,9 @@ msgstr ""
 #, elixir-format
 #: lib/glific/flows/flow_context.ex:340
 msgid "We have finished the flow"
+msgstr ""
+
+#, elixir-format
+#: lib/glific/partners/invoice.ex:270
+msgid "Error occurred while updating status for %{invoice_id}: %{error}"
 msgstr ""

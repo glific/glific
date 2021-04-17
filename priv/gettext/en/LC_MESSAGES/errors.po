@@ -10,39 +10,30 @@ msgstr ""
 "Language-Team: lokalise.com\n\n"
 "Language: en\n"
 
-#, fuzzy
 msgid "can't be blank"
 msgstr ""
 
-#, fuzzy
 msgid "has already been taken"
 msgstr ""
 
-#, fuzzy
 msgid "is invalid"
 msgstr ""
 
-#, fuzzy
 msgid "must be accepted"
 msgstr ""
 
-#, fuzzy
 msgid "has invalid format"
 msgstr ""
 
-#, fuzzy
 msgid "has an invalid entry"
 msgstr ""
 
-#, fuzzy
 msgid "is reserved"
 msgstr ""
 
-#, fuzzy
 msgid "does not match confirmation"
 msgstr ""
 
-#, fuzzy
 msgid "is still associated with this entry"
 msgstr ""
 
@@ -94,98 +85,164 @@ msgstr "must be greater than or equal to %{number}"
 msgid "must be equal to %{number}"
 msgstr "must be equal to %{number}"
 
+#, elixir-format
+#: lib/glific_web/schema.ex:184
 msgid "Auth Credentials mismatch"
 msgstr "Auth Credentials mismatch"
 
+#, elixir-format
+#: lib/glific/contacts.ex:471 lib/glific/contacts.ex:511
 msgid "Cannot send hsm message to contact, invalid BSP status."
 msgstr "Cannot send hsm message to contact, invalid BSP status."
 
+#, elixir-format
+#: lib/glific/contacts.ex:474
 msgid "Cannot send hsm message to contact, not opted in."
 msgstr "Cannot send hsm message to contact, not opted in."
 
+#, elixir-format
+#: lib/glific/jobs/chatbase/chatbase_worker.ex:115
 msgid "Chatbase returned an unexpected result"
 msgstr "Chatbase returned an unexpected result"
 
+#, elixir-format
+#: lib/glific/contacts.ex:468 lib/glific/contacts.ex:487
 msgid "Contact status is not valid."
 msgstr "Contact status is not valid."
 
+#, elixir-format
+#: lib/glific/flows/router.ex:214
 msgid "Could not find category for: %{body}"
 msgstr "Could not find category for: %{body}"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:281
 msgid "Could not find invoice for %{invoice_id}"
 msgstr "Could not find invoice for %{invoice_id}"
 
+#, elixir-format
+#: lib/glific/flows/webhook.ex:122
 msgid "Error in decoding webhook body. Please check the json body in floweditor"
 msgstr "Error in decoding webhook body. Please check the json body in floweditor"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:178
 msgid "Error occurred while creating invoice: %{error}"
 msgstr "Error occurred while creating invoice: %{error}"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:138
 msgid "Error occurred while finalizing setup invoice: %{error}"
 msgstr "Error occurred while finalizing setup invoice: %{error}"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:155
 msgid "Error occurred while updating prorations: %{error}"
 msgstr "Error occurred while updating prorations: %{error}"
 
-msgid "Error occurred while updating status for ${invoice_id}: %{error}"
-msgstr "Error occurred while updating status for ${invoice_id}: %{error}"
-
+#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:88
 msgid "Error updating opted-in contacts: %{message}"
 msgstr "Error updating opted-in contacts: %{message}"
 
+#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:101
 msgid "Error updating opted-in contacts: %{reason}"
 msgstr "Error updating opted-in contacts: %{reason}"
 
+#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:97
 msgid "Error updating opted-in contacts: Invalid BSP API key"
 msgstr "Error updating opted-in contacts: Invalid BSP API key"
 
+#, elixir-format
+#: lib/glific_web/resolvers/partners.ex:127
 msgid "Error while fetching the BSP balance"
 msgstr "Error while fetching the BSP balance"
 
+#, elixir-format
+#: lib/glific/providers/gupshup/wallet.ex:22
 msgid "Invalid BSP API key"
 msgstr "Invalid BSP API key"
 
+#, elixir-format
+#: lib/glific/contacts.ex:633 lib/glific/partners.ex:348
+#: lib/glific/templates.ex:164 lib/glific/templates.ex:248
 msgid "Invalid BSP provider"
 msgstr "Invalid BSP provider"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:262
 msgid "Invoice status updated for %{invoice_id}"
 msgstr "Invoice status updated for %{invoice_id}"
 
+#, elixir-format
+#: lib/glific/partners.ex:341 lib/glific/partners.ex:596
+#: lib/glific/providers/gupshup/api_client.ex:36
 msgid "No active BSP available"
 msgstr "No active BSP available"
 
+#, elixir-format
+#: lib/glific/partners/billing.ex:384
 msgid "Not handling %{return} value"
 msgstr "Not handling %{return} value"
 
+#, elixir-format
+#: lib/glific/messages.ex:442
 msgid "Please provide media for media template."
 msgstr "Please provide media for media template."
 
+#, elixir-format
+#: lib/glific/messages.ex:439
 msgid "Please provide the right number of parameters for the template."
 msgstr "Please provide the right number of parameters for the template."
 
+#, elixir-format
+#: lib/glific_web/misc/http_signature.ex:82
 msgid "Signature is in a wrong format or is missing %{schema}"
 msgstr "Signature is in a wrong format or is missing %{schema}"
 
+#, elixir-format
+#: lib/glific_web/misc/http_signature.ex:61
 msgid "Signature is incorrect"
 msgstr "Signature is incorrect"
 
+#, elixir-format
+#: lib/glific_web/misc/http_signature.ex:55
 msgid "Signature is too old"
 msgstr "Signature is too old"
 
+#, elixir-format
+#: lib/glific_web/resolvers/flows.ex:86
 msgid "Something went wrong."
 msgstr "Something went wrong."
 
+#, elixir-format
+#: lib/glific/contacts.ex:491
 msgid "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
 msgstr "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
 
+#, elixir-format
+#: lib/glific_web/resolvers/triggers.ex:59
 msgid "Trigger start_at should always be greater than current time"
 msgstr "Trigger start_at should always be greater than current time"
 
+#, elixir-format
+#: lib/glific_web/schema/middleware/authorize.ex:24
 msgid "Unauthorized"
 msgstr "Unauthorized"
 
+#, elixir-format
+#: lib/glific/flows/node.ex:225
 msgid "Unsupported node type"
 msgstr "Unsupported node type"
 
+#, elixir-format
+#: lib/glific/flows/flow_context.ex:340
 msgid "We have finished the flow"
 msgstr "We have finished the flow"
+
+#, elixir-format, fuzzy
+#: lib/glific/partners/invoice.ex:270
+msgid "Error occurred while updating status for %{invoice_id}: %{error}"
+msgstr "Error occurred while updating status for ${invoice_id}: %{error}"

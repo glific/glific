@@ -10,5 +10,7 @@ msgstr ""
 "Language-Team: lokalise.com\n\n"
 "Language: hi\n"
 
+#, elixir-format
+#: lib/glific_web/templates/live/page_live.html.leex:2
 msgid "Welcome to %{name}!"
 msgstr ""

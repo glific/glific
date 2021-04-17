@@ -37,7 +37,6 @@ msgstr ""
 msgid "is still associated with this entry"
 msgstr ""
 
-#, fuzzy
 msgid "are still associated with this entry"
 msgstr ""
 
@@ -86,99 +85,164 @@ msgstr "%{number} से अधिक या बराबर होना चा
 msgid "must be equal to %{number}"
 msgstr "%{number} बराबर होना चाहिए"
 
+#, elixir-format
+#: lib/glific_web/schema.ex:184
 msgid "Auth Credentials mismatch"
 msgstr "प्रामाणिक साख बेमेल"
 
+#, elixir-format
+#: lib/glific/contacts.ex:471 lib/glific/contacts.ex:511
 msgid "Cannot send hsm message to contact, invalid BSP status."
 msgstr "बीएसपी स्थिति से संपर्क करने के लिए hsm संदेश नहीं भेजा जा सकता।"
 
+#, elixir-format
+#: lib/glific/contacts.ex:474
 msgid "Cannot send hsm message to contact, not opted in."
 msgstr "संपर्क करने के लिए hsm संदेश नहीं भेजा जा सकता, नहीं चुना गया।"
 
+#, elixir-format
+#: lib/glific/jobs/chatbase/chatbase_worker.ex:115
 msgid "Chatbase returned an unexpected result"
 msgstr "चैटबेस ने अप्रत्याशित परिणाम दिया"
 
+#, elixir-format
+#: lib/glific/contacts.ex:468 lib/glific/contacts.ex:487
 msgid "Contact status is not valid."
 msgstr "संपर्क स्थिति मान्य नहीं है।"
 
+#, elixir-format
+#: lib/glific/flows/router.ex:214
 msgid "Could not find category for: %{body}"
 msgstr "के लिए श्रेणी नहीं मिल सका: %{body}"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:281
 msgid "Could not find invoice for %{invoice_id}"
 msgstr "%{invoice_id} लिए चालान नहीं मिला"
 
+#, elixir-format
+#: lib/glific/flows/webhook.ex:122
 msgid "Error in decoding webhook body. Please check the json body in floweditor"
 msgstr "Webhook बॉडी को डिकोड करने में त्रुटि। कृपया फ्लोसीटर में जसन बॉडी की जाँच करें"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:178
 msgid "Error occurred while creating invoice: %{error}"
 msgstr "चालान बनाते समय त्रुटि आई: %{error}"
 
-#, fuzzy
+#, elixir-format
+#: lib/glific/partners/invoice.ex:138
 msgid "Error occurred while finalizing setup invoice: %{error}"
 msgstr ""
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:155
 msgid "Error occurred while updating prorations: %{error}"
 msgstr "प्रोरेशन अपडेट करते समय त्रुटि आई: %{error}"
 
-msgid "Error occurred while updating status for ${invoice_id}: %{error}"
-msgstr "प्रोरेशन अपडेट करते समय त्रुटि आई: %{error}"
-
+#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:88
 msgid "Error updating opted-in contacts: %{message}"
 msgstr "ऑप्ट-इन संपर्कों को अपडेट करने में त्रुटि: %{message}"
 
+#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:101
 msgid "Error updating opted-in contacts: %{reason}"
 msgstr "ऑप्ट-इन संपर्कों को अपडेट करने में त्रुटि: %{reason}"
 
+#, elixir-format
+#: lib/glific/providers/gupshup/contacts.ex:97
 msgid "Error updating opted-in contacts: Invalid BSP API key"
 msgstr "ऑप्ट-इन संपर्कों को अपडेट करने में त्रुटि: अमान्य बीएसपी एपीआई कुंजी"
 
+#, elixir-format
+#: lib/glific_web/resolvers/partners.ex:127
 msgid "Error while fetching the BSP balance"
 msgstr "बीएसपी संतुलन लाने में त्रुटि"
 
+#, elixir-format
+#: lib/glific/providers/gupshup/wallet.ex:22
 msgid "Invalid BSP API key"
 msgstr "अमान्य बीएसपी एपीआई कुंजी"
 
+#, elixir-format
+#: lib/glific/contacts.ex:633 lib/glific/partners.ex:348
+#: lib/glific/templates.ex:164 lib/glific/templates.ex:248
 msgid "Invalid BSP provider"
 msgstr "अमान्य बीएसपी प्रदाता"
 
+#, elixir-format
+#: lib/glific/partners/invoice.ex:262
 msgid "Invoice status updated for %{invoice_id}"
 msgstr "%{invoice_id} लिए चालान स्थिति अपडेट की गई"
 
+#, elixir-format
+#: lib/glific/partners.ex:341 lib/glific/partners.ex:596
+#: lib/glific/providers/gupshup/api_client.ex:36
 msgid "No active BSP available"
 msgstr "कोई सक्रिय बीएसपी उपलब्ध नहीं है"
 
+#, elixir-format
+#: lib/glific/partners/billing.ex:384
 msgid "Not handling %{return} value"
 msgstr "%{return} मान को हैंडल नहीं कर रहा है"
 
+#, elixir-format
+#: lib/glific/messages.ex:442
 msgid "Please provide media for media template."
 msgstr "कृपया टेम्पलेट के लिए मापदंडों की सही संख्या प्रदान करें।"
 
+#, elixir-format
+#: lib/glific/messages.ex:439
 msgid "Please provide the right number of parameters for the template."
 msgstr "कृपया टेम्पलेट के लिए मापदंडों की सही संख्या प्रदान करें।"
 
+#, elixir-format
+#: lib/glific_web/misc/http_signature.ex:82
 msgid "Signature is in a wrong format or is missing %{schema}"
 msgstr "हस्ताक्षर गलत प्रारूप में है या %{schema}"
 
+#, elixir-format
+#: lib/glific_web/misc/http_signature.ex:61
 msgid "Signature is incorrect"
 msgstr "हस्ताक्षर बहुत पुराना है"
 
+#, elixir-format
+#: lib/glific_web/misc/http_signature.ex:55
 msgid "Signature is too old"
 msgstr "हस्ताक्षर बहुत पुराना है"
 
+#, elixir-format
+#: lib/glific_web/resolvers/flows.ex:86
 msgid "Something went wrong."
 msgstr "कुछ गलत हो गया।"
 
+#, elixir-format
+#: lib/glific/contacts.ex:491
 msgid "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
 msgstr "माफ़ करना! 24 बजे की खिड़की बंद। इस समय आपका संदेश नहीं भेजा जा सकता है।"
 
+#, elixir-format
+#: lib/glific_web/resolvers/triggers.ex:59
 msgid "Trigger start_at should always be greater than current time"
 msgstr "ट्रिगर start_at हमेशा वर्तमान समय से अधिक होना चाहिए"
 
+#, elixir-format
+#: lib/glific_web/schema/middleware/authorize.ex:24
 msgid "Unauthorized"
 msgstr "अनधिकृत"
 
+#, elixir-format
+#: lib/glific/flows/node.ex:225
 msgid "Unsupported node type"
 msgstr "असमर्थित नोड प्रकार"
 
+#, elixir-format
+#: lib/glific/flows/flow_context.ex:340
 msgid "We have finished the flow"
 msgstr "हमने प्रवाह समाप्त कर दिया है"
+
+#, elixir-format, fuzzy
+#: lib/glific/partners/invoice.ex:270
+msgid "Error occurred while updating status for %{invoice_id}: %{error}"
+msgstr "प्रोरेशन अपडेट करते समय त्रुटि आई: %{error}"

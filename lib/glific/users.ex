@@ -164,7 +164,8 @@ defmodule Glific.Users do
       nil ->
         %User{password_hash: nil}
 
-      user -> user |> Repo.preload(:language)
+      user ->
+        user |> Repo.preload(:language)
     end
     |> verify_password(params["password"])
   end

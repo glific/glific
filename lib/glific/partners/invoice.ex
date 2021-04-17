@@ -269,7 +269,7 @@ defmodule Glific.Partners.Invoice do
             {:error,
              dgettext(
                "errors",
-               "Error occurred while updating status for ${invoice_id}: %{error}",
+               "Error occurred while updating status for %{invoice_id}: %{error}",
                invoice_id: invoice_id,
                error: inspect(error)
              )}
