@@ -9,6 +9,7 @@ defmodule Glific.Stats do
 
   alias Glific.{
     Flows.FlowContext,
+    Jobs.BigQueryWorker,
     Messages.Message,
     Partners,
     Repo,
@@ -79,7 +80,7 @@ defmodule Glific.Stats do
   Top level function to generate stats for all active organizations
   by default. Can control behavior by setting function parameters
   """
-  @spec generate_stats(list, boolean, Keyword.t()) :: nil
+  @spec generate_stats(list, boolean, Keyword.t()) :: :ok
   def generate_stats(list \\ [], recent \\ true, opts \\ []) do
     org_id_list = Partners.org_id_list(list, recent)
 
@@ -87,6 +88,10 @@ defmodule Glific.Stats do
     if org_id_list == [],
       do: nil,
       else: do_generate_stats(org_id_list, opts)
+
+    # Lets force push this to the BQ SaaS monitoring storage everytime we generate
+    # stats so, we get it soon
+    BigQueryWorker.perform_periodic(Application.fetch_env!(:glific, :saas_organization_id))
   end
 
   @spec do_generate_stats(list, Keyword.t()) :: nil
