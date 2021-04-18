@@ -14,6 +14,7 @@ defmodule Glific.Partners.Billing do
 
   alias Glific.{
     Partners.Organization,
+    Partners.Saas,
     Repo,
     Stats
   }
@@ -219,18 +220,12 @@ defmodule Glific.Partners.Billing do
     |> format_errors()
   end
 
-  @spec stripe_ids :: map()
-  defp stripe_ids,
-    do:
-      Application.fetch_env!(:glific, :stripe_ids)
-      |> Enum.into(%{})
-
   @doc """
   Fetch the stripe id's
   """
-  @spec get_stripe_ids :: map()
-  def get_stripe_ids,
-    do: stripe_ids()
+  @spec stripe_ids :: map()
+  def stripe_ids,
+    do: Saas.stripe_ids()
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do

@@ -19,10 +19,6 @@ config :glific,
   auth_username: "admin",
   auth_password: "admin"
 
-# The SaaS Admin root account phone number
-config :glific, :saas_phone, "+91111222333"
-config :glific, :saas_organization_id, 2
-
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #

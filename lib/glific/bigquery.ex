@@ -16,6 +16,7 @@ defmodule Glific.Bigquery do
     Messages.Message,
     Notifications,
     Partners,
+    Partners.Saas,
     Repo,
     Stats.Stat
   }
@@ -37,7 +38,7 @@ defmodule Glific.Bigquery do
   }
 
   defp bigquery_tables(organization_id) do
-    if organization_id == Application.fetch_env!(:glific, :saas_organization_id),
+    if organization_id == Saas.organization_id(),
       do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
       else: @bigquery_tables
   end

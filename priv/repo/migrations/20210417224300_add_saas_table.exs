@@ -17,14 +17,15 @@ defmodule Glific.Repo.Migrations.AddSaasTable do
 
   defp saas_table do
     create table(:saas,
-             prefix: @global_schema,
              comment:
                "Lets store all the meta data we need to drive the SaaS platform in this table"
            ) do
+      add :name, :string, comment: "The name of the SaaS (for lookup)"
+
       add :organization_id, references(:organizations, on_delete: :delete_all),
         comment: "The master organization running this service"
 
-      add :saas_phone, :string, comment: "Phone number for the SaaS admin account"
+      add :phone, :string, comment: "Phone number for the SaaS admin account"
 
       add :stripe_ids, :jsonb,
         default: "[]",

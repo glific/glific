@@ -41,10 +41,6 @@ config :appsignal, :config,
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: System.get_env("GLIFIC_PUSH_API_KEY")
 
-config :glific, :saas_phone, System.get_env("SAAS_PHONE") || "911234567890"
-
-config :glific, :saas_organization_id, System.get_env("SAAS_ORGANIZATION_ID") || 1
-
 cipher_key = System.get_env("CIPHER_KEY") || "BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY="
 old_cipher_key = System.get_env("OLD_CIPHER_KEY") || "BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY="
 
