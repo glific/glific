@@ -74,9 +74,7 @@ defmodule Glific.Partners.Saas do
   """
   @spec stripe_ids(String.t()) :: map()
   def stripe_ids(name \\ "Tides"),
-    do:
-  saas_field(name, :stripe_ids)
-  |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
+    do: saas_field(name, :stripe_ids)
 
   @spec saas_field(String.t(), atom()) :: any()
   defp saas_field(name, field) do
