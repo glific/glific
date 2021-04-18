@@ -4,11 +4,12 @@ defmodule Glific.MixProject do
   @github_url "https://github.com/glific/glific/"
   @home_url "https://glific.io"
   @test_envs [:test, :test_full]
+  @oban_envs [:prod, :dev]
 
   def project do
     [
       app: :glific,
-      version: "1.4.2",
+      version: "1.5.0",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -106,9 +107,9 @@ defmodule Glific.MixProject do
       {:dataloader, "~> 1.0"},
       {:hackney, "~> 1.16"},
       {:tesla, "~> 1.3"},
-      {:oban, "~> 2.0"},
-      {:oban_web, "~> 2.5", organization: "oban", only: :prod},
-      {:oban_pro, "~> 0.6", organization: "oban", only: :prod},
+      {:oban, "~> 2.6"},
+      {:oban_web, "~> 2.6", organization: "oban", only: @oban_envs},
+      {:oban_pro, "~> 0.7", organization: "oban", only: :oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},

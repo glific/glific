@@ -59,11 +59,17 @@ oban_crontab = [
   {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
 ]
 
+oban_engine =
+  if Mix.env() == :prod,
+    do: Oban.Pro.Queue.SmartEngine,
+    else: Oban.Queue.BasicEngine
+
 oban_plugins_prod =
   if Mix.env() == :prod,
     do: [
       Oban.Pro.Plugins.Lifeline,
-      Oban.Web.Plugins.Stats
+      Oban.Web.Plugins.Stats,
+      Oban.Plugins.Gossip
     ],
     else: []
 
@@ -77,6 +83,7 @@ oban_plugins =
 config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
+  engine: oban_engine,
   queues: oban_queues,
   plugins: oban_plugins
 
