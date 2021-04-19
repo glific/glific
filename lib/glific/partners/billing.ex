@@ -15,7 +15,7 @@ defmodule Glific.Partners.Billing do
   alias Glific.{
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient,
+    Providers.Stripe,
     Repo,
     Stats
   }
@@ -605,12 +605,9 @@ defmodule Glific.Partners.Billing do
       "return_url" => "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
     }
 
-    api_key = Application.fetch_env!(:stripity_stripe, :api_key)
-
-    ApiClient.stripe_post(
+    Stripe.fetch_portal_url(
       @stripe_url,
-      payload,
-      api_key
+      payload
     )
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
