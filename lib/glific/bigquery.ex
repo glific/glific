@@ -611,6 +611,10 @@ defmodule Glific.Bigquery do
         }. #{inspect(response)}"
       )
 
+   defp handle_duplicate_removal_job_error({:error, :timeout}, table, _, _),
+   do: "timeout while removing duplicate entries from the table #{table} on bigquery"
+    |> Logger.info
+
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{
