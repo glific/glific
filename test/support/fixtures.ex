@@ -484,7 +484,7 @@ defmodule Glific.Fixtures do
       roles: ["admin"],
       language_id: 1,
       # This should be static for all the user fixtures
-      organization_id: get_org_id(),
+      organization_id: get_org_id()
     }
 
     {:ok, user} =

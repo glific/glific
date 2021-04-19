@@ -28,7 +28,7 @@ defmodule GlificWeb.RouterTest do
         contact_id: contact.id,
         organization_id: organization_id,
         roles: ["manager"],
-        language_id: 1,
+        language_id: 1
       })
       |> Repo.insert!()
 
