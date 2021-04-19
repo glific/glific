@@ -17,7 +17,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
     Partners,
-    Partners.Billing,
+    # Partners.Billing,
     Searches.CollectionCount,
     Stats,
     Templates,
@@ -167,6 +167,7 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "daily_tasks" ->
         # Billing.update_usage()
+        nil
 
       "hourly_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture

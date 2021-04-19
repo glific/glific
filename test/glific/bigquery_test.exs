@@ -307,18 +307,6 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  test "handle_duplicate_removal_job_error/2 should raise error about deletion in case of error",
-       attrs do
-    assert_raise RuntimeError, fn ->
-      Bigquery.handle_duplicate_removal_job_error(
-        {:error, "error"},
-        "messages",
-        %{},
-        attrs.organization_id
-      )
-    end
-  end
-
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
        attrs do
     # we need to figure out how to check that this function did the right thing
