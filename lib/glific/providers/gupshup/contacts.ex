@@ -72,6 +72,9 @@ defmodule Glific.Providers.GupshupContacts do
     end
   end
 
+  @doc """
+  Perform the gupshup API call and parse the results for downstream functions
+  """
   @spec validate_opted_in_contacts(Tesla.Env.result()) :: {:ok, list()} | {:error, String.t()}
   def validate_opted_in_contacts(result) do
     case result do
@@ -79,10 +82,7 @@ defmodule Glific.Providers.GupshupContacts do
         {:ok, response_data} = Jason.decode(body)
 
         if response_data["status"] == "error" do
-          {:error,
-           dgettext("errors", "Error: %{message}",
-             message: response_data["message"]
-           )}
+          {:error, dgettext("errors", "Error: %{message}", message: response_data["message"])}
         else
           users = response_data["users"]
           {:ok, users}
@@ -92,8 +92,7 @@ defmodule Glific.Providers.GupshupContacts do
         {:error, dgettext("errors", "Error: Invalid BSP API key")}
 
       {:error, %Tesla.Error{reason: reason}} ->
-        {:error,
-         dgettext("errors", "Error: %{reason}", reason: reason)}
+        {:error, dgettext("errors", "Error: %{reason}", reason: reason)}
     end
   end
 
@@ -113,7 +112,8 @@ defmodule Glific.Providers.GupshupContacts do
         update_contacts(users, organization)
         :ok
 
-      error -> error
+      error ->
+        error
     end
   end
 

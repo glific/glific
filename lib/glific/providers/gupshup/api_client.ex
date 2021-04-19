@@ -120,7 +120,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec fetch_opted_in_contacts(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def fetch_opted_in_contacts(org_id) do
     with {:ok, credentials} <- get_credentials(org_id),
-      do: users_get(credentials.api_key, credentials.app_name)
+         do: users_get(credentials.api_key, credentials.app_name)
   end
 
   @doc """

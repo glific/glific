@@ -9,8 +9,8 @@ defmodule Glific.Partners.Onboard do
 
   alias Glific.{
     Partners.Organization,
-    Providers.GupshupContacts,
     Providers.Gupshup.ApiClient,
+    Providers.GupshupContacts,
     Repo
   }
 
@@ -54,6 +54,9 @@ defmodule Glific.Partners.Onboard do
     end
   end
 
+  @doc """
+  Ensure this shortcode is currently not being used
+  """
   @spec validate_shortcode(String.t()) :: map()
   def validate_shortcode(shortcode) do
     o =
