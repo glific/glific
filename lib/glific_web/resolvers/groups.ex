@@ -15,7 +15,18 @@ defmodule GlificWeb.Resolvers.Groups do
   def group(_, %{id: id}, _context) do
     {:ok, %{group: Groups.get_group!(id)}}
   rescue
-    _ -> {:ok, group: %{errors: [%{message: "Group not found or permission denied."}]}}
+    _ ->
+      {:ok,
+       %{
+         group: %{
+           errors: [
+             %{
+               key: "Group",
+               message: "Group not found or permission denied."
+             }
+           ]
+         }
+       }}
   end
 
   @doc """
