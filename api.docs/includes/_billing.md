@@ -44,6 +44,28 @@ Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 ID | <a href="#id">ID</a> | nil ||
 
+## Get a Customer Portal URL of active billing
+
+```graphql
+query customerPortal() {
+  customerPortal() {
+    url
+}
+
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "customerPortal": {
+      "url": "https://billing.stripe.com/session/_JKaPnfwK5WNd83KbdlkasjdfvmX"
+    }
+  }
+}
+```
+
 ## Get the organization billing object
 
 ```graphql
