@@ -592,6 +592,10 @@ defmodule Glific.Partners.Billing do
   end
 
   @stripe_url "https://api.stripe.com/v1/billing_portal/sessions"
+  @doc """
+  fetches customer portal url of organization with billing status as active
+  """
+  @spec customer_portal_link(Billing.t()) :: {:ok, any()} | {:error, String.t()}
   def customer_portal_link(billing) do
     payload = %{
       "customer" => billing.stripe_customer_id
