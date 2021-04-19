@@ -162,6 +162,14 @@ defmodule GlificWeb.Resolvers.Messages do
     {:ok, Messages.count_messages_media(args)}
   end
 
+  @doc """
+  Validate a media url and type
+  """
+  @spec validate_media(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def validate_media(_, args, _) do
+    {:ok, Messages.validate_media(args.url, args.type)}
+  end
+
   @doc false
   @spec create_message_media(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}

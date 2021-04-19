@@ -954,13 +954,13 @@ defmodule Glific.Messages do
     create_and_send_message(attrs)
   end
 
+  # cache ttl is 1 hour
+  @ttl_limit 1
+
   @doc false
   @spec validate_media(String.t(), String.t()) :: map()
   def validate_media(url, _type) when url in ["", nil],
     do: %{is_valid: false, message: "Please provide a media URL"}
-
-  # cache ttl is 1 hour
-  @ttl_limit 1
 
   def validate_media(url, type) do
     # We can cache this across all organizations

@@ -49,6 +49,14 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.count_messages_media/3)
     end
+
+    @desc "Validate a media url"
+    field :validate_media, :json do
+      arg(:url, non_null(:string))
+      arg(:type, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.validate_media/3)
+    end
   end
 
   object :message_media_mutations do
