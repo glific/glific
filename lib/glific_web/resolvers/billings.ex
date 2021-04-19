@@ -33,9 +33,7 @@ defmodule GlificWeb.Resolvers.Billings do
   def customer_portal(_, _, %{context: %{current_user: user}}) do
     with {:ok, billing} <-
            Repo.fetch_by(Billing, %{is_active: true, organization_id: user.organization_id}),
-         do:
-        #  Billing.customer_portal_link(billing)
-         {:ok, %{billing: billing}}
+         do: Billing.customer_portal_link(billing)
   end
 
   @doc false
