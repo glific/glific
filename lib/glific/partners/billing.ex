@@ -594,8 +594,7 @@ defmodule Glific.Partners.Billing do
   @stripe_url "https://api.stripe.com/v1/billing_portal/sessions"
   def customer_portal_link(billing) do
     payload = %{
-      "customer" => billing.stripe_customer_id,
-      "return_url" => "https://example.com/account"
+      "customer" => billing.stripe_customer_id
     }
 
     api_key = Application.fetch_env!(:stripity_stripe, :api_key)
