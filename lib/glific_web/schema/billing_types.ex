@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.BillingTypes do
 
   object :customer_portal_result do
     field :url, :string
+    field :return_url, :string
   end
 
   object :billing do

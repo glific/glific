@@ -13,6 +13,7 @@ defmodule Glific.Partners.Billing do
   require Logger
 
   alias Glific.{
+    Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
     Repo,
@@ -597,8 +598,11 @@ defmodule Glific.Partners.Billing do
   """
   @spec customer_portal_link(Billing.t()) :: {:ok, any()} | {:error, String.t()}
   def customer_portal_link(billing) do
+    organization = Partners.organization(billing.organization_id)
+
     payload = %{
-      "customer" => billing.stripe_customer_id
+      "customer" => billing.stripe_customer_id,
+      "return_url" => "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
     }
 
     api_key = Application.fetch_env!(:stripity_stripe, :api_key)
@@ -611,7 +615,7 @@ defmodule Glific.Partners.Billing do
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         with {:ok, response} <- Jason.decode(body) do
-          {:ok, %{url: response["url"]}}
+          {:ok, %{url: response["url"], return_url: response["return_url"]}}
         end
 
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
