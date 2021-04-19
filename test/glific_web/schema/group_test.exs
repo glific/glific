@@ -114,10 +114,10 @@ defmodule GlificWeb.Schema.GroupTest do
     assert group["users"] == []
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
-    assert {:ok, query_data} = result
+    assert {:ok, query_data} = result |> IO.inspect
 
     message = get_in(query_data, [:data, "group", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    assert message == "Group not found or permission denied."
   end
 
   test "create a group and test possible scenarios and errors", %{manager: user} do

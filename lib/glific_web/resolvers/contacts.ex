@@ -9,10 +9,10 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def contact(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{contact: contact}}
+  def contact(_, %{id: id}, _context) do
+    {:ok, %{contact: Contacts.get_contact!(id)}}
+  rescue
+    _ -> {:ok, %{contact: nil, errors: %{message: "Contact not found or permission denied."}}}
   end
 
   @doc false

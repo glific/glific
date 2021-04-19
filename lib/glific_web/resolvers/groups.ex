@@ -12,9 +12,10 @@ defmodule GlificWeb.Resolvers.Groups do
   """
   @spec group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def group(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{group: group}}
+  def group(_, %{id: id}, _context) do
+    {:ok, %{group: Groups.get_group!(id)}}
+  rescue
+    _ -> {:ok, group: %{errors: [%{message: "Group not found or permission denied."}]}}
   end
 
   @doc """
