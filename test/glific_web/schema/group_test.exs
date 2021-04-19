@@ -113,8 +113,8 @@ defmodule GlificWeb.Schema.GroupTest do
     assert group["contacts"] == []
     assert group["users"] == []
 
-    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456}) |> IO.inspect
-    assert {:ok, query_data} = result |> IO.inspect
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
+    assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "group", "errors", Access.at(0), "message"])
     assert message == "Group not found or permission denied."

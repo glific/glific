@@ -12,7 +12,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   def contact(_, %{id: id}, _context) do
     {:ok, %{contact: Contacts.get_contact!(id)}}
   rescue
-    _ -> {:ok, %{contact: nil, errors: %{message: "Contact not found or permission denied."}}}
+    _ -> {:error, ["Contact", "Contact not found or permission denied."]}
   end
 
   @doc false
