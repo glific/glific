@@ -15,6 +15,7 @@ defmodule Glific.Partners.Billing do
 
   alias Glific.{
     Partners.Organization,
+    Partners.Saas,
     Repo,
     Stats
   }
@@ -220,18 +221,12 @@ defmodule Glific.Partners.Billing do
     |> format_errors()
   end
 
-  @spec stripe_ids :: map()
-  defp stripe_ids,
-    do:
-      Application.fetch_env!(:glific, :stripe_ids)
-      |> Enum.into(%{})
-
   @doc """
   Fetch the stripe id's
   """
-  @spec get_stripe_ids :: map()
-  def get_stripe_ids,
-    do: stripe_ids()
+  @spec stripe_ids :: map()
+  def stripe_ids,
+    do: Saas.stripe_ids()
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
@@ -252,17 +247,17 @@ defmodule Glific.Partners.Billing do
       prorate: false,
       items: [
         %{
-          price: prices.monthly,
+          price: prices["monthly"],
           quantity: 1
         },
         %{
-          price: prices.users
+          price: prices["users"]
         },
         %{
-          price: prices.messages
+          price: prices["messages"]
         },
         %{
-          price: prices.consulting_hours
+          price: prices["consulting_hours"]
         }
       ],
       metadata: %{
@@ -330,7 +325,7 @@ defmodule Glific.Partners.Billing do
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
         currency: billing.currency,
-        price: stripe_ids().setup,
+        price: stripe_ids()["setup"],
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -519,14 +514,14 @@ defmodule Glific.Partners.Billing do
         subscription_items = billing.stripe_subscription_items
 
         record_subscription_item(
-          subscription_items[prices.messages],
+          subscription_items[prices["messages"]],
           usage.messages,
           time,
           "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
         )
 
         record_subscription_item(
-          subscription_items[prices.users],
+          subscription_items[prices["users"]],
           usage.users,
           time,
           "users: #{organization_id}, #{Date.to_string(start_usage_date)}"

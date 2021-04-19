@@ -11,6 +11,7 @@ defmodule Glific.ContactsTest do
     Groups,
     Partners,
     Partners.Organization,
+    Partners.Saas,
     Providers.GupshupContacts,
     Seeds.SeedsDev,
     Settings,
@@ -886,8 +887,7 @@ defmodule Glific.ContactsTest do
     end
 
     test "getting saas variables" do
-      Application.put_env(:glific, :saas_phone, "9997887776")
-      assert "9997887776" == Contacts.saas_phone()
+      assert "91111222333" == Saas.phone()
     end
   end
 end

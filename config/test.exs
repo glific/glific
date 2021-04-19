@@ -33,10 +33,6 @@ config :logger,
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
-# The SaaS Admin root account phone number
-config :glific, :saas_phone, "+91111222333"
-config :glific, :saas_organization_id, 1
-
 # config :absinthe, Absinthe.Logger,
 #  pipeline: true,
 #  level: :debug

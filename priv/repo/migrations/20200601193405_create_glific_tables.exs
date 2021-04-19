@@ -353,7 +353,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
       the user with messages based on their preferences. The user can select one or
-      more options from the preferenes list. All settings are checkboxes or multi-select.
+      more options from the preferences list. All settings are checkboxes or multi-select.
       Merge this with fields, when we have type information
       """
 

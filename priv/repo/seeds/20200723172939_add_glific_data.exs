@@ -12,6 +12,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Partners,
     Partners.Organization,
     Partners.Provider,
+    Partners.Saas,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
@@ -43,6 +44,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     ## Added organization id in the query
     Glific.Repo.put_organization_id(organization.id)
+
+    # Add the SaaS row
+    saas(count_organizations, organization)
 
     # calling it gtags, since tags is a macro in philcolumns
     gtags(organization, en)
@@ -148,6 +152,24 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     {:ok, hi} = Repo.fetch_by(Language, %{label: "Hindi"})
     [en, hi]
   end
+
+  defp saas(0, organization) do
+    Repo.insert!(%Saas{
+      name: "Tides",
+      organization_id: organization.id,
+      phone: "91111222333",
+      stripe_ids: %{
+        product: "prod_JG5ns5s9yPRiOq",
+        setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
+        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
+        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
+        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
+        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk"
+      }
+    })
+  end
+
+  defp saas(_count, _organization), do: nil
 
   def gtags(organization, en) do
     # seed tags
