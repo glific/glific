@@ -7,6 +7,7 @@ defmodule Glific.Partners.Billing do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   alias __MODULE__
 
@@ -374,7 +375,8 @@ defmodule Glific.Partners.Billing do
             {:ok, %{status: :active}}
 
           true ->
-            {:error, "Not handling #{inspect(subscription)} value"}
+            {:error,
+             dgettext("errors", "Not handling %{return} value", return: inspect(subscription))}
         end
 
       {:error, stripe_error} ->
@@ -566,7 +568,7 @@ defmodule Glific.Partners.Billing do
   # daily usage and weekly usage are the same
   @spec period_usage(DateTime.t()) :: :ok
   defp period_usage(end_date) do
-    %Billing{}
+    Billing
     |> where([b], b.is_active == true)
     |> Repo.all()
     |> Enum.each(&update_period_usage(&1, end_date))

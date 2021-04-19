@@ -5,6 +5,7 @@ defmodule Glific.Flows.Router do
   alias __MODULE__
 
   use Ecto.Schema
+  import GlificWeb.Gettext
   require Logger
 
   alias Glific.{
@@ -210,7 +211,7 @@ defmodule Glific.Flows.Router do
     FlowContext.reset_all_contexts(context, "Could not find category for: #{msg.body}")
 
     # This error is logged and sent upstream to the reporting engine
-    {:error, "Could not find category for: #{msg.body}"}
+    {:error, dgettext("errors", "Could not find category for: %{body}", body: msg.body)}
   end
 
   defp execute_category(router, context, {msg, rest}, category_uuid) do

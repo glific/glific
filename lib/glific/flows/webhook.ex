@@ -3,6 +3,7 @@ defmodule Glific.Flows.Webhook do
   Lets wrap all webhook functionality here as we try and get
   a better handle on the breadth and depth of webhooks
   """
+  import GlificWeb.Gettext
 
   alias Glific.{Contacts, Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
@@ -113,8 +114,15 @@ defmodule Glific.Flows.Webhook do
       |> String.replace("\"@results\"", default_results)
 
     case Jason.decode(action_body) do
-      {:ok, action_body_map} -> {action_body_map, action_body}
-      _ -> {:error, "Error in decoding webhook body. Please check the json body in floweditor"}
+      {:ok, action_body_map} ->
+        {action_body_map, action_body}
+
+      _ ->
+        {:error,
+         dgettext(
+           "errors",
+           "Error in decoding webhook body. Please check the json body in floweditor"
+         )}
     end
   end
 

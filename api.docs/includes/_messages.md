@@ -1103,6 +1103,13 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 <td></td>
 </tr>
 
+
+<tr>
+<td colspan="2" valign="top"><strong>ContextMessage</strong></td>
+<td valign="top"><a href="#messagemedia">Message</a></td>
+<td>Context message that the user responded to</td>
+</tr>
+
 <tr>
 <td colspan="2" valign="top"><strong>isHsm</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>

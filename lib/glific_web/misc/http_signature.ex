@@ -6,6 +6,7 @@ defmodule GlificWeb.Misc.HTTPSignature do
   @behaviour Plug
 
   import Plug.Conn
+  import GlificWeb.Gettext
 
   @impl true
   @doc false
@@ -51,13 +52,13 @@ defmodule GlificWeb.Misc.HTTPSignature do
 
       cond do
         timestamp + @valid_period_in_seconds < current_timestamp ->
-          {:error, "signature is too old"}
+          {:error, dgettext("errors", "Signature is too old")}
 
         not Plug.Crypto.secure_compare(
           hash,
           Glific.signature(conn.assigns[:organization_id], payload, timestamp)
         ) ->
-          {:error, "signature is incorrect"}
+          {:error, dgettext("errors", "Signature is incorrect")}
 
         true ->
           :ok
@@ -76,7 +77,11 @@ defmodule GlificWeb.Misc.HTTPSignature do
          {timestamp, ""} <- Integer.parse(timestamp) do
       {:ok, timestamp, hash}
     else
-      _ -> {:error, "signature is in a wrong format or is missing #{schema} schema"}
+      _ ->
+        {:error,
+         dgettext("errors", "Signature is in a wrong format or is missing %{schema}",
+           schema: schema
+         )}
     end
   end
 end
