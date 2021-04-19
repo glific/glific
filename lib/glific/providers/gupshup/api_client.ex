@@ -22,6 +22,13 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   def gupshup_get(url, api_key), do: get(url, headers: [{"apikey", api_key}])
 
   @doc """
+  Making Tesla post call and adding authorization token
+  """
+  @spec stripe_post(String.t(), any(), String.t()) :: Tesla.Env.result()
+  def stripe_post(url, payload, api_key),
+    do: post(url, payload, headers: [{"Authorization", "Bearer #{api_key}"}])
+
+  @doc """
   Making Tesla post call and adding api key in header
   """
   @spec gupshup_post(String.t(), any(), String.t()) :: Tesla.Env.result()

@@ -14,6 +14,7 @@ defmodule Glific.Partners.Billing do
 
   alias Glific.{
     Partners.Organization,
+    Providers.Gupshup.ApiClient,
     Repo,
     Stats
   }
@@ -588,6 +589,32 @@ defmodule Glific.Partners.Billing do
         else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
 
     record_usage(billing.organization_id, start_date, end_date)
+  end
+
+  @stripe_url "https://api.stripe.com/v1/billing_portal/sessions"
+  def customer_portal_link(billing) do
+    payload = %{
+      "customer" => billing.stripe_customer_id,
+      "return_url" => "https://example.com/account"
+    }
+
+    api_key = Application.fetch_env!(:stripity_stripe, :api_key)
+
+    ApiClient.stripe_post(
+      @stripe_url,
+      payload,
+      api_key
+    )
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        Jason.decode(body)
+
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
+        {:error, body}
+
+      _ ->
+        {:error, "Invalid Stripe Key"}
+    end
   end
 
   # events that we need to handle, delete comment once handled :)
