@@ -18,6 +18,10 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :errors, :string
   end
 
+  object :customer_portal_result do
+    field :url, :string
+  end
+
   object :billing do
     field :id, :id
     field :name, :string
@@ -55,7 +59,7 @@ defmodule GlificWeb.Schema.BillingTypes do
     end
 
     @desc "get customer portal link"
-    field :customer_portal, :json do
+    field :customer_portal, :customer_portal_result do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.customer_portal/3)
     end

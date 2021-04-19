@@ -607,7 +607,9 @@ defmodule Glific.Partners.Billing do
     )
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        Jason.decode(body)
+        with {:ok, response} <- Jason.decode(body) do
+          {:ok, %{url: response["url"]}}
+        end
 
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
         {:error, body}
