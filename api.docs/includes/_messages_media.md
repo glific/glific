@@ -101,6 +101,33 @@ query countMessagesMedia {
 }
 ```
 
+
+## Validate a Media URL and type
+
+```graphql
+query validateMedia($url: String!, $type: String!) {
+  validateMedia(url: $url, type: $type)
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "validateMedia": "{\"is_valid\": true, \"message\": \"success\"}"
+  }
+}
+
+OR
+
+{
+  "data": {
+    "validateMedia": "{\"is_valid\": false, \"message\": \"Media content-type is not valid\"}"
+  }
+}
+```
+
 ## Create a Message Media
 
 ```graphql
@@ -161,7 +188,7 @@ mutation updateMessageMedia($id: ID!, $input:MessageMediaInput!) {
     messageMedia {
       id
       url
-      caption 
+      caption
     }
     errors {
       key

@@ -671,12 +671,10 @@ defmodule Glific.Messages do
 
   defp do_list_conversations(query, args, false = _count) do
     query
-    |> preload([:contact, :sender, :receiver, :tags, :user, :media])
+    |> preload([:contact, :sender, :receiver, :context_message, :tags, :user, :media])
     |> Repo.all()
     |> make_conversations()
     |> add_empty_conversations(args)
-
-    # |> adjust_message_numbers()
   end
 
   defp do_list_conversations(query, _args, true = _count) do
@@ -956,13 +954,13 @@ defmodule Glific.Messages do
     create_and_send_message(attrs)
   end
 
+  # cache ttl is 1 hour
+  @ttl_limit 1
+
   @doc false
   @spec validate_media(String.t(), String.t()) :: map()
   def validate_media(url, _type) when url in ["", nil],
     do: %{is_valid: false, message: "Please provide a media URL"}
-
-  # cache ttl is 1 hour
-  @ttl_limit 1
 
   def validate_media(url, type) do
     # We can cache this across all organizations

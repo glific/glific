@@ -53,6 +53,15 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :send_at, :datetime
 
+    # the context of this message if applicable
+    # basically links to the message which the user
+    # replied to
+    field :context_id, :string
+
+    field :context_message, :message do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :sender, :contact do
       resolve(dataloader(Repo, use_parent: true))
     end
