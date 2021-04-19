@@ -8,6 +8,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
   """
 
   import Ecto.Query
+  import GlificWeb.Gettext
 
   use Oban.Worker,
     queue: :default,
@@ -111,7 +112,7 @@ defmodule Glific.Jobs.ChatbaseWorker do
           :ok
 
         _ ->
-          {:error, "Chatbase returned an unexpected result"}
+          {:error, dgettext("errors", "Chatbase returned an unexpected result")}
       end
     else
       :ok

@@ -6,6 +6,7 @@ defmodule Glific.Partners do
   use Publicist
 
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
   require Logger
 
   alias Glific.{
@@ -337,14 +338,14 @@ defmodule Glific.Partners do
     organization = Glific.Partners.organization(organization_id)
 
     if is_nil(organization.services["bsp"]) do
-      {:error, "No active BSP available"}
+      {:error, dgettext("errors", "No active BSP available")}
     else
       credentials = organization.services["bsp"]
       api_key = credentials.secrets["api_key"]
 
       case organization.bsp.shortcode do
         "gupshup" -> GupshupWallet.balance(api_key)
-        _ -> {:error, "Invalid provider"}
+        _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
   end
@@ -592,7 +593,7 @@ defmodule Glific.Partners do
     organization = organization(attrs.organization_id)
 
     if is_nil(organization.services["bsp"]) do
-      {:error, "No active BSP available"}
+      {:error, dgettext("errors", "No active BSP available")}
     else
       case organization.bsp.shortcode do
         "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)

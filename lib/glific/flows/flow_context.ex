@@ -9,6 +9,7 @@ defmodule Glific.Flows.FlowContext do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
   require Logger
 
   alias Glific.{
@@ -336,7 +337,7 @@ defmodule Glific.Flows.FlowContext do
   @spec execute(FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
-    do: {:error, "We have finished the flow"}
+    do: {:error, dgettext("errors", "We have finished the flow")}
 
   def execute(context, messages) do
     case Node.execute(context.node, context, messages) do

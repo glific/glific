@@ -482,8 +482,9 @@ defmodule Glific.Fixtures do
       password: "secret1234",
       password_confirmation: "secret1234",
       roles: ["admin"],
+      language_id: 1,
       # This should be static for all the user fixtures
-      organization_id: get_org_id()
+      organization_id: get_org_id(),
     }
 
     {:ok, user} =

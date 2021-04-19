@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema do
   """
 
   use Absinthe.Schema
+  import GlificWeb.Gettext
 
   alias Glific.Repo
   alias GlificWeb.Schema.Middleware
@@ -180,7 +181,7 @@ defmodule GlificWeb.Schema do
     if organization_id == Integer.to_string(user.organization_id) do
       {:ok, [topic: organization_id]}
     else
-      {:error, "Credentials did not match"}
+      {:error, dgettext("errors", "Auth Credentials mismatch")}
     end
   end
 end

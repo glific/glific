@@ -648,7 +648,7 @@ defmodule Glific.MessagesTest do
         %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
         |> Messages.create_and_send_hsm_message()
 
-      assert error_message == "You need to provide correct number of parameters for hsm template"
+      assert error_message == "Please provide the right number of parameters for the template."
 
       # Correct number of parameters should create and send hsm message
       parameters = ["param1", "param2", "param3"]
@@ -711,7 +711,7 @@ defmodule Glific.MessagesTest do
         %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
         |> Messages.create_and_send_hsm_message()
 
-      assert error_message == "You need to provide media for media hsm template"
+      assert error_message == "Please provide media for media template."
 
       media = Fixtures.message_media_fixture(attrs)
 

@@ -2,6 +2,8 @@ defmodule Glific.Providers.Gupshup.GupshupWallet do
   @moduledoc """
   Module for checking gupshup remaining balance
   """
+  import GlificWeb.Gettext
+
   @gupshup_balance_url "https://api.gupshup.io/sm/api/v2/wallet/balance"
 
   @doc """
@@ -17,7 +19,7 @@ defmodule Glific.Providers.Gupshup.GupshupWallet do
         {:error, body}
 
       _ ->
-        {:error, "Invalid key"}
+        {:error, dgettext("errors", "Invalid BSP API key")}
     end
   end
 end

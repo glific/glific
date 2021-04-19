@@ -3,6 +3,7 @@ defmodule Glific.Messages do
   The Messages context.
   """
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   require Logger
 
@@ -434,10 +435,11 @@ defmodule Glific.Messages do
       |> create_and_send_message(message_params)
     else
       false ->
-        {:error, "You need to provide correct number of parameters for hsm template"}
+        {:error,
+         dgettext("errors", "Please provide the right number of parameters for the template.")}
 
       {"type", false} ->
-        {:error, "You need to provide media for media hsm template"}
+        {:error, dgettext("errors", "Please provide media for media template.")}
     end
   end
 
