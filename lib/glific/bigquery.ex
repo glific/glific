@@ -575,7 +575,7 @@ defmodule Glific.Bigquery do
 
         ## timeout takes some time to delete the old records. So incresing the timeout limit.
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 60_000}
+          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
         )
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
@@ -611,19 +611,12 @@ defmodule Glific.Bigquery do
         }. #{inspect(response)}"
       )
 
-   defp handle_duplicate_removal_job_error({:error, :timeout}, table, _, _),
-   do: "timeout while removing duplicate entries from the table #{table} on bigquery"
-    |> Logger.info
-
+    ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{
         inspect(error)
       }"
     )
-
-    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{
-            inspect(error)
-          }"
   end
 end
