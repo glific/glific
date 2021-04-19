@@ -611,7 +611,7 @@ defmodule Glific.Bigquery do
         }. #{inspect(response)}"
       )
 
-    ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
+  ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{

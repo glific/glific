@@ -23,9 +23,8 @@ defmodule Glific.GCS do
     token = Partners.get_goth_token(organization_id, "google_cloud_storage")
 
     if is_nil(token),
-    do:  Logger.info("error while fetching the gcs token org_id: #{organization_id}"),
-    else: token.token
-
+      do: Logger.info("error while fetching the gcs token org_id: #{organization_id}"),
+      else: token.token
   end
 
   @doc """
