@@ -462,6 +462,12 @@ defmodule Glific.Partners.Billing do
             organization_id
           }"
         )
+
+        message = """
+        Did not find Billing object for Subscription: #{subscription.id}, org: #{organization_id}
+        """
+
+        {:error, message}
     end
   end
 
