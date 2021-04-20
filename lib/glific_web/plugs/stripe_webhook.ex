@@ -15,8 +15,10 @@ defmodule GlificWeb.StripeWebhook do
     signing_secret = Application.fetch_env!(:stripity_stripe, :signing_secret)
     [stripe_signature] = Conn.get_req_header(conn, "stripe-signature")
 
-    with {:ok, body, _} <- Conn.read_body(conn),
-         {:ok, stripe_event} <-
+    # using the raw body which we've cached in the endpoint for all webhook urls
+    body = conn.assigns[:raw_body]
+
+    with {:ok, stripe_event} <-
            Stripe.Webhook.construct_event(body, stripe_signature, signing_secret) do
       conn |> Plug.Conn.assign(:stripe_event, stripe_event)
     else
