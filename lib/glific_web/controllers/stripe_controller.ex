@@ -41,9 +41,9 @@ defmodule StripeController do
   ## customer id is present in all endpoints.
   @spec get_organization_id(any()) :: integer() | nil
   defp get_organization_id(stripe_event) do
-    object = stripe_event.object
+    object = stripe_event.data.object
 
-    with true <- is_struct(stripe_event.object),
+    with true <- is_struct(object),
          {:ok, billing} <-
            Repo.fetch_by(Billing, %{stripe_customer_id: object.customer},
              skip_organization_id: true
