@@ -1,4 +1,4 @@
-defmodule StripeController do
+defmodule GlificWeb.StripeController do
   @moduledoc """
   The controller for all events received from Stripe
   """
