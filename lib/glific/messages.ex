@@ -366,7 +366,7 @@ defmodule Glific.Messages do
   end
 
   @doc """
-  Send a session template to the specific contact. This is typically used in automation
+  Send a session template to the specific contact. This is typically used in automation.
   """
   @spec create_and_send_session_template(String.t(), integer) :: {:ok, Message.t()}
   def create_and_send_session_template(template_id, receiver_id) when is_binary(template_id),
