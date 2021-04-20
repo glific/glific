@@ -3,6 +3,7 @@ defmodule Glific.Contacts do
   The Contacts context.
   """
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   use Tesla
   plug Tesla.Middleware.FormUrlencoded
@@ -464,13 +465,13 @@ defmodule Glific.Contacts do
   def can_send_message_to?(contact, true = _is_hsm) do
     cond do
       contact.status != :valid ->
-        {:error, "Contact status is not valid."}
+        {:error, dgettext("errors", "Contact status is not valid.")}
 
       contact.bsp_status not in [:session_and_hsm, :hsm] ->
-        {:error, "Cannot send hsm message to contact, invalid bsp status."}
+        {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
 
       contact.optin_time == nil ->
-        {:error, "Cannot send hsm message to contact, not opted in."}
+        {:error, dgettext("errors", "Cannot send hsm message to contact, not opted in.")}
 
       true ->
         {:ok, nil}
@@ -483,10 +484,14 @@ defmodule Glific.Contacts do
   def can_send_message_to?(contact, false = _is_hsm) do
     cond do
       contact.status != :valid ->
-        {:error, "Contact status is not valid."}
+        {:error, dgettext("errors", "Contact status is not valid.")}
 
       contact.bsp_status not in [:session_and_hsm, :session] ->
-        {:error, "Sorry! 24 hrs window closed. Your message cannot be sent at this time."}
+        {:error,
+         dgettext(
+           "errors",
+           "Sorry! 24 hrs window closed. Your message cannot be sent at this time."
+         )}
 
       true ->
         {:ok, nil}
@@ -502,14 +507,15 @@ defmodule Glific.Contacts do
     if is_hsm do
       if contact.bsp_status in [:session_and_hsm, :hsm],
         do: {:ok, nil},
-        else: {:error, "Cannot send hsm message to contact, invalid bsp status."}
+        else:
+          {:error, dgettext("errors", "Cannot send hsm message to contact, invalid BSP status.")}
     else
       if contact.bsp_status in [:session_and_hsm, :session] &&
            Glific.in_past_time(contact.last_message_at, :hours, 24),
          do: {:ok, nil},
          else:
            {:error,
-            "Cannot send session message to contact, invalid bsp status or not messaged in 24 hour window."}
+            "Cannot send session message to contact, invalid BSP status or not messaged in 24 hour window."}
     end
   end
 
@@ -624,7 +630,7 @@ defmodule Glific.Contacts do
 
     case organization.bsp.shortcode do
       "gupshup" -> GupshupContacts.optin_contact(attrs)
-      _ -> {:error, "Invalid provider"}
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
@@ -661,10 +667,6 @@ defmodule Glific.Contacts do
   @doc false
   @spec simulator_phone_prefix :: String.t()
   def simulator_phone_prefix, do: @simulator_phone_prefix
-
-  @doc false
-  @spec saas_phone :: String.t()
-  def saas_phone, do: Application.fetch_env!(:glific, :saas_phone)
 
   @doc """
   Lets centralize the code to detect simulator messages and interaction

@@ -29,6 +29,7 @@ defmodule Glific.Partners.Organization do
   @optional_fields [
     :contact_id,
     :is_active,
+    :is_approved,
     :timezone,
     :active_language_ids,
     :session_limit,
@@ -55,6 +56,7 @@ defmodule Glific.Partners.Organization do
           hours: list() | nil,
           days: list() | nil,
           is_active: boolean() | true,
+          is_approved: boolean() | false,
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,
@@ -92,6 +94,7 @@ defmodule Glific.Partners.Organization do
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
 
     field :is_active, :boolean, default: true
+    field :is_approved, :boolean, default: false
 
     field :timezone, :string, default: "Asia/Kolkata"
 

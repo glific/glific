@@ -5,6 +5,8 @@ defmodule Glific.Providers.GupshupContacts do
 
   use Publicist
 
+  import GlificWeb.Gettext
+
   alias Glific.{
     Contacts,
     Contacts.Contact,
@@ -82,17 +84,21 @@ defmodule Glific.Providers.GupshupContacts do
         {:ok, response_data} = Jason.decode(body)
 
         if response_data["status"] == "error" do
-          {:error, "Error updating opted-in contacts #{response_data["message"]}"}
+          {:error,
+           dgettext("errors", "Error updating opted-in contacts: %{message}",
+             message: response_data["message"]
+           )}
         else
           users = response_data["users"]
           update_contacts(users, organization)
         end
 
       {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
-        {:error, "Error updating opted-in contacts invalid key"}
+        {:error, dgettext("errors", "Error updating opted-in contacts: Invalid BSP API key")}
 
       {:error, %Tesla.Error{reason: reason}} ->
-        {:error, "Error updating opted-in contacts #{reason}"}
+        {:error,
+         dgettext("errors", "Error updating opted-in contacts: %{reason}", reason: reason)}
     end
 
     :ok

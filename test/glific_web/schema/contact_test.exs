@@ -119,7 +119,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "contact", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    assert message == "Contact not found or permission denied."
   end
 
   test "contact by id returns one contact with phone for manager/admin role", %{manager: user} do

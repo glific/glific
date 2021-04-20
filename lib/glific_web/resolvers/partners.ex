@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.Partners do
   Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{
     Partners,
@@ -123,7 +124,7 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.get_bsp_balance(organization_id)
     |> case do
       {:ok, data} -> {:ok, %{balance: data["balance"]}}
-      _ -> {:error, "Error while fetching the balance"}
+      _ -> {:error, dgettext("errors", "Error while fetching the BSP balance")}
     end
   end
 

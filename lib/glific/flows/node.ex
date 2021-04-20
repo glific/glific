@@ -5,6 +5,7 @@ defmodule Glific.Flows.Node do
   alias __MODULE__
 
   use Ecto.Schema
+  import GlificWeb.Gettext
 
   alias Glific.{
     Flows,
@@ -221,7 +222,7 @@ defmodule Glific.Flows.Node do
         Router.execute(node.router, context, messages)
 
       true ->
-        {:error, "Unsupported node type"}
+        {:error, dgettext("errors", "Unsupported node type")}
     end
   end
 

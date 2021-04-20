@@ -4,6 +4,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   alias Glific.Partners
   alias Plug.Conn.Query
+  import GlificWeb.Gettext
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
   # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
@@ -32,7 +33,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     organization = Partners.organization(org_id)
 
     if is_nil(organization.services["bsp"]) do
-      {:error, "No active BSP available"}
+      {:error, dgettext("errors", "No active BSP available")}
     else
       bsp_credentials = organization.services["bsp"]
 

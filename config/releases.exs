@@ -56,21 +56,6 @@ config :glific,
   auth_username: auth_username,
   auth_password: auth_password
 
-# both these variables will go into the saas table coming in Glific v1.5
-saas_phone =
-  System.get_env("SAAS_PHONE") ||
-    raise """
-    environment variable SAAS_PHONE is missing.
-    """
-
-# The SaaS Admin root account phone number
-config :glific, :saas_phone, System.get_env("SAAS_PHONE")
-
-saas_organization_id = System.get_env("SAAS_ORGANIZATION_ID") || 2
-
-# The SaaS organization, that we can store the stats_global table in
-config :glific, :saas_organization_id, saas_organization_id
-
 config :glific, :max_rate_limit_request, System.get_env("MAX_RATE_LIMIT_REQUEST")
 
 # AppSignal configs
