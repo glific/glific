@@ -49,6 +49,7 @@ defmodule Glific.Partners.Onboard do
       email: params["email"],
       bsp_id: 1,
       default_language_id: 1,
+      active_language_ids: [1],
       timezone: "Asia/Kolkata",
       is_active: false,
       is_approved: false
@@ -72,15 +73,15 @@ defmodule Glific.Partners.Onboard do
   defp contact(result, params) do
     attrs = %{
       phone: params["phone"],
-      language_id: params.organization.default_language_id,
-      organization_id: params.organization.id
+      language_id: result.organization.default_language_id,
+      organization_id: result.organization.id
     }
 
     case Contacts.create_contact(attrs) do
       {:ok, contact} ->
         {:ok, organization} =
           Partners.update_organization(
-            params.organization,
+            result.organization,
             %{contact_id: contact.id}
           )
 
@@ -105,7 +106,7 @@ defmodule Glific.Partners.Onboard do
         "api_key" => params["api_key"],
         "app_name" => params["app_name"]
       },
-      organization_id: params.organization.id
+      organization_id: result.organization.id
     }
 
     case Partners.create_credential(attrs) do
@@ -129,6 +130,13 @@ defmodule Glific.Partners.Onboard do
     |> validate_phone(params["phone"])
   end
 
+  @spec error(String.t(), map()) :: map()
+  defp error(message, result) do
+    result
+    |> Map.put(:is_valid, false)
+    |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+  end
+
   # return if a string is nil or empty
   @spec empty(String.t() | nil) :: boolean
   defp empty(str), do: is_nil(str) || str == ""
@@ -142,11 +150,8 @@ defmodule Glific.Partners.Onboard do
     app_name = params["app_name"]
 
     if empty(api_key) || empty(app_name) do
-      message = dgettext("error", "API Key or App Name is empty")
-
-      result
-      |> Map.put(:is_valid, false)
-      |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+      dgettext("error", "API Key or App Name is empty")
+      |> error(result)
     else
       validate_bsp_keys(result, api_key, app_name)
     end
@@ -159,18 +164,18 @@ defmodule Glific.Partners.Onboard do
       |> GupshupContacts.validate_opted_in_contacts()
 
     case response do
-      {:ok, _users} ->
-        result
+      {:ok, _users} -> result
 
-      {:error, message} ->
-        result
-        |> Map.put(:is_valid, false)
-        |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+      {:error, message} -> error(message, result)
     end
   end
 
   # Ensure this shortcode is currently not being used
   @spec validate_shortcode(map(), String.t()) :: map()
+  defp validate_shortcode(result, nil) do
+    dgettext("error", "Shortcode cannot be empty") |> error(result)
+  end
+
   defp validate_shortcode(result, shortcode) do
     o =
       Organization
@@ -181,11 +186,8 @@ defmodule Glific.Partners.Onboard do
     if o == [] do
       result
     else
-      message = dgettext("error", "Shortcode has already been taken")
-
-      result
-      |> Map.put(:is_valid, false)
-      |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+      dgettext("error", "Shortcode has already been taken")
+      |> error(result)
     end
   end
 
@@ -196,11 +198,8 @@ defmodule Glific.Partners.Onboard do
         result
 
       _ ->
-        message = dgettext("error", "Email is not valid.")
-
-        result
-        |> Map.put(:is_valid, false)
-        |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+        dgettext("error", "Email is not valid.")
+        |> error(result)
     end
   end
 
@@ -211,11 +210,8 @@ defmodule Glific.Partners.Onboard do
         result
 
       _ ->
-        message = dgettext("error", "Phone is not valid.")
-
-        result
-        |> Map.put(:is_valid, false)
-        |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+        dgettext("error", "Phone is not valid.")
+        |> error(result)
     end
   end
 end

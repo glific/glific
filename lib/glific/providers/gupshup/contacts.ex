@@ -82,17 +82,17 @@ defmodule Glific.Providers.GupshupContacts do
         {:ok, response_data} = Jason.decode(body)
 
         if response_data["status"] == "error" do
-          {:error, dgettext("errors", "Error: %{message}", message: response_data["message"])}
+          {:error, dgettext("errors", "Message: %{message}", message: response_data["message"])}
         else
           users = response_data["users"]
           {:ok, users}
         end
 
       {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
-        {:error, dgettext("errors", "Error: Invalid BSP API key")}
+        {:error, dgettext("errors", "Invalid BSP API key")}
 
       {:error, %Tesla.Error{reason: reason}} ->
-        {:error, dgettext("errors", "Error: %{reason}", reason: reason)}
+        {:error, dgettext("errors", "Reason: %{reason}", reason: reason)}
     end
   end
 
