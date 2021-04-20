@@ -46,7 +46,6 @@ defmodule GlificWeb.Endpoint do
   plug Phoenix.LiveDashboard.RequestLogger, param_key: "request_logger"
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
-  plug GlificWeb.StripeWebhook
 
   plug :parse_body
 
@@ -76,6 +75,9 @@ defmodule GlificWeb.Endpoint do
   # add the subdomain/domain
   plug GlificWeb.SubdomainPlug
   plug GlificWeb.EnsurePlug
+
+  # we'll use the raw_body here for webhook
+  plug GlificWeb.StripeWebhook
 
   # gigalixir puts us behind a proxy, hence using this to get the right
   # IP
