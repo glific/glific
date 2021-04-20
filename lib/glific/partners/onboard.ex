@@ -102,6 +102,13 @@ defmodule Glific.Partners.Onboard do
   defp credentials(result, params) do
     attrs = %{
       shortcode: "gupshup",
+      keys: %{
+        "url" => "https://gupshup.io/",
+        "worker" => "Glific.Providers.Gupshup.Worker",
+        "handler" => "Glific.Providers.Gupshup.Message",
+        "bsp_limit" => 40,
+        "api_end_point" => "https://api.gupshup.io/sm/api/v1"
+      },
       secrets: %{
         "api_key" => params["api_key"],
         "app_name" => params["app_name"]
