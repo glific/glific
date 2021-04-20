@@ -72,6 +72,7 @@ defmodule Glific.Partners.Onboard do
 
   defp contact(result, params) do
     attrs = %{
+      name: "NGO Main Account",
       phone: params["phone"],
       language_id: result.organization.default_language_id,
       organization_id: result.organization.id
