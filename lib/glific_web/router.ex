@@ -103,6 +103,7 @@ defmodule GlificWeb.Router do
 
   scope "/webhook", GlificWeb do
     post "/stripe", StripeController, :stripe_webhook
+    post "/stir/survey", Flows.WebhookController, :stir_survey
   end
 
   scope "/flow-editor", GlificWeb.Flows do
@@ -147,10 +148,6 @@ defmodule GlificWeb.Router do
     get "/functions", FlowEditorController, :functions
 
     get "/validate-media", FlowEditorController, :validate_media
-  end
-
-  scope "/webhook", GlificWeb.Flows do
-    post "/stir/survey", WebhookController, :stir_survey
   end
 
   # implement basic authentication for live dashboard and oban pro
