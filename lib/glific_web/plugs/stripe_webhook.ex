@@ -18,10 +18,11 @@ defmodule GlificWeb.StripeWebhook do
     # using the raw body which we've cached in the endpoint for all webhook urls
     body = conn.assigns[:raw_body]
 
-    with {:ok, stripe_event} <-
-           Stripe.Webhook.construct_event(body, stripe_signature, signing_secret) do
-      conn |> Plug.Conn.assign(:stripe_event, stripe_event)
-    else
+    case Stripe.Webhook.construct_event(body, stripe_signature, signing_secret) do
+      {:ok, stripe_event} ->
+        conn
+        |> Plug.Conn.assign(:stripe_event, stripe_event)
+
       {:error, error} ->
         conn
         |> Conn.send_resp(:bad_request, inspect(error))
