@@ -137,7 +137,7 @@ defmodule Glific.Partners.Onboard do
   # opt-in url which requires both and ensure that it returns success to validate these two
   # parameters
   @spec validate_bsp_keys(map(), map()) :: map()
-  def validate_bsp_keys(result, params) do
+  defp validate_bsp_keys(result, params) do
     api_key = params["api_key"]
     app_name = params["app_name"]
 
