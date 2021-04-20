@@ -13,12 +13,11 @@ defmodule GlificWeb.StripeWebhook do
   @doc false
   def call(%{request_path: "/webhook/stripe"} = conn, _) do
     signing_secret = Application.fetch_env!(:stripity_stripe, :signing_secret)
-    [stripe_signature] = Conn.get_req_header(conn, "stripe-signature") |> IO.inspect(label: "Signature")
+    [stripe_signature] = Conn.get_req_header(conn, "stripe-signature")
 
     with {:ok, body, _} <- Conn.read_body(conn),
          {:ok, stripe_event} <-
-    Stripe.Webhook.construct_event(body, stripe_signature, signing_secret) do
-      IO.inspect(stripe_event.type, label: "EVENT")
+           Stripe.Webhook.construct_event(body, stripe_signature, signing_secret) do
       conn |> Plug.Conn.assign(:stripe_event, stripe_event)
     else
       {:error, error} ->

@@ -133,7 +133,7 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Upate the stripecustomer details record
+  Upate the stripe customer details record
   """
   @spec update_stripe_customer(Billing.t(), map()) ::
           {:ok, Billing.t()} | {:error, Stripe.Error.t()}
