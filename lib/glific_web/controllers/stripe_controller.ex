@@ -22,8 +22,9 @@ defmodule StripeController do
           conn,
         _params
       ) do
-
-    Logger.info("Stripe webhook called with event #{stripe_event} and organization_id #{organization_id}")
+    Logger.info(
+      "Stripe webhook called with event #{stripe_event} and organization_id #{organization_id}"
+    )
 
     organization_id = get_organization_id(stripe_event) || organization_id
 
