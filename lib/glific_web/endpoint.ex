@@ -62,7 +62,7 @@ defmodule GlificWeb.Endpoint do
                      )
 
   # All endpoints that start with "webhooks" have their body cached.
-  defp parse_body(%{path_info: ["webhook" | _]} = conn, _),
+  defp parse_body(%{path_info: ["webhooks" | _]} = conn, _),
     do: Plug.Parsers.call(conn, @parser_with_cache)
 
   defp parse_body(conn, _),
