@@ -74,7 +74,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 is_org_read = false,
                 is_org_replied = false,
                 is_contact_replied = true,
-                updated_at = now,
+                updated_at = now
               WHERE id = NEW.contact_id;
 
             IF (NEW.context_id IS NOT NULL) THEN
@@ -94,7 +94,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
                 last_message_number = last_message_number + 1,
                 is_org_replied = true,
                 is_contact_replied = false,
-                updated_at = now,
+                updated_at = now
               WHERE id = NEW.contact_id;
 
             NEW.message_number = var_message_number + 1;
