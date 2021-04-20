@@ -22,6 +22,9 @@ defmodule StripeController do
           conn,
         _params
       ) do
+
+    Logger.info("Stripe webhook called with event #{stripe_event} and organization_id #{organization_id}")
+
     organization_id = get_organization_id(stripe_event) || organization_id
 
     Logger.info(
@@ -42,7 +45,7 @@ defmodule StripeController do
   @spec get_organization_id(any()) :: integer() | nil
   defp get_organization_id(stripe_event) do
     object = stripe_event.object
-
+    Logger.info("Found stripe object #{object}")
     with true <- is_struct(stripe_event.object),
          {:ok, billing} <-
            Repo.fetch_by(Billing, %{stripe_customer_id: object.customer},
