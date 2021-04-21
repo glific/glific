@@ -1,8 +1,6 @@
-defmodule Glific.Partners.Onboard do
+defmodule Glific.Saas.Queries do
   @moduledoc """
-  For now, we will build this on top of organization table, and have a group of helper functions
-  here to manage global operations across all organizations.
-  At some later point, we might decide to have a separate onboarding table and managment structure
+  Lets keep all the onboarding queries and validation here
   """
   import GlificWeb.Gettext
   import Ecto.Query
@@ -19,17 +17,10 @@ defmodule Glific.Partners.Onboard do
   alias Pow.Ecto.Schema.Changeset
 
   @doc """
-  Setup all the tables and necessary values to onboard an organization
+  Main function to setup the organization entity in Glific
   """
-  @spec setup(map()) :: map()
-  def setup(params) do
-    %{is_valid: true, messages: []}
-    |> validate(params)
-    |> setup(params)
-  end
-
   @spec setup(map(), map()) :: map()
-  defp setup(result, params) do
+  def setup(result, params) do
     result
     # first create the organization
     |> organization(params)
@@ -37,6 +28,18 @@ defmodule Glific.Partners.Onboard do
     |> contact(params)
     # create the credentials
     |> credentials(params)
+  end
+
+  @doc """
+  Validate all the input elements
+  """
+  @spec validate(map(), map()) :: map()
+  def validate(result, params) do
+    result
+    |> validate_bsp_keys(params)
+    |> validate_shortcode(params["shortcode"])
+    |> validate_email(params["email"])
+    |> validate_phone(params["phone"])
   end
 
   @spec organization(map(), map()) :: map()
@@ -60,7 +63,8 @@ defmodule Glific.Partners.Onboard do
         Repo.put_organization_id(organization.id)
         Map.put(result, :organization, organization)
 
-      {:error, errors} -> error(inspect(errors), result)
+      {:error, errors} ->
+        error(inspect(errors), result)
     end
   end
 
@@ -87,7 +91,8 @@ defmodule Glific.Partners.Onboard do
         |> Map.put(:organization, organization)
         |> Map.put(:contact, contact)
 
-      {:error, errors} -> error(inspect(errors), result)
+      {:error, errors} ->
+        error(inspect(errors), result)
     end
   end
 
@@ -115,18 +120,9 @@ defmodule Glific.Partners.Onboard do
       {:ok, credential} ->
         Map.put(result, :credential, credential)
 
-      {:error, errors} -> error(inspect(errors), result)
+      {:error, errors} ->
+        error(inspect(errors), result)
     end
-  end
-
-  # validate all the input elements
-  @spec validate(map(), map()) :: map()
-  defp validate(result, params) do
-    result
-    |> validate_bsp_keys(params)
-    |> validate_shortcode(params["shortcode"])
-    |> validate_email(params["email"])
-    |> validate_phone(params["phone"])
   end
 
   @spec error(String.t(), map()) :: map()

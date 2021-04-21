@@ -17,10 +17,11 @@ defmodule GlificWeb.Schema.MessageMediaTest do
           status: 200,
           headers: %{"content-type" => "image"},
           body:
-          Jason.encode!(%{
-                "is_valid" => true,
-                "message" => "success"
-                        })}
+            Jason.encode!(%{
+              "is_valid" => true,
+              "message" => "success"
+            })
+        }
     end)
 
     :ok

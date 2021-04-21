@@ -3,7 +3,7 @@ defmodule Glific.OnboardTest do
   use ExUnit.Case
 
   alias Glific.{
-    Partners.Onboard
+    Saas.Onboard
   }
 
   @valid_attrs %{
@@ -21,10 +21,11 @@ defmodule Glific.OnboardTest do
         %Tesla.Env{
           status: 200,
           body:
-          Jason.encode!(%{
-                "status" => "ok",
-                "users" => [1, 2, 3]
-                        })}
+            Jason.encode!(%{
+              "status" => "ok",
+              "users" => [1, 2, 3]
+            })
+        }
     end)
 
     :ok
@@ -51,5 +52,4 @@ defmodule Glific.OnboardTest do
     assert result.is_valid == false
     assert result.messages != []
   end
-
 end
