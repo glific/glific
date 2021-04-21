@@ -228,7 +228,8 @@ defmodule Glific.Flows.FlowContext do
       parent
     else
       child_results = %{
-        "child #{child.flow_id}" => child_results,
+        # for now commenting this out since folks have complex flows
+        # "child #{child.flow_id}" => child_results,
         "child" => child_results
       }
 
