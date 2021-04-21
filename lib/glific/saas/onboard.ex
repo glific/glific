@@ -18,6 +18,7 @@ defmodule Glific.Saas.Onboard do
     %{is_valid: true, messages: []}
     |> Queries.validate(params)
     |> Queries.setup(params)
+    |> format_results()
   end
 
   @spec add_map(map(), atom(), boolean()) :: map()
@@ -64,4 +65,14 @@ defmodule Glific.Saas.Onboard do
   end
 
   def delete(_params), do: {:error, "Cannot delete organization"}
+
+  @spec format_results(map()) :: map()
+  defp format_results(results) do
+    organization =  results.organization
+    contact =  results.contact
+    results
+    |> Map.put(:organization, %{id: organization.id, name: organization.name, email: organization.email, is_approved: organization.is_approved})
+    |> Map.put(:contact, %{id: contact.id, name: contact.name, phone: contact.phone, status: contact.status})
+    |> Map.put(:credential, %{})
+  end
 end
