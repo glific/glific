@@ -256,7 +256,8 @@ defmodule Glific.Flows.Flow do
     FlowContext.init_context(flow, context.contact, context.status,
       parent_id: context.id,
       delay: context.delay,
-      results: %{parent: context.results}
+      # lets keep only one level of results, rather than a lot of them
+      results: %{parent: Map.delete(context.results, "parent")}
     )
   end
 
