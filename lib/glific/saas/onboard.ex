@@ -5,6 +5,7 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
   alias Glific.{
+    Contacts.Contact,
     Partners,
     Partners.Organization,
     Saas.Queries
@@ -68,11 +69,9 @@ defmodule Glific.Saas.Onboard do
 
   @spec format_results(map()) :: map()
   defp format_results(%{is_valid: true} = results) do
-    organization =  results.organization
-    contact =  results.contact
     results
-    |> Map.put(:organization, %{id: organization.id, name: organization.name, email: organization.email, is_approved: organization.is_approved})
-    |> Map.put(:contact, %{id: contact.id, name: contact.name, phone: contact.phone, status: contact.status})
+    |> Map.put(:organization, Organization.to_minimal_map(results.organization))
+    |> Map.put(:contact, Contact.to_minimal_map(results.contact))
     |> Map.put(:credential, "Gupshup secrets has been added.")
   end
 
