@@ -140,19 +140,12 @@ defmodule GlificWeb.Schema.BillingTest do
   end
 
   test "fetch customer portal url", %{user: user} do
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            "{\n  \"return_url\": \"https://test.tides.coloredcow.com/settings/billing\",\n  \"url\": \"https://billing.stripe.com/session/test_session_id\"\n}\n"
-        }
-    end)
-
-    result = auth_query_gql_by(:customer_portal, user, variables: %{})
-    assert {:ok, query_data} = result
-    customer_portal = get_in(query_data, [:data, "customerPortal"])
-    assert customer_portal["returnUrl"] == "https://test.tides.coloredcow.com/settings/billing"
-    assert customer_portal["url"] == "https://billing.stripe.com/session/test_session_id"
+    use_cassette "customer_portal_link" do
+      result = auth_query_gql_by(:customer_portal, user, variables: %{})
+      assert {:ok, query_data} = result
+      customer_portal = get_in(query_data, [:data, "customerPortal"])
+      assert customer_portal["returnUrl"] == "https://test.tides.coloredcow.com/settings/billing"
+      assert customer_portal["url"] == "https://billing.stripe.com/session/test_session_id"
+    end
   end
 end

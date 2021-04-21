@@ -658,7 +658,7 @@ defmodule Glific.Fixtures do
   def billing_fixture(attrs) do
     valid_attrs = %{
       name: "some name",
-      stripe_customer_id: "some customer id",
+      stripe_customer_id: "random_id",
       email: "some email",
       currency: "inr"
     }
