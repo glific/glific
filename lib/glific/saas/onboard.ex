@@ -5,6 +5,7 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
   alias Glific.{
+    Contacts.Contact,
     Partners,
     Partners.Organization,
     Saas.Queries
@@ -18,6 +19,7 @@ defmodule Glific.Saas.Onboard do
     %{is_valid: true, messages: []}
     |> Queries.validate(params)
     |> Queries.setup(params)
+    |> format_results()
   end
 
   @spec add_map(map(), atom(), boolean()) :: map()
@@ -64,4 +66,14 @@ defmodule Glific.Saas.Onboard do
   end
 
   def delete(_params), do: {:error, "Cannot delete organization"}
+
+  @spec format_results(map()) :: map()
+  defp format_results(%{is_valid: true} = results) do
+    results
+    |> Map.put(:organization, Organization.to_minimal_map(results.organization))
+    |> Map.put(:contact, Contact.to_minimal_map(results.contact))
+    |> Map.put(:credential, "Gupshup secrets has been added.")
+  end
+
+  defp format_results(results), do: results
 end
