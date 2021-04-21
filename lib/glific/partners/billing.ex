@@ -21,7 +21,10 @@ defmodule Glific.Partners.Billing do
     Stats
   }
 
-  alias Stripe.SubscriptionItem.Usage
+  alias Stripe.{
+    BillingPortal,
+    SubscriptionItem.Usage
+  }
 
   # define all the required fields for
   @required_fields [
@@ -606,7 +609,7 @@ defmodule Glific.Partners.Billing do
       "return_url" => "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
     }
 
-    Stripe.BillingPortal.Session.create(params)
+    BillingPortal.Session.create(params)
     |> case do
       {:ok, response} ->
         {:ok, %{url: response.url, return_url: response.return_url}}
