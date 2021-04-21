@@ -134,6 +134,7 @@ defmodule Glific.Partners.Organization do
     |> unique_constraint(:contact_id)
   end
 
+  @doc false
   @spec to_minimal_map(Organization.t()) :: map()
   def to_minimal_map(organization) do
     Map.take(organization, [:id | @required_fields ++ @optional_fields])

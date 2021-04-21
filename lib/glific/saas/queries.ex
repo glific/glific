@@ -188,7 +188,8 @@ defmodule Glific.Saas.Queries do
   @spec validate_email(map(), String.t()) :: map()
   defp validate_email(result, email) do
     case Changeset.validate_email(email) do
-      :ok -> result
+      :ok ->
+        result
 
       _ ->
         dgettext("error", "Email is not valid.")

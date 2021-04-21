@@ -76,5 +76,4 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp format_results(results), do: results
-
 end
