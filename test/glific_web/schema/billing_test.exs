@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.BillingTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/billings/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/billings/list.gql")
+  load_gql(:customer_portal, GlificWeb.Schema, "assets/gql/billings/customer_portal.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/billings/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/billings/create.gql")
   load_gql(:create_subscription, GlificWeb.Schema, "assets/gql/billings/create_subscription.gql")
@@ -136,5 +137,22 @@ defmodule GlificWeb.Schema.BillingTest do
       billing = get_in(query_data, [:data, "updatePaymentMethod", "billing"])
       assert billing["stripe_payment_method_id"] == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
     end
+  end
+
+  test "fetch customer portal url", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            "{\n  \"return_url\": \"https://test.tides.coloredcow.com/settings/billing\",\n  \"url\": \"https://billing.stripe.com/session/test_session_id\"\n}\n"
+        }
+    end)
+
+    result = auth_query_gql_by(:customer_portal, user, variables: %{})
+    assert {:ok, query_data} = result
+    customerPortal = get_in(query_data, [:data, "customerPortal"])
+    assert customerPortal["returnUrl"] == "https://test.tides.coloredcow.com/settings/billing"
+    assert customerPortal["url"] == "https://billing.stripe.com/session/test_session_id"
   end
 end
