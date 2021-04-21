@@ -119,11 +119,16 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec fetch_opted_in_contacts(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def fetch_opted_in_contacts(org_id) do
-    get_credentials(org_id)
+    with {:ok, credentials} <- get_credentials(org_id),
+         do: users_get(credentials.api_key, credentials.app_name)
+  end
 
-    with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_url <> "/users/" <> credentials.app_name
-      gupshup_get(url, credentials.api_key)
-    end
+  @doc """
+  Build the gupshup user list url
+  """
+  @spec users_get(String.t(), String.t()) :: Tesla.Env.result() | {:error, String.t()}
+  def users_get(api_key, app_name) do
+    url = @gupshup_url <> "/users/" <> app_name
+    gupshup_get(url, api_key)
   end
 end

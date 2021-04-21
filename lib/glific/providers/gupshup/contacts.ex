@@ -48,7 +48,7 @@ defmodule Glific.Providers.GupshupContacts do
   end
 
   @doc """
-    This method creates a contact if it does not exist. Otherwise, updates it.
+  This method creates a contact if it does not exist. Otherwise, updates it.
   """
   @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_or_update_contact(contact_data) do
@@ -73,35 +73,48 @@ defmodule Glific.Providers.GupshupContacts do
   end
 
   @doc """
-  Fetch opted in contacts data from providers server
+  Perform the gupshup API call and parse the results for downstream functions
   """
-  @spec fetch_opted_in_contacts(map()) :: :ok | any()
-  def fetch_opted_in_contacts(attrs) do
-    organization = Partners.organization(attrs.organization_id)
-
-    case ApiClient.fetch_opted_in_contacts(attrs.organization_id) do
+  @spec validate_opted_in_contacts(Tesla.Env.result()) :: {:ok, list()} | {:error, String.t()}
+  def validate_opted_in_contacts(result) do
+    case result do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
 
         if response_data["status"] == "error" do
-          {:error,
-           dgettext("errors", "Error updating opted-in contacts: %{message}",
-             message: response_data["message"]
-           )}
+          {:error, dgettext("errors", "Message: %{message}", message: response_data["message"])}
         else
           users = response_data["users"]
-          update_contacts(users, organization)
+          {:ok, users}
         end
 
       {:ok, %Tesla.Env{status: status}} when status in 400..499 ->
-        {:error, dgettext("errors", "Error updating opted-in contacts: Invalid BSP API key")}
+        {:error, dgettext("errors", "Invalid BSP API key")}
 
       {:error, %Tesla.Error{reason: reason}} ->
-        {:error,
-         dgettext("errors", "Error updating opted-in contacts: %{reason}", reason: reason)}
+        {:error, dgettext("errors", "Reason: %{reason}", reason: reason)}
     end
+  end
 
-    :ok
+  @doc """
+  Fetch opted in contacts data from providers server
+  """
+  @spec fetch_opted_in_contacts(map()) :: :ok | {:error, String.t()}
+  def fetch_opted_in_contacts(attrs) do
+    organization = Partners.organization(attrs.organization_id)
+
+    result =
+      ApiClient.fetch_opted_in_contacts(attrs.organization_id)
+      |> validate_opted_in_contacts()
+
+    case result do
+      {:ok, users} ->
+        update_contacts(users, organization)
+        :ok
+
+      error ->
+        error
+    end
   end
 
   @spec update_contacts(list() | nil, Organization.t() | nil) :: :ok | any()
