@@ -189,7 +189,7 @@ defmodule Glific.Saas.Queries do
   defp validate_email(result, email) do
     case Changeset.validate_email(email) do
       :ok ->
-        result
+        validate_email_for_org(result, email)
 
       _ ->
         dgettext("error", "Email is not valid.")
@@ -207,5 +207,19 @@ defmodule Glific.Saas.Queries do
         dgettext("error", "Phone is not valid.")
         |> error(result)
     end
+  end
+
+  @spec validate_email_for_org(map(), String.t()) :: map()
+  defp validate_email_for_org(result, email) do
+      Organization
+      |> where([o], o.email == ^email)
+      |> select([o], o.id)
+      |> Repo.all(skip_organization_id: true)
+      |> case do
+        [] -> result
+
+        _ ->  dgettext("error", "Email already taken.")
+              |> error(result)
+      end
   end
 end
