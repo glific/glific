@@ -60,10 +60,7 @@ defmodule Glific.Partners.Onboard do
         Repo.put_organization_id(organization.id)
         Map.put(result, :organization, organization)
 
-      {:error, errors} ->
-        result
-        |> Map.put(:is_valid, false)
-        |> Map.update!(:messages, fn msgs -> [inspect(errors) | msgs] end)
+      {:error, errors} -> error(inspect(errors), result)
     end
   end
 
@@ -90,10 +87,7 @@ defmodule Glific.Partners.Onboard do
         |> Map.put(:organization, organization)
         |> Map.put(:contact, contact)
 
-      {:error, errors} ->
-        result
-        |> Map.put(:is_valid, false)
-        |> Map.update!(:messages, fn msgs -> [inspect(errors) | msgs] end)
+      {:error, errors} -> error(inspect(errors), result)
     end
   end
 
@@ -121,10 +115,7 @@ defmodule Glific.Partners.Onboard do
       {:ok, credential} ->
         Map.put(result, :credential, credential)
 
-      {:error, errors} ->
-        result
-        |> Map.put(:is_valid, false)
-        |> Map.update!(:messages, fn msgs -> [inspect(errors) | msgs] end)
+      {:error, errors} -> error(inspect(errors), result)
     end
   end
 
@@ -158,7 +149,7 @@ defmodule Glific.Partners.Onboard do
     app_name = params["app_name"]
 
     if empty(api_key) || empty(app_name) do
-      dgettext("error", "API Key or App Name is empty")
+      dgettext("error", "API Key or App Name is empty.")
       |> error(result)
     else
       validate_bsp_keys(result, api_key, app_name)
@@ -173,7 +164,6 @@ defmodule Glific.Partners.Onboard do
 
     case response do
       {:ok, _users} -> result
-
       {:error, message} -> error(message, result)
     end
   end
@@ -181,7 +171,7 @@ defmodule Glific.Partners.Onboard do
   # Ensure this shortcode is currently not being used
   @spec validate_shortcode(map(), String.t()) :: map()
   defp validate_shortcode(result, nil) do
-    dgettext("error", "Shortcode cannot be empty") |> error(result)
+    dgettext("error", "Shortcode cannot be empty.") |> error(result)
   end
 
   defp validate_shortcode(result, shortcode) do
@@ -189,12 +179,12 @@ defmodule Glific.Partners.Onboard do
       Organization
       |> where([o], o.shortcode == ^shortcode)
       |> select([o], o.id)
-      |> Repo.all()
+      |> Repo.all(skip_organization_id: true)
 
     if o == [] do
       result
     else
-      dgettext("error", "Shortcode has already been taken")
+      dgettext("error", "Shortcode has already been taken.")
       |> error(result)
     end
   end
