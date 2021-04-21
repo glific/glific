@@ -257,7 +257,7 @@ defmodule Glific.Flows.Flow do
       parent_id: context.id,
       delay: context.delay,
       # lets keep only one level of results, rather than a lot of them
-      results: %{parent: Map.delete(context.results, "parent")}
+      results: %{parent: context.results |> Map.delete("parent") |> Map.delete("child")}
     )
   end
 
