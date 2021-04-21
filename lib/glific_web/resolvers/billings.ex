@@ -28,6 +28,15 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
+  @spec customer_portal(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def customer_portal(_, _, %{context: %{current_user: user}}) do
+    with {:ok, billing} <-
+           Repo.fetch_by(Billing, %{is_active: true, organization_id: user.organization_id}),
+         do: Billing.customer_portal_link(billing)
+  end
+
+  @doc false
   @spec create_billing(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_billing(_, %{input: params}, _) do

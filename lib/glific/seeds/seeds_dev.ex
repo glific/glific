@@ -964,8 +964,6 @@ if Code.ensure_loaded?(Faker) do
       seed_messages_media(organization)
 
       hsm_templates(organization)
-
-      seed_billing(organization)
     end
   end
 end

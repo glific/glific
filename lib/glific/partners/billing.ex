@@ -14,13 +14,17 @@ defmodule Glific.Partners.Billing do
   require Logger
 
   alias Glific.{
+    Partners,
     Partners.Organization,
     Partners.Saas,
     Repo,
     Stats
   }
 
-  alias Stripe.SubscriptionItem.Usage
+  alias Stripe.{
+    BillingPortal,
+    SubscriptionItem.Usage
+  }
 
   # define all the required fields for
   @required_fields [
@@ -591,6 +595,28 @@ defmodule Glific.Partners.Billing do
         else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
 
     record_usage(billing.organization_id, start_date, end_date)
+  end
+
+  @doc """
+  fetches customer portal url of organization with billing status as active
+  """
+  @spec customer_portal_link(Billing.t()) :: {:ok, any()} | {:error, String.t()}
+  def customer_portal_link(billing) do
+    organization = Partners.organization(billing.organization_id)
+
+    params = %{
+      customer: billing.stripe_customer_id,
+      return_url: "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
+    }
+
+    BillingPortal.Session.create(params)
+    |> case do
+      {:ok, response} ->
+        {:ok, %{url: response.url, return_url: response.return_url}}
+
+      _ ->
+        {:error, "Invalid Stripe Key"}
+    end
   end
 
   # events that we need to handle, delete comment once handled :)

@@ -14,6 +14,7 @@ defmodule Glific.BillingTest do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
     HTTPoison.start()
+    ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
     :ok
   end
 
@@ -91,6 +92,20 @@ defmodule Glific.BillingTest do
                  |> Billing.create_subscription(stripe_payment_method_id)
 
         assert subscription == %{status: :active}
+      end
+    end
+
+    test "customer_portal_link/1 with valid data should return url", attrs do
+      use_cassette "customer_portal_link" do
+        attrs
+        |> Map.merge(%{name: "Akhilesh Negi"})
+        |> Fixtures.billing_fixture()
+
+        billing = Billing.get_billing(%{name: "Akhilesh Negi"})
+
+        assert {:ok, response} = Billing.customer_portal_link(billing)
+        assert response.url == "https://billing.stripe.com/session/test_session_id"
+        assert response.return_url == "https://test.tides.coloredcow.com/settings/billing"
       end
     end
 
