@@ -151,8 +151,8 @@ defmodule GlificWeb.Schema.BillingTest do
 
     result = auth_query_gql_by(:customer_portal, user, variables: %{})
     assert {:ok, query_data} = result
-    customerPortal = get_in(query_data, [:data, "customerPortal"])
-    assert customerPortal["returnUrl"] == "https://test.tides.coloredcow.com/settings/billing"
-    assert customerPortal["url"] == "https://billing.stripe.com/session/test_session_id"
+    customer_portal = get_in(query_data, [:data, "customerPortal"])
+    assert customer_portal["returnUrl"] == "https://test.tides.coloredcow.com/settings/billing"
+    assert customer_portal["url"] == "https://billing.stripe.com/session/test_session_id"
   end
 end
