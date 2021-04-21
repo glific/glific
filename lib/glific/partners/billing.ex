@@ -17,7 +17,6 @@ defmodule Glific.Partners.Billing do
     Partners,
     Partners.Organization,
     Partners.Saas,
-    Providers,
     Repo,
     Stats
   }
@@ -595,7 +594,6 @@ defmodule Glific.Partners.Billing do
     record_usage(billing.organization_id, start_date, end_date)
   end
 
-  @stripe_url "https://api.stripe.com/v1/billing_portal/sessions"
   @doc """
   fetches customer portal url of organization with billing status as active
   """
@@ -603,23 +601,15 @@ defmodule Glific.Partners.Billing do
   def customer_portal_link(billing) do
     organization = Partners.organization(billing.organization_id)
 
-    payload = %{
+    params = %{
       "customer" => billing.stripe_customer_id,
       "return_url" => "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
     }
 
-    Providers.Stripe.fetch_portal_url(
-      @stripe_url,
-      payload
-    )
+    Stripe.BillingPortal.Session.create(params)
     |> case do
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        with {:ok, response} <- Jason.decode(body) do
-          {:ok, %{url: response["url"], return_url: response["return_url"]}}
-        end
-
-      {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
-        {:error, body}
+      {:ok, response} ->
+        {:ok, %{url: response.url, return_url: response.return_url}}
 
       _ ->
         {:error, "Invalid Stripe Key"}
