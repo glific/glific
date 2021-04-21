@@ -46,8 +46,7 @@ defmodule Glific.OnboardTest do
       |> Map.put("phone", "93'#$%^")
       |> Map.put("shortcode", "glific")
 
-    IO.inspect(Repo.query("select id, shortcode from organizations;"))
-    result = Onboard.setup(attrs) |> IO.inspect()
+    result = Onboard.setup(attrs)
 
     assert result.is_valid == false
     assert result.messages != []
