@@ -67,7 +67,7 @@ defmodule Glific.Saas.Onboard do
   def delete(_params), do: {:error, "Cannot delete organization"}
 
   @spec format_results(map()) :: map()
-  defp format_results(results) do
+  defp format_results(%{is_valid: true} = results) do
     organization =  results.organization
     contact =  results.contact
     results
@@ -75,4 +75,7 @@ defmodule Glific.Saas.Onboard do
     |> Map.put(:contact, %{id: contact.id, name: contact.name, phone: contact.phone, status: contact.status})
     |> Map.put(:credential, %{})
   end
+
+  defp format_results(results), do: results
+
 end
