@@ -66,13 +66,14 @@ defmodule Glific.Saas.Onboard do
 
   def delete(_params), do: {:error, "Cannot delete organization"}
 
-  ## We have to convert the struct to map to send as a json response.
   @spec format_results(map()) :: map()
   defp format_results(%{is_valid: true} = results) do
+    organization =  results.organization
+    contact =  results.contact
     results
-    |> Map.put(:organization, Map.from_struct(results.organization))
-    |> Map.put(:contact, Map.from_struct(results.contact))
-    |> Map.put(:credential, Map.from_struct(results.credential))
+    |> Map.put(:organization, %{id: organization.id, name: organization.name, email: organization.email, is_approved: organization.is_approved})
+    |> Map.put(:contact, %{id: contact.id, name: contact.name, phone: contact.phone, status: contact.status})
+    |> Map.put(:credential, "Gupshup secrets has been added.")
   end
 
   defp format_results(results), do: results
