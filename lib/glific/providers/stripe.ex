@@ -1,4 +1,7 @@
 defmodule Glific.Providers.Stripe do
+  @moduledoc """
+  Http API client to interact with Stripe
+  """
   alias Plug.Conn.Query
   use Tesla
 
@@ -14,7 +17,7 @@ defmodule Glific.Providers.Stripe do
   @doc """
   Making Tesla post call and adding authorization token
   """
-  @spec fetch_portal_url(String.t(), any()) :: Tesla.Env.result()
+  @spec fetch_portal_url(String.t(), map()) :: Tesla.Env.result()
   def fetch_portal_url(url, payload),
     do: post(url, payload)
 end

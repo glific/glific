@@ -12,6 +12,7 @@ defmodule Glific.Stats do
     Jobs.BigQueryWorker,
     Messages.Message,
     Partners,
+    Partners.Saas,
     Repo,
     Stats.Stat,
     Users.User
@@ -91,7 +92,7 @@ defmodule Glific.Stats do
 
     # Lets force push this to the BQ SaaS monitoring storage everytime we generate
     # stats so, we get it soon
-    BigQueryWorker.perform_periodic(Application.fetch_env!(:glific, :saas_organization_id))
+    BigQueryWorker.perform_periodic(Saas.organization_id())
   end
 
   @spec do_generate_stats(list, Keyword.t()) :: nil

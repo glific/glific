@@ -14,6 +14,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Groups.Group,
     Partners,
     Partners.Organization,
+    Partners.Saas,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
@@ -220,7 +221,7 @@ defmodule Glific.Seeds.SeedsMigration do
       Map.merge(
         attrs,
         %{
-          phone: Contacts.saas_phone(),
+          phone: Saas.phone(),
           name: name
         }
       )

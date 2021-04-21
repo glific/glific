@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   Implementing middleware functions to transform errors from Ecto Changeset into a format
   consumable and displayable to the API user. This version is specifically for mutations.
   """
+  import GlificWeb.Gettext
 
   @behaviour Absinthe.Middleware
 
@@ -20,7 +21,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
     else
       _ ->
         resolution
-        |> Absinthe.Resolution.put_result({:error, "Unauthorized"})
+        |> Absinthe.Resolution.put_result({:error, dgettext("errors", "Unauthorized")})
     end
   end
 

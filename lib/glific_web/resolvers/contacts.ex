@@ -1,18 +1,20 @@
 defmodule GlificWeb.Resolvers.Contacts do
   @moduledoc """
-  Contact Resolver which sits between the GraphQL schema and Glific Contact Context API. This layer basically stiches together
-  one or more calls to resolve the incoming queries.
+  Contact Resolver which sits between the GraphQL schema and Glific Contact Context API.
+  This layer basically stiches together one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Contacts.Simulator, Repo}
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def contact(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{contact: contact}}
+  def contact(_, %{id: id}, _context) do
+    {:ok, %{contact: Contacts.get_contact!(id)}}
+  rescue
+    _ ->
+      {:error, ["Contact", dgettext("errors", "Contact not found or permission denied.")]}
   end
 
   @doc false

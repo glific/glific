@@ -117,7 +117,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "group", "errors", Access.at(0), "message"])
-    assert message == "Resource not found"
+    assert message == "Group not found or permission denied."
   end
 
   test "create a group and test possible scenarios and errors", %{manager: user} do

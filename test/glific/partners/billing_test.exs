@@ -14,6 +14,7 @@ defmodule Glific.BillingTest do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
     HTTPoison.start()
+    ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
     :ok
   end
 
@@ -92,6 +93,27 @@ defmodule Glific.BillingTest do
 
         assert subscription == %{status: :active}
       end
+    end
+
+    test "customer_portal_link/1 with valid data should return url", attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              "{\n  \"return_url\": \"https://test.tides.coloredcow.com/settings/billing\",\n  \"url\": \"https://billing.stripe.com/session/test_session_id\"\n}\n"
+          }
+      end)
+
+      attrs
+      |> Map.merge(%{name: "some name"})
+      |> Fixtures.billing_fixture()
+
+      billing = Billing.get_billing(%{name: "some name"})
+
+      assert {:ok, response} = Billing.customer_portal_link(billing)
+      assert response.url == "https://billing.stripe.com/session/test_session_id"
+      assert response.return_url == "https://test.tides.coloredcow.com/settings/billing"
     end
 
     test "update_payment_method/1 with valid data should update payment method", %{

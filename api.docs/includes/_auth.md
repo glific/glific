@@ -1,6 +1,5 @@
 # Authentication
 
-Authorization in Glific is still at a prototype stage and is not currently enforced by the system.
 We do **not** use GraphQL for authorization, but use REST to generate and renew tokens. The
 authentication tokens should be included in all GraphQL requests. This section will be expanded to also
 include roles and permissions. User management will be done via GraphQL

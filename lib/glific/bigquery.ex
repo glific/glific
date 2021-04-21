@@ -16,6 +16,7 @@ defmodule Glific.Bigquery do
     Messages.Message,
     Notifications,
     Partners,
+    Partners.Saas,
     Repo,
     Stats.Stat
   }
@@ -37,7 +38,7 @@ defmodule Glific.Bigquery do
   }
 
   defp bigquery_tables(organization_id) do
-    if organization_id == Application.fetch_env!(:glific, :saas_organization_id),
+    if organization_id == Saas.organization_id(),
       do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
       else: @bigquery_tables
   end
@@ -575,7 +576,7 @@ defmodule Glific.Bigquery do
 
         ## timeout takes some time to delete the old records. So incresing the timeout limit.
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
-          body: %{query: sql, useLegacySql: false, timeoutMs: 60_000}
+          body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
         )
         |> handle_duplicate_removal_job_error(table, credentials, organization_id)
 
@@ -611,15 +612,12 @@ defmodule Glific.Bigquery do
         }. #{inspect(response)}"
       )
 
+  ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{
         inspect(error)
       }"
     )
-
-    raise "Error while removing duplicate entries from the table #{table} on bigquery. #{
-            inspect(error)
-          }"
   end
 end

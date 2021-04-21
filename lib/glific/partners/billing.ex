@@ -7,6 +7,7 @@ defmodule Glific.Partners.Billing do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   alias __MODULE__
 
@@ -15,7 +16,8 @@ defmodule Glific.Partners.Billing do
   alias Glific.{
     Partners,
     Partners.Organization,
-    Providers.Stripe,
+    Partners.Saas,
+    Providers,
     Repo,
     Stats
   }
@@ -135,7 +137,7 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Upate the stripecustomer details record
+  Upate the stripe customer details record
   """
   @spec update_stripe_customer(Billing.t(), map()) ::
           {:ok, Billing.t()} | {:error, Stripe.Error.t()}
@@ -221,18 +223,12 @@ defmodule Glific.Partners.Billing do
     |> format_errors()
   end
 
-  @spec stripe_ids :: map()
-  defp stripe_ids,
-    do:
-      Application.fetch_env!(:glific, :stripe_ids)
-      |> Enum.into(%{})
-
   @doc """
   Fetch the stripe id's
   """
-  @spec get_stripe_ids :: map()
-  def get_stripe_ids,
-    do: stripe_ids()
+  @spec stripe_ids :: map()
+  def stripe_ids,
+    do: Saas.stripe_ids()
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
@@ -253,17 +249,17 @@ defmodule Glific.Partners.Billing do
       prorate: false,
       items: [
         %{
-          price: prices.monthly,
+          price: prices["monthly"],
           quantity: 1
         },
         %{
-          price: prices.users
+          price: prices["users"]
         },
         %{
-          price: prices.messages
+          price: prices["messages"]
         },
         %{
-          price: prices.consulting_hours
+          price: prices["consulting_hours"]
         }
       ],
       metadata: %{
@@ -331,7 +327,7 @@ defmodule Glific.Partners.Billing do
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
         currency: billing.currency,
-        price: stripe_ids().setup,
+        price: stripe_ids()["setup"],
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -381,7 +377,8 @@ defmodule Glific.Partners.Billing do
             {:ok, %{status: :active}}
 
           true ->
-            {:error, "Not handling #{inspect(subscription)} value"}
+            {:error,
+             dgettext("errors", "Not handling %{return} value", return: inspect(subscription))}
         end
 
       {:error, stripe_error} ->
@@ -464,6 +461,12 @@ defmodule Glific.Partners.Billing do
             organization_id
           }"
         )
+
+        message = """
+        Did not find Billing object for Subscription: #{subscription.id}, org: #{organization_id}
+        """
+
+        {:error, message}
     end
   end
 
@@ -519,14 +522,14 @@ defmodule Glific.Partners.Billing do
         subscription_items = billing.stripe_subscription_items
 
         record_subscription_item(
-          subscription_items[prices.messages],
+          subscription_items[prices["messages"]],
           usage.messages,
           time,
           "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
         )
 
         record_subscription_item(
-          subscription_items[prices.users],
+          subscription_items[prices["users"]],
           usage.users,
           time,
           "users: #{organization_id}, #{Date.to_string(start_usage_date)}"
@@ -605,7 +608,7 @@ defmodule Glific.Partners.Billing do
       "return_url" => "https://#{organization.shortcode}.tides.coloredcow.com/settings/billing"
     }
 
-    Stripe.fetch_portal_url(
+    Providers.Stripe.fetch_portal_url(
       @stripe_url,
       payload
     )

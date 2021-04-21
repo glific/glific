@@ -6,6 +6,7 @@ defmodule Glific.Partners do
   use Publicist
 
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
   require Logger
 
   alias Glific.{
@@ -337,14 +338,14 @@ defmodule Glific.Partners do
     organization = Glific.Partners.organization(organization_id)
 
     if is_nil(organization.services["bsp"]) do
-      {:error, "No active BSP available"}
+      {:error, dgettext("errors", "No active BSP available")}
     else
       credentials = organization.services["bsp"]
       api_key = credentials.secrets["api_key"]
 
       case organization.bsp.shortcode do
         "gupshup" -> GupshupWallet.balance(api_key)
-        _ -> {:error, "Invalid provider"}
+        _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
   end
@@ -592,7 +593,7 @@ defmodule Glific.Partners do
     organization = organization(attrs.organization_id)
 
     if is_nil(organization.services["bsp"]) do
-      {:error, "No active BSP available"}
+      {:error, dgettext("errors", "No active BSP available")}
     else
       case organization.bsp.shortcode do
         "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
@@ -726,7 +727,12 @@ defmodule Glific.Partners do
             token
 
           {:error, error} ->
-            Logger.info("Error while fetching token #{error} for org_id #{organization_id}")
+            Logger.info(
+              "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{
+                organization_id
+              }"
+            )
+
             handle_token_error(organization_id, provider_shortcode, error)
         end
     end
@@ -734,7 +740,7 @@ defmodule Glific.Partners do
 
   @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
   defp handle_token_error(organization_id, provider_shortcode, error) when is_binary(error) do
-    if String.contains?(error, "account not found"),
+    if String.contains?(error, ["account not found", "invalid_grant"]),
       do: disable_credential(organization_id, provider_shortcode)
 
     nil

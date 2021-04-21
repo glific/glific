@@ -10,6 +10,19 @@ defmodule GlificWeb.Schema.MessageMediaTest do
 
   setup do
     SeedsDev.seed_messages_media()
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          headers: %{"content-type" => "image"},
+          body:
+          Jason.encode!(%{
+                "is_valid" => true,
+                "message" => "success"
+                        })}
+    end)
+
     :ok
   end
 
@@ -19,6 +32,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/messages_media/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/messages_media/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/messages_media/delete.gql")
+  load_gql(:validate, GlificWeb.Schema, "assets/gql/messages_media/validate.gql")
 
   test "messages media field returns list of messages", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -53,6 +67,19 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   test "count returns the number of messages media", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
     assert get_in(query_data, [:data, "countMessagesMedia"]) == 4
+  end
+
+  test "validate returns success and failure for good and bad urls", %{staff: user} do
+    {:ok, query_data} =
+      auth_query_gql_by(:validate, user,
+        variables: %{
+          "url" => "https://s.yimg.com/rz/p/yahoo_homepage_en-US_s_f_p_bestfit_homepage_2x.png",
+          "type" => "image"
+        }
+      )
+
+    result = Jason.decode!(get_in(query_data, [:data, "validateMedia"]))
+    assert result["is_valid"] == true
   end
 
   test "message media id returns one message media or nil", %{staff: user} do

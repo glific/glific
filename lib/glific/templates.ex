@@ -4,6 +4,7 @@ defmodule Glific.Templates do
   """
   require Logger
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   use Tesla
   plug Tesla.Middleware.FormUrlencoded
@@ -160,7 +161,7 @@ defmodule Glific.Templates do
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Template.submit_for_approval(attrs)
-      _ -> {:error, "Invalid provider"}
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
@@ -244,7 +245,7 @@ defmodule Glific.Templates do
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Template.update_hsm_templates(organization_id)
-      _ -> {:error, "Invalid provider"}
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
