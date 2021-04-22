@@ -102,6 +102,10 @@ defmodule Glific.Providers.Gupshup.Message do
   defp caption(nil), do: ""
   defp caption(caption), do: caption
 
+  @spec context_id(map()) :: String.t() | nil
+  defp context_id(payload),
+    do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
+
   @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec receive_text(payload :: map()) :: map()
@@ -111,7 +115,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
-      context_id: get_in(payload, ["context", "gsId"]),
+      context_id: context_id(payload),
       body: message_payload["text"],
       sender: %{
         phone: payload["sender"]["phone"],
@@ -129,7 +133,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
-      context_id: get_in(payload, ["context", "gsId"]),
+      context_id: context_id(payload),
       caption: message_payload["caption"],
       url: message_payload["url"],
       source_url: message_payload["url"],
@@ -149,7 +153,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
-      context_id: get_in(payload, ["context", "gsId"]),
+      context_id: context_id(payload),
       longitude: message_payload["longitude"],
       latitude: message_payload["latitude"],
       sender: %{
