@@ -61,7 +61,7 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :organization, organization)
 
       {:error, errors} ->
-        error(inspect(errors), result)
+        error(inspect(errors), result, :create_organization)
     end
   end
 
@@ -89,7 +89,7 @@ defmodule Glific.Saas.Queries do
         |> Map.put(:contact, contact)
 
       {:error, errors} ->
-        error(inspect(errors), result)
+        error(inspect(errors), result, :create_contact)
     end
   end
 
@@ -118,17 +118,17 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
-        error(inspect(errors), result)
+        error(inspect(errors), result, :credential)
     end
   end
 
-  @spec error(String.t(), map()) :: map()
-  defp error(message, result) do
+  @spec error(String.t(), map(), atom()) :: map()
+  defp error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
-    |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+    |> Map.put(key, message)
   end
-
+  # [message | msgs]
   # return if a string is nil or empty
   @spec empty(String.t() | nil) :: boolean
   defp empty(str), do: is_nil(str) || str == ""
@@ -143,7 +143,7 @@ defmodule Glific.Saas.Queries do
 
     if empty(api_key) || empty(app_name) do
       dgettext("error", "API Key or App Name is empty.")
-      |> error(result)
+      |> error(result, :bsp)
     else
       validate_bsp_keys(result, api_key, app_name)
     end
@@ -157,14 +157,14 @@ defmodule Glific.Saas.Queries do
 
     case response do
       {:ok, _users} -> result
-      {:error, message} -> error(message, result)
+      {:error, message} -> error(message, result, :bsp)
     end
   end
 
   # Ensure this shortcode is currently not being used
   @spec validate_shortcode(map(), String.t()) :: map()
   defp validate_shortcode(result, nil) do
-    dgettext("error", "Shortcode cannot be empty.") |> error(result)
+    dgettext("error", "Shortcode cannot be empty.") |> error(result, :shortcode)
   end
 
   defp validate_shortcode(result, shortcode) do
@@ -172,7 +172,7 @@ defmodule Glific.Saas.Queries do
     |> case do
       {:ok, _} ->
         dgettext("error", "Shortcode has already been taken.")
-        |> error(result)
+        |> error(result, :shortcode)
 
       {:error, _} ->
         result
@@ -185,7 +185,7 @@ defmodule Glific.Saas.Queries do
     |> case do
       {:ok, _} ->
         dgettext("error", "Email is not valid.")
-        |> error(result)
+        |> error(result, :email)
 
       {:error, _} ->
         result
@@ -200,7 +200,7 @@ defmodule Glific.Saas.Queries do
 
       _ ->
         dgettext("error", "Phone is not valid.")
-        |> error(result)
+        |> error(result, :phone)
     end
   end
 end
