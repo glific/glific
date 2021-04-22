@@ -3,7 +3,6 @@ defmodule Glific.Saas.Queries do
   Lets keep all the onboarding queries and validation here
   """
   import GlificWeb.Gettext
-  import Ecto.Query
 
   alias Glific.{
     Contacts,
@@ -13,8 +12,6 @@ defmodule Glific.Saas.Queries do
     Providers.GupshupContacts,
     Repo
   }
-
-  alias Pow.Ecto.Schema.Changeset
 
   @doc """
   Main function to setup the organization entity in Glific
@@ -171,29 +168,27 @@ defmodule Glific.Saas.Queries do
   end
 
   defp validate_shortcode(result, shortcode) do
-    o =
-      Organization
-      |> where([o], o.shortcode == ^shortcode)
-      |> select([o], o.id)
-      |> Repo.all(skip_organization_id: true)
+    Repo.fetch_by(Organization, %{shortcode: shortcode}, skip_organization_id: true)
+    |> case do
+      {:ok, _} ->
+        dgettext("error", "Shortcode has already been taken.")
+        |> error(result)
 
-    if o == [] do
-      result
-    else
-      dgettext("error", "Shortcode has already been taken.")
-      |> error(result)
+      {:error, _} ->
+        result
     end
   end
 
   @spec validate_email(map(), String.t()) :: map()
   defp validate_email(result, email) do
-    case Changeset.validate_email(email) do
-      :ok ->
-        result
-
-      _ ->
+    Repo.fetch_by(Organization, %{email: email}, skip_organization_id: true)
+    |> case do
+      {:ok, _} ->
         dgettext("error", "Email is not valid.")
         |> error(result)
+
+      {:error, _} ->
+        result
     end
   end
 
