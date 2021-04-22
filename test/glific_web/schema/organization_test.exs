@@ -36,6 +36,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/organizations/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
+  load_gql(:setup, GlificWeb.Schema, "assets/gql/organizations/setup.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
@@ -95,6 +96,38 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     organization_id = get_in(query_data, [:data, "organization", "organization", "id"])
     assert organization_id == to_string(user.organization_id)
+  end
+
+  test "onboard a new organization ", %{user: user} do
+    attrs = %{
+      name: "First Organization",
+      phone: "+911234567890",
+      api_key: "fake api key",
+      app_name: "fake app name",
+      email: "default@fake.com",
+      shortcode: "short"
+    }
+
+    result =
+      auth_query_gql_by(:setup, user,
+        variables: %{
+          "input" => %{
+            "name" => attrs.name,
+            "phone" => attrs.phone,
+            "api_key" => attrs.api_key,
+            "app_name" => attrs.app_name,
+            "email" => attrs.email,
+            "shortcode" => attrs.shortcode
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    organization = get_in(query_data, [:data, "setupOrganization"])
+    assert organization["contact"]["name"] == "NGO Main Account"
+    assert organization["credential"] == "Gupshup secrets has been added."
+    assert organization["is_valid"] == true
+    assert organization["organization"]["name"] == "First Organization"
   end
 
   test "create an organization and test possible scenarios and errors", %{user: user} do
