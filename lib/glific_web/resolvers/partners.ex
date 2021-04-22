@@ -91,7 +91,6 @@ defmodule GlificWeb.Resolvers.Partners do
           context: map()
         }) :: {:ok, any} | {:error, any}
   def update_organization_status(_, %{input: params}, _) do
-    IO.inspect(params)
     with organization <- Onboard.status(params) do
       {:ok, %{organization: organization}}
     end

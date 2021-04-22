@@ -32,21 +32,23 @@ defmodule Glific.Saas.Onboard do
   Update the active and/or approved status of an organization
   """
   @spec status(map()) :: Organization.t() | nil
-  def status(%{
-        org_id: org_id,
-        is_active: is_active,
-        is_approved: is_approved
-      } = params) do
+  def status(
+        %{
+          org_id: org_id,
+          is_active: is_active,
+          is_approved: is_approved
+        } = params
+      ) do
     changes =
       %{}
       |> add_map(:is_active, is_active)
       |> add_map(:is_approved, is_approved)
-      IO.inspect("debug001Status")
-IO.inspect(params)
+
     {:ok, organization} =
       org_id
       |> Partners.get_organization!()
       |> Partners.update_organization(changes)
+
     organization
   end
 
