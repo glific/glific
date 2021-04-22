@@ -70,11 +70,10 @@ defmodule Glific.Communications.Message do
   defp publish_message(message) do
     {
       :ok,
-      if message.publish? do
-        Communications.publish_data(message, :sent_message, message.organization_id)
-      else
-        message
-      end
+      if(message.publish?,
+        do: publish_data(message, :sent_message),
+        else: message
+      )
     }
   end
 
@@ -120,12 +119,7 @@ defmodule Glific.Communications.Message do
   @spec publish_message_status(Message.t()) :: any()
   defp publish_message_status(message) do
     if is_nil(message.group_id),
-      do:
-        Communications.publish_data(
-          message,
-          :update_message_status,
-          message.organization_id
-        )
+      do: publish_data(message, :update_message_status)
   end
 
   @doc """
@@ -218,7 +212,7 @@ defmodule Glific.Communications.Message do
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> Communications.publish_data(:received_message, message_params.organization_id)
+    |> publish_data(:received_message)
     |> process_message()
   end
 
@@ -230,7 +224,7 @@ defmodule Glific.Communications.Message do
     message_params
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
-    |> Communications.publish_data(:received_message, message_params.organization_id)
+    |> publish_data(:received_message)
     |> process_message()
 
     :ok
@@ -247,10 +241,21 @@ defmodule Glific.Communications.Message do
     |> Contacts.create_location()
 
     message
-    |> Communications.publish_data(:received_message, message.organization_id)
+    |> publish_data(:received_message)
     |> process_message()
 
     :ok
+  end
+
+  # preload the context message if it exists, so frontend can do the right thing
+  @spec publish_data(Message.t() | {:ok, Message.t()}, atom()) :: Message.t()
+  defp publish_data({:ok, message}, data_type),
+    do: publish_data(message, data_type)
+
+  defp publish_data(message, data_type) do
+    message
+    |> Repo.preload([:context_message])
+    |> Communications.publish_data(data_type, message.organization_id)
   end
 
   # lets have a default timeout of 3 seconds for each call
