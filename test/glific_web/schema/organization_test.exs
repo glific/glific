@@ -223,6 +223,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   test "delete organization inactive organization", %{user: user} do
     organization = Fixtures.organization_fixture(%{is_active: false})
+
     result =
       auth_query_gql_by(:delete_onboarded, user,
         variables: %{
@@ -232,7 +233,12 @@ defmodule GlificWeb.Schema.OrganizationTest do
           }
         }
       )
-      IO.inspect(result)
+
+    assert {:ok, query_data} = result
+    organization = get_in(query_data, [:data, "deleteOnboardedOrganization", "organization"])
+    assert organization["isActive"] == false
+    assert organization["isApproved"] == false
+    assert organization["name"] == "Fixture Organization"
   end
 
   test "update an organization and test possible scenarios and errors", %{user: user} do

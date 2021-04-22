@@ -1,4 +1,4 @@
-mutation updateOrganizationStatus($input:DeleteOrganizationInput!) {
+mutation updateOrganizationStatus($input:OrganizationStatusInput!) {
   updateOrganizationStatus(input: $input) {
     organization {
       email

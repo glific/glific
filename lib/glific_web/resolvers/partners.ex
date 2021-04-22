@@ -115,7 +115,7 @@ defmodule GlificWeb.Resolvers.Partners do
           {:ok, any} | {:error, any}
   def delete_onboarded_organization(_, %{input: params}, _) do
     with {:ok, organization} <- Onboard.delete(params) do
-      {:ok, organization}
+      {:ok, %{organization: organization}}
     end
   end
 
