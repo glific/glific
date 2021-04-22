@@ -137,6 +137,11 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :is_approved, :boolean
   end
 
+  input_object :delete_organization_input do
+    field :org_id, :id
+    field :is_confirmed, :boolean
+  end
+
   input_object :organization_input do
     field :name, :string
     field :shortcode, :string
@@ -223,6 +228,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
+    end
+
+    field :delete_onboarded_organization, :organization_result do
+      arg(:input, :delete_organization_input)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.delete_onboarded_organization/3)
     end
   end
 
