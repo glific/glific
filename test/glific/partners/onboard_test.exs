@@ -3,6 +3,7 @@ defmodule Glific.OnboardTest do
   use ExUnit.Case
 
   alias Glific.{
+    Partners.Organization,
     Saas.Onboard
   }
 
@@ -51,5 +52,31 @@ defmodule Glific.OnboardTest do
 
     assert result.is_valid == false
     assert result.messages != []
+  end
+
+  test "ensure that sending in valid parameters, update organization status" do
+    result = Onboard.setup(@valid_attrs)
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
+
+    updated_organization =
+      %{
+        org_id: organization.id,
+        is_active: true,
+        is_approved: nil
+      }
+      |> Onboard.status()
+
+    assert updated_organization.is_active == true
+
+    # should update is_approveds
+    updated_organization =
+      %{
+        org_id: organization.id,
+        is_active: true,
+        is_approved: true
+      }
+      |> Onboard.status()
+
+    assert updated_organization.is_approved == true
   end
 end
