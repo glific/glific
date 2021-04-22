@@ -132,23 +132,18 @@ defmodule Glific.Saas.Queries do
     |> Map.update!(:messages, fn msgs -> [message | msgs] end)
   end
 
-  # return if a string is nil or empty
-  @spec empty(String.t() | nil) :: boolean
-  defp empty(str), do: is_nil(str) || str == ""
-
   # Validate the APIKey and AppName entered by the organization. We will use the gupshup
   # opt-in url which requires both and ensure that it returns success to validate these two
   # parameters
   @spec validate_bsp_keys(map(), map()) :: map()
   defp validate_bsp_keys(result, params) do
-    api_key = params.api_key
-    app_name = params.app_name
-
-    if empty(api_key) || empty(app_name) do
-      dgettext("error", "API Key or App Name is empty.")
-      |> error(result)
+    with true <- Map.has_key?(params, :api_key),
+         true <- Map.has_key?(params, :app_name) do
+      validate_bsp_keys(result, params.api_key, params.app_name)
     else
-      validate_bsp_keys(result, api_key, app_name)
+      _ ->
+        dgettext("error", "API Key or App Name is empty.")
+        |> error(result)
     end
   end
 
