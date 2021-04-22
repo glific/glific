@@ -1,5 +1,5 @@
-mutation deleteOnboardedOrganization($input:DeleteOrganizationInput!) {
-  deleteOnboardedOrganization(input: $input) {
+mutation deleteInactiveOrganization($input:DeleteOrganizationInput!) {
+  deleteInactiveOrganization(input: $input) {
     organization {
       email
       id

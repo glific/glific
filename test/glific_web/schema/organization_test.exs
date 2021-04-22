@@ -235,7 +235,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       )
 
     assert {:ok, query_data} = result
-    organization = get_in(query_data, [:data, "deleteOnboardedOrganization", "organization"])
+    organization = get_in(query_data, [:data, "deleteInactiveOrganization", "organization"])
     assert organization["isActive"] == false
     assert organization["isApproved"] == false
     assert organization["name"] == "Fixture Organization"
