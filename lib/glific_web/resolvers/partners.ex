@@ -85,6 +85,19 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Updates an organization status is_active/is_approved
+  """
+  @spec update_organization_status(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def update_organization_status(_, %{input: params}, _) do
+    IO.inspect(params)
+    with organization <- Onboard.status(params) do
+      {:ok, %{organization: organization}}
+    end
+  end
+
+  @doc """
   Deletes an organization
   """
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

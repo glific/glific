@@ -33,20 +33,20 @@ defmodule Glific.Saas.Onboard do
   """
   @spec status(map()) :: Organization.t() | nil
   def status(%{
-        organization_id: organization_id,
+        org_id: org_id,
         is_active: is_active,
         is_approved: is_approved
-      }) do
+      } = params) do
     changes =
       %{}
       |> add_map(:is_active, is_active)
       |> add_map(:is_approved, is_approved)
-
+      IO.inspect("debug001Status")
+IO.inspect(params)
     {:ok, organization} =
-      organization_id
+      org_id
       |> Partners.get_organization!()
       |> Partners.update_organization(changes)
-
     organization
   end
 
