@@ -1,9 +1,0 @@
-#import "./setup_fields.frag.gql"
-
-mutation setupOrganization($input:SetupInput!) {
-  setupOrganization(input: $input) {
-    ...SetupFields
-
-    ...ErrorFields
-  }
-}

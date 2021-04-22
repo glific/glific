@@ -59,19 +59,6 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Setup a new organization
-  """
-  @spec setup_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def setup_organization(_, %{input: params}, _) do
-    organization = Onboard.setup(params)
-
-    with true <- organization.is_valid do
-      {:ok, organization}
-    end
-  end
-
-  @doc """
   Updates an organization
   """
   @spec update_organization(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{

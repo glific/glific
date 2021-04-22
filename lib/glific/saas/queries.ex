@@ -37,9 +37,9 @@ defmodule Glific.Saas.Queries do
   def validate(result, params) do
     result
     |> validate_bsp_keys(params)
-    |> validate_shortcode(params.shortcode)
-    |> validate_email(params.email)
-    |> validate_phone(params.phone)
+    |> validate_shortcode(params["shortcode"])
+    |> validate_email(params["email"])
+    |> validate_phone(params["phone"])
   end
 
   @spec organization(map(), map()) :: map()
@@ -47,9 +47,9 @@ defmodule Glific.Saas.Queries do
 
   defp organization(result, params) do
     attrs = %{
-      name: params.name,
-      shortcode: params.shortcode,
-      email: params.email,
+      name: params["name"],
+      shortcode: params["shortcode"],
+      email: params["email"],
       bsp_id: 1,
       default_language_id: 1,
       active_language_ids: [1],
@@ -74,7 +74,7 @@ defmodule Glific.Saas.Queries do
   defp contact(result, params) do
     attrs = %{
       name: "NGO Main Account",
-      phone: params.phone,
+      phone: params["phone"],
       language_id: result.organization.default_language_id,
       organization_id: result.organization.id
     }
@@ -110,8 +110,8 @@ defmodule Glific.Saas.Queries do
         "api_end_point" => "https://api.gupshup.io/sm/api/v1"
       },
       secrets: %{
-        "api_key" => params.api_key,
-        "app_name" => params.app_name
+        "api_key" => params["api_key"],
+        "app_name" => params["app_name"]
       },
       organization_id: result.organization.id
     }
