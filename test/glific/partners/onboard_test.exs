@@ -79,4 +79,13 @@ defmodule Glific.OnboardTest do
 
     assert updated_organization.is_approved == true
   end
+
+  test "ensure that sending in valid parameters, delete inactive organization" do
+    result = Onboard.setup(@valid_attrs)
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
+    Onboard.delete(%{org_id: organization.id, is_confirmed: true})
+
+    assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
+             Repo.fetch_by(Organization, %{name: result.organization.name})
+  end
 end
