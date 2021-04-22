@@ -109,11 +109,11 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Deletes an onboarded organization
+  Deletes an inactive organization
   """
-  @spec delete_onboarded_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec delete_inactive_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_onboarded_organization(_, %{input: params}, _) do
+  def delete_inactive_organization(_, %{input: params}, _) do
     with {:ok, organization} <- Onboard.delete(params) do
       {:ok, %{organization: organization}}
     end

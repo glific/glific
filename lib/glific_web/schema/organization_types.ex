@@ -230,10 +230,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.delete_organization/3)
     end
 
-    field :delete_onboarded_organization, :organization_result do
+    field :delete_inactive_organization, :organization_result do
       arg(:input, :delete_organization_input)
       middleware(Authorize, :admin)
-      resolve(&Resolvers.Partners.delete_onboarded_organization/3)
+      resolve(&Resolvers.Partners.delete_inactive_organization/3)
     end
   end
 
