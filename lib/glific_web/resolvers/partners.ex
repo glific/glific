@@ -10,7 +10,8 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
-    Repo
+    Repo,
+    Saas.Onboard
   }
 
   @doc """
@@ -54,6 +55,19 @@ defmodule GlificWeb.Resolvers.Partners do
   def create_organization(_, %{input: params}, _) do
     with {:ok, organization} <- Partners.create_organization(params) do
       {:ok, %{organization: organization}}
+    end
+  end
+
+  @doc """
+  Setup a new organization
+  """
+  @spec setup_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def setup_organization(_, %{input: params}, _) do
+    organization = Onboard.setup(params)
+
+    with true <- organization.is_valid do
+      {:ok, organization}
     end
   end
 

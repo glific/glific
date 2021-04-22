@@ -19,6 +19,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :onboard_result do
+    field :organization, :organization
+    field :contact, :contact
+    field :credential, :string
+    field :is_valid, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :enabled_day do
     field :id, :integer
     field :enabled, :boolean
@@ -112,6 +120,15 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :flow_id, :id
   end
 
+  input_object :onboard_input do
+    field :name, :string
+    field :shortcode, :string
+    field :phone, :string
+    field :api_key, :string
+    field :app_name, :string
+    field :email, :string
+  end
+
   input_object :organization_input do
     field :name, :string
     field :shortcode, :string
@@ -173,6 +190,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:input, non_null(:organization_input))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.create_organization/3)
+    end
+
+    field :setup_organization, :onboard_result do
+      arg(:input, non_null(:onboard_input))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.setup_organization/3)
     end
 
     field :update_organization, :organization_result do
