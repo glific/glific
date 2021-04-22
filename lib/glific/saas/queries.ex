@@ -126,7 +126,7 @@ defmodule Glific.Saas.Queries do
   defp error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
-    |> Map.put(key, message)
+    |> Map.update!(:messages, fn msgs -> Map.put(msgs, key, message) end)
   end
   # [message | msgs]
   # return if a string is nil or empty
