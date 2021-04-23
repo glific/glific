@@ -58,29 +58,34 @@ defmodule Glific.Messages do
 
     Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
+        )
 
       {:receiver, receiver}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :receiver),
           where: ilike(c.name, ^"%#{receiver}%")
+        )
 
       {:contact, contact}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.name, ^"%#{contact}%")
+        )
 
       {:either, phone}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
+        )
 
       {:user, user}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :user),
           where: ilike(c.name, ^"%#{user}%")
+        )
 
       {:tags_included, tags_included}, query ->
         message_ids =
@@ -101,7 +106,7 @@ defmodule Glific.Messages do
         query |> where([m], m.id not in ^message_ids)
 
       {:bsp_status, bsp_status}, query ->
-        from q in query, where: q.bsp_status == ^bsp_status
+        from(q in query, where: q.bsp_status == ^bsp_status)
 
       _, query ->
         query
@@ -400,6 +405,14 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
+  defp fetch_language_specific_template(session_template, id) do
+    contact = Contacts.get_contact!(id)
+
+    if session_template.language_id != contact.language_id,
+      do: session_template.translations[Integer.to_string(contact.language_id)],
+      else: session_template
+  end
+
   @doc """
   Send a hsm template message to the specific contact.
   """
@@ -410,7 +423,15 @@ defmodule Glific.Messages do
       ) do
     media_id = Map.get(attrs, :media_id, nil)
     contact = Glific.Contacts.get_contact!(receiver_id)
-    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+    {:ok, template} = Repo.fetch(SessionTemplate, template_id)
+
+    fetch_language_specific_template = fetch_language_specific_template(template, receiver_id)
+
+    session_template =
+      template
+      |> Map.from_struct()
+      |> Map.put(:body, fetch_language_specific_template["body"])
+      |> Map.put(:uuid, fetch_language_specific_template["uuid"])
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
@@ -430,6 +451,8 @@ defmodule Glific.Messages do
         media_id: media_id,
         is_optin_flow: Map.get(attrs, :is_optin_flow, false)
       }
+
+      IO.inspect(message_params)
 
       Contacts.can_send_message_to?(contact, true, attrs)
       |> create_and_send_message(message_params)
