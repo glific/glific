@@ -153,7 +153,9 @@ defmodule GlificWeb.Schema do
     do: middleware
 
   @spec repo_opts(map()) :: Keyword.t()
-  defp repo_opts(%{current_user: user}) when user != nil, do: [organization_id: user.organization_id]
+  defp repo_opts(%{current_user: user}) when user != nil,
+    do: [organization_id: user.organization_id]
+
   defp repo_opts(_params), do: []
 
   @doc """
