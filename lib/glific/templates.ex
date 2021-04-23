@@ -290,7 +290,7 @@ defmodule Glific.Templates do
       db_templates
       |> Map.values()
       |> Enum.filter(fn db_template ->
-        db_template.shortcode == template["elementName"]
+        db_template.shortcode == template["elementName"] and db_template.uuid != template["id"]
       end)
 
     approved_db_templates =
@@ -298,22 +298,14 @@ defmodule Glific.Templates do
       |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
 
     with true <- template["status"] == "APPROVED",
-         true <- length(db_template_translations) > 1,
+         true <- length(db_template_translations) >= 1,
          true <- length(approved_db_templates) >= 1 do
-      [approved_db_template] = approved_db_templates
+      approved_db_templates
+      |> Enum.each(fn approved_db_template ->
+        update_hsm_translation(template, approved_db_template, organization, languages)
+      end)
 
-      case update_hsm_translation(template, approved_db_template, organization, languages) do
-        {:ok, _} ->
-          # delete old entry
-          db_templates[template["id"]]
-          |> Repo.delete()
-
-        {:error, error} ->
-          {:error, error}
-      end
-    else
-      _ ->
-        do_update_hsm(template, db_templates)
+      do_update_hsm(template, db_templates)
     end
   end
 
@@ -432,6 +424,8 @@ defmodule Glific.Templates do
     update_attrs = %{
       translations: translations
     }
+
+    IO.inspect(update_attrs)
 
     approved_db_template
     |> SessionTemplate.changeset(update_attrs)
