@@ -16,7 +16,7 @@ defmodule Glific.Saas.Onboard do
   """
   @spec setup(map()) :: map()
   def setup(params) do
-    %{is_valid: true, messages: []}
+    %{is_valid: true, messages: %{}}
     |> Queries.validate(params)
     |> Queries.setup(params)
     |> format_results()
