@@ -115,13 +115,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   end
 
   input_object :organization_status_input do
-    field :org_id, :id
+    field :update_organization_id, :id
     field :is_active, :boolean
     field :is_approved, :boolean
   end
 
   input_object :delete_organization_input do
-    field :org_id, :id
+    field :delete_organization_id, :id
     field :is_confirmed, :boolean
   end
 

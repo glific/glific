@@ -76,7 +76,7 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
   "input": {
     "isActive": true,
     "isApproved": true,
-    "orgId": 1,
+    "updateOrganizationId": 1,
   }
 }
 ```
@@ -139,7 +139,7 @@ mutation deleteInactiveOrganization($id: ID!, $input: DeleteOrganizationInput!) 
   "id": "1",
   "input": {
     "isConfirmed": true,
-    "orgId": 1,
+    "deleteOrganizationId": 1,
   }
 }
 ```
@@ -191,7 +191,7 @@ Enabled days Ids represets weekdays starting from 1 for Monday.
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>orgId</strong></td>
+<td colspan="2" valign="top"><strong>updateOrganizationId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td>
 
@@ -224,7 +224,7 @@ Unique
 </thead>
 <tbody>
 <tr>
-<td colspan="2" valign="top"><strong>orgId</strong></td>
+<td colspan="2" valign="top"><strong>deleteOrganizationId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td>
 

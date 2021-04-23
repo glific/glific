@@ -174,7 +174,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       auth_query_gql_by(:update_status, user,
         variables: %{
           "input" => %{
-            "orgId" => organization.id,
+            "updateOrganizationId" => organization.id,
             "isActive" => true,
             "isApproved" => true
           }
@@ -195,7 +195,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       auth_query_gql_by(:delete_onboarded, user,
         variables: %{
           "input" => %{
-            "orgId" => organization.id,
+            "deleteOrganizationId" => organization.id,
             "isConfirmed" => true
           }
         }
