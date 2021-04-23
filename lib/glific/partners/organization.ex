@@ -130,7 +130,6 @@ defmodule Glific.Partners.Organization do
     |> validate_active_languages()
     |> validate_default_language()
     |> unique_constraint(:shortcode)
-    |> unique_constraint(:email)
     |> unique_constraint(:contact_id)
   end
 

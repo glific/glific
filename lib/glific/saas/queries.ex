@@ -3,7 +3,6 @@ defmodule Glific.Saas.Queries do
   Lets keep all the onboarding queries and validation here
   """
   import GlificWeb.Gettext
-  import Ecto.Query
 
   alias Glific.{
     Contacts,
@@ -13,7 +12,6 @@ defmodule Glific.Saas.Queries do
     Providers.GupshupContacts,
     Repo
   }
-
   alias Pow.Ecto.Schema.Changeset
 
   @doc """
@@ -64,7 +62,7 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :organization, organization)
 
       {:error, errors} ->
-        error(inspect(errors), result)
+        error(inspect(errors), result, :global)
     end
   end
 
@@ -92,7 +90,7 @@ defmodule Glific.Saas.Queries do
         |> Map.put(:contact, contact)
 
       {:error, errors} ->
-        error(inspect(errors), result)
+        error(inspect(errors), result, :global)
     end
   end
 
@@ -121,17 +119,18 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
-        error(inspect(errors), result)
+        error(inspect(errors), result, :global)
     end
   end
 
-  @spec error(String.t(), map()) :: map()
-  defp error(message, result) do
+  @spec error(String.t(), map(), atom()) :: map()
+  defp error(message, result, key) do
     result
     |> Map.put(:is_valid, false)
-    |> Map.update!(:messages, fn msgs -> [message | msgs] end)
+    |> Map.update!(:messages, fn msgs -> Map.put(msgs, key, message) end)
   end
 
+  # [message | msgs]
   # return if a string is nil or empty
   @spec empty(String.t() | nil) :: boolean
   defp empty(str), do: is_nil(str) || str == ""
@@ -146,7 +145,7 @@ defmodule Glific.Saas.Queries do
 
     if empty(api_key) || empty(app_name) do
       dgettext("error", "API Key or App Name is empty.")
-      |> error(result)
+      |> error(result, :api_key_name)
     else
       validate_bsp_keys(result, api_key, app_name)
     end
@@ -160,28 +159,25 @@ defmodule Glific.Saas.Queries do
 
     case response do
       {:ok, _users} -> result
-      {:error, message} -> error(message, result)
+      {:error, message} -> error(message, result, :app_name)
     end
   end
 
   # Ensure this shortcode is currently not being used
   @spec validate_shortcode(map(), String.t()) :: map()
   defp validate_shortcode(result, nil) do
-    dgettext("error", "Shortcode cannot be empty.") |> error(result)
+    dgettext("error", "Shortcode cannot be empty.") |> error(result, :shortcode)
   end
 
   defp validate_shortcode(result, shortcode) do
-    o =
-      Organization
-      |> where([o], o.shortcode == ^shortcode)
-      |> select([o], o.id)
-      |> Repo.all(skip_organization_id: true)
+    Repo.fetch_by(Organization, %{shortcode: shortcode}, skip_organization_id: true)
+    |> case do
+      {:ok, _} ->
+        dgettext("error", "Shortcode has already been taken.")
+        |> error(result, :shortcode)
 
-    if o == [] do
-      result
-    else
-      dgettext("error", "Shortcode has already been taken.")
-      |> error(result)
+      {:error, _} ->
+        result
     end
   end
 
@@ -193,7 +189,7 @@ defmodule Glific.Saas.Queries do
 
       _ ->
         dgettext("error", "Email is not valid.")
-        |> error(result)
+        |> error(result, :email)
     end
   end
 
@@ -205,7 +201,7 @@ defmodule Glific.Saas.Queries do
 
       _ ->
         dgettext("error", "Phone is not valid.")
-        |> error(result)
+        |> error(result, :phone)
     end
   end
 end

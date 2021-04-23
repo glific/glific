@@ -10,7 +10,8 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
-    Repo
+    Repo,
+    Saas.Onboard
   }
 
   @doc """
@@ -71,6 +72,18 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Updates an organization status is_active/is_approved
+  """
+  @spec update_organization_status(Absinthe.Resolution.t(), %{input: map()}, %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def update_organization_status(_, %{input: params}, _) do
+    with organization <- Onboard.status(params) do
+      {:ok, %{organization: organization}}
+    end
+  end
+
+  @doc """
   Deletes an organization
   """
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -79,6 +92,17 @@ defmodule GlificWeb.Resolvers.Partners do
     with {:ok, organization} <- Repo.fetch(Organization, id),
          {:ok, organization} <- Partners.delete_organization(organization) do
       {:ok, organization}
+    end
+  end
+
+  @doc """
+  Deletes an inactive organization
+  """
+  @spec delete_inactive_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_inactive_organization(_, %{input: params}, _) do
+    with {:ok, organization} <- Onboard.delete(params) do
+      {:ok, %{organization: organization}}
     end
   end
 

@@ -54,6 +54,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :is_active, :boolean
 
+    field :is_approved, :boolean
+
     field :timezone, :string
 
     field :session_limit, :integer
@@ -110,6 +112,17 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :end_time, :time
     field :enabled_days, list_of(:enabled_day_input)
     field :flow_id, :id
+  end
+
+  input_object :organization_status_input do
+    field :update_organization_id, :id
+    field :is_active, :boolean
+    field :is_approved, :boolean
+  end
+
+  input_object :delete_organization_input do
+    field :delete_organization_id, :id
+    field :is_confirmed, :boolean
   end
 
   input_object :organization_input do
@@ -182,10 +195,22 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.update_organization/3)
     end
 
+    field :update_organization_status, :organization_result do
+      arg(:input, :organization_status_input)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.update_organization_status/3)
+    end
+
     field :delete_organization, :organization_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
+    end
+
+    field :delete_inactive_organization, :organization_result do
+      arg(:input, :delete_organization_input)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.delete_inactive_organization/3)
     end
   end
 

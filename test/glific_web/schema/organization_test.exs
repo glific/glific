@@ -37,7 +37,9 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
+  load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
+  load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
 
   test "organizations field returns list of organizations", %{user: user} do
@@ -163,6 +165,47 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "createOrganization", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+  end
+
+  test "update an organization status", %{user: user} do
+    organization = Fixtures.organization_fixture()
+
+    result =
+      auth_query_gql_by(:update_status, user,
+        variables: %{
+          "input" => %{
+            "updateOrganizationId" => organization.id,
+            "isActive" => true,
+            "isApproved" => true
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    organization = get_in(query_data, [:data, "updateOrganizationStatus", "organization"])
+    assert organization["isActive"] == true
+    assert organization["isApproved"] == true
+    assert organization["name"] == "Fixture Organization"
+  end
+
+  test "delete organization inactive organization", %{user: user} do
+    organization = Fixtures.organization_fixture(%{is_active: false})
+
+    result =
+      auth_query_gql_by(:delete_onboarded, user,
+        variables: %{
+          "input" => %{
+            "deleteOrganizationId" => organization.id,
+            "isConfirmed" => true
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    organization = get_in(query_data, [:data, "deleteInactiveOrganization", "organization"])
+    assert organization["isActive"] == false
+    assert organization["isApproved"] == false
+    assert organization["name"] == "Fixture Organization"
   end
 
   test "update an organization and test possible scenarios and errors", %{user: user} do

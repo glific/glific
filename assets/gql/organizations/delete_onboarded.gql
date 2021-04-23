@@ -1,0 +1,16 @@
+mutation deleteInactiveOrganization($input:DeleteOrganizationInput!) {
+  deleteInactiveOrganization(input: $input) {
+    organization {
+      email
+      id
+      isApproved
+      isActive
+      name
+      shortcode
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
