@@ -159,7 +159,7 @@ defmodule Glific.Saas.Queries do
 
     case response do
       {:ok, _users} -> result
-      {:error, message} -> error(message, result, :api_key_name)
+      {:error, message} -> error(message, result, :app_name)
     end
   end
 
