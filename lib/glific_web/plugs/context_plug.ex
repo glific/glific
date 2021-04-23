@@ -27,8 +27,9 @@ defmodule GlificWeb.ContextPlug do
       Glific.Repo.put_current_user(current_user)
 
       # Add the locale also if language is loaded
-      if Ecto.assoc_loaded?(current_user.language),
-        do: Gettext.put_locale(current_user.language.locale)
+      # if Ecto.assoc_loaded?(current_user.language),
+      # do:
+      Gettext.put_locale(current_user.language.locale)
 
       %{current_user: current_user}
     else
