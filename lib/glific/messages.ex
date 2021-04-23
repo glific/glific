@@ -400,7 +400,8 @@ defmodule Glific.Messages do
       flow_id: args[:flow_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
-      organization_id: session_template.organization_id
+      organization_id: session_template.organization_id,
+      params: args[:params]
     }
 
     create_and_send_message(message_params)
