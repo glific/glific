@@ -408,9 +408,16 @@ defmodule Glific.Messages do
   defp fetch_language_specific_template(session_template, id) do
     contact = Contacts.get_contact!(id)
 
-    if session_template.language_id != contact.language_id,
-      do: session_template.translations[Integer.to_string(contact.language_id)],
-      else: session_template
+    with true <- session_template.language_id != contact.language_id,
+         translation <- session_template.translations[Integer.to_string(contact.language_id)],
+         false <- is_nil(translation) do
+      session_template
+      |> Map.from_struct()
+      |> Map.put(:body, translation["body"])
+      |> Map.put(:uuid, translation["uuid"])
+    else
+      _ -> session_template
+    end
   end
 
   @doc """
@@ -425,13 +432,7 @@ defmodule Glific.Messages do
     contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, template} = Repo.fetch(SessionTemplate, template_id)
 
-    fetch_language_specific_template = fetch_language_specific_template(template, receiver_id)
-
-    session_template =
-      template
-      |> Map.from_struct()
-      |> Map.put(:body, fetch_language_specific_template["body"])
-      |> Map.put(:uuid, fetch_language_specific_template["uuid"])
+    session_template = fetch_language_specific_template(template, receiver_id)
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
@@ -451,8 +452,6 @@ defmodule Glific.Messages do
         media_id: media_id,
         is_optin_flow: Map.get(attrs, :is_optin_flow, false)
       }
-
-      IO.inspect(message_params)
 
       Contacts.can_send_message_to?(contact, true, attrs)
       |> create_and_send_message(message_params)
