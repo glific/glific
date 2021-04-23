@@ -81,6 +81,8 @@ defmodule GlificWeb.RouterTest do
         conn
         |> post("/api", %{query: "", variables: %{}})
 
+      IO.inspect(response.status)
+
       assert response.status == 401
 
       response =

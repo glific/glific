@@ -80,7 +80,6 @@ defmodule GlificWeb.Schema do
     import_fields(:billing_queries)
   end
 
-
   mutation do
     import_fields(:contact_mutations)
 

@@ -80,15 +80,15 @@ defmodule GlificWeb.Router do
     forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
   end
 
-  if Mix.env == :dev do
+  if Mix.env() in [:dev, :test] do
     scope "/" do
       # pipe_through [:api, :api_protected]
       pipe_through [:api]
 
       forward "/graphiql",
-        Absinthe.Plug.GraphiQL,
-        schema: GlificWeb.Schema,
-        interface: :playground
+              Absinthe.Plug.GraphiQL,
+              schema: GlificWeb.Schema,
+              interface: :playground
     end
   end
 

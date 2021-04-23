@@ -8,13 +8,12 @@ defmodule GlificWeb.Resolvers.Media do
   """
   @spec upload(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def upload(_,
-    %{media: media,
-      type: type,
-      organization_id: organization_id},
-    _context) do
-
-    IO.inspect(File.read!(media.path), label: "Contents")
-    {:ok, "success"}
+  def upload(
+        _,
+        %{media: media, type: type, organization_id: organization_id},
+        _context
+      ) do
+    content = File.read!(media.path)
+    {:ok, "Success: #{type}, #{organization_id}, #{content}"}
   end
 end

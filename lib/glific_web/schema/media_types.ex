@@ -10,8 +10,8 @@ defmodule GlificWeb.Schema.MediaTypes do
   object :media_mutations do
     @desc "upload a media file and type"
     field :upload_media, :string do
-      arg :media, non_null(:upload)
-      arg :type, non_null(:string)
+      arg(:media, non_null(:upload))
+      arg(:type, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Media.upload/3)
     end
