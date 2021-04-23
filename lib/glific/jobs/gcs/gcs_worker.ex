@@ -258,8 +258,7 @@ defmodule Glific.Jobs.GcsWorker do
         File.rm(local)
         {:ok, get_public_link(response)}
 
-         {:error, error} ->
-           IO.inspect(error)
+      {:error, error} ->
         error = handle_gcs_error(organization_id, error)
         {:error, error}
     end

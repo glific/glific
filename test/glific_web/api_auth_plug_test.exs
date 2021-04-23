@@ -28,10 +28,11 @@ defmodule GlificWeb.APIAuthPlugTest do
     {:ok, conn: conn, user: user}
   end
 
-  defp delete_fields(user), do:
-  user
-  |> Map.delete(:fingerprint)
-  |> Map.delete(:language)
+  defp delete_fields(user),
+    do:
+      user
+      |> Map.delete(:fingerprint)
+      |> Map.delete(:language)
 
   test "can create, fetch, renew, and delete session", %{conn: conn, user: user} do
     assert {_no_auth_conn, nil} = APIAuthPlug.fetch(conn, @pow_config)
@@ -79,7 +80,6 @@ defmodule GlificWeb.APIAuthPlugTest do
   end
 
   defp with_auth_header(conn, token), do: Plug.Conn.put_req_header(conn, "authorization", token)
-
 
   test "delete all existing sessions of a user", %{conn: conn, user: user} do
     {data, api_user} = APIAuthPlug.create(conn, user, @pow_config)
