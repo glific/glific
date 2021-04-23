@@ -425,8 +425,6 @@ defmodule Glific.Templates do
       translations: translations
     }
 
-    IO.inspect(update_attrs)
-
     approved_db_template
     |> SessionTemplate.changeset(update_attrs)
     |> Repo.update()

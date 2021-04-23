@@ -392,6 +392,7 @@ defmodule Glific.Messages do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
+      template_id: session_template.id,
       media_id: session_template.message_media_id,
       sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
