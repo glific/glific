@@ -2,6 +2,7 @@ defmodule GlificWeb.Resolvers.Media do
   @moduledoc """
   Resolver to deal with file uploads, which we send directly to GCS
   """
+  alias Glific.Jobs.GcsWorker
 
   @doc """
   Upload a file given its type (to determine the extention)
@@ -13,7 +14,7 @@ defmodule GlificWeb.Resolvers.Media do
         %{media: media, type: type, organization_id: organization_id},
         _context
       ) do
-    content = File.read!(media.path)
-    {:ok, "Success: #{type}, #{organization_id}, #{content}"}
+    remote_name = "media/" <> Ecto.UUID.generate() <> "." <> type
+    GcsWorker.upload_media(media.path, remote_name, organization_id)
   end
 end

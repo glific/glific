@@ -170,6 +170,7 @@ defmodule Glific.Jobs.GcsWorker do
     :ok
   end
 
+  @spec uploading_to_gcs(String.t(), map()) :: :ok
   defp uploading_to_gcs(local_name, media) do
     upload_file_on_gcs(media)
     |> case do
@@ -178,16 +179,16 @@ defmodule Glific.Jobs.GcsWorker do
         |> update_gcs_url(media["id"])
 
         File.rm(local_name)
-        :ok
 
       {:error, error} ->
-        handle_upload_error(media["organization_id"], error)
+        handle_gcs_error(media["organization_id"], error)
     end
 
     :ok
   end
 
-  defp handle_upload_error(org_id, error) do
+  @spec handle_gcs_error(non_neg_integer, map()) :: String.t()
+  defp handle_gcs_error(org_id, error) do
     Jason.decode(error.body)
     |> case do
       {:ok, data} ->
@@ -200,7 +201,7 @@ defmodule Glific.Jobs.GcsWorker do
           Notifications.create_notification(%{
             category: "GCS",
             message: "Billing account is disabled for GCS",
-            severity: "Error",
+            severity: "Critical",
             organization_id: org_id,
             entity: %{
               error: "#{inspect(error)}"
@@ -208,8 +209,13 @@ defmodule Glific.Jobs.GcsWorker do
           })
         end
 
+        "Error while uploading file to GCS #{inspect(error)}"
+
       _ ->
-        raise("Error while uploading file to GCS #{inspect(error)}")
+        error = "Error while uploading file to GCS #{inspect(error)}"
+        {_, stacktrace} = Process.info(self(), :current_stacktrace)
+        Appsignal.send_error(:error, error, stacktrace)
+        error
     end
   end
 
@@ -223,19 +229,40 @@ defmodule Glific.Jobs.GcsWorker do
           {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
   defp upload_file_on_gcs(%{"local_name" => local_name} = media) do
     remote_name = Glific.Clients.gcs_file_name(media)
+    upload_file_on_gcs(local_name, remote_name, media["organization_id"])
+  end
 
-    Logger.info(
-      "Uploading to GCS, org_id: #{media["organization_id"]}, file_name: #{remote_name}"
-    )
+  @spec upload_file_on_gcs(String.t(), String.t(), non_neg_integer) ::
+          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
+  defp upload_file_on_gcs(local, remote, organization_id) do
+    Logger.info("Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
 
     CloudStorage.put(
       Glific.Media,
       :original,
       {
-        %Waffle.File{path: local_name, file_name: remote_name},
-        Integer.to_string(media["organization_id"])
+        %Waffle.File{path: local, file_name: remote},
+        "#{organization_id}"
       }
     )
+  end
+
+  @doc """
+  Public interface to upload a file provided by the org at local name to gcs as remote name
+  """
+  @spec upload_media(String.t(), String.t(), non_neg_integer) :: {:ok | :error, String.t()}
+  def upload_media(local, remote, organization_id) do
+    upload_file_on_gcs(local, remote, organization_id)
+    |> case do
+      {:ok, response} ->
+        File.rm(local)
+        {:ok, get_public_link(response)}
+
+         {:error, error} ->
+           IO.inspect(error)
+        error = handle_gcs_error(organization_id, error)
+        {:error, error}
+    end
   end
 
   @spec update_gcs_url(String.t(), integer()) ::
