@@ -82,8 +82,7 @@ defmodule GlificWeb.Router do
 
   if Mix.env() in [:dev, :test] do
     scope "/" do
-      # pipe_through [:api, :api_protected]
-      pipe_through [:api]
+      pipe_through [:api, :api_protected]
 
       forward "/graphiql",
               Absinthe.Plug.GraphiQL,

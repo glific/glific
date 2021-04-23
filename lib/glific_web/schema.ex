@@ -152,6 +152,10 @@ defmodule GlificWeb.Schema do
   def middleware(middleware, _field, _object),
     do: middleware
 
+  @spec repo_opts(map()) :: Keyword.t()
+  defp repo_opts(%{current_user: user}) when user != nil, do: [organization_id: user.organization_id]
+  defp repo_opts(_params), do: []
+
   @doc """
   Used to set some values in the context that we may need in order to run.
   We store the organization id and the current user in the context once the user has been
@@ -163,7 +167,7 @@ defmodule GlificWeb.Schema do
       Dataloader.new()
       |> Dataloader.add_source(
         Repo,
-        Dataloader.Ecto.new(Repo, repo_opts: [organization_id: ctx.current_user.organization_id])
+        Dataloader.Ecto.new(Repo, repo_opts: repo_opts(ctx))
       )
 
     Map.put(ctx, :loader, loader)
