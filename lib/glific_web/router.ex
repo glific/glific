@@ -78,11 +78,18 @@ defmodule GlificWeb.Router do
     pipe_through [:api, :api_protected]
 
     forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
+  end
 
-    forward "/graphiql", Absinthe.Plug.GraphiQL,
-      schema: GlificWeb.Schema,
-      interface: :simple,
-      socket: GlificWeb.UserSocket
+  if Mix.env == :dev do
+    scope "/" do
+      # pipe_through [:api, :api_protected]
+      pipe_through [:api]
+
+      forward "/graphiql",
+        Absinthe.Plug.GraphiQL,
+        schema: GlificWeb.Schema,
+        interface: :playground
+    end
   end
 
   # pipeline :gupshup do

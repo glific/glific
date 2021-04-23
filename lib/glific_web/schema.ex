@@ -12,6 +12,9 @@ defmodule GlificWeb.Schema do
 
   import_types(Absinthe.Type.Custom)
 
+  # Important: Needed to use the `:upload` type
+  import_types(Absinthe.Plug.Types)
+
   import_types(__MODULE__.ContactTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
@@ -37,6 +40,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.NotificationTypes)
   import_types(__MODULE__.LocationTypes)
   import_types(__MODULE__.BillingTypes)
+  import_types(__MODULE__.MediaTypes)
 
   query do
     import_fields(:contact_queries)
@@ -75,6 +79,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:billing_queries)
   end
+
 
   mutation do
     import_fields(:contact_mutations)
@@ -116,6 +121,8 @@ defmodule GlificWeb.Schema do
     import_fields(:trigger_mutations)
 
     import_fields(:billing_mutations)
+
+    import_fields(:media_mutations)
   end
 
   subscription do
