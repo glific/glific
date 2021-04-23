@@ -49,9 +49,7 @@ defmodule GlificWeb.UserSocket do
   end
 
   # This function will be called when there was no authentication information
-  def connect(_params, _socket, _connect_info) do
-    :error
-  end
+  def connect(_params, _socket, _connect_info), do: :error
 
   # Socket id's are topics that allow you to identify all sockets for a given user:
   #

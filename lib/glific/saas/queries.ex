@@ -12,6 +12,7 @@ defmodule Glific.Saas.Queries do
     Providers.GupshupContacts,
     Repo
   }
+
   alias Pow.Ecto.Schema.Changeset
 
   @doc """
