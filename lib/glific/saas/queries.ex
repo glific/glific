@@ -12,6 +12,7 @@ defmodule Glific.Saas.Queries do
     Providers.GupshupContacts,
     Repo
   }
+  alias Pow.Ecto.Schema.Changeset
 
   @doc """
   Main function to setup the organization entity in Glific
@@ -61,7 +62,7 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :organization, organization)
 
       {:error, errors} ->
-        error(inspect(errors), result, :create_organization)
+        error(inspect(errors), result, :global)
     end
   end
 
@@ -89,7 +90,7 @@ defmodule Glific.Saas.Queries do
         |> Map.put(:contact, contact)
 
       {:error, errors} ->
-        error(inspect(errors), result, :create_contact)
+        error(inspect(errors), result, :global)
     end
   end
 
@@ -118,7 +119,7 @@ defmodule Glific.Saas.Queries do
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
-        error(inspect(errors), result, :credential)
+        error(inspect(errors), result, :global)
     end
   end
 
@@ -128,6 +129,7 @@ defmodule Glific.Saas.Queries do
     |> Map.put(:is_valid, false)
     |> Map.update!(:messages, fn msgs -> Map.put(msgs, key, message) end)
   end
+
   # [message | msgs]
   # return if a string is nil or empty
   @spec empty(String.t() | nil) :: boolean
@@ -143,7 +145,7 @@ defmodule Glific.Saas.Queries do
 
     if empty(api_key) || empty(app_name) do
       dgettext("error", "API Key or App Name is empty.")
-      |> error(result, :bsp)
+      |> error(result, :api_key_name)
     else
       validate_bsp_keys(result, api_key, app_name)
     end
@@ -157,7 +159,7 @@ defmodule Glific.Saas.Queries do
 
     case response do
       {:ok, _users} -> result
-      {:error, message} -> error(message, result, :bsp)
+      {:error, message} -> error(message, result, :api_key_name)
     end
   end
 
@@ -181,14 +183,13 @@ defmodule Glific.Saas.Queries do
 
   @spec validate_email(map(), String.t()) :: map()
   defp validate_email(result, email) do
-    Repo.fetch_by(Organization, %{email: email}, skip_organization_id: true)
-    |> case do
-      {:ok, _} ->
+    case Changeset.validate_email(email) do
+      :ok ->
+        result
+
+      _ ->
         dgettext("error", "Email is not valid.")
         |> error(result, :email)
-
-      {:error, _} ->
-        result
     end
   end
 
