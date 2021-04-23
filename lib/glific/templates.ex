@@ -270,12 +270,51 @@ defmodule Glific.Templates do
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
         Map.has_key?(db_templates, template["id"]) ->
-          do_update_hsm(template, db_templates)
+          update_hsm(template, organization, languages)
 
         true ->
           true
       end
     end)
+  end
+
+  @spec update_hsm(map(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp update_hsm(template, organization, languages) do
+    # get updated db templates to handle multiple approved translations
+    db_templates =
+      list_session_templates(%{filter: %{is_hsm: true}})
+      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+
+    db_template_translations =
+      db_templates
+      |> Map.values()
+      |> Enum.filter(fn db_template ->
+        db_template.shortcode == template["elementName"]
+      end)
+
+    approved_db_templates =
+      db_template_translations
+      |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
+
+    with true <- template["status"] == "APPROVED",
+         true <- length(db_template_translations) > 1,
+         true <- length(approved_db_templates) >= 1 do
+      [approved_db_template] = approved_db_templates
+
+      case update_hsm_translation(template, approved_db_template, organization, languages) do
+        {:ok, _} ->
+          # delete old entry
+          db_templates[template["id"]]
+          |> Repo.delete()
+
+        {:error, error} ->
+          {:error, error}
+      end
+    else
+      _ ->
+        do_update_hsm(template, db_templates)
+    end
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
@@ -350,5 +389,52 @@ defmodule Glific.Templates do
       db_templates[template["id"]]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
+  end
+
+  @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp update_hsm_translation(template, approved_db_template, organization, languages) do
+    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+
+    type =
+      template["templateType"]
+      |> String.downcase()
+      |> Glific.safe_string_to_atom()
+
+    # setting default language id if languageCode is not known
+    language_id = languages[template["languageCode"]] || organization.default_language_id
+
+    example =
+      case Jason.decode(template["meta"]) do
+        {:ok, meta} ->
+          meta["example"]
+
+        _ ->
+          nil
+      end
+
+    translations =
+      %{
+        "#{language_id}" => %{
+          uuid: template["id"],
+          body: template["data"],
+          language_id: language_id,
+          status: template["status"],
+          type: type,
+          number_parameters: number_of_parameter,
+          example: example,
+          category: template["category"],
+          label: template["elementName"]
+        }
+      }
+      |> Map.merge(approved_db_template.translations)
+
+    update_attrs = %{
+      translations: translations
+    }
+
+    approved_db_template
+    |> SessionTemplate.changeset(update_attrs)
+    |> Repo.update()
   end
 end
