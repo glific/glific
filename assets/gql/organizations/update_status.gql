@@ -1,0 +1,16 @@
+mutation updateOrganizationStatus($input:OrganizationStatusInput!) {
+  updateOrganizationStatus(input: $input) {
+    organization {
+      email
+      id
+      isApproved
+      isActive
+      name
+      shortcode
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

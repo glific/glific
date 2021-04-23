@@ -31,7 +31,7 @@ defmodule Glific.Saas.Onboard do
   """
   @spec status(map()) :: Organization.t() | nil
   def status(%{
-        organization_id: organization_id,
+        update_organization_id: organization_id,
         is_active: is_active,
         is_approved: is_approved
       }) do
@@ -53,15 +53,15 @@ defmodule Glific.Saas.Onboard do
   since this is a super destructive operation
   """
   @spec delete(map()) :: {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
-  def delete(%{organization_id: organization_id, is_confirmed: true}) do
+  def delete(%{delete_organization_id: organization_id, is_confirmed: true}) do
     organization = Partners.get_organization!(organization_id)
 
     # ensure that the organization is not active, our last check before we
     # blow it away
     if organization.is_active do
-      Partners.delete_organization(organization)
-    else
       {:error, "Organization is still active"}
+    else
+      Partners.delete_organization(organization)
     end
   end
 
