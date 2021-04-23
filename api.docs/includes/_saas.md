@@ -35,7 +35,7 @@ In the case of a validation failure
 ```json
 {
   "is_valid": FALSE,
-  "messages": ["Error Message 1", "Error Message 2", "Error Message 3"]
+  "messages": {email: "email is invalid", shortcode: "shortcode already taken"}
 }
 ```
 
