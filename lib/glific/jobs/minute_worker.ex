@@ -14,7 +14,6 @@ defmodule Glific.Jobs.MinuteWorker do
     Flows.FlowContext,
     Jobs.BigQueryWorker,
     Jobs.BSPBalanceWorker,
-    Jobs.ChatbaseWorker,
     Jobs.GcsWorker,
     Partners,
     # Partners.Billing,
@@ -69,7 +68,6 @@ defmodule Glific.Jobs.MinuteWorker do
           :enable_out_of_office,
           for: %{organization_id: organization_id}
         ),
-      "chatbase" => organization.services["chatbase"] != nil,
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil
     }
@@ -94,7 +92,6 @@ defmodule Glific.Jobs.MinuteWorker do
         fn {org_id, service}, acc ->
           acc
           |> add_service("fun_with_flags", service["fun_with_flags"], org_id)
-          |> add_service("chatbase", service["chatbase"], org_id)
           |> add_service("bigquery", service["bigquery"], org_id)
           |> add_service("google_cloud_storage", service["google_cloud_storage"], org_id)
         end
@@ -122,7 +119,6 @@ defmodule Glific.Jobs.MinuteWorker do
        when job in [
               "contact_status",
               "wakeup_flows",
-              "chatbase",
               "bigquery",
               "gcs",
               "execute_triggers"
@@ -137,9 +133,6 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "execute_triggers" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
-
-      "chatbase" ->
-        Partners.perform_all(&ChatbaseWorker.perform_periodic/1, nil, services["chatbase"], true)
 
       "bigquery" ->
         Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)

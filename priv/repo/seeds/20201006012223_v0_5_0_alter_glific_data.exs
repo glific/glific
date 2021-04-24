@@ -19,8 +19,6 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
 
     {:ok, goth} = Repo.fetch_by(Provider, %{shortcode: "goth"})
 
-    {:ok, chatbase} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
-
     {:ok, bigquery} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
 
     {:ok, google_cloud_storage} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
@@ -59,13 +57,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
 
     Repo.update!(
       Ecto.Changeset.change(goth, %{
-        description: "Setup for GOTH which is required for Dialogflow and Chatbase"
-      })
-    )
-
-    Repo.update!(
-      Ecto.Changeset.change(chatbase, %{
-        description: "Integrate chatbase to create analytics and reports your way"
+        description: "Setup for GOTH which is required for Dialogflow"
       })
     )
 
