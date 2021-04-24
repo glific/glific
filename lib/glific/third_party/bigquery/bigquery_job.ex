@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.BigqueryJob do
+defmodule Glific.BigQuery.BigQueryJob do
   @moduledoc """
   Book keeping table to keep track of the last job that we processed from the
   messages belonging to the organization
@@ -37,7 +37,7 @@ defmodule Glific.Jobs.BigqueryJob do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(BigqueryJob.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(BigQueryJob.t(), map()) :: Ecto.Changeset.t()
   def changeset(search, attrs) do
     search
     |> cast(attrs, @required_fields ++ @optional_fields)

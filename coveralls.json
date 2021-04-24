@@ -1,8 +1,4 @@
 {
-    "coverage_options": {
-        "minimum_coverage": 85,
-        "treat_no_relevant_lines_as_covered": true
-    },
     "skip_files": [
         "lib/glific.ex",
         "lib/glific/application.ex",
@@ -59,5 +55,9 @@
         "lib/glific_web/uploaders",
         "lib/glific_web/views",
         "test/support"
-    ]
+    ],
+    "coverage_options": {
+        "treat_no_relevant_lines_as_covered": true,
+        "minimum_coverage": 85
+    }
 }

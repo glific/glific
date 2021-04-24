@@ -10,7 +10,7 @@ defmodule Glific.Partners do
   require Logger
 
   alias Glific.{
-    Bigquery,
+    BigQuery,
     Caches,
     Contacts.Contact,
     Flags,
@@ -789,7 +789,7 @@ defmodule Glific.Partners do
   """
   @spec credential_update_callback(Organization.t(), String.t()) :: :ok
   def credential_update_callback(organization, "bigquery") do
-    Bigquery.sync_schema_with_bigquery(organization.id)
+    BigQuery.sync_schema_with_bigquery(organization.id)
     :ok
   end
 

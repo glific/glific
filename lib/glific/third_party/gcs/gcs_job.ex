@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.GcsJob do
+defmodule Glific.GCS.GcsJob do
   @moduledoc """
   Book keeping table to keep track of the last job that we processed from the
   messages belonging to the organization

@@ -204,7 +204,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           keys: %{
             url: %{
               type: :string,
-              label: "Bigquery Url",
+              label: "BigQuery Url",
               default: "https://www.googleapis.com/auth/cloud-platform",
               view_only: true
             }

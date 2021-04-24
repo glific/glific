@@ -8,8 +8,8 @@ defmodule Glific.Stats do
   use Publicist
 
   alias Glific.{
+    BigQuery.BigQueryWorker,
     Flows.FlowContext,
-    Jobs.BigQueryWorker,
     Messages.Message,
     Partners,
     Partners.Saas,

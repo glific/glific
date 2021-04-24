@@ -8,7 +8,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.FlowLabel,
-    Jobs.BigqueryJob,
+    BigQuery.BigQueryJob,
     Partners,
     Partners.Organization,
     Partners.Provider,
@@ -567,7 +567,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp bigquery_jobs(organization) do
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "messages",
       table_id: 0,
       organization_id: organization.id,
@@ -575,7 +575,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "contacts",
       table_id: 0,
       organization_id: organization.id,
@@ -583,7 +583,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "flows",
       table_id: 0,
       organization_id: organization.id,
@@ -591,7 +591,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "flow_results",
       table_id: 0,
       organization_id: organization.id,
@@ -599,7 +599,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "stats",
       table_id: 0,
       organization_id: organization.id,

@@ -8,13 +8,13 @@ defmodule Glific.Jobs.MinuteWorker do
     max_attempts: 3
 
   alias Glific.{
+    BigQuery.BigQueryWorker,
     Caches,
     Contacts,
     Flags,
     Flows.FlowContext,
-    Jobs.BigQueryWorker,
     Jobs.BSPBalanceWorker,
-    Jobs.GcsWorker,
+    GCS.GcsWorker,
     Partners,
     # Partners.Billing,
     Searches.CollectionCount,
