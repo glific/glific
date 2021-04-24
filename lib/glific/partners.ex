@@ -10,7 +10,7 @@ defmodule Glific.Partners do
   require Logger
 
   alias Glific.{
-    Bigquery,
+    BigQuery,
     Caches,
     Contacts.Contact,
     Flags,
@@ -43,7 +43,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["dialogflow", "goth", "shortcode", "chatbase"], provider.shortcode)
+      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
     end)
   end
 
@@ -387,7 +387,7 @@ defmodule Glific.Partners do
     # this is of the form {:global_org_key, {:organization, value}}
     # we want the value element
     cache_key = cachex_key |> elem(1) |> elem(1)
-    Logger.info("Loading organization cache: #{cache_key}")
+    Logger.info("Loading orgcanization cache: #{cache_key}")
 
     organization =
       if is_integer(cache_key) do
@@ -789,7 +789,7 @@ defmodule Glific.Partners do
   """
   @spec credential_update_callback(Organization.t(), String.t()) :: :ok
   def credential_update_callback(organization, "bigquery") do
-    Bigquery.sync_schema_with_bigquery(organization.id)
+    BigQuery.sync_schema_with_bigquery(organization.id)
     :ok
   end
 

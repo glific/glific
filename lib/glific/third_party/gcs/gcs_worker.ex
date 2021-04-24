@@ -1,4 +1,4 @@
-defmodule Glific.Jobs.GcsWorker do
+defmodule Glific.GCS.GcsWorker do
   @moduledoc """
   Process the  media table for each organization. Chunk number of message medias
   in groups of 128 and create a Gcs Worker Job to deliver the message media url to

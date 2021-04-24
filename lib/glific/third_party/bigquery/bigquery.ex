@@ -1,18 +1,18 @@
-defmodule Glific.Bigquery do
+defmodule Glific.BigQuery do
   @moduledoc """
-  Glific Bigquery Dataset and table creation
+  Glific BigQuery Dataset and table creation
   """
 
   require Logger
   use Publicist
 
   alias Glific.{
-    BigquerySchema,
+    BigQuery.BigQueryJob,
+    BigQuery.Schema,
     Contacts.Contact,
     Flows.FlowResult,
     Flows.FlowRevision,
     Jobs,
-    Jobs.BigqueryJob,
     Messages.Message,
     Notifications,
     Partners,
@@ -126,7 +126,7 @@ defmodule Glific.Bigquery do
         organization_id,
         %{conn: conn, dataset_id: dataset_id, project_id: project_id} = _cred
       ) do
-    Logger.info("refresh Bigquery schema for org_id: #{organization_id}")
+    Logger.info("refresh BigQuery schema for org_id: #{organization_id}")
     insert_bigquery_jobs(organization_id)
     create_tables(conn, organization_id, dataset_id, project_id)
     alter_tables(conn, organization_id, dataset_id, project_id)
@@ -149,13 +149,13 @@ defmodule Glific.Bigquery do
   @doc false
   @spec create_bigquery_job(String.t(), non_neg_integer) :: :ok
   defp create_bigquery_job(table_name, organization_id) do
-    Repo.fetch_by(BigqueryJob, %{table: table_name, organization_id: organization_id})
+    Repo.fetch_by(BigQueryJob, %{table: table_name, organization_id: organization_id})
     |> case do
       {:ok, bigquery_job} ->
         bigquery_job
 
       _ ->
-        %BigqueryJob{table: table_name, table_id: 0, organization_id: organization_id}
+        %BigQueryJob{table: table_name, table_id: 0, organization_id: organization_id}
         |> Repo.insert!()
     end
 
@@ -185,7 +185,7 @@ defmodule Glific.Bigquery do
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp flat_fields_procedure(conn, dataset_id, project_id) do
     routine_id = "flat_fields"
-    defination = BigquerySchema.flat_fields_procedure(project_id, dataset_id)
+    defination = Schema.flat_fields_procedure(project_id, dataset_id)
 
     {:ok, _res} =
       create_or_update_procedure(
@@ -220,7 +220,7 @@ defmodule Glific.Bigquery do
     organization_id
     |> bigquery_tables()
     |> Enum.each(fn {table_id, schema_fn} ->
-      apply(BigquerySchema, schema_fn, [])
+      apply(Schema, schema_fn, [])
       |> create_table(%{
         conn: conn,
         dataset_id: dataset_id,
@@ -241,7 +241,7 @@ defmodule Glific.Bigquery do
         organization_id
         |> bigquery_tables()
         |> Enum.each(fn {table_id, schema_fn} ->
-          apply(BigquerySchema, schema_fn, [])
+          apply(Schema, schema_fn, [])
           |> alter_table(%{
             conn: conn,
             dataset_id: dataset_id,
@@ -495,7 +495,7 @@ defmodule Glific.Bigquery do
 
     cond do
       res.insertErrors != nil ->
-        raise("Bigquery Insert Error for table #{table} with res: #{inspect(res)}")
+        raise("BigQuery Insert Error for table #{table} with res: #{inspect(res)}")
 
       ## Max id will be nil or 0 in case of update statement.
       max_id not in [nil, 0] ->
@@ -536,8 +536,8 @@ defmodule Glific.Bigquery do
         Partners.disable_credential(organization_id, "bigquery")
 
         Notifications.create_notification(%{
-          category: "Bigquery",
-          message: "Billing account is disabled for Bigquery",
+          category: "BigQuery",
+          message: "Billing account is disabled for BigQuery",
           severity: "Error",
           organization_id: organization_id,
           entity: %{
@@ -546,7 +546,7 @@ defmodule Glific.Bigquery do
         })
 
       _ ->
-        raise("Bigquery Insert Error for table #{table}  #{response}")
+        raise("BigQuery Insert Error for table #{table}  #{response}")
     end
   end
 

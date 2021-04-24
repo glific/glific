@@ -1,13 +1,13 @@
 defmodule Glific.GCS do
   @moduledoc """
-  Glific Bigquery Dataset and table creation
+  Glific GCS Manager
   """
 
   @behaviour Waffle.Storage.Google.Token.Fetcher
   require Logger
 
   alias Glific.{
-    Jobs.GcsJob,
+    GCS.GcsJob,
     Partners,
     Repo
   }

@@ -2,7 +2,7 @@ defmodule GlificWeb.Resolvers.Media do
   @moduledoc """
   Resolver to deal with file uploads, which we send directly to GCS
   """
-  alias Glific.Jobs.GcsWorker
+  alias Glific.GCS.GcsWorker
 
   @doc """
   Upload a file given its type (to determine the extention)

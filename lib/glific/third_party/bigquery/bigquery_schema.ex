@@ -1,4 +1,4 @@
-defmodule Glific.BigquerySchema do
+defmodule Glific.BigQuery.Schema do
   @moduledoc """
   Schema for tables to be created for a dataset
   """

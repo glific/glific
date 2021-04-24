@@ -49,7 +49,6 @@ oban_queues = [
 oban_crontab = [
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-  {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
