@@ -49,5 +49,8 @@ npm-debug.log
 .vscode
 .DS_Store
 
+# ignore the certificate files
+/priv/cert/
+
 # don't commit mnesia files
 /Mnesia*

@@ -90,9 +90,18 @@ to update your codebase from the glicic repository.
   * Ensure you have not modified any files in this directory, by running: `git status`
   * Run the setup command: `mix setup`
 
-## Deploying release on ECS with CD
-1. If you are using AWS codebuild for CD, use buildspec.yml.sample file content for creating and pushing docker image.
-2. For using and alternative repository like docker hub, you just need to make some changes in the pre_build phase (REPOSITORY_URI and authentications), the rest of the phases will remains same.
+## Use SSL for frontend and backend
+
+(we'll be making the switch to using SSL for both frontend and backend in development post 1.5).
+These are the preliminary  steps invovled
+
+  * Install mkcert (https://github.com/FiloSottile/mkcert)
+  * ```mkcert --install```
+  * ```mkcert glific.test api.glific.test```
+  * ```mkdir priv/cert```
+  * ```mv glific.test+1* priv/cert priv/cert```
+  * The backend config files for development will assume that the port is 4001 with the above hostnames
+  * Switch the frontend to use https port 4001 for the backend
 
 ## Documentation
 
