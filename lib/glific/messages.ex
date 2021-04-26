@@ -441,21 +441,22 @@ defmodule Glific.Messages do
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
-      message_params = %{
-        body: updated_template.body,
-        flow_id: attrs.flow_id,
-        type: updated_template.type,
-        is_hsm: updated_template.is_hsm,
-        organization_id: session_template.organization_id,
-        sender_id: Partners.organization_contact_id(session_template.organization_id),
-        receiver_id: receiver_id,
-        template_uuid: session_template.uuid,
-        template_id: template_id,
-        template_type: session_template.type,
-        params: parameters,
-        media_id: media_id,
-        is_optin_flow: Map.get(attrs, :is_optin_flow, false)
-      }
+      message_params =
+        %{
+          body: updated_template.body,
+          type: updated_template.type,
+          is_hsm: updated_template.is_hsm,
+          organization_id: session_template.organization_id,
+          sender_id: Partners.organization_contact_id(session_template.organization_id),
+          receiver_id: receiver_id,
+          template_uuid: session_template.uuid,
+          template_id: template_id,
+          template_type: session_template.type,
+          params: parameters,
+          media_id: media_id,
+          is_optin_flow: Map.get(attrs, :is_optin_flow, false)
+        }
+        |> check_flow_id(attrs)
 
       Contacts.can_send_message_to?(contact, true, attrs)
       |> create_and_send_message(message_params)
@@ -467,6 +468,13 @@ defmodule Glific.Messages do
       {"type", false} ->
         {:error, dgettext("errors", "Please provide media for media template.")}
     end
+  end
+
+  @spec check_flow_id(map(), map()) :: map()
+  defp check_flow_id(message_params, attrs) do
+    if Map.has_key?(attrs, :flow_id),
+      do: Map.put(message_params, :flow_id, attrs.flow_id),
+      else: message_params
   end
 
   @doc false
