@@ -821,5 +821,61 @@ defmodule Glific.TemplatesTest do
       assert hsm2.status == "REJECTED"
       assert hsm2.is_active == false
     end
+
+    test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do
+      l1 = Glific.Settings.get_language!(1)
+      l2 = Glific.Settings.get_language!(2)
+      otp_hsm_1 = otp_hsm_fixture(l1.id, "PENDING")
+      otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
+      # should update status of pending template
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => otp_hsm_1.uuid,
+                    "elementName" => otp_hsm_1.shortcode,
+                    "data" => otp_hsm_1.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_1.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_1.example}),
+                    "languageCode" => l1.locale
+                  },
+                  %{
+                    "id" => otp_hsm_2.uuid,
+                    "elementName" => otp_hsm_2.shortcode,
+                    "data" => otp_hsm_2.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_2.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_2.example}),
+                    "languageCode" => l2.locale
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm1} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+      assert {:ok, %SessionTemplate{} = hsm2} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_2.uuid})
+
+      assert hsm1.status == "APPROVED"
+      assert hsm1.is_active == true
+      translation = hsm1.translations[Integer.to_string(l2.id)]
+
+      assert translation["status"] == "APPROVED"
+      assert translation["uuid"] == hsm2.uuid
+    end
   end
 end
