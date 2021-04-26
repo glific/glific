@@ -148,20 +148,22 @@ defmodule Glific.Partners.Invoice do
     invoice
   end
 
-  @spec finalize(Invoice.t()) :: Invoice.t()
+  @spec finalize(Invoice.t()) :: Invoice.t() | nil
   defp update_prorations(invoice) do
     billing = Billing.get_billing(%{organization_id: invoice.organization_id})
     # our test record does not have a billing, need to clean that up
-    if billing != nil && billing.stripe_subscription_id != nil,
-      do: {:ok, _} = Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
-
-    invoice
+    if billing != nil && billing.stripe_subscription_id != nil do
+      {:ok, _} = Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
+      invoice
+    else
+      nil
+    end
   end
 
   @doc """
   Create an invoice record
   """
-  @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, String.t()}
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
     invoice =
       invoice
@@ -172,16 +174,9 @@ defmodule Glific.Partners.Invoice do
       # Temporary, for the existing customers prorations to be updated.
       |> update_prorations()
 
-    case invoice do
-      {:error, error} ->
-        {:error,
-         dgettext("errors", "Error occurred while creating invoice: %{error}",
-           error: inspect(error)
-         )}
-
-      invoice ->
-        {:ok, invoice}
-    end
+    if invoice,
+      do: {:ok, invoice},
+      else: {:error, dgettext("errors", "Could not create invoice")}
   end
 
   def create_invoice(attrs) do
