@@ -344,7 +344,8 @@ defmodule Glific.Partners.Billing do
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
-        }
+        },
+        tax_percent: 18
       })
 
     billing
