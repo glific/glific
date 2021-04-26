@@ -58,29 +58,34 @@ defmodule Glific.Messages do
 
     Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
+        )
 
       {:receiver, receiver}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :receiver),
           where: ilike(c.name, ^"%#{receiver}%")
+        )
 
       {:contact, contact}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.name, ^"%#{contact}%")
+        )
 
       {:either, phone}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
+        )
 
       {:user, user}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :user),
           where: ilike(c.name, ^"%#{user}%")
+        )
 
       {:tags_included, tags_included}, query ->
         message_ids =
@@ -101,7 +106,7 @@ defmodule Glific.Messages do
         query |> where([m], m.id not in ^message_ids)
 
       {:bsp_status, bsp_status}, query ->
-        from q in query, where: q.bsp_status == ^bsp_status
+        from(q in query, where: q.bsp_status == ^bsp_status)
 
       _, query ->
         query
@@ -387,6 +392,7 @@ defmodule Glific.Messages do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
+      template_id: session_template.id,
       media_id: session_template.message_media_id,
       sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
@@ -394,10 +400,27 @@ defmodule Glific.Messages do
       flow_id: args[:flow_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
-      organization_id: session_template.organization_id
+      organization_id: session_template.organization_id,
+      params: args[:params]
     }
 
     create_and_send_message(message_params)
+  end
+
+  defp fetch_language_specific_template(session_template, id) do
+    contact = Contacts.get_contact!(id)
+
+    with true <- session_template.language_id != contact.language_id,
+         translation <- session_template.translations[Integer.to_string(contact.language_id)],
+         false <- is_nil(translation),
+         "APPROVED" <- translation["status"] do
+      session_template
+      |> Map.from_struct()
+      |> Map.put(:body, translation["body"])
+      |> Map.put(:uuid, translation["uuid"])
+    else
+      _ -> session_template
+    end
   end
 
   @doc """
@@ -410,26 +433,30 @@ defmodule Glific.Messages do
       ) do
     media_id = Map.get(attrs, :media_id, nil)
     contact = Glific.Contacts.get_contact!(receiver_id)
-    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+    {:ok, template} = Repo.fetch(SessionTemplate, template_id)
+
+    session_template = fetch_language_specific_template(template, receiver_id)
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
-      message_params = %{
-        body: updated_template.body,
-        type: updated_template.type,
-        is_hsm: updated_template.is_hsm,
-        organization_id: session_template.organization_id,
-        sender_id: Partners.organization_contact_id(session_template.organization_id),
-        receiver_id: receiver_id,
-        template_uuid: session_template.uuid,
-        template_id: template_id,
-        template_type: session_template.type,
-        params: parameters,
-        media_id: media_id,
-        is_optin_flow: Map.get(attrs, :is_optin_flow, false)
-      }
+      message_params =
+        %{
+          body: updated_template.body,
+          type: updated_template.type,
+          is_hsm: updated_template.is_hsm,
+          organization_id: session_template.organization_id,
+          sender_id: Partners.organization_contact_id(session_template.organization_id),
+          receiver_id: receiver_id,
+          template_uuid: session_template.uuid,
+          template_id: template_id,
+          template_type: session_template.type,
+          params: parameters,
+          media_id: media_id,
+          is_optin_flow: Map.get(attrs, :is_optin_flow, false)
+        }
+        |> check_flow_id(attrs)
 
       Contacts.can_send_message_to?(contact, true, attrs)
       |> create_and_send_message(message_params)
@@ -441,6 +468,13 @@ defmodule Glific.Messages do
       {"type", false} ->
         {:error, dgettext("errors", "Please provide media for media template.")}
     end
+  end
+
+  @spec check_flow_id(map(), map()) :: map()
+  defp check_flow_id(message_params, attrs) do
+    if Map.has_key?(attrs, :flow_id),
+      do: Map.put(message_params, :flow_id, attrs.flow_id),
+      else: message_params
   end
 
   @doc false
