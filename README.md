@@ -99,7 +99,7 @@ These are the preliminary  steps invovled
   * ```mkcert --install```
   * ```mkcert glific.test api.glific.test```
   * ```mkdir priv/cert```
-  * ```mv glific.test+1* priv/cert priv/cert```
+  * ```mv glific.test+1* priv/cert```
   * The backend config files for development will assume that the port is 4001 with the above hostnames
   * Switch the frontend to use https port 4001 for the backend
 
