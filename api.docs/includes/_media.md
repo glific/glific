@@ -20,7 +20,7 @@ mutation uploadMedia($media: Upload!, $type: String!) {
 ```json
 {
   "data": {
-    https://GCS_STORAGE_URL_HERE
-  }
+    "uploadMedia":"https://storage.googleapis.com/BUCKET/uploads/outbound/2021-17/NGO Main Account/70253d8b-e419-425f-ad24-7878eb8eb687.png"
+   }
 }
 ```
