@@ -67,6 +67,17 @@ defmodule Glific.Saas.Onboard do
 
   def delete(_params), do: {:error, "Cannot delete organization"}
 
+  @doc """
+  Reset a few tables and fields for an organization, so they can get rid of all the test data and experiments.
+  As dangerous as delete, so also needs confirmation
+  """
+  @spec reset(map()) :: {:ok | :error, String.t()}
+  def reset(%{reset_organization_id: organization_id, is_confirmed: true}) do
+    Queries.reset(organization_id)
+  end
+
+  def reset(_params), do: {:error, "Cannot reset organization data"}
+
   @spec format_results(map()) :: map()
   defp format_results(%{is_valid: true} = results) do
     results

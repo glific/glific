@@ -6,6 +6,9 @@ defmodule Glific.Saas.Queries do
 
   alias Glific.{
     Contacts,
+    Flows.FlowContext
+    Flows.FlowResult,
+    Messages.Message,
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
@@ -204,5 +207,24 @@ defmodule Glific.Saas.Queries do
         dgettext("error", "Phone is not valid.")
         |> error(result, :phone)
     end
+  end
+
+  @spec reset(non_neg_integer) :: {:ok | :error, String.t()}
+  def reset(reset_organization_id) do
+    organization_id
+    |> reset_table(Message)
+    |> reset_flow_results(FlowResult)
+    |> reset_flow_contexts(FlowContext)
+
+    {:ok, "Reset Data for Organization"}
+  end
+
+  @spec reset_table(atom(), non_neg_integer) :: non_neg_integer
+  defp reset_table(object, reset_organization_id) do
+    object
+    |> where([o], o.organization_id == ^reset_organization_id)
+    |> Repo.delete_all(skip_organization_id: true)
+
+    organization_id
   end
 end
