@@ -867,6 +867,7 @@ defmodule Glific.TemplatesTest do
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+
       assert {:ok, %SessionTemplate{} = hsm2} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_2.uuid})
 
