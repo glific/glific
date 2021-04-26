@@ -659,6 +659,7 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       name: "some name",
       stripe_customer_id: "random_id",
+      stripe_subscription_id: "random_subscription_id",
       email: "some email",
       currency: "inr"
     }

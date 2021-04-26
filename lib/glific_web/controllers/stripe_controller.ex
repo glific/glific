@@ -72,7 +72,7 @@ defmodule GlificWeb.StripeController do
        ) do
     case Invoice.create_invoice(%{stripe_invoice: invoice, organization_id: organization_id}) do
       {:ok, invoice} -> {:ok, "success, #{invoice.id}"}
-      {:error, error} -> {:error, inspect(error)}
+      {:error, error} -> {:error, error}
     end
   end
 
