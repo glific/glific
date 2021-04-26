@@ -146,12 +146,12 @@ defmodule Glific.Partners.Invoice do
 
   @spec finalize(Invoice.t()) :: Invoice.t()
   defp update_prorations(invoice) do
-    with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
-         {:ok, _} <- Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true}) do
-      invoice
-    else
-      {:error, error} -> {:error, "Error occurred while updating prorations. #{inspect(error)}"}
-    end
+    billing = Billing.get_billing(%{organization_id: invoice.organization_id})
+    # our test record does not have a billing, need to clean that up
+    if billing != nil && billing.stripe_subscription_id != nil,
+      do: {:ok, _} = Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
+
+    invoice
   end
 
   @doc """
