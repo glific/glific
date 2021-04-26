@@ -81,6 +81,10 @@ defmodule Glific.Partners.Invoice do
       end_date: DateTime.from_unix!(invoice.period_end)
     }
 
+  @spec setup?(String.t() | nil) :: boolean()
+  defp setup?(nil), do: false
+  defp setup?(str), do: String.contains?(String.downcase(str), "setup")
+
   @spec line_items(map(), map()) :: {map(), boolean}
   defp line_items(attrs, invoice) do
     {line_items, setup} =
@@ -95,7 +99,7 @@ defmodule Glific.Partners.Invoice do
               end_date: DateTime.from_unix!(line.period.end)
             })
 
-          setup = setup || String.contains?(String.downcase(line.price.nickname), "setup")
+          setup = setup || setup?(line.price.nickname)
           {acc, setup}
         end
       )
