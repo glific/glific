@@ -871,8 +871,14 @@ if Code.ensure_loaded?(Faker) do
       translations = %{
         hi.id => %{
           body: "{{1}} के लिए आपका OTP {{2}} है। यह {{3}} के लिए मान्य है।",
+          example: "[अनिल को आदाता के रूप में जोड़ना] के लिए आपका OTP [1234] है। यह [15 मिनट] के लिए मान्य है।",
           language_id: hi.id,
-          number_parameters: 3
+          status: "APPROVED",
+          label: "OTP Message",
+          uuid: "98c7dec4-f05a-4a76-a25a-f7a50d821f27",
+          number_parameters: 3,
+          category: "ACCOUNT_UPDATE",
+          type: :text
         }
       }
 
