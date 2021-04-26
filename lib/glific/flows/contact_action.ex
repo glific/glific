@@ -145,7 +145,7 @@ defmodule Glific.Flows.ContactAction do
          session_template: session_template
        }) do
     attachments = Localization.get_translation(context, action, :attachments)
-    params = Localization.get_translation(context, action, :text)
+    params = action.templating.variables
 
     {type, media_id} =
       if is_nil(attachments) or attachments == %{},
@@ -169,7 +169,7 @@ defmodule Glific.Flows.ContactAction do
       flow_id: context.flow_id,
       is_hsm: true,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
-      params: [params]
+      params: params
     }
 
     Messages.create_and_send_session_template(session_template, attrs)

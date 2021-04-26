@@ -443,6 +443,7 @@ defmodule Glific.Messages do
       # Passing uuid to save db call when sending template via provider
       message_params = %{
         body: updated_template.body,
+        flow_id: attrs.flow_id,
         type: updated_template.type,
         is_hsm: updated_template.is_hsm,
         organization_id: session_template.organization_id,
