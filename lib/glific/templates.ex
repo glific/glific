@@ -304,9 +304,9 @@ defmodule Glific.Templates do
       |> Enum.each(fn approved_db_template ->
         update_hsm_translation(template, approved_db_template, organization, languages)
       end)
-
-      do_update_hsm(template, db_templates)
     end
+
+    do_update_hsm(template, db_templates)
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
