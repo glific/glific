@@ -3,10 +3,11 @@ defmodule Glific.Saas.Queries do
   Lets keep all the onboarding queries and validation here
   """
   import GlificWeb.Gettext
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts,
-    Flows.FlowContext
+    Flows.FlowContext,
     Flows.FlowResult,
     Messages.Message,
     Partners,
@@ -209,22 +210,39 @@ defmodule Glific.Saas.Queries do
     end
   end
 
+  @doc """
+  Reset selected data of an organization which could potentially be considered test
+  data
+  """
   @spec reset(non_neg_integer) :: {:ok | :error, String.t()}
   def reset(reset_organization_id) do
-    organization_id
+    reset_organization_id
     |> reset_table(Message)
-    |> reset_flow_results(FlowResult)
-    |> reset_flow_contexts(FlowContext)
+    |> reset_table(FlowResult)
+    |> reset_table(FlowContext)
+    |> reset_contact_fields()
 
     {:ok, "Reset Data for Organization"}
   end
 
-  @spec reset_table(atom(), non_neg_integer) :: non_neg_integer
-  defp reset_table(object, reset_organization_id) do
+  @spec reset_table(non_neg_integer, atom()) :: non_neg_integer
+  defp reset_table(reset_organization_id, object) do
     object
     |> where([o], o.organization_id == ^reset_organization_id)
     |> Repo.delete_all(skip_organization_id: true)
 
-    organization_id
+    reset_organization_id
+  end
+
+  @spec reset_contact_fields(non_neg_integer) :: non_neg_integer
+  defp reset_contact_fields(reset_organization_id) do
+    Contact
+    |> where([c], c.organization_id == ^reset_organization_id)
+    |> Repo.update_all(
+      set: [fields: %{}, settings: %{}],
+      skip_organization_id: true
+    )
+
+    reset_organization_id
   end
 end
