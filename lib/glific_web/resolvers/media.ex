@@ -15,7 +15,6 @@ defmodule GlificWeb.Resolvers.Media do
         %{context: %{current_user: user}}
       ) do
     GcsWorker.upload_media(media.path, remote_name(user, type), organization_id)
-    |> IO.inspect(label: "GCS")
   end
 
   @spec remote_name(User.t(), String.t()) :: String.t()
