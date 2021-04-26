@@ -214,8 +214,8 @@ mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}
 
 | Parameter | Type                                                           | Default  | Description |
 | --------- | -------------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">resetOrganizationID</a>!                               | required |             |
-| input     | <a href="#boolean">icConfirmed</a> | required |             |
+| resetOrganizationID        | <a href="#id">resetOrganizationID</a>!                               | required |             |
+| isConfirmed     | <a href="#boolean">isConfirmed</a> | required |             |
 
 ### Return Parameters
 
