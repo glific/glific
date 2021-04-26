@@ -412,7 +412,8 @@ defmodule Glific.Messages do
 
     with true <- session_template.language_id != contact.language_id,
          translation <- session_template.translations[Integer.to_string(contact.language_id)],
-         false <- is_nil(translation) do
+         false <- is_nil(translation),
+         "APPROVED" <- translation["status"] do
       session_template
       |> Map.from_struct()
       |> Map.put(:body, translation["body"])

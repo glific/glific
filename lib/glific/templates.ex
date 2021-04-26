@@ -405,21 +405,21 @@ defmodule Glific.Templates do
           nil
       end
 
-    translations =
-      %{
-        "#{language_id}" => %{
-          uuid: template["id"],
-          body: template["data"],
-          language_id: language_id,
-          status: template["status"],
-          type: type,
-          number_parameters: number_of_parameter,
-          example: example,
-          category: template["category"],
-          label: template["elementName"]
-        }
+    translation = %{
+      "#{language_id}" => %{
+        uuid: template["id"],
+        body: template["data"],
+        language_id: language_id,
+        status: template["status"],
+        type: type,
+        number_parameters: number_of_parameter,
+        example: example,
+        category: template["category"],
+        label: template["elementName"]
       }
-      |> Map.merge(approved_db_template.translations)
+    }
+
+    translations = Map.merge(approved_db_template.translations, translation)
 
     update_attrs = %{
       translations: translations
