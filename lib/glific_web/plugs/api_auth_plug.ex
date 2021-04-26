@@ -185,7 +185,9 @@ defmodule GlificWeb.APIAuthPlug do
 
   defp fetch_access_token(conn) do
     case Conn.get_req_header(conn, "authorization") do
-      [token | _rest] -> {:ok, token}
+      [token | _rest] ->
+        {:ok, token}
+
       _any -> :error
     end
   end

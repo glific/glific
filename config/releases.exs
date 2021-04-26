@@ -32,7 +32,7 @@ check_origin =
     environment variable REQUEST_ORIGIN/REQUEST_ORIGIN_WILDCARD is missing.
     """
 
-# GLific endpoint configs
+# Glific endpoint configs
 config :glific, GlificWeb.Endpoint,
   server: true,
   http: [:inet6, port: http_port],

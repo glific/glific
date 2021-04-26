@@ -27,6 +27,14 @@ config :glific,
 # with webpack to recompile .js and .css sources.
 config :glific, GlificWeb.Endpoint,
   http: [port: 4000],
+  # EXPERIMENT TO get everyone to switch to https even for local development
+  # So we can record audio etc, which requires ssl
+  # https: [
+  #   port: 4001,
+  #   cipher_suite: :strong,
+  #   certfile: "priv/cert/glific.test+1.pem",
+  #   keyfile: "priv/cert/glific.test+1-key.pem"
+  # ],
   debug_errors: true,
   code_reloader: true,
   check_origin: false,
