@@ -96,7 +96,7 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Deletes an inactive organization
+  Delete an inactive organization
   """
   @spec delete_inactive_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -104,6 +104,22 @@ defmodule GlificWeb.Resolvers.Partners do
     with {:ok, organization} <- Onboard.delete(params) do
       {:ok, %{organization: organization}}
     end
+  end
+
+  @doc """
+  Resets table and some columns of an  organization
+  """
+  @spec reset_organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok | :error, String.t()}
+  def reset_organization(
+        _,
+        %{
+          reset_organization_id: reset_organization_id,
+          is_confirmed: is_confirmed
+        },
+        _
+      ) do
+    Onboard.reset(reset_organization_id, is_confirmed)
   end
 
   @doc """

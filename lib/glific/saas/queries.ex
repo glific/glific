@@ -7,6 +7,7 @@ defmodule Glific.Saas.Queries do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.FlowContext,
     Flows.FlowResult,
     Messages.Message,
@@ -238,10 +239,7 @@ defmodule Glific.Saas.Queries do
   defp reset_contact_fields(reset_organization_id) do
     Contact
     |> where([c], c.organization_id == ^reset_organization_id)
-    |> Repo.update_all(
-      set: [fields: %{}, settings: %{}],
-      skip_organization_id: true
-    )
+    |> Repo.update_all(set: [fields: %{}, settings: %{}])
 
     reset_organization_id
   end

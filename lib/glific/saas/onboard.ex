@@ -71,12 +71,12 @@ defmodule Glific.Saas.Onboard do
   Reset a few tables and fields for an organization, so they can get rid of all the test data and experiments.
   As dangerous as delete, so also needs confirmation
   """
-  @spec reset(map()) :: {:ok | :error, String.t()}
-  def reset(%{reset_organization_id: organization_id, is_confirmed: true}) do
-    Queries.reset(organization_id)
+  @spec reset(non_neg_integer, boolean) :: {:ok | :error, String.t()}
+  def reset(reset_organization_id, true) do
+    Queries.reset(reset_organization_id)
   end
 
-  def reset(_params), do: {:error, "Cannot reset organization data"}
+  def reset(_, false), do: {:error, "Cannot reset organization data"}
 
   @spec format_results(map()) :: map()
   defp format_results(%{is_valid: true} = results) do

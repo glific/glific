@@ -48,7 +48,7 @@ Or in the case of success
   "messages": [],
   "organization": "Organization Object",
   "contact": "Contact Object",
-  "credential": "Credential Object"
+  "credential": "Message indicating creating a credential was successful"
 }
 ```
 
@@ -100,8 +100,6 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
   }
 }
 ```
-
-Enabled days Ids represets weekdays starting from 1 for Monday.
 
 ### Query Parameters
 
@@ -164,8 +162,6 @@ mutation deleteInactiveOrganization($id: ID!, $input: DeleteOrganizationInput!) 
 }
 ```
 
-Enabled days Ids represets weekdays starting from 1 for Monday.
-
 ### Query Parameters
 
 | Parameter | Type                                                           | Default  | Description |
@@ -178,6 +174,56 @@ Enabled days Ids represets weekdays starting from 1 for Monday.
 | Type                                                 | Description                     |
 | ---------------------------------------------------- | ------------------------------- |
 | <a href="#organizationresult">OrganizationResult</a> | The updated organization object |
+
+## Reset selected tables from Organization
+
+Used to delete potential test and sample data. Currently only deletes entries from
+```
+* Messages
+* Flow Results
+* Flow Context
+* Resets Contact Fields and Settings to empty
+```
+
+```graphql
+mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}
+  resetOrganization(
+    $resetOrganizationID: $resetOrganizationID,
+    isConfirmed: $isConfirmed)
+}
+
+{
+  "reset_organization_id": "2",
+  "isConfirmed": true
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "resetOrganization": {
+      "Successfully reset tables and fields of organization"
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                           | Default  | Description |
+| --------- | -------------------------------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">resetOrganizationID</a>!                               | required |             |
+| input     | <a href="#boolean">icConfirmed</a> | required |             |
+
+### Return Parameters
+
+| Type                                                 | Description                     |
+| ---------------------------------------------------- | ------------------------------- |
+| <a href="#string">Status Message</a> | Message indicating successful completion |
+
+
 
 ### OrganizationStatusInput
 
