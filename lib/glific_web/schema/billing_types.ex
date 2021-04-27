@@ -54,11 +54,6 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :stripe_subscription_id, :string
   end
 
-  input_object :payment_method_input do
-    field :stripe_payment_method_id, :string
-    field :promo_code, :string
-  end
-
   object :billing_queries do
     @desc "get the details of one billing"
     field :billing, :billing_result do
