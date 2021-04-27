@@ -23,6 +23,7 @@ defmodule Glific.Partners.Billing do
 
   alias Stripe.{
     BillingPortal,
+    Request,
     SubscriptionItem.Usage
   }
 
@@ -325,7 +326,7 @@ defmodule Glific.Partners.Billing do
 
   @spec setup(Billing.t(), Organization.t()) :: Billing.t()
   defp setup(billing, organization) do
-    {:ok, _invoice_item} =
+    {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
         currency: billing.currency,
@@ -335,6 +336,12 @@ defmodule Glific.Partners.Billing do
           "name" => organization.name
         }
       })
+
+    Request.new_request()
+    |> Request.put_endpoint("invoiceitems/#{invoice_item.id}")
+    |> Request.put_method(:post)
+    |> Request.put_params(%{discounts: %{coupon: "mWH5sOOw"}})
+    |> Request.make_request()
 
     {:ok, _invoice} =
       Stripe.Invoice.create(%{
