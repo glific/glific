@@ -232,6 +232,13 @@ defmodule Glific.Partners.Billing do
   def stripe_ids,
     do: Saas.stripe_ids()
 
+  @doc """
+  Fetch the stripe tax rates
+  """
+  @spec tax_rates :: map()
+  def tax_rates,
+    do: Saas.tax_rates()
+
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
     prices = stripe_ids()
@@ -252,16 +259,20 @@ defmodule Glific.Partners.Billing do
       items: [
         %{
           price: prices["monthly"],
-          quantity: 1
+          quantity: 1,
+          tax_rates: tax_rates()["gst"]
         },
         %{
-          price: prices["users"]
+          price: prices["users"],
+          tax_rates: tax_rates()["gst"]
         },
         %{
-          price: prices["messages"]
+          price: prices["messages"],
+          tax_rates: tax_rates()["gst"]
         },
         %{
-          price: prices["consulting_hours"]
+          price: prices["consulting_hours"],
+          tax_rates: tax_rates()["gst"]
         }
       ],
       metadata: %{
@@ -330,6 +341,7 @@ defmodule Glific.Partners.Billing do
         customer: billing.stripe_customer_id,
         currency: billing.currency,
         price: stripe_ids()["setup"],
+        tax_rates: tax_rates()["gst"],
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -521,6 +533,7 @@ defmodule Glific.Partners.Billing do
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
 
         prices = stripe_ids()
+        tax_rates()["gst"]
         subscription_items = billing.stripe_subscription_items
 
         record_subscription_item(
