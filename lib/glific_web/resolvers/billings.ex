@@ -28,6 +28,15 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
+  @spec get_promo_code(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def get_promo_code(_, %{code: code}, _) do
+    with promo_code <-
+      Billing.get_promo_codes(code),
+         do: {:ok, promo_code}
+  end
+
+  @doc false
   @spec customer_portal(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def customer_portal(_, _, %{context: %{current_user: user}}) do

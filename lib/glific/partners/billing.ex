@@ -301,6 +301,29 @@ defmodule Glific.Partners.Billing do
   defp send_update_response({:ok, billing}), do: {:ok, billing}
   defp send_update_response({:error, _}), do: {:error, %{message: "Error while saving details"}}
 
+  @spec get_promo_codes(any()) :: map()
+  def get_promo_codes(code) do
+    with {:ok, response} <- make_promocode_request(code) do
+      make_results(response.data)
+    end
+  end
+
+  defp make_results(response) do
+    result = List.first(response)
+
+    %{code: result.code}
+    |> Map.put(:metadata, result.coupon.metadata)
+    |> Map.put(:id, result.coupon.id)
+  end
+
+  defp make_promocode_request(code) do
+    Request.new_request()
+    |> Request.put_endpoint("promotion_codes")
+    |> Request.put_method(:get)
+    |> Request.put_params(%{code: code})
+    |> Request.make_request()
+  end
+
   @doc """
   Once the organization has entered a new payment card we create a subscription for it.
   We'll do updating the card in a seperate function

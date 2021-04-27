@@ -13,6 +13,13 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :promo_code_result do
+    field :id, :string
+    field :code, :string
+    field :metadata, :json
+    field :errors, list_of(:input_error)
+  end
+
   object :subscription_result do
     field :subscription, :json
     field :errors, :string
@@ -69,6 +76,13 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :get_organization_billing, :billing_result do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.get_organization_billing/3)
+    end
+
+    @desc "get the details of promotion codes"
+    field :get_promo_code, :promo_code_result do
+      arg(:code, non_null(:string))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Billings.get_promo_code/3)
     end
   end
 
