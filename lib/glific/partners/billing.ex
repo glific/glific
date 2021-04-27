@@ -361,7 +361,7 @@ defmodule Glific.Partners.Billing do
         }
       })
 
-    apply_coupon(invoice_item.id, params)|>IO.inspect()
+    apply_coupon(invoice_item.id, params)
 
     {:ok, _invoice} =
       Stripe.Invoice.create(%{
@@ -377,11 +377,11 @@ defmodule Glific.Partners.Billing do
     billing
   end
 
-  defp apply_coupon(invoice_id, %{promo_code: promo_code}) do
+  defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
     Request.new_request()
     |> Request.put_endpoint("invoiceitems/#{invoice_id}")
     |> Request.put_method(:post)
-    |> Request.put_params(%{discounts: [%{coupon: promo_code}]})
+    |> Request.put_params(%{discounts: [%{coupon: coupon_code}]})
     |> Request.make_request()
   end
 
