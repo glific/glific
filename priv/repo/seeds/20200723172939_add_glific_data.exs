@@ -165,6 +165,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         users: "price_1IdZehEMShkCsLFnyYhuDu6p",
         messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
         consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk"
+      },
+      tax_rates: %{
+        gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
       }
     })
   end
