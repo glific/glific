@@ -330,10 +330,8 @@ defmodule Glific.Partners.Billing do
   """
   @spec create_subscription(Organization.t(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_subscription(organization, %{
-        promo_code: promo_code,
-        stripe_payment_method_id: stripe_payment_method_id
-      }) do
+  def create_subscription(organization, params) do
+    stripe_payment_method_id = params.stripe_payment_method_id
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
@@ -341,7 +339,7 @@ defmodule Glific.Partners.Billing do
     |> case do
       {:ok, _} ->
         billing
-        |> setup(organization, promo_code)
+        |> setup(organization, params)
         |> subscription(organization)
 
       {:error, error} ->
@@ -350,8 +348,8 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-  @spec setup(Billing.t(), Organization.t(), String.t()) :: Billing.t()
-  defp setup(billing, organization, promo_code) do
+  @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
+  defp setup(billing, organization, params) do
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
@@ -363,7 +361,7 @@ defmodule Glific.Partners.Billing do
         }
       })
 
-    apply_coupon(invoice_item.id, promo_code)
+    apply_coupon(invoice_item.id, params)|>IO.inspect()
 
     {:ok, _invoice} =
       Stripe.Invoice.create(%{
@@ -379,13 +377,15 @@ defmodule Glific.Partners.Billing do
     billing
   end
 
-  defp apply_coupon(invoice_id, promo_code) do
+  defp apply_coupon(invoice_id, %{promo_code: promo_code}) do
     Request.new_request()
     |> Request.put_endpoint("invoiceitems/#{invoice_id}")
     |> Request.put_method(:post)
-    |> Request.put_params(%{discounts: %{coupon: promo_code}})
+    |> Request.put_params(%{discounts: [%{coupon: promo_code}]})
     |> Request.make_request()
   end
+
+  defp apply_coupon(_, _), do: nil
 
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
