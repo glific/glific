@@ -87,7 +87,6 @@ defmodule GlificWeb.Resolvers.Billings do
           {:ok | :error | :pending, any}
   def create_subscription(_, %{input: params}, _) do
     organization = Partners.organization(params.organization_id)
-
     Billing.create_subscription(organization, params)
     |> case do
       {:error, error} ->

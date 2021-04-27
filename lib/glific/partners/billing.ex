@@ -328,11 +328,11 @@ defmodule Glific.Partners.Billing do
   Once the organization has entered a new payment card we create a subscription for it.
   We'll do updating the card in a seperate function
   """
-  @spec create_subscription(Organization.t(), String.t()) ::
+  @spec create_subscription(Organization.t(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   def create_subscription(organization, %{
         promo_code: promo_code,
-        payment_method: stripe_payment_method_id
+        stripe_payment_method_id: stripe_payment_method_id
       }) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
@@ -383,7 +383,7 @@ defmodule Glific.Partners.Billing do
     Request.new_request()
     |> Request.put_endpoint("invoiceitems/#{invoice_id}")
     |> Request.put_method(:post)
-    |> Request.put_params(%{discounts: %{coupon: coupon_code}})
+    |> Request.put_params(%{discounts: %{coupon: promo_code}})
     |> Request.make_request()
   end
 
