@@ -58,24 +58,12 @@ defmodule Glific.OnboardTest do
     result = Onboard.setup(@valid_attrs)
     {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
 
-    updated_organization =
-      %{
-        update_organization_id: organization.id,
-        is_active: true,
-        is_approved: nil
-      }
-      |> Onboard.status()
+    updated_organization = Onboard.status(organization.id, true, nil)
 
     assert updated_organization.is_active == true
 
     # should update is_approveds
-    updated_organization =
-      %{
-        update_organization_id: organization.id,
-        is_active: true,
-        is_approved: true
-      }
-      |> Onboard.status()
+    updated_organization = Onboard.status(organization.id, true, true)
 
     assert updated_organization.is_approved == true
   end
@@ -83,7 +71,7 @@ defmodule Glific.OnboardTest do
   test "ensure that sending in valid parameters, delete inactive organization" do
     result = Onboard.setup(@valid_attrs)
     {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
-    Onboard.delete(%{delete_organization_id: organization.id, is_confirmed: true})
+    Onboard.delete(organization.id, true)
 
     assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
              Repo.fetch_by(Organization, %{name: result.organization.name})

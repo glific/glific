@@ -55,8 +55,8 @@ Or in the case of success
 ## Update Organization Status IsActive or IsApproved
 
 ```graphql
-mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
-  updateOrganizationStatus(id: $id, input: $input) {
+mutation updateOrganizationStatus($updateOrganizationid: ID!, $isActive: Boolean, $isApproved: Boolean) {
+  updateOrganizationStatus($updateOrganizationid: updateOrganizationid, $isActive: isActive, $isApproved: isApproved) {}
     organization {
       email
       isActive
@@ -72,12 +72,9 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
 }
 
 {
-  "id": "1",
-  "input": {
-    "isActive": true,
-    "isApproved": true,
-    "updateOrganizationId": 1,
-  }
+  "isActive": true,
+  "isApproved": true,
+  "updateOrganizationId": 1,
 }
 ```
 
@@ -105,8 +102,9 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
 
 | Parameter | Type                                                           | Default  | Description |
 | --------- | -------------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                                          | required |             |
-| input     | <a href="#organizationstatusinput">OrganizationStatusInput</a> | required |             |
+| updateOrganizationId | <a href="#id">ID</a>!                                          | required |             |
+| isActive | <a href="#boolean">Boolean</a> | required |             |
+| isApproved | <a href="#boolean">Boolean</a> | required |             |
 
 ### Return Parameters
 
@@ -117,8 +115,10 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
 ## Delete Organization with status as inactive
 
 ```graphql
-mutation deleteInactiveOrganization($id: ID!, $input: DeleteOrganizationInput!) {
-  deleteInactiveOrganization(id: $id, input: $input) {
+mutation deleteInactiveOrganization($deleteOrganizationID: ID!, $isConfirmed: Boolean) {}
+  deleteInactiveOrganization(
+    deleteOrganizationID: $deleteOrganizationID,
+    isConfirmed: $isConfirmed) {
     organization {
       email
       isActive
@@ -166,8 +166,8 @@ mutation deleteInactiveOrganization($id: ID!, $input: DeleteOrganizationInput!) 
 
 | Parameter | Type                                                           | Default  | Description |
 | --------- | -------------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                                          | required |             |
-| input     | <a href="#organizationstatusinput">OrganizationStatusInput</a> | required |             |
+| deleteOrganizationID         | <a href="#id">ID</a>!                                          | required |             |
+| isConfirmed | <a href="#boolean">Boolean</a> | required |             |
 
 ### Return Parameters
 
@@ -188,7 +188,7 @@ Used to delete potential test and sample data. Currently only deletes entries fr
 ```graphql
 mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}
   resetOrganization(
-    $resetOrganizationID: $resetOrganizationID,
+    resetOrganizationID: $resetOrganizationID,
     isConfirmed: $isConfirmed)
 }
 
@@ -214,8 +214,8 @@ mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}
 
 | Parameter | Type                                                           | Default  | Description |
 | --------- | -------------------------------------------------------------- | -------- | ----------- |
-| resetOrganizationID        | <a href="#id">resetOrganizationID</a>!                               | required |             |
-| isConfirmed     | <a href="#boolean">isConfirmed</a> | required |             |
+| resetOrganizationID        | <a href="#id">ID!</a>!                            | required |             |
+| isConfirmed     | <a href="#boolean">Boolean</a> | required |             |
 
 ### Return Parameters
 
@@ -252,34 +252,6 @@ Unique
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>isApproved</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### DeleteInactiveOrganization
-
-<table>
-<thead>
-<tr>
-<th colspan="2" align="left">Field</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>deleteOrganizationId</strong></td>
-<td valign="top"><a href="#id">ID</a></td>
-<td>
-
-Unique
-
-</td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>isConfirmed</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
