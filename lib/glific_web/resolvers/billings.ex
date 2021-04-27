@@ -32,7 +32,7 @@ defmodule GlificWeb.Resolvers.Billings do
           {:ok, any} | {:error, any}
   def get_promo_code(_, %{code: code}, _) do
     with promo_code <-
-      Billing.get_promo_codes(code),
+           Billing.get_promo_codes(code),
          do: {:ok, promo_code}
   end
 
@@ -81,12 +81,13 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
-  @spec create_subscription(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec create_subscription(Absinthe.Resolution.t(), map(), %{
           context: map()
         }) ::
           {:ok | :error | :pending, any}
-  def create_subscription(_, %{input: params}, _) do
+  def create_subscription(_, params, _) do
     organization = Partners.organization(params.organization_id)
+
     Billing.create_subscription(organization, params)
     |> case do
       {:error, error} ->
