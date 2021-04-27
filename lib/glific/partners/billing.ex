@@ -235,7 +235,7 @@ defmodule Glific.Partners.Billing do
   @doc """
   Fetch the stripe tax rates
   """
-  @spec tax_rates :: map()
+  @spec tax_rates :: list()
   def tax_rates,
     do: Saas.tax_rates()
 
@@ -260,19 +260,19 @@ defmodule Glific.Partners.Billing do
         %{
           price: prices["monthly"],
           quantity: 1,
-          tax_rates: [tax_rates()["gst"]]
+          tax_rates: tax_rates()
         },
         %{
           price: prices["users"],
-          tax_rates: [tax_rates()["gst"]]
+          tax_rates: tax_rates()
         },
         %{
           price: prices["messages"],
-          tax_rates: [tax_rates()["gst"]]
+          tax_rates: tax_rates()
         },
         %{
           price: prices["consulting_hours"],
-          tax_rates: [tax_rates()["gst"]]
+          tax_rates: tax_rates()
         }
       ],
       metadata: %{
@@ -341,7 +341,7 @@ defmodule Glific.Partners.Billing do
         customer: billing.stripe_customer_id,
         currency: billing.currency,
         price: stripe_ids()["setup"],
-        tax_rates: [tax_rates()["gst"]],
+        tax_rates: tax_rates(),
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name

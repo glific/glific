@@ -80,9 +80,9 @@ defmodule Glific.Partners.Saas do
   @doc """
   SaaS tax rates for adding tax to subscription and invoices, convert the string keys to atoms
   """
-  @spec tax_rates(String.t()) :: map()
+  @spec tax_rates(String.t()) :: list()
   def tax_rates(name \\ "Tides"),
-    do: saas_field(name, :tax_rates)
+    do: saas_field(name, :tax_rates)|> Map.values()
 
   @spec saas_field(String.t(), atom()) :: any()
   defp saas_field(name, field) do
