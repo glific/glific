@@ -188,7 +188,8 @@ defmodule GlificWeb.APIAuthPlug do
       [token | _rest] ->
         {:ok, token}
 
-      _any -> :error
+      _any ->
+        :error
     end
   end
 

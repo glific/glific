@@ -82,7 +82,7 @@ defmodule Glific.Partners.Saas do
   """
   @spec tax_rates(String.t()) :: list()
   def tax_rates(name \\ "Tides"),
-    do: saas_field(name, :tax_rates)|> Map.values()
+    do: saas_field(name, :tax_rates) |> Map.values()
 
   @spec saas_field(String.t(), atom()) :: any()
   defp saas_field(name, field) do

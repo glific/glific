@@ -88,16 +88,17 @@ defmodule GlificWeb.Resolvers.Partners do
   validate approval and activation
   """
   @spec update_organization_status(Absinthe.Resolution.t(), map(), %{
-        context: map()
-                                   }) :: {:ok, any} | {:error, any}
+          context: map()
+        }) :: {:ok, any} | {:error, any}
   def update_organization_status(
-    _,
-    %{
-      update_organization_id: update_organization_id,
-      is_active: is_active,
-      is_approved: is_approved
-    },
-    _) do
+        _,
+        %{
+          update_organization_id: update_organization_id,
+          is_active: is_active,
+          is_approved: is_approved
+        },
+        _
+      ) do
     with organization <- Onboard.status(update_organization_id, is_active, is_approved) do
       {:ok, %{organization: organization}}
     end

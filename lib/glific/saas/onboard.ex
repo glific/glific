@@ -48,7 +48,8 @@ defmodule Glific.Saas.Onboard do
   Delete an organization from the DB, ensure that the confirmed flag is set
   since this is a super destructive operation
   """
-  @spec delete(non_neg_integer, boolean) :: {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
+  @spec delete(non_neg_integer, boolean) ::
+          {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
   def delete(delete_organization_id, true) do
     organization = Partners.get_organization!(delete_organization_id)
 
