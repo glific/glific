@@ -55,8 +55,8 @@ Or in the case of success
 ## Update Organization Status IsActive or IsApproved
 
 ```graphql
-mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
-  updateOrganizationStatus(id: $id, input: $input) {
+mutation updateOrganizationStatus($updateOrganizationid: ID!, $isActive: Boolean, $isApproved: Boolean) {
+  updateOrganizationStatus($updateOrganizationid: updateOrganizationid, $isActive: isActive, $isApproved: isApproved) {}
     organization {
       email
       isActive
@@ -72,12 +72,9 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
 }
 
 {
-  "id": "1",
-  "input": {
-    "isActive": true,
-    "isApproved": true,
-    "updateOrganizationId": 1,
-  }
+  "isActive": true,
+  "isApproved": true,
+  "updateOrganizationId": 1,
 }
 ```
 
@@ -105,8 +102,9 @@ mutation updateOrganizationStatus($id: ID!, $input: OrganizationStatusInput!) {
 
 | Parameter | Type                                                           | Default  | Description |
 | --------- | -------------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                                          | required |             |
-| input     | <a href="#organizationstatusinput">OrganizationStatusInput</a> | required |             |
+| updateOrganizationId | <a href="#id">ID</a>!                                          | required |             |
+| isActive | <a href="#boolean">Boolean</a> | required |             |
+| isApproved | <a href="#boolean">Boolean</a> | required |             |
 
 ### Return Parameters
 
@@ -216,8 +214,8 @@ mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}
 
 | Parameter | Type                                                           | Default  | Description |
 | --------- | -------------------------------------------------------------- | -------- | ----------- |
-| resetOrganizationID        | <a href="#id">resetOrganizationID</a>!                               | required |             |
-| isConfirmed     | <a href="#boolean">isConfirmed</a> | required |             |
+| resetOrganizationID        | <a href="#id">ID!</a>!                            | required |             |
+| isConfirmed     | <a href="#boolean">Boolean</a> | required |             |
 
 ### Return Parameters
 
