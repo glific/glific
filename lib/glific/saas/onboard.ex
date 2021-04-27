@@ -29,19 +29,15 @@ defmodule Glific.Saas.Onboard do
   @doc """
   Update the active and/or approved status of an organization
   """
-  @spec status(map()) :: Organization.t() | nil
-  def status(%{
-        update_organization_id: organization_id,
-        is_active: is_active,
-        is_approved: is_approved
-      }) do
+  @spec status(non_neg_integer, boolean | nil, boolean | nil) :: Organization.t() | nil
+  def status(update_organization_id, is_active, is_approved) do
     changes =
       %{}
       |> add_map(:is_active, is_active)
       |> add_map(:is_approved, is_approved)
 
     {:ok, organization} =
-      organization_id
+      update_organization_id
       |> Partners.get_organization!()
       |> Partners.update_organization(changes)
 
@@ -52,9 +48,9 @@ defmodule Glific.Saas.Onboard do
   Delete an organization from the DB, ensure that the confirmed flag is set
   since this is a super destructive operation
   """
-  @spec delete(map()) :: {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
-  def delete(%{delete_organization_id: organization_id, is_confirmed: true}) do
-    organization = Partners.get_organization!(organization_id)
+  @spec delete(non_neg_integer, boolean) :: {:ok, Organization.t()} | {:error, String.t() | Ecto.Changeset.t()}
+  def delete(delete_organization_id, true) do
+    organization = Partners.get_organization!(delete_organization_id)
 
     # ensure that the organization is not active, our last check before we
     # blow it away
@@ -65,7 +61,7 @@ defmodule Glific.Saas.Onboard do
     end
   end
 
-  def delete(_params), do: {:error, "Cannot delete organization"}
+  def delete(_delete_organization_id, false), do: {:error, "Cannot delete organization"}
 
   @doc """
   Reset a few tables and fields for an organization, so they can get rid of all the test data and experiments.

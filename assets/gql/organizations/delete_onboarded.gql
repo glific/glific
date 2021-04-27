@@ -1,5 +1,5 @@
-mutation deleteInactiveOrganization($input:DeleteOrganizationInput!) {
-  deleteInactiveOrganization(input: $input) {
+mutation deleteInactiveOrganization($deleteOrganizationId: ID!, $isConfirmed: Boolean!) {
+  deleteInactiveOrganization(deleteOrganizationId: $deleteOrganizationId, isConfirmed: $isConfirmed) {
     organization {
       email
       id
