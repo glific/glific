@@ -22,7 +22,7 @@ defmodule GlificWeb.StripeController do
           conn,
         _params
       ) do
-    organization_id = get_organization_id(stripe_event, organization_id)
+    organization_id = get_organization_id(stripe_event, organization_id, stripe_event.type)
 
     case handle_webhook(stripe_event, organization_id) do
       {:ok, _} -> handle_success(conn)
@@ -33,8 +33,25 @@ defmodule GlificWeb.StripeController do
   ## We might need to move this to stripe webhook plug.
   ## I am just not sure that how it will impact on other request and if the
   ## customer id is present in all endpoints.
-  @spec get_organization_id(any(), non_neg_integer) :: non_neg_integer
-  defp get_organization_id(stripe_event, default) do
+  @spec get_organization_id(any(), non_neg_integer, String.t()) :: non_neg_integer
+  defp get_organization_id(stripe_event, default, "customer.updated") do
+    object = stripe_event.data.object
+
+    with true <- is_struct(object),
+         {:ok, billing} <-
+           Repo.fetch_by(Billing, %{stripe_customer_id: object.id},
+             skip_organization_id: true
+           ) do
+      Logger.info("Stripe webhook: #{stripe_event.type}, org: #{billing.organization_id}")
+
+      Repo.put_process_state(billing.organization_id)
+      billing.organization_id
+    else
+      _ -> default
+    end
+  end
+
+  defp get_organization_id(stripe_event, default, _) do
     object = stripe_event.data.object
 
     with true <- is_struct(object),
