@@ -330,7 +330,10 @@ defmodule Glific.Partners.Billing do
   """
   @spec create_subscription(Organization.t(), String.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_subscription(organization, stripe_payment_method_id) do
+  def create_subscription(organization, %{
+        promo_code: promo_code,
+        payment_method: stripe_payment_method_id
+      }) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
@@ -338,7 +341,7 @@ defmodule Glific.Partners.Billing do
     |> case do
       {:ok, _} ->
         billing
-        |> setup(organization)
+        |> setup(organization, promo_code)
         |> subscription(organization)
 
       {:error, error} ->
@@ -347,8 +350,8 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-  @spec setup(Billing.t(), Organization.t()) :: Billing.t()
-  defp setup(billing, organization) do
+  @spec setup(Billing.t(), Organization.t(), String.t()) :: Billing.t()
+  defp setup(billing, organization, promo_code) do
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
@@ -360,11 +363,7 @@ defmodule Glific.Partners.Billing do
         }
       })
 
-    Request.new_request()
-    |> Request.put_endpoint("invoiceitems/#{invoice_item.id}")
-    |> Request.put_method(:post)
-    |> Request.put_params(%{discounts: %{coupon: "mWH5sOOw"}})
-    |> Request.make_request()
+    apply_coupon(invoice_item.id, promo_code)
 
     {:ok, _invoice} =
       Stripe.Invoice.create(%{
@@ -378,6 +377,14 @@ defmodule Glific.Partners.Billing do
       })
 
     billing
+  end
+
+  defp apply_coupon(invoice_id, promo_code) do
+    Request.new_request()
+    |> Request.put_endpoint("invoiceitems/#{invoice_id}")
+    |> Request.put_method(:post)
+    |> Request.put_params(%{discounts: %{coupon: coupon_code}})
+    |> Request.make_request()
   end
 
   @spec subscription(Billing.t(), Organization.t()) ::

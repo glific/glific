@@ -94,7 +94,8 @@ defmodule GlificWeb.Schema.BillingTypes do
     end
 
     field :create_billing_subscription, :subscription_result do
-      arg(:input, non_null(:payment_method_input))
+      arg(:payment_method, non_null(:string))
+      arg(:code, non_null(:string))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.create_subscription/3)
     end
