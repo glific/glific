@@ -260,19 +260,19 @@ defmodule Glific.Partners.Billing do
         %{
           price: prices["monthly"],
           quantity: 1,
-          tax_rates: tax_rates()["gst"]
+          tax_rates: [tax_rates()["gst"]]
         },
         %{
           price: prices["users"],
-          tax_rates: tax_rates()["gst"]
+          tax_rates: [tax_rates()["gst"]]
         },
         %{
           price: prices["messages"],
-          tax_rates: tax_rates()["gst"]
+          tax_rates: [tax_rates()["gst"]]
         },
         %{
           price: prices["consulting_hours"],
-          tax_rates: tax_rates()["gst"]
+          tax_rates: [tax_rates()["gst"]]
         }
       ],
       metadata: %{
@@ -341,7 +341,7 @@ defmodule Glific.Partners.Billing do
         customer: billing.stripe_customer_id,
         currency: billing.currency,
         price: stripe_ids()["setup"],
-        tax_rates: tax_rates()["gst"],
+        tax_rates: [tax_rates()["gst"]],
         metadata: %{
           "id" => Integer.to_string(organization.id),
           "name" => organization.name
@@ -533,7 +533,6 @@ defmodule Glific.Partners.Billing do
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
 
         prices = stripe_ids()
-        tax_rates()["gst"]
         subscription_items = billing.stripe_subscription_items
 
         record_subscription_item(
