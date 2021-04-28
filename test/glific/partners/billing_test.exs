@@ -97,6 +97,12 @@ defmodule Glific.BillingTest do
       end
     end
 
+    test "apply_coupon/2 should validate " do
+      use_cassette "apply_coupon" do
+        Billing.apply_coupon("test_invoice_id", %{coupon_code: "mWH5sOOw"})
+      end
+    end
+
     test "customer_portal_link/1 with valid data should return url", attrs do
       use_cassette "customer_portal_link" do
         attrs

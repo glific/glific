@@ -5,6 +5,7 @@ defmodule Glific.Partners.Billing do
   """
 
   use Ecto.Schema
+  use Publicist
   import Ecto.Changeset
   import Ecto.Query, warn: false
   import GlificWeb.Gettext
