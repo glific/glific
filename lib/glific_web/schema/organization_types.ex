@@ -81,6 +81,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
           else: {:ok, organization.signature_phrase}
       end)
     end
+
+    field :inserted_at, :datetime
+
+    field :updated_at, :datetime
   end
 
   @desc "Filtering options for organizations"
