@@ -31,9 +31,9 @@ defmodule GlificWeb.Resolvers.Billings do
   @spec get_promo_code(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def get_promo_code(_, %{code: code}, _) do
-    with promo_code <-
+    with {:ok, coupon_code} <-
            Billing.get_promo_codes(code),
-         do: {:ok, promo_code}
+         do: {:ok, coupon_code}
   end
 
   @doc false

@@ -70,25 +70,25 @@ defmodule Glific.Partners.Billing do
         }
 
   schema "billings" do
-    field :stripe_customer_id, :string
-    field :stripe_payment_method_id, :string
+    field(:stripe_customer_id, :string)
+    field(:stripe_payment_method_id, :string)
 
-    field :stripe_subscription_id, :string
-    field :stripe_subscription_status, :string
-    field :stripe_subscription_items, :map, default: %{}
+    field(:stripe_subscription_id, :string)
+    field(:stripe_subscription_status, :string)
+    field(:stripe_subscription_items, :map, default: %{})
 
-    field :stripe_current_period_start, :utc_datetime
-    field :stripe_current_period_end, :utc_datetime
-    field :stripe_last_usage_recorded, :utc_datetime
+    field(:stripe_current_period_start, :utc_datetime)
+    field(:stripe_current_period_end, :utc_datetime)
+    field(:stripe_last_usage_recorded, :utc_datetime)
 
-    field :name, :string
-    field :email, :string
-    field :currency, :string
+    field(:name, :string)
+    field(:email, :string)
+    field(:currency, :string)
 
-    field :is_delinquent, :boolean, default: false
-    field :is_active, :boolean, default: true
+    field(:is_delinquent, :boolean, default: false)
+    field(:is_active, :boolean, default: true)
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -312,19 +312,24 @@ defmodule Glific.Partners.Billing do
   defp send_update_response({:ok, billing}), do: {:ok, billing}
   defp send_update_response({:error, _}), do: {:error, %{message: "Error while saving details"}}
 
-  @spec get_promo_codes(any()) :: map()
+  @spec get_promo_codes(any()) :: any()
   def get_promo_codes(code) do
     with {:ok, response} <- make_promocode_request(code) do
       make_results(response.data)
     end
   end
 
+  defp make_results([]), do: {:error, ["errors", "Invalid coupon code"]}
+
   defp make_results(response) do
     result = List.first(response)
 
-    %{code: result.code}
-    |> Map.put(:metadata, result.coupon.metadata)
-    |> Map.put(:id, result.coupon.id)
+    coupon =
+      %{code: result.code}
+      |> Map.put(:metadata, result.coupon.metadata)
+      |> Map.put(:id, result.coupon.id)
+
+    {:ok, coupon}
   end
 
   defp make_promocode_request(code) do
