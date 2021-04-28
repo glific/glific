@@ -72,18 +72,6 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Updates an organization status is_active/is_approved
-  """
-  @spec update_organization_status(Absinthe.Resolution.t(), %{input: map()}, %{
-          context: map()
-        }) :: {:ok, any} | {:error, any}
-  def update_organization_status(_, %{input: params}, _) do
-    with organization <- Onboard.status(params) do
-      {:ok, %{organization: organization}}
-    end
-  end
-
-  @doc """
   Deletes an organization
   """
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -96,12 +84,40 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Updates an organization status is_active/is_approved. We will add checks to
+  validate approval and activation
+  """
+  @spec update_organization_status(Absinthe.Resolution.t(), map(), %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def update_organization_status(
+        _,
+        %{
+          update_organization_id: update_organization_id,
+          is_active: is_active,
+          is_approved: is_approved
+        },
+        _
+      ) do
+    with organization <- Onboard.status(update_organization_id, is_active, is_approved) do
+      {:ok, %{organization: organization}}
+    end
+  end
+
+  @doc """
   Delete an inactive organization
   """
-  @spec delete_inactive_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec delete_inactive_organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_inactive_organization(_, %{input: params}, _) do
-    with {:ok, organization} <- Onboard.delete(params) do
+  def delete_inactive_organization(
+        _,
+        %{
+          delete_organization_id: delete_organization_id,
+          is_confirmed: is_confirmed
+        },
+        _
+      ) do
+    with {:ok, organization} <- Onboard.delete(delete_organization_id, is_confirmed) do
       {:ok, %{organization: organization}}
     end
   end

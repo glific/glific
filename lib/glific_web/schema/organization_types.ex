@@ -195,20 +195,23 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.update_organization/3)
     end
 
-    field :update_organization_status, :organization_result do
-      arg(:input, :organization_status_input)
-      middleware(Authorize, :admin)
-      resolve(&Resolvers.Partners.update_organization_status/3)
-    end
-
     field :delete_organization, :organization_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
     end
 
+    field :update_organization_status, :organization_result do
+      arg(:update_organization_id, non_null(:id))
+      arg(:is_active, :boolean)
+      arg(:is_approved, :boolean)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.update_organization_status/3)
+    end
+
     field :delete_inactive_organization, :organization_result do
-      arg(:input, :delete_organization_input)
+      arg(:delete_organization_id, non_null(:id))
+      arg(:is_confirmed, non_null(:boolean))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_inactive_organization/3)
     end
