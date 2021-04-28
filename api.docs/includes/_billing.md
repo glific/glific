@@ -310,16 +310,15 @@ Type | Description
 
 ```graphql
 mutation createBillingSubscription($input:PaymentMethodInput!) {
-  createBillingSubscription(input: $input) {
+  createBillingSubscription($stripePaymentMethodId: stripePaymentMethodId, $couponCode: couponCode) {
     subscription
     errors
   }
 }
 
 {
-  "input": {
     "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa",
-  }
+    "couponCode": "P3XU8ZEB"
 }```
 
 > The above query returns JSON structured like this:
