@@ -69,7 +69,7 @@ query customerPortal() {
 ## Get a Coupon Code
 
 ```graphql
-mutation createBilling($input:BillingInput!) {
+query getCouponCode($code: String!) {
   getCouponCode($code: code) {
     code
     errors {
