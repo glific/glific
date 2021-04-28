@@ -321,7 +321,7 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-  defp make_results([]), do: {:error, ["errors", "Invalid coupon code"]}
+  defp make_results([]), do: {:error, "Invalid coupon code"}
 
   defp make_results(response) do
     result = List.first(response)

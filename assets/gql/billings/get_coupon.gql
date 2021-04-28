@@ -3,9 +3,5 @@ query getCouponCode($code: String!) {
     code
     id
     metadata
-    errors {
-      message
-      key
-    }
   }
 }
