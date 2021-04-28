@@ -312,6 +312,9 @@ defmodule Glific.Partners.Billing do
   defp send_update_response({:ok, billing}), do: {:ok, billing}
   defp send_update_response({:error, _}), do: {:error, %{message: "Error while saving details"}}
 
+  @doc """
+  Validate entered coupon code and return with coupon details
+  """
   @spec get_promo_codes(any()) :: any()
   def get_promo_codes(code) do
     with {:ok, response} <- make_promocode_request(code) do
