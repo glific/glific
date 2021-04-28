@@ -68,11 +68,11 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
-  @spec update_payment_method(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_payment_method(Absinthe.Resolution.t(), map(), %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_payment_method(_, %{input: params}, _) do
+  def update_payment_method(_, params, _) do
     with organization <- Partners.organization(params.organization_id),
          {:ok, billing} <-
            Billing.update_payment_method(organization, params.stripe_payment_method_id) do

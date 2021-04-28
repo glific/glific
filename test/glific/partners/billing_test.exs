@@ -89,7 +89,9 @@ defmodule Glific.BillingTest do
 
         assert {:ok, subscription} =
                  Partners.get_organization!(organization_id)
-                 |> Billing.create_subscription(stripe_payment_method_id)
+                 |> Billing.create_subscription(%{
+                   stripe_payment_method_id: stripe_payment_method_id
+                 })
 
         assert subscription == %{status: :active}
       end

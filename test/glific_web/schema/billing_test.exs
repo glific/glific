@@ -127,15 +127,13 @@ defmodule GlificWeb.Schema.BillingTest do
       result =
         auth_query_gql_by(:payment_method, user,
           variables: %{
-            "input" => %{
-              "stripe_payment_method_id" => payment_method_id
-            }
+              "StripePaymentMethodId" => payment_method_id
           }
         )
-
       assert {:ok, query_data} = result
       billing = get_in(query_data, [:data, "updatePaymentMethod", "billing"])
-      assert billing["stripe_payment_method_id"] == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
+
+      assert billing["StripePaymentMethodId"] == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
     end
   end
 

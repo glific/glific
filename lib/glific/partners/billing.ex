@@ -292,7 +292,6 @@ defmodule Glific.Partners.Billing do
   def update_payment_method(organization, stripe_payment_method_id) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
-
     # first update the contact with default payment id
     with {:ok, _res} <-
            Stripe.PaymentMethod.attach(%{
