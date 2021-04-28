@@ -101,9 +101,7 @@ defmodule GlificWeb.Schema.BillingTest do
       result =
         auth_query_gql_by(:create_subscription, user,
           variables: %{
-            "input" => %{
-              "stripe_payment_method_id" => "some_stripe_payment_method_id"
-            }
+            "StripePaymentMethodId" => "some_stripe_payment_method_id"
           }
         )
 
