@@ -26,6 +26,7 @@ defmodule GlificWeb.Schema.BillingTest do
   load_gql(:create_subscription, GlificWeb.Schema, "assets/gql/billings/create_subscription.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/billings/update.gql")
   load_gql(:payment_method, GlificWeb.Schema, "assets/gql/billings/payment_method.gql")
+  load_gql(:get_coupon, GlificWeb.Schema, "assets/gql/billings/get_coupon.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/billings/delete.gql")
 
   test "delete a billing", %{user: user} do
@@ -80,6 +81,21 @@ defmodule GlificWeb.Schema.BillingTest do
     end
   end
 
+  test "validate coupon", %{user: user} do
+    use_cassette "coupon_code" do
+      result =
+        auth_query_gql_by(:get_coupon, user,
+          variables: %{
+            "code" => "P3MU8SEB"
+          }
+        )
+
+      assert {:ok, query_data} = result
+      assert get_in(query_data, [:data, "getCouponCode", "code"]) == "P3MU8SEB"
+      assert get_in(query_data, [:data, "getCouponCode", "id"]) == "mWH5sXEw"
+    end
+  end
+
   test "create a billing subscription", %{user: user} do
     use_cassette "create_subscription" do
       result =
@@ -127,9 +143,10 @@ defmodule GlificWeb.Schema.BillingTest do
       result =
         auth_query_gql_by(:payment_method, user,
           variables: %{
-              "StripePaymentMethodId" => payment_method_id
+            "StripePaymentMethodId" => payment_method_id
           }
         )
+
       assert {:ok, query_data} = result
       billing = get_in(query_data, [:data, "updatePaymentMethod", "billing"])
 

@@ -1,0 +1,11 @@
+query getCouponCode($code: String!) {
+  getCouponCode(code: $code) {
+    code
+    id
+    metadata
+    errors {
+      message
+      key
+    }
+  }
+}
