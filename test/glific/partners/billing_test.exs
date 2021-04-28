@@ -89,9 +89,17 @@ defmodule Glific.BillingTest do
 
         assert {:ok, subscription} =
                  Partners.get_organization!(organization_id)
-                 |> Billing.create_subscription(stripe_payment_method_id)
+                 |> Billing.create_subscription(%{
+                   stripe_payment_method_id: stripe_payment_method_id
+                 })
 
         assert subscription == %{status: :active}
+      end
+    end
+
+    test "apply_coupon/2 should validate " do
+      use_cassette "apply_coupon" do
+        Billing.apply_coupon("test_invoice_id", %{coupon_code: "mWH5sOOw"})
       end
     end
 

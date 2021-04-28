@@ -28,6 +28,15 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
+  @spec get_promo_code(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def get_promo_code(_, %{code: code}, _) do
+    with {:ok, coupon_code} <-
+           Billing.get_promo_codes(code),
+         do: {:ok, coupon_code}
+  end
+
+  @doc false
   @spec customer_portal(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def customer_portal(_, _, %{context: %{current_user: user}}) do
@@ -59,11 +68,11 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
-  @spec update_payment_method(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_payment_method(Absinthe.Resolution.t(), map(), %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_payment_method(_, %{input: params}, _) do
+  def update_payment_method(_, params, _) do
     with organization <- Partners.organization(params.organization_id),
          {:ok, billing} <-
            Billing.update_payment_method(organization, params.stripe_payment_method_id) do
@@ -72,14 +81,14 @@ defmodule GlificWeb.Resolvers.Billings do
   end
 
   @doc false
-  @spec create_subscription(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec create_subscription(Absinthe.Resolution.t(), map(), %{
           context: map()
         }) ::
           {:ok | :error | :pending, any}
-  def create_subscription(_, %{input: params}, _) do
+  def create_subscription(_, params, _) do
     organization = Partners.organization(params.organization_id)
 
-    Billing.create_subscription(organization, params.stripe_payment_method_id)
+    Billing.create_subscription(organization, params)
     |> case do
       {:error, error} ->
         {:error, error}

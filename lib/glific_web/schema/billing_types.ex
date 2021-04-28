@@ -13,6 +13,12 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :coupon_code_result do
+    field :id, :string
+    field :code, :string
+    field :metadata, :json
+  end
+
   object :subscription_result do
     field :subscription, :json
     field :errors, :string
@@ -47,10 +53,6 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :stripe_subscription_id, :string
   end
 
-  input_object :payment_method_input do
-    field :stripe_payment_method_id, :string
-  end
-
   object :billing_queries do
     @desc "get the details of one billing"
     field :billing, :billing_result do
@@ -70,6 +72,13 @@ defmodule GlificWeb.Schema.BillingTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.get_organization_billing/3)
     end
+
+    @desc "get the details of promotion codes"
+    field :get_coupon_code, :coupon_code_result do
+      arg(:code, non_null(:string))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Billings.get_promo_code/3)
+    end
   end
 
   object :billing_mutations do
@@ -80,13 +89,14 @@ defmodule GlificWeb.Schema.BillingTypes do
     end
 
     field :create_billing_subscription, :subscription_result do
-      arg(:input, non_null(:payment_method_input))
+      arg(:stripe_payment_method_id, non_null(:string))
+      arg(:coupon_code, :string)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.create_subscription/3)
     end
 
     field :update_payment_method, :billing_result do
-      arg(:input, non_null(:payment_method_input))
+      arg(:stripe_payment_method_id, non_null(:string))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.update_payment_method/3)
     end

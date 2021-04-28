@@ -5,6 +5,7 @@ defmodule Glific.Partners.Billing do
   """
 
   use Ecto.Schema
+  use Publicist
   import Ecto.Changeset
   import Ecto.Query, warn: false
   import GlificWeb.Gettext
@@ -23,6 +24,7 @@ defmodule Glific.Partners.Billing do
 
   alias Stripe.{
     BillingPortal,
+    Request,
     SubscriptionItem.Usage
   }
 
@@ -291,7 +293,6 @@ defmodule Glific.Partners.Billing do
   def update_payment_method(organization, stripe_payment_method_id) do
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
-
     # first update the contact with default payment id
     with {:ok, _res} <-
            Stripe.PaymentMethod.attach(%{
@@ -312,12 +313,44 @@ defmodule Glific.Partners.Billing do
   defp send_update_response({:error, _}), do: {:error, %{message: "Error while saving details"}}
 
   @doc """
+  Validate entered coupon code and return with coupon details
+  """
+  @spec get_promo_codes(any()) :: any()
+  def get_promo_codes(code) do
+    with {:ok, response} <- make_promocode_request(code) do
+      make_results(response.data)
+    end
+  end
+
+  defp make_results([]), do: {:error, "Invalid coupon code"}
+
+  defp make_results(response) do
+    result = List.first(response)
+
+    coupon =
+      %{code: result.code}
+      |> Map.put(:metadata, result.coupon.metadata)
+      |> Map.put(:id, result.coupon.id)
+
+    {:ok, coupon}
+  end
+
+  defp make_promocode_request(code) do
+    Request.new_request()
+    |> Request.put_endpoint("promotion_codes")
+    |> Request.put_method(:get)
+    |> Request.put_params(%{code: code})
+    |> Request.make_request()
+  end
+
+  @doc """
   Once the organization has entered a new payment card we create a subscription for it.
   We'll do updating the card in a seperate function
   """
-  @spec create_subscription(Organization.t(), String.t()) ::
+  @spec create_subscription(Organization.t(), map()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
-  def create_subscription(organization, stripe_payment_method_id) do
+  def create_subscription(organization, params) do
+    stripe_payment_method_id = params.stripe_payment_method_id
     # get the billing record
     billing = Repo.get_by!(Billing, %{organization_id: organization.id, is_active: true})
 
@@ -325,7 +358,7 @@ defmodule Glific.Partners.Billing do
     |> case do
       {:ok, _} ->
         billing
-        |> setup(organization)
+        |> setup(organization, params)
         |> subscription(organization)
 
       {:error, error} ->
@@ -334,9 +367,9 @@ defmodule Glific.Partners.Billing do
     end
   end
 
-  @spec setup(Billing.t(), Organization.t()) :: Billing.t()
-  defp setup(billing, organization) do
-    {:ok, _invoice_item} =
+  @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
+  defp setup(billing, organization, params) do
+    {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
         currency: billing.currency,
@@ -347,6 +380,8 @@ defmodule Glific.Partners.Billing do
           "name" => organization.name
         }
       })
+
+    apply_coupon(invoice_item.id, params)
 
     {:ok, _invoice} =
       Stripe.Invoice.create(%{
@@ -361,6 +396,16 @@ defmodule Glific.Partners.Billing do
 
     billing
   end
+
+  defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
+    Request.new_request()
+    |> Request.put_endpoint("invoiceitems/#{invoice_id}")
+    |> Request.put_method(:post)
+    |> Request.put_params(%{discounts: [%{coupon: coupon_code}]})
+    |> Request.make_request()
+  end
+
+  defp apply_coupon(_, _), do: nil
 
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}

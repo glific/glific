@@ -66,6 +66,41 @@ query customerPortal() {
 }
 ```
 
+## Get a Coupon Code
+
+```graphql
+query getCouponCode($code: String!) {
+  getCouponCode($code: code) {
+    code
+    errors {
+      key
+      message
+    }
+    id
+    metadata
+  }
+}
+
+{
+    "code": "P3XU8ZEB"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "getCouponCode": {
+      "code": "P3XU8ZEB",
+      "errors": null,
+      "id": "mWH6SOOw",
+      "metadata": "{\"description\":\"Setup fee discount for initial NGO's\"}"
+    }
+  }
+}
+```
+
 ## Get the organization billing object
 
 ```graphql
@@ -275,16 +310,15 @@ Type | Description
 
 ```graphql
 mutation createBillingSubscription($input:PaymentMethodInput!) {
-  createBillingSubscription(input: $input) {
+  createBillingSubscription($stripePaymentMethodId: stripePaymentMethodId, $couponCode: couponCode) {
     subscription
     errors
   }
 }
 
 {
-  "input": {
     "stripePaymentMethodId": "pm_1IbONxSAmm68Jt0wLWwLIPa",
-  }
+    "couponCode": "P3XU8ZEB"
 }```
 
 > The above query returns JSON structured like this:

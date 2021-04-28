@@ -1,9 +1,14 @@
-#import "./fields.frag.gql"
-
-mutation updatePaymentMethod($input:PaymentMethodInput!) {
-  updatePaymentMethod(input: $input) {
-    ...BillingFields
-
-    ...ErrorFields
+mutation updatePaymentMethod($StripePaymentMethodId: String!) {
+  updatePaymentMethod(StripePaymentMethodId: $StripePaymentMethodId) {
+    billing {
+      currency
+      email
+      isActive
+      StripePaymentMethodId
+    }
+    errors {
+      key
+      message
+    }
   }
 }
