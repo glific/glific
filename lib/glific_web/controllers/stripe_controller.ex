@@ -35,10 +35,9 @@ defmodule GlificWeb.StripeController do
   ## customer id is present in all endpoints.
   @spec organization_id(any(), non_neg_integer) :: non_neg_integer
   defp organization_id(stripe_event, default) do
-    object = stripe_event.data.object
-    customer_id = get_customer_id(stripe_event.type, object)
+    customer_id = get_customer_id(stripe_event)
 
-    with true <- is_struct(object),
+    with true <- is_struct(stripe_event.data.object),
          {:ok, billing} <-
            Repo.fetch_by(Billing, %{stripe_customer_id: customer_id}, skip_organization_id: true) do
       Logger.info("Stripe webhook: #{stripe_event.type}, org: #{billing.organization_id}")
@@ -50,14 +49,15 @@ defmodule GlificWeb.StripeController do
     end
   end
 
-  defp get_customer_id("customer.updated", object), do: object.id
+  @spec get_customer_id(map()) :: String.t()
+  defp get_customer_id(%{type: "customer.updated", data: %{object: object}}), do: object.id
 
-  defp get_customer_id("customer.deleted", object) do
+  defp get_customer_id(%{type: "customer.deleted", data: %{object: object}}) do
     customer = object |> Map.from_struct()
     customer.id
   end
 
-  defp get_customer_id(_event, object), do: object.customer
+  defp get_customer_id(%{data: %{object: object}}), do: object.customer
 
   @spec handle_success(Plug.Conn.t()) :: Plug.Conn.t()
   defp handle_success(conn) do
@@ -111,12 +111,12 @@ defmodule GlificWeb.StripeController do
   end
 
   defp handle_webhook(
-         %{type: "customer.deleted", data: %{object: object}} = _stripe_event,
+         %{type: "customer.deleted"} = stripe_event,
          organization_id
        ) do
-    customer = object |> Map.from_struct()
+    customer_id = get_customer_id(stripe_event)
 
-    Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
+    Billing.get_billing(%{stripe_customer_id: customer_id, organization_id: organization_id})
     |> Billing.delete_billing()
   end
 
