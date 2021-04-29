@@ -7,12 +7,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
-  alias Glific.Settings.Language
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
-
-  alias GlificWeb.Schema
+  alias Glific.{Partners, Repo, Settings.Language}
+  alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
   object :organization_result do
     field :organization, :organization
@@ -174,6 +170,18 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:filter, :organization_filter)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.count_organizations/3)
+    end
+
+    field :attachments_enabled, :boolean do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+
+      resolve(fn _, %{id: id}, _ ->
+        case Glific.parse_maybe_integer(id) do
+          {:ok, id} -> {:ok, Partners.attachments_enabled?(id)}
+          _ -> {:error, "Could not parse argument"}
+        end
+      end)
     end
 
     field :timezones, list_of(:string) do

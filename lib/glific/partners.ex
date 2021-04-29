@@ -646,8 +646,8 @@ defmodule Glific.Partners do
   end
 
   # check for non empty string or nil
-  @spec non_empty_string(String.t() | nil) :: boolean()
-  defp non_empty_string(str) do
+  @spec non_nil_string(String.t() | nil) :: boolean()
+  defp non_nil_string(str) do
     !is_nil(str) && str != ""
   end
 
@@ -655,9 +655,9 @@ defmodule Glific.Partners do
   @spec valid_bsp?(Credential.t()) :: boolean()
   defp valid_bsp?(credential) do
     credential.provider.group == "bsp" &&
-      non_empty_string(credential.keys["api_end_point"]) &&
-      non_empty_string(credential.secrets["app_name"]) &&
-      non_empty_string(credential.secrets["api_key"])
+      non_nil_string(credential.keys["api_end_point"]) &&
+      non_nil_string(credential.secrets["app_name"]) &&
+      non_nil_string(credential.secrets["api_key"])
   end
 
   @doc """
@@ -689,7 +689,7 @@ defmodule Glific.Partners do
   end
 
   @doc """
-    Removing organization cache
+  Removing organization cache
   """
   @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
   def remove_organization_cache(organization_id, shortcode) do
@@ -700,7 +700,7 @@ defmodule Glific.Partners do
   end
 
   @doc """
-    Common function to get the goth config
+  Common function to get the goth config
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
@@ -786,7 +786,7 @@ defmodule Glific.Partners do
   end
 
   @doc """
-    Updating setup
+  Updating setup
   """
   @spec credential_update_callback(Organization.t(), String.t()) :: :ok
   def credential_update_callback(organization, "bigquery") do
@@ -800,6 +800,18 @@ defmodule Glific.Partners do
   end
 
   def credential_update_callback(_organization, _provider), do: :ok
+
+  @doc """
+  Check if we can allow attachments for this organization. For now, this is a check to
+  see if GCS is enabled for this organization
+  """
+  @spec attachments_enabled?(non_neg_integer) :: boolean()
+  def attachments_enabled?(organization_id),
+    do:
+      organization_id
+      |> organization()
+      |> Map.get(:services)
+      |> Map.has_key?("google_cloud_storage")
 
   @doc """
   Given an empty list, determine which organizations have been active in the recent
