@@ -52,7 +52,7 @@ defmodule GlificWeb.StripeController do
 
   defp get_customer_id("customer.updated", object), do: object.id
 
-  defp get_customer_id(event, object) when event in ["customer.created", "customer.deleted"] do
+  defp get_customer_id("customer.deleted", object) do
     customer = object |> Map.from_struct()
     customer.id
   end
