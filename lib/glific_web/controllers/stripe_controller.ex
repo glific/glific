@@ -36,11 +36,7 @@ defmodule GlificWeb.StripeController do
   @spec organization_id(any(), non_neg_integer) :: non_neg_integer
   defp organization_id(stripe_event, default) do
     object = stripe_event.data.object
-
-    customer_id =
-      if stripe_event.type == "customer.updated",
-        do: object.id,
-        else: object.customer
+    customer_id = get_customer_id(stripe_event.type, object)
 
     with true <- is_struct(object),
          {:ok, billing} <-
@@ -53,6 +49,15 @@ defmodule GlificWeb.StripeController do
       _ -> default
     end
   end
+
+  defp get_customer_id("customer.updated", object), do: object.id
+
+  defp get_customer_id("customer.deleted", object) do
+    customer = object |> Map.from_struct()
+    customer.id
+  end
+
+  defp get_customer_id(_event, object), do: object.customer
 
   @spec handle_success(Plug.Conn.t()) :: Plug.Conn.t()
   defp handle_success(conn) do
