@@ -1,0 +1,3 @@
+query attachmentsEnabled($id: ID!) {
+  attachmentsEnabled(id: $id)
+}
