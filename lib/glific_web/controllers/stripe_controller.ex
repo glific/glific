@@ -52,10 +52,8 @@ defmodule GlificWeb.StripeController do
   @spec get_customer_id(map()) :: String.t()
   defp get_customer_id(%{type: "customer.updated", data: %{object: object}}), do: object.id
 
-  defp get_customer_id(%{type: "customer.deleted", data: %{object: object}}) do
-    customer = object |> Map.from_struct()
-    customer.id
-  end
+  defp get_customer_id(%{type: "customer.deleted", data: %{object: object}}),
+    do: object |> Map.from_struct() |> Map.get(:id)
 
   defp get_customer_id(%{data: %{object: object}}), do: object.customer
 
