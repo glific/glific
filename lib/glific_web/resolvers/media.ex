@@ -31,6 +31,7 @@ defmodule GlificWeb.Resolvers.Media do
 
     # first decode blob and store in temp file
     local_file = local_name(type, uuid)
+
     File.write!(
       local_file,
       Base.decode64!(media)
