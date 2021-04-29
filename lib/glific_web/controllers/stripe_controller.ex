@@ -52,7 +52,7 @@ defmodule GlificWeb.StripeController do
 
   defp get_customer_id("customer.updated", object), do: object.id
 
-  defp get_customer_id("customer.deleted", object) do
+  defp get_customer_id(event, object) when event in ["customer.created", "customer.deleted"] do
     customer = object |> Map.from_struct()
     customer.id
   end
@@ -108,6 +108,16 @@ defmodule GlificWeb.StripeController do
        ) do
     Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
     |> Billing.update_billing(%{email: customer.email})
+  end
+
+  defp handle_webhook(
+         %{type: "customer.deleted", data: %{object: object}} = _stripe_event,
+         organization_id
+       ) do
+    customer = object |> Map.from_struct()
+
+    Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
+    |> Billing.delete_billing()
   end
 
   defp handle_webhook(stripe_event, _organization_id) do
