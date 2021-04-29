@@ -30,11 +30,11 @@ defmodule GlificWeb.Resolvers.Media do
     uuid = Ecto.UUID.generate()
 
     # first decode blob and store in temp file
-    local_file =
-      File.write!(
-        local_name(type, uuid),
-        Base.decode64!(media)
-      )
+    local_file = local_name(type, uuid)
+    File.write!(
+      local_file,
+      Base.decode64!(media)
+    )
 
     GcsWorker.upload_media(local_file, remote_name(user, type, uuid), organization_id)
   end
