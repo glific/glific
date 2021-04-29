@@ -470,14 +470,10 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#organizationresult">OrganizationResult</a> | An error object or empty
 
-## Check for attachment support
+## Check for attachment support for the given user
 ```graphql
-query attachmentEnabled($id: ID) {
-  attachmentEnabled(id: $id)
-}
-
-{
-  "id": 1
+query attachmentsEnabled {
+  attachmentsEnabled
 }
 ```
 
@@ -487,16 +483,10 @@ query attachmentEnabled($id: ID) {
 
 {
   "data": {
-    "attachmentEnabled": true
+    "attachmentsEnabled": true
   }
 }
 ```
-
-### Query Parameters
-
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> ||
 
 ### Return Parameters
 Type | Description

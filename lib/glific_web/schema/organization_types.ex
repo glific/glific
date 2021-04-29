@@ -173,14 +173,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     end
 
     field :attachments_enabled, :boolean do
-      arg(:id, non_null(:id))
       middleware(Authorize, :staff)
 
-      resolve(fn _, %{id: id}, _ ->
-        case Glific.parse_maybe_integer(id) do
-          {:ok, id} -> {:ok, Partners.attachments_enabled?(id)}
-          _ -> {:error, "Could not parse argument"}
-        end
+      resolve(fn _, _, %{context: %{current_user: user}} ->
+        {:ok, Partners.attachments_enabled?(user.organization_id)}
       end)
     end
 
