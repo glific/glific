@@ -470,6 +470,29 @@ Type | Description
 --------- | ---- | ------- | -----------
 <a href="#organizationresult">OrganizationResult</a> | An error object or empty
 
+## Check for attachment support for the given user
+```graphql
+query attachmentsEnabled {
+  attachmentsEnabled
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+
+{
+  "data": {
+    "attachmentsEnabled": true
+  }
+}
+```
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#boolean">Boolean</a> | Have we enabled attachment support for this organization
+
 ## Get List of Timezones
 ```graphql
 query timezones {

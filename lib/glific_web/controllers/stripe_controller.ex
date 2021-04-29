@@ -35,14 +35,9 @@ defmodule GlificWeb.StripeController do
   ## customer id is present in all endpoints.
   @spec organization_id(any(), non_neg_integer) :: non_neg_integer
   defp organization_id(stripe_event, default) do
-    object = stripe_event.data.object
+    customer_id = get_customer_id(stripe_event)
 
-    customer_id =
-      if stripe_event.type == "customer.updated",
-        do: object.id,
-        else: object.customer
-
-    with true <- is_struct(object),
+    with true <- is_struct(stripe_event.data.object),
          {:ok, billing} <-
            Repo.fetch_by(Billing, %{stripe_customer_id: customer_id}, skip_organization_id: true) do
       Logger.info("Stripe webhook: #{stripe_event.type}, org: #{billing.organization_id}")
@@ -53,6 +48,14 @@ defmodule GlificWeb.StripeController do
       _ -> default
     end
   end
+
+  @spec get_customer_id(map()) :: String.t()
+  defp get_customer_id(%{type: "customer.updated", data: %{object: object}}), do: object.id
+
+  defp get_customer_id(%{type: "customer.deleted", data: %{object: object}}),
+    do: object |> Map.from_struct() |> Map.get(:id)
+
+  defp get_customer_id(%{data: %{object: object}}), do: object.customer
 
   @spec handle_success(Plug.Conn.t()) :: Plug.Conn.t()
   defp handle_success(conn) do
@@ -96,6 +99,24 @@ defmodule GlificWeb.StripeController do
          organization_id
        ),
        do: Billing.update_subscription_details(subscription, organization_id, nil)
+
+  defp handle_webhook(
+         %{type: "customer.updated", data: %{object: customer}} = _stripe_event,
+         organization_id
+       ) do
+    Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
+    |> Billing.update_billing(%{email: customer.email})
+  end
+
+  defp handle_webhook(
+         %{type: "customer.deleted"} = stripe_event,
+         organization_id
+       ) do
+    customer_id = get_customer_id(stripe_event)
+
+    Billing.get_billing(%{stripe_customer_id: customer_id, organization_id: organization_id})
+    |> Billing.delete_billing()
+  end
 
   defp handle_webhook(stripe_event, _organization_id) do
     # handle default case. We ignore these web hooks.

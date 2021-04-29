@@ -1,5 +1,5 @@
 defmodule GlificWeb.Schema.OrganizationTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase, async: false
   use Wormwood.GQLCase
 
   alias Glific.{
@@ -40,6 +40,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
   load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
+  load_gql(:attachments, GlificWeb.Schema, "assets/gql/organizations/attachments.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
 
   test "organizations field returns list of organizations", %{user: user} do
@@ -396,6 +397,16 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "deleteOrganization", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "attachments enabled returns false by default, but true when we have GCS credential", %{
+    user: user
+  } do
+    result = auth_query_gql_by(:attachments, user, variables: %{"id" => user.organization_id})
+    assert {:ok, query_data} = result
+
+    enabled? = get_in(query_data, [:data, "attachmentsEnabled"])
+    assert enabled? == false
   end
 
   test "timezones returns list of timezones", %{user: user} do
