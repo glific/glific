@@ -97,6 +97,14 @@ defmodule GlificWeb.StripeController do
        ),
        do: Billing.update_subscription_details(subscription, organization_id, nil)
 
+  defp handle_webhook(
+         %{type: "customer.updated", data: %{object: customer}} = _stripe_event,
+         organization_id
+       ) do
+    Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
+    |> Billing.update_billing(%{email: customer.email})
+  end
+
   defp handle_webhook(stripe_event, _organization_id) do
     # handle default case. We ignore these web hooks.
     {:ok, "success, ignoring #{stripe_event.type}"}
