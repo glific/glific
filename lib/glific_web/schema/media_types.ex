@@ -11,7 +11,7 @@ defmodule GlificWeb.Schema.MediaTypes do
     @desc "upload a media file and type"
     field :upload_media, :string do
       arg(:media, non_null(:upload))
-      arg(:type, non_null(:string))
+      arg(:extension, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Media.upload/3)
     end
@@ -19,7 +19,7 @@ defmodule GlificWeb.Schema.MediaTypes do
     @desc "upload a media blob encoded in base 64 and type"
     field :upload_blob, :string do
       arg(:media, non_null(:string))
-      arg(:type, non_null(:string))
+      arg(:extension, non_null(:string))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Media.upload_blob/3)
     end

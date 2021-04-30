@@ -9,8 +9,8 @@ client (frontend). Client can then use this url, in a media message to send to W
 ## Upload a file
 
 ```graphql
-mutation uploadMedia($media: Upload!, $type: String!) {
-  uploadMedia(media: $media., type: $type)
+mutation uploadMedia($media: Upload!, $extension: String!) {
+  uploadMedia(media: $media, extension: $extension)
 }
 ```
 
@@ -30,8 +30,15 @@ mutation uploadMedia($media: Upload!, $type: String!) {
 The media blob has to be encoded in base64
 
 ```graphql
-mutation uploadBlob($media: String!, $type: String!) {
-  uploadBlob(media: $media., type: $type)
+mutation uploadBlob($media: String!, $extension: String!) {
+  uploadBlob(media: $media, extension: $extension)
+}
+
+{
+  "input": {
+    "media": "W29iamVjdCBCbG9iXQ==",
+    "extension": "wav"
+  }
 }
 ```
 
@@ -44,3 +51,27 @@ mutation uploadBlob($media: String!, $type: String!) {
    }
 }
 ```
+### BlobInput
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>media</strong></td>
+<td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>extension</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
