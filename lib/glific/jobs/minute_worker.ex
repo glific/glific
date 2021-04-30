@@ -125,7 +125,8 @@ defmodule Glific.Jobs.MinuteWorker do
               "chatbase",
               "bigquery",
               "gcs",
-              "execute_triggers"
+              "execute_triggers",
+              "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
@@ -151,6 +152,9 @@ defmodule Glific.Jobs.MinuteWorker do
           services["google_cloud_storage"],
           true
         )
+
+      "stats" ->
+        Stats.generate_stats([], false)
     end
 
     :ok
@@ -160,6 +164,7 @@ defmodule Glific.Jobs.MinuteWorker do
        when job in [
               "daily_tasks",
               "hourly_tasks",
+              "delete_tasks",
               "five_minute_tasks",
               "update_hsms"
             ] do
@@ -169,12 +174,13 @@ defmodule Glific.Jobs.MinuteWorker do
         # Billing.update_usage()
         nil
 
-      "hourly_tasks" ->
+      "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
         # of the DB we generate for all organizations, not the most recent ones
-        Stats.generate_stats([], false)
         FlowContext.delete_completed_flow_contexts()
         FlowContext.delete_old_flow_contexts()
+
+      "hourly_tasks" ->
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
 
