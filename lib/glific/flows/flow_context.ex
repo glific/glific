@@ -616,7 +616,7 @@ defmodule Glific.Flows.FlowContext do
     {count, nil} =
       FlowContext
       |> where([fc], fc.completed_at < ^back_date)
-      |> Repo.delete_all(skip_organization_id: true)
+      |> Repo.delete_all(skip_organization_id: true, timeout: 60_000)
 
     Logger.info("Deleting flow contexts completed #{back} days back: count: '#{count}'")
 
@@ -624,16 +624,16 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Delete all the contexts which are older than 30 days
+  Delete all the contexts which are older than 7 days
   """
   @spec delete_old_flow_contexts(non_neg_integer) :: :ok
-  def delete_old_flow_contexts(back \\ 30) do
+  def delete_old_flow_contexts(back \\ 7) do
     deletion_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
     {count, nil} =
       FlowContext
       |> where([fc], fc.inserted_at < ^deletion_date)
-      |> Repo.delete_all(skip_organization_id: true)
+      |> Repo.delete_all(skip_organization_id: true, timeout: 60_000)
 
     Logger.info("Deleting flow contexts older than #{back} days: count: '#{count}'")
 

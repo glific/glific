@@ -245,19 +245,8 @@ defmodule Glific.Partners.Billing do
   defp subscription_params(billing, organization) do
     prices = stripe_ids()
 
-    # Temporary to make sure that the subscription starts from the beginning of next month
-    anchor_timestamp =
-      DateTime.utc_now()
-      |> Timex.end_of_month()
-      |> Timex.shift(days: 1)
-      |> Timex.beginning_of_day()
-      |> DateTime.to_unix()
-
     %{
       customer: billing.stripe_customer_id,
-      # Temporary for existing customers.
-      billing_cycle_anchor: anchor_timestamp,
-      prorate: false,
       items: [
         %{
           price: prices["monthly"],
