@@ -96,6 +96,18 @@ defmodule GlificWeb.Resolvers.Messages do
          do: {:ok, %{message: message}}
   end
 
+  @spec send_message_to_group(map(), non_neg_integer, User.t(), atom()) ::
+          {:ok | :error, map()}
+  defp send_message_to_group(attrs, group_id, user, type) do
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
+         {:ok, contact_ids} <-
+           attrs
+           |> Map.merge(%{user_id: user.id})
+           |> Messages.create_and_send_message_to_group(group, type),
+         do: {:ok, %{success: true, contact_ids: contact_ids}}
+  end
+
   @doc """
   Create and send message to contacts of a group
   """
@@ -103,15 +115,8 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def create_and_send_message_to_group(_, %{input: message_params, group_id: group_id}, %{
         context: %{current_user: current_user}
-      }) do
-    with {:ok, group} <-
-           Repo.fetch_by(Group, %{id: group_id, organization_id: current_user.organization_id}),
-         {:ok, contact_ids} <-
-           message_params
-           |> Map.merge(%{user_id: current_user.id})
-           |> Messages.create_and_send_message_to_group(group, :session),
-         do: {:ok, %{success: true, contact_ids: contact_ids}}
-  end
+      }),
+      do: send_message_to_group(message_params, group_id, current_user, :session)
 
   @doc false
   @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -126,15 +131,8 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def send_hsm_message_to_group(_, %{group_id: group_id} = attrs, %{
         context: %{current_user: current_user}
-      }) do
-    with {:ok, group} <-
-           Repo.fetch_by(Group, %{id: group_id, organization_id: current_user.organization_id}),
-         {:ok, contact_ids} <-
-           attrs
-           |> Map.merge(%{user_id: current_user.id})
-           |> Messages.create_and_send_message_to_group(group, :hsm),
-         do: {:ok, %{success: true, contact_ids: contact_ids}}
-  end
+      }),
+      do: send_message_to_group(attrs, group_id, current_user, :hsm)
 
   @doc false
   @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
