@@ -10,7 +10,8 @@ defmodule GlificWeb.Resolvers.Messages do
     Messages,
     Messages.Message,
     Messages.MessageMedia,
-    Repo
+    Repo,
+    Users.User
   }
 
   @doc """
