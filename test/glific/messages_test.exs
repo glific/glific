@@ -438,7 +438,7 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:ok, [contact1_id, contact2_id | _]} =
-               Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
+               Messages.create_and_send_message_to_contacts(message_attrs, contact_ids, :session)
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
@@ -488,7 +488,11 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:ok, []} =
-               Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
+               Messages.create_and_send_message_to_contacts(
+                 message_attrs,
+                 [receiver.id],
+                 :session
+               )
     end
 
     test "create_group_message/1 should create group message",
@@ -572,7 +576,7 @@ defmodule Glific.MessagesTest do
       org_contact = Glific.Partners.organization(organization_id).contact
 
       assert {:ok, [contact1_id, contact2_id | _]} =
-               Messages.create_and_send_message_to_group(message_attrs, group)
+               Messages.create_and_send_message_to_group(message_attrs, group, :session)
 
       # message should be sent only to the contacts of the group
       assert [contact1_id, contact2_id] -- contact_ids == []

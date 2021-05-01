@@ -244,7 +244,7 @@ defmodule GlificWeb.Schema.SearchTest do
       organization_id: attrs.organization_id
     }
 
-    Messages.create_and_send_message_to_group(valid_attrs, group)
+    Messages.create_and_send_message_to_group(valid_attrs, group, :session)
 
     result =
       auth_query_gql_by(:search, user,

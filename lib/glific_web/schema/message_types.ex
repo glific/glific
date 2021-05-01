@@ -179,10 +179,18 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :send_hsm_message, :message_result do
       arg(:template_id, non_null(:id))
-      arg(:receiver_id, non_null(:id))
       arg(:parameters, list_of(:string))
+      arg(:receiver_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_hsm_message/3)
+    end
+
+    field :send_hsm_message_to_group, :group_message_result do
+      arg(:template_id, non_null(:id))
+      arg(:parameters, list_of(:string))
+      arg(:group_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_hsm_message_to_group/3)
     end
 
     field :send_session_message, :message_result do

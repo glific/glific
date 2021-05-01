@@ -16,6 +16,7 @@ defmodule Glific.Messages do
     Conversations.Conversation,
     Flows.FlowContext,
     Flows.MessageVarParser,
+    Groups,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -238,14 +239,14 @@ defmodule Glific.Messages do
       |> create_and_send_hsm_message()
     else
       Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
-      |> create_and_send_message(attrs)
+      |> do_send_message(attrs)
     end
   end
 
   @doc false
-  @spec create_and_send_message({:ok | :error, any()}, map()) ::
+  @spec do_send_message({:ok | :error, any()}, map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp create_and_send_message(
+  defp do_send_message(
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
@@ -262,7 +263,7 @@ defmodule Glific.Messages do
     Communications.Message.send_message(message, attrs)
   end
 
-  defp create_and_send_message({:error, reason}, attrs) do
+  defp do_send_message({:error, reason}, attrs) do
     notify(attrs, reason)
     {:error, reason}
   end
@@ -423,6 +424,29 @@ defmodule Glific.Messages do
     end
   end
 
+  defp hsm_message_params(
+         session_template,
+         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
+       ) do
+    media_id = Map.get(attrs, :media_id, nil)
+    updated_template = parse_template_vars(session_template, parameters)
+
+    %{
+      body: updated_template.body,
+      type: updated_template.type,
+      is_hsm: updated_template.is_hsm,
+      organization_id: session_template.organization_id,
+      sender_id: Partners.organization_contact_id(session_template.organization_id),
+      receiver_id: receiver_id,
+      template_uuid: session_template.uuid,
+      template_id: template_id,
+      template_type: session_template.type,
+      params: parameters,
+      media_id: media_id,
+      is_optin_flow: Map.get(attrs, :is_optin_flow, false)
+    }
+  end
+
   @doc """
   Send a hsm template message to the specific contact.
   """
@@ -432,34 +456,22 @@ defmodule Glific.Messages do
         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
       ) do
     media_id = Map.get(attrs, :media_id, nil)
-    contact = Glific.Contacts.get_contact!(receiver_id)
     {:ok, template} = Repo.fetch(SessionTemplate, template_id)
 
     session_template = fetch_language_specific_template(template, receiver_id)
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
-      updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
       message_params =
-        %{
-          body: updated_template.body,
-          type: updated_template.type,
-          is_hsm: updated_template.is_hsm,
-          organization_id: session_template.organization_id,
-          sender_id: Partners.organization_contact_id(session_template.organization_id),
-          receiver_id: receiver_id,
-          template_uuid: session_template.uuid,
-          template_id: template_id,
-          template_type: session_template.type,
-          params: parameters,
-          media_id: media_id,
-          is_optin_flow: Map.get(attrs, :is_optin_flow, false)
-        }
+        session_template
+        |> hsm_message_params(attrs)
         |> check_flow_id(attrs)
 
-      Contacts.can_send_message_to?(contact, true, attrs)
-      |> create_and_send_message(message_params)
+      receiver_id
+      |> Glific.Contacts.get_contact!()
+      |> Contacts.can_send_message_to?(true, attrs)
+      |> do_send_message(message_params)
     else
       false ->
         {:error,
@@ -498,14 +510,19 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, list()}
-  def create_and_send_message_to_contacts(message_params, contact_ids) do
+  @spec create_and_send_message_to_contacts(map(), [], atom()) :: {:ok, list()}
+  def create_and_send_message_to_contacts(message_params, contact_ids, type) do
     contact_ids =
       contact_ids
       |> Enum.reduce([], fn contact_id, contact_ids ->
         message_params = Map.put(message_params, :receiver_id, contact_id)
 
-        case create_and_send_message(message_params) do
+        result =
+          if type == :session,
+            do: create_and_send_message(message_params),
+            else: create_and_send_hsm_message(message_params)
+
+        case result do
           {:ok, message} ->
             [message.contact_id | contact_ids]
 
@@ -559,20 +576,31 @@ defmodule Glific.Messages do
   @doc """
   Create and send message to all contacts of a group
   """
-  @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
-  def create_and_send_message_to_group(message_params, group) do
-    group = group |> Repo.preload(:contacts)
+  @spec create_and_send_message_to_group(map(), Group.t(), atom()) :: {:ok, list()}
+  def create_and_send_message_to_group(message_params, group, type) do
+    contact_ids = Groups.contact_ids(group.id)
 
-    contact_ids =
-      group.contacts
-      |> Enum.map(fn contact -> contact.id end)
-
-    {:ok, _group_message} = create_group_message(Map.put(message_params, :group_id, group.id))
+    {:ok, _group_message} =
+      if type == :session,
+        do: create_group_message(Map.put(message_params, :group_id, group.id)),
+        else:
+          create_group_message(
+            message_params
+            |> Map.put(:group_id, group.id)
+            |> Map.put(
+              :body,
+              "Sending HSM template #{message_params.template_id}, params: #{
+                message_params.parameters
+              }"
+            )
+            |> Map.put(:type, :text)
+          )
 
     create_and_send_message_to_contacts(
       # supress publishing a subscription for group messages
       Map.merge(message_params, %{publish?: false, group_id: group.id}),
-      contact_ids
+      contact_ids,
+      type
     )
   end
 

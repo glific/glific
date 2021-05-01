@@ -44,6 +44,12 @@ defmodule GlificWeb.Schema.MessageTest do
   )
 
   load_gql(
+    :send_hsm_message_to_group,
+    GlificWeb.Schema,
+    "assets/gql/messages/send_hsm_message_to_group.gql"
+  )
+
+  load_gql(
     :send_session_message,
     GlificWeb.Schema,
     "assets/gql/messages/send_session_message.gql"
@@ -284,6 +290,30 @@ defmodule GlificWeb.Schema.MessageTest do
     assert length(contact_ids) >= 2
   end
 
+  test "send hsm message to a group", %{staff: user} = attrs do
+    [cg1 | _] = Fixtures.group_contacts_fixture(attrs)
+
+    label = "OTP Message"
+
+    {:ok, hsm_template} =
+      Repo.fetch_by(SessionTemplate, %{label: label, organization_id: user.organization_id})
+
+    parameters = ["param1", "param2", "param3"]
+
+    result =
+      auth_query_gql_by(:send_hsm_message_to_group, user,
+        variables: %{
+          "template_id" => hsm_template.id,
+          "group_id" => cg1.group_id,
+          "parameters" => parameters
+        }
+      )
+
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "sendHsmMessageToGroup", "errors"]) == nil
+    assert get_in(query_data, [:data, "sendHsmMessageToGroup", "contactIds"]) != []
+  end
+
   test "send hsm message to an opted in contact", %{staff: user} do
     contact = Glific.Fixtures.contact_fixture()
 
@@ -297,7 +327,7 @@ defmodule GlificWeb.Schema.MessageTest do
     result =
       auth_query_gql_by(:send_hsm_message, user,
         variables: %{
-          "id" => hsm_template.id,
+          "template_id" => hsm_template.id,
           "receiver_id" => contact.id,
           "parameters" => parameters
         }

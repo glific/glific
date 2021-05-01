@@ -262,6 +262,21 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  Get the contacts ids for a specific group that have not opted out
+  """
+  @spec contact_ids(non_neg_integer) :: list(non_neg_integer)
+  def contact_ids(group_id) do
+    Contact
+    |> where([c], c.status != :blocked and is_nil(c.optout_time))
+    |> join(:inner, [c], cg in ContactGroup,
+      as: :cg,
+      on: cg.contact_id == c.id and cg.group_id == ^group_id
+    )
+    |> select([c], c.id)
+    |> Repo.all()
+  end
+
+  @doc """
   Delete group contacts
 
   """
