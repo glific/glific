@@ -580,7 +580,15 @@ defmodule Glific.Messages do
   def create_and_send_message_to_group(message_params, group, type) do
     contact_ids = Groups.contact_ids(group.id)
 
-    {:ok, _group_message} = create_group_message(Map.put(message_params, :group_id, group.id))
+    {:ok, _group_message} =
+    if type == :session,
+      do: create_group_message(Map.put(message_params, :group_id, group.id)),
+      else: create_group_message(
+            message_params
+            |> Map.put(:group_id, group.id)
+            |> Map.put(:body, "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}")
+            |> Map.put(:type, :text)
+          )
 
     create_and_send_message_to_contacts(
       # supress publishing a subscription for group messages

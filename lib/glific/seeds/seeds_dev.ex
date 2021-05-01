@@ -79,17 +79,26 @@ if Code.ensure_loaded?(Faker) do
         %{
           name: "Adelle Cavin",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: hi_in.id
+          language_id: hi_in.id,
+          bsp_status: :session_and_hsm,
+          optin_time: utc_now,
+          optin_status: true,
         },
         %{
           name: "Margarita Quinteros",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: hi_in.id
+          language_id: hi_in.id,
+          bsp_status: :session_and_hsm,
+          optin_time: utc_now,
+          optin_status: true,
         },
         %{
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: en.id
+          language_id: en.id,
+          bsp_status: :session_and_hsm,
+          optin_time: utc_now,
+          optin_status: true,
         }
       ]
 
