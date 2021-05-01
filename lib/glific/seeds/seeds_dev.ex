@@ -82,7 +82,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: hi_in.id,
           bsp_status: :session_and_hsm,
           optin_time: utc_now,
-          optin_status: true,
+          optin_status: true
         },
         %{
           name: "Margarita Quinteros",
@@ -90,7 +90,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: hi_in.id,
           bsp_status: :session_and_hsm,
           optin_time: utc_now,
-          optin_status: true,
+          optin_status: true
         },
         %{
           name: "Chrissy Cron",
@@ -98,7 +98,7 @@ if Code.ensure_loaded?(Faker) do
           language_id: en.id,
           bsp_status: :session_and_hsm,
           optin_time: utc_now,
-          optin_status: true,
+          optin_status: true
         }
       ]
 

@@ -581,12 +581,18 @@ defmodule Glific.Messages do
     contact_ids = Groups.contact_ids(group.id)
 
     {:ok, _group_message} =
-    if type == :session,
-      do: create_group_message(Map.put(message_params, :group_id, group.id)),
-      else: create_group_message(
+      if type == :session,
+        do: create_group_message(Map.put(message_params, :group_id, group.id)),
+        else:
+          create_group_message(
             message_params
             |> Map.put(:group_id, group.id)
-            |> Map.put(:body, "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}")
+            |> Map.put(
+              :body,
+              "Sending HSM template #{message_params.template_id}, params: #{
+                message_params.parameters
+              }"
+            )
             |> Map.put(:type, :text)
           )
 
