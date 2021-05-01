@@ -488,7 +488,11 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:ok, []} =
-               Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id], :session)
+               Messages.create_and_send_message_to_contacts(
+                 message_attrs,
+                 [receiver.id],
+                 :session
+               )
     end
 
     test "create_group_message/1 should create group message",
