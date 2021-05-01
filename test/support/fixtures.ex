@@ -560,8 +560,8 @@ defmodule Glific.Fixtures do
       organization_id: attrs.organization_id
     }
 
-    Messages.create_and_send_message_to_group(valid_attrs, group_1)
-    Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    Messages.create_and_send_message_to_group(valid_attrs, group_1, :session)
+    Messages.create_and_send_message_to_group(valid_attrs, group_2, :session)
     nil
   end
 

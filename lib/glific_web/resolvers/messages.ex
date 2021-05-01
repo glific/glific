@@ -109,7 +109,7 @@ defmodule GlificWeb.Resolvers.Messages do
          {:ok, contact_ids} <-
            message_params
            |> Map.merge(%{user_id: current_user.id})
-           |> Messages.create_and_send_message_to_group(group),
+           |> Messages.create_and_send_message_to_group(group, :session),
          do: {:ok, %{success: true, contact_ids: contact_ids}}
   end
 
@@ -119,6 +119,21 @@ defmodule GlificWeb.Resolvers.Messages do
   def send_hsm_message(_, attrs, _) do
     {:ok, message} = Messages.create_and_send_hsm_message(attrs)
     {:ok, %{message: message}}
+  end
+
+  @doc false
+  @spec send_hsm_message_to_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def send_hsm_message_to_group(_, %{group_id: group_id} = attrs, %{
+        context: %{current_user: current_user}
+      }) do
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{id: group_id, organization_id: current_user.organization_id}),
+         {:ok, contact_ids} <-
+           attrs
+           |> Map.merge(%{user_id: current_user.id})
+           |> Messages.create_and_send_message_to_group(group, :hsm),
+         do: {:ok, %{success: true, contact_ids: contact_ids}}
   end
 
   @doc false
