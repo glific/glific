@@ -6,7 +6,6 @@ defmodule Glific.Repo.Migrations.Extensions do
   end
 
   defp extensions do
-
     drop_if_exists table(:extensions)
 
     create table(:extensions, comment: "Lets store information and code for the extensions") do

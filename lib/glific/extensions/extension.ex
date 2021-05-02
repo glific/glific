@@ -72,14 +72,14 @@ defmodule Glific.Extensions.Extension do
     # typically in an update
     unload(module)
 
-    case do_compile(code) |> IO.inspect() do
+    case do_compile(code) do
       {:ok, module} ->
         %{
           is_valid: true,
-          module: Atom.to_string(module)
+          module: module
         }
 
-      _ ->
+      {:error, _} ->
         %{
           is_valid: false,
           module: nil
@@ -94,7 +94,7 @@ defmodule Glific.Extensions.Extension do
 
     if length(results) == 1 do
       {module, _binary} = hd(results)
-      {:ok, module}
+      {:ok, Atom.to_string(module)}
     else
       {:error, "Error in compiling file"}
     end
@@ -103,7 +103,7 @@ defmodule Glific.Extensions.Extension do
       {:error, "Error in compiling file, #{inspect(e)}"}
   end
 
-  @spec unload(String.t()) :: :ok
+  @spec unload(String.t() | nil) :: :ok
   defp unload(nil), do: :ok
 
   defp unload(module) do
@@ -116,8 +116,8 @@ defmodule Glific.Extensions.Extension do
   Create a extension record
   """
   @spec create_extension(map()) :: {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
-  def create_extension(attrs \\ %{}) do
-    attrs = Map.merge(attrs, compile(attrs.code) |> IO.inspect()) |> IO.inspect()
+  def create_extension(attrs) do
+    attrs = Map.merge(attrs, compile(attrs.code))
 
     %Extension{}
     |> Extension.changeset(Map.put(attrs, :organization_id, attrs.organization_id))
