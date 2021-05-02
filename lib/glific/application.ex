@@ -113,6 +113,18 @@ defmodule Glific.Application do
   end
 
   defp oban_config do
-    Application.get_env(:glific, Oban)
+    opts = Application.get_env(:glific, Oban)
+
+    if in_console?() do
+      opts
+      |> Keyword.put(:plugins, false)
+      |> Keyword.put(:queues, false)
+    else
+      opts
+    end
+  end
+
+  defp in_console? do
+    Code.ensure_loaded?(IEx) && IEx.started?()
   end
 end
