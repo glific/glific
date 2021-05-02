@@ -31,6 +31,10 @@ defmodule Glific.Repo.Migrations.AddSaasTable do
         default: "[]",
         comment: "All the stripe subscriptions IDS, no more config"
 
+      add :tax_rates, :jsonb,
+        default: "[]",
+        comment: "All the stripe tax rates"
+
       timestamps(type: :utc_datetime)
     end
   end
