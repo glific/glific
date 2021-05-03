@@ -237,6 +237,8 @@ defmodule Glific.Searches do
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
     sub_query = permission_query(user)
+    IO.inspect(query)
+    IO.inspect(user)
 
     query
     |> where([c: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
@@ -377,9 +379,10 @@ defmodule Glific.Searches do
   defp filtered_query(args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
 
-    query = from m in Message, as: :m
+    query = from c in Contact, as: :c
 
     query
+    |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
