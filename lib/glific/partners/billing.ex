@@ -445,6 +445,38 @@ defmodule Glific.Partners.Billing do
     end
   end
 
+  def update_subscription(billing, organization) do
+    anchor_timestamp =
+      DateTime.utc_now()
+      |> Timex.beginning_of_day()
+      |> DateTime.to_unix()
+
+    params = %{
+      billing_cycle_anchor: anchor_timestamp,
+      proration_behavior: "create_prorations",
+      items: [
+        %{
+          price: stripe_ids()["inactive"],
+          quantity: 1,
+          tax_rates: tax_rates()
+        }
+      ],
+      metadata: %{
+        "id" => Integer.to_string(billing.organization_id),
+        "name" => organization.name
+      }
+    }
+
+    billing.stripe_subscription_items
+    |> Map.values()
+    |> Enum.each(fn subscription_item ->
+      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
+    end)
+
+    Stripe.SubscriptionItem.delete(stripe_ids()["monthly"], %{}, [])
+    Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
+  end
+
   # return a map which maps glific product ids to subscription item ids
   @spec subscription_details(Stripe.Subscription.t()) :: map()
   defp subscription_details(subscription),
