@@ -380,6 +380,7 @@ defmodule Glific.Searches do
     query = from m in Message, as: :m
 
     query
+    |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
