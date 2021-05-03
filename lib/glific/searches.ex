@@ -237,8 +237,6 @@ defmodule Glific.Searches do
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def add_permission(query, user) do
     sub_query = permission_query(user)
-    IO.inspect(query)
-    IO.inspect(user)
 
     query
     |> where([c: c], c.id == ^user.contact_id or c.id in subquery(sub_query))
