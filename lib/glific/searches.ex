@@ -377,10 +377,10 @@ defmodule Glific.Searches do
   defp filtered_query(args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
 
-    query = from c in Contact, as: :c
+    query = from m in Message, as: :m
 
     query
-    |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
+    |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
