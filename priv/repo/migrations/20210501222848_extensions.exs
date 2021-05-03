@@ -29,9 +29,10 @@ defmodule Glific.Repo.Migrations.Extensions do
 
   defp consulting_hours do
     create table(:consulting_hours, comment: "Lets track consulting hours here") do
-      add :organization_id, references(:organizations, on_delete: :nilify)
+      add :organization_id, references(:organizations, on_delete: :nilify_all)
 
-      add :organization_name, :string, comment: "Record of who we billed in case we delete the organization"
+      add :organization_name, :string,
+        comment: "Record of who we billed in case we delete the organization"
 
       add :participants, :text, comment: "Name of NGO participants"
 
@@ -43,7 +44,7 @@ defmodule Glific.Repo.Migrations.Extensions do
 
       add :content, :text, comment: "Agenda, and action items of the call"
 
-      add :is_active, :boolean, default: true
+      add :is_billable, :boolean, default: true, comment: "Is this call billable"
 
       timestamps(type: :utc_datetime)
     end
