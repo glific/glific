@@ -66,7 +66,8 @@ defmodule GlificWeb.API.V1.RegistrationController do
       |> Map.merge(%{
         "password_confirmation" => user_params["password"],
         "contact_id" => contact.id,
-        "organization_id" => organization_id
+        "organization_id" => organization_id,
+        "language_id" => contact.language_id
       })
 
     conn
