@@ -446,6 +446,12 @@ defmodule Glific.Partners.Billing do
   end
 
   def update_subscription(billing, organization) do
+    billing.stripe_subscription_items
+    |> Map.values()
+    |> Enum.each(fn subscription_item ->
+      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
+    end)
+
     anchor_timestamp =
       DateTime.utc_now()
       |> Timex.beginning_of_day()
@@ -466,12 +472,6 @@ defmodule Glific.Partners.Billing do
         "name" => organization.name
       }
     }
-
-    billing.stripe_subscription_items
-    |> Map.values()
-    |> Enum.each(fn subscription_item ->
-      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
-    end)
 
     Stripe.SubscriptionItem.delete(stripe_ids()["monthly"], %{}, [])
     Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
