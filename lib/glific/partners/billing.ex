@@ -397,6 +397,7 @@ defmodule Glific.Partners.Billing do
     billing
   end
 
+  @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
   defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
     Request.new_request()
     |> Request.put_endpoint("invoiceitems/#{invoice_id}")
@@ -445,6 +446,10 @@ defmodule Glific.Partners.Billing do
     end
   end
 
+  @doc """
+  Update organization subscription plan
+  """
+  @spec update_subscription(Billing.t(), Organization.t()) :: {:ok, any()} | {:error, Stripe.Error.t()}
   def update_subscription(billing, organization) do
     billing.stripe_subscription_items
     |> Map.values()
