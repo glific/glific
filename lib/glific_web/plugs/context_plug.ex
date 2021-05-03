@@ -25,7 +25,9 @@ defmodule GlificWeb.ContextPlug do
     if current_user != nil do
       # Add the current_user to the Process memory
       Glific.Repo.put_current_user(current_user)
-      Gettext.put_locale(current_user.language.locale)
+
+      if current_user.language,
+        do: Gettext.put_locale(current_user.language.locale)
 
       %{current_user: current_user}
     else
