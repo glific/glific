@@ -3,6 +3,8 @@ defmodule Glific.Repo.Migrations.Extensions do
 
   def change do
     extensions()
+
+    consulting_hours()
   end
 
   defp extensions do
@@ -20,6 +22,28 @@ defmodule Glific.Repo.Migrations.Extensions do
       add :is_active, :boolean, default: true
 
       add :organization_id, references(:organizations, on_delete: :delete_all)
+
+      timestamps(type: :utc_datetime)
+    end
+  end
+
+  defp consulting_hours do
+    create table(:consulting_hours, comment: "Lets track consulting hours here") do
+      add :organization_id, references(:organizations, on_delete: :nilify)
+
+      add :organization_name, :string, comment: "Record of who we billed in case we delete the organization"
+
+      add :participants, :text, comment: "Name of NGO participants"
+
+      add :staff, :text, comment: "Name of staff members who were on the call"
+
+      add :when, :utc_datetime, comment: "Date and time of when the support call happened"
+
+      add :duration, :integer, comment: "Minutes spent on call, round up to 15 minute intervals"
+
+      add :content, :text, comment: "Agenda, and action items of the call"
+
+      add :is_active, :boolean, default: true
 
       timestamps(type: :utc_datetime)
     end
