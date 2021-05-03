@@ -41,10 +41,22 @@ defmodule Glific.Providers.Gupshup.Template do
     else
       {status, response} ->
         # structure of response body can be different for different errors
-        {:error, ["BSP response status: #{to_string(status)}", response.body]}
+        {:error, ["BSP response status: #{to_string(status)}", handle_error_response(response)]}
 
       _ ->
         {:error, ["BSP", "couldn't submit for approval"]}
+    end
+  end
+
+  @spec handle_error_response(map()) :: String.t()
+  defp handle_error_response(response) do
+    Jason.decode(response.body)
+    |> case do
+      {:ok, data} ->
+        if Map.has_key?(data, "message"), do: data["message"], else: "Something went wrong"
+
+      _ ->
+        "Error in decoding response body"
     end
   end
 
