@@ -48,7 +48,9 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  @spec handle_error_response(map()) :: String.t()
+  @spec handle_error_response(map() | String.t()) :: String.t()
+  defp handle_error_response(response) when is_binary(response), do: response
+
   defp handle_error_response(response) do
     Jason.decode(response.body)
     |> case do
