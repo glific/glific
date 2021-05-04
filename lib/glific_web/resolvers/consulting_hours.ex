@@ -27,4 +27,19 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
       {:ok, %{consulting_hour: consulting_hour}}
     end
   end
+
+  @doc """
+  Update consulting hour
+  """
+  @spec update_consulting_hour(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def update_consulting_hour(_, %{id: id, input: params}, _) do
+    with {:ok, consulting_hour} <-
+           Repo.fetch_by(ConsultingHour, %{id: id}),
+         {:ok, consulting_hour} <- ConsultingHour.update_consulting_hour(consulting_hour, params) do
+      {:ok, %{consulting_hour: consulting_hour}}
+    end
+  end
 end
