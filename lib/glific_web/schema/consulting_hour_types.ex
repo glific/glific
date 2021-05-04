@@ -24,24 +24,14 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :content, :string
     field :when, :datetime
     field :duration, :integer
+    field :is_billable, :boolean
+
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
 
     field :organization, :organization do
       resolve(dataloader(Repo))
     end
-
-  end
-
-  object :consulting_hour_result do
-    field :participants, :string
-    field :staff, :string
-    field :content, :string
-    field :when, :datetime
-    field :duration, :integer
-
-    field :organization, :organization do
-      resolve(dataloader(Repo))
-    end
-
   end
 
   input_object :consulting_hour_input do
@@ -50,10 +40,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :content, :string
     field :when, :datetime
     field :duration, :integer
-
-    field :organization, :organization do
-      resolve(dataloader(Repo))
-    end
+    field :is_billable, :boolean
   end
 
   object :consulting_hours_queries do

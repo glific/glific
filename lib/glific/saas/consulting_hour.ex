@@ -39,6 +39,7 @@ defmodule Glific.Saas.ConsultingHour do
           when: DateTime.t() | nil,
           duration: non_neg_integer | nil,
           is_billable: boolean() | true,
+          content: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
