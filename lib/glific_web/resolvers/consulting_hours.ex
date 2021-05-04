@@ -4,16 +4,22 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   one or more calls to resolve the incoming queries.
   """
 
+  import GlificWeb.Gettext
   alias Glific.{Saas.ConsultingHour, Repo}
 
   @doc """
-  Get consulting hour
+  Fetch consulting hour based id
   """
-  @spec get_consulting_hours(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec get_consulting_hours(Absinthe.Resolution.t(), %{id: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def get_consulting_hours(_, %{input: params}, _) do
-    with consulting_hour <- ConsultingHour.get_consulting_hour(params) do
+  def get_consulting_hours(_, %{id: id}, _) do
+    with consulting_hour <-
+           ConsultingHour.get_consulting_hour(%{id: id}),
+         false <- is_nil(consulting_hour) do
       {:ok, %{consulting_hour: consulting_hour}}
+    else
+      _ ->
+        {:error, dgettext("errors", "No consulting hour found with inputted params")}
     end
   end
 

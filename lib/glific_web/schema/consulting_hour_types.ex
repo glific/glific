@@ -48,7 +48,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
   object :consulting_hours_queries do
     @desc "get the details of consulting hours"
     field :consulting_hour, :consulting_hour_result do
-      arg(:input, non_null(:consulting_hour_input))
+      arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.ConsultingHours.get_consulting_hours/3)
     end
