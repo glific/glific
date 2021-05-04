@@ -1,15 +1,13 @@
-defmodule GlificWeb.Schema.MessageTypes do
+defmodule GlificWeb.Schema.ConsultingHourTypes do
   @moduledoc """
   GraphQL Representation of Glific's Consulting Hours DataType
   """
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
-
-  alias Glific.Repo
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias GlificWeb.{
+    Repo,
     Resolvers,
-    Schema,
     Schema.Middleware.Authorize
   }
 
@@ -20,6 +18,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   object :consulting_hour do
     field :participants, :string
+    field :organization_name, :string
     field :staff, :string
     field :content, :string
     field :when, :datetime
@@ -36,6 +35,8 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   input_object :consulting_hour_input do
     field :participants, :string
+    field :organization_name, :string
+    field :organization_id, :id
     field :staff, :string
     field :content, :string
     field :when, :datetime

@@ -7,6 +7,17 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   alias Glific.{Saas.ConsultingHour, Repo}
 
   @doc """
+  Get consulting hour
+  """
+  @spec get_consulting_hours(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def get_consulting_hours(_, %{input: params}, _) do
+    with consulting_hour <- ConsultingHour.get_consulting_hour(params) do
+      {:ok, %{consulting_hour: consulting_hour}}
+    end
+  end
+
+  @doc """
   Create consulting hour
   """
   @spec create_consulting_hour(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
