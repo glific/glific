@@ -70,7 +70,8 @@ defmodule Glific.Saas.ConsultingHour do
     consulting_hour
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:organization_name, :when, :staff])
+    |> unique_constraint([:organization_id, :when, :staff])
+    |> foreign_key_constraint(:organization_id)
   end
 
   @doc """
@@ -79,7 +80,7 @@ defmodule Glific.Saas.ConsultingHour do
   @spec create_consulting_hour(map()) :: {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def create_consulting_hour(attrs) do
     %ConsultingHour{}
-    |> ConsultingHour.changeset(Map.put(attrs, :organization_id, attrs.organization_id))
+    |> changeset(Map.put(attrs, :organization_id, attrs.organization_id))
     |> Repo.insert()
   end
 
@@ -96,7 +97,7 @@ defmodule Glific.Saas.ConsultingHour do
           {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def update_consulting_hour(%ConsultingHour{} = consulting_hour, attrs) do
     consulting_hour
-    |> ConsultingHour.changeset(attrs)
+    |> changeset(attrs)
     |> Repo.update()
   end
 
