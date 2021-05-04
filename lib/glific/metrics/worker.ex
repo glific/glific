@@ -9,53 +9,97 @@ defmodule Glific.Metrics.Worker do
 
   @registry Glific.Metrics.Registry
 
+  alias Glific.Flows.FlowCount
+
+  @doc false
   def start_link(key) do
     GenServer.start_link(__MODULE__, key, name: {:via, Registry, {@registry, key}})
   end
 
+  @doc false
   @impl true
   def init({:flow_id, flow_id} = _key) do
     Process.flag(:trap_exit, true)
-    {:ok, %{flow_id: flow_id, nodes: %{}}}
-  end
-
-  @impl true
-  def handle_info(:bump, {path, 0}) do
     schedule_upsert()
-    {:noreply, {path, 1}}
+    {:ok, %{flow_id: flow_id, entries: []}}
+  end
+
+  @spec add_entry(map(), list()) :: list()
+  defp add_entry(entry, []), do: [entry]
+
+  defp add_entry(entry, entries) do
+    recent_messages =
+      if Map.has_key?(entry, :recent_message),
+        do: [entry.recent_message],
+        else: []
+
+    {entries, found} =
+      entries
+      |> Enum.reduce(
+        {[], false},
+        fn e, {entries, found} ->
+          if !found && e.id == entry.id do
+            e =
+              e
+              |> Map.put(:count, e.count + 1)
+              |> Map.put(:recent_messages, e.recent_messages ++ recent_messages)
+
+            {[e | entries], true}
+          else
+            {[e | entries], found}
+          end
+        end
+      )
+
+    if found do
+      entries
+    else
+      e =
+        entry
+        |> Map.put(:count, 1)
+        |> Map.put(:recent_messages, recent_messages)
+
+      [e | entries]
+    end
+  end
+
+  @doc false
+  defp schedule_upsert do
+    # store to database between 1 to 3 minutes
+    Process.send_after(self(), :upsert, Enum.random(60..180) * 1_000)
+  end
+
+  @doc false
+  @impl true
+  def handle_info({:bump, entry}, %{flow_id: flow_id, entries: entries}) do
+    {:noreply, %{flow_id: flow_id, entries: add_entry(entry, entries)}}
   end
 
   @impl true
-  def handle_info(:bump, {path, counter}) do
-    {:noreply, {path, counter + 1}}
-  end
-
-  defp schedule_upsert() do
-    Process.send_after(self(), :upsert, Enum.random(60..300) * 1_000)
-  end
-
-  @impl true
-  def handle_info(:upsert, {path, counter}) do
+  def handle_info(:upsert, %{flow_id: flow_id} = state) do
     # We first unregister ourselves so we stop receiving new messages.
-    Registry.unregister(@registry, path)
+    Registry.unregister(@registry, {:flow_id, flow_id})
 
     # Schedule to stop in 2 seconds, this will give us time to process
     # any late messages.
     Process.send_after(self(), :stop, 2_000)
-    {:noreply, {path, counter}}
+    {:noreply, state}
   end
 
   @impl true
-  def handle_info(:stop, {path, counter}) do
+  def handle_info(:stop, state) do
     # Now we just stop. The terminate callback will write all pending writes.
-    {:stop, :shutdown, {path, counter}}
+    {:stop, :shutdown, state}
   end
 
-  defp upsert!(path, counter) do
-    # store state in DB
+  @spec upsert!(map()) :: :ok
+  defp upsert!(%{entries: []}), do: :ok
+
+  defp upsert!(%{entries: entries}) do
+    entries |> Enum.each(&FlowCount.upsert_flow_count(&1))
   end
 
+  @doc false
   @impl true
-  def terminate(_, {_path, 0}), do: :ok
-  def terminate(_, {path, counter}), do: upsert!(path, counter)
+  def terminate(_, state), do: upsert!(state)
 end

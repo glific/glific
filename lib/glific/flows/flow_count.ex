@@ -103,26 +103,13 @@ defmodule Glific.Flows.FlowCount do
         update_flow_count(
           flowcount,
           Map.merge(attrs, %{
-            count: flowcount.count + 1,
-            recent_messages: update_recent_messages(flowcount, attrs)
+            count: flowcount.count + attrs.count,
+            recent_messages: Enum.take(attrs.recent_messages ++ flowcount.recent_messages, 5)
           })
         )
 
       {:error, _} ->
-        attrs =
-          if Map.has_key?(attrs, :recent_message),
-            do: Map.put(attrs, :recent_messages, [attrs.recent_message]),
-            else: attrs
-
         create_flow_count(attrs)
     end
   end
-
-  @spec update_recent_messages(FlowCount.t(), map()) :: [any()]
-  defp update_recent_messages(flow_count, %{recent_message: recent_message})
-       when recent_message != %{},
-       # we only store the first 5 recent messages
-       do: Enum.take([recent_message | flow_count.recent_messages], 5)
-
-  defp update_recent_messages(_, _), do: []
 end
