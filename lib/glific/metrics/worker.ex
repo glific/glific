@@ -9,7 +9,7 @@ defmodule Glific.Metrics.Worker do
 
   @registry Glific.Metrics.Registry
 
-  alias Glific.Flows.FlowCount
+  alias Glific.{Flows.FlowCount, Repo}
 
   @doc false
   def start_link(key) do
@@ -24,27 +24,28 @@ defmodule Glific.Metrics.Worker do
     {:ok, %{flow_id: flow_id, entries: []}}
   end
 
-  @spec add_entry(map(), list()) :: list()
-  defp add_entry(entry, []), do: [entry]
-
-  defp add_entry(entry, entries) do
+  defp update_entry(entry, count, messages) do
     recent_messages =
       if Map.has_key?(entry, :recent_message),
         do: [entry.recent_message],
         else: []
 
+    entry
+    |> Map.put(:count, count + 1)
+    |> Map.put(:recent_messages, messages ++ recent_messages)
+  end
+
+  @spec add_entry(map(), list()) :: list()
+  defp add_entry(entry, []), do: [update_entry(entry, 0, [])]
+
+  defp add_entry(entry, entries) do
     {entries, found} =
       entries
       |> Enum.reduce(
         {[], false},
         fn e, {entries, found} ->
-          if !found && e.id == entry.id do
-            e =
-              e
-              |> Map.put(:count, e.count + 1)
-              |> Map.put(:recent_messages, e.recent_messages ++ recent_messages)
-
-            {[e | entries], true}
+          if !found && e.uuid == entry.uuid do
+            {[update_entry(e, e.count, e.recent_messages) | entries], true}
           else
             {[e | entries], found}
           end
@@ -54,12 +55,7 @@ defmodule Glific.Metrics.Worker do
     if found do
       entries
     else
-      e =
-        entry
-        |> Map.put(:count, 1)
-        |> Map.put(:recent_messages, recent_messages)
-
-      [e | entries]
+      [update_entry(entry, 0, []) | entries]
     end
   end
 
@@ -92,10 +88,19 @@ defmodule Glific.Metrics.Worker do
     {:stop, :shutdown, state}
   end
 
+  @spec put_process_state(list()) :: non_neg_integer
+  defp put_process_state(entries),
+    do:
+      entries
+      |> hd()
+      |> Map.get(:organization_id)
+      |> Repo.put_process_state()
+
   @spec upsert!(map()) :: :ok
   defp upsert!(%{entries: []}), do: :ok
 
   defp upsert!(%{entries: entries}) do
+    entries |> put_process_state()
     entries |> Enum.each(&FlowCount.upsert_flow_count(&1))
   end
 
