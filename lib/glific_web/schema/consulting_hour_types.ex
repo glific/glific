@@ -67,5 +67,11 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.ConsultingHours.update_consulting_hour/3)
     end
+
+    field :delete_consulting_hour, :consulting_hour_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.ConsultingHours.delete_consulting_hour/3)
+    end
   end
 end

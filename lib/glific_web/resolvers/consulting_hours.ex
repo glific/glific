@@ -42,4 +42,16 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
       {:ok, %{consulting_hour: consulting_hour}}
     end
   end
+
+  @doc """
+  Delete consulting hour
+  """
+  @spec delete_consulting_hour(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_consulting_hour(_, %{id: id}, _) do
+    with {:ok, consulting_hour} <- Repo.fetch_by(ConsultingHour, %{id: id}),
+         {:ok, consulting_hour} <- ConsultingHour.delete_consulting_hour(consulting_hour) do
+      {:ok, %{consulting_hour: consulting_hour}}
+    end
+  end
 end
