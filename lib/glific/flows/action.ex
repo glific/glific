@@ -517,10 +517,15 @@ defmodule Glific.Flows.Action do
         ContactAction.optout(context)
 
       "optin" ->
+        message_id =
+          if context.last_message == nil,
+            do: nil,
+            else: context.last_message.bsp_message_id
+
         ContactAction.optin(
           context,
           method: "WA",
-          message_id: context.last_message.bsp_message_id,
+          message_id: message_id,
           bsp_status: :session_and_hsm
         )
 
