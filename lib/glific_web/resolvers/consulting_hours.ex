@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   """
 
   import GlificWeb.Gettext
-  alias Glific.{Saas.ConsultingHour, Repo}
+  alias Glific.{Repo, Saas.ConsultingHour}
 
   @doc """
   Fetch consulting hour based id
