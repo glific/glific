@@ -10,7 +10,7 @@ defmodule Glific.Flows.Node do
   alias Glific.{
     Flows,
     Messages.Message,
-    Metrics,
+    Metrics
   }
 
   alias Glific.Flows.{

@@ -29,7 +29,7 @@ defmodule Glific.Metrics do
   @doc """
   Bump the count for a specific node/exit within a flow
   """
-  @spec bump(map()) :: any
+  @spec bump(map()) :: :ok
   def bump(%{flow_id: flow_id} = args) when is_integer(flow_id) do
     key = {:flow_id, flow_id}
 
@@ -46,5 +46,6 @@ defmodule Glific.Metrics do
       end
 
     send(pid, {:bump, args})
+    :ok
   end
 end
