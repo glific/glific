@@ -21,42 +21,32 @@ defmodule Glific.Metrics.Worker do
   def init({:flow_id, flow_id} = _key) do
     Process.flag(:trap_exit, true)
     schedule_upsert()
-    {:ok, %{flow_id: flow_id, entries: []}}
+    {:ok, %{flow_id: flow_id, entries: %{}}}
   end
 
   defp update_entry(entry, count, messages) do
-    recent_messages =
+    messages =
       if Map.has_key?(entry, :recent_message),
-        do: [entry.recent_message],
-        else: []
+        do: [entry.recent_message | messages],
+        else: messages
 
     entry
     |> Map.put(:count, count + 1)
-    |> Map.put(:recent_messages, messages ++ recent_messages)
+    |> Map.put(:recent_messages, messages)
   end
 
-  @spec add_entry(map(), list()) :: list()
-  defp add_entry(entry, []), do: [update_entry(entry, 0, [])]
-
+  @spec add_entry(map(), map()) :: map()
   defp add_entry(entry, entries) do
-    {entries, found} =
-      entries
-      |> Enum.reduce(
-        {[], false},
-        fn e, {entries, found} ->
-          if !found && e.uuid == entry.uuid do
-            {[update_entry(e, e.count, e.recent_messages) | entries], true}
-          else
-            {[e | entries], found}
-          end
-        end
-      )
+    e = entries[entry.uuid]
 
-    if found do
-      entries
-    else
-      [update_entry(entry, 0, []) | entries]
-    end
+    {count, messages} =
+      if e != nil,
+        do: {e.count, e.recent_messages},
+        else: {0, []}
+
+    entries
+    |> Map.put(entry.uuid, update_entry(entry, count, messages))
+    |> Map.put_new(:organization_id, entry.organization_id)
   end
 
   @doc false
@@ -88,20 +78,14 @@ defmodule Glific.Metrics.Worker do
     {:stop, :shutdown, state}
   end
 
-  @spec put_process_state(list()) :: non_neg_integer
-  defp put_process_state(entries),
-    do:
-      entries
-      |> hd()
-      |> Map.get(:organization_id)
-      |> Repo.put_process_state()
-
   @spec upsert!(map()) :: :ok
-  defp upsert!(%{entries: []}), do: :ok
-
   defp upsert!(%{entries: entries}) do
-    entries |> put_process_state()
-    entries |> Enum.each(&FlowCount.upsert_flow_count(&1))
+    Repo.put_process_state(entries.organization_id)
+
+    # we are only interested in the value of the map, which has map to be inserted
+    entries
+    |> Map.delete(:organization_id)
+    |> Enum.each(&FlowCount.upsert_flow_count(elem(&1, 1)))
   end
 
   @doc false
