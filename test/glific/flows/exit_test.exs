@@ -64,7 +64,7 @@ defmodule Glific.Flows.ExitTest do
   test "execute when the destination node is valid ", attrs do
     exit_uuid = Ecto.UUID.generate()
     node_uuid = Ecto.UUID.generate()
-    node = %Node{uuid: node_uuid, actions: [], router: nil}
+    node = %Node{uuid: node_uuid, actions: [], router: nil, flow_id: 1}
     json = %{"uuid" => exit_uuid, "destination_uuid" => node_uuid}
     uuid_map = %{node_uuid => {:node, node}}
 

@@ -9,7 +9,8 @@ defmodule Glific.Flows.Node do
 
   alias Glific.{
     Flows,
-    Messages.Message
+    Messages.Message,
+    Metrics,
   }
 
   alias Glific.Flows.{
@@ -17,7 +18,6 @@ defmodule Glific.Flows.Node do
     Exit,
     Flow,
     FlowContext,
-    FlowCount,
     Router
   }
 
@@ -193,7 +193,7 @@ defmodule Glific.Flows.Node do
   def execute(node, context, messages) do
     # update the flow count
 
-    FlowCount.upsert_flow_count(%{
+    Metrics.bump(%{
       uuid: node.uuid,
       flow_id: node.flow_id,
       flow_uuid: node.flow_uuid,
