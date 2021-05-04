@@ -29,9 +29,13 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   @spec is_valid_role?(list(), atom() | list()) :: boolean()
   defp is_valid_role?(_, :any), do: true
   defp is_valid_role?(roles, :glific_admin), do: is_valid_role?(roles, [:glific_admin])
-  defp is_valid_role?(roles, :admin), do: is_valid_role?(roles, [:admin])
-  defp is_valid_role?(roles, :manager), do: is_valid_role?(roles, [:admin, :manager])
-  defp is_valid_role?(roles, :staff), do: is_valid_role?(roles, [:admin, :manager, :staff])
+  defp is_valid_role?(roles, :admin), do: is_valid_role?(roles, [:glific_admin, :admin])
+
+  defp is_valid_role?(roles, :manager),
+    do: is_valid_role?(roles, [:glific_admin, :admin, :manager])
+
+  defp is_valid_role?(roles, :staff),
+    do: is_valid_role?(roles, [:glific_admin, :admin, :manager, :staff])
 
   defp is_valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
   defp is_valid_role?(_, _), do: false
