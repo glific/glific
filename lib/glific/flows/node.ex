@@ -26,7 +26,7 @@ defmodule Glific.Flows.Node do
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
-          flow_id: Ecto.UUID.t() | nil,
+          flow_id: non_neg_integer | nil,
           flow: Flow.t() | nil,
           actions: [Action.t()] | [],
           exits: [Exit.t()] | [],
@@ -35,7 +35,7 @@ defmodule Glific.Flows.Node do
 
   embedded_schema do
     field :uuid, Ecto.UUID
-    field :flow_id, Ecto.UUID
+    field :flow_id, :integer
     field :flow_uuid, Ecto.UUID
     embeds_one :flow, Flow
 
@@ -188,7 +188,7 @@ defmodule Glific.Flows.Node do
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Node.t(), FlowContext.t(), [Message.t()]) ::
+  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # update the flow count

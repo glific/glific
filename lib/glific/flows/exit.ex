@@ -80,7 +80,7 @@ defmodule Glific.Flows.Exit do
   @doc """
   Execute a exit, given a message stream.
   """
-  @spec execute(Exit.t(), FlowContext.t(), [Message.t()]) ::
+  @spec execute(atom() | Exit.t(), atom() | FlowContext.t(), [Message.t()]) ::
           {:ok, FlowContext.t() | nil, [Message.t()]} | {:error, String.t()}
   def execute(exit, context, messages) do
     context = Repo.preload(context, :flow)
