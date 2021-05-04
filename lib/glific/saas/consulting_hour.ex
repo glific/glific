@@ -70,7 +70,7 @@ defmodule Glific.Saas.ConsultingHour do
     consulting_hour
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:stripe_customer_id)
+    |> unique_constraint([:organization_name, :when, :staff])
   end
 
   @doc """
