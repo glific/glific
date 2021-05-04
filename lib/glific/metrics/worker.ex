@@ -51,8 +51,8 @@ defmodule Glific.Metrics.Worker do
 
   @doc false
   defp schedule_upsert do
-    # store to database between 1 to 3 minutes
-    Process.send_after(self(), :upsert, Enum.random(60..90) * 1_000)
+    # store to database between 2 to 4 minutes
+    Process.send_after(self(), :upsert, Enum.random(120..240) * 1_000)
   end
 
   @doc false
