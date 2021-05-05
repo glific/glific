@@ -68,7 +68,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert content == consulting_hour.content
   end
 
-  test "get consulting hours", %{user: user} = attrs do
+  test "get consulting hours and test possible scenarios and errors", %{user: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
@@ -84,5 +84,17 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert consulting_hours["participants"] == consulting_hour.participants
     assert consulting_hours["content"] == consulting_hour.content
     assert consulting_hours["staff"] == consulting_hour.staff
+
+    # testing error message when id is incorrect
+    result =
+      auth_query_gql_by(:by_id, user,
+        variables: %{
+          "id" => consulting_hour.id + 1
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [error] = get_in(query_data, [:errors])
+    assert error.message == "No consulting hour found with inputted params"
   end
 end
