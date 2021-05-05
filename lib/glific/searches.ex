@@ -13,6 +13,7 @@ defmodule Glific.Searches do
     Conversations,
     Conversations.Conversation,
     ConversationsGroup,
+    Groups,
     Groups.ContactGroup,
     Groups.UserGroup,
     Messages.Message,
@@ -287,6 +288,12 @@ defmodule Glific.Searches do
   defp group_ids(%{filter: %{include_groups: gids}}), do: gids
   defp group_ids(%{filter: %{ids: gids}}), do: gids
   defp group_ids(%{filter: %{id: gid}}), do: [gid]
+
+  defp group_ids(%{filter: %{group_label: group_label}}) do
+    Groups.list_groups(%{filter: %{label: group_label}})
+    |> Enum.map(fn group -> group.id end)
+  end
+
   defp group_ids(_), do: nil
 
   @doc """
@@ -296,7 +303,9 @@ defmodule Glific.Searches do
   def search(args, count \\ false)
 
   def search(%{filter: %{search_group: true, group_label: group_label}} = args, _count) do
-    Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
+    Logger.info(
+      "Searches.Search/2 with : args: #{inspect(args)} group label: #{inspect(group_label)}"
+    )
 
     ConversationsGroup.list_conversations(
       group_ids(args),
