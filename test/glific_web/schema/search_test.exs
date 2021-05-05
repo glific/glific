@@ -278,8 +278,7 @@ defmodule GlificWeb.Schema.SearchTest do
         variables: %{
           "filter" => %{
             "groupLabel" => "#{group.label}",
-            "searchGroup" => true,
-            "include_groups" => ["#{group.id}"]
+            "searchGroup" => true
           },
           "contactOpts" => %{"limit" => 10},
           "messageOpts" => %{"limit" => 10}
