@@ -26,7 +26,7 @@ defmodule Glific.Metrics.Worker do
 
   defp update_entry(entry, count, messages) do
     messages =
-      if Map.has_key?(entry, :recent_message),
+      if Map.has_key?(entry, :recent_message) and entry.recent_message != %{},
         do: [entry.recent_message | messages],
         else: messages
 
