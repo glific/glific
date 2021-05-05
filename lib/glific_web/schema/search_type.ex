@@ -89,6 +89,9 @@ defmodule GlificWeb.Schema.SearchTypes do
 
     @desc "It will use the save search filters"
     field :saved_search_id, :id
+
+    @desc "Searches based on group label"
+    field :group_label, :string
   end
 
   object :search_queries do
