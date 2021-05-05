@@ -48,5 +48,8 @@ defmodule Glific.Repo.Migrations.Extensions do
 
       timestamps(type: :utc_datetime)
     end
+
+    create unique_index(:consulting_hours, [:when, :staff, :organization_id])
+    create index(:consulting_hours, :organization_id)
   end
 end

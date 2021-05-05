@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateConsultingHour($id: ID!, $input: ConsultingHourInput!) {
+  updateConsultingHour(id: $id, input: $input) {
+    ...ConsultingHourFields
+
+    ...ErrorFields
+  }
+}

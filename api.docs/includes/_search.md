@@ -54,7 +54,7 @@ query search(  $saveSearchInput: SaveSearchInput,
 ```json
 {
   "data": {
-     "search": [
+    "search": [
       {
         "contact": {
           "name": "Default receiver"
@@ -87,24 +87,24 @@ query search(  $saveSearchInput: SaveSearchInput,
             "body": "Omnis architecto qui pariatur autem minima.",
             "id": "3",
             "tags": []
-          },
+          }
         ]
       }
     ]
   }
 }
 ```
+
 This returns a list of conversations that match the term and filters <a href="#conversation">Conversation</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#searchfilter">SearchFilter</a> | nil | filter the list
-saveSearchInput | <a href="#savesearchinput">SaveSearchInput</a> | nil | filter the list. The label and other parameter should be available.
-messageOpts | <a href="#opts">Opts</a> | nil | limit / offset message options
-contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options
-
+| Parameter       | Type                                           | Default | Description                                                         |
+| --------------- | ---------------------------------------------- | ------- | ------------------------------------------------------------------- |
+| filter          | <a href="#searchfilter">SearchFilter</a>       | nil     | filter the list                                                     |
+| saveSearchInput | <a href="#savesearchinput">SaveSearchInput</a> | nil     | filter the list. The label and other parameter should be available. |
+| messageOpts     | <a href="#opts">Opts</a>                       | nil     | limit / offset message options                                      |
+| contactOpts     | <a href="#opts">Opts</a>                       | nil     | limit / offset contact options                                      |
 
 ## Search for a multiple section based on term
 
@@ -193,15 +193,16 @@ query searchMulti( $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOp
   }
 }
 ```
+
 This returns a list of messages filtered in 3 sections <a href="#searchmulti">SearchMulti</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#searchfilter">SearchFilter</a> | nil | filter the list
-messageOpts | <a href="#opts">Opts</a> | nil | limit / offset message options
-contactOpts | <a href="#opts">Opts</a> | nil | limit / offset contact options
+| Parameter   | Type                                     | Default | Description                    |
+| ----------- | ---------------------------------------- | ------- | ------------------------------ |
+| filter      | <a href="#searchfilter">SearchFilter</a> | nil     | filter the list                |
+| messageOpts | <a href="#opts">Opts</a>                 | nil     | limit / offset message options |
+| contactOpts | <a href="#opts">Opts</a>                 | nil     | limit / offset contact options |
 
 ## Saved Search Execution
 
@@ -248,7 +249,7 @@ query search(
 ```json
 {
   "data": {
-     "search": [
+    "search": [
       {
         "contact": {
           "name": "Default receiver"
@@ -276,15 +277,15 @@ query search(
             "body": "Omnis architecto qui pariatur autem minima.",
             "id": "3",
             "tags": []
-          },
+          }
         ]
       }
     ]
   }
 }
 ```
-This returns a list of conversations that match the term and filters <a href="#conversation">Conversation</a>
 
+This returns a list of conversations that match the term and filters <a href="#conversation">Conversation</a>
 
 ## Saved Search Count
 
@@ -313,10 +314,10 @@ Returns a count of the number of contacts returned when executing the saved sear
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required | Saved search ID
-term | <a href="#string">String</a> | nil | optional keyword to add to saved search
+| Parameter | Type                         | Default  | Description                             |
+| --------- | ---------------------------- | -------- | --------------------------------------- |
+| id        | <a href="#id">ID</a>         | required | Saved search ID                         |
+| term      | <a href="#string">String</a> | nil      | optional keyword to add to saved search |
 
 ## Search Objects
 
@@ -350,7 +351,6 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 <td></td>
 </tr>
 
-
 <tr>
 <td colspan="2" valign="top"><strong>IncludeGroups</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
@@ -381,9 +381,14 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 <td></td>
 </tr>
 
+<tr>
+<td colspan="2" valign="top"><strong>GroupLabel</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
 </tbody>
 </table>
-
 
 ### SaveSearchInput
 
@@ -412,8 +417,6 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 </tbody>
 </table>
 
-
-
 ### daterange
 
 <table>
@@ -440,7 +443,6 @@ term | <a href="#string">String</a> | nil | optional keyword to add to saved sea
 
 </tbody>
 </table>
-
 
 ### searchmulti
 
