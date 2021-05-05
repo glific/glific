@@ -252,7 +252,7 @@ defmodule Glific.Flows.ContactAction do
 
   @spec error(FlowContext.t(), any(), map()) :: {:ok, map(), any()}
   defp error(context, error, attrs) do
-    message = "Error sending message, resetting contect: #{inspect(error)}, #{inspect(attrs)}"
+    message = "Error sending message, resetting context: #{inspect(error)}, #{inspect(attrs)}"
 
     # returning for now, but resetting the context
     context = FlowContext.reset_all_contexts(context, message)
