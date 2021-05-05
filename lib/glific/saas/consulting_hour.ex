@@ -81,7 +81,6 @@ defmodule Glific.Saas.ConsultingHour do
   """
   @spec create_consulting_hour(map()) :: {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def create_consulting_hour(attrs) do
-    IO.inspect(attrs)
     %ConsultingHour{}
     |> changeset(Map.put(attrs, :organization_id, attrs.organization_id))
     |> Repo.insert()

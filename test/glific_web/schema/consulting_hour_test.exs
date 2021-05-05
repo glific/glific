@@ -67,4 +67,22 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     content = get_in(query_data, [:data, "deleteConsultingHour", "consultingHour", "content"])
     assert content == consulting_hour.content
   end
+
+  test "get consulting hours", %{user: user} = attrs do
+    consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:by_id, user,
+        variables: %{
+          "id" => consulting_hour.id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "consultingHour", "consultingHour"])
+
+    assert consulting_hours["participants"] == consulting_hour.participants
+    assert consulting_hours["content"] == consulting_hour.content
+    assert consulting_hours["staff"] == consulting_hour.staff
+  end
 end
