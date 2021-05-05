@@ -70,7 +70,9 @@ defmodule Glific.Saas.ConsultingHour do
     consulting_hour
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:organization_id, :when, :staff])
+    |> unique_constraint([:organization_id, :when, :staff],
+      message: "Sorry, Consulting hours are already filled for this call"
+    )
     |> foreign_key_constraint(:organization_id)
   end
 
@@ -79,6 +81,7 @@ defmodule Glific.Saas.ConsultingHour do
   """
   @spec create_consulting_hour(map()) :: {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def create_consulting_hour(attrs) do
+    IO.inspect(attrs)
     %ConsultingHour{}
     |> changeset(Map.put(attrs, :organization_id, attrs.organization_id))
     |> Repo.insert()

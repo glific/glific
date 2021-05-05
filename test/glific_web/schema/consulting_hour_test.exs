@@ -2,12 +2,17 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
+  alias Glific.{
+    Fixtures
+    # Repo
+  }
+
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/consulting_hour/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/consulting_hour/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/consulting_hour/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/consulting_hour/delete.gql")
 
-  test "create a consulting hour entry and test possible scenarios and errors", %{manager: user} do
+  test "create a consulting hour entry", %{manager: user} do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -29,5 +34,23 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert consulting_hour["participants"] == "Adam"
     assert consulting_hour["content"] == "GCS issue"
     assert consulting_hour["staff"] == "Adelle Cavin"
+  end
+
+  test "update a consulting hours", %{manager: user} = attrs do
+    consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => consulting_hour.id,
+          "input" => %{"duration" => 20}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    duration = get_in(query_data, [:data, "updateConsultingHour", "consultingHour", "duration"])
+    assert duration == 20
+  end
   end
 end
