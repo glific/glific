@@ -2,10 +2,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{
-    Fixtures
-    # Repo
-  }
+  alias Glific.Fixtures
 
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/consulting_hour/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/consulting_hour/create.gql")
