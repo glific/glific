@@ -70,7 +70,7 @@ defmodule Glific.Saas.ConsultingHour do
     consulting_hour
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:organization_id, :when, :staff],
+    |> unique_constraint([:when, :staff, :organization_id],
       message: "Sorry, Consulting hours are already filled for this call"
     )
     |> foreign_key_constraint(:organization_id)
