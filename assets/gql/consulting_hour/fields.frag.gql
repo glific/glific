@@ -1,8 +1,7 @@
 fragment ConsultingHourFields on ConsultingHourResult {
   consultingHour {
     participants
-    organization_id
-    organization_name
+    organizationName
     staff
     content
     when

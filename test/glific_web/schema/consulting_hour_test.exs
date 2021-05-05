@@ -2,14 +2,6 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{
-    Seeds.SeedsDev
-  }
-
-  setup do
-    SeedsDev.seed_organizations()
-  end
-
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/consulting_hour/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/consulting_hour/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/consulting_hour/update.gql")
@@ -32,38 +24,10 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
         }
       )
 
-    IO.inspect(result)
-
-    # assert {:ok, query_data} = result
-    # label = get_in(query_data, [:data, "createTag", "tag", "label"])
-    # assert label == "Test Tag"
-
-    # # try creating the same tag twice
-    # _ =
-    #   auth_query_gql_by(:create, user,
-    #     variables: %{
-    #       "input" => %{
-    #         "label" => "Klingon",
-    #         "shortcode" => "klingon",
-    #         "languageId" => language_id
-    #       }
-    #     }
-    #   )
-
-    # result =
-    #   auth_query_gql_by(:create, user,
-    #     variables: %{
-    #       "input" => %{
-    #         "label" => "Klingon",
-    #         "shortcode" => "klingon",
-    #         "languageId" => language_id
-    #       }
-    #     }
-    #   )
-
-    # assert {:ok, query_data} = result
-
-    # message = get_in(query_data, [:data, "createTag", "errors", Access.at(0), "message"])
-    # assert message == "has already been taken"
+    assert {:ok, query_data} = result
+    consulting_hour = get_in(query_data, [:data, "createConsultingHour", "consultingHour"])
+    assert consulting_hour["participants"] == "Adam"
+    assert consulting_hour["content"] == "GCS issue"
+    assert consulting_hour["staff"] == "Adelle Cavin"
   end
 end
