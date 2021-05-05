@@ -52,5 +52,19 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     duration = get_in(query_data, [:data, "updateConsultingHour", "consultingHour", "duration"])
     assert duration == 20
   end
+
+  test "delete a consulting hours", %{user: user} = attrs do
+    consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:delete, user,
+        variables: %{
+          "id" => consulting_hour.id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    content = get_in(query_data, [:data, "deleteConsultingHour", "consultingHour", "content"])
+    assert content == consulting_hour.content
   end
 end
