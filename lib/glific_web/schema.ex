@@ -41,6 +41,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.LocationTypes)
   import_types(__MODULE__.BillingTypes)
   import_types(__MODULE__.MediaTypes)
+  import_types(__MODULE__.ConsultingHourTypes)
 
   query do
     import_fields(:contact_queries)
@@ -78,6 +79,8 @@ defmodule GlificWeb.Schema do
     import_fields(:location_queries)
 
     import_fields(:billing_queries)
+
+    import_fields(:consulting_hours_queries)
   end
 
   mutation do
@@ -122,6 +125,8 @@ defmodule GlificWeb.Schema do
     import_fields(:billing_mutations)
 
     import_fields(:media_mutations)
+
+    import_fields(:consulting_hours_mutations)
   end
 
   subscription do

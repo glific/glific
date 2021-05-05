@@ -39,6 +39,7 @@ defmodule Glific.Saas.ConsultingHour do
           when: DateTime.t() | nil,
           duration: non_neg_integer | nil,
           is_billable: boolean() | true,
+          content: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -69,7 +70,10 @@ defmodule Glific.Saas.ConsultingHour do
     consulting_hour
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:stripe_customer_id)
+    |> unique_constraint([:when, :staff, :organization_id],
+      message: "Sorry, Consulting hours are already filled for this call"
+    )
+    |> foreign_key_constraint(:organization_id)
   end
 
   @doc """
@@ -78,7 +82,7 @@ defmodule Glific.Saas.ConsultingHour do
   @spec create_consulting_hour(map()) :: {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def create_consulting_hour(attrs) do
     %ConsultingHour{}
-    |> ConsultingHour.changeset(Map.put(attrs, :organization_id, attrs.organization_id))
+    |> changeset(Map.put(attrs, :organization_id, attrs.organization_id))
     |> Repo.insert()
   end
 
@@ -95,7 +99,7 @@ defmodule Glific.Saas.ConsultingHour do
           {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def update_consulting_hour(%ConsultingHour{} = consulting_hour, attrs) do
     consulting_hour
-    |> ConsultingHour.changeset(attrs)
+    |> changeset(attrs)
     |> Repo.update()
   end
 

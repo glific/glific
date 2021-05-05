@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query consultingHour($id: ID!) {
+  consultingHour(id: $id) {
+    ...ConsultingHourFields
+
+    ...ErrorFields
+  }
+}
