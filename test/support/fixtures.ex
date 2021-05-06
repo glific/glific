@@ -123,6 +123,8 @@ defmodule Glific.Fixtures do
 
     valid_attrs = %{
       name: "Fixture Organization",
+      is_active: true,
+      is_approved: true,
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       last_communication_at: DateTime.backward(0),

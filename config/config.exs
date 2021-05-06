@@ -52,15 +52,14 @@ oban_crontab = [
 
 oban_engine = Oban.Pro.Queue.SmartEngine
 
-oban_plugins =
-  [
-    # Prune jobs after 5 mins, gives us some time to go investigate if needed
-    {Oban.Plugins.Pruner, max_age: 300},
-    {Oban.Plugins.Cron, crontab: oban_crontab},
-    Oban.Pro.Plugins.Lifeline,
-    Oban.Web.Plugins.Stats,
-    Oban.Plugins.Gossip
-  ]
+oban_plugins = [
+  # Prune jobs after 5 mins, gives us some time to go investigate if needed
+  {Oban.Plugins.Pruner, max_age: 300},
+  {Oban.Plugins.Cron, crontab: oban_crontab},
+  Oban.Pro.Plugins.Lifeline,
+  Oban.Web.Plugins.Stats,
+  Oban.Plugins.Gossip
+]
 
 config :glific, Oban,
   prefix: "global",

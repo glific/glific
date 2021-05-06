@@ -388,7 +388,7 @@ defmodule Glific.Partners do
     # this is of the form {:global_org_key, {:organization, value}}
     # we want the value element
     cache_key = cachex_key |> elem(1) |> elem(1)
-    Logger.info("Loading orgcanization cache: #{cache_key}")
+    Logger.info("Loading organization cache: #{cache_key}")
 
     organization =
       if is_integer(cache_key) do
