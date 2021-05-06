@@ -6,14 +6,7 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :glific, Glific.Repo,
-  username: "postgres",
-  password: "postgres",
-  database: "glific_test#{System.get_env("MIX_TEST_PARTITION")}",
-  hostname: "localhost",
-  pool_size: 20,
-  pool: Ecto.Adapters.SQL.Sandbox,
-  prepare: :named,
-  parameters: [plan_cache_mode: "force_custom_plan"]
+  pool: Ecto.Adapters.SQL.Sandbox
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
@@ -33,10 +26,6 @@ config :logger,
 # setting the state of the environment for use within code base
 config :glific, :environment, :test
 
-# config :absinthe, Absinthe.Logger,
-#  pipeline: true,
-#  level: :debug
-
 config :glific, Oban,
   prefix: "global",
   crontab: false,
@@ -48,6 +37,8 @@ config :glific,
   provider_worker: Glific.Providers.Gupshup.Worker,
   provider_id: "gupshup-provider-23",
   provider_limit: 10
+
+config :goth, disabled: true
 
 config :glific, Poolboy, worker: Glific.Processor.ConsumerWorkerMock
 
@@ -63,19 +54,6 @@ config :glific,
   provider_url: "https://api.gupshup.io/sm/api/v1",
   provider_key: "random_abcdefghigklmnop"
 
-config :appsignal, :config,
-  otp_app: :glific,
-  active: false,
-  env: :test
-
-config :glific, Glific.Vault,
-  cloak_repo: [Glific.Repo],
-  ciphers: [
-    default:
-      {Cloak.Ciphers.AES.GCM,
-       tag: "AES.GCM.V1", key: Base.decode64!("BliS4zyqMG065ZrRJ8BhhruZFXnpV+eYAQBRqzusnSY=")}
-  ]
-
 config :glific,
   stripe_ids: [
     product: "random_prod_JG5ns5",
@@ -85,7 +63,3 @@ config :glific,
     messages: "random_price_1IfNf2EMSh",
     consulting_hours: "random_price_1IfNe9EMShk"
   ]
-
-config :stripity_stripe,
-  api_key: "random_sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cC",
-  signing_secret: "random_whsec_F6xvua5ZhjS98FkK"

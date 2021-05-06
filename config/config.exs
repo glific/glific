@@ -11,16 +11,6 @@ config :glific,
   ecto_repos: [Glific.Repo],
   global_schema: "global"
 
-# Configures the endpoint
-config :glific, GlificWeb.Endpoint,
-  server: true,
-  http: [port: 4000],
-  url: [host: "glific.test"],
-  secret_key_base: "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e",
-  render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
-  pubsub_server: Glific.PubSub,
-  live_view: [signing_salt: "4htfH6BMHdxcuDKFHeSryT32amWvVvlX"]
-
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
@@ -60,28 +50,17 @@ oban_crontab = [
   {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
 ]
 
-oban_envs = [:prod, :dev, :test]
-
-oban_engine =
-  if Mix.env() in oban_envs,
-    do: Oban.Pro.Queue.SmartEngine,
-    else: Oban.Queue.BasicEngine
-
-oban_plugins_prod =
-  if Mix.env() in oban_envs,
-    do: [
-      Oban.Pro.Plugins.Lifeline,
-      Oban.Web.Plugins.Stats,
-      Oban.Plugins.Gossip
-    ],
-    else: []
+oban_engine = Oban.Pro.Queue.SmartEngine
 
 oban_plugins =
   [
     # Prune jobs after 5 mins, gives us some time to go investigate if needed
     {Oban.Plugins.Pruner, max_age: 300},
-    {Oban.Plugins.Cron, crontab: oban_crontab}
-  ] ++ oban_plugins_prod
+    {Oban.Plugins.Cron, crontab: oban_crontab},
+    Oban.Pro.Plugins.Lifeline,
+    Oban.Web.Plugins.Stats,
+    Oban.Plugins.Gossip
+  ]
 
 config :glific, Oban,
   prefix: "global",
@@ -132,12 +111,6 @@ config :fun_with_flags, :cache_bust_notifications,
   enabled: true,
   adapter: FunWithFlags.Notifications.PhoenixPubSub,
   client: Glific.PubSub
-
-# config goth in default disabled state
-config :goth,
-  disabled: true
-
-config :glific, Glific.Vault, ciphers: false
 
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,
