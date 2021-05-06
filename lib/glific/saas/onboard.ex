@@ -43,9 +43,9 @@ defmodule Glific.Saas.Onboard do
       |> Partners.update_organization(changes)
 
     update_organization_billing(organization)
-    organization
   end
 
+  @spec update_organization_billing(Organization.t()) :: Organization.t()
   defp update_organization_billing(%{is_active: false} = organization) do
     with billing <- Billing.get_billing(%{organization_id: organization.id}),
          false <- is_nil(billing),
@@ -54,7 +54,7 @@ defmodule Glific.Saas.Onboard do
     end
   end
 
-  defp update_organization_billing(_organization), do: nil
+  defp update_organization_billing(organization), do: organization
 
   @doc """
   Delete an organization from the DB, ensure that the confirmed flag is set
