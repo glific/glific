@@ -449,8 +449,7 @@ defmodule Glific.Partners.Billing do
   @doc """
   Update organization subscription plan
   """
-  @spec update_subscription(Billing.t(), Organization.t()) ::
-          {:ok, any()} | {:error, Stripe.Error.t()}
+  @spec update_subscription(Billing.t(), Organization.t()) :: Organization.t()
   def update_subscription(billing, organization) do
     billing.stripe_subscription_items
     |> Map.values()
@@ -474,8 +473,14 @@ defmodule Glific.Partners.Billing do
       }
     }
 
-    Stripe.SubscriptionItem.delete(stripe_ids()["monthly"], %{}, [])
+    Stripe.SubscriptionItem.delete(
+      billing.stripe_subscription_items[stripe_ids()["monthly"]],
+      %{},
+      []
+    )
+
     Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
+    organization
   end
 
   # return a map which maps glific product ids to subscription item ids

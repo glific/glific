@@ -836,11 +836,13 @@ if Code.ensure_loaded?(Faker) do
     def seed_billing(organization) do
       Repo.insert!(%Billing{
         name: "Billing name",
-        stripe_customer_id: "test_cus_JIdQjmJcjq",
+        stripe_customer_id: "test_customer_id",
         email: "Billing person email",
         currency: "inr",
         organization_id: organization.id,
-        is_active: true
+        is_active: true,
+        stripe_subscription_id: "test_subscription_id",
+        stripe_subscription_items: %{price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id"}
       })
     end
 
