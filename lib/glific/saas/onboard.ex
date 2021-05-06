@@ -48,8 +48,9 @@ defmodule Glific.Saas.Onboard do
 
   defp update_organization_billing(%{is_active: false} = organization) do
     with billing <- Billing.get_billing(%{organization_id: organization.id}),
-         true <- billing.status do
-          Billing.update_subscription(billing, organization)
+         false <- is_nil(billing),
+         true <- billing.is_active do
+      Billing.update_subscription(billing, organization)
     end
   end
 
