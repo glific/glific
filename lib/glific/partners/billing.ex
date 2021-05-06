@@ -458,7 +458,7 @@ defmodule Glific.Partners.Billing do
     end)
 
     params = %{
-      billing_cycle_anchor: "unchanged",
+      # billing_cycle_anchor: "unchanged",
       proration_behavior: "create_prorations",
       items: [
         %{
