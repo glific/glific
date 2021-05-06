@@ -365,7 +365,7 @@ defmodule Glific.TemplatesTest do
       assert {:error,
               [
                 "BSP response status: 400",
-                "{\"message\":\"Template Not Supported On Gupshup Platform\",\"status\":\"error\"}"
+                "Template Not Supported On Gupshup Platform"
               ]} = Templates.create_session_template(attrs)
     end
 

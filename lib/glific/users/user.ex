@@ -66,7 +66,7 @@ defmodule Glific.Users.User do
   """
   def get_roles_list do
     # keeping the order alphabetical ASC for frontend dropdown display
-    ["Admin", "Manager", "No access", "Staff"]
+    ["Admin", "Glific admin", "Manager", "No access", "Staff"]
   end
 
   @doc """

@@ -21,6 +21,7 @@ defmodule Glific.Fixtures do
     Partners.Billing,
     Partners.Organization,
     Repo,
+    Saas.ConsultingHour,
     Settings,
     Tags,
     Templates,
@@ -671,5 +672,27 @@ defmodule Glific.Fixtures do
       |> Billing.create_billing()
 
     billing
+  end
+
+  @doc false
+  @spec consulting_hour_fixture(map()) :: ConsultingHour.t()
+  def consulting_hour_fixture(attrs) do
+    valid_attrs = %{
+      participants: "Adam",
+      organization_id: attrs.organization_id,
+      organization_name: "Glific",
+      staff: "Adelle Cavin",
+      content: "GCS issue",
+      when: DateTime.backward(10),
+      duration: 10,
+      is_billable: true
+    }
+
+    {:ok, consulting_hour} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> ConsultingHour.create_consulting_hour()
+
+    consulting_hour
   end
 end
