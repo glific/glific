@@ -71,25 +71,25 @@ defmodule Glific.Partners.Billing do
         }
 
   schema "billings" do
-    field :stripe_customer_id, :string
-    field :stripe_payment_method_id, :string
+    field(:stripe_customer_id, :string)
+    field(:stripe_payment_method_id, :string)
 
-    field :stripe_subscription_id, :string
-    field :stripe_subscription_status, :string
-    field :stripe_subscription_items, :map, default: %{}
+    field(:stripe_subscription_id, :string)
+    field(:stripe_subscription_status, :string)
+    field(:stripe_subscription_items, :map, default: %{})
 
-    field :stripe_current_period_start, :utc_datetime
-    field :stripe_current_period_end, :utc_datetime
-    field :stripe_last_usage_recorded, :utc_datetime
+    field(:stripe_current_period_start, :utc_datetime)
+    field(:stripe_current_period_end, :utc_datetime)
+    field(:stripe_last_usage_recorded, :utc_datetime)
 
-    field :name, :string
-    field :email, :string
-    field :currency, :string
+    field(:name, :string)
+    field(:email, :string)
+    field(:currency, :string)
 
-    field :is_delinquent, :boolean, default: false
-    field :is_active, :boolean, default: true
+    field(:is_delinquent, :boolean, default: false)
+    field(:is_active, :boolean, default: true)
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -449,7 +449,7 @@ defmodule Glific.Partners.Billing do
   @doc """
   Update organization subscription plan
   """
-  @spec update_subscription(Billing.t(), Organization.t()) :: {:ok, any()} | {:error, Stripe.Error.t()}
+  @spec update_subscription(Billing.t(), Organization.t()) :: Organization.t()
   def update_subscription(billing, organization) do
     billing.stripe_subscription_items
     |> Map.values()
@@ -457,13 +457,8 @@ defmodule Glific.Partners.Billing do
       Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
     end)
 
-    anchor_timestamp =
-      DateTime.utc_now()
-      |> Timex.beginning_of_day()
-      |> DateTime.to_unix()
-
     params = %{
-      billing_cycle_anchor: anchor_timestamp,
+      billing_cycle_anchor: "unchanged",
       proration_behavior: "create_prorations",
       items: [
         %{
@@ -480,6 +475,7 @@ defmodule Glific.Partners.Billing do
 
     Stripe.SubscriptionItem.delete(stripe_ids()["monthly"], %{}, [])
     Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
+    organization
   end
 
   # return a map which maps glific product ids to subscription item ids
