@@ -158,7 +158,7 @@ defmodule Glific.Flows.FlowContext do
   @spec reset_all_contexts(FlowContext.t(), String.t()) :: FlowContext.t() | nil
   def reset_all_contexts(context, message) do
     # lets skip logging and notifications for things that occur quite often
-    if  !ignore_error?(message) do
+    if !ignore_error?(message) do
       Logger.info(message)
       notification(context, message)
     end

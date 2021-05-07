@@ -10,6 +10,8 @@ defmodule Glific.Contacts do
 
   alias __MODULE__
 
+  require Logger
+
   alias Glific.{
     Clients,
     Contacts.Contact,
@@ -423,35 +425,43 @@ defmodule Glific.Contacts do
 
   defp optin_on_bsp(res, _), do: res
 
+  @spec opted_out_attrs(String.t(), non_neg_integer, DateTime.t()) :: map()
+  defp opted_out_attrs(phone, organization_id, utc_time),
+    do: %{
+      phone: phone,
+      optout_time: utc_time,
+      optin_time: nil,
+      optin_status: false,
+      optin_method: nil,
+      optin_message_id: nil,
+      status: :invalid,
+      bsp_status: :none,
+      organization_id: organization_id,
+      updated_at: DateTime.utc_now()
+    }
+
   @doc """
   Update DB fields when contact opted out
   """
-  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: :ok
+  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: :ok | :error
   def contact_opted_out(phone, organization_id, utc_time) do
-    if !is_simulator_contact?(phone) do
-      attrs = %{
-        phone: phone,
-        optout_time: utc_time,
-        optin_time: nil,
-        optin_status: false,
-        optin_method: nil,
-        optin_message_id: nil,
-        status: :invalid,
-        bsp_status: :none,
-        organization_id: organization_id,
-        updated_at: DateTime.utc_now()
-      }
-
+    if is_simulator_contact?(phone) do
+      :ok
+    else
       case Repo.get_by(Contact, %{phone: phone}) do
         nil ->
-          raise "Contact does not exist with phone: #{phone}"
+          Logger.error("Contact does not exist with phone: #{phone}")
+          :error
 
         contact ->
-          update_contact(contact, attrs)
+          update_contact(
+            contact,
+            opted_out_attrs(phone, organization_id, utc_time)
+          )
+
+          :ok
       end
     end
-
-    :ok
   end
 
   @doc """

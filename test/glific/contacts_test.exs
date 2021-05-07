@@ -806,9 +806,8 @@ defmodule Glific.ContactsTest do
       assert contact.status == :invalid
       assert contact.optout_time != nil
 
-      assert_raise RuntimeError, "Contact does not exist with phone: 8910928313", fn ->
-        Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now())
-      end
+      assert Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now()) ==
+               :error
     end
 
     test "maybe_create_contact/1 will update contact name", %{organization_id: organization_id} do
