@@ -333,11 +333,7 @@ defmodule Glific.Partners.Billing do
   end
 
   defp make_promocode_request(code) do
-    Request.new_request()
-    |> Request.put_endpoint("promotion_codes")
-    |> Request.put_method(:get)
-    |> Request.put_params(%{code: code})
-    |> Request.make_request()
+    make_stripe_request("promotion_codes", :get, %{code: code})
   end
 
   @doc """
@@ -396,14 +392,24 @@ defmodule Glific.Partners.Billing do
 
   @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
   defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
-    Request.new_request()
-    |> Request.put_endpoint("invoiceitems/#{invoice_id}")
-    |> Request.put_method(:post)
-    |> Request.put_params(%{discounts: [%{coupon: coupon_code}]})
-    |> Request.make_request()
+    make_stripe_request("invoiceitems/#{invoice_id}", :post, %{
+      discounts: [%{coupon: coupon_code}]
+    })
   end
 
   defp apply_coupon(_, _), do: nil
+
+  @doc """
+  A common function for making Stripe API calls with params that are not supported withing Stripity Stripe
+  """
+  @spec make_stripe_request(String.t(), atom(), map()) :: any()
+  def make_stripe_request(endpoint, method, params) do
+    Request.new_request()
+    |> Request.put_endpoint(endpoint)
+    |> Request.put_method(method)
+    |> Request.put_params(params)
+    |> Request.make_request()
+  end
 
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
@@ -411,11 +417,7 @@ defmodule Glific.Partners.Billing do
     # now create and attach the subscriptions to this organization
     params = subscription_params(billing, organization)
 
-    Request.new_request()
-    |> Request.put_endpoint("subscriptions")
-    |> Request.put_method(:post)
-    |> Request.put_params(params)
-    |> Request.make_request()
+    make_stripe_request("subscriptions", :post, params)
     |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
