@@ -397,6 +397,7 @@ defmodule Glific.Partners.Billing do
     billing
   end
 
+  @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
   defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
     Request.new_request()
     |> Request.put_endpoint("invoiceitems/#{invoice_id}")
@@ -443,6 +444,42 @@ defmodule Glific.Partners.Billing do
       {:error, stripe_error} ->
         {:error, inspect(stripe_error)}
     end
+  end
+
+  @doc """
+  Update organization subscription plan
+  """
+  @spec update_subscription(Billing.t(), Organization.t()) :: Organization.t()
+  def update_subscription(billing, organization) do
+    billing.stripe_subscription_items
+    |> Map.values()
+    |> Enum.each(fn subscription_item ->
+      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
+    end)
+
+    params = %{
+      proration_behavior: "create_prorations",
+      items: [
+        %{
+          price: stripe_ids()["inactive"],
+          quantity: 1,
+          tax_rates: tax_rates()
+        }
+      ],
+      metadata: %{
+        "id" => Integer.to_string(billing.organization_id),
+        "name" => organization.name
+      }
+    }
+
+    Stripe.SubscriptionItem.delete(
+      billing.stripe_subscription_items[stripe_ids()["monthly"]],
+      %{},
+      []
+    )
+
+    Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
+    organization
   end
 
   # return a map which maps glific product ids to subscription item ids

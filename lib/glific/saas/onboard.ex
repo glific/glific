@@ -7,7 +7,9 @@ defmodule Glific.Saas.Onboard do
   alias Glific.{
     Contacts.Contact,
     Partners,
+    Partners.Billing,
     Partners.Organization,
+    Repo,
     Saas.Queries
   }
 
@@ -41,8 +43,22 @@ defmodule Glific.Saas.Onboard do
       |> Partners.get_organization!()
       |> Partners.update_organization(changes)
 
-    organization
+    update_organization_billing(organization)
   end
+
+  @spec update_organization_billing(Organization.t()) :: Organization.t()
+  defp update_organization_billing(%{is_active: false} = organization) do
+    # putting organization id in process as this operation is used by glific_admin for other organizations
+    Repo.put_process_state(organization.id)
+
+    with billing <- Billing.get_billing(%{organization_id: organization.id}),
+         false <- is_nil(billing),
+         true <- billing.is_active do
+      Billing.update_subscription(billing, organization)
+    end
+  end
+
+  defp update_organization_billing(organization), do: organization
 
   @doc """
   Delete an organization from the DB, ensure that the confirmed flag is set
