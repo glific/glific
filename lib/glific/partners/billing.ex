@@ -261,26 +261,23 @@ defmodule Glific.Partners.Billing do
       items: [
         %{
           price: prices["monthly"],
-          quantity: 1,
-          tax_rates: tax_rates()
+          quantity: 1
         },
         %{
-          price: prices["users"],
-          tax_rates: tax_rates()
+          price: prices["users"]
         },
         %{
-          price: prices["messages"],
-          tax_rates: tax_rates()
+          price: prices["messages"]
         },
         %{
-          price: prices["consulting_hours"],
-          tax_rates: tax_rates()
+          price: prices["consulting_hours"]
         }
       ],
       metadata: %{
         "id" => Integer.to_string(billing.organization_id),
         "name" => organization.name
-      }
+      },
+      default_tax_rates: tax_rates()
     }
   end
 
@@ -413,9 +410,13 @@ defmodule Glific.Partners.Billing do
   defp subscription(billing, organization) do
     # now create and attach the subscriptions to this organization
     params = subscription_params(billing, organization)
-    opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    case Stripe.Subscription.create(params, opts) do
+    Request.new_request()
+    |> Request.put_endpoint("subscriptions")
+    |> Request.put_method(:post)
+    |> Request.put_params(params)
+    |> Request.make_request()
+    |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
