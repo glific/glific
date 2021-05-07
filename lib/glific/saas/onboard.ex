@@ -9,6 +9,7 @@ defmodule Glific.Saas.Onboard do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Repo,
     Saas.Queries
   }
 
@@ -47,6 +48,9 @@ defmodule Glific.Saas.Onboard do
 
   @spec update_organization_billing(Organization.t()) :: Organization.t()
   defp update_organization_billing(%{is_active: false} = organization) do
+    # putting organization id in process as this operation is used by glific_admin for other organizations
+    Repo.put_process_state(organization.id)
+
     with billing <- Billing.get_billing(%{organization_id: organization.id}),
          false <- is_nil(billing),
          true <- billing.is_active do
