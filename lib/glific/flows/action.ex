@@ -390,11 +390,20 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
+    # if the action is part of a terminal node, then lets mark this context as
+    # complete, and use the parent context
+    {:node, node} = context.uuid_map[action.node_uuid]
+    {context, parent_id} =
+    if node.is_terminal do
+      {FlowContext.reset_one_context(context), context.parent_id}
+    else
+      {context, context.id}
+    end
     # we start off a new context here and dont really modify the current context
     # hence ignoring the return value of start_sub_flow
     # for now, we'll just delay by at least min_delay second
     context = %{context | delay: max(context.delay + @min_delay, @min_delay)}
-    Flow.start_sub_flow(context, action.enter_flow_uuid)
+    Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
 
     # We null the messages here, since we are going into a different flow
     # this clears any potential errors

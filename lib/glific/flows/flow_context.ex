@@ -171,8 +171,12 @@ defmodule Glific.Flows.FlowContext do
     reset_one_context(context)
   end
 
+  @doc """
+  Reset this context, but dont follow parent context tail. This is used
+  for tail call optimization
+  """
   @spec reset_one_context(FlowContext.t()) :: FlowContext.t()
-  defp reset_one_context(context) do
+  def reset_one_context(context) do
     {:ok, context} =
       FlowContext.update_flow_context(
         context,

@@ -28,6 +28,7 @@ defmodule Glific.Flows.Node do
           flow_uuid: Ecto.UUID.t() | nil,
           flow_id: Ecto.UUID.t() | nil,
           flow: Flow.t() | nil,
+          is_terminal: boolean() | false,
           actions: [Action.t()] | [],
           exits: [Exit.t()] | [],
           router: Router.t() | nil
@@ -37,6 +38,9 @@ defmodule Glific.Flows.Node do
     field :uuid, Ecto.UUID
     field :flow_id, Ecto.UUID
     field :flow_uuid, Ecto.UUID
+
+    field :is_terminal, :boolean, default: false
+
     embeds_one :flow, Flow
 
     embeds_many :actions, Action
@@ -75,7 +79,10 @@ defmodule Glific.Flows.Node do
         node
       )
 
-    node = Map.put(node, :exits, exits)
+    node =
+      node
+      |> Map.put(:exits, exits)
+      |> Map.put(:is_terminal, is_terminal?(exits))
 
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
@@ -95,6 +102,14 @@ defmodule Glific.Flows.Node do
 
     {node, uuid_map}
   end
+
+  @spec is_terminal?(list() :: boolean()
+  defp is_terminal?(exits),
+    do:
+      Enum.all?(
+        exits,
+        fn e -> is_nil(e.destination_node_uuid) end
+      )
 
   @doc """
   If the node has a router component, and the flow has enabled us to fix
