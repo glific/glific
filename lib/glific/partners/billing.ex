@@ -540,7 +540,6 @@ defmodule Glific.Partners.Billing do
     do:
       !is_nil(subscription.pending_setup_intent) &&
         subscription.pending_setup_intent.status == "requires_action"
-  end
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
