@@ -26,7 +26,7 @@ defmodule Glific.Application do
       Pow.Store.Backend.MnesiaCache,
 
       # Add Oban to process jobs
-      {Oban, oban_config()},
+      # {Oban, oban_config()},
 
       # Add Absinthe's subscription
       {Absinthe.Subscription, GlificWeb.Endpoint},
