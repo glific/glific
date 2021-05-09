@@ -257,7 +257,7 @@ defmodule Glific.Partners.Billing do
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      proration_behavior: "create_prorations",
+      prorate: false,
       items: [
         %{
           price: prices["monthly"],
@@ -402,9 +402,9 @@ defmodule Glific.Partners.Billing do
   @doc """
   A common function for making Stripe API calls with params that are not supported withing Stripity Stripe
   """
-  @spec make_stripe_request(String.t(), atom(), map()) :: any()
-  def make_stripe_request(endpoint, method, params) do
-    Request.new_request()
+  @spec make_stripe_request(String.t(), atom(), map(), list()) :: any()
+  def make_stripe_request(endpoint, method, params, opts \\ []) do
+    Request.new_request(opts)
     |> Request.put_endpoint(endpoint)
     |> Request.put_method(method)
     |> Request.put_params(params)
@@ -416,8 +416,9 @@ defmodule Glific.Partners.Billing do
   defp subscription(billing, organization) do
     # now create and attach the subscriptions to this organization
     params = subscription_params(billing, organization)
+    opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    make_stripe_request("subscriptions", :post, params)
+    make_stripe_request("subscriptions", :post, params, opts)
     |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
@@ -539,6 +540,7 @@ defmodule Glific.Partners.Billing do
     do:
       !is_nil(subscription.pending_setup_intent) &&
         subscription.pending_setup_intent.status == "requires_action"
+  end
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
