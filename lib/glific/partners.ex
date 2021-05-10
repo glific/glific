@@ -314,7 +314,8 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
     # we are deleting an organization that is one of the SaaS users, not the current users org
-    Repo.delete(organization, skip_organization_id: true)
+    # setting timeout as the deleting organization is an expensive operation
+    Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
   end
 
   @doc ~S"""
