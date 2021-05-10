@@ -55,6 +55,8 @@ defmodule Glific.Saas.Onboard do
          false <- is_nil(billing),
          true <- billing.is_active do
       Billing.update_subscription(billing, organization)
+    else
+      _ -> organization
     end
   end
 

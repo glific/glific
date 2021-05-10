@@ -4,6 +4,7 @@ defmodule Glific.OnboardTest do
   use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 
   alias Glific.{
+    Fixtures,
     Partners.Organization,
     Saas.Onboard,
     Seeds.SeedsDev
@@ -84,6 +85,15 @@ defmodule Glific.OnboardTest do
 
       assert updated_organization.is_active == false
     end
+  end
+
+  test "ensure that sending in valid parameters, update organization status as is_active false for organization without billing" do
+    organization = Fixtures.organization_fixture()
+    {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: organization.id})
+
+    updated_organization = Onboard.status(organization.id, false, nil)
+
+    assert updated_organization.is_active == false
   end
 
   test "ensure that sending in valid parameters, delete inactive organization" do
