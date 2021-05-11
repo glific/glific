@@ -110,7 +110,7 @@ defmodule Glific.Saas.ConsultingHour do
   """
   @spec count_consulting_hours(map()) :: integer
   def count_consulting_hours(args),
-    do: Repo.count_filter(args, ConsultingHour, &Repo.filter_with/2)
+    do: Repo.count_filter(args, ConsultingHour, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
