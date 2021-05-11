@@ -1,6 +1,6 @@
 # Consulting Hours
 
-## Get Consulting Hours
+## Get Consulting Hour by ID
 
 ```graphql
 query consultingHour(id: ID!) {
