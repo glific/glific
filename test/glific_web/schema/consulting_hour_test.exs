@@ -61,6 +61,27 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end
 
+  test "consulting hours field returns list of consulting hours", %{staff: user} = attrs do
+    _consulting_hour_1 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Jon Cavin"
+      })
+
+    _consulting_hour_2 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Ken Cavin"
+      })
+
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "consultingHours"])
+    assert length(consulting_hours) > 0
+    [consulting_hour | _] = consulting_hours
+    assert get_in(consulting_hour, ["staff"]) == "Jon Cavin"
+  end
+
   test "update a consulting hours", %{manager: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 

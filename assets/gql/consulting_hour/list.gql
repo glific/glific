@@ -1,14 +1,10 @@
-query ConsultingHours($filter: ConsultingHourFilter, $opts: Opts) {
-  ConsultingHours(filter: $filter, opts: $opts) {
+query consultingHours($filter: ConsultingHourFilter, $opts: Opts) {
+  consultingHours(filter: $filter, opts: $opts) {
     participants
     organizationName
     staff
     content
     when
     duration
-    organization {
-      name
-      shortcode
-    }
   }
 }
