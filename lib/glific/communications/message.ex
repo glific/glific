@@ -248,7 +248,12 @@ defmodule Glific.Communications.Message do
   end
 
   # preload the context message if it exists, so frontend can do the right thing
-  @spec publish_data(Message.t() | {:ok, Message.t()}, atom()) :: Message.t()
+  @spec publish_data(Message.t() | {:ok, Message.t()} | {:error, any()}, atom()) ::
+          Message.t() | nil
+  defp publish_data({:error, error}, _data_type) do
+    error("Create message error", error)
+  end
+
   defp publish_data({:ok, message}, data_type),
     do: publish_data(message, data_type)
 
@@ -261,15 +266,23 @@ defmodule Glific.Communications.Message do
   # lets have a default timeout of 3 seconds for each call
   @timeout 4000
 
-  @spec error(String.t(), any(), any(), list()) :: :ok
-  defp error(error, e, r, stacktrace) do
+  @spec error(String.t(), any(), any(), list() | nil) :: :ok
+  defp error(error, e, r \\ nil, stacktrace \\ nil) do
     error = error <> ": #{inspect(e)}, #{inspect(r)}"
     Logger.error(error)
+
+    stacktrace =
+      if stacktrace == nil,
+        do: Process.info(self(), :current_stacktrace) |> elem(1),
+        else: stacktrace
+
     Appsignal.send_error(:error, error, stacktrace)
     :ok
   end
 
-  @spec process_message(Message.t()) :: :ok
+  @spec process_message(Message.t() | nil) :: :ok
+  defp process_message(nil), do: :ok
+
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
     process_state = {
