@@ -33,6 +33,15 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   end
 
   @doc """
+  Get the count of consulting hours filtered by args
+  """
+  @spec count_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, integer}
+  def count_consulting_hours(_, args, _) do
+    {:ok, ConsultingHour.count_consulting_hours(args)}
+  end
+
+  @doc """
   Create consulting hour
   """
   @spec create_consulting_hour(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

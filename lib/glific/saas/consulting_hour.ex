@@ -105,6 +105,13 @@ defmodule Glific.Saas.ConsultingHour do
   def list_consulting_hours(args),
     do: Repo.list_filter(args, ConsultingHour, &Repo.opts_with_label/2, &filter_with/2)
 
+  @doc """
+  Return the count of consulting hours, using the same filter as list_consulting_hours
+  """
+  @spec count_consulting_hours(map()) :: integer
+  def count_consulting_hours(args),
+    do: Repo.count_filter(args, ConsultingHour, &Repo.filter_with/2)
+
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)

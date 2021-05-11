@@ -75,6 +75,13 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.ConsultingHours.consulting_hours/3)
     end
+
+    @desc "Get a count of all consulting hours filtered by various criteria"
+    field :count_consulting_hours, :integer do
+      arg(:filter, :consulting_hour_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.ConsultingHours.count_consulting_hours/3)
+    end
   end
 
   object :consulting_hours_mutations do
