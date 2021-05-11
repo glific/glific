@@ -534,17 +534,6 @@ defmodule Glific.BigQuery do
 
       "PERMISSION_DENIED" ->
         Partners.disable_credential(organization_id, "bigquery")
-
-        Notifications.create_notification(%{
-          category: "BigQuery",
-          message: "Billing account is disabled for BigQuery",
-          severity: "Error",
-          organization_id: organization_id,
-          entity: %{
-            error: "#{inspect(response)}"
-          }
-        })
-
       _ ->
         raise("BigQuery Insert Error for table #{table}  #{response}")
     end

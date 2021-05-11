@@ -135,6 +135,8 @@ defmodule Glific.Flows.FlowContext do
 
   @spec notification(FlowContext.t(), String.t()) :: nil
   defp notification(context, message) do
+    context =  Repo.preload(context, [:contact, :flow])
+
     {:ok, _} =
       Notifications.create_notification(%{
         category: "Flow",
@@ -144,7 +146,10 @@ defmodule Glific.Flows.FlowContext do
         entity: %{
           contact_id: context.contact_id,
           flow_id: context.flow_id,
-          parent_id: context.parent_id
+          parent_id: context.parent_id,
+          name: context.contact.name,
+          flow_name: context.flow.name,
+          flow_uuid: context.flow.uuid
         }
       })
 
