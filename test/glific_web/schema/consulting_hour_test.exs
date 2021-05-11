@@ -8,6 +8,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/consulting_hour/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/consulting_hour/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/consulting_hour/delete.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/consulting_hour/list.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
 
   test "create a consulting hour entry", %{manager: user} do
     result =
