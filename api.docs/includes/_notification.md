@@ -89,6 +89,40 @@ query countNotifications($filter: NotificationFilter) {
 | --------- | ---------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#Notificationfilter">NotificationFilter</a> | nil     | filter the list |
 
+
+## Mark all the notification as read
+
+```graphql
+mutation markNotificationAsRead() {
+  markNotificationAsRead()
+}
+
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "markNotificationAsRead": true,
+    "errors": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+input | <a href="#contactinput">ContactInput</a> | required ||
+
+### Return Parameters
+Type | Description
+| ---- | -----------
+<a href="#contactresult">ContactResult</a> | The created contact object
+
+
 ## Notification Objects
 
 ### NotificationFilter
