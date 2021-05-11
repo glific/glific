@@ -69,6 +69,7 @@ query consultingHour(id: ID!) {
 ```graphql
 query consultingHours($filter: consultingHourFilter, $opts: Opts) {
   consultingHours(filter: $filter, opts:$opts) {
+    id
     content
     isBillable
     duration
@@ -101,6 +102,7 @@ query consultingHours($filter: consultingHourFilter, $opts: Opts) {
     "consultingHours": [
       {
         "content": "GCS issue",
+        "id": 2,
         "duration": 10,
         "insertedAt": "2021-05-04T11:18:20Z",
         "isBillable": true,
@@ -442,6 +444,11 @@ mutation  deleteConsultingHour($id: ID!) {
 </tr>
 </thead>
 <tbody>
+<tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
 <tr>
 <td colspan="2" valign="top"><strong>duration</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>

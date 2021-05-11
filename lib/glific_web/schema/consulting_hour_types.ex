@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
   end
 
   object :consulting_hour do
+    field :id, :id
     field :participants, :string
     field :organization_name, :string
     field :staff, :string
