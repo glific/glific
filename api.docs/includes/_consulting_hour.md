@@ -145,6 +145,7 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
       content
       isBillable
       insertedAt
+      organizationId
       organizationName
       participants
       staff
