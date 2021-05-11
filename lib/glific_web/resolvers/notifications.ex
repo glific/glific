@@ -28,7 +28,7 @@ defmodule GlificWeb.Resolvers.Notifications do
   @doc """
   Mark all the unread messages as read
   """
-  @spec mark_notification_as_read(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, boolean())
+  @spec mark_notification_as_read(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, boolean()}
   def mark_notification_as_read(_, _args, _) do
     {:ok, Notifications.mark_notification_as_read()}
   end
