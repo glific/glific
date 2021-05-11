@@ -55,7 +55,7 @@ defmodule Glific.Notifications do
         from q in query, where: ilike(q.message, ^"%#{message}%")
 
       {:is_read, is_read}, query ->
-        from q in query, where: q.is_read = ^is_read
+        from q in query, where: q.is_read == ^is_read
 
       _, query ->
         query
