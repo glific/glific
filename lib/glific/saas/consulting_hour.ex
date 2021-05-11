@@ -93,6 +93,32 @@ defmodule Glific.Saas.ConsultingHour do
   def get_consulting_hour(clauses), do: Repo.get_by(ConsultingHour, clauses)
 
   @doc """
+  Returns the list of consulting hours.
+
+  ## Examples
+
+      iex> list_consulting_hours()
+      [%ConsultingHour{}, ...]
+
+  """
+  @spec list_consulting_hours(map()) :: [ConsultingHour.t()]
+  def list_consulting_hours(args),
+    do: Repo.list_filter(args, ConsultingHour, &Repo.opts_with_label/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specific to consulting hours only.
+    Enum.reduce(filter, query, fn
+      {:organization_name, organization_name}, query ->
+        from q in query, where: ilike(q.organization_name, ^"%#{organization_name}%")
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc """
   Update the consulting_hour record
   """
   @spec update_consulting_hour(ConsultingHour.t(), map()) ::
