@@ -126,14 +126,14 @@ query consultingHours($filter: consultingHourFilter, $opts: Opts) {
 }
 ```
 
-This returns all the tags for the organization filtered by the input <a href="#tagfilter">TagFilter</a>
+This returns all the consulting hours filtered by the input <a href="#ConsultingHourfilter">ConsultingHourfilter</a>
 
 ### Query Parameters
 
-| Parameter | Type                               | Default | Description                         |
-| --------- | ---------------------------------- | ------- | ----------------------------------- |
-| filter    | <a href="#tagfilter">TagFilter</a> | nil     | filter the list                     |
-| opts      | <a href="#opts">Opts</a>           | nil     | limit / offset / sort order options |
+| Parameter | Type                                                     | Default | Description                         |
+| --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
 
 ## Create a Consulting Hour
 
@@ -206,6 +206,36 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 | Type                                                       | Description                        |
 | ---------------------------------------------------------- | ---------------------------------- |
 | <a href="#consulting_hour_result">ConsultingHourResult</a> | The created consulting hour object |
+
+## Count all Consulting Hours
+
+```graphql
+query countConsultingHours($filter: ConsultingHourFilter) {
+  countConsultingHours(filter: $filter)
+}
+
+{
+  "filter": {
+    "organizationName": "Glific"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "countConsultingHours": 22
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description     |
+| --------- | -------------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#ConsultingHourfilter">ConsultingHourFilter</a> | nil     | filter the list |
 
 ## Update a Consulting Hour
 
