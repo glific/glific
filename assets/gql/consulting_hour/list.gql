@@ -6,5 +6,6 @@ query consultingHours($filter: ConsultingHourFilter, $opts: Opts) {
     content
     when
     duration
+    isBillable
   }
 }
