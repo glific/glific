@@ -49,6 +49,15 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
   input_object :consulting_hour_filter do
     @desc "Match the organization name"
     field :organization_name, :string
+
+    @desc "Match the participants name"
+    field :participants, :string
+
+    @desc "Match the staff name"
+    field :staff, :string
+
+    @desc "Match the billable flag"
+    field :is_billable, :boolean
   end
 
   object :consulting_hours_queries do

@@ -113,6 +113,15 @@ defmodule Glific.Saas.ConsultingHour do
       {:organization_name, organization_name}, query ->
         from q in query, where: ilike(q.organization_name, ^"%#{organization_name}%")
 
+      {:staff, staff}, query ->
+        from q in query, where: ilike(q.staff, ^"%#{staff}%")
+
+      {:is_billable, is_billable}, query ->
+        from q in query, where: q.is_billable == ^is_billable
+
+      {:participants, participants}, query ->
+        from q in query, where: ilike(q.participants, ^"%#{participants}%")
+
       _, query ->
         query
     end)
