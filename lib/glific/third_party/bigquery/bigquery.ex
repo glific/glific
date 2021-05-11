@@ -14,7 +14,6 @@ defmodule Glific.BigQuery do
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
-    Notifications,
     Partners,
     Partners.Saas,
     Repo,

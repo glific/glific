@@ -21,7 +21,6 @@ defmodule Glific.GCS.GcsWorker do
     Jobs,
     Messages.Message,
     Messages.MessageMedia,
-    Notifications,
     Partners,
     Repo
   }
