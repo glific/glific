@@ -634,12 +634,13 @@ defmodule Glific.Flows.FlowContext do
   def delete_old_flow_contexts(back \\ 7) do
     deletion_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
-    {count, nil} =
-      FlowContext
-      |> where([fc], fc.inserted_at < ^deletion_date)
-      |> Repo.delete_all(skip_organization_id: true, timeout: 60_000)
+    """
+    DELETE FROM flow_contexts
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{deletion_date}' LIMIT 500));
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts older than #{back} days: count: '#{count}'")
+    Logger.info("Deleting flow contexts older than #{back} days")
 
     :ok
   end
