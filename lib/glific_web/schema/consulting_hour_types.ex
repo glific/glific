@@ -18,6 +18,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
   end
 
   object :consulting_hour do
+    field :id, :id
     field :participants, :string
     field :organization_name, :string
     field :staff, :string
@@ -45,12 +46,42 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
     field :is_billable, :boolean
   end
 
+  @desc "Filtering options for consulting hours"
+  input_object :consulting_hour_filter do
+    @desc "Match the organization name"
+    field :organization_name, :string
+
+    @desc "Match the participants name"
+    field :participants, :string
+
+    @desc "Match the staff name"
+    field :staff, :string
+
+    @desc "Match the billable flag"
+    field :is_billable, :boolean
+  end
+
   object :consulting_hours_queries do
     @desc "get the details of consulting hours"
     field :consulting_hour, :consulting_hour_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.ConsultingHours.get_consulting_hours/3)
+    end
+
+    @desc "Get a list of all consulting hours filtered by various criteria"
+    field :consulting_hours, list_of(:consulting_hour) do
+      arg(:filter, :consulting_hour_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.ConsultingHours.consulting_hours/3)
+    end
+
+    @desc "Get a count of all consulting hours filtered by various criteria"
+    field :count_consulting_hours, :integer do
+      arg(:filter, :consulting_hour_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.ConsultingHours.count_consulting_hours/3)
     end
   end
 

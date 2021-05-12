@@ -1,21 +1,22 @@
 # Consulting Hours
 
-## Get Consulting Hours
+## Get Consulting Hour by ID
 
 ```graphql
 query consultingHour(id: ID!) {
   consultingHour(id: $id) {
-    participants
-    organization_id
-    organization_name
-    staff
-    content
-    when
     duration
-    is_billable
+    content
+    isBillable
+    insertedAt
+    organizationName
+    participants
+    staff
+    updatedAt
+    when
     organization {
-        name
-        shortcode
+      name
+      shortcode
     }
   }
 }
@@ -63,20 +64,95 @@ query consultingHour(id: ID!) {
 | ---------------------------------------------------------- | ---------------------------------- |
 | <a href="#consulting_hour_result">ConsultingHourResult</a> | The queried consulting_hour object |
 
+## Get Consulting Hours
+
+```graphql
+query consultingHours($filter: consultingHourFilter, $opts: Opts) {
+  consultingHours(filter: $filter, opts:$opts) {
+    id
+    content
+    isBillable
+    duration
+    insertedAt
+    participants
+    staff
+    organizationName
+    updatedAt
+    when
+  }
+}
+
+{
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
+  },
+  "filter": {
+    "organizationName": "glific"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "consultingHours": [
+      {
+        "content": "GCS issue",
+        "id": 2,
+        "duration": 10,
+        "insertedAt": "2021-05-04T11:18:20Z",
+        "isBillable": true,
+        "organizationName": "Glific",
+        "participants": "Adam",
+        "staff": "Adelle Cavin",
+        "updatedAt": "2021-05-04T11:18:20Z",
+        "when": "2021-03-08T08:22:51Z"
+      },
+      {
+        "content": "Bigquery issue",
+        "duration": 10,
+        "insertedAt": "2021-05-04T16:18:20Z",
+        "isBillable": true,
+        "organizationName": "Glific",
+        "participants": "Kevin",
+        "staff": "Adelle Cavin",
+        "updatedAt": "2021-05-04T11:18:20Z",
+        "when": "2021-03-08T08:22:51Z"
+      }
+    ]
+  }
+}
+```
+
+This returns all the consulting hours filtered by the input <a href="#ConsultingHourfilter">ConsultingHourfilter</a>
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description                         |
+| --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
+
 ## Create a Consulting Hour
 
 ```graphql
 mutation createConsultingHour($input:ConsultingHourInput!) {
   createConsultingHour(input: $input) {
     consultingHour {
-        participants
-        organization_id
-        organization_name
-        staff
-        content
-        when
-        duration
-        is_billable
+      duration
+      content
+      isBillable
+      insertedAt
+      organizationId
+      organizationName
+      participants
+      staff
+      updatedAt
+      when
     }
     errors {
         message
@@ -88,13 +164,13 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 {
   "input": {
     "participants": "Adam",
-    "organization_id": 1,
-    "organization_name": "Glific",
+    "organizationId": 1,
+    "organizationName": "Glific",
     "staff": "Adelle Cavin",
     "content": "GCS issue",
     "when": "2021-03-08T08:22:51Z",
     "duration": 10,
-    "is_billable": true,
+    "isBillable": true,
   }
 }
 ```
@@ -134,20 +210,51 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 | ---------------------------------------------------------- | ---------------------------------- |
 | <a href="#consulting_hour_result">ConsultingHourResult</a> | The created consulting hour object |
 
+## Count all Consulting Hours
+
+```graphql
+query countConsultingHours($filter: ConsultingHourFilter) {
+  countConsultingHours(filter: $filter)
+}
+
+{
+  "filter": {
+    "organizationName": "Glific"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "countConsultingHours": 22
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description     |
+| --------- | -------------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#ConsultingHourfilter">ConsultingHourFilter</a> | nil     | filter the list |
+
 ## Update a Consulting Hour
 
 ```graphql
 mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
   updateConsultingHour(id: $id!, input: $input) {
     consultingHour {
-        participants
-        organization_id
-        organization_name
-        staff
-        content
-        when
-        duration
-        is_billable
+      duration
+      content
+      isBillable
+      insertedAt
+      organizationName
+      participants
+      staff
+      updatedAt
+      when
     }
     errors {
         message
@@ -206,14 +313,15 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 mutation  deleteConsultingHour($id: ID!) {
    deleteConsultingHour(id: $id!) {
     consultingHour {
-        participants
-        organization_id
-        organization_name
-        staff
-        content
-        when
-        duration
-        is_billable
+      duration
+      content
+      isBillable
+      insertedAt
+      organizationName
+      participants
+      staff
+      updatedAt
+      when
     }
     errors {
         message
@@ -252,9 +360,9 @@ mutation  deleteConsultingHour($id: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                                                     | Default  | Description |
-| --------- | -------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                                    | required |             |
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 
@@ -336,6 +444,11 @@ mutation  deleteConsultingHour($id: ID!) {
 </tr>
 </thead>
 <tbody>
+<tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
 <tr>
 <td colspan="2" valign="top"><strong>duration</strong></td>
 <td valign="top"><a href="#integer">Integer</a></td>
