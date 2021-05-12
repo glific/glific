@@ -23,10 +23,10 @@ defmodule Glific.ConsultingHourTest do
       duration: 15,
       when: DateTime.utc_now()
     }
-    # @update_attrs %{
-    #   staff: "Chrissy Cron",
-    #   duration: 30
-    # }
+    @update_attrs %{
+      staff: "Chrissy Cron",
+      duration: 30
+    }
     @invalid_attrs %{
       participants: nil,
       organization_name: nil,
@@ -48,7 +48,6 @@ defmodule Glific.ConsultingHourTest do
 
     _consulting_hour_3 = Fixtures.consulting_hour_fixture(Map.merge(attrs, @valid_more_attrs))
 
-    # _ = tag_fixture(Map.merge(attrs, @valid_more_attrs))
     assert ConsultingHour.count_consulting_hours(%{filter: attrs}) == consulting_hour_count + 2
 
     assert ConsultingHour.count_consulting_hours(%{
@@ -82,10 +81,38 @@ defmodule Glific.ConsultingHourTest do
     assert consulting_hour.organization_id == organization_id
   end
 
-  test "create_consulting_hour/1 with invalid data returns error changeset", %{organization_id: organization_id} do
+  test "create_consulting_hour/1 with invalid data returns error changeset", %{
+    organization_id: organization_id
+  } do
     attrs =
       Map.merge(@invalid_attrs, %{organization_id: organization_id, when: DateTime.utc_now()})
 
     assert {:error, %Ecto.Changeset{}} = ConsultingHour.create_consulting_hour(attrs)
+  end
+
+  test "update_consulting_hour/2 with valid data updates the consulting_hour", %{
+    organization_id: organization_id
+  } do
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id, when: DateTime.utc_now()})
+
+    assert {:ok, %ConsultingHour{} = consulting_hour} =
+             ConsultingHour.create_consulting_hour(attrs)
+
+    attrs = Map.merge(@update_attrs, %{content: "BigQuery issue"})
+
+    assert {:ok, %ConsultingHour{} = updated_consulting_hour} =
+             ConsultingHour.update_consulting_hour(consulting_hour, attrs)
+
+    assert updated_consulting_hour.content == "BigQuery issue"
+    assert updated_consulting_hour.is_billable == true
+    assert updated_consulting_hour.participants == "Adam"
+    assert updated_consulting_hour.staff == "Chrissy Cron"
+    assert updated_consulting_hour.organization_id == organization_id
+  end
+
+  test "consulting_hour/1 deletes the consulting_hour", %{organization_id: organization_id} do
+    consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: organization_id})
+    assert {:ok, %ConsultingHour{}} = ConsultingHour.delete_consulting_hour(consulting_hour)
+    assert true == is_nil(ConsultingHour.get_consulting_hour(%{id: consulting_hour.id}))
   end
 end
