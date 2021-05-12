@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.NotificationTypes do
     field :entity, :json
     field :message, :string
     field :severity, :json
+    field :is_read, :boolean
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
@@ -35,6 +36,10 @@ defmodule GlificWeb.Schema.NotificationTypes do
 
     @desc "Match the category"
     field :category, :string
+
+    @desc "Match is read status"
+    field :is_read, :boolean
+
   end
 
   object :notification_queries do
@@ -51,6 +56,13 @@ defmodule GlificWeb.Schema.NotificationTypes do
       arg(:filter, :notification_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Notifications.count_notifications/3)
+    end
+  end
+
+  object :notification_mutations do
+    field :mark_notification_as_read, :boolean do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Notifications.mark_notification_as_read/3)
     end
   end
 end

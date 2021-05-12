@@ -770,12 +770,13 @@ defmodule Glific.Partners do
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
         Notifications.create_notification(%{
-          category: shortcode,
-          message: "Disabling #{shortcode}",
+          category: "Partner",
+          message: "Disabling #{shortcode}. Something is wrong with the account.",
           severity: "Critical",
           organization_id: organization_id,
           entity: %{
-            error: "You have entered wrong credentials"
+            id: provider.id,
+            shortcode: shortcode
           }
         })
 
