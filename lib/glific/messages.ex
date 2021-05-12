@@ -279,7 +279,6 @@ defmodule Glific.Messages do
       do: Contacts.get_contact!(attrs.receiver_id),
       else: attrs.receiver
 
-
     Logger.error(
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
         reason
