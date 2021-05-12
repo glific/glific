@@ -73,11 +73,10 @@ defmodule Glific.Notifications do
   Mark all the unread messages as read.
   """
   @spec mark_notification_as_read() :: boolean
-  def mark_notification_as_read() do
-     Notification
+  def mark_notification_as_read do
+    Notification
     |> where([n], n.is_read == false)
     |> Repo.update_all(set: [is_read: true])
     true
   end
-
 end

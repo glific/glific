@@ -93,8 +93,8 @@ query countNotifications($filter: NotificationFilter) {
 ## Mark all the notification as read
 
 ```graphql
-mutation markNotificationAsRead() {
-  markNotificationAsRead()
+mutation markNotificationAsRead {
+  markNotificationAsRead
 }
 
 ```

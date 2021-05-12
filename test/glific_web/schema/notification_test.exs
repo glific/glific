@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.NotificationTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/notifications/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/notifications/list.gql")
+  load_gql(:mark_as_read, GlificWeb.Schema, "assets/gql/notifications/mark_as_read.gql")
 
   test "notifications field returns list of notifications", %{staff: user} = attrs do
     notify = Fixtures.notification_fixture(attrs)
@@ -115,15 +116,17 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert get_in(query_data, [:data, "countNotifications"]) == 1
   end
 
-  test "mark all the notification as read", %{staff: _user} = attrs do
-    _n1 = Fixtures.notification_fixture(attrs)
-    _n2 = Fixtures.notification_fixture(attrs)
-    _n3 = Fixtures.notification_fixture(attrs)
-    _n4 = Fixtures.notification_fixture(attrs)
-    _n5 = Fixtures.notification_fixture(attrs)
+  test "mark all the notification as read", %{staff: user} = attrs do
+    Enum.each(0..5, fn _ -> Fixtures.notification_fixture(attrs) end)
 
-  unread_notification =  Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
-  IO.inspect(unread_notification)
+    unread_notification =  Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
+    assert unread_notification > 0
+
+    result = auth_query_gql_by(:mark_as_read, user, variables: %{})
+    assert {:ok, _query_data} = result
+
+    unread_notification =  Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
+    assert unread_notification == 0
 
   end
 

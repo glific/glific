@@ -127,6 +127,8 @@ defmodule GlificWeb.Schema do
     import_fields(:media_mutations)
 
     import_fields(:consulting_hours_mutations)
+
+    import_fields(:notification_mutations)
   end
 
   subscription do
