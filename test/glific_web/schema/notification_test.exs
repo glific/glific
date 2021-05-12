@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert length(notifications) > 0
     [notification | _] = notifications
     assert notification["category"] == notify.category
+    assert notification["is_read"] == false
   end
 
   test "notifications field returns list of notifications in desc order",
@@ -61,6 +62,13 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert length(notifications) > 0
     [notification | _] = notifications
     assert get_in(notification, ["message"]) == notify_1.message
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"is_read" => false}})
+    assert {:ok, query_data} = result
+    notifications = get_in(query_data, [:data, "notifications"])
+    assert length(notifications) > 0
+
   end
 
   test "notifications field obeys limit and offset", %{staff: user} = attrs do
@@ -106,4 +114,17 @@ defmodule GlificWeb.Schema.NotificationTest do
 
     assert get_in(query_data, [:data, "countNotifications"]) == 1
   end
+
+  test "mark all the notification as read", %{staff: _user} = attrs do
+    _n1 = Fixtures.notification_fixture(attrs)
+    _n2 = Fixtures.notification_fixture(attrs)
+    _n3 = Fixtures.notification_fixture(attrs)
+    _n4 = Fixtures.notification_fixture(attrs)
+    _n5 = Fixtures.notification_fixture(attrs)
+
+  unread_notification =  Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
+  IO.inspect(unread_notification)
+
+  end
+
 end

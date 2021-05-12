@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.NotificationTypes do
     field :entity, :json
     field :message, :string
     field :severity, :json
+    field :is_read, :boolean
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
