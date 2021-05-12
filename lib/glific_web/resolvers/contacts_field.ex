@@ -2,7 +2,7 @@ defmodule GlificWeb.Resolvers.ContactsField do
   @moduledoc """
   Contact Field Resolver which sits between the GraphQL schema and Glific Contact Field Context API.
   """
-  alias Glific.{Contacts.ContactsField, Repo}
+  alias Glific.{Flows.ContactField, Repo}
 
   @doc """
   Get a specific contact field by id
@@ -13,5 +13,16 @@ defmodule GlificWeb.Resolvers.ContactsField do
     with {:ok, contacts_field} <-
            Repo.fetch_by(ContactsField, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{contacts_field: contacts_field}}
+  end
+
+  @doc """
+  Create contact field
+  """
+  @spec create_contacts_field(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_contacts_field(_, %{input: params}, _) do
+    with {:ok, contacts_field} <- ContactField.create_contact_field(params) do
+      {:ok, %{contacts_field: contacts_field}}
+    end
   end
 end

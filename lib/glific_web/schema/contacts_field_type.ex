@@ -7,7 +7,6 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
   alias Glific.{
-    Contacts.ContactsField,
     Repo
   }
 
@@ -57,6 +56,14 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.ContactsField.contacts_field/3)
+    end
+  end
+
+  object :contacts_field_mutations do
+    field :create_contacts_field, :contacts_field_result do
+      arg(:input, non_null(:contacts_field_input))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.ContactsField.create_contacts_field/3)
     end
   end
 end
