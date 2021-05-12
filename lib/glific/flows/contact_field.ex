@@ -86,4 +86,24 @@ defmodule Glific.Flows.ContactField do
     |> ContactsField.changeset(attrs)
     |> Repo.update()
   end
+
+  @doc """
+  Deletes a contact field.
+
+  ## Examples
+
+      iex> delete_contacts_field(contacts_field)
+      {:ok, %ContactsField{}}
+
+      iex> delete_contacts_field(contacts_field)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec delete_contacts_field(ContactsField.t()) ::
+          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def delete_contacts_field(%ContactsField{} = contacts_field) do
+    contacts_field
+    |> ContactsField.changeset(%{})
+    |> Repo.delete()
+  end
 end
