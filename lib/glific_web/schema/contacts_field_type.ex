@@ -62,8 +62,15 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
   object :contacts_field_mutations do
     field :create_contacts_field, :contacts_field_result do
       arg(:input, non_null(:contacts_field_input))
-      middleware(Authorize, :manager)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.ContactsField.create_contacts_field/3)
+    end
+
+    field :update_contacts_field, :contacts_field_result do
+      arg(:id, non_null(:id))
+      arg(:input, :contacts_field_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.ContactsField.update_contacts_field/3)
     end
   end
 end

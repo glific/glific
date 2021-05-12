@@ -66,4 +66,24 @@ defmodule Glific.Flows.ContactField do
     |> ContactsField.changeset(attrs)
     |> Repo.insert()
   end
+
+  @doc """
+  Updates a contact field.
+
+  ## Examples
+
+      iex> update_contacts_field(contacts_field, %{field: new_value})
+      {:ok, %ContactsField{}}
+
+      iex> update_contacts_field(contacts_field, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_contacts_field(ContactsField.t(), map()) ::
+          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def update_contacts_field(%ContactsField{} = contacts_field, attrs) do
+    contacts_field
+    |> ContactsField.changeset(attrs)
+    |> Repo.update()
+  end
 end
