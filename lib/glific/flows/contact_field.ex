@@ -58,6 +58,13 @@ defmodule Glific.Flows.ContactField do
     do: Repo.list_filter(args, ContactsField, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
+  Return the count of contacts_fields, using the same filter as list_contacts_fields
+  """
+  @spec count_contacts_fields(map()) :: integer
+  def count_contacts_fields(args),
+    do: Repo.count_filter(args, ContactsField, &Repo.filter_with/2)
+
+  @doc """
   Create contact field
   """
   @spec create_contact_field(map()) :: {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
