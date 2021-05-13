@@ -131,6 +131,8 @@ defmodule GlificWeb.Schema do
 
     import_fields(:consulting_hours_mutations)
 
+    import_fields(:notification_mutations)
+
     import_fields(:contacts_field_mutations)
   end
 
