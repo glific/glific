@@ -24,8 +24,8 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
     field :id, :id
     field :name, :string
     field :shortcode, :string
-    field :value_type, :string
-    field :scope, :string
+    field :value_type, :contact_field_value_type_enum
+    field :scope, :contact_field_scope_enum
     field :inserted_at, :datetime
     field :updated_at, :datetime
 
@@ -46,8 +46,8 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
   input_object :contacts_field_input do
     field :name, :string
     field :shortcode, :string
-    field :value_type, :string
-    field :scope, :string
+    field :value_type, :contact_field_value_type_enum
+    field :scope, :contact_field_scope_enum
   end
 
   object :contacts_field_queries do
