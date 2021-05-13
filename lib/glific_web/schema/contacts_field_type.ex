@@ -57,6 +57,21 @@ defmodule GlificWeb.Schema.ContactsFieldTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.ContactsField.contacts_field/3)
     end
+
+    @desc "Get a list of all contacs fields filtered by various criteria"
+    field :contacts_fields, list_of(:contacts_field) do
+      arg(:filter, :contacts_field_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.ContactsField.contacts_fields/3)
+    end
+
+    # @desc "Get a count of all contacs fields filtered by various criteria"
+    # field :count_tags, :integer do
+    #   arg(:filter, :tag_filter)
+    #   middleware(Authorize, :staff)
+    #   resolve(&Resolvers.Tags.count_tags/3)
+    # end
   end
 
   object :contacts_field_mutations do

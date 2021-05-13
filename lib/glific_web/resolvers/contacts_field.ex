@@ -16,6 +16,14 @@ defmodule GlificWeb.Resolvers.ContactsField do
   end
 
   @doc """
+  Get the list of contacts_fields filtered by args
+  """
+  @spec contacts_fields(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [ContactsField]}
+  def contacts_fields(_, args, _) do
+    {:ok, ContactField.list_contacts_fields(args)}
+  end
+
+  @doc """
   Create contact field
   """
   @spec create_contacts_field(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

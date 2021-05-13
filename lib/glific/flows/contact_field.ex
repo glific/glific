@@ -53,8 +53,8 @@ defmodule Glific.Flows.ContactField do
   @doc """
   list contacts fields.
   """
-  @spec list_contacts_fields(map()) :: [ContactsField.t()]
-  def list_contacts_fields(%{filter: %{organization_id: _organization_id}} = args),
+  @spec list_contacts_fields(map()) :: [Tag.t()]
+  def list_contacts_fields(args),
     do: Repo.list_filter(args, ContactsField, &Repo.opts_with_label/2, &Repo.filter_with/2)
 
   @doc """
