@@ -132,7 +132,7 @@ mutation createContactsField($input:ContactsFieldInput!) {
           "shortcode": "glific"
         },
         "scope": "contact",
-        "shortcode": "school name",
+        "shortcode": "school_name",
         "updatedAt": "2021-05-13T05:52:24Z",
         "valueType": "text"
       },
@@ -144,26 +144,26 @@ mutation createContactsField($input:ContactsFieldInput!) {
 
 ### Query Parameters
 
-| Parameter | Type                                                     | Default  | Description |
-| --------- | -------------------------------------------------------- | -------- | ----------- |
+| Parameter | Type                                                   | Default  | Description |
+| --------- | ------------------------------------------------------ | -------- | ----------- |
 | input     | <a href="#contacts_field_input">ContactsFieldInput</a> | required |             |
 
 ### Return Parameters
 
-| Type                                                       | Description                        |
-| ---------------------------------------------------------- | ---------------------------------- |
-| <a href="#contacts_field_result">ContactsFieldResult</a> | The created consulting hour object |
+| Type                                                     | Description                       |
+| -------------------------------------------------------- | --------------------------------- |
+| <a href="#contacts_field_result">ContactsFieldResult</a> | The created contacts field object |
 
-## Count all Consulting Hours
+## Count all Contacts Fields
 
 ```graphql
-query countConsultingHours($filter: ContactsFieldfilter) {
-  countConsultingHours(filter: $filter)
+query countContactsFields($filter: ContactsFieldfilter) {
+  countContactsFields(filter: $filter)
 }
 
 {
   "filter": {
-    "organizationName": "Glific"
+    "name": "Age Group"
   }
 }
 ```
@@ -173,7 +173,7 @@ query countConsultingHours($filter: ContactsFieldfilter) {
 ```json
 {
   "data": {
-    "countConsultingHours": 22
+    "countContactsFields": 22
   }
 }
 ```
@@ -184,12 +184,12 @@ query countConsultingHours($filter: ContactsFieldfilter) {
 | --------- | ------------------------------------------------------ | ------- | --------------- |
 | filter    | <a href="#ContactsFieldfilter">ContactsFieldfilter</a> | nil     | filter the list |
 
-## Update a Consulting Hour
+## Update a Contacts Fields
 
 ```graphql
-mutation updateConsultingHour($id: ID!, $input:ContactsFieldInput!) {
-  updateConsultingHour(id: $id!, input: $input) {
-    consultingHour {
+mutation updateContactsField($id: ID!, $input:ContactsFieldInput!) {
+  updateContactsField(id: $id!, input: $input) {
+    contactsField {
         valueType
         updatedAt
         shortcode
@@ -213,7 +213,7 @@ mutation updateConsultingHour($id: ID!, $input:ContactsFieldInput!) {
 {
     "id": "2",
     "input": {
-        "participants": "Ken"
+        "shortcode": "age group"
     }
 }
 ```
@@ -223,17 +223,20 @@ mutation updateConsultingHour($id: ID!, $input:ContactsFieldInput!) {
 ```json
 {
   "data": {
-    "updateConsultingHour": {
-      "consultingHour": {
-        "content": "GCS issue",
-        "duration": 10,
-        "insertedAt": "2021-05-04T11:18:20Z",
-        "isBillable": true,
-        "organizationName": "Glific",
-        "participants": "Ken",
-        "staff": "Adelle Cavin",
-        "updatedAt": "2021-05-04T11:18:20Z",
-        "when": "2021-03-08T08:22:51Z"
+    "updateContactsField": {
+      "contactsField": {
+        "id": "2",
+        "insertedAt": "2021-05-11T07:15:24Z",
+        "name": "Age Group",
+        "organization": {
+          "isActive": true,
+          "isApproved": false,
+          "shortcode": "glific"
+        },
+        "scope": "contact",
+        "shortcode": "age group",
+        "updatedAt": "2021-05-11T07:15:24Z",
+        "valueType": "text"
       },
       "errors": null
     }
@@ -243,23 +246,23 @@ mutation updateConsultingHour($id: ID!, $input:ContactsFieldInput!) {
 
 ### Query Parameters
 
-| Parameter | Type                                                     | Default  | Description |
-| --------- | -------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                                    | required |             |
+| Parameter | Type                                                    | Default  | Description |
+| --------- | ------------------------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                                   | required |             |
 | input     | <a href="#consulting_hour_input">ContactsFieldInput</a> | required |             |
 
 ### Return Parameters
 
-| Type                                                       | Description                        |
-| ---------------------------------------------------------- | ---------------------------------- |
-| <a href="#consulting_hour_result">ContactsFieldResult</a> | The created consulting hour object |
+| Type                                                      | Description                        |
+| --------------------------------------------------------- | ---------------------------------- |
+| <a href="#consulting_hour_result">ContactsFieldResult</a> | The created Contacts Fields object |
 
-## Delete a Consulting Hour
+## Delete a Contacts Fields
 
 ```graphql
-mutation  deleteConsultingHour($id: ID!) {
-   deleteConsultingHour(id: $id!) {
-    consultingHour {
+mutation  deletecontactsField($id: ID!) {
+   deletecontactsField(id: $id!) {
+    contactsField {
         valueType
         updatedAt
         shortcode
@@ -281,7 +284,7 @@ mutation  deleteConsultingHour($id: ID!) {
 }
 
 {
-    "id": "2",
+    "id": "4",
 }
 ```
 
@@ -290,17 +293,20 @@ mutation  deleteConsultingHour($id: ID!) {
 ```json
 {
   "data": {
-    " deleteConsultingHour": {
-      "consultingHour": {
-        "content": "GCS issue",
-        "duration": 10,
-        "insertedAt": "2021-05-04T11:18:20Z",
-        "isBillable": true,
-        "organizationName": "Glific",
-        "participants": "Ken",
-        "staff": "Adelle Cavin",
-        "updatedAt": "2021-05-04T11:18:20Z",
-        "when": "2021-03-08T08:22:51Z"
+    " deletecontactsField": {
+      "contactsField": {
+        "id": "4",
+        "insertedAt": "2021-05-13T05:52:24Z",
+        "name": "Name",
+        "organization": {
+          "isActive": true,
+          "isApproved": false,
+          "shortcode": "glific"
+        },
+        "scope": "contact",
+        "shortcode": "name",
+        "updatedAt": "2021-05-13T05:52:24Z",
+        "valueType": "text"
       },
       "errors": null
     }
@@ -351,12 +357,12 @@ mutation  deleteConsultingHour($id: ID!) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>value_type</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td valign="top"><a href="#string">ContactFieldValueTypeConst</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>scope</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td valign="top"><a href="#string">ContactFieldScopeEnum</a></td>
 <td></td>
 </tr>
 <tr>
@@ -401,12 +407,12 @@ mutation  deleteConsultingHour($id: ID!) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>value_type</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td valign="top"><a href="#string">ContactFieldValueTypeConst</a></td>
 <td></td>
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>scope</strong></td>
-<td valign="top"><a href="#string">String</a></td>
+<td valign="top"><a href="#string">ContactFieldScopeEnum</a></td>
 <td></td>
 </tr>
 </tbody>
