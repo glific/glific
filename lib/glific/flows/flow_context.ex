@@ -594,12 +594,16 @@ defmodule Glific.Flows.FlowContext do
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
 
-    {:ok, context} =
+
       context
       |> FlowContext.load_context(flow)
       |> FlowContext.step_forward(message)
+      |> case do
+        {:ok, context}  -> {:ok, context, []}
+        {:error, message} -> {:error, message}
+        err -> Logger.error("Error while waking up the flow. #{inspect(err)}")
+      end
 
-    {:ok, context, []}
   end
 
   @doc """
