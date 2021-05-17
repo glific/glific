@@ -298,6 +298,16 @@ defmodule Glific.Partners do
     |> Repo.update(skip_organization_id: true)
   end
 
+  @doc """
+  Updates organization field
+  """
+  @spec update_organization_fields(Organization.t(), map()) ::
+          {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
+  def update_organization_fields(%Organization{} = organization, attrs) do
+    fields = Map.merge(attrs, %{})
+    update_organization(organization, fields)
+  end
+
   @doc ~S"""
   Deletes an Orgsanization.
 

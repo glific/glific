@@ -72,6 +72,19 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Updates an organization fields
+  """
+  @spec update_organization_fields(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def update_organization_fields(_, %{id: id, input: params}, _) do
+    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
+         {:ok, organization} <- Partners.update_organization_fields(organization, params) do
+      {:ok, %{organization: organization}}
+    end
+  end
+
+  @doc """
   Deletes an organization
   """
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

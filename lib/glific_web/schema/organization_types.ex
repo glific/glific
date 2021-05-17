@@ -33,6 +33,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :shortcode, :string
     field :email, :string
+    field :fields, :json
 
     field :bsp, :provider do
       resolve(dataloader(Repo))
@@ -229,6 +230,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:is_confirmed, non_null(:boolean))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.reset_organization/3)
+    end
+
+    field :update_organization_fields, :organization_result do
+      arg(:id, non_null(:id))
+      arg(:input, :json)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.update_organization_fields/3)
     end
   end
 
