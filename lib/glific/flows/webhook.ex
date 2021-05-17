@@ -169,10 +169,8 @@ defmodule Glific.Flows.Webhook do
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
-  defp do_action("get", url, body, headers) do
+  defp do_action("get", url, body, headers), do:
     Tesla.get(url, headers: headers, query: [extra_data: body])
-    |> IO.inspect()
-  end
 
   @doc """
   Standard perform method to use Oban worker
