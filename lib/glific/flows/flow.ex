@@ -253,10 +253,12 @@ defmodule Glific.Flows.Flow do
     # we might want to put the current one under some sort of pause status
     flow = get_flow(context.flow.organization_id, uuid, context.status)
 
-    parent = Glific.delete_multiple(
-      context.results,
-      ["parent", :parent, "child", :child]
-    )
+    parent =
+      Glific.delete_multiple(
+        context.results,
+        ["parent", :parent, "child", :child]
+      )
+
     FlowContext.init_context(flow, context.contact, context.status,
       parent_id: parent_id,
       delay: context.delay,

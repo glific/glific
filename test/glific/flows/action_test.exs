@@ -491,7 +491,7 @@ defmodule Glific.Flows.ActionTest do
     assert {:ok, updated_context, _updated_message_stream} = result
 
     assert Glific.delete_multiple(updated_context, [:delay, :uuids_seen]) ==
-      Glific.delete_multiple(context, [:delay, :uuids_seen])
+             Glific.delete_multiple(context, [:delay, :uuids_seen])
   end
 
   test "execute an action when type is wait_for_time", attrs do
@@ -513,7 +513,7 @@ defmodule Glific.Flows.ActionTest do
     }
 
     # bad message
-    assert_raise ArgumentError, fn -> Action.execute(action, context, [%{body: "FooBar"}]) end
+    assert elem(Action.execute(action, context, [%{body: "FooBar"}]), 0) == :error
 
     # good message, proceed ahead
     result = Action.execute(action, context, [%{body: "No Response"}])
