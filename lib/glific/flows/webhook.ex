@@ -259,8 +259,6 @@ defmodule Glific.Flows.Webhook do
         |> update_log(message)
 
       {map, body} ->
-        IO.inspect("mapmap")
-        IO.inspect(map)
         do_oban(action, context, {map, body})
     end
   end
