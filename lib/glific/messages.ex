@@ -276,8 +276,8 @@ defmodule Glific.Messages do
   def notify(attrs, reason \\ "Cannot send the message to the contact.") do
     contact =
       if is_nil(Map.get(attrs, :receiver, nil)),
-      do: Contacts.get_contact!(attrs.receiver_id),
-      else: attrs.receiver
+        do: Contacts.get_contact!(attrs.receiver_id),
+        else: attrs.receiver
 
     Logger.error(
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
@@ -309,9 +309,11 @@ defmodule Glific.Messages do
 
   @spec parse_message_body(map()) :: String.t() | nil
   defp parse_message_body(attrs) do
+    organization = Partners.organization(attrs.organization_id)
+
     message_vars = %{
       "contact" => Contacts.get_contact!(attrs.receiver_id) |> Map.from_struct(),
-      "global" => MessageVariables.get_global_field_map()
+      "global" => organization.fields
     }
 
     MessageVarParser.parse(attrs.body, message_vars)
