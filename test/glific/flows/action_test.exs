@@ -474,6 +474,7 @@ defmodule Glific.Flows.ActionTest do
     context =
       %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
       |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuid_map, %{"Test UUID" => {:node, %{is_terminal: false}}})
 
     # using uuid of language flow
     action = %Action{
