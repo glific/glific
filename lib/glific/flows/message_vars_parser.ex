@@ -25,8 +25,7 @@ defmodule Glific.Flows.MessageVarParser do
         "global",
         Partners.get_global_field_map(Repo.get_organization_id())
       )
-
-    binding = stringify_keys(binding)
+      |> stringify_keys()
 
     input
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
