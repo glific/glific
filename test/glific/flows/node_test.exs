@@ -267,8 +267,7 @@ defmodule Glific.Flows.NodeTest do
     message_stream = [message]
 
     # execute node
-    assert {:error, message} = Node.execute(node, context, message_stream)
-    assert message == "Unexpected message completed received"
+    assert elem(Node.execute(node, context, message_stream), 0) == :error
 
     # execute node
     {:ok, _context, []} = Node.execute(node, context, [])

@@ -254,7 +254,7 @@ defmodule Glific.Flows.Node do
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_node_actions(node, context, messages) do
     # we need to execute all the actions (nodes can have multiple actions)
-    {status, context, messages} =
+    result =
       Enum.reduce(
         node.actions,
         {:ok, context, messages},
@@ -264,9 +264,17 @@ defmodule Glific.Flows.Node do
         end
       )
 
-    case status do
-      :ok -> Exit.execute(hd(node.exits), context, messages)
-      :wait -> {:ok, context, messages}
+    case elem(result, 0) do
+      :error ->
+        result
+
+      :ok ->
+        {_status, context, messages} = result
+        Exit.execute(hd(node.exits), context, messages)
+
+      :wait ->
+        {_status, context, messages} = result
+        {:ok, context, messages}
     end
   end
 end
