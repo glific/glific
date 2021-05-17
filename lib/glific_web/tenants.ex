@@ -73,10 +73,18 @@ defmodule GlificWeb.Tenants do
   def organization_handler(shortcode) do
     case Partners.organization(shortcode) do
       # lets stop resolving nil to glific to avoid any potential security issues
-      nil -> 0
+      nil ->
+        0
+
       # we assume 0 is the error for now
-      {:error, _error} -> 0
-      organization -> organization.id
+      {:error, _error} ->
+        0
+
+      # if not active or approved, lets return an error
+      organization ->
+        if !organization.is_active || !organization.is_approved,
+          do: 0,
+          else: organization.id
     end
   end
 

@@ -135,6 +135,8 @@ defmodule Glific.Flows.FlowContext do
 
   @spec notification(FlowContext.t(), String.t()) :: nil
   defp notification(context, message) do
+    context = Repo.preload(context, [:flow])
+
     {:ok, _} =
       Notifications.create_notification(%{
         category: "Flow",
@@ -144,7 +146,9 @@ defmodule Glific.Flows.FlowContext do
         entity: %{
           contact_id: context.contact_id,
           flow_id: context.flow_id,
-          parent_id: context.parent_id
+          flow_uuid: context.flow.uuid,
+          parent_id: context.parent_id,
+          name: context.flow.name
         }
       })
 
@@ -157,8 +161,11 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec reset_all_contexts(FlowContext.t(), String.t()) :: FlowContext.t() | nil
   def reset_all_contexts(context, message) do
-    Logger.info(message)
-    notification(context, message)
+    # lets skip logging and notifications for things that occur quite often
+    if !ignore_error?(message) do
+      Logger.info(message)
+      notification(context, message)
+    end
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
@@ -613,12 +620,13 @@ defmodule Glific.Flows.FlowContext do
   def delete_completed_flow_contexts(back \\ 2) do
     back_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
-    {count, nil} =
-      FlowContext
-      |> where([fc], fc.completed_at < ^back_date)
-      |> Repo.delete_all(skip_organization_id: true, timeout: 60_000)
+    """
+    DELETE FROM flow_contexts
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.completed_at < '#{back_date}' and f0.completed_at is not null LIMIT 500));
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts completed #{back} days back: count: '#{count}'")
+    Logger.info("Deleting flow contexts completed #{back} days back")
 
     :ok
   end
@@ -630,12 +638,15 @@ defmodule Glific.Flows.FlowContext do
   def delete_old_flow_contexts(back \\ 7) do
     deletion_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
-    {count, nil} =
-      FlowContext
-      |> where([fc], fc.inserted_at < ^deletion_date)
-      |> Repo.delete_all(skip_organization_id: true, timeout: 60_000)
+    """
+    DELETE FROM flow_contexts
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{
+      deletion_date
+    }' LIMIT 500));
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts older than #{back} days: count: '#{count}'")
+    Logger.info("Deleting flow contexts older than #{back} days")
 
     :ok
   end

@@ -257,30 +257,27 @@ defmodule Glific.Partners.Billing do
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      proration_behavior: "create_prorations",
+      prorate: false,
       items: [
         %{
           price: prices["monthly"],
-          quantity: 1,
-          tax_rates: tax_rates()
+          quantity: 1
         },
         %{
-          price: prices["users"],
-          tax_rates: tax_rates()
+          price: prices["users"]
         },
         %{
-          price: prices["messages"],
-          tax_rates: tax_rates()
+          price: prices["messages"]
         },
         %{
-          price: prices["consulting_hours"],
-          tax_rates: tax_rates()
+          price: prices["consulting_hours"]
         }
       ],
       metadata: %{
         "id" => Integer.to_string(billing.organization_id),
         "name" => organization.name
-      }
+      },
+      default_tax_rates: tax_rates()
     }
   end
 
@@ -336,11 +333,7 @@ defmodule Glific.Partners.Billing do
   end
 
   defp make_promocode_request(code) do
-    Request.new_request()
-    |> Request.put_endpoint("promotion_codes")
-    |> Request.put_method(:get)
-    |> Request.put_params(%{code: code})
-    |> Request.make_request()
+    make_stripe_request("promotion_codes", :get, %{code: code})
   end
 
   @doc """
@@ -397,15 +390,26 @@ defmodule Glific.Partners.Billing do
     billing
   end
 
+  @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
   defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
-    Request.new_request()
-    |> Request.put_endpoint("invoiceitems/#{invoice_id}")
-    |> Request.put_method(:post)
-    |> Request.put_params(%{discounts: [%{coupon: coupon_code}]})
-    |> Request.make_request()
+    make_stripe_request("invoiceitems/#{invoice_id}", :post, %{
+      discounts: [%{coupon: coupon_code}]
+    })
   end
 
   defp apply_coupon(_, _), do: nil
+
+  @doc """
+  A common function for making Stripe API calls with params that are not supported withing Stripity Stripe
+  """
+  @spec make_stripe_request(String.t(), atom(), map(), list()) :: any()
+  def make_stripe_request(endpoint, method, params, opts \\ []) do
+    Request.new_request(opts)
+    |> Request.put_endpoint(endpoint)
+    |> Request.put_method(method)
+    |> Request.put_params(params)
+    |> Request.make_request()
+  end
 
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
@@ -414,7 +418,8 @@ defmodule Glific.Partners.Billing do
     params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    case Stripe.Subscription.create(params, opts) do
+    make_stripe_request("subscriptions", :post, params, opts)
+    |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
@@ -443,6 +448,42 @@ defmodule Glific.Partners.Billing do
       {:error, stripe_error} ->
         {:error, inspect(stripe_error)}
     end
+  end
+
+  @doc """
+  Update organization subscription plan
+  """
+  @spec update_subscription(Billing.t(), Organization.t()) :: Organization.t()
+  def update_subscription(billing, organization) do
+    billing.stripe_subscription_items
+    |> Map.values()
+    |> Enum.each(fn subscription_item ->
+      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
+    end)
+
+    params = %{
+      proration_behavior: "create_prorations",
+      items: [
+        %{
+          price: stripe_ids()["inactive"],
+          quantity: 1,
+          tax_rates: tax_rates()
+        }
+      ],
+      metadata: %{
+        "id" => Integer.to_string(billing.organization_id),
+        "name" => organization.name
+      }
+    }
+
+    Stripe.SubscriptionItem.delete(
+      billing.stripe_subscription_items[stripe_ids()["monthly"]],
+      %{},
+      []
+    )
+
+    Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
+    organization
   end
 
   # return a map which maps glific product ids to subscription item ids

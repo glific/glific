@@ -26,7 +26,7 @@ defmodule Glific.Contacts.Simulator do
   def handle_call({:get, user}, _from, state) do
     {contact, state} = get_simulator(user, state)
 
-    {:reply, contact, state}
+    {:reply, contact, state, :hibernate}
   end
 
   @impl true
@@ -34,19 +34,19 @@ defmodule Glific.Contacts.Simulator do
   def handle_call({:release, user}, _from, state) do
     state = release_simulator(user, state)
 
-    {:reply, nil, state}
+    {:reply, nil, state, :hibernate}
   end
 
   @impl true
   @doc false
   def handle_call({:state, organization_id}, _from, state) do
-    {:reply, get_state(state, organization_id), state}
+    {:reply, get_state(state, organization_id), state, :hibernate}
   end
 
   @impl true
   @doc false
   def handle_call(:reset, _from, _state) do
-    {:reply, :ok, reset_state()}
+    {:reply, :ok, reset_state(), :hibernate}
   end
 
   # Note that we are specifically not implementing the handle_cast callback
