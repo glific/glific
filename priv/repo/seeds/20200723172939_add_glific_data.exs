@@ -166,7 +166,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
         consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
         inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
-
       },
       tax_rates: %{
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
@@ -424,7 +423,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       active_language_ids: [en.id, hi.id],
       default_language_id: en.id,
       out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!"
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true
     })
   end
 
@@ -439,7 +440,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       active_language_ids: [en.id, hi.id],
       default_language_id: en.id,
       out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!"
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true
     })
   end
 

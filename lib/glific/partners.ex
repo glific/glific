@@ -314,7 +314,8 @@ defmodule Glific.Partners do
           {:ok, Organization.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization(%Organization{} = organization) do
     # we are deleting an organization that is one of the SaaS users, not the current users org
-    Repo.delete(organization, skip_organization_id: true)
+    # setting timeout as the deleting organization is an expensive operation
+    Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
   end
 
   @doc ~S"""
@@ -388,7 +389,7 @@ defmodule Glific.Partners do
     # this is of the form {:global_org_key, {:organization, value}}
     # we want the value element
     cache_key = cachex_key |> elem(1) |> elem(1)
-    Logger.info("Loading orgcanization cache: #{cache_key}")
+    Logger.info("Loading organization cache: #{cache_key}")
 
     organization =
       if is_integer(cache_key) do
@@ -769,12 +770,13 @@ defmodule Glific.Partners do
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
         Notifications.create_notification(%{
-          category: shortcode,
-          message: "Disabling #{shortcode}",
+          category: "Partner",
+          message: "Disabling #{shortcode}. Something is wrong with the account.",
           severity: "Critical",
           organization_id: organization_id,
           entity: %{
-            error: "You have entered wrong credentials"
+            id: provider.id,
+            shortcode: shortcode
           }
         })
 

@@ -147,6 +147,7 @@ defmodule Glific.Messages.Message do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_media(message)
+    |> unique_constraint([:bsp_message_id, :organization_id])
   end
 
   @doc """

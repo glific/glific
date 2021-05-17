@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "1.5.0",
+      version: "1.5.2",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -147,7 +147,8 @@ defmodule Glific.MixProject do
       {:stripity_stripe, "~> 2.0"},
       {:stripe_mock, "~> 0.1.0", only: @test_envs},
       {:remote_ip, "~> 1.0"},
-      {:exvcr, "~> 0.12.2", only: @test_envs}
+      {:exvcr, "~> 0.12.2", only: @test_envs},
+      {:dotenvy, "~> 0.1"}
     ]
   end
 
@@ -160,11 +161,6 @@ defmodule Glific.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "common"],
-      no_oban: [
-        "deps.clean oban_web oban_pro --unlock",
-        "deps.get --only dev",
-        "common"
-      ],
       common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create --quiet",
