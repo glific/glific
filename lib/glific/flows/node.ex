@@ -103,13 +103,11 @@ defmodule Glific.Flows.Node do
     {node, uuid_map}
   end
 
-  @spec is_terminal?(list() :: boolean()
+  @spec is_terminal?(list()) :: boolean()
   defp is_terminal?(exits),
     do:
-      Enum.all?(
-        exits,
-        fn e -> is_nil(e.destination_node_uuid) end
-      )
+      exits
+      |> Enum.all?(fn e -> is_nil(e.destination_node_uuid) end)
 
   @doc """
   If the node has a router component, and the flow has enabled us to fix
