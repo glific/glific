@@ -64,12 +64,10 @@ defmodule GlificWeb.Schema.NotificationTest do
     [notification | _] = notifications
     assert get_in(notification, ["message"]) == notify_1.message
 
-    result =
-      auth_query_gql_by(:list, user, variables: %{"filter" => %{"is_read" => false}})
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"is_read" => false}})
     assert {:ok, query_data} = result
     notifications = get_in(query_data, [:data, "notifications"])
     assert length(notifications) > 0
-
   end
 
   test "notifications field obeys limit and offset", %{staff: user} = attrs do
@@ -119,15 +117,13 @@ defmodule GlificWeb.Schema.NotificationTest do
   test "mark all the notification as read", %{staff: user} = attrs do
     Enum.each(0..5, fn _ -> Fixtures.notification_fixture(attrs) end)
 
-    unread_notification =  Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
+    unread_notification = Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
     assert unread_notification > 0
 
     result = auth_query_gql_by(:mark_as_read, user, variables: %{})
     assert {:ok, _query_data} = result
 
-    unread_notification =  Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
+    unread_notification = Glific.Notifications.count_notifications(%{filter: %{is_read: false}})
     assert unread_notification == 0
-
   end
-
 end

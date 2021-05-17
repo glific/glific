@@ -119,7 +119,8 @@ defmodule Glific.Flows.Webhook do
         {action_body_map, action_body}
 
       _ ->
-        Logger.info("Error in decoding webhook body #{inspect action_body}.")
+        Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+
         {:error,
          dgettext(
            "errors",
@@ -172,11 +173,11 @@ defmodule Glific.Flows.Webhook do
     do: Tesla.post(url, body, headers: headers)
 
   ## We need to figure out a way to send the data with urls.
-  ##Currently we can not send the json map as a query string
+  ## Currently we can not send the json map as a query string
   ## We will come back on this one in the future.
 
-  defp do_action("get", url, body, headers), do:
-    Tesla.get(url, headers: headers, query: [data: body])
+  defp do_action("get", url, body, headers),
+    do: Tesla.get(url, headers: headers, query: [data: body])
 
   @doc """
   Standard perform method to use Oban worker

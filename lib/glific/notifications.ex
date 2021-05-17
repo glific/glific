@@ -77,6 +77,7 @@ defmodule Glific.Notifications do
     Notification
     |> where([n], n.is_read == false)
     |> Repo.update_all(set: [is_read: true])
+
     true
   end
 end

@@ -135,7 +135,7 @@ defmodule Glific.Flows.FlowContext do
 
   @spec notification(FlowContext.t(), String.t()) :: nil
   defp notification(context, message) do
-    context =  Repo.preload(context, [:flow])
+    context = Repo.preload(context, [:flow])
 
     {:ok, _} =
       Notifications.create_notification(%{
@@ -148,7 +148,7 @@ defmodule Glific.Flows.FlowContext do
           flow_id: context.flow_id,
           flow_uuid: context.flow.uuid,
           parent_id: context.parent_id,
-          name: context.flow.name,
+          name: context.flow.name
         }
       })
 
@@ -574,7 +574,7 @@ defmodule Glific.Flows.FlowContext do
   Process one context at a time that is ready to be woken
   """
   @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
@@ -594,16 +594,13 @@ defmodule Glific.Flows.FlowContext do
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
 
-
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message)
-      |> case do
-        {:ok, context}  -> {:ok, context, []}
-        {:error, message} -> {:error, message}
-        err -> Logger.error("Error while waking up the flow. #{inspect(err)}")
-      end
-
+    context
+    |> FlowContext.load_context(flow)
+    |> FlowContext.step_forward(message)
+    |> case do
+      {:ok, context} -> {:ok, context, []}
+      {:error, message} -> {:error, message}
+    end
   end
 
   @doc """
@@ -644,7 +641,9 @@ defmodule Glific.Flows.FlowContext do
 
     """
     DELETE FROM flow_contexts
-    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{deletion_date}' LIMIT 500));
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{
+      deletion_date
+    }' LIMIT 500));
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
