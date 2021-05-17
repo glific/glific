@@ -490,7 +490,8 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, updated_context, _updated_message_stream} = result
 
-    assert Map.delete(updated_context, :delay) == Map.delete(context, :delay)
+    assert updated_context |> Map.delete(:delay) |> Map.delete(:uuids_seen) ==
+      context |> Map.delete(:delay) |> Map.delete(:uuids_seen)
   end
 
   test "execute an action when type is wait_for_time", attrs do

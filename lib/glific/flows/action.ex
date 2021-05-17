@@ -393,35 +393,35 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "enter_flow"} = action, context, _messages) do
     # check if we've seen this flow in this execution
     if Map.has_key?(context.uuids_seen, action.enter_flow_uuid) do
-      raise RuntimeError, message: "Round and Round the flows we go, so lets stop"
+      FlowContext.log_error("Repeated loop, hence finished the flow")
+    else
+      # check if we are looping with the same flow, if so reset
+      # and start from scratch, since we really dont want to have too deep a stack
+      maybe_reset_flows(context, action.enter_flow_uuid)
+
+      # if the action is part of a terminal node, then lets mark this context as
+      # complete, and use the parent context
+      {:node, node} = context.uuid_map[action.node_uuid]
+
+      {context, parent_id} =
+        if node.is_terminal,
+          do: {FlowContext.reset_one_context(context), context.parent_id},
+          else: {context, context.id}
+
+      # we start off a new context here and dont really modify the current context
+      # hence ignoring the return value of start_sub_flow
+      # for now, we'll just delay by at least min_delay second
+      context =
+        context
+        |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
+        |> Map.update!(:uuids_seen, &Map.put(&1, action.enter_flow_uuid, 1))
+
+      Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
+
+      # We null the messages here, since we are going into a different flow
+      # this clears any potential errors
+      {:ok, context, []}
     end
-
-    # check if we are looping with the same flow, if so reset
-    # and start from scratch, since we really dont want to have too deep a stack
-    reset = maybe_reset_flows(context, action.enter_flow_uuid)
-
-    # if the action is part of a terminal node, then lets mark this context as
-    # complete, and use the parent context
-    {:node, node} = context.uuid_map[action.node_uuid]
-
-    {context, parent_id} =
-      if node.is_terminal,
-        do: {FlowContext.reset_one_context(context), context.parent_id},
-        else: {context, context.id}
-
-    # we start off a new context here and dont really modify the current context
-    # hence ignoring the return value of start_sub_flow
-    # for now, we'll just delay by at least min_delay second
-    context =
-      context
-      |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
-      |> Map.update!(:uuids_seen, &Map.put(&1, action.enter_flow_uuid, 1))
-
-    Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
-
-    # We null the messages here, since we are going into a different flow
-    # this clears any potential errors
-    {:ok, context, []}
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
@@ -491,10 +491,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
-    if msg.body != "No Response",
-      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
-
-    {:ok, context, []}
+    if msg.body != "No Response" do
+      FlowContext.log_error("Unexpected message #{msg.body} received")
+    else
+      {:ok, context, []}
+    end
   end
 
   def execute(%{type: "wait_for_time"} = action, context, []) do

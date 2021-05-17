@@ -535,13 +535,15 @@ defmodule Glific.Flows.FlowContext do
       String.contains?(error, "finished the flow")
   end
 
-  # log the error and also send it over to our friends at appsignal
+  @doc """
+  Log the error and also send it over to our friends at appsignal
+  """
   @spec log_error(String.t()) :: {:error, String.t()}
-  defp log_error(error) do
+  def log_error(error) do
     Logger.error(error)
 
-    # disable sending exit loop errors, since these are beneficiary errors
-    # and we dont need to be informed
+    # disable sending exit loop and finished flow errors, since
+    # these are beneficiary errors
     if !ignore_error?(error) do
       {_, stacktrace} = Process.info(self(), :current_stacktrace)
       Appsignal.send_error(:error, error, stacktrace)
