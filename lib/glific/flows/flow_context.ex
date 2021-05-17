@@ -35,6 +35,7 @@ defmodule Glific.Flows.FlowContext do
     :wait_for_time,
     :completed_at,
     :delay,
+    :uuids_seen,
     :uuid_map,
     :recent_inbound,
     :recent_outbound
@@ -61,6 +62,7 @@ defmodule Glific.Flows.FlowContext do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
+          uuids_seen: map(),
           recent_inbound: [map()] | [],
           recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
@@ -87,6 +89,10 @@ defmodule Glific.Flows.FlowContext do
     field :wait_for_time, :boolean, default: false
 
     field :delay, :integer, default: 0, virtual: true
+
+    # keep a counter of all uuids we encounter (start with flows)
+    # this allows to to detect infinite loops and abort
+    field :uuids_seen, :map, default: %{}, virtual: true
 
     field :recent_inbound, {:array, :map}, default: []
     field :recent_outbound, {:array, :map}, default: []
@@ -409,7 +415,8 @@ defmodule Glific.Flows.FlowContext do
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
   def seed_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
-    current_delay = Keyword.get(opts, :delay, 0)
+    delay = Keyword.get(opts, :delay, 0)
+    uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
     results = Keyword.get(opts, :results, %{})
 
@@ -431,7 +438,8 @@ defmodule Glific.Flows.FlowContext do
       flow: flow,
       organization_id: flow.organization_id,
       uuid_map: flow.uuid_map,
-      delay: current_delay,
+      delay: delay,
+      uuids_seen: uuids_seen,
       wakeup_at: wakeup_at
     })
   end
@@ -524,7 +532,7 @@ defmodule Glific.Flows.FlowContext do
     # to a large extent, its more a completion exit rather than an
     # error exit
     String.contains?(error, "Exit Loop") ||
-      String.contains?(error, "We have finished the flow")
+      String.contains?(error, "finished the flow")
   end
 
   # log the error and also send it over to our friends at appsignal
