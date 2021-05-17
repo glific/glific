@@ -164,7 +164,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
         users: "price_1IdZehEMShkCsLFnyYhuDu6p",
         messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk"
+        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
+        inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
       },
       tax_rates: %{
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"

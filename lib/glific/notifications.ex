@@ -54,6 +54,9 @@ defmodule Glific.Notifications do
       {:message, message}, query ->
         from q in query, where: ilike(q.message, ^"%#{message}%")
 
+      {:is_read, is_read}, query ->
+        from q in query, where: q.is_read == ^is_read
+
       _, query ->
         query
     end)
@@ -65,4 +68,15 @@ defmodule Glific.Notifications do
   @spec count_notifications(map()) :: integer
   def count_notifications(args),
     do: Repo.count_filter(args, Notification, &filter_with/2)
+
+  @doc """
+  Mark all the unread messages as read.
+  """
+  @spec mark_notification_as_read() :: boolean
+  def mark_notification_as_read do
+    Notification
+    |> where([n], n.is_read == false)
+    |> Repo.update_all(set: [is_read: true])
+    true
+  end
 end

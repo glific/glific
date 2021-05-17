@@ -840,7 +840,9 @@ if Code.ensure_loaded?(Faker) do
         email: "Billing person email",
         currency: "inr",
         organization_id: organization.id,
-        is_active: true
+        is_active: true,
+        stripe_subscription_id: "test_subscription_id",
+        stripe_subscription_items: %{price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id"}
       })
     end
 

@@ -1,10 +1,13 @@
 defmodule Glific.OnboardTest do
   use Glific.DataCase
   use ExUnit.Case
+  use ExVCR.Mock, adapter: ExVCR.Adapter.Hackney
 
   alias Glific.{
+    Fixtures,
     Partners.Organization,
-    Saas.Onboard
+    Saas.Onboard,
+    Seeds.SeedsDev
   }
 
   @valid_attrs %{
@@ -17,6 +20,11 @@ defmodule Glific.OnboardTest do
   }
 
   setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.seed_billing(organization)
+    HTTPoison.start()
+    ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
+
     Tesla.Mock.mock(fn
       %{method: :get} ->
         %Tesla.Env{
@@ -62,10 +70,30 @@ defmodule Glific.OnboardTest do
 
     assert updated_organization.is_active == true
 
-    # should update is_approveds
+    # should update is_approved
     updated_organization = Onboard.status(organization.id, true, true)
 
     assert updated_organization.is_approved == true
+  end
+
+  test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",
+       attrs do
+    use_cassette "update_subscription_inactive_plan" do
+      {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: attrs.organization_id})
+
+      updated_organization = Onboard.status(organization.id, false, nil)
+
+      assert updated_organization.is_active == false
+    end
+  end
+
+  test "ensure that sending in valid parameters, update organization status as is_active false for organization without billing" do
+    organization = Fixtures.organization_fixture()
+    {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: organization.id})
+
+    updated_organization = Onboard.status(organization.id, false, nil)
+
+    assert updated_organization.is_active == false
   end
 
   test "ensure that sending in valid parameters, delete inactive organization" do
