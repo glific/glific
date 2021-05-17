@@ -20,7 +20,6 @@ defmodule Glific.Messages do
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
-    Messages.MessageVariables,
     Notifications,
     Partners,
     Repo,
