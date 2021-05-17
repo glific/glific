@@ -9,9 +9,9 @@ defmodule Glific.Flows.Exit do
   alias Glific.{
     Flows,
     Flows.FlowContext,
-    Flows.FlowCount,
     Flows.Node,
     Messages.Message,
+    Metrics,
     Repo
   }
 
@@ -80,13 +80,12 @@ defmodule Glific.Flows.Exit do
   @doc """
   Execute a exit, given a message stream.
   """
-  @spec execute(Exit.t(), FlowContext.t(), [Message.t()]) ::
+  @spec execute(atom() | Exit.t(), atom() | FlowContext.t(), [Message.t()]) ::
           {:ok, FlowContext.t() | nil, [Message.t()]} | {:error, String.t()}
   def execute(exit, context, messages) do
     context = Repo.preload(context, :flow)
     # update the flow count
-    FlowCount.upsert_flow_count(%{
-      id: exit.id,
+    Metrics.bump(%{
       uuid: exit.uuid,
       destination_uuid: exit.destination_node_uuid,
       flow_uuid: context.flow_uuid,

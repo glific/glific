@@ -62,7 +62,7 @@ defmodule Glific.Flows.Category do
   Execute a category, given a message stream.
   """
   @spec execute(Category.t(), FlowContext.t(), [Message.t()]) ::
-          {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+          {:ok, FlowContext.t() | nil, [Message.t()]} | {:error, String.t()}
   def execute(category, context, messages) do
     # transfer control to the exit node
     {:ok, {:exit, exit}} = Map.fetch(context.uuid_map, category.exit_uuid)
