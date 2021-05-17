@@ -4,6 +4,7 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
   import GlificWeb.Gettext
+  require Logger
 
   alias Glific.{Contacts, Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
@@ -118,6 +119,7 @@ defmodule Glific.Flows.Webhook do
         {action_body_map, action_body}
 
       _ ->
+        Logger.info("Error in decoding webhook body #{inspect action_body}.")
         {:error,
          dgettext(
            "errors",
@@ -169,8 +171,12 @@ defmodule Glific.Flows.Webhook do
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
+  ## We need to figure out a way to send the data with urls.
+  ##Currently we can not send the json map as a query string
+  ## We will come back on this one in the future.
+
   defp do_action("get", url, body, headers), do:
-    Tesla.get(url, headers: headers, query: [extra_data: body])
+    Tesla.get(url, headers: headers, query: [data: body])
 
   @doc """
   Standard perform method to use Oban worker
@@ -201,7 +207,7 @@ defmodule Glific.Flows.Webhook do
 
     result =
       case do_action(method, url, body, headers) do
-        {:ok, %Tesla.Env{status: 200} = message} ->
+        {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           case Jason.decode(message.body) do
             {:ok, json_response} ->
               update_log(webhook_log_id, message)
@@ -214,7 +220,7 @@ defmodule Glific.Flows.Webhook do
           end
 
         {:ok, %Tesla.Env{} = message} ->
-          update_log(webhook_log_id, "Did not return a 200 status code" <> message.body)
+          update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
           nil
 
         {:error, error_message} ->
