@@ -39,7 +39,9 @@ npm-debug.log
 .*credentials.json*
 
 # Not using env files now
-.env*
+.env
+.env.dev
+
 
 # Ignore the dialyzer cache files
 /priv/plts/
