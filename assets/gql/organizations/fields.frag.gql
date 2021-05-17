@@ -29,7 +29,7 @@ fragment OrganizationFields on OrganizationResult {
     isActive
     timezone
     sessionLimit
-
+    fields
     default_language {
       id
       label

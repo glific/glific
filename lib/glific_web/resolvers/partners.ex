@@ -81,10 +81,9 @@ defmodule GlificWeb.Resolvers.Partners do
     do: update_organization_fields(resolution, %{id: id, fields: "{}"}, context)
 
   def update_organization_fields(_, %{id: id, fields: fields}, _) do
-    with {:ok, organization_fields} <- Jason.decode(fields),
-         {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
+    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
          {:ok, organization} <-
-           Partners.update_organization(organization, %{fields: organization_fields}) do
+           Partners.update_organization(organization, %{fields: fields}) do
       {:ok, %{organization: organization}}
     else
       _ -> {:error, "Error parsing JSON"}
