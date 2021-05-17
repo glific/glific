@@ -169,8 +169,10 @@ defmodule Glific.Flows.Webhook do
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
-  defp do_action("get", url, _body, headers),
-    do: Tesla.get(url, headers: headers)
+  defp do_action("get", url, body, headers) do
+    Tesla.get(url, headers: headers, query: [extra_data: body])
+    |> IO.inspect()
+  end
 
   @doc """
   Standard perform method to use Oban worker
@@ -251,6 +253,17 @@ defmodule Glific.Flows.Webhook do
 
   # Send a get request, and if success, sned the json map back
   @spec get(atom() | Action.t(), FlowContext.t()) :: nil
-  defp get(action, context),
-    do: do_oban(action, context, {%{}, ""})
+  defp get(action, context) do
+    case create_body(context, action.body) do
+      {:error, message} ->
+        action
+        |> create_log(%{}, action.headers, context)
+        |> update_log(message)
+
+      {map, body} ->
+        IO.inspect("mapmap")
+        IO.inspect(map)
+        do_oban(action, context, {map, body})
+    end
+  end
 end
