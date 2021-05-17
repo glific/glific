@@ -74,13 +74,20 @@ defmodule GlificWeb.Resolvers.Partners do
   @doc """
   Updates an organization fields
   """
-  @spec update_organization_fields(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_organization_fields(Absinthe.Resolution.t(), %{id: integer, fields: any()}, %{
           context: map()
         }) :: {:ok, any} | {:error, any}
-  def update_organization_fields(_, %{id: id, input: params}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
-         {:ok, organization} <- Partners.update_organization_fields(organization, params) do
+  def update_organization_fields(resolution, %{id: id, fields: ""}, context),
+    do: update_organization_fields(resolution, %{id: id, fields: "{}"}, context)
+
+  def update_organization_fields(_, %{id: id, fields: fields}, _) do
+    with {:ok, organization_fields} <- Jason.decode(fields),
+         {:ok, organization} <- Repo.fetch(Organization, id, skip_organization_id: true),
+         {:ok, organization} <-
+           Partners.update_organization(organization, %{fields: organization_fields}) do
       {:ok, %{organization: organization}}
+    else
+      _ -> {:error, "Error parsing JSON"}
     end
   end
 

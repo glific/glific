@@ -234,7 +234,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :update_organization_fields, :organization_result do
       arg(:id, non_null(:id))
-      arg(:input, :json)
+      arg(:fields, :json)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.update_organization_fields/3)
     end
