@@ -188,7 +188,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
   end
 
   test "delete organization inactive organization", %{user: user} do
-
     organization = Fixtures.organization_fixture(%{is_active: false})
 
     result =

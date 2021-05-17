@@ -533,6 +533,7 @@ defmodule Glific.BigQuery do
 
       "PERMISSION_DENIED" ->
         Partners.disable_credential(organization_id, "bigquery")
+
       _ ->
         raise("BigQuery Insert Error for table #{table}  #{response}")
     end
