@@ -276,8 +276,8 @@ defmodule Glific.Messages do
   def notify(attrs, reason \\ "Cannot send the message to the contact.") do
     contact =
       if is_nil(Map.get(attrs, :receiver, nil)),
-      do: Contacts.get_contact!(attrs.receiver_id),
-      else: attrs.receiver
+        do: Contacts.get_contact!(attrs.receiver_id),
+        else: attrs.receiver
 
     Logger.error(
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
