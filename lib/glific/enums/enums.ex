@@ -33,7 +33,7 @@ defmodule Glific.Enums do
   :set_contact_field]
 
   iex> Glific.Enums.flow_type_const()
-  [:message]
+  [:message, :messaging]
 
   iex> Glific.Enums.message_flow_const()
   [:inbound, :outbound]
