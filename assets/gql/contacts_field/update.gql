@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-mutation updateConsultingHour($id: ID!, $input: ConsultingHourInput!) {
-  updateConsultingHour(id: $id, input: $input) {
-    ...ConsultingHourFields
+mutation updateContactsField($id: ID!, $input: ContactsFieldInput!) {
+  updateContactsField(id: $id, input: $input) {
+    ...ContactsFieldFields
 
     ...ErrorFields
   }

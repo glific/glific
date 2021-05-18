@@ -1,21 +1,21 @@
-fragment ConsultingHourFields on ConsultingHourResult {
+fragment ContactsFieldFields on ContactsFieldResult {
   consultingHour {
     id
-    participants
-    organizationName
-    staff
-    content
-    when
-    duration
-    is_billable
+    name
+    scope
+    shortcode
+    valueType
+    insertedAt
+    updatedAt
     organization {
+      isActive
       name
       shortcode
     }
   }
 }
 
-fragment ErrorFields on ConsultingHourResult {
+fragment ErrorFields on ContactsFieldResult {
   errors {
     key
     message

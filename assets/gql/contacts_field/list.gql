@@ -1,4 +1,4 @@
-query consultingHours($filter: ConsultingHourFilter, $opts: Opts) {
+query consultingHours($filter: ContactsFieldFilter, $opts: Opts) {
   consultingHours(filter: $filter, opts: $opts) {
     id
     participants

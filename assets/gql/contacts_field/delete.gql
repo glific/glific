@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-mutation deleteConsultingHour($id: ID!) {
-  deleteConsultingHour(id: $id) {
-    ...ConsultingHourFields
+mutation deleteContactsField($id: ID!) {
+  deleteContactsField(id: $id) {
+    ...ContactsFieldFields
 
     ...ErrorFields
   }
