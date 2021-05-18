@@ -67,6 +67,7 @@ defmodule GlificWeb.Resolvers.ContactsField do
     with {:ok, contacts_field} <-
            Repo.fetch_by(ContactsField, %{id: id, organization_id: user.organization_id}),
          {:ok, contacts_field} <- ContactField.delete_contacts_field(contacts_field) do
+      IO.inspect(contacts_field)
       {:ok, contacts_field}
     end
   end

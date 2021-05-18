@@ -55,7 +55,7 @@ defmodule Glific.Flows.ContactField do
   """
   @spec list_contacts_fields(map()) :: [Tag.t()]
   def list_contacts_fields(args),
-    do: Repo.list_filter(args, ContactsField, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, ContactsField, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
 
   @doc """
   Return the count of contacts_fields, using the same filter as list_contacts_fields

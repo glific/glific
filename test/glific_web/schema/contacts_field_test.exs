@@ -55,107 +55,87 @@ defmodule GlificWeb.Schema.ContactsFieldTest do
     assert get_in(query_data, [:data, "countContactsFields"]) == 1
   end
 
-  test "contact fields returns list of contact fields", %{staff: user} = attrs do
-    _contacts_field_2 =
-      Fixtures.contacts_field_fixture(%{
-        organization_id: attrs.organization_id
-      })
-
-    _contacts_field_2 =
-      Fixtures.contacts_field_fixture(%{
-        organization_id: attrs.organization_id,
-        name: "Nationality",
-        shortcode: "nationality"
-      })
-
+  test "contact fields returns list of contact fields", %{staff: user} = _attrs do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
-    # consulting_hours = get_in(query_data, [:data, "consultingHours"])
-    # assert length(consulting_hours) > 0
-    # [consulting_hour | _] = consulting_hours
-    # assert get_in(consulting_hour, ["staff"]) == "Jon Cavin"
+    contacts_fields = get_in(query_data, [:data, "contactsFields"])
+    assert length(contacts_fields) > 0
+    [contacts_field | _] = contacts_fields
+    assert get_in(contacts_field, ["name"]) == "Name"
 
-    # result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isBillable" => false}})
-    # assert {:ok, query_data} = result
-    # consulting_hours = get_in(query_data, [:data, "consultingHours"])
-    # assert length(consulting_hours) > 0
-    # [consulting_hour | _] = consulting_hours
-    # assert get_in(consulting_hour, ["staff"]) == "Ken Cavin"
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"name" => "Name"}})
+    assert {:ok, query_data} = result
+    contacts_fields = get_in(query_data, [:data, "contactsFields"])
+    assert length(contacts_fields) > 0
+    [contacts_field | _] = contacts_fields
+    assert get_in(contacts_field, ["name"]) == "Name"
 
-    # result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"participants" => "John"}})
-    # assert {:ok, query_data} = result
-    # consulting_hours = get_in(query_data, [:data, "consultingHours"])
-    # assert length(consulting_hours) > 0
-    # [consulting_hour | _] = consulting_hours
-    # assert get_in(consulting_hour, ["participants"]) == "John Doe"
+    result =
+      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
 
-    # result =
-    #   auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
-
-    # assert {:ok, query_data} = result
-    # consulting_hours = get_in(query_data, [:data, "consultingHours"])
-    # assert length(consulting_hours) == 1
+    assert {:ok, query_data} = result
+    contacts_fields = get_in(query_data, [:data, "contactsFields"])
+    assert length(contacts_fields) == 1
   end
 
-  # test "update a contact fields", %{manager: user} = attrs do
-  #   consulting_hour = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
+  test "update a contact fields", %{manager: user} = attrs do
+    contacts_field = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
 
-  #   result =
-  #     auth_query_gql_by(:update, user,
-  #       variables: %{
-  #         "id" => consulting_hour.id,
-  #         "input" => %{"duration" => 20}
-  #       }
-  #     )
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => contacts_field.id,
+          "input" => %{"name" => "Age category"}
+        }
+      )
 
-  #   assert {:ok, query_data} = result
+    assert {:ok, query_data} = result
 
-  #   duration = get_in(query_data, [:data, "updateConsultingHour", "consultingHour", "duration"])
-  #   assert duration == 20
-  # end
+    name = get_in(query_data, [:data, "updateContactsField", "contactsField", "name"])
+    assert name == "Age category"
+  end
 
-  # test "delete a contact fields", %{user: user} = attrs do
-  #   consulting_hour = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
+  test "delete a contact fields", %{user: user} = attrs do
+    contacts_field = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
 
-  #   result =
-  #     auth_query_gql_by(:delete, user,
-  #       variables: %{
-  #         "id" => consulting_hour.id
-  #       }
-  #     )
+    result =
+      auth_query_gql_by(:delete, user,
+        variables: %{
+          "id" => contacts_field.id
+        }
+      )
 
-  #   assert {:ok, query_data} = result
-  #   content = get_in(query_data, [:data, "deleteConsultingHour", "consultingHour", "content"])
-  #   assert content == consulting_hour.content
-  # end
+    assert {:ok, query_data} = result
+    error = get_in(query_data, [:data, "deleteContactsField", "errors"])
+    assert true == is_nil(error)
+  end
 
-  # test "get contact fields and test possible scenarios and errors", %{user: user} = attrs do
-  #   consulting_hour = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
+  test "get contact fields and test possible scenarios and errors", %{user: user} = attrs do
+    contacts_field = Fixtures.contacts_field_fixture(%{organization_id: attrs.organization_id})
 
-  #   result =
-  #     auth_query_gql_by(:by_id, user,
-  #       variables: %{
-  #         "id" => consulting_hour.id
-  #       }
-  #     )
+    result =
+      auth_query_gql_by(:by_id, user,
+        variables: %{
+          "id" => contacts_field.id
+        }
+      )
 
-  #   assert {:ok, query_data} = result
-  #   consulting_hours = get_in(query_data, [:data, "consultingHour", "consultingHour"])
+    assert {:ok, query_data} = result
+    contacts_fields = get_in(query_data, [:data, "contactsField", "contactsField"])
 
-  #   assert consulting_hours["participants"] == consulting_hour.participants
-  #   assert consulting_hours["content"] == consulting_hour.content
-  #   assert consulting_hours["staff"] == consulting_hour.staff
+    assert contacts_fields["name"] == contacts_field.name
+    assert contacts_fields["shortcode"] == contacts_field.shortcode
 
-  #   # testing error message when id is incorrect
-  #   result =
-  #     auth_query_gql_by(:by_id, user,
-  #       variables: %{
-  #         "id" => consulting_hour.id + 1
-  #       }
-  #     )
+    # testing error message when id is incorrect
+    result =
+      auth_query_gql_by(:by_id, user,
+        variables: %{
+          "id" => contacts_field.id + 1
+        }
+      )
 
-  #   assert {:ok, query_data} = result
-  #   [error] = get_in(query_data, [:errors])
-  #   assert error.message == "No consulting hour found with inputted params"
-  # end
+    assert {:ok, query_data} = result
+    [error] = get_in(query_data, [:data, "contactsField", "errors"])
+    assert error["message"] == "Resource not found"
+  end
 end
