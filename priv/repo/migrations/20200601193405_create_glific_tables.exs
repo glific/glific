@@ -699,7 +699,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
 
       add :flow_type, :flow_type_enum,
         null: false,
-        default: "message",
+        default: "messaging",
         comment: "Type of flow; default - message"
 
       # Enable ignore keywords while in the flow
