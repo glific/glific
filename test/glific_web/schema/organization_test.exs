@@ -37,7 +37,6 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
-  load_gql(:update_fields, GlificWeb.Schema, "assets/gql/organizations/update_fields.gql")
   load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
   load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
@@ -206,43 +205,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert organization["name"] == "Fixture Organization"
   end
 
-  test "update an organization  fields and test possible scenarios and errors", %{user: user} do
-    organization = Fixtures.organization_fixture()
-
-    fields = %{"organization_name" => "Glific", "url" => "/registration"} |> Jason.encode!()
-
-    result =
-      auth_query_gql_by(:update_fields, user,
-        variables: %{
-          "id" => organization.id,
-          "fields" => fields
-        }
-      )
-
-    assert {:ok, query_data} = result
-    updated_organization = get_in(query_data, [:data, "updateOrganizationFields", "organization"])
-
-    assert updated_organization["fields"] ==
-             "{\"url\":\"/registration\",\"organization_name\":\"Glific\"}"
-
-    field = %{} |> Jason.encode!()
-
-    result =
-      auth_query_gql_by(:update_fields, user,
-        variables: %{
-          "id" => organization.id,
-          "fields" => field
-        }
-      )
-
-    assert {:ok, query_data} = result
-    updated_organization = get_in(query_data, [:data, "updateOrganizationFields", "organization"])
-    assert updated_organization["fields"] == "{}"
-  end
-
   test "update an organization and test possible scenarios and errors", %{user: user} do
-    organization = Fixtures.organization_fixture()
-
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
@@ -325,6 +288,26 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+
+    # update organization fields with valid param
+    organization = Fixtures.organization_fixture()
+    fields = %{"organization_name" => "Glific", "url" => "/registration"} |> Jason.encode!()
+
+    result =
+      auth_query_gql_by(:update_fields, user,
+        variables: %{
+          "id" => organization.id,
+          "fields" => fields
+        }
+      )
+
+    assert {:ok, query_data} = result
+    updated_organization = get_in(query_data, [:data, "updateOrganizationFields", "organization"])
+
+    assert updated_organization["fields"] ==
+             "{\"url\":\"/registration\",\"organization_name\":\"Glific\"}"
+
+    assert updated_organization["fields"] == "{}"
   end
 
   test "update an organization with default language and active languages", %{user: user} do
