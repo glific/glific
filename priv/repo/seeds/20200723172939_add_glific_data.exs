@@ -423,7 +423,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       active_language_ids: [en.id, hi.id],
       default_language_id: en.id,
       out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!"
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true
     })
   end
 
@@ -438,7 +440,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       active_language_ids: [en.id, hi.id],
       default_language_id: en.id,
       out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!"
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true
     })
   end
 
