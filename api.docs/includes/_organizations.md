@@ -276,61 +276,6 @@ mutation createOrganization($input:OrganizationInput!) {
 | ---------------------------------------------------- | ------------------------------- |
 | <a href="#organizationresult">OrganizationResult</a> | The created organization object |
 
-## Update a Organization Fields
-
-```graphql
-mutation updateOrganizationFields($id: ID!, $fields: Json!) {
-   updateOrganizationFields(id: $id!, fields: $fields) {
-    organization {
-      fields
-      isActive
-      name
-      shortcode
-    }
-    errors {
-        message
-        key
-    }
-  }
-}
-
-{
-    "id": "2",
-    "fields": "{\"hello\":\"hi\"}"
-}
-```
-
-> The above query returns JSON structured like this:
-
-```json
-{
-  "data": {
-    "updateOrganizationFields": {
-      "organization": {
-        "fields": "{\"hello\":\"hi\"}",
-        "isActive": false,
-        "name": "Glific",
-        "shortcode": "glific"
-      },
-      "errors": null
-    }
-  }
-}
-```
-
-### Query Parameters
-
-| Parameter | Type                                                     | Default  | Description |
-| --------- | -------------------------------------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                                    | required |             |
-| input     | <a href="#consulting_hour_input">ConsultingHourInput</a> | required |             |
-
-### Return Parameters
-
-| Type                                                       | Description                        |
-| ---------------------------------------------------------- | ---------------------------------- |
-| <a href="#consulting_hour_result">ConsultingHourResult</a> | The created consulting hour object |
-
 ## Update an Organization
 
 ```graphql
