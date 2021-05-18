@@ -94,7 +94,7 @@ to update your codebase from the glific repository.
 ## Use SSL for frontend and backend
 
 (we'll be making the switch to using SSL for both frontend and backend in development post 1.5).
-These are the preliminary  steps involed
+These are the preliminary steps involved
 
   * Install mkcert (https://github.com/FiloSottile/mkcert)
   * ```mkcert --install```
