@@ -33,6 +33,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :shortcode, :string
     field :email, :string
+    field :fields, :json
 
     field :bsp, :provider do
       resolve(dataloader(Repo))
@@ -147,6 +148,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :signature_phrase, :string
 
     field :last_communication_at, :datetime
+
+    field :fields, :json
   end
 
   object :organization_queries do
@@ -230,6 +233,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.reset_organization/3)
     end
+
   end
 
   object :organization_subscriptions do

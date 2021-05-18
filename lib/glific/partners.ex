@@ -849,4 +849,10 @@ defmodule Glific.Partners do
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
   end
+
+  @doc """
+  Convert global field to map for variable substitution
+  """
+  @spec get_global_field_map(integer) :: map()
+  def get_global_field_map(organization_id), do: organization(organization_id).fields
 end
