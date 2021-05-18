@@ -610,6 +610,24 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
+    test "create and send message should send message to contact with replacing global vars",
+         attrs do
+      organization =
+        Partners.get_organization!(attrs.organization_id)
+        |> Partners.update_organization(%{fields: %{"org_name" => "Glific"}})
+
+      valid_attrs = %{
+        body: "test message from @global.org_name",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message from Glific"
+    end
+
     test "create and send message should send message to contact should return error", attrs do
       updated_attrs = %{
         is_active: false,
