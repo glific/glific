@@ -706,7 +706,7 @@ defmodule Glific.Partners do
   Removing organization services cache
   """
   @spec remove_organization_services_cache() :: any()
-  def remove_organization_services_cache() do
+  def remove_organization_services_cache do
     Caches.remove(
       @global_organization_id,
       ["organization_services"]
