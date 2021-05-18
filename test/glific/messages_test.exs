@@ -612,7 +612,6 @@ defmodule Glific.MessagesTest do
 
     test "create and send message should send message to contact with replacing global vars",
          attrs do
-      organization =
         Partners.get_organization!(attrs.organization_id)
         |> Partners.update_organization(%{fields: %{"org_name" => "Glific"}})
 
