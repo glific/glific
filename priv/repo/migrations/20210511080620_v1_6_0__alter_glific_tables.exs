@@ -16,16 +16,15 @@ defmodule Glific.Repo.Migrations.V160_AlterGlificTables do
 
   defp flow_editor_type_changes do
     execute ~s"""
-      ALTER TYPE flow_type_enum ADD VALUE IF NOT EXISTS 'messaging';
-      """
+    ALTER TYPE flow_type_enum ADD VALUE IF NOT EXISTS 'messaging';
+    """
 
     alter table(:flows) do
       modify :flow_type,
-      :flow_type_enum,
-      default: "messaging",
-      null: false,
-      comment: "Type of flow; default - message"
+             :flow_type_enum,
+             default: "messaging",
+             null: false,
+             comment: "Type of flow; default - message"
     end
-
   end
 end

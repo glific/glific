@@ -292,10 +292,7 @@ defmodule Glific.Flows.Router do
           FlowContext.t()
   defp update_context_results(context, key, msg, category) do
     cond do
-      msg.type == :text ->
-        FlowContext.update_results(context, key, msg.body, category.name)
-
-      Enum.member?([:image, :video, :audio], msg.type) ->
+      msg.type in [:image, :video, :audio] ->
         json =
           msg.media
           |> Map.take([:id, :source_url, :url, :caption])
@@ -304,7 +301,7 @@ defmodule Glific.Flows.Router do
 
         FlowContext.update_results(context, %{key => json})
 
-      msg.type == :location ->
+      msg.type in [:location] ->
         json =
           msg.location
           |> Map.take([:id, :longitude, :latitude])
@@ -312,6 +309,7 @@ defmodule Glific.Flows.Router do
 
         FlowContext.update_results(context, %{key => json})
 
+      # this also handles msg.type in [:text]
       true ->
         FlowContext.update_results(context, key, msg.body, category.name)
     end

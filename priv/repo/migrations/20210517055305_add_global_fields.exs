@@ -8,8 +8,8 @@ defmodule Glific.Repo.Migrations.AddGlobalFields do
   defp organizations do
     alter table(:organizations) do
       add :fields, :map,
-      default: %{},
-      comment: "Labels and values of the NGO generated global fields"
+        default: %{},
+        comment: "Labels and values of the NGO generated global fields"
     end
   end
 end
