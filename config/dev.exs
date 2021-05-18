@@ -12,12 +12,12 @@ config :glific, :environment, :dev
 config :glific, GlificWeb.Endpoint,
   # EXPERIMENT TO get everyone to switch to https even for local development
   # So we can record audio etc, which requires ssl
-  # https: [
-  #   port: 4001,
-  #   cipher_suite: :strong,
-  #   certfile: "priv/cert/glific.test+1.pem",
-  #   keyfile: "priv/cert/glific.test+1-key.pem"
-  # ],
+  https: [
+    port: 4001,
+    cipher_suite: :strong,
+    certfile: "priv/cert/glific.test+1.pem",
+    keyfile: "priv/cert/glific.test+1-key.pem"
+  ],
   debug_errors: true,
   code_reloader: true,
   watchers: [

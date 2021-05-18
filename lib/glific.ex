@@ -173,4 +173,16 @@ defmodule Glific do
       Appsignal.send_error(:error, error, __STACKTRACE__)
       :invalid_atom
   end
+
+  @doc """
+  Delete multiple items from the map
+  """
+  @spec delete_multiple(map(), list()) :: map()
+  def delete_multiple(map, list) do
+    list
+    |> Enum.reduce(
+      map,
+      fn l, acc -> Map.delete(acc, l) end
+    )
+  end
 end

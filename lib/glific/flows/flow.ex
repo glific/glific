@@ -247,17 +247,24 @@ defmodule Glific.Flows.Flow do
   @doc """
   Create a subflow of an existing flow
   """
-  @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t()) ::
+  @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t(), non_neg_integer) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
-  def start_sub_flow(context, uuid) do
+  def start_sub_flow(context, uuid, parent_id) do
     # we might want to put the current one under some sort of pause status
     flow = get_flow(context.flow.organization_id, uuid, context.status)
 
+    parent =
+      Glific.delete_multiple(
+        context.results,
+        ["parent", :parent, "child", :child]
+      )
+
     FlowContext.init_context(flow, context.contact, context.status,
-      parent_id: context.id,
+      parent_id: parent_id,
       delay: context.delay,
+      uuids_seen: context.uuids_seen,
       # lets keep only one level of results, rather than a lot of them
-      results: %{parent: context.results |> Map.delete("parent") |> Map.delete("child")}
+      results: %{parent: parent}
     )
   end
 
