@@ -10,7 +10,9 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
+    Contacts.ContactsField,
     Flows,
+    Flows.ContactField,
     Flows.WebhookLog,
     Groups,
     Messages,
@@ -696,5 +698,22 @@ defmodule Glific.Fixtures do
       |> ConsultingHour.create_consulting_hour()
 
     consulting_hour
+  end
+
+  @doc false
+  @spec contacts_field_fixture(map()) :: ContactsField.t()
+  def contacts_field_fixture(attrs) do
+    valid_attrs = %{
+      name: "Age",
+      shortcode: "age",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, contacts_field} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> ContactField.create_contact_field()
+
+    contacts_field
   end
 end
