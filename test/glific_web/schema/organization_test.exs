@@ -210,6 +210,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     shortcode = "org_shortcode"
     email = "test2@glific.org"
     timezone = "America/Los_Angeles"
+    organization = Fixtures.organization_fixture()
 
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
@@ -290,24 +291,23 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
 
     # update organization fields with valid param
-    organization = Fixtures.organization_fixture()
     fields = %{"organization_name" => "Glific", "url" => "/registration"} |> Jason.encode!()
 
     result =
-      auth_query_gql_by(:update_fields, user,
+      auth_query_gql_by(:update, user,
         variables: %{
           "id" => organization.id,
-          "fields" => fields
+          "input" => %{
+            "fields" => fields
+          }
         }
       )
 
     assert {:ok, query_data} = result
-    updated_organization = get_in(query_data, [:data, "updateOrganizationFields", "organization"])
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
 
     assert updated_organization["fields"] ==
              "{\"url\":\"/registration\",\"organization_name\":\"Glific\"}"
-
-    assert updated_organization["fields"] == "{}"
   end
 
   test "update an organization with default language and active languages", %{user: user} do
