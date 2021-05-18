@@ -16,7 +16,7 @@ defmodule Glific.Repo.Migrations.V160_AlterGlificTables do
 
   defp flow_editor_type_changes do
     execute ~s"""
-      ALTER TYPE flow_type_enum ADD VALUE 'messaging';
+      ALTER TYPE flow_type_enum ADD VALUE IF NOT EXISTS 'messaging';
       """
 
     alter table(:flows) do
