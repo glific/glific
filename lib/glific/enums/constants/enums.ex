@@ -29,6 +29,7 @@ defmodule Glific.Enums.Constants do
         :set_contact_field
       ]
 
+      ## We need to update the exiting value from message to messaging and then remove this enum.
       @flow_type_const [:message, :messaging]
 
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
