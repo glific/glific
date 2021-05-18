@@ -10,8 +10,8 @@ defmodule Glific.Flows.CaseTest do
   test "process extracts the right values from json" do
     json = %{
       "uuid" => "UUID 1",
-      "type" => "some type",
-      "arguments" => [1, 2, 3],
+      "type" => "has_multiple",
+      "arguments" => ["1, 2, 3"],
       "category_uuid" => "Cat UUID"
     }
 
@@ -19,7 +19,7 @@ defmodule Glific.Flows.CaseTest do
 
     assert case.uuid == "UUID 1"
     assert case.category_uuid == "Cat UUID"
-    assert case.arguments == [1, 2, 3]
+    assert case.arguments == ["1, 2, 3"]
     assert uuid_map[case.uuid] == {:case, case}
 
     # dont send a category UUID and it should raise an error
