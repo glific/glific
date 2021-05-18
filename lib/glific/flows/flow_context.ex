@@ -588,7 +588,7 @@ defmodule Glific.Flows.FlowContext do
   Process one context at a time that is ready to be woken
   """
   @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
@@ -608,12 +608,13 @@ defmodule Glific.Flows.FlowContext do
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
 
-    {:ok, context} =
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message)
-
-    {:ok, context, []}
+    context
+    |> FlowContext.load_context(flow)
+    |> FlowContext.step_forward(message)
+    |> case do
+      {:ok, context} -> {:ok, context, []}
+      {:error, message} -> {:error, message}
+    end
   end
 
   @doc """
