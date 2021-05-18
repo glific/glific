@@ -1,0 +1,23 @@
+fragment ConsultingHourFields on ConsultingHourResult {
+  consultingHour {
+    id
+    participants
+    organizationName
+    staff
+    content
+    when
+    duration
+    is_billable
+    organization {
+      name
+      shortcode
+    }
+  }
+}
+
+fragment ErrorFields on ConsultingHourResult {
+  errors {
+    key
+    message
+  }
+}
