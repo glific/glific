@@ -37,7 +37,8 @@ have the bandwidth to support earlier versions of the packages.
 
 ## Setup
   * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
-  * Copy the file: `config/env.dev.txt` to `config/env.dev` and edit it with your credentials
+  * Copy the file: `config/.env.dev.txt` to `config/.env.dev` and edit it with your credentials
+  * Run `source config/.env.dev`
   * Start the postgres server
   * Run `mix setup`
   * This will setup Glific with default credentials as:
