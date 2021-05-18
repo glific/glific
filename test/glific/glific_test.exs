@@ -16,4 +16,13 @@ defmodule Glific.GlificTest do
       fn {k, v} -> assert Glific.parse_maybe_integer(k) == v end
     )
   end
+
+  test "make list" do
+    valid = MapSet.new(["a", "b", "c"])
+    assert Glific.make_set("a b c") == valid
+    assert Glific.make_set("a,b;c") == valid
+    assert Glific.make_set("a,b;c") == valid
+    assert Glific.make_set("a,\tb\n;c") == valid
+    assert Glific.make_set("a,     b;     c") == valid
+  end
 end

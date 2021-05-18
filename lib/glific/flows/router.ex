@@ -292,28 +292,24 @@ defmodule Glific.Flows.Router do
           FlowContext.t()
   defp update_context_results(context, key, msg, category) do
     cond do
-      Enum.member?([:text], msg.type) ->
-        FlowContext.update_results(context, key, msg.body, category.name)
-
-      Enum.member?([:image, :video, :audio], msg.type) ->
-        media = msg.media
-
+      msg.type in [:image, :video, :audio] ->
         json =
-          Map.take(media, [:id, :source_url, :url, :caption])
+          msg.media
+          |> Map.take([:id, :source_url, :url, :caption])
           |> Map.put(:category, "media")
-          |> Map.put(:input, media.url)
+          |> Map.put(:input, msg.media.url)
 
         FlowContext.update_results(context, %{key => json})
 
-      Enum.member?([:location], msg.type) ->
-        location = msg.location
-
+      msg.type in [:location] ->
         json =
-          Map.take(location, [:id, :longitude, :latitude])
+          msg.location
+          |> Map.take([:id, :longitude, :latitude])
           |> Map.put(:category, "location")
 
         FlowContext.update_results(context, %{key => json})
 
+      # this also handles msg.type in [:text]
       true ->
         FlowContext.update_results(context, key, msg.body, category.name)
     end

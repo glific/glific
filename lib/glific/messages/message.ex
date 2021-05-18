@@ -22,7 +22,7 @@ defmodule Glific.Messages.Message do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
-          type: String.t() | nil,
+          type: String.t() | atom() | nil,
           is_hsm: boolean | nil,
           flow: String.t() | nil,
           flow_label: String.t() | nil,

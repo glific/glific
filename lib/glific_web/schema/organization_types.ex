@@ -233,7 +233,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.reset_organization/3)
     end
-
   end
 
   object :organization_subscriptions do

@@ -35,6 +35,7 @@ defmodule Glific.Flows.Case do
 
     field :type, FlowCase
     field :arguments, {:array, :string}, default: []
+    field :parsed_arguments, :map
 
     field :category_uuid, Ecto.UUID
     embeds_one :category, Category
@@ -57,6 +58,18 @@ defmodule Glific.Flows.Case do
       type: json["type"],
       arguments: json["arguments"]
     }
+
+    c =
+      if c.type == "has_multiple" do
+        pargs =
+          json["arguments"]
+          |> hd()
+          |> Glific.make_set()
+
+        Map.put(c, :parsed_arguments, pargs)
+      else
+        c
+      end
 
     {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
@@ -87,7 +100,7 @@ defmodule Glific.Flows.Case do
   It also returns a boolean, rather than a tuple
   """
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
-  def execute(%{type: type} = c, _context, msg) when type == "has_number_eq",
+  def execute(%{type: "has_number_eq"} = c, _context, msg),
     do: strip(c.arguments) == strip(msg)
 
   def execute(%{type: type} = c, _context, msg) when type == "has_number_between" do
@@ -105,46 +118,43 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: type}, _context, msg) when type == "has_number",
+  def execute(%{type: "has_number"}, _context, msg),
     do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
   def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"],
     do: String.contains?(strip(c.arguments), strip(msg))
 
-  def execute(%{type: type} = c, _context, msg)
-      when type == "has_only_phrase" or type == "has_only_text",
-      do: strip(c.arguments) == strip(msg)
+  def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
+    do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: type}, _context, msg)
-      when type == "has_location",
-      do: msg.type == :location
+  def execute(%{type: "has_multiple"} = c, _context, msg),
+    do:
+      msg.body
+      |> Glific.make_set()
+      |> MapSet.subset?(c.parsed_arguments)
 
-  def execute(%{type: type}, _context, msg)
-      when type == "has_media",
-      do: msg.type in [:audio, :video, :image]
+  def execute(%{type: "has_location"}, _context, msg),
+    do: msg.type == :location
 
-  def execute(%{type: type}, _context, msg)
-      when type == "has_audio",
-      do: msg.type == :audio
+  def execute(%{type: "has_media"}, _context, msg),
+    do: msg.type in [:audio, :video, :image]
 
-  def execute(%{type: type}, _context, msg)
-      when type == "has_video",
-      do: msg.type == :video
+  def execute(%{type: "has_audio"}, _context, msg),
+    do: msg.type == :audio
 
-  def execute(%{type: type}, _context, msg)
-      when type == "has_image",
-      do: msg.type == :image
+  def execute(%{type: "has_video"}, _context, msg),
+    do: msg.type == :video
 
-  def execute(%{type: type}, _context, msg)
-      when type == "has_file",
-      do: msg.type == :document
+  def execute(%{type: "has_image"}, _context, msg),
+    do: msg.type == :image
 
-  def execute(%{type: type} = c, _context, msg)
-      when type == "has_all_words",
-      do: is_has_all_the_words?(true, strip(msg), c.arguments)
+  def execute(%{type: "has_file"}, _context, msg),
+    do: msg.type == :document
 
-  def execute(%{type: type} = _c, _context, msg)
-      when type == "has_phone" do
+  def execute(%{type: "has_all_words"} = c, _context, msg),
+    do: is_has_all_the_words?(true, strip(msg), c.arguments)
+
+  def execute(%{type: "has_phone"} = _c, _context, msg) do
     phone = strip(msg)
 
     case ExPhoneNumber.parse(phone, "IN") do
@@ -153,8 +163,7 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: type} = _c, _context, msg)
-      when type == "has_email" do
+  def execute(%{type: "has_email"} = _c, _context, msg) do
     email = strip(msg)
 
     case Changeset.validate_email(email) do

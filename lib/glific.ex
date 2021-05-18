@@ -185,4 +185,19 @@ defmodule Glific do
       fn l, acc -> Map.delete(acc, l) end
     )
   end
+
+  @doc """
+  Given a string seperated by spaces, commas, or semi-colons, create a set of individual
+  elements in the string
+  """
+  @spec make_set(String.t(), list()) :: MapSet.t()
+  def make_set(str, seperators \\ [",", ";"]) do
+    str
+    # First ALWAYS split by white space
+    |> String.split()
+    # then split by seperators
+    |> Enum.flat_map(fn x -> String.split(x, seperators, trim: true) end)
+    # finally create a mapset for easy fast checks
+    |> MapSet.new()
+  end
 end

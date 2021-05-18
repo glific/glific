@@ -93,8 +93,7 @@ defmodule Glific.ContactsFieldTest do
   test "contacts_field/1 deletes the contacts_field", %{organization_id: organization_id} do
     contacts_field = Fixtures.contacts_field_fixture(%{organization_id: organization_id})
 
-    assert {:ok, %ContactsField{}} =
-             ContactField.delete_contacts_field(contacts_field)
+    assert {:ok, %ContactsField{}} = ContactField.delete_contacts_field(contacts_field)
 
     assert_raise Ecto.NoResultsError, fn -> Repo.get!(ContactsField, contacts_field.id) end
   end
