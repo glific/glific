@@ -1,5 +1,5 @@
 fragment ContactsFieldFields on ContactsFieldResult {
-  consultingHour {
+  contactsField {
     id
     name
     scope

@@ -1,12 +1,11 @@
-query consultingHours($filter: ContactsFieldFilter, $opts: Opts) {
-  consultingHours(filter: $filter, opts: $opts) {
+query contactsFields($filter: ContactsFieldFilter, $opts: Opts) {
+  contactsFields(filter: $filter, opts: $opts) {
     id
-    participants
-    organizationName
-    staff
-    content
-    when
-    duration
-    isBillable
+    name
+    shortcode
+    value_type
+    scope
+    inserted_at
+    updated_at
   }
 }
