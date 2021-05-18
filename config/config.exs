@@ -13,7 +13,6 @@ config :glific,
 
 # Configures Elixir's Logger
 config :logger, :console,
-  level: :emergency,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id, :user_id, :org_id]
 
