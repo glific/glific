@@ -10,11 +10,11 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @doc """
   Fetch consulting hour based id
   """
-  @spec get_consulting_hours(Absinthe.Resolution.t(), %{id: map()}, %{context: map()}) ::
+  @spec get_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def get_consulting_hours(_, %{id: id}, _) do
+  def get_consulting_hours(_, %{id: id, client_id: client_id}, _) do
     with consulting_hour <-
-           ConsultingHour.get_consulting_hour(%{id: id}),
+           ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}),
          false <- is_nil(consulting_hour) do
       {:ok, %{consulting_hour: consulting_hour}}
     else
