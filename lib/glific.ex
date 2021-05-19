@@ -200,4 +200,15 @@ defmodule Glific do
     # finally create a mapset for easy fast checks
     |> MapSet.new()
   end
+
+  @doc """
+  Intermediary function to update the input params.map()
+  for operation performed by glific_admin incase organization_id can be different
+  """
+  @spec substitute_organization_id(map(), any, atom()) :: map()
+  def substitute_organization_id(params, value, key) do
+    params
+    |> Map.put(:organization_id, value)
+    |> Map.delete(key)
+  end
 end
