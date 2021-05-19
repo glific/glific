@@ -55,6 +55,7 @@ defmodule Glific.Flows.Case do
     c = %Case{
       uuid: json["uuid"],
       category_uuid: json["category_uuid"],
+      # type: (if json["type"] == "has_any_word", do: "has_multiple", else: json["type"]),
       type: json["type"],
       arguments: json["arguments"]
     }

@@ -276,18 +276,6 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Update the contact results state as we step through the flow
-  """
-  @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
-          FlowContext.t()
-  def update_results(context, key, input, category) do
-    update_results(
-      context,
-      %{key => %{"input" => input, "category" => category}}
-    )
-  end
-
-  @doc """
   Update the contact results with each element of the json map
   """
   @spec update_results(FlowContext.t(), map() | nil) :: FlowContext.t()

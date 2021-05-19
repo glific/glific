@@ -191,9 +191,9 @@ defmodule Glific.Flows.Router do
 
     context = FlowContext.update_recent(context, msg.body, :recent_inbound)
 
-    category_uuid = find_category(router, context, msg)
+    {category_uuid, is_checkbox} = find_category(router, context, msg)
 
-    execute_category(router, context, {msg, rest}, category_uuid)
+    execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox})
   end
 
   def execute(_router, _context, _messages),
@@ -203,10 +203,10 @@ defmodule Glific.Flows.Router do
           Router.t(),
           FlowContext.t(),
           {Message.t(), [Message.t()]},
-          Ecto.UUID.t() | nil
+          {Ecto.UUID.t() | nil, boolean}
         ) ::
           {:ok, FlowContext.t(), [Message.t()]} | {:error, String.t()}
-  defp execute_category(_router, context, {msg, _rest}, nil = _category_uuid) do
+  defp execute_category(_router, context, {msg, _rest}, {nil, _is_checkbox}) do
     # lets reset the context tree
     FlowContext.reset_all_contexts(context, "Could not find category for: #{msg.body}")
 
@@ -214,7 +214,7 @@ defmodule Glific.Flows.Router do
     {:error, dgettext("errors", "Could not find category for: %{body}", body: msg.body)}
   end
 
-  defp execute_category(router, context, {msg, rest}, category_uuid) do
+  defp execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox}) do
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
 
@@ -222,7 +222,7 @@ defmodule Glific.Flows.Router do
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
         do: context,
-        else: update_context_results(context, router.result_name, msg, category)
+        else: update_context_results(context, router.result_name, msg, {category, is_checkbox})
 
     Category.execute(category, context, rest)
   end
@@ -263,15 +263,16 @@ defmodule Glific.Flows.Router do
       "Invalid Code"
   end
 
-  @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: Ecto.UUID.t() | nil
+  # return the right category but also return if it is a "checkbox" related category
+  @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: {Ecto.UUID.t() | nil, boolean}
   defp find_category(router, _context, %{body: body} = _msg)
        when body in ["No Response", "Exit Loop", "Success", "Failure"] do
     # Find the category with above name
     category = Enum.find(router.categories, fn c -> c.name == body end)
 
     if is_nil(category),
-      do: nil,
-      else: category.uuid
+      do: {nil, false},
+      else: {category.uuid, false}
   end
 
   defp find_category(router, context, msg) do
@@ -284,34 +285,46 @@ defmodule Glific.Flows.Router do
       )
 
     if is_nil(c),
-      do: router.default_category_uuid,
-      else: c.category_uuid
+      do: {router.default_category_uuid, false},
+      else: {c.category_uuid, c.type == "has_multiple"}
   end
 
-  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), Category.t()) ::
+  @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
-  defp update_context_results(context, key, msg, category) do
-    cond do
-      msg.type in [:image, :video, :audio] ->
-        json =
-          msg.media
-          |> Map.take([:id, :source_url, :url, :caption])
-          |> Map.put(:category, "media")
-          |> Map.put(:input, msg.media.url)
+  defp update_context_results(context, key, msg, {category, is_checkbox}) do
+    results =
+      cond do
+        msg.type in [:image, :video, :audio] ->
+          json =
+            msg.media
+            |> Map.take([:id, :source_url, :url, :caption])
+            |> Map.put(:category, "media")
+            |> Map.put(:input, msg.media.url)
 
-        FlowContext.update_results(context, %{key => json})
+          %{key => json}
 
-      msg.type in [:location] ->
-        json =
-          msg.location
-          |> Map.take([:id, :longitude, :latitude])
-          |> Map.put(:category, "location")
+        msg.type in [:location] ->
+          json =
+            msg.location
+            |> Map.take([:id, :longitude, :latitude])
+            |> Map.put(:category, "location")
 
-        FlowContext.update_results(context, %{key => json})
+          %{key => json}
 
-      # this also handles msg.type in [:text]
-      true ->
-        FlowContext.update_results(context, key, msg.body, category.name)
-    end
+        is_checkbox ->
+          %{
+            key => %{
+              "input" => msg.body,
+              "selected" => msg.body |> Glific.make_set() |> MapSet.to_list(),
+              "category" => category.name
+            }
+          }
+
+        # this also handles msg.type in [:text]
+        true ->
+          %{key => %{"input" => msg.body, "category" => category.name}}
+      end
+
+    FlowContext.update_results(context, results)
   end
 end
