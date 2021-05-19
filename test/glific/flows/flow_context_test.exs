@@ -86,7 +86,11 @@ defmodule Glific.Flows.FlowContextTest do
     flow_context = flow_context_fixture()
     json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
     {category, _uuid_map} = Category.process(json, %{})
-    FlowContext.update_results(flow_context, %{"test_key" => %{"input" => "test_input", "category" => category.name}})
+
+    FlowContext.update_results(flow_context, %{
+      "test_key" => %{"input" => "test_input", "category" => category.name}
+    })
+
     flow_context = Repo.get!(FlowContext, flow_context.id)
 
     assert flow_context.results["test_key"] == %{
@@ -169,7 +173,11 @@ defmodule Glific.Flows.FlowContextTest do
     flow_context = flow_context_fixture()
     json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
     {category, _uuid_map} = Category.process(json, %{})
-    FlowContext.update_results(flow_context, %{"test_key" => %{"input" => "test_input", "category" => category.name}})
+
+    FlowContext.update_results(flow_context, %{
+      "test_key" => %{"input" => "test_input", "category" => category.name}
+    })
+
     flow_context = Repo.get!(FlowContext, flow_context.id)
 
     # now results value will always return the input if there is a map.
