@@ -90,18 +90,20 @@ defmodule Glific.Flows.Webhook do
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
   defp create_body(context, action_body) do
+    context_results = Glific.encode_json_map(context.results)
+
     default_payload = %{
       contact: %{
         name: context.contact.name,
         phone: context.contact.phone,
         fields: context.contact.fields
       },
-      results: context.results
+      results: context_results
     }
 
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results
+      "results" => context_results
     }
 
     {:ok, default_contact} = Jason.encode(default_payload.contact)
@@ -110,9 +112,10 @@ defmodule Glific.Flows.Webhook do
     action_body =
       action_body
       |> MessageVarParser.parse(fields)
-      |> MessageVarParser.parse_results(context.results)
+      |> MessageVarParser.parse_results(context_results)
       |> String.replace("\"@contact\"", default_contact)
       |> String.replace("\"@results\"", default_results)
+
 
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->

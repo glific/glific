@@ -200,4 +200,19 @@ defmodule Glific do
     # finally create a mapset for easy fast checks
     |> MapSet.new()
   end
+
+  @doc """
+    Encode all the strings in a map jason encoded.
+  """
+  @spec encode_json_map(map()) :: map() | nil
+  def encode_json_map(nil), do: nil
+  def encode_json_map(map) when is_struct(map), do: Map.from_struct(map)
+  def encode_json_map(string) when is_binary(string), do: Jason.encode!(string)
+  def encode_json_map(map) when is_map(map) do
+    map
+    |> Enum.map(fn {k, v} -> {encode_json_map(k), encode_json_map(v)} end)
+    |> Enum.into(%{})
+  end
+
+  def encode_json_map(value), do: value
 end
