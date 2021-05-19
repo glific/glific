@@ -69,17 +69,10 @@ mutation createExtension($input:ExtensionInput!) {
   createExtension(input: $input) {
     extension {
       code
-      id
-      insertedAt
-      updatedAt
       isActive
-      isValid
       module
       name
-      organization {
-        name
-        isActive
-      }
+      clientId
     }
     errors {
         message
@@ -238,6 +231,7 @@ mutation  deleteExtension($id: ID!) {
 
 {
     "id": "2",
+    "clientId": "1"
 }
 ```
 
