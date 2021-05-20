@@ -59,7 +59,9 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(query_data, [:data, "countConsultingHours"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"staff" => "Ken Cavin"}, "clientId" => attrs.organization_id})
+      auth_query_gql_by(:count, user,
+        variables: %{"filter" => %{"staff" => "Ken Cavin"}, "clientId" => attrs.organization_id}
+      )
 
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end

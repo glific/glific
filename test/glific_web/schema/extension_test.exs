@@ -26,6 +26,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     extension = get_in(query_data, [:data, "createExtension", "extension"])
+
     assert extension["code"] ==
              "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}"
 
