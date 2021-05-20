@@ -200,6 +200,4 @@ defmodule Glific do
     # finally create a mapset for easy fast checks
     |> MapSet.new()
   end
-
-
 end

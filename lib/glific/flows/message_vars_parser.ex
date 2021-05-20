@@ -115,7 +115,6 @@ defmodule Glific.Flows.MessageVarParser do
       body
     end
   end
-
   def parse_results(body, _),  do: body
 
   @doc """
@@ -132,6 +131,4 @@ defmodule Glific.Flows.MessageVarParser do
   do: parse(value, bindings) |> parse_results(bindings["results"])
 
   def parse_map(value, _results),  do: value
-
-
 end

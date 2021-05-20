@@ -89,7 +89,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  def create_body(context, action_body) do
+  defp create_body(context, action_body) do
     default_payload = %{
       contact: %{
         name: context.contact.name,
