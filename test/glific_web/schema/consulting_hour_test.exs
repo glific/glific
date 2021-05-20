@@ -11,13 +11,13 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/consulting_hour/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
 
-  test "create a consulting hour entry", %{manager: user} do
+  test "create a consulting hour entry", %{manager: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "participants" => "Adam",
-            "organizationId" => 1,
+            "clientId" => attrs.organization_id,
             "organizationName" => "Glific",
             "staff" => "Adelle Cavin",
             "content" => "GCS issue",
@@ -50,13 +50,16 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
 
     {:ok, query_data} =
       auth_query_gql_by(:count, user,
-        variables: %{"filter" => %{"organization_name" => "test organization"}}
+        variables: %{
+          "filter" => %{"organization_name" => "test organization"},
+          "clientId" => attrs.organization_id
+        }
       )
 
     assert get_in(query_data, [:data, "countConsultingHours"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"staff" => "Ken Cavin"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"staff" => "Ken Cavin"}, "clientId" => attrs.organization_id})
 
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end
@@ -76,21 +79,33 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
         is_billable: false
       })
 
-    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"opts" => %{"order" => "ASC"}, "clientId" => attrs.organization_id}
+      )
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) > 0
     [consulting_hour | _] = consulting_hours
     assert get_in(consulting_hour, ["staff"]) == "Jon Cavin"
 
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isBillable" => false}})
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"isBillable" => false}, "clientId" => attrs.organization_id}
+      )
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) > 0
     [consulting_hour | _] = consulting_hours
     assert get_in(consulting_hour, ["staff"]) == "Ken Cavin"
 
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"participants" => "John"}})
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"participants" => "John"}, "clientId" => attrs.organization_id}
+      )
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) > 0
@@ -98,7 +113,12 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(consulting_hour, ["participants"]) == "John Doe"
 
     result =
-      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "opts" => %{"limit" => 1, "offset" => 0},
+          "clientId" => attrs.organization_id
+        }
+      )
 
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
@@ -112,7 +132,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => consulting_hour.id,
-          "input" => %{"duration" => 20}
+          "input" => %{"duration" => 20, "clientId" => attrs.organization_id}
         }
       )
 
@@ -128,7 +148,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     result =
       auth_query_gql_by(:delete, user,
         variables: %{
-          "id" => consulting_hour.id
+          "id" => consulting_hour.id,
+          "clientId" => attrs.organization_id
         }
       )
 
@@ -143,7 +164,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "id" => consulting_hour.id
+          "id" => consulting_hour.id,
+          "clientId" => attrs.organization_id
         }
       )
 
@@ -158,7 +180,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "id" => consulting_hour.id + 1
+          "id" => consulting_hour.id + 1,
+          "clientId" => attrs.organization_id
         }
       )
 

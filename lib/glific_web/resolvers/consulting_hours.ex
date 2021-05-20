@@ -17,7 +17,6 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
 
     # Using put_process_state as consulting hours can be updated for other organization by glific_admin
     Repo.put_process_state(organization_id)
-    ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}) |> IO.inspect()
 
     with consulting_hour <-
            ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}),
