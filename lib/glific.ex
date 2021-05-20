@@ -208,6 +208,7 @@ defmodule Glific do
   def encode_json_map(nil), do: nil
   def encode_json_map(map) when is_struct(map), do: Map.from_struct(map)
   def encode_json_map(string) when is_binary(string), do: Jason.encode!(string)
+
   def encode_json_map(map) when is_map(map) do
     map
     |> Enum.map(fn {k, v} -> {encode_json_map(k), encode_json_map(v)} end)

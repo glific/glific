@@ -116,7 +116,6 @@ defmodule Glific.Flows.Webhook do
       |> String.replace("\"@contact\"", default_contact)
       |> String.replace("\"@results\"", default_results)
 
-
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->
         {action_body_map, action_body}
