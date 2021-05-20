@@ -51,7 +51,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     extensions = get_in(query_data, [:data, "updateExtension", "extension"])
-    IO.inspect(extensions)
     assert extensions["isActive"] == true
     assert extensions["isValid"] == true
     assert extensions["name"] == "Test extension"
