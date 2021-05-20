@@ -35,7 +35,6 @@ defmodule GlificWeb.Schema.ExtensionTypes do
 
   input_object :extension_input do
     field :module, :string
-    field :client_id, :id
     field :code, :string
     field :is_active, :boolean
     field :name, :string
@@ -54,12 +53,14 @@ defmodule GlificWeb.Schema.ExtensionTypes do
   object :extensions_mutations do
     field :create_extension, :extension_result do
       arg(:input, non_null(:extension_input))
+      arg(:client_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Extensions.create_extension/3)
     end
 
     field :update_extension, :extension_result do
       arg(:id, non_null(:id))
+      arg(:client_id, non_null(:id))
       arg(:input, :extension_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Extensions.update_extension/3)

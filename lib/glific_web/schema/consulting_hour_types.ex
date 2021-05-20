@@ -37,7 +37,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
   input_object :consulting_hour_input do
     field :participants, :string
-    field :organization_id, :id
+    field :client_id, non_null(:id)
     field :organization_name, :string
     field :staff, :string
     field :content, :string
@@ -90,7 +90,6 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
   object :consulting_hours_mutations do
     field :create_consulting_hour, :consulting_hour_result do
-      arg(:client_id, non_null(:id))
       arg(:input, non_null(:consulting_hour_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.ConsultingHours.create_consulting_hour/3)
@@ -98,15 +97,14 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
     field :update_consulting_hour, :consulting_hour_result do
       arg(:id, non_null(:id))
-      arg(:client_id, non_null(:id))
       arg(:input, :consulting_hour_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.ConsultingHours.update_consulting_hour/3)
     end
 
     field :delete_consulting_hour, :consulting_hour_result do
-      arg(:client_id, non_null(:id))
       arg(:id, non_null(:id))
+      arg(:client_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.delete_consulting_hour/3)
     end

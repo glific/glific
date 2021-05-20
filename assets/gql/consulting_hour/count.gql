@@ -1,3 +1,3 @@
 query count_consulting_hours($filter: ConsultingHourFilter) {
-  countConsultingHours(filter: $filter)
+  countConsultingHours(filter: $filter, clientId: $clientId)
 }
