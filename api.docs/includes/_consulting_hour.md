@@ -3,8 +3,8 @@
 ## Get Consulting Hour by ID
 
 ```graphql
-query consultingHour(id: ID!) {
-  consultingHour(id: $id) {
+query consultingHour(id: ID!, clientId: ID!) {
+  consultingHour(id: $id, clientId: $clientId) {
     duration
     content
     isBillable
@@ -67,8 +67,8 @@ query consultingHour(id: ID!) {
 ## Get Consulting Hours
 
 ```graphql
-query consultingHours($filter: consultingHourFilter, $opts: Opts) {
-  consultingHours(filter: $filter, opts:$opts) {
+query consultingHours($filter: consultingHourFilter, $opts: Opts, clientId: ID!) {
+  consultingHours(filter: $filter, opts:$opts, clientId: $clientId) {
     id
     content
     isBillable
@@ -213,8 +213,8 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 ## Count all Consulting Hours
 
 ```graphql
-query countConsultingHours($filter: ConsultingHourFilter) {
-  countConsultingHours(filter: $filter)
+query countConsultingHours($filter: ConsultingHourFilter, $clientId: ID!) {
+  countConsultingHours(filter: $filter, clientId: $clientId!)
 }
 
 {
@@ -310,8 +310,8 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 ## Delete a Consulting Hour
 
 ```graphql
-mutation  deleteConsultingHour($id: ID!) {
-   deleteConsultingHour(id: $id!) {
+mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
+   deleteConsultingHour(id: $id!, clientId: $clientId!) {
     consultingHour {
       duration
       content
@@ -485,7 +485,7 @@ mutation  deleteConsultingHour($id: ID!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>organization_id</strong></td>
+<td colspan="2" valign="top"><strong>client_id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
