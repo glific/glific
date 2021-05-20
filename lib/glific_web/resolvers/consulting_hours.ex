@@ -13,6 +13,12 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec get_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def get_consulting_hours(_, %{id: id, client_id: client_id}, _) do
+    organization_id = String.to_integer(client_id)
+
+    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
+    Repo.put_process_state(organization_id)
+    ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}) |> IO.inspect()
+
     with consulting_hour <-
            ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}),
          false <- is_nil(consulting_hour) do
@@ -29,6 +35,10 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [ConsultingHour]}
   def consulting_hours(_, args, _) do
+    organization_id = String.to_integer(args.client_id)
+
+    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
+    Repo.put_process_state(organization_id)
     updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
 
     {:ok, ConsultingHour.list_consulting_hours(updated_args)}
@@ -40,6 +50,10 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec count_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, integer}
   def count_consulting_hours(_, args, _) do
+    organization_id = String.to_integer(args.client_id)
+
+    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
+    Repo.put_process_state(organization_id)
     updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
     {:ok, ConsultingHour.count_consulting_hours(updated_args)}
   end
