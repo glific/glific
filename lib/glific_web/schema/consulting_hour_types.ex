@@ -66,7 +66,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
     field :consulting_hour, :consulting_hour_result do
       arg(:client_id, non_null(:id))
       arg(:id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.get_consulting_hours/3)
     end
 
@@ -75,7 +75,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
       arg(:client_id, non_null(:id))
       arg(:filter, :consulting_hour_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.consulting_hours/3)
     end
 
@@ -83,7 +83,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
     field :count_consulting_hours, :integer do
       arg(:client_id, non_null(:id))
       arg(:filter, :consulting_hour_filter)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.count_consulting_hours/3)
     end
   end
@@ -91,14 +91,14 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
   object :consulting_hours_mutations do
     field :create_consulting_hour, :consulting_hour_result do
       arg(:input, non_null(:consulting_hour_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.create_consulting_hour/3)
     end
 
     field :update_consulting_hour, :consulting_hour_result do
       arg(:id, non_null(:id))
       arg(:input, :consulting_hour_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.update_consulting_hour/3)
     end
 

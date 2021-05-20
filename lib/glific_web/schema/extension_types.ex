@@ -46,7 +46,7 @@ defmodule GlificWeb.Schema.ExtensionTypes do
     field :extension, :extension_result do
       arg(:id, non_null(:id))
       arg(:client_id, non_null(:id))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.extension/3)
     end
   end
@@ -54,14 +54,14 @@ defmodule GlificWeb.Schema.ExtensionTypes do
   object :extensions_mutations do
     field :create_extension, :extension_result do
       arg(:input, non_null(:extension_input))
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.create_extension/3)
     end
 
     field :update_extension, :extension_result do
       arg(:id, non_null(:id))
       arg(:input, :extension_input)
-      middleware(Authorize, :staff)
+      middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.update_extension/3)
     end
 

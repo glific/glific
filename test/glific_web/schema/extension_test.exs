@@ -9,7 +9,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/extension/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/extension/delete.gql")
 
-  test "create a new extension", %{manager: user} = attrs do
+  test "create a new extension", %{user: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -34,7 +34,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert extension["name"] == "Extension.Schema.Test.Phone"
   end
 
-  test "update an extension", %{manager: user} = attrs do
+  test "update an extension", %{user: user} = attrs do
     extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =

@@ -11,7 +11,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/consulting_hour/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
 
-  test "create a consulting hour entry", %{manager: user} = attrs do
+  test "create a consulting hour entry", %{user: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert consulting_hour["staff"] == "Adelle Cavin"
   end
 
-  test "count returns the number of consulting hours", %{staff: user} = attrs do
+  test "count returns the number of consulting hours", %{user: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
@@ -64,7 +64,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end
 
-  test "consulting hours field returns list of consulting hours", %{staff: user} = attrs do
+  test "consulting hours field returns list of consulting hours", %{user: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{
         organization_id: attrs.organization_id,
@@ -125,7 +125,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert length(consulting_hours) == 1
   end
 
-  test "update a consulting hours", %{manager: user} = attrs do
+  test "update a consulting hours", %{user: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
