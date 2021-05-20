@@ -12,11 +12,8 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   """
   @spec get_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def get_consulting_hours(_, %{id: id, client_id: client_id}, _) do
-    organization_id = String.to_integer(client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
+  def get_consulting_hours(_, %{id: id, client_id: client_id} = params, _) do
+    Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with consulting_hour <-
            ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}),
@@ -34,10 +31,6 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [ConsultingHour]}
   def consulting_hours(_, args, _) do
-    organization_id = String.to_integer(args.client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
     updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
 
     {:ok, ConsultingHour.list_consulting_hours(updated_args)}
@@ -49,10 +42,6 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec count_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, integer}
   def count_consulting_hours(_, args, _) do
-    organization_id = String.to_integer(args.client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
     updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
     {:ok, ConsultingHour.count_consulting_hours(updated_args)}
   end
@@ -78,10 +67,6 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
         }) ::
           {:ok, any} | {:error, any}
   def update_consulting_hour(_, %{id: id, input: params}, _) do
-    organization_id = String.to_integer(params.client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
     updated_params = Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, consulting_hour} <-
@@ -99,14 +84,11 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def delete_consulting_hour(_, %{id: id, client_id: client_id}, _) do
-    organization_id = String.to_integer(client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
+  def delete_consulting_hour(_, %{id: id, client_id: client_id} = params, _) do
+    Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, consulting_hour} <-
-           Repo.fetch_by(ConsultingHour, %{id: id, organization_id: organization_id}),
+           Repo.fetch_by(ConsultingHour, %{id: id, organization_id: client_id}),
          {:ok, consulting_hour} <- ConsultingHour.delete_consulting_hour(consulting_hour) do
       {:ok, %{consulting_hour: consulting_hour}}
     end

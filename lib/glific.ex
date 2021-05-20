@@ -12,7 +12,10 @@ defmodule Glific do
   a new file
   """
 
-  alias Glific.Partners
+  alias Glific.{
+    Partners,
+    Repo
+  }
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
@@ -207,6 +210,11 @@ defmodule Glific do
   """
   @spec substitute_organization_id(map(), any, atom()) :: map()
   def substitute_organization_id(params, value, key) do
+    # Using put_process_state as the operation is performed by glific_admin for other organizations
+    value
+    |> String.to_integer()
+    |> Repo.put_process_state()
+
     params
     |> Map.put(:organization_id, value)
     |> Map.delete(key)

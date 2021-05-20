@@ -7,13 +7,10 @@ defmodule GlificWeb.Resolvers.Extensions do
   @doc """
   Get a specific extension by id
   """
-  @spec extension(Absinthe.Resolution.t(), %{id: integer, client_id: integer}, %{context: map()}) ::
+  @spec extension(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def extension(_, %{id: id, client_id: client_id}, _) do
-    organization_id = String.to_integer(client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
+  def extension(_, %{id: id, client_id: client_id} = params, _) do
+    Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, extension} <-
            Repo.fetch_by(Extension, %{id: id, organization_id: client_id}),
@@ -26,10 +23,6 @@ defmodule GlificWeb.Resolvers.Extensions do
   @spec create_extension(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def create_extension(_, %{input: params}, _) do
-    organization_id = String.to_integer(params.client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
     updated_params = Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, extension} <- Extension.create_extension(updated_params) do
@@ -45,10 +38,6 @@ defmodule GlificWeb.Resolvers.Extensions do
         }) ::
           {:ok, any} | {:error, any}
   def update_extension(_, %{id: id, input: params}, _) do
-    organization_id = String.to_integer(params.client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
     updated_params = Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, extension} <-
@@ -65,11 +54,8 @@ defmodule GlificWeb.Resolvers.Extensions do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def delete_extension(_, %{id: id, client_id: client_id}, _) do
-    organization_id = String.to_integer(client_id)
-
-    # Using put_process_state as consulting hours can be updated for other organization by glific_admin
-    Repo.put_process_state(organization_id)
+  def delete_extension(_, %{id: id, client_id: client_id} = params, _) do
+    Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, extension} <- Repo.fetch_by(Extension, %{id: id, organization_id: client_id}),
          {:ok, extension} <- Extension.delete_extension(extension) do
