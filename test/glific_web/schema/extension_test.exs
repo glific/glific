@@ -26,7 +26,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     extension = get_in(query_data, [:data, "createExtension", "extension"])
-
     assert extension["code"] ==
              "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}"
 
@@ -43,7 +42,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
         variables: %{
           "id" => extension.id,
           "input" => %{
-            "clientId" => 1,
+            "clientId" => attrs.organization_id,
             "code" =>
               "defmodule Extension.Schema.Test.Id, do: def default_id(), do: %{id: 9997123545}"
           }
@@ -52,6 +51,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     extensions = get_in(query_data, [:data, "updateExtension", "extension"])
+    IO.inspect(extensions)
     assert extensions["isActive"] == true
     assert extensions["isValid"] == true
     assert extensions["name"] == "Test extension"
