@@ -1,7 +1,7 @@
 #import "./fields.frag.gql"
 
-query extension($id: ID!) {
-  extension(id: $id) {
+query extension($id: ID!, $clientId: ID!) {
+  extension(id: $id, clientId: $clientId) {
     ...ExtensionFields
 
     ...ErrorFields
