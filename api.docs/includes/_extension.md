@@ -84,7 +84,7 @@ mutation createExtension($input:ExtensionInput!) {
 {
   "input": {
     "clientId": 1,
-    "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
+    "code": "defmodule URI, do: def default_port(), do: %{phone: 9876543210}",
     "isActive": true,
     "module": "URI",
     "name": "URI"
@@ -98,7 +98,7 @@ mutation createExtension($input:ExtensionInput!) {
   "data": {
     "createExtension": {
       "extension": {
-        "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
+        "code": "defmodule URI, do: def default_port(), do: %{phone: 9876543210}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
         "updatedAt": "2021-05-19T11:47:30Z",
@@ -159,7 +159,7 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
     "id": "2",
     "client_id": "1",
     "input": {
-        "code": "defmodule URI, do: def default_port(), do: %{hello: 444}"
+        "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}"
     }
 }
 ```
@@ -171,7 +171,7 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
   "data": {
     "updateExtension": {
       "Extension": {
-        "code": "defmodule URI, do: def default_port(), do: %{hello: 444}",
+        "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
         "updatedAt": "2021-05-19T11:47:30Z",
@@ -242,7 +242,7 @@ mutation  deleteExtension($id: ID!) {
   "data": {
     " deleteExtension": {
       "Extension": {
-        "code": "defmodule URI, do: def default_port(), do: %{hello: 444}",
+        "code": "defmodule URI, do: def default_port(), do: %{phone: 9876543210}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
         "updatedAt": "2021-05-19T11:47:30Z",
