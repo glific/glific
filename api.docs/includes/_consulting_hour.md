@@ -3,8 +3,8 @@
 ## Get Consulting Hour by ID
 
 ```graphql
-query consultingHour(id: ID!) {
-  consultingHour(id: $id) {
+query consultingHour(id: ID!, clientId: ID!) {
+  consultingHour(id: $id, clientId: $clientId) {
     duration
     content
     isBillable
@@ -22,7 +22,8 @@ query consultingHour(id: ID!) {
 }
 
 {
-  "id": 2
+  "id": 2,
+  "clientId": 1
 }
 ```
 
@@ -57,6 +58,7 @@ query consultingHour(id: ID!) {
 | Parameter | Type                 | Default | Description |
 | --------- | -------------------- | ------- | ----------- |
 | ID        | <a href="#id">ID</a> | nil     |             |
+| clientId  | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
 
@@ -67,8 +69,8 @@ query consultingHour(id: ID!) {
 ## Get Consulting Hours
 
 ```graphql
-query consultingHours($filter: consultingHourFilter, $opts: Opts) {
-  consultingHours(filter: $filter, opts:$opts) {
+query consultingHours($filter: consultingHourFilter, $opts: Opts, clientId: ID!) {
+  consultingHours(filter: $filter, opts:$opts, clientId: $clientId) {
     id
     content
     isBillable
@@ -90,7 +92,8 @@ query consultingHours($filter: consultingHourFilter, $opts: Opts) {
   },
   "filter": {
     "organizationName": "glific"
-  }
+  },
+  "clientId": 1
 }
 ```
 
@@ -136,6 +139,7 @@ This returns all the consulting hours filtered by the input <a href="#Consulting
 | --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
 | opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
+| clientId  | <a href="#id">ID</a>                                     | nil     |                                     |
 
 ## Create a Consulting Hour
 
@@ -164,7 +168,7 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 {
   "input": {
     "participants": "Adam",
-    "organizationId": 1,
+    "clientId": 1,
     "organizationName": "Glific",
     "staff": "Adelle Cavin",
     "content": "GCS issue",
@@ -213,14 +217,15 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 ## Count all Consulting Hours
 
 ```graphql
-query countConsultingHours($filter: ConsultingHourFilter) {
-  countConsultingHours(filter: $filter)
+query countConsultingHours($filter: ConsultingHourFilter, $clientId: ID!) {
+  countConsultingHours(filter: $filter, clientId: $clientId!)
 }
 
 {
   "filter": {
     "organizationName": "Glific"
-  }
+  },
+  "clientId": 1
 }
 ```
 
@@ -239,6 +244,7 @@ query countConsultingHours($filter: ConsultingHourFilter) {
 | Parameter | Type                                                     | Default | Description     |
 | --------- | -------------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourFilter</a> | nil     | filter the list |
+| clientId  | <a href="#id">ID</a>                                     | nil     |                 |
 
 ## Update a Consulting Hour
 
@@ -266,7 +272,8 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 {
     "id": "2",
     "input": {
-        "participants": "Ken"
+        "participants": "Ken",
+        "clientId": 1
     }
 }
 ```
@@ -310,8 +317,8 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 ## Delete a Consulting Hour
 
 ```graphql
-mutation  deleteConsultingHour($id: ID!) {
-   deleteConsultingHour(id: $id!) {
+mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
+   deleteConsultingHour(id: $id!, clientId: $clientId!) {
     consultingHour {
       duration
       content
@@ -332,6 +339,7 @@ mutation  deleteConsultingHour($id: ID!) {
 
 {
     "id": "2",
+    "clientId": 2
 }
 ```
 
@@ -363,6 +371,7 @@ mutation  deleteConsultingHour($id: ID!) {
 | Parameter | Type                  | Default  | Description |
 | --------- | --------------------- | -------- | ----------- |
 | id        | <a href="#id">ID</a>! | required |             |
+| clientId  | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 
@@ -485,7 +494,7 @@ mutation  deleteConsultingHour($id: ID!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>organization_id</strong></td>
+<td colspan="2" valign="top"><strong>client_id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>

@@ -12,7 +12,10 @@ defmodule Glific do
   a new file
   """
 
-  alias Glific.Partners
+  alias Glific.{
+    Partners,
+    Repo
+  }
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
@@ -199,5 +202,20 @@ defmodule Glific do
     |> Enum.flat_map(fn x -> String.split(x, seperators, trim: true) end)
     # finally create a mapset for easy fast checks
     |> MapSet.new()
+  end
+
+  @doc """
+  Intermediary function to update the input params with organization id
+  as operation is performed by glific_admin for other organizations
+  """
+  @spec substitute_organization_id(map(), any, atom()) :: map()
+  def substitute_organization_id(params, value, key) do
+    value
+    |> String.to_integer()
+    |> Repo.put_process_state()
+
+    params
+    |> Map.put(:organization_id, value)
+    |> Map.delete(key)
   end
 end

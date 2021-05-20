@@ -11,6 +11,7 @@ defmodule Glific.Fixtures do
   alias Glific.{
     Contacts,
     Contacts.ContactsField,
+    Extensions.Extension,
     Flows,
     Flows.ContactField,
     Flows.WebhookLog,
@@ -715,5 +716,24 @@ defmodule Glific.Fixtures do
       |> ContactField.create_contact_field()
 
     contacts_field
+  end
+
+  @doc false
+  @spec extension_fixture(map()) :: Extension.t()
+  def extension_fixture(attrs) do
+    valid_attrs = %{
+      code: "defmodule Glific.Test.Extension, do: def default_phone(), do: %{phone: 9876543210}",
+      isActive: true,
+      module: "Glific.Test.Extension",
+      name: "Test extension",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, extension} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Extension.create_extension()
+
+    extension
   end
 end
