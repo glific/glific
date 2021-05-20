@@ -89,35 +89,34 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(context, action_body) do
-    context_results = encode_results_values(context.results)
-
+  def create_body(context, action_body) do
     default_payload = %{
       contact: %{
         name: context.contact.name,
         phone: context.contact.phone,
         fields: context.contact.fields
       },
-      results: context_results
+      results: context.results
     }
 
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context_results
+      "results" => context.results
     }
 
-    {:ok, default_contact} = Jason.encode(default_payload.contact)
-    {:ok, default_results} = Jason.encode(default_payload.results)
+    {:ok, action_body_map} =  Jason.decode(action_body)
 
-    action_body =
-      action_body
-      |> MessageVarParser.parse(fields)
-      |> MessageVarParser.parse_results(context_results)
-      |> String.replace("\"@contact\"", default_contact)
-      |> String.replace("\"@results\"", default_results)
+    action_body_map =
+    action_body_map
+    |> MessageVarParser.parse_map(fields)
+    |> Enum.map(fn
+      {k, "@contact"} -> {k, default_payload.contact}
+      {k, "@results"} -> {k, default_payload.results}
+      {k, v} -> {k, v} end)
+    |> Enum.into(%{})
 
-    case Jason.decode(action_body) do
-      {:ok, action_body_map} ->
+    case Jason.encode(action_body_map) do
+      {:ok, action_body} ->
         {action_body_map, action_body}
 
       _ ->
@@ -270,15 +269,5 @@ defmodule Glific.Flows.Webhook do
       {map, body} ->
         do_oban(action, context, {map, body})
     end
-  end
-
-  @doc """
-    Encode all the strings in a map jason encoded.
-  """
-  @spec encode_results_values(map()) :: map() | nil
-  def encode_results_values(map) when is_map(map) do
-    map
-    |> Enum.map(fn {k, v} ->{k, Map.update!(v, "input", &Jason.encode!(&1))} end)
-    |> Enum.into(%{})
   end
 end

@@ -95,7 +95,7 @@ defmodule Glific.Flows.MessageVarParser do
   It will just treat @results.variable to @results.variable.input
   """
   @spec parse_results(String.t(), map()) :: String.t()
-  def parse_results(body, results) do
+  def parse_results(body, results) when is_map(results) do
     if String.contains?(body, "@results.") do
       Enum.reduce(
         results,
@@ -115,4 +115,19 @@ defmodule Glific.Flows.MessageVarParser do
       body
     end
   end
+
+  def parse_results(body, _),  do: body
+
+  def parse_map(map, bindings) when is_map(map) do
+    map
+    |> Enum.map(fn {k, v} -> {parse_map(k, bindings), parse_map(v, bindings)} end)
+    |> Enum.into(%{})
+  end
+
+  def parse_map(value, bindings) when is_binary(value),
+  do: parse(value, bindings) |> parse_results(bindings["results"])
+
+  def parse_map(value, _results),  do: value
+
+
 end
