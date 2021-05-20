@@ -22,7 +22,8 @@ query consultingHour(id: ID!, clientId: ID!) {
 }
 
 {
-  "id": 2
+  "id": 2,
+  "clientId": 1
 }
 ```
 
@@ -57,6 +58,7 @@ query consultingHour(id: ID!, clientId: ID!) {
 | Parameter | Type                 | Default | Description |
 | --------- | -------------------- | ------- | ----------- |
 | ID        | <a href="#id">ID</a> | nil     |             |
+| clientId  | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
 
@@ -90,7 +92,8 @@ query consultingHours($filter: consultingHourFilter, $opts: Opts, clientId: ID!)
   },
   "filter": {
     "organizationName": "glific"
-  }
+  },
+  "clientId": 1
 }
 ```
 
@@ -136,6 +139,7 @@ This returns all the consulting hours filtered by the input <a href="#Consulting
 | --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
 | opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
+| clientId  | <a href="#id">ID</a>                                     | nil     |                                     |
 
 ## Create a Consulting Hour
 
@@ -164,7 +168,7 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 {
   "input": {
     "participants": "Adam",
-    "organizationId": 1,
+    "clientId": 1,
     "organizationName": "Glific",
     "staff": "Adelle Cavin",
     "content": "GCS issue",
@@ -220,7 +224,8 @@ query countConsultingHours($filter: ConsultingHourFilter, $clientId: ID!) {
 {
   "filter": {
     "organizationName": "Glific"
-  }
+  },
+  "clientId": 1
 }
 ```
 
@@ -239,6 +244,7 @@ query countConsultingHours($filter: ConsultingHourFilter, $clientId: ID!) {
 | Parameter | Type                                                     | Default | Description     |
 | --------- | -------------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourFilter</a> | nil     | filter the list |
+| clientId  | <a href="#id">ID</a>                                     | nil     |                 |
 
 ## Update a Consulting Hour
 
@@ -266,7 +272,8 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 {
     "id": "2",
     "input": {
-        "participants": "Ken"
+        "participants": "Ken",
+        "clientId": 1
     }
 }
 ```
@@ -332,6 +339,7 @@ mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
 
 {
     "id": "2",
+    "clientId": 2
 }
 ```
 
@@ -363,6 +371,7 @@ mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
 | Parameter | Type                  | Default  | Description |
 | --------- | --------------------- | -------- | ----------- |
 | id        | <a href="#id">ID</a>! | required |             |
+| clientIds        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 
