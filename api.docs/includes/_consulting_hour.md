@@ -371,7 +371,7 @@ mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
 | Parameter | Type                  | Default  | Description |
 | --------- | --------------------- | -------- | ----------- |
 | id        | <a href="#id">ID</a>! | required |             |
-| clientIds        | <a href="#id">ID</a>! | required |             |
+| clientId  | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 

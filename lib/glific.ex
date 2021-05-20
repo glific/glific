@@ -205,12 +205,11 @@ defmodule Glific do
   end
 
   @doc """
-  Intermediary function to update the input params.map()
-  for operation performed by glific_admin incase organization_id can be different
+  Intermediary function to update the input params with organization id
+  as operation is performed by glific_admin for other organizations
   """
   @spec substitute_organization_id(map(), any, atom()) :: map()
   def substitute_organization_id(params, value, key) do
-    # Using put_process_state as the operation is performed by glific_admin for other organizations
     value
     |> String.to_integer()
     |> Repo.put_process_state()
