@@ -118,6 +118,10 @@ defmodule Glific.Flows.MessageVarParser do
 
   def parse_results(body, _),  do: body
 
+  @doc """
+  Replace all the keys and values of a given map
+  """
+  @spec parse_map(map(), map()) :: map()
   def parse_map(map, bindings) when is_map(map) do
     map
     |> Enum.map(fn {k, v} -> {parse_map(k, bindings), parse_map(v, bindings)} end)
