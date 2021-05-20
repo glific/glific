@@ -90,7 +90,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
   defp create_body(context, action_body) do
-    context_results = Glific.encode_json_map(context.results)
+    context_results = encode_results_values(context.results)
 
     default_payload = %{
       contact: %{
@@ -270,5 +270,15 @@ defmodule Glific.Flows.Webhook do
       {map, body} ->
         do_oban(action, context, {map, body})
     end
+  end
+
+  @doc """
+    Encode all the strings in a map jason encoded.
+  """
+  @spec encode_results_values(map()) :: map() | nil
+  def encode_results_values(map) when is_map(map) do
+    map
+    |> Enum.map(fn {k, v} ->{k, Map.update!(v, "input", &Jason.encode!(&1))} end)
+    |> Enum.into(%{})
   end
 end
