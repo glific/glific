@@ -4,6 +4,7 @@ defmodule Glific.Flows.Webhook do
   a better handle on the breadth and depth of webhooks
   """
   import GlificWeb.Gettext
+  require Logger
 
   alias Glific.{Contacts, Messages, Repo}
   alias Glific.Flows.{Action, FlowContext, MessageVarParser, WebhookLog}
@@ -88,7 +89,26 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
+  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
+
   defp create_body(context, action_body) do
+    case Jason.decode(action_body) do
+      {:ok, action_body_map}
+       -> do_create_body(context, action_body_map)
+
+      _ ->
+      Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+
+        {:error,
+         dgettext(
+           "errors",
+           "Error in decoding webhook body. Please check the json body in floweditor"
+         )}
+    end
+  end
+
+  @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
+  defp do_create_body(context, action_body_map) do
     default_payload = %{
       contact: %{
         name: context.contact.name,
@@ -103,26 +123,28 @@ defmodule Glific.Flows.Webhook do
       "results" => context.results
     }
 
-    {:ok, default_contact} = Jason.encode(default_payload.contact)
-    {:ok, default_results} = Jason.encode(default_payload.results)
+    MessageVarParser.parse_map(action_body_map, fields)
+    |> Enum.map(fn
+      {k, "@contact"} -> {k, default_payload.contact}
+      {k, "@results"} -> {k, default_payload.results}
+      {k, v} -> {k, v}
+    end)
+    |> Enum.into(%{})
+    |> Jason.encode()
+    |> case do
+       {:ok, action_body}
+        ->
+          {action_body_map, action_body}
+      _
+       ->
+        Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
 
-    action_body =
-      action_body
-      |> MessageVarParser.parse(fields)
-      |> MessageVarParser.parse_results(context.results)
-      |> String.replace("\"@contact\"", default_contact)
-      |> String.replace("\"@results\"", default_results)
-
-    case Jason.decode(action_body) do
-      {:ok, action_body_map} ->
-        {action_body_map, action_body}
-
-      _ ->
         {:error,
          dgettext(
            "errors",
-           "Error in decoding webhook body. Please check the json body in floweditor"
+           "Error in encoding webhook body. Please check the json body in floweditor"
          )}
+
     end
   end
 
@@ -169,8 +191,13 @@ defmodule Glific.Flows.Webhook do
   defp do_action("post", url, body, headers),
     do: Tesla.post(url, body, headers: headers)
 
-  defp do_action("get", url, _body, headers),
-    do: Tesla.get(url, headers: headers)
+  ## We need to figure out a way to send the data with urls.
+  ## Currently we can not send the json map as a query string
+  ## We will come back on this one in the future.
+
+  defp do_action("get", url, body, headers) do
+    Tesla.get(url, headers: headers, query: [data: body])
+  end
 
   @doc """
   Standard perform method to use Oban worker
@@ -201,7 +228,7 @@ defmodule Glific.Flows.Webhook do
 
     result =
       case do_action(method, url, body, headers) do
-        {:ok, %Tesla.Env{status: 200} = message} ->
+        {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           case Jason.decode(message.body) do
             {:ok, json_response} ->
               update_log(webhook_log_id, message)
@@ -214,7 +241,7 @@ defmodule Glific.Flows.Webhook do
           end
 
         {:ok, %Tesla.Env{} = message} ->
-          update_log(webhook_log_id, "Did not return a 200 status code" <> message.body)
+          update_log(webhook_log_id, "Did not return a 200..299 status code" <> message.body)
           nil
 
         {:error, error_message} ->
@@ -251,6 +278,15 @@ defmodule Glific.Flows.Webhook do
 
   # Send a get request, and if success, sned the json map back
   @spec get(atom() | Action.t(), FlowContext.t()) :: nil
-  defp get(action, context),
-    do: do_oban(action, context, {%{}, ""})
+  defp get(action, context) do
+    case create_body(context, action.body) do
+      {:error, message} ->
+        action
+        |> create_log(%{}, action.headers, context)
+        |> update_log(message)
+
+      {map, body} ->
+        do_oban(action, context, {map, body})
+    end
+  end
 end
