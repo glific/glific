@@ -32,6 +32,24 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert extension["isActive"] == true
     assert extension["isValid"] == true
     assert extension["name"] == "Extension.Schema.Test.Phone"
+
+    # try creating the same extension twice
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "clientId" => attrs.organization_id,
+            "code" =>
+              "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}",
+            "isActive" => true,
+            "name" => "Extension.Schema.Test.Phone"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:data, "createExtension", "errors", Access.at(0), "message"])
+    assert message == "has already been taken"
   end
 
   test "update an extension", %{user: user} = attrs do
@@ -56,7 +74,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert extensions["name"] == "Test extension"
   end
 
-  test "delete a consulting hours", %{user: user} = attrs do
+  test "delete an extension", %{user: user} = attrs do
     extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
