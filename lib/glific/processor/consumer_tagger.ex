@@ -4,7 +4,6 @@ defmodule Glific.Processor.ConsumerTagger do
   """
 
   alias Glific.{
-    Dialogflow.Sessions,
     Messages.Message,
     Processor.Helper,
     Taggers,
@@ -30,9 +29,9 @@ defmodule Glific.Processor.ConsumerTagger do
     {message, state}
     |> keyword_tagger(body)
     |> new_contact_tagger()
-    |> dialogflow_tagger()
 
     # |> numeric_tagger(body)
+    # |> dialogflow_tagger()
   end
 
   @spec keyword_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
@@ -79,6 +78,9 @@ defmodule Glific.Processor.ConsumerTagger do
   end
   """
 
+  _ = '''
+  alias Glific.Dialogflow.Sessions
+
   @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
   # dialog flow only accepts messages less than 255 characters for intent
   defp dialogflow_tagger({%{body: body} = message, %{tagged: false} = state})
@@ -96,6 +98,7 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp dialogflow_tagger({message, state}), do: {message, state}
+  '''
 
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),
