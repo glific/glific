@@ -12,8 +12,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.Flow,
     Flows.FlowCount,
     Flows.FlowLabel,
+    GCS.GcsWorker,
     Settings
   }
+
 
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
@@ -412,4 +414,22 @@ defmodule GlificWeb.Flows.FlowEditorController do
   defp generate_uuid do
     Ecto.UUID.generate()
   end
+
+  def flow_attachment(conn, %{"media" => media, "extension" => extension} = _params) do
+    organization_id = conn.assigns[:organization_id]
+    remote_name = remote_name(nil, extension)
+    GcsWorker.upload_media(media.path, remote_name , organization_id)
+    |> case do
+      {:ok, gcs_url} -> json(conn, %{url: gcs_url, error: nil})
+      {:error, error} -> json(conn, %{url: nil, error: error})
+    end
+  end
+
+
+  @spec remote_name(User.t(), String.t(), Ecto.UUID.t() | nil) :: String.t()
+  defp remote_name(_user, extension, uuid \\ Ecto.UUID.generate()) do
+    {year, week} = Timex.iso_week(Timex.now())
+    "outbound/#{year}-#{week}/#{uuid}.#{extension}"
+  end
+
 end
