@@ -552,13 +552,14 @@ defmodule Glific.Flows.ActionTest do
       %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
       |> Repo.preload([:contact, :flow])
 
-    url = "https://yahoo.com"
+    url = "https://postman-echo.com/post"
 
     # using uuid of language flow
     action = %Action{
       type: "call_webhook",
       uuid: "UUID 1",
       url: url,
+      body: "qbc",
       method: "POST",
       headers: %{
         Accept: "application/json",
