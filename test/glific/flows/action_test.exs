@@ -552,13 +552,14 @@ defmodule Glific.Flows.ActionTest do
       %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
       |> Repo.preload([:contact, :flow])
 
-    url = "https://yahoo.com"
+    url = "https://postman-echo.com/post"
 
     # using uuid of language flow
     action = %Action{
       type: "call_webhook",
       uuid: "UUID 1",
       url: url,
+      body: "qbc",
       method: "POST",
       headers: %{
         Accept: "application/json",
@@ -579,6 +580,7 @@ defmodule Glific.Flows.ActionTest do
     # ensure we have an entry in the webhook log
     # webhooks are tested in a complete manner in webhook_test, so skipping here
     log = Repo.get_by(WebhookLog, %{url: url})
+
     assert String.contains?(log.error, "Error in decoding webhook body")
   end
 

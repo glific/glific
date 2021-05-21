@@ -89,7 +89,26 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
+  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
+
   defp create_body(context, action_body) do
+    case Jason.decode(action_body) do
+      {:ok, action_body_map}
+       -> do_create_body(context, action_body_map)
+
+      _ ->
+      Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+
+        {:error,
+         dgettext(
+           "errors",
+           "Error in decoding webhook body. Please check the json body in floweditor"
+         )}
+    end
+  end
+
+  @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
+  defp do_create_body(context, action_body_map) do
     default_payload = %{
       contact: %{
         name: context.contact.name,
@@ -104,28 +123,28 @@ defmodule Glific.Flows.Webhook do
       "results" => context.results
     }
 
-    {:ok, default_contact} = Jason.encode(default_payload.contact)
-    {:ok, default_results} = Jason.encode(default_payload.results)
-
-    action_body =
-      action_body
-      |> MessageVarParser.parse(fields)
-      |> MessageVarParser.parse_results(context.results)
-      |> String.replace("\"@contact\"", default_contact)
-      |> String.replace("\"@results\"", default_results)
-
-    case Jason.decode(action_body) do
-      {:ok, action_body_map} ->
-        {action_body_map, action_body}
-
-      _ ->
-        Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+    MessageVarParser.parse_map(action_body_map, fields)
+    |> Enum.map(fn
+      {k, "@contact"} -> {k, default_payload.contact}
+      {k, "@results"} -> {k, default_payload.results}
+      {k, v} -> {k, v}
+    end)
+    |> Enum.into(%{})
+    |> Jason.encode()
+    |> case do
+       {:ok, action_body}
+        ->
+          {action_body_map, action_body}
+      _
+       ->
+        Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
 
         {:error,
          dgettext(
            "errors",
-           "Error in decoding webhook body. Please check the json body in floweditor"
+           "Error in encoding webhook body. Please check the json body in floweditor"
          )}
+
     end
   end
 
@@ -176,8 +195,9 @@ defmodule Glific.Flows.Webhook do
   ## Currently we can not send the json map as a query string
   ## We will come back on this one in the future.
 
-  defp do_action("get", url, body, headers),
-    do: Tesla.get(url, headers: headers, query: [data: body])
+  defp do_action("get", url, body, headers) do
+    Tesla.get(url, headers: headers, query: [data: body])
+  end
 
   @doc """
   Standard perform method to use Oban worker
