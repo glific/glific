@@ -31,6 +31,7 @@ defmodule Glific.Processor.Helper do
   """
   @spec add_dialogflow_tag(Message.t(), map()) :: any()
   def add_dialogflow_tag(_message, %{"intent" => %{"isFallback" => true}}), do: nil
+  def add_dialogflow_tag(_message, %{"intent" => %{}}), do: nil
 
   def add_dialogflow_tag(message, %{"intent" => intent} = response) do
     tag_label =

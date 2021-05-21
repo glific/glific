@@ -43,7 +43,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
+      Enum.member?(["goth", "shortcode"], provider.shortcode)
     end)
   end
 

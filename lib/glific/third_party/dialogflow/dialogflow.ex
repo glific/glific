@@ -16,19 +16,19 @@ defmodule Glific.Dialogflow do
   def request(organization_id, method, path, body) do
     %{url: url, id: id, email: email} = project_info(organization_id)
 
-    dflow_url = "#{url}/v2/projects/#{id}/locations/global/agent/#{path}"
+    dflow_url = "#{url}#{id}/locations/global/agent/#{path}"
 
     method
     |> do_request(dflow_url, body(body), headers(email, organization_id))
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
-        {:ok, Poison.decode!(body)}
+        {:ok, Jason.decode!(body)}
 
       {:ok, %Tesla.Env{status: status, body: body}} when status in 400..499 ->
-        {:error, Poison.decode!(body)}
+        {:error, Jason.decode!(body)}
 
       {:ok, %Tesla.Env{status: status, body: body}} when status >= 500 ->
-        {:error, Poison.decode!(body)}
+        {:error, Jason.decode!(body)}
 
       {:error, %Tesla.Error{reason: reason}} ->
         {:error, reason}
@@ -77,10 +77,12 @@ defmodule Glific.Dialogflow do
         }
 
       credential ->
+        service_account = Jason.decode!(credential.secrets["service_account"])
+
         %{
           url: credential.keys["url"],
-          id: credential.secrets["project_id"],
-          email: credential.secrets["project_email"]
+          id: service_account["project_id"],
+          email: service_account["client_email"]
         }
     end
   end
