@@ -35,7 +35,8 @@ defmodule Glific.Partners.Organization do
     :session_limit,
     :organization_id,
     :signature_phrase,
-    :last_communication_at
+    :last_communication_at,
+    :fields
   ]
 
   @type t() :: %__MODULE__{
@@ -65,7 +66,8 @@ defmodule Glific.Partners.Organization do
           signature_phrase: binary | nil,
           last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          fields: map() | nil
         }
 
   schema "organizations" do
@@ -112,6 +114,8 @@ defmodule Glific.Partners.Organization do
     field :signature_phrase, Glific.Encrypted.Binary
 
     field :last_communication_at, :utc_datetime
+
+    field :fields, :map, default: %{}
 
     timestamps(type: :utc_datetime)
   end

@@ -44,8 +44,7 @@ defmodule Glific.CSV.Flow do
 
     json_map
     |> Map.put(:nodes, Enum.reverse(json_map.nodes))
-    |> Map.delete(:organization_id)
-    |> Map.delete(:opts)
+    |> Glific.delete_multiple([:organization_id, :opts])
   end
 
   @spec gen_flow_helper(map(), Menu.t()) :: map()

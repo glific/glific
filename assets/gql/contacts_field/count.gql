@@ -1,0 +1,3 @@
+query count_contacts_fields($filter: ContactsFieldFilter) {
+  countContactsFields(filter: $filter)
+}

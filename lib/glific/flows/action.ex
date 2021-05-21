@@ -6,6 +6,7 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts.Contact,
@@ -390,15 +391,37 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
-    # we start off a new context here and dont really modify the current context
-    # hence ignoring the return value of start_sub_flow
-    # for now, we'll just delay by at least min_delay second
-    context = %{context | delay: max(context.delay + @min_delay, @min_delay)}
-    Flow.start_sub_flow(context, action.enter_flow_uuid)
+    # check if we've seen this flow in this execution
+    if Map.has_key?(context.uuids_seen, action.enter_flow_uuid) do
+      FlowContext.log_error("Repeated loop, hence finished the flow")
+    else
+      # check if we are looping with the same flow, if so reset
+      # and start from scratch, since we really dont want to have too deep a stack
+      maybe_reset_flows(context, action.enter_flow_uuid)
 
-    # We null the messages here, since we are going into a different flow
-    # this clears any potential errors
-    {:ok, context, []}
+      # if the action is part of a terminal node, then lets mark this context as
+      # complete, and use the parent context
+      {:node, node} = context.uuid_map[action.node_uuid]
+
+      {context, parent_id} =
+        if node.is_terminal,
+          do: {FlowContext.reset_one_context(context), context.parent_id},
+          else: {context, context.id}
+
+      # we start off a new context here and dont really modify the current context
+      # hence ignoring the return value of start_sub_flow
+      # for now, we'll just delay by at least min_delay second
+      context =
+        context
+        |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
+        |> Map.update!(:uuids_seen, &Map.put(&1, action.enter_flow_uuid, 1))
+
+      Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
+
+      # We null the messages here, since we are going into a different flow
+      # this clears any potential errors
+      {:ok, context, []}
+    end
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
@@ -468,10 +491,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
-    if msg.body != "No Response",
-      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
-
-    {:ok, context, []}
+    if msg.body != "No Response" do
+      FlowContext.log_error("Unexpected message #{msg.body} received")
+    else
+      {:ok, context, []}
+    end
   end
 
   def execute(%{type: "wait_for_time"} = action, context, []) do
@@ -553,6 +577,23 @@ defmodule Glific.Flows.Action do
 
       _ ->
         acc
+    end
+  end
+
+  @spec maybe_reset_flows(FlowContext.t(), Ecto.UUID.t()) :: boolean
+  defp maybe_reset_flows(context, flow_uuid) do
+    # check and see if there are any matching flows that are not completed
+    matching =
+      FlowContext
+      |> where([fc], fc.contact_id == ^context.contact_id)
+      |> where([fc], fc.flow_uuid == ^flow_uuid)
+      |> Repo.aggregate(:count)
+
+    if matching > 0 do
+      FlowContext.reset_all_contexts(context, "Repeated loop, hence finished the flow")
+      true
+    else
+      false
     end
   end
 end

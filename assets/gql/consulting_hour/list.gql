@@ -1,0 +1,12 @@
+query consultingHours($filter: ConsultingHourFilter, $opts: Opts, $clientId: ID!) {
+  consultingHours(filter: $filter, opts: $opts, clientId: $clientId) {
+    id
+    participants
+    organizationName
+    staff
+    content
+    when
+    duration
+    isBillable
+  }
+}

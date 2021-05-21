@@ -37,6 +37,8 @@ have the bandwidth to support earlier versions of the packages.
 
 ## Setup
   * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
+  * Copy the file: `config/.env.dev.txt` to `config/.env.dev` and edit it with your credentials
+  * Run `source config/.env.dev`
   * Start the postgres server
   * Run `mix setup`
   * This will setup Glific with default credentials as:
@@ -83,7 +85,7 @@ You will need to do the following:
 ## Updating your instance
 
 For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands
-to update your codebase from the glicic repository.
+to update your codebase from the glific repository.
 
   * Ensure you are in the top level directory of the glific api code.
   * Get the latest code from master: `git switch master; git pull`
@@ -93,7 +95,7 @@ to update your codebase from the glicic repository.
 ## Use SSL for frontend and backend
 
 (we'll be making the switch to using SSL for both frontend and backend in development post 1.5).
-These are the preliminary  steps invovled
+These are the preliminary steps involved
 
   * Install mkcert (https://github.com/FiloSottile/mkcert)
   * ```mkcert --install```

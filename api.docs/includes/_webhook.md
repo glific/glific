@@ -52,6 +52,7 @@ Glific sends a standard json object with contact and results fields as default f
 }
 ```
 
+*Note*: When you make a get request all this data will go as json string in a parameter called *data*
 ## Webhook Authentication
 
 By default, Glific adds an extra signature header to each webhook to indicate that this was sent from Glific. This

@@ -715,6 +715,12 @@ defmodule Glific.PartnersTest do
       {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
     end
 
+    test "get_global_field_map/2 for organization should return global fields map" do
+      organization = Fixtures.organization_fixture(%{fields: %{"org_name" => "Glific"}})
+      global_fields = Partners.get_global_field_map(organization.id)
+      assert global_fields == %{"org_name" => "Glific"}
+    end
+
     test "get_goth_token/2 should return goth token",
          %{organization_id: organization_id} = _attrs do
       with_mocks([
@@ -897,7 +903,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         })
 
-      assert notification.message == "Disabling shortcode 1"
+      assert notification.message == "Disabling shortcode 1. Something is wrong with the account."
       assert credential.is_active == false
     end
   end

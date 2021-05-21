@@ -12,7 +12,10 @@ defmodule Glific do
   a new file
   """
 
-  alias Glific.Partners
+  alias Glific.{
+    Partners,
+    Repo
+  }
 
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
@@ -172,5 +175,50 @@ defmodule Glific do
       error = "#{value} can not be converted to atom"
       Appsignal.send_error(:error, error, __STACKTRACE__)
       :invalid_atom
+  end
+
+  @doc """
+  Delete multiple items from the map
+  """
+  @spec delete_multiple(map(), list()) :: map()
+  def delete_multiple(map, list) do
+    list
+    |> Enum.reduce(
+      map,
+      fn l, acc -> Map.delete(acc, l) end
+    )
+  end
+
+  @doc """
+  Given a string seperated by spaces, commas, or semi-colons, create a set of individual
+  elements in the string
+  """
+  @spec make_set(String.t(), list()) :: MapSet.t()
+  def make_set(str, seperators \\ [",", ";"]) do
+    str
+    # First ALWAYS split by white space
+    |> String.split()
+    # then split by seperators
+    |> Enum.flat_map(fn x -> String.split(x, seperators, trim: true) end)
+    # finally create a mapset for easy fast checks
+    |> MapSet.new()
+  end
+
+  @doc """
+  Intermediary function to update the input params with organization id
+  as operation is performed by glific_admin for other organizations
+  """
+  @spec substitute_organization_id(map(), any, atom()) :: map()
+  def substitute_organization_id(params, value, key) when is_integer(value),
+    do: substitute_organization_id(params, "#{value}", key)
+
+  def substitute_organization_id(params, value, key) do
+    value
+    |> String.to_integer()
+    |> Repo.put_process_state()
+
+    params
+    |> Map.put(:organization_id, value)
+    |> Map.delete(key)
   end
 end

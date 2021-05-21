@@ -111,8 +111,8 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:dataloader, "~> 1.0"},
-      {:hackney, "~> 1.16"},
-      {:tesla, "~> 1.3"},
+      {:hackney, "~> 1.17"},
+      {:tesla, "~> 1.4"},
       {:oban, "~> 2.6"},
       {:oban_web, "~> 2.6", organization: "oban", only: @oban_envs},
       {:oban_pro, "~> 0.7", organization: "oban", only: @oban_envs},
@@ -147,7 +147,8 @@ defmodule Glific.MixProject do
       {:stripity_stripe, "~> 2.0"},
       {:stripe_mock, "~> 0.1.0", only: @test_envs},
       {:remote_ip, "~> 1.0"},
-      {:exvcr, "~> 0.12.2", only: @test_envs}
+      {:exvcr, "~> 0.12.2", only: @test_envs},
+      {:dotenvy, "~> 0.1"}
     ]
   end
 
@@ -160,11 +161,6 @@ defmodule Glific.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "common"],
-      no_oban: [
-        "deps.clean oban_web oban_pro --unlock",
-        "deps.get --only dev",
-        "common"
-      ],
       common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create --quiet",

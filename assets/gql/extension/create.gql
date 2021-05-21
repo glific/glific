@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createExtension($input: ExtensionInput!) {
+  createExtension(input: $input) {
+    ...ExtensionFields
+
+    ...ErrorFields
+  }
+}

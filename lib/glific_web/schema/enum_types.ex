@@ -12,6 +12,12 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "API Function Status enum"
   enum(:api_status_enum, values: Glific.Enums.api_status_const())
 
+  @desc "The Contact Field Scope Types enum"
+  enum(:contact_field_scope_enum, values: Glific.Enums.contact_field_scope_const())
+
+  @desc "The Contact Field Value Types enum"
+  enum(:contact_field_value_type_enum, values: Glific.Enums.contact_field_value_type_const())
+
   @desc "The Contact Status enum"
   enum(:contact_status_enum, values: Glific.Enums.contact_status_const())
 

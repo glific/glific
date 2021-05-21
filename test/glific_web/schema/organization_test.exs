@@ -201,17 +201,15 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
     organization = get_in(query_data, [:data, "deleteInactiveOrganization", "organization"])
     assert organization["isActive"] == false
-    assert organization["isApproved"] == false
     assert organization["name"] == "Fixture Organization"
   end
 
   test "update an organization and test possible scenarios and errors", %{user: user} do
-    organization = Fixtures.organization_fixture()
-
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
     timezone = "America/Los_Angeles"
+    organization = Fixtures.organization_fixture()
 
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
@@ -290,6 +288,25 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+
+    # update organization fields with valid param
+    fields = %{"organization_name" => "Glific", "url" => "/registration"} |> Jason.encode!()
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "fields" => fields
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+
+    assert updated_organization["fields"] ==
+             "{\"url\":\"/registration\",\"organization_name\":\"Glific\"}"
   end
 
   test "update an organization with default language and active languages", %{user: user} do

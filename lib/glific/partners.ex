@@ -389,7 +389,7 @@ defmodule Glific.Partners do
     # this is of the form {:global_org_key, {:organization, value}}
     # we want the value element
     cache_key = cachex_key |> elem(1) |> elem(1)
-    Logger.info("Loading orgcanization cache: #{cache_key}")
+    Logger.info("Loading organization cache: #{cache_key}")
 
     organization =
       if is_integer(cache_key) do
@@ -634,7 +634,6 @@ defmodule Glific.Partners do
         # first delete the cached organization
         organization = get_organization!(attrs.organization_id)
         remove_organization_cache(organization.id, organization.shortcode)
-
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
         %Credential{}
@@ -698,6 +697,11 @@ defmodule Glific.Partners do
     Caches.remove(
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
+    )
+
+    Caches.remove(
+      @global_organization_id,
+      ["organization_services"]
     )
   end
 
@@ -771,12 +775,13 @@ defmodule Glific.Partners do
         Logger.info("Disable #{shortcode} credential for org_id: #{organization_id}")
 
         Notifications.create_notification(%{
-          category: shortcode,
-          message: "Disabling #{shortcode}",
+          category: "Partner",
+          message: "Disabling #{shortcode}. Something is wrong with the account.",
           severity: "Critical",
           organization_id: organization_id,
           entity: %{
-            error: "You have entered wrong credentials"
+            id: provider.id,
+            shortcode: shortcode
           }
         })
 
@@ -849,4 +854,10 @@ defmodule Glific.Partners do
     |> group_by([c], c.organization_id)
     |> select([c], [count(c.id), c.organization_id])
   end
+
+  @doc """
+  Convert global field to map for variable substitution
+  """
+  @spec get_global_field_map(integer) :: map()
+  def get_global_field_map(organization_id), do: organization(organization_id).fields
 end

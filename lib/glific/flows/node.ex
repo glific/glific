@@ -9,7 +9,8 @@ defmodule Glific.Flows.Node do
 
   alias Glific.{
     Flows,
-    Messages.Message
+    Messages.Message,
+    Metrics
   }
 
   alias Glific.Flows.{
@@ -17,7 +18,6 @@ defmodule Glific.Flows.Node do
     Exit,
     Flow,
     FlowContext,
-    FlowCount,
     Router
   }
 
@@ -26,8 +26,9 @@ defmodule Glific.Flows.Node do
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
           flow_uuid: Ecto.UUID.t() | nil,
-          flow_id: Ecto.UUID.t() | nil,
+          flow_id: non_neg_integer | nil,
           flow: Flow.t() | nil,
+          is_terminal: boolean() | false,
           actions: [Action.t()] | [],
           exits: [Exit.t()] | [],
           router: Router.t() | nil
@@ -35,8 +36,11 @@ defmodule Glific.Flows.Node do
 
   embedded_schema do
     field :uuid, Ecto.UUID
-    field :flow_id, Ecto.UUID
+    field :flow_id, :integer
     field :flow_uuid, Ecto.UUID
+
+    field :is_terminal, :boolean, default: false
+
     embeds_one :flow, Flow
 
     embeds_many :actions, Action
@@ -75,7 +79,10 @@ defmodule Glific.Flows.Node do
         node
       )
 
-    node = Map.put(node, :exits, exits)
+    node =
+      node
+      |> Map.put(:exits, exits)
+      |> Map.put(:is_terminal, is_terminal?(exits))
 
     {node, uuid_map} =
       if Map.has_key?(json, "router") do
@@ -95,6 +102,12 @@ defmodule Glific.Flows.Node do
 
     {node, uuid_map}
   end
+
+  @spec is_terminal?(list()) :: boolean()
+  defp is_terminal?(exits),
+    do:
+      exits
+      |> Enum.all?(fn e -> is_nil(e.destination_node_uuid) end)
 
   @doc """
   If the node has a router component, and the flow has enabled us to fix
@@ -188,12 +201,12 @@ defmodule Glific.Flows.Node do
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
-  @spec execute(Node.t(), FlowContext.t(), [Message.t()]) ::
+  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # update the flow count
 
-    FlowCount.upsert_flow_count(%{
+    Metrics.bump(%{
       uuid: node.uuid,
       flow_id: node.flow_id,
       flow_uuid: node.flow_uuid,
@@ -241,7 +254,7 @@ defmodule Glific.Flows.Node do
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_node_actions(node, context, messages) do
     # we need to execute all the actions (nodes can have multiple actions)
-    {status, context, messages} =
+    result =
       Enum.reduce(
         node.actions,
         {:ok, context, messages},
@@ -251,9 +264,17 @@ defmodule Glific.Flows.Node do
         end
       )
 
-    case status do
-      :ok -> Exit.execute(hd(node.exits), context, messages)
-      :wait -> {:ok, context, messages}
+    case elem(result, 0) do
+      :error ->
+        result
+
+      :ok ->
+        {_status, context, messages} = result
+        Exit.execute(hd(node.exits), context, messages)
+
+      :wait ->
+        {_status, context, messages} = result
+        {:ok, context, messages}
     end
   end
 end

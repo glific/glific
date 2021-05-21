@@ -8,14 +8,16 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/consulting_hour/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/consulting_hour/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/consulting_hour/delete.gql")
+  load_gql(:list, GlificWeb.Schema, "assets/gql/consulting_hour/list.gql")
+  load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
 
-  test "create a consulting hour entry", %{manager: user} do
+  test "create a consulting hour entry", %{user: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "participants" => "Adam",
-            "organizationId" => 1,
+            "clientId" => attrs.organization_id,
             "organizationName" => "Glific",
             "staff" => "Adelle Cavin",
             "content" => "GCS issue",
@@ -33,14 +35,106 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert consulting_hour["staff"] == "Adelle Cavin"
   end
 
-  test "update a consulting hours", %{manager: user} = attrs do
+  test "count returns the number of consulting hours", %{user: user} = attrs do
+    _consulting_hour_1 =
+      Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
+
+    _consulting_hour_2 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Ken Cavin"
+      })
+
+    {:ok, query_data} = auth_query_gql_by(:count, user)
+    assert get_in(query_data, [:data, "countConsultingHours"]) > 0
+
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user,
+        variables: %{
+          "filter" => %{"organization_name" => "test organization"},
+          "clientId" => attrs.organization_id
+        }
+      )
+
+    assert get_in(query_data, [:data, "countConsultingHours"]) == 0
+
+    {:ok, query_data} =
+      auth_query_gql_by(:count, user,
+        variables: %{"filter" => %{"staff" => "Ken Cavin"}, "clientId" => attrs.organization_id}
+      )
+
+    assert get_in(query_data, [:data, "countConsultingHours"]) == 1
+  end
+
+  test "consulting hours field returns list of consulting hours", %{user: user} = attrs do
+    _consulting_hour_1 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Jon Cavin",
+        participants: "John Doe"
+      })
+
+    _consulting_hour_2 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Ken Cavin",
+        is_billable: false
+      })
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"opts" => %{"order" => "ASC"}, "clientId" => attrs.organization_id}
+      )
+
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "consultingHours"])
+    assert length(consulting_hours) > 0
+    [consulting_hour | _] = consulting_hours
+    assert get_in(consulting_hour, ["staff"]) == "Jon Cavin"
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"isBillable" => false}, "clientId" => attrs.organization_id}
+      )
+
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "consultingHours"])
+    assert length(consulting_hours) > 0
+    [consulting_hour | _] = consulting_hours
+    assert get_in(consulting_hour, ["staff"]) == "Ken Cavin"
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"participants" => "John"}, "clientId" => attrs.organization_id}
+      )
+
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "consultingHours"])
+    assert length(consulting_hours) > 0
+    [consulting_hour | _] = consulting_hours
+    assert get_in(consulting_hour, ["participants"]) == "John Doe"
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "opts" => %{"limit" => 1, "offset" => 0},
+          "clientId" => attrs.organization_id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "consultingHours"])
+    assert length(consulting_hours) == 1
+  end
+
+  test "update a consulting hours", %{user: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => consulting_hour.id,
-          "input" => %{"duration" => 20}
+          "input" => %{"duration" => 20, "clientId" => attrs.organization_id}
         }
       )
 
@@ -56,7 +150,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     result =
       auth_query_gql_by(:delete, user,
         variables: %{
-          "id" => consulting_hour.id
+          "id" => consulting_hour.id,
+          "clientId" => attrs.organization_id
         }
       )
 
@@ -71,7 +166,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "id" => consulting_hour.id
+          "id" => consulting_hour.id,
+          "clientId" => attrs.organization_id
         }
       )
 
@@ -86,7 +182,8 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "id" => consulting_hour.id + 1
+          "id" => consulting_hour.id + 1,
+          "clientId" => attrs.organization_id
         }
       )
 

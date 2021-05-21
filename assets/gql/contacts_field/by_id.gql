@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query contactsField($id: ID!) {
+  contactsField(id: $id) {
+    ...ContactsFieldFields
+
+    ...ErrorFields
+  }
+}
