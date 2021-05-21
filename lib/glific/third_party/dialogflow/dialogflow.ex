@@ -16,9 +16,10 @@ defmodule Glific.Dialogflow do
   def request(organization_id, method, path, body) do
     %{url: url, id: id, email: email} = project_info(organization_id)
 
-    dflow_url = "#{url}/v2beta1/projects/#{id}/locations/global/agent/#{path}"
+    dflow_url = "#{url}/v2/projects/#{id}/locations/global/agent/#{path}"
 
-    do_request(method, dflow_url, body(body), headers(email, organization_id))
+    method
+    |> do_request(dflow_url, body(body), headers(email, organization_id))
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Poison.decode!(body)}

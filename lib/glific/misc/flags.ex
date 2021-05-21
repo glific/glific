@@ -119,7 +119,7 @@ defmodule Glific.Flags do
   See if we have valid dialogflow credentials, if so, enable dialogflow
   else disable it
   """
-  @spec dialogflow(Organization.t()) :: {:ok, boolean()}
+  @spec dialogflow(Organization.t()) :: nil
   def dialogflow(organization) do
     organization.services["dialogflow"]
     |> case do
@@ -135,5 +135,7 @@ defmodule Glific.Flags do
           for_actor: %{organization_id: organization.id}
         )
     end
+
+    nil
   end
 end
