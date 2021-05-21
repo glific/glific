@@ -21,7 +21,7 @@ defmodule Glific.Flags do
 
     out_of_office_update(organization)
 
-    # dialogflow(organization)
+    dialogflow(organization)
   end
 
   @spec business_day?(DateTime.t(), [integer]) :: boolean
@@ -115,7 +115,6 @@ defmodule Glific.Flags do
     )
   end
 
-  _ = '''
   @doc """
   See if we have valid dialogflow credentials, if so, enable dialogflow
   else disable it
@@ -137,5 +136,4 @@ defmodule Glific.Flags do
         )
     end
   end
-  '''
 end

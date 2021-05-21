@@ -93,11 +93,11 @@ defmodule Glific.Flows.Webhook do
 
   defp create_body(context, action_body) do
     case Jason.decode(action_body) do
-      {:ok, action_body_map}
-       -> do_create_body(context, action_body_map)
+      {:ok, action_body_map} ->
+        do_create_body(context, action_body_map)
 
       _ ->
-      Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+        Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
 
         {:error,
          dgettext(
@@ -132,11 +132,10 @@ defmodule Glific.Flows.Webhook do
     |> Enum.into(%{})
     |> Jason.encode()
     |> case do
-       {:ok, action_body}
-        ->
-          {action_body_map, action_body}
-      _
-       ->
+      {:ok, action_body} ->
+        {action_body_map, action_body}
+
+      _ ->
         Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
 
         {:error,
@@ -144,7 +143,6 @@ defmodule Glific.Flows.Webhook do
            "errors",
            "Error in encoding webhook body. Please check the json body in floweditor"
          )}
-
     end
   end
 

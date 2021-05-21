@@ -4,6 +4,7 @@ defmodule Glific.Processor.ConsumerTagger do
   """
 
   alias Glific.{
+    Dialogflow.Sessions,
     Messages.Message,
     Processor.Helper,
     Taggers,
@@ -16,17 +17,9 @@ defmodule Glific.Processor.ConsumerTagger do
   """
   @spec load_state(non_neg_integer) :: map()
   def load_state(organization_id) do
-    _ = """
-    Commenting this out for now, since we are no longer using this
-    Delete in March, 2021 if we are still not using
-
-    %{
-      numeric_map: Numeric.get_numeric_map(),
-      dialogflow_session_id: Ecto.UUID.generate()
-    }
-    """
-
-    Taggers.get_tag_maps(organization_id)
+    organization_id
+    |> Taggers.get_tag_maps()
+    |> Map.put(:dialogflow_session_id, Ecto.UUID.generate())
   end
 
   @doc false
@@ -37,9 +30,9 @@ defmodule Glific.Processor.ConsumerTagger do
     {message, state}
     |> keyword_tagger(body)
     |> new_contact_tagger()
+    |> dialogflow_tagger()
 
     # |> numeric_tagger(body)
-    # |> dialogflow_tagger()
   end
 
   @spec keyword_tagger({atom() | Message.t(), map()}, String.t()) :: {Message.t(), map()}
@@ -84,6 +77,7 @@ defmodule Glific.Processor.ConsumerTagger do
         {message, state}
     end
   end
+  """
 
   @spec dialogflow_tagger({Message.t(), map()}) :: {Message.t(), map()}
   # dialog flow only accepts messages less than 255 characters for intent
@@ -102,7 +96,6 @@ defmodule Glific.Processor.ConsumerTagger do
   end
 
   defp dialogflow_tagger({message, state}), do: {message, state}
-  """
 
   @spec add_status_tag(Message.t(), String.t(), map()) :: Message.t()
   defp add_status_tag(message, status, state),

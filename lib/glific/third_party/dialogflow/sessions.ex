@@ -6,7 +6,8 @@ defmodule Glific.Dialogflow.Sessions do
   alias Glific.{
     Dialogflow,
     Dialogflow.SessionWorker,
-    Messages.Message
+    Messages.Message,
+    Processor.Helper
   }
 
   @doc """
@@ -45,15 +46,12 @@ defmodule Glific.Dialogflow.Sessions do
       "sessions/#{session_id}:detectIntent",
       body
     )
-
-    # |> handle_response(message)
+    |> handle_response(message)
   end
 
-  _ = """
   @spec handle_response(tuple(), map() | String.t()) :: any()
   defp handle_response({:ok, response}, message),
     do: Helper.add_dialogflow_tag(message, response["queryResult"])
 
   defp handle_response(error, _), do: {:error, error}
-  """
 end
