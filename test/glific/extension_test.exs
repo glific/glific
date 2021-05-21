@@ -15,12 +15,6 @@ defmodule Glific.ExtensionTest do
       module: "Glific.Test.Extension",
       name: "Test extension version"
     }
-    # @valid_more_attrs %{
-    #   code: "defmodule Glific.Test.Extension.Id, do: def current_id(), do: %{id: 22194}",
-    #   isActive: true,
-    #   module: "Glific.Test.Extension.Id",
-    #   name: "Test extension id"
-    # }
     @update_attrs %{
       isActive: false,
       code: "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"

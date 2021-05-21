@@ -45,7 +45,7 @@ defmodule GlificWeb.Resolvers.Extensions do
          {:ok, extension} <-
            Extension.update_extension(
              extension,
-             Map.merge(updated_params, %{module: extension.module})
+             Map.put(updated_params, :module, extension.module)
            ) do
       {:ok, %{extension: extension}}
     end
