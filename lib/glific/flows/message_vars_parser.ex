@@ -1,11 +1,6 @@
 defmodule Glific.Flows.MessageVarParser do
   require Logger
 
-  alias Glific.{
-    Partners,
-    Repo
-  }
-
   @moduledoc """
   substitute the contact fileds and result sets in the messages
   """
@@ -19,14 +14,7 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) when binding in [nil, %{}], do: input
 
   def parse(input, binding) do
-    binding =
-      binding
-      |> Map.put(
-        "global",
-        Partners.get_global_field_map(Repo.get_organization_id())
-      )
-      |> stringify_keys()
-
+    binding = stringify_keys(binding)
     input
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
