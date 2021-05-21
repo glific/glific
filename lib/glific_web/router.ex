@@ -159,6 +159,8 @@ defmodule GlificWeb.Router do
 
     get "/validate-media", FlowEditorController, :validate_media
 
+    get "/attachments_enabled", FlowEditorController, :attachments_enabled
+
     post "/flow-attachment", FlowEditorController, :flow_attachment
 
   end

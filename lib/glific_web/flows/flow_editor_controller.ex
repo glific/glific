@@ -13,6 +13,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.FlowCount,
     Flows.FlowLabel,
     GCS.GcsWorker,
+    Partners,
     Settings
   }
 
@@ -410,11 +411,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
-  @spec generate_uuid() :: String.t()
-  defp generate_uuid do
-    Ecto.UUID.generate()
+  @spec attachments_enabled(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def attachments_enabled(conn, _) do
+    organization_id = conn.assigns[:organization_id]
+    json(conn, %{is_enabled: Partners.attachments_enabled?(organization_id)} )
   end
 
+  @doc false
+  @spec flow_attachment(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flow_attachment(conn, %{"media" => media, "extension" => extension} = _params) do
     organization_id = conn.assigns[:organization_id]
     remote_name = remote_name(nil, extension)
@@ -425,6 +429,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
     end
   end
 
+  @doc false
+  @spec generate_uuid() :: String.t()
+  defp generate_uuid do
+    Ecto.UUID.generate()
+  end
 
   @spec remote_name(User.t(), String.t(), Ecto.UUID.t() | nil) :: String.t()
   defp remote_name(_user, extension, uuid \\ Ecto.UUID.generate()) do
