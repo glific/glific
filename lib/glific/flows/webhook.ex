@@ -89,7 +89,7 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(_context, nil), do: {%{}, "{}"}
+  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
   defp create_body(context, action_body) do
     case Jason.decode(action_body) do
@@ -98,6 +98,7 @@ defmodule Glific.Flows.Webhook do
 
       _ ->
       Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
+
         {:error,
          dgettext(
            "errors",
@@ -194,8 +195,9 @@ defmodule Glific.Flows.Webhook do
   ## Currently we can not send the json map as a query string
   ## We will come back on this one in the future.
 
-  defp do_action("get", url, body, headers),
-    do: Tesla.get(url, headers: headers, query: [data: body])
+  defp do_action("get", url, body, headers) do
+    Tesla.get(url, headers: headers, query: [data: body])
+  end
 
   @doc """
   Standard perform method to use Oban worker
