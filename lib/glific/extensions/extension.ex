@@ -43,14 +43,14 @@ defmodule Glific.Extensions.Extension do
         }
 
   schema "extensions" do
-    field(:name, :string)
-    field(:code, :string)
-    field(:module, :string)
+    field :name, :string
+    field :code, :string
+    field :module, :string
 
-    field(:is_valid, :boolean, default: false)
-    field(:is_active, :boolean, default: true)
+    field :is_valid, :boolean, default: false
+    field :is_active, :boolean, default: true
 
-    belongs_to(:organization, Organization)
+    belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
   end
