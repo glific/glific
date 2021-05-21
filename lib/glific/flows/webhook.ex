@@ -89,6 +89,8 @@ defmodule Glific.Flows.Webhook do
   end
 
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
+  defp create_body(_context, nil), do: {%{}, nil}
+
   defp create_body(context, action_body) do
     default_payload = %{
       contact: %{
@@ -104,16 +106,15 @@ defmodule Glific.Flows.Webhook do
       "results" => context.results
     }
 
-    {:ok, action_body_map} =  Jason.decode(action_body)
-
     action_body_map =
-    action_body_map
-    |> MessageVarParser.parse_map(fields)
-    |> Enum.map(fn
-      {k, "@contact"} -> {k, default_payload.contact}
-      {k, "@results"} -> {k, default_payload.results}
-      {k, v} -> {k, v} end)
-    |> Enum.into(%{})
+      Jason.decode!(action_body)
+      |> MessageVarParser.parse_map(fields)
+      |> Enum.map(fn
+        {k, "@contact"} -> {k, default_payload.contact}
+        {k, "@results"} -> {k, default_payload.results}
+        {k, v} -> {k, v}
+      end)
+      |> Enum.into(%{})
 
     case Jason.encode(action_body_map) do
       {:ok, action_body} ->

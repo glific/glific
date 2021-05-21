@@ -115,7 +115,8 @@ defmodule Glific.Flows.MessageVarParser do
       body
     end
   end
-  def parse_results(body, _),  do: body
+
+  def parse_results(body, _), do: body
 
   @doc """
   Replace all the keys and values of a given map
@@ -128,7 +129,7 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   def parse_map(value, bindings) when is_binary(value),
-  do: parse(value, bindings) |> parse_results(bindings["results"])
+    do: parse(value, bindings) |> parse_results(bindings["results"])
 
-  def parse_map(value, _results),  do: value
+  def parse_map(value, _results), do: value
 end

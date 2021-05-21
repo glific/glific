@@ -579,6 +579,7 @@ defmodule Glific.Flows.ActionTest do
     # ensure we have an entry in the webhook log
     # webhooks are tested in a complete manner in webhook_test, so skipping here
     log = Repo.get_by(WebhookLog, %{url: url})
+
     assert String.contains?(log.error, "Error in decoding webhook body")
   end
 
