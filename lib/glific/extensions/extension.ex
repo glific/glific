@@ -43,14 +43,14 @@ defmodule Glific.Extensions.Extension do
         }
 
   schema "extensions" do
-    field :name, :string
-    field :code, :string
-    field :module, :string
+    field(:name, :string)
+    field(:code, :string)
+    field(:module, :string)
 
-    field :is_valid, :boolean, default: false
-    field :is_active, :boolean, default: true
+    field(:is_valid, :boolean, default: false)
+    field(:is_active, :boolean, default: true)
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -63,7 +63,7 @@ defmodule Glific.Extensions.Extension do
     extension
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:stripe_customer_id)
+    |> unique_constraint([:module, :name, :organization_id])
   end
 
   @spec compile(String.t(), String.t() | nil) :: map()

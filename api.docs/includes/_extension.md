@@ -72,7 +72,6 @@ mutation createExtension($input:ExtensionInput!) {
     extension {
       code
       isActive
-      module
       name
       clientId
     }
@@ -88,7 +87,6 @@ mutation createExtension($input:ExtensionInput!) {
     "clientId": 1,
     "code": "defmodule URI, do: def default_port(), do: %{phone: 9876543210}",
     "isActive": true,
-    "module": "URI",
     "name": "URI"
   }
 ```
@@ -179,7 +177,7 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
         "updatedAt": "2021-05-19T11:47:30Z",
         "isActive": false,
         "isValid": false,
-        "module": null,
+        "module": "Elixir.Glific.URI",
         "name": "URI",
         "organization": {
           "isActive": true,
@@ -351,11 +349,6 @@ mutation  deleteExtension($id: ID!, clientId: ID!) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>code</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>module</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
