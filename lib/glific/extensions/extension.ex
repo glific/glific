@@ -63,7 +63,7 @@ defmodule Glific.Extensions.Extension do
     extension
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:stripe_customer_id)
+    |> unique_constraint([:module, :name, :organization_id])
   end
 
   @spec compile(String.t(), String.t() | nil) :: map()

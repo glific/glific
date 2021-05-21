@@ -42,7 +42,11 @@ defmodule GlificWeb.Resolvers.Extensions do
 
     with {:ok, extension} <-
            Repo.fetch_by(Extension, %{id: id}),
-         {:ok, extension} <- Extension.update_extension(extension, updated_params) do
+         {:ok, extension} <-
+           Extension.update_extension(
+             extension,
+             Map.put(updated_params, :module, extension.module)
+           ) do
       {:ok, %{extension: extension}}
     end
   end

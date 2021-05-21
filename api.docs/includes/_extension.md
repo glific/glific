@@ -3,8 +3,8 @@
 ## Get Extension by ID
 
 ```graphql
-query Extension(id: ID!) {
-  Extension(id: $id) {
+query Extension(id: ID!, clientId: ID!) {
+  Extension(id: $id, clientId: $clientId) {
     code
     id
     insertedAt
@@ -22,6 +22,7 @@ query Extension(id: ID!) {
 
 {
   "id": 2
+  "clientId": 2
 }
 ```
 
@@ -52,9 +53,10 @@ query Extension(id: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                 | Default | Description |
-| --------- | -------------------- | ------- | ----------- |
-| ID        | <a href="#id">ID</a> | nil     |             |
+| Parameter | Type                       | Default | Description |
+| --------- | -------------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a>       | nil     |             |
+| clientId  | <a href="#id">clientId</a> | nil     |             |
 
 ### Return Parameters
 
@@ -70,7 +72,6 @@ mutation createExtension($input:ExtensionInput!) {
     extension {
       code
       isActive
-      module
       name
       clientId
     }
@@ -86,7 +87,6 @@ mutation createExtension($input:ExtensionInput!) {
     "clientId": 1,
     "code": "defmodule URI, do: def default_port(), do: %{phone: 9876543210}",
     "isActive": true,
-    "module": "URI",
     "name": "URI"
   }
 ```
@@ -177,7 +177,7 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
         "updatedAt": "2021-05-19T11:47:30Z",
         "isActive": false,
         "isValid": false,
-        "module": null,
+        "module": "Elixir.Glific.URI",
         "name": "URI",
         "organization": {
           "isActive": true,
@@ -206,8 +206,8 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
 ## Delete a Extension
 
 ```graphql
-mutation  deleteExtension($id: ID!) {
-   deleteExtension(id: $id!) {
+mutation  deleteExtension($id: ID!, clientId: ID!) {
+   deleteExtension(id: $id!, clientId: $clientId) {
     Extension {
       code
       id
@@ -263,9 +263,10 @@ mutation  deleteExtension($id: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                  | Default  | Description |
-| --------- | --------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>! | required |             |
+| Parameter | Type                        | Default  | Description |
+| --------- | --------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!       | required |             |
+| clientId  | <a href="#id">clientId</a>! | required |             |
 
 ### Return Parameters
 
@@ -348,11 +349,6 @@ mutation  deleteExtension($id: ID!) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>code</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>module</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
