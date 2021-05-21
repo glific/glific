@@ -18,7 +18,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
             "code" =>
               "defmodule Extension.Schema.Test.Phone, do: def default_phone(), do: %{phone: 9876543210}",
             "isActive" => true,
-            "module" => "Extension.Schema.Test.Phone",
             "name" => "Extension.Schema.Test.Phone"
           }
         }
