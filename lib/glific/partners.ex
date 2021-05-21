@@ -634,8 +634,6 @@ defmodule Glific.Partners do
         # first delete the cached organization
         organization = get_organization!(attrs.organization_id)
         remove_organization_cache(organization.id, organization.shortcode)
-        remove_organization_services_cache()
-
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
         %Credential{}
@@ -672,7 +670,6 @@ defmodule Glific.Partners do
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
-    remove_organization_services_cache()
 
     {:ok, credential} =
       credential
@@ -692,7 +689,7 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Removing organization cache
+  Removing organization cache and organization services cache
   """
   @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
   def remove_organization_cache(organization_id, shortcode) do
@@ -700,13 +697,7 @@ defmodule Glific.Partners do
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
     )
-  end
 
-  @doc """
-  Removing organization services cache
-  """
-  @spec remove_organization_services_cache() :: any()
-  def remove_organization_services_cache do
     Caches.remove(
       @global_organization_id,
       ["organization_services"]
@@ -774,7 +765,6 @@ defmodule Glific.Partners do
         # first delete the cached organization
         organization = get_organization!(organization_id)
         remove_organization_cache(organization.id, organization.shortcode)
-        remove_organization_services_cache()
 
         Credential
         |> where([c], c.provider_id == ^provider.id)
