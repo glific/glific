@@ -123,6 +123,7 @@ defmodule Glific.Flows.Webhook do
       "results" => context.results
     }
 
+    action_body_map =
     MessageVarParser.parse_map(action_body_map, fields)
     |> Enum.map(fn
       {k, "@contact"} -> {k, default_payload.contact}
@@ -130,7 +131,8 @@ defmodule Glific.Flows.Webhook do
       {k, v} -> {k, v}
     end)
     |> Enum.into(%{})
-    |> Jason.encode()
+
+    Jason.encode(action_body_map)
     |> case do
        {:ok, action_body}
         ->
