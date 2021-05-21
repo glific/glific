@@ -209,6 +209,9 @@ defmodule Glific do
   as operation is performed by glific_admin for other organizations
   """
   @spec substitute_organization_id(map(), any, atom()) :: map()
+  def substitute_organization_id(params, value, key) when is_integer(value),
+    do: substitute_organization_id(params, "#{value}", key)
+
   def substitute_organization_id(params, value, key) do
     value
     |> String.to_integer()

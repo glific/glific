@@ -34,7 +34,6 @@ defmodule GlificWeb.Schema.ExtensionTypes do
   end
 
   input_object :extension_input do
-    field :module, :string
     field :code, :string
     field :is_active, :boolean
     field :name, :string

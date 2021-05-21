@@ -3,8 +3,8 @@ defmodule Glific.ExtensionTest do
   use ExUnit.Case
 
   alias Glific.{
-    Fixtures,
-    Extensions.Extension
+    Extensions.Extension,
+    Fixtures
   }
 
   describe "extensions" do
@@ -23,8 +23,7 @@ defmodule Glific.ExtensionTest do
     # }
     @update_attrs %{
       isActive: false,
-      code:
-      "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
+      code: "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
     }
     @invalid_attrs %{
       code: nil,
@@ -43,14 +42,15 @@ defmodule Glific.ExtensionTest do
     assert extension.is_active == true
     assert extension.is_valid == true
     assert extension.name == "Test extension version"
-    assert extension.code == "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 1}"
+
+    assert extension.code ==
+             "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 1}"
   end
 
   test "create_extension/1 with invalid data returns error changeset", %{
     organization_id: organization_id
   } do
-    attrs =
-      Map.merge(@invalid_attrs, %{organization_id: organization_id})
+    attrs = Map.merge(@invalid_attrs, %{organization_id: organization_id})
 
     assert {:error, %Ecto.Changeset{}} = Extension.create_extension(attrs)
   end
@@ -68,7 +68,9 @@ defmodule Glific.ExtensionTest do
 
     assert updated_extension.is_valid == true
     assert updated_extension.name == "Current Version"
-    assert updated_extension.code == "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
+
+    assert updated_extension.code ==
+             "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
   end
 
   test "extension/1 deletes the extension", %{organization_id: organization_id} do
