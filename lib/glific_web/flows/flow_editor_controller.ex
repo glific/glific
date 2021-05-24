@@ -14,7 +14,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.FlowLabel,
     GCS.GcsWorker,
     Partners,
-    Settings
+    Settings,
+    Users.User
   }
 
   @doc false
