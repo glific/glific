@@ -6,19 +6,23 @@ defmodule Glific.Dialogflow.Sessions do
   alias Glific.{
     Dialogflow,
     Dialogflow.SessionWorker,
+    Flows.FlowContext,
+    Messages,
     Messages.Message,
-    Processor.Helper
+    Repo,
   }
 
   @doc """
   Add message to queue worker to detect the intent
   """
-  @spec detect_intent(map(), String.t()) :: :ok
-  def detect_intent(message, session_id) do
+  @spec detect_intent(Message.t(), non_neg_integer, String.t()) :: :ok
+  def detect_intent(message, context_id, result_name) do
     %{
-      :path => session_id,
-      :locale => message.contact.language.locale,
-      :message => Message.to_minimal_map(message)
+      path: message.session_uuid,
+      locale: message.contact.language.locale,
+      message: Message.to_minimal_map(message),
+      context_id: context_id,
+      result_name: result_name
     }
     |> SessionWorker.new()
     |> Oban.insert()
@@ -29,8 +33,10 @@ defmodule Glific.Dialogflow.Sessions do
   @doc """
   Function to communicate with dialogflow to detect the intent of the request
   """
-  @spec make_request(map(), String.t(), String.t()) :: tuple
-  def make_request(message, session_id, language \\ "en") do
+  @spec make_request(map(), String.t(), String.t(), Keyword.t()) :: :ok | {:error, :string}
+  def make_request(message, session_id, language \\ "en", opts) do
+    Repo.put_process_state(message.organization_id)
+
     body = %{
       queryInput: %{
         text: %{
@@ -47,12 +53,35 @@ defmodule Glific.Dialogflow.Sessions do
       body
     )
     |> IO.inspect()
-    |> handle_response(message)
+    |> handle_response(opts[:context_id], opts[:result_name])
   end
 
-  @spec handle_response(tuple(), map() | String.t()) :: any()
-  defp handle_response({:ok, response}, message),
-    do: Helper.add_dialogflow_tag(message, response["queryResult"])
+  @spec handle_response(tuple(), non_neg_integer, String.t()) :: :ok | {:error, :string}
+  defp handle_response({:ok, response}, context_id, result_name) do
+    intent = get_in(response, ["queryResult", "intent", "displayName"])
+    confidence = get_in(response, ["queryResult", "intentDetectionConfidence"])
 
-  defp handle_response(error, _), do: {:error, error}
+    context =
+      Repo.get!(FlowContext, context_id)
+      |> Repo.preload(:flow)
+
+    {context, message} =
+    if is_nil(intent) do
+      {
+        context,
+        Messages.create_temp_message(context.organization_id, "Failure")
+      }
+    else
+      # update the context with the results from webhook return values
+      {
+        FlowContext.update_results(context, %{result_name => %{intent: intent, confidence: confidence}}),
+        Messages.create_temp_message(context.organization_id, String.downcase(intent))
+      }
+    end
+
+    FlowContext.wakeup_one(context, message)
+    :ok
+  end
+
+  defp handle_response(error, _, _), do: {:error, error}
 end

@@ -148,12 +148,19 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-  A list of all the NLP classifiers. For Glific it's just WhatsApp.
+  A list of all the NLP classifiers. For Glific it's just Dialogflow
   We are not supporting them for now. We will come back to this in near future
   """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
-    classifiers = %{results: []}
+    classifiers = %{results: [
+                       %{
+                         uuid: generate_uuid(),
+                         name: "Dialogflow",
+                         type: "dialogflow",
+                         intents: ["glific.info", "glific.features"]
+                       }
+                       ]}
     json(conn, classifiers)
   end
 

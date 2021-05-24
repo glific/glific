@@ -7,7 +7,8 @@ defmodule Glific.Dialogflow do
   seem to be maintained, that we could not use as is. The dependency list was quite old etc.
   """
 
-  alias Glific.Partners
+  alias Glific.{Dialogflow.Sessions, Messages.Message, Partners}
+  alias Glific.Flows.{Action, FlowContext}
 
   @doc """
   The request controller which sends and parses requests. We should move this to Tesla
@@ -85,5 +86,13 @@ defmodule Glific.Dialogflow do
           email: service_account["client_email"]
         }
     end
+  end
+
+  @doc """
+  Execute a webhook action, could be either get or post for now
+  """
+  @spec execute(Action.t(), FlowContext.t(), Message.t()) :: nil
+  def execute(action, context, message) do
+    Sessions.detect_intent(message, context.id, action.result_name)
   end
 end

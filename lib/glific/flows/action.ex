@@ -10,6 +10,7 @@ defmodule Glific.Flows.Action do
 
   alias Glific.{
     Contacts.Contact,
+    Dialogflow,
     Flows,
     Flows.Flow,
     Groups,
@@ -39,6 +40,7 @@ defmodule Glific.Flows.Action do
   @required_fields_set_contact_field [:value, :field | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
+  @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
@@ -170,12 +172,21 @@ defmodule Glific.Flows.Action do
     Flows.check_required_fields(json, @required_fields_webhook)
 
     process(json, uuid_map, node, %{
-      url: json["url"],
-      method: json["method"],
-      result_name: json["result_name"],
-      body: json["body"],
-      headers: json["headers"]
-    })
+          url: json["url"],
+          method: json["method"],
+          result_name: json["result_name"],
+          body: json["body"],
+          headers: json["headers"]
+            })
+  end
+
+  def process(%{"type" => "call_classifier"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_classifier)
+
+    process(json, uuid_map, node, %{
+          input: json["input"],
+          result_name: json["result_name"],
+            })
   end
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
@@ -428,6 +439,14 @@ defmodule Glific.Flows.Action do
     # just call the webhook, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchrnously
     Webhook.execute(action, context)
+    # webhooks dont consume a message, so we send it forward
+    {:wait, context, messages}
+  end
+
+  def execute(%{type: "call_classifier"} = action, context, messages) do
+    # just call the classifier, and ask the caller to wait
+    # we are processing the webhook using Oban and this happens asynchronously
+    Dialogflow.execute(action, context, context.last_message)
     # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
   end
