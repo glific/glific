@@ -689,10 +689,12 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Removing organization cache and organization services cache
+  Removing organization and service cache
   """
   @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
   def remove_organization_cache(organization_id, shortcode) do
+    Caches.remove(@global_organization_id, ["organization_services"])
+
     Caches.remove(
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
@@ -747,7 +749,7 @@ defmodule Glific.Partners do
   @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
   defp handle_token_error(organization_id, provider_shortcode, error) when is_binary(error) do
     if String.contains?(error, ["account not found", "invalid_grant"]),
-      do: disable_credential(organization_id, provider_shortcode)
+      do: disable_credential(organization_id, provider_shortcode, "Invalid credentials, service account not found")
 
     nil
   end
@@ -758,8 +760,8 @@ defmodule Glific.Partners do
   @doc """
   Disable a specific credential for the organization
   """
-  @spec disable_credential(non_neg_integer, String.t()) :: :ok
-  def disable_credential(organization_id, shortcode) do
+  @spec disable_credential(non_neg_integer, String.t(), String.t()) :: :ok
+  def disable_credential(organization_id, shortcode, error_message) do
     case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
       {:ok, provider} ->
         # first delete the cached organization
@@ -775,7 +777,7 @@ defmodule Glific.Partners do
 
         Notifications.create_notification(%{
           category: "Partner",
-          message: "Disabling #{shortcode}. Something is wrong with the account.",
+          message: "Disabling #{shortcode}. #{error_message}",
           severity: "Critical",
           organization_id: organization_id,
           entity: %{

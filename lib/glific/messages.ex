@@ -288,7 +288,7 @@ defmodule Glific.Messages do
       Notifications.create_notification(%{
         category: "Message",
         message: reason,
-        severity: "Error",
+        severity: "Warning",
         organization_id: attrs.organization_id,
         entity: %{
           id: contact.id,

@@ -874,7 +874,7 @@ defmodule Glific.PartnersTest do
       end
     end
 
-    test "disable_credentails/2 should disable the credentails and create notification",
+    test "disable_credential/2 should disable the credentials and create notification",
          %{organization_id: organization_id} = _attrs do
       provider = provider_fixture()
 
@@ -890,7 +890,7 @@ defmodule Glific.PartnersTest do
       assert credential.is_active == true
 
       # credential with same provider shortcode for the organization should not be allowed
-      Partners.disable_credential(organization_id, provider.shortcode)
+      Partners.disable_credential(organization_id, provider.shortcode, "Multiple credentials found for same shortcode")
 
       {:ok, credential} =
         Repo.fetch_by(Credential, %{
@@ -903,7 +903,7 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         })
 
-      assert notification.message == "Disabling shortcode 1. Something is wrong with the account."
+      assert notification.message == "Disabling shortcode 1. Multiple credentials found for same shortcode"
       assert credential.is_active == false
     end
   end
