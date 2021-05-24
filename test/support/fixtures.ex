@@ -637,7 +637,7 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       category: "Message",
       message: "Cannot send message",
-      severity: "Error",
+      severity: "Warning",
       organization_id: attrs.organization_id,
       entity: %{
         id: contact.id,

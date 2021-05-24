@@ -26,8 +26,8 @@ defmodule Glific.Notifications do
   """
   @spec update_notification(Notification.t(), map()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  def update_notification(log, attrs) do
-    log
+  def update_notification(notification, attrs) do
+    notification
     |> Notification.changeset(attrs)
     |> Repo.update()
   end
