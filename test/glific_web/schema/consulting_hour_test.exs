@@ -183,7 +183,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
       )
 
     assert {:ok, query_data} = result
-    [error] = get_in(query_data, [:errors])
-    assert error.message == "No consulting hour found with inputted params"
+    [error] = get_in(query_data, [:data, "consultingHour", "errors"])
+    assert error["message"] == "Resource not found"
   end
 end
