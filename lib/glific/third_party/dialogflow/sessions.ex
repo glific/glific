@@ -46,6 +46,7 @@ defmodule Glific.Dialogflow.Sessions do
       "sessions/#{session_id}:detectIntent",
       body
     )
+    |> IO.inspect()
     |> handle_response(message)
   end
 
