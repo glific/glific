@@ -155,6 +155,21 @@
           "key": "last_message_at",
           "help": "contact's last inbound message time",
           "type": "text"
+        },
+        {
+          "key": "in_groups",
+          "help": "list of collections contact is member of",
+          "type": "text"
+        },
+        {
+          "key": "language",
+          "help": "contact default language",
+          "type": "text"
+        },
+        {
+          "key": "optin_method",
+          "help": "mode of optin",
+          "type": "text"
         }
       ]
     },
