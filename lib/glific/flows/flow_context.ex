@@ -147,7 +147,7 @@ defmodule Glific.Flows.FlowContext do
       Notifications.create_notification(%{
         category: "Flow",
         message: message,
-        severity: "Error",
+        severity: "Warning",
         organization_id: context.organization_id,
         entity: %{
           contact_id: context.contact_id,
