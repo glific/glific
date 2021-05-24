@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
           "id" => extension.id,
           "input" => %{
             "clientId" => attrs.organization_id,
+            "isActive" => true,
             "code" =>
               "defmodule Extension.Schema.Test.Id, do: def default_id(), do: %{id: 9997123545}"
           }
