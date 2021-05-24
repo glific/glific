@@ -17,7 +17,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Settings
   }
 
-
   @doc false
   @spec globals(Plug.Conn.t(), map) :: Plug.Conn.t()
   def globals(conn, _params) do
