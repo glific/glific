@@ -693,7 +693,8 @@ defmodule Glific.Partners do
   """
   @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
   def remove_organization_cache(organization_id, shortcode) do
-    Caches.remove( @global_organization_id, ["organization_services"])
+    Caches.remove(@global_organization_id, ["organization_services"])
+
     Caches.remove(
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
