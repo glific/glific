@@ -162,11 +162,6 @@
           "type": "text"
         },
         {
-          "key": "language",
-          "help": "contact default language",
-          "type": "text"
-        },
-        {
           "key": "optin_method",
           "help": "mode of optin",
           "type": "text"
