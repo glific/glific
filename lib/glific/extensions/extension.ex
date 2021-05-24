@@ -128,7 +128,7 @@ defmodule Glific.Extensions.Extension do
   Retrieve a extension record by clauses
   """
   @spec get_extension(map()) :: Extension.t() | nil
-  def get_extension(clauses), do: Repo.get_by(Extension, clauses)
+  def get_extension(clauses), do: Repo.get_by(Extension, clauses, skip_organization_id: true)
 
   @doc """
   Update the extension record
@@ -149,6 +149,6 @@ defmodule Glific.Extensions.Extension do
   @spec delete_extension(Extension.t()) ::
           {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
   def delete_extension(%Extension{} = extension) do
-    Repo.delete(extension)
+    Repo.delete(extension, skip_organization_id: true)
   end
 end
