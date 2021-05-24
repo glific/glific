@@ -9,11 +9,9 @@ defmodule GlificWeb.Resolvers.Extensions do
   """
   @spec extension(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def extension(_, %{id: id, client_id: client_id} = params, _) do
-    Glific.substitute_organization_id(params, params.client_id, :client_id)
-
+  def extension(_, %{id: id}, _) do
     with {:ok, extension} <-
-           Repo.fetch_by(Extension, %{id: id, organization_id: client_id}),
+           Repo.fetch_by(Extension, %{id: id}, skip_organization_id: true),
          do: {:ok, %{extension: extension}}
   end
 
@@ -58,10 +56,8 @@ defmodule GlificWeb.Resolvers.Extensions do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def delete_extension(_, %{id: id, client_id: client_id} = params, _) do
-    Glific.substitute_organization_id(params, params.client_id, :client_id)
-
-    with {:ok, extension} <- Repo.fetch_by(Extension, %{id: id, organization_id: client_id}),
+  def delete_extension(_, %{id: id}, _) do
+    with {:ok, extension} <- Repo.fetch_by(Extension, %{id: id}, skip_organization_id: true),
          {:ok, extension} <- Extension.delete_extension(extension) do
       {:ok, %{extension: extension}}
     end

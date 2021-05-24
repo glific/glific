@@ -44,7 +44,6 @@ defmodule GlificWeb.Schema.ExtensionTypes do
     @desc "get the details of one extension"
     field :extension, :extension_result do
       arg(:id, non_null(:id))
-      arg(:client_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.extension/3)
     end
@@ -66,7 +65,6 @@ defmodule GlificWeb.Schema.ExtensionTypes do
 
     field :delete_extension, :extension_result do
       arg(:id, non_null(:id))
-      arg(:client_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.delete_extension/3)
     end

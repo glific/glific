@@ -80,7 +80,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
     result =
       auth_query_gql_by(:delete, user,
         variables: %{
-          "clientId" => attrs.organization_id,
           "id" => extension.id
         }
       )
@@ -99,7 +98,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "clientId" => attrs.organization_id,
           "id" => extension.id
         }
       )
@@ -115,7 +113,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "clientId" => attrs.organization_id,
           "id" => extension.id + 1
         }
       )
