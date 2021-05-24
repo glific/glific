@@ -13,9 +13,8 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec get_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def get_consulting_hours(_, %{id: id}, _) do
-    with consulting_hour <-
-           ConsultingHour.get_consulting_hour(%{id: id}),
-         false <- is_nil(consulting_hour) do
+    with {:ok, consulting_hour} <-
+           Repo.fetch_by(ConsultingHour, %{id: id}, skip_organization_id: true) do
       {:ok, %{consulting_hour: consulting_hour}}
     else
       _ ->
@@ -29,9 +28,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [ConsultingHour]}
   def consulting_hours(_, args, _) do
-    updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
-
-    {:ok, ConsultingHour.list_consulting_hours(updated_args)}
+    {:ok, ConsultingHour.list_consulting_hours(args)}
   end
 
   @doc """
@@ -40,8 +37,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec count_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, integer}
   def count_consulting_hours(_, args, _) do
-    updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
-    {:ok, ConsultingHour.count_consulting_hours(updated_args)}
+    {:ok, ConsultingHour.count_consulting_hours(args)}
   end
 
   @doc """
@@ -84,7 +80,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
           {:ok, any} | {:error, any}
   def delete_consulting_hour(_, %{id: id}, _) do
     with {:ok, consulting_hour} <-
-           Repo.fetch_by(ConsultingHour, %{id: id}),
+           Repo.fetch_by(ConsultingHour, %{id: id}, skip_organization_id: true),
          {:ok, consulting_hour} <- ConsultingHour.delete_consulting_hour(consulting_hour) do
       {:ok, %{consulting_hour: consulting_hour}}
     end

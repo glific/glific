@@ -64,7 +64,6 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
   object :consulting_hours_queries do
     @desc "get the details of consulting hours"
     field :consulting_hour, :consulting_hour_result do
-      arg(:client_id, non_null(:id))
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.get_consulting_hours/3)
@@ -72,7 +71,6 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
     @desc "Get a list of all consulting hours filtered by various criteria"
     field :consulting_hours, list_of(:consulting_hour) do
-      arg(:client_id, non_null(:id))
       arg(:filter, :consulting_hour_filter)
       arg(:opts, :opts)
       middleware(Authorize, :admin)
@@ -81,7 +79,6 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
     @desc "Get a count of all consulting hours filtered by various criteria"
     field :count_consulting_hours, :integer do
-      arg(:client_id, non_null(:id))
       arg(:filter, :consulting_hour_filter)
       middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.count_consulting_hours/3)
@@ -104,7 +101,6 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
     field :delete_consulting_hour, :consulting_hour_result do
       arg(:id, non_null(:id))
-      arg(:client_id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.delete_consulting_hour/3)
     end
