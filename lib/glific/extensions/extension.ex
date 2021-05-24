@@ -66,8 +66,20 @@ defmodule Glific.Extensions.Extension do
     |> unique_constraint([:module, :name, :organization_id])
   end
 
-  @spec compile(String.t(), String.t() | nil) :: map()
-  defp compile(code, module \\ nil) do
+  @spec compile(map(), String.t(), String.t() | nil) :: map()
+  defp compile(attrs, code, module \\ nil)
+
+  defp compile(%{is_active: false}, _code, module) do
+    # incase of is_active as false we do not compile the code
+    unload(module)
+
+    %{
+      is_valid: false,
+      module: nil
+    }
+  end
+
+  defp compile(%{is_active: true}, code, module) do
     # unload the previous loaded module if it exists
     # typically in an update
     unload(module)
@@ -117,7 +129,7 @@ defmodule Glific.Extensions.Extension do
   """
   @spec create_extension(map()) :: {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
   def create_extension(attrs) do
-    attrs = Map.merge(attrs, compile(attrs.code))
+    attrs = Map.merge(attrs, compile(attrs, attrs.code))
 
     %Extension{}
     |> Extension.changeset(Map.put(attrs, :organization_id, attrs.organization_id))
@@ -136,7 +148,7 @@ defmodule Glific.Extensions.Extension do
   @spec update_extension(Extension.t(), map()) ::
           {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
   def update_extension(%Extension{} = extension, attrs) do
-    attrs = Map.merge(attrs, compile(attrs.code, extension.module))
+    attrs = Map.merge(attrs, compile(attrs, attrs.code, extension.module))
 
     extension
     |> Extension.changeset(attrs)
