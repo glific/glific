@@ -91,7 +91,7 @@ defmodule Glific.Dialogflow do
   @doc """
   Execute a webhook action, could be either get or post for now
   """
-  @spec execute(Action.t(), FlowContext.t(), Message.t()) :: nil
+  @spec execute(Action.t(), FlowContext.t(), Message.t()) :: :ok
   def execute(action, context, message) do
     Sessions.detect_intent(message, context.id, action.result_name)
   end

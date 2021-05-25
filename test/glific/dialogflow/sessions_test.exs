@@ -35,10 +35,10 @@ defmodule Glific.Dialogflow.SessionsTest do
   ## We will come back on this one after completing the create credentials funcationality
   test "detect_intent/2 will add the message to queue" do
     message =
-      Fixtures.message_fixture(%{body: "Hola"})
+      Fixtures.message_fixture(%{body: "Hola", session_uuid: Ecto.UUID.generate()})
       |> Repo.preload(contact: [:language])
 
-    Sessions.detect_intent(message, "1e8118272e2f69ea6ec98acbb71ab959")
+    Sessions.detect_intent(message, 1, "test_result_name")
     assert_enqueued(worker: SessionWorker, prefix: "global")
     assert %{success: 1, failure: 0} == Oban.drain_queue(queue: :dialogflow)
 

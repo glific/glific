@@ -50,6 +50,7 @@ defmodule Glific.Messages.Message do
           body: String.t() | nil,
           clean_body: String.t() | nil,
           publish?: boolean,
+          extra: map(),
           bsp_message_id: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
