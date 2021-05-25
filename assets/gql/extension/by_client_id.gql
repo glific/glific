@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query get_organization_extension($client: ID!) {
+  get_organization_extension(client: $client) {
+    ...ExtensionFields
+
+    ...ErrorFields
+  }
+}

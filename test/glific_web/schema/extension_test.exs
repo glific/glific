@@ -5,6 +5,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
   alias Glific.Fixtures
 
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/extension/by_id.gql")
+  load_gql(:by_client_id, GlificWeb.Schema, "assets/gql/extension/by_client_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/extension/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/extension/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/extension/delete.gql")
@@ -121,5 +122,24 @@ defmodule GlificWeb.Schema.ExtensionTest do
     assert {:ok, query_data} = result
     [error] = get_in(query_data, [:data, "extension", "errors"])
     assert error["message"] == "Resource not found"
+  end
+
+  test "get extension by client_id and test possible scenarios and errors",
+       %{user: user} = attrs do
+    extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:by_id, user,
+        variables: %{
+          "clientId" => attrs.organization_id
+        }
+      )
+
+    assert {:ok, query_data} = result
+    extensions = get_in(query_data, [:data, "extension", "extension"])
+
+    assert extensions["isValid"] == true
+    assert extensions["isActive"] == true
+    assert extensions["name"] == "Test extension"
   end
 end
