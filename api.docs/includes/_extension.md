@@ -3,7 +3,7 @@
 ## Get Extension by ID
 
 ```graphql
-query Extension(id: ID!!) {
+query Extension(id: ID!) {
   Extension(id: $id) {
     code
     id
@@ -53,9 +53,66 @@ query Extension(id: ID!!) {
 
 ### Query Parameters
 
-| Parameter | Type                       | Default | Description |
-| --------- | -------------------------- | ------- | ----------- |
-| ID        | <a href="#id">ID</a>       | nil     |             |
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
+
+## Get Organization Extension
+
+```graphql
+query Extension(client_id: ID!) {
+  Extension(client_id: $client_id) {
+    code
+    id
+    insertedAt
+    updatedAt
+    isActive
+    isValid
+    module
+    name
+    organization {
+    name
+    isActive
+    }
+  }
+}
+
+{
+  "clientId": 2
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "Extension": {
+      "Extension": {
+        "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
+        "id": "7",
+        "insertedAt": "2021-05-19T11:47:30Z",
+        "updatedAt": "2021-05-19T11:47:30Z",
+        "isActive": false,
+        "isValid": false,
+        "module": null,
+        "name": "URI",
+        "organization": {
+          "isActive": true,
+          "name": "Glific"
+        }
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
+| client_id | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
 
@@ -261,9 +318,9 @@ mutation  deleteExtension($id: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                        | Default  | Description |
-| --------- | --------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!       | required |             |
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 

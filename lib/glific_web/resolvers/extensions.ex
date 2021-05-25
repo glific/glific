@@ -15,6 +15,15 @@ defmodule GlificWeb.Resolvers.Extensions do
          do: {:ok, %{extension: extension}}
   end
 
+  @doc false
+  @spec get_organization_extension(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def get_organization_extension(_, %{client_id: client_id}, _) do
+    with {:ok, extension} <-
+           Repo.fetch_by(Extension, %{organization_id: client_id}, skip_organization_id: true),
+         do: {:ok, %{extension: extension}}
+  end
+
   @doc """
   Create extension
   """
