@@ -62,11 +62,6 @@
           "type": "text"
         },
         {
-          "key": "uuid",
-          "help": "the UUID of the contact",
-          "type": "text"
-        },
-        {
           "key": "id",
           "help": "the numeric ID of the contact",
           "type": "text"
@@ -88,38 +83,10 @@
           "help": "the gender of the contact like male/female/others",
           "type": "text"
         },
-
-        {
-          "key": "created_on",
-          "help": "the creation date of the contact",
-          "type": "datetime"
-        },
-        {
-          "key": "urns",
-          "help": "the URNs belonging to the contact like phone number",
-          "type": "text",
-          "array": true
-        },
-        {
-          "key": "urn",
-          "help": "the preferred URN of the contact",
-          "type": "text"
-        },
-        {
-          "key": "groups",
-          "help": "the groups the contact belongs to",
-          "type": "group",
-          "array": true
-        },
         {
           "key": "fields",
           "help": "the custom field values of the contact",
           "type": "fields"
-        },
-        {
-          "key": "channel",
-          "help": "the preferred channel of the contact",
-          "type": "channel"
         },
         {
           "key": "phone",
