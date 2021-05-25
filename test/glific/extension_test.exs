@@ -11,17 +11,17 @@ defmodule Glific.ExtensionTest do
     @valid_attrs %{
       code:
         "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 1}",
-      isActive: true,
+      is_active: true,
       module: "Glific.Test.Extension",
       name: "Test extension version"
     }
     @update_attrs %{
-      isActive: false,
+      is_active: false,
       code: "defmodule Glific.Test.Extension.Version, do: def current_verion(), do: %{version: 2}"
     }
     @invalid_attrs %{
       code: nil,
-      isActive: nil,
+      is_active: nil,
       module: nil,
       name: nil
     }
@@ -60,7 +60,7 @@ defmodule Glific.ExtensionTest do
 
     assert {:ok, %Extension{} = updated_extension} = Extension.update_extension(extension, attrs)
 
-    assert updated_extension.is_valid == true
+    assert updated_extension.is_valid == false
     assert updated_extension.name == "Current Version"
 
     assert updated_extension.code ==

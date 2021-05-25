@@ -4,7 +4,6 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   one or more calls to resolve the incoming queries.
   """
 
-  import GlificWeb.Gettext
   alias Glific.{Repo, Saas.ConsultingHour}
 
   @doc """
@@ -12,17 +11,9 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   """
   @spec get_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def get_consulting_hours(_, %{id: id, client_id: client_id} = params, _) do
-    Glific.substitute_organization_id(params, params.client_id, :client_id)
-
-    with consulting_hour <-
-           ConsultingHour.get_consulting_hour(%{id: id, organization_id: client_id}),
-         false <- is_nil(consulting_hour) do
-      {:ok, %{consulting_hour: consulting_hour}}
-    else
-      _ ->
-        {:error, dgettext("errors", "No consulting hour found with inputted params")}
-    end
+  def get_consulting_hours(_, %{id: id}, _) do
+    with {:ok, consulting_hour} <- Repo.fetch(ConsultingHour, id, skip_organization_id: true),
+         do: {:ok, %{consulting_hour: consulting_hour}}
   end
 
   @doc """
@@ -31,9 +22,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [ConsultingHour]}
   def consulting_hours(_, args, _) do
-    updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
-
-    {:ok, ConsultingHour.list_consulting_hours(updated_args)}
+    {:ok, ConsultingHour.list_consulting_hours(args)}
   end
 
   @doc """
@@ -42,8 +31,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   @spec count_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, integer}
   def count_consulting_hours(_, args, _) do
-    updated_args = Glific.substitute_organization_id(args, args.client_id, :client_id)
-    {:ok, ConsultingHour.count_consulting_hours(updated_args)}
+    {:ok, ConsultingHour.count_consulting_hours(args)}
   end
 
   @doc """
@@ -84,11 +72,9 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def delete_consulting_hour(_, %{id: id, client_id: client_id} = params, _) do
-    Glific.substitute_organization_id(params, params.client_id, :client_id)
-
+  def delete_consulting_hour(_, %{id: id}, _) do
     with {:ok, consulting_hour} <-
-           Repo.fetch_by(ConsultingHour, %{id: id, organization_id: client_id}),
+           Repo.fetch_by(ConsultingHour, %{id: id}, skip_organization_id: true),
          {:ok, consulting_hour} <- ConsultingHour.delete_consulting_hour(consulting_hour) do
       {:ok, %{consulting_hour: consulting_hour}}
     end

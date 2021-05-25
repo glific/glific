@@ -3,8 +3,8 @@
 ## Get Extension by ID
 
 ```graphql
-query Extension(id: ID!, clientId: ID!) {
-  Extension(id: $id, clientId: $clientId) {
+query extension(id: ID!) {
+  extension(id: $id) {
     code
     id
     insertedAt
@@ -31,8 +31,8 @@ query Extension(id: ID!, clientId: ID!) {
 ```json
 {
   "data": {
-    "Extension": {
-      "Extension": {
+    "extension": {
+      "extension": {
         "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
@@ -53,10 +53,65 @@ query Extension(id: ID!, clientId: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                       | Default | Description |
-| --------- | -------------------------- | ------- | ----------- |
-| ID        | <a href="#id">ID</a>       | nil     |             |
-| clientId  | <a href="#id">clientId</a> | nil     |             |
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
+
+## Get Organization Extension
+
+```graphql
+query getOrganizationExtension(client_id: ID!) {
+  extension(client_id: $client_id) {
+    code
+    id
+    insertedAt
+    updatedAt
+    isActive
+    isValid
+    module
+    name
+    organization {
+    name
+    isActive
+    }
+  }
+}
+
+{
+  "clientId": 2
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "getOrganizationExtension": {
+      "extension": {
+        "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
+        "id": "7",
+        "insertedAt": "2021-05-19T11:47:30Z",
+        "updatedAt": "2021-05-19T11:47:30Z",
+        "isActive": false,
+        "isValid": false,
+        "module": null,
+        "name": "URI",
+        "organization": {
+          "isActive": true,
+          "name": "Glific"
+        }
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| clientId  | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
 
@@ -134,7 +189,7 @@ mutation createExtension($input:ExtensionInput!) {
 ```graphql
 mutation updateExtension($id: ID!, $input:ExtensionInput!) {
   updateExtension(id: $id!, input: $input) {
-    Extension {
+    extension {
       code
       id
       insertedAt
@@ -157,8 +212,8 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
 
 {
     "id": "2",
-    "client_id": "1",
     "input": {
+    "clientId": "1",
         "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}"
     }
 }
@@ -170,7 +225,81 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
 {
   "data": {
     "updateExtension": {
-      "Extension": {
+      "extension": {
+        "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}",
+        "id": "7",
+        "insertedAt": "2021-05-19T11:47:30Z",
+        "updatedAt": "2021-05-19T11:47:30Z",
+        "isActive": false,
+        "isValid": false,
+        "module": "Elixir.Glific.URI",
+        "name": "URI",
+        "organization": {
+          "isActive": true,
+          "name": "Glific"
+        }
+      },
+      "errors": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                          | Default  | Description |
+| --------- | --------------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                         | required |             |
+| input     | <a href="#extension_input">ExtensionInput</a> | required |             |
+
+### Return Parameters
+
+| Type                                            | Description                  |
+| ----------------------------------------------- | ---------------------------- |
+| <a href="#extension_result">ExtensionResult</a> | The created Extension object |
+
+## Update a Organization Extension
+
+```graphql
+mutation updateExtension($clientId: ID!, $input:ExtensionInput!) {
+  updateExtension(clientId: $clientId!, input: $input) {
+    extension {
+      code
+      id
+      insertedAt
+      updatedAt
+      isActive
+      isValid
+      module
+      name
+      organization {
+        name
+        isActive
+      }
+    }
+    errors {
+        message
+        key
+    }
+  }
+}
+
+{
+    "clientId": "2",
+    "input": {
+      "clientId": "1",
+      "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}"
+    }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "updateExtension": {
+      "extension": {
         "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
@@ -206,9 +335,9 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
 ## Delete a Extension
 
 ```graphql
-mutation  deleteExtension($id: ID!, clientId: ID!) {
-   deleteExtension(id: $id!, clientId: $clientId) {
-    Extension {
+mutation  deleteExtension($id: ID!) {
+   deleteExtension(id: $id!) {
+    extension {
       code
       id
       insertedAt
@@ -230,8 +359,7 @@ mutation  deleteExtension($id: ID!, clientId: ID!) {
 }
 
 {
-    "id": "2",
-    "clientId": "1"
+    "id": "2"
 }
 ```
 
@@ -263,10 +391,9 @@ mutation  deleteExtension($id: ID!, clientId: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                        | Default  | Description |
-| --------- | --------------------------- | -------- | ----------- |
-| id        | <a href="#id">ID</a>!       | required |             |
-| clientId  | <a href="#id">clientId</a>! | required |             |
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 
@@ -353,13 +480,13 @@ mutation  deleteExtension($id: ID!, clientId: ID!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>is_active</strong></td>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>client_id</strong></td>
+<td colspan="2" valign="top"><strong>clientId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
