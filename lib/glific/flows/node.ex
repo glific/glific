@@ -10,6 +10,7 @@ defmodule Glific.Flows.Node do
   alias Glific.{
     Flows,
     Messages.Message,
+    Messages,
     Metrics
   }
 
@@ -244,10 +245,30 @@ defmodule Glific.Flows.Node do
   defp execute_node_router(node, context, messages) do
     # need a better way to figure out if we should handle router or action
     # this is a hack for now
+    action = hd(node.actions)
+
     if messages != [] and
-         hd(messages).clean_body in ["completed", "expired", "success", "failure"],
-       do: Router.execute(node.router, context, messages),
-       else: Action.execute(hd(node.actions), context, messages)
+         hd(messages).clean_body in ["completed", "expired", "success", "failure"] do
+      messages =
+        if action.type == "call_classifier" do
+          # lets put the intent and the intent score in the message
+          result = context.results[action.result_name]
+
+          msg =
+            context.organization_id
+            |> Messages.create_temp_message(result.intent)
+            |> Map.put(:flow_label, "#{result.confidence}")
+            |> IO.inspect()
+
+          [msg]
+        else
+          messages
+        end
+
+      Router.execute(node.router, context, messages)
+    else
+      Action.execute(action, context, messages)
+    end
   end
 
   @spec execute_node_actions(Node.t(), FlowContext.t(), [Message.t()]) ::

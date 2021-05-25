@@ -16,6 +16,8 @@ defmodule Glific.Dialogflow.Sessions do
   Add message to queue worker to detect the intent
   """
   @spec detect_intent(Message.t(), non_neg_integer, String.t()) :: :ok
+  def detect_intent(nil, _, _), do: :ok
+
   def detect_intent(message, context_id, result_name) do
     %{
       path: message.session_uuid,
@@ -75,7 +77,7 @@ defmodule Glific.Dialogflow.Sessions do
       # update the context with the results from webhook return values
       {
         FlowContext.update_results(context, %{result_name => %{intent: intent, confidence: confidence}}),
-        Messages.create_temp_message(context.organization_id, String.downcase(intent))
+        Messages.create_temp_message(context.organization_id, "Success")
       }
     end
 
