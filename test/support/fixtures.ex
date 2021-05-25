@@ -723,7 +723,7 @@ defmodule Glific.Fixtures do
   def extension_fixture(attrs) do
     valid_attrs = %{
       code: "defmodule Glific.Test.Extension, do: def default_phone(), do: %{phone: 9876543210}",
-      isActive: true,
+      is_active: true,
       module: "Glific.Test.Extension",
       name: "Test extension",
       organization_id: attrs.organization_id

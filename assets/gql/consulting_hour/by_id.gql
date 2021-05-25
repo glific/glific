@@ -1,7 +1,7 @@
 #import "./fields.frag.gql"
 
-query consultingHour($id: ID!, $clientId: ID!) {
-  consultingHour(id: $id, clientId: $clientId) {
+query consultingHour($id: ID!) {
+  consultingHour(id: $id) {
     ...ConsultingHourFields
 
     ...ErrorFields

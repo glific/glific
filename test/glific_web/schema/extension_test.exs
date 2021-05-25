@@ -61,6 +61,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
           "id" => extension.id,
           "input" => %{
             "clientId" => attrs.organization_id,
+            "isActive" => true,
             "code" =>
               "defmodule Extension.Schema.Test.Id, do: def default_id(), do: %{id: 9997123545}"
           }
@@ -80,7 +81,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
     result =
       auth_query_gql_by(:delete, user,
         variables: %{
-          "clientId" => attrs.organization_id,
           "id" => extension.id
         }
       )
@@ -99,7 +99,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "clientId" => attrs.organization_id,
           "id" => extension.id
         }
       )
@@ -115,7 +114,6 @@ defmodule GlificWeb.Schema.ExtensionTest do
     result =
       auth_query_gql_by(:by_id, user,
         variables: %{
-          "clientId" => attrs.organization_id,
           "id" => extension.id + 1
         }
       )

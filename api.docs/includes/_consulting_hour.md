@@ -58,7 +58,6 @@ query consultingHour(id: ID!, clientId: ID!) {
 | Parameter | Type                 | Default | Description |
 | --------- | -------------------- | ------- | ----------- |
 | ID        | <a href="#id">ID</a> | nil     |             |
-| clientId  | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
 
@@ -69,8 +68,8 @@ query consultingHour(id: ID!, clientId: ID!) {
 ## Get Consulting Hours
 
 ```graphql
-query consultingHours($filter: consultingHourFilter, $opts: Opts, clientId: ID!) {
-  consultingHours(filter: $filter, opts:$opts, clientId: $clientId) {
+query consultingHours($filter: consultingHourFilter, $opts: Opts) {
+  consultingHours(filter: $filter, opts:$opts) {
     id
     content
     isBillable
@@ -92,8 +91,7 @@ query consultingHours($filter: consultingHourFilter, $opts: Opts, clientId: ID!)
   },
   "filter": {
     "organizationName": "glific"
-  },
-  "clientId": 1
+  }
 }
 ```
 
@@ -139,7 +137,6 @@ This returns all the consulting hours filtered by the input <a href="#Consulting
 | --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
 | opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
-| clientId  | <a href="#id">ID</a>                                     | nil     |                                     |
 
 ## Create a Consulting Hour
 
@@ -217,15 +214,14 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 ## Count all Consulting Hours
 
 ```graphql
-query countConsultingHours($filter: ConsultingHourFilter, $clientId: ID!) {
-  countConsultingHours(filter: $filter, clientId: $clientId!)
+query countConsultingHours($filter: ConsultingHourFilter) {
+  countConsultingHours(filter: $filter)
 }
 
 {
   "filter": {
     "organizationName": "Glific"
-  },
-  "clientId": 1
+  }
 }
 ```
 
@@ -244,7 +240,6 @@ query countConsultingHours($filter: ConsultingHourFilter, $clientId: ID!) {
 | Parameter | Type                                                     | Default | Description     |
 | --------- | -------------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourFilter</a> | nil     | filter the list |
-| clientId  | <a href="#id">ID</a>                                     | nil     |                 |
 
 ## Update a Consulting Hour
 
@@ -317,8 +312,8 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 ## Delete a Consulting Hour
 
 ```graphql
-mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
-   deleteConsultingHour(id: $id!, clientId: $clientId!) {
+mutation  deleteConsultingHour($id: ID!) {
+   deleteConsultingHour(id: $id!) {
     consultingHour {
       duration
       content
@@ -338,8 +333,7 @@ mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
 }
 
 {
-    "id": "2",
-    "clientId": 2
+    "id": "2"
 }
 ```
 
@@ -371,7 +365,6 @@ mutation  deleteConsultingHour($id: ID!, $clientId: ID!) {
 | Parameter | Type                  | Default  | Description |
 | --------- | --------------------- | -------- | ----------- |
 | id        | <a href="#id">ID</a>! | required |             |
-| clientId  | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 

@@ -90,7 +90,8 @@ defmodule Glific.Saas.ConsultingHour do
   Retrieve a consulting_hour record by clauses
   """
   @spec get_consulting_hour(map()) :: ConsultingHour.t() | nil
-  def get_consulting_hour(clauses), do: Repo.get_by(ConsultingHour, clauses)
+  def get_consulting_hour(clauses),
+    do: Repo.get_by(ConsultingHour, clauses, skip_organization_id: true)
 
   @doc """
   Returns the list of consulting hours.
@@ -103,14 +104,17 @@ defmodule Glific.Saas.ConsultingHour do
   """
   @spec list_consulting_hours(map()) :: [ConsultingHour.t()]
   def list_consulting_hours(args),
-    do: Repo.list_filter(args, ConsultingHour, &Repo.opts_with_inserted_at/2, &filter_with/2)
+    do:
+      Repo.list_filter(args, ConsultingHour, &Repo.opts_with_inserted_at/2, &filter_with/2,
+        skip_organization_id: true
+      )
 
   @doc """
   Return the count of consulting hours, using the same filter as list_consulting_hours
   """
   @spec count_consulting_hours(map()) :: integer
   def count_consulting_hours(args),
-    do: Repo.count_filter(args, ConsultingHour, &filter_with/2)
+    do: Repo.count_filter(args, ConsultingHour, &filter_with/2, skip_organization_id: true)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -151,6 +155,6 @@ defmodule Glific.Saas.ConsultingHour do
   @spec delete_consulting_hour(ConsultingHour.t()) ::
           {:ok, ConsultingHour.t()} | {:error, Ecto.Changeset.t()}
   def delete_consulting_hour(%ConsultingHour{} = consulting_hour) do
-    Repo.delete(consulting_hour)
+    Repo.delete(consulting_hour, skip_organization_id: true)
   end
 end
