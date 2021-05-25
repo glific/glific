@@ -195,10 +195,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Get a list of all organizations services"
     field :organization_services, :organization_services_result do
       middleware(Authorize, :staff)
-
-      resolve(fn _, _, %{context: %{current_user: user}} ->
-        {:ok, Partners.attachments_enabled?(user.organization_id)}
-      end)
+      resolve(&Resolvers.Partners.organization_services/3)
     end
 
     field :timezones, list_of(:string) do
