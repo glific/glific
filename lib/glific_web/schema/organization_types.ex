@@ -15,6 +15,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :organization_services_result do
+    field :bigquery, :boolean
+    field :google_cloud_storage, :boolean
+    field :dialogflow, :boolean
+    field :fun_with_flags, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :enabled_day do
     field :id, :integer
     field :enabled, :boolean
@@ -175,7 +183,17 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.count_organizations/3)
     end
 
+    @desc "Checks if organization has an active cloud storage setup"
     field :attachments_enabled, :boolean do
+      middleware(Authorize, :staff)
+
+      resolve(fn _, _, %{context: %{current_user: user}} ->
+        {:ok, Partners.attachments_enabled?(user.organization_id)}
+      end)
+    end
+
+    @desc "Get a list of all organizations services"
+    field :organization_services, :organization_services_result do
       middleware(Authorize, :staff)
 
       resolve(fn _, _, %{context: %{current_user: user}} ->
