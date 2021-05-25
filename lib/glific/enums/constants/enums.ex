@@ -30,7 +30,7 @@ defmodule Glific.Enums.Constants do
       ]
 
       ## We need to update the exiting value from message to messaging and then remove this enum.
-      @flow_type_const [:message, :messaging]
+      @flow_type_const [:message]
 
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
       @message_flow_const [:inbound, :outbound]

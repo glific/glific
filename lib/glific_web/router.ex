@@ -162,7 +162,6 @@ defmodule GlificWeb.Router do
     get "/attachments-enabled", FlowEditorController, :attachments_enabled
 
     post "/flow-attachment", FlowEditorController, :flow_attachment
-
   end
 
   # implement basic authentication for live dashboard and oban pro
