@@ -126,17 +126,17 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
   test "get extension by client_id and test possible scenarios and errors",
        %{user: user} = attrs do
-    extension = Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
+    Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
 
     result =
-      auth_query_gql_by(:by_id, user,
+      auth_query_gql_by(:by_client_id, user,
         variables: %{
           "clientId" => attrs.organization_id
         }
       )
 
     assert {:ok, query_data} = result
-    extensions = get_in(query_data, [:data, "extension", "extension"])
+    extensions = get_in(query_data, [:data, "get_organization_extension", "extension"])
 
     assert extensions["isValid"] == true
     assert extensions["isActive"] == true
