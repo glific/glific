@@ -3,8 +3,8 @@
 ## Get Consulting Hour by ID
 
 ```graphql
-query consultingHour(id: ID!, clientId: ID!) {
-  consultingHour(id: $id, clientId: $clientId) {
+query consultingHour(id: ID!) {
+  consultingHour(id: $id) {
     duration
     content
     isBillable
@@ -22,8 +22,7 @@ query consultingHour(id: ID!, clientId: ID!) {
 }
 
 {
-  "id": 2,
-  "clientId": 1
+  "id": 2
 }
 ```
 
@@ -138,7 +137,7 @@ This returns all the consulting hours filtered by the input <a href="#Consulting
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
 | opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
 
-## Create a Consulting Hour
+## Create a Consulting Hours
 
 ```graphql
 mutation createConsultingHour($input:ConsultingHourInput!) {
