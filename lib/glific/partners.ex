@@ -749,7 +749,12 @@ defmodule Glific.Partners do
   @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
   defp handle_token_error(organization_id, provider_shortcode, error) when is_binary(error) do
     if String.contains?(error, ["account not found", "invalid_grant"]),
-      do: disable_credential(organization_id, provider_shortcode, "Invalid credentials, service account not found")
+      do:
+        disable_credential(
+          organization_id,
+          provider_shortcode,
+          "Invalid credentials, service account not found"
+        )
 
     nil
   end

@@ -108,6 +108,10 @@ defmodule Glific.Messages.Message do
     # when sendign to a group
     field :publish?, :boolean, default: true, virtual: true
 
+    # adding an extra virtual field so we can hang dynamic data to pass during processing of
+    # agents and flows. Specifically used for now during dialogflow
+    field :extra, :map, default: %{}, virtual: true
+
     field :is_hsm, :boolean, default: false
 
     field :bsp_message_id, :string

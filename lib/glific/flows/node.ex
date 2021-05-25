@@ -10,7 +10,6 @@ defmodule Glific.Flows.Node do
   alias Glific.{
     Flows,
     Messages.Message,
-    Messages,
     Metrics
   }
 
@@ -249,22 +248,6 @@ defmodule Glific.Flows.Node do
 
     if messages != [] and
          hd(messages).clean_body in ["completed", "expired", "success", "failure"] do
-      messages =
-        if action.type == "call_classifier" do
-          # lets put the intent and the intent score in the message
-          result = context.results[action.result_name]
-
-          msg =
-            context.organization_id
-            |> Messages.create_temp_message(result.intent)
-            |> Map.put(:flow_label, "#{result.confidence}")
-            |> IO.inspect()
-
-          [msg]
-        else
-          messages
-        end
-
       Router.execute(node.router, context, messages)
     else
       Action.execute(action, context, messages)

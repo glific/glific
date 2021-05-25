@@ -153,14 +153,17 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
-    classifiers = %{results: [
-                       %{
-                         uuid: generate_uuid(),
-                         name: "Dialogflow",
-                         type: "dialogflow",
-                         intents: ["glific.info", "glific.features"]
-                       }
-                       ]}
+    classifiers = %{
+      results: [
+        %{
+          uuid: generate_uuid(),
+          name: "Dialogflow",
+          type: "dialogflow",
+          intents: ["glific.info", "glific.features"]
+        }
+      ]
+    }
+
     json(conn, classifiers)
   end
 

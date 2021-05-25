@@ -532,7 +532,11 @@ defmodule Glific.BigQuery do
         sync_schema_with_bigquery(organization_id)
 
       "PERMISSION_DENIED" ->
-        Partners.disable_credential(organization_id, "bigquery", "Account does not have sufficient permissions to insert data to BigQuery.")
+        Partners.disable_credential(
+          organization_id,
+          "bigquery",
+          "Account does not have sufficient permissions to insert data to BigQuery."
+        )
 
       _ ->
         raise("BigQuery Insert Error for table #{table}  #{response}")

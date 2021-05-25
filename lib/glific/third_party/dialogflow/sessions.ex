@@ -9,7 +9,7 @@ defmodule Glific.Dialogflow.Sessions do
     Flows.FlowContext,
     Messages,
     Messages.Message,
-    Repo,
+    Repo
   }
 
   @doc """
@@ -54,32 +54,36 @@ defmodule Glific.Dialogflow.Sessions do
       "sessions/#{session_id}:detectIntent",
       body
     )
-    |> IO.inspect()
     |> handle_response(opts[:context_id], opts[:result_name])
   end
 
   @spec handle_response(tuple(), non_neg_integer, String.t()) :: :ok | {:error, :string}
   defp handle_response({:ok, response}, context_id, result_name) do
     intent = get_in(response, ["queryResult", "intent", "displayName"])
-    confidence = get_in(response, ["queryResult", "intentDetectionConfidence"])
 
     context =
       Repo.get!(FlowContext, context_id)
       |> Repo.preload(:flow)
 
     {context, message} =
-    if is_nil(intent) do
-      {
-        context,
-        Messages.create_temp_message(context.organization_id, "Failure")
-      }
-    else
-      # update the context with the results from webhook return values
-      {
-        FlowContext.update_results(context, %{result_name => %{intent: intent, confidence: confidence}}),
-        Messages.create_temp_message(context.organization_id, "Success")
-      }
-    end
+      if is_nil(intent) do
+        {
+          context,
+          Messages.create_temp_message(context.organization_id, "Failure")
+        }
+      else
+        # update the context with the results from webhook return values
+        confidence = get_in(response, ["queryResult", "intentDetectionConfidence"])
+        response = get_in(response, ["queryResult", "fulfillmentText"])
+
+        data = %{intent: intent, confidence: confidence, response: response}
+
+        {
+          FlowContext.update_results(context, %{result_name => data}),
+          Messages.create_temp_message(context.organization_id, "Success")
+          |> Map.put(:extra, data)
+        }
+      end
 
     FlowContext.wakeup_one(context, message)
     :ok

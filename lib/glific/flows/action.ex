@@ -172,21 +172,21 @@ defmodule Glific.Flows.Action do
     Flows.check_required_fields(json, @required_fields_webhook)
 
     process(json, uuid_map, node, %{
-          url: json["url"],
-          method: json["method"],
-          result_name: json["result_name"],
-          body: json["body"],
-          headers: json["headers"]
-            })
+      url: json["url"],
+      method: json["method"],
+      result_name: json["result_name"],
+      body: json["body"],
+      headers: json["headers"]
+    })
   end
 
   def process(%{"type" => "call_classifier"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_classifier)
 
     process(json, uuid_map, node, %{
-          input: json["input"],
-          result_name: json["result_name"],
-            })
+      input: json["input"],
+      result_name: json["result_name"]
+    })
   end
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do

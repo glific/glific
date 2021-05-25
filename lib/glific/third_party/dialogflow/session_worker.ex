@@ -10,7 +10,6 @@ defmodule Glific.Dialogflow.SessionWorker do
 
   alias Glific.Dialogflow.Sessions
 
-
   @doc """
   Standard perform method to use Oban worker
   """
@@ -22,12 +21,17 @@ defmodule Glific.Dialogflow.SessionWorker do
           "locale" => locale,
           "message" => message,
           "context_id" => context_id,
-          "result_name" => result_name,
-        }}) do
+          "result_name" => result_name
+        }
+      }) do
     Sessions.make_request(
       Glific.atomize_keys(message),
-      path, locale,
-      [context_id: context_id, result_name: result_name])
+      path,
+      locale,
+      context_id: context_id,
+      result_name: result_name
+    )
+
     :ok
   end
 end
