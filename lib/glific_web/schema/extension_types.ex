@@ -63,6 +63,13 @@ defmodule GlificWeb.Schema.ExtensionTypes do
       resolve(&Resolvers.Extensions.create_extension/3)
     end
 
+    field :update_organization_extension, :extension_result do
+      arg(:client_id, non_null(:id))
+      arg(:input, :extension_input)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Extensions.update_organization_extension/3)
+    end
+
     field :update_extension, :extension_result do
       arg(:id, non_null(:id))
       arg(:input, :extension_input)
