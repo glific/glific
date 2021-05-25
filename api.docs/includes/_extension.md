@@ -212,8 +212,8 @@ mutation updateExtension($id: ID!, $input:ExtensionInput!) {
 
 {
     "id": "2",
-    "client_id": "1",
     "input": {
+    "client_id": "1",
         "code": "defmodule URI, do: def default_port(), do: %{phone: 9997543210}"
     }
 }
