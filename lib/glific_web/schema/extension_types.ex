@@ -47,6 +47,13 @@ defmodule GlificWeb.Schema.ExtensionTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.extension/3)
     end
+
+    @desc "get the details of active extension of organization"
+    field :get_organization_extension, :extension_result do
+      arg(:client_id, non_null(:id))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Extensions.get_organization_extension/3)
+    end
   end
 
   object :extensions_mutations do
@@ -54,6 +61,13 @@ defmodule GlificWeb.Schema.ExtensionTypes do
       arg(:input, non_null(:extension_input))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Extensions.create_extension/3)
+    end
+
+    field :update_organization_extension, :extension_result do
+      arg(:client_id, non_null(:id))
+      arg(:input, :extension_input)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Extensions.update_organization_extension/3)
     end
 
     field :update_extension, :extension_result do
