@@ -423,11 +423,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
     organization_id = conn.assigns[:organization_id]
     remote_name = remote_name(nil, extension)
 
-    GcsWorker.upload_media(media.path, remote_name, organization_id)
+    res = GcsWorker.upload_media(media.path, remote_name, organization_id)
     |> case do
-      {:ok, gcs_url} -> json(conn, %{url: gcs_url, error: nil})
-      {:error, error} -> json(conn, %{url: nil, error: error})
+      {:ok, gcs_url} -> %{url: gcs_url, error: nil}
+      {:error, error} -> %{url: nil, error: error}
     end
+
+    json(conn, res)
   end
 
   @doc false
@@ -436,7 +438,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Ecto.UUID.generate()
   end
 
-  @spec remote_name(User.t(), String.t(), Ecto.UUID.t() | nil) :: String.t()
+  @spec remote_name(User.t(), String.t(), Ecto.UUID.t()) :: String.t()
   defp remote_name(_user, extension, uuid \\ Ecto.UUID.generate()) do
     {year, week} = Timex.iso_week(Timex.now())
     "outbound/#{year}-#{week}/#{uuid}.#{extension}"
