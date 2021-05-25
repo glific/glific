@@ -3,8 +3,8 @@
 ## Get Extension by ID
 
 ```graphql
-query Extension(id: ID!) {
-  Extension(id: $id) {
+query extension(id: ID!) {
+  extension(id: $id) {
     code
     id
     insertedAt
@@ -31,8 +31,8 @@ query Extension(id: ID!) {
 ```json
 {
   "data": {
-    "Extension": {
-      "Extension": {
+    "extension": {
+      "extension": {
         "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
@@ -60,8 +60,8 @@ query Extension(id: ID!) {
 ## Get Organization Extension
 
 ```graphql
-query Extension(client_id: ID!) {
-  Extension(client_id: $client_id) {
+query getOrganizationExtension(client_id: ID!) {
+  extension(client_id: $client_id) {
     code
     id
     insertedAt
@@ -87,8 +87,8 @@ query Extension(client_id: ID!) {
 ```json
 {
   "data": {
-    "Extension": {
-      "Extension": {
+    "getOrganizationExtension": {
+      "extension": {
         "code": "defmodule URI, do: def default_port(), do: %{hello: \"hello2”}",
         "id": "7",
         "insertedAt": "2021-05-19T11:47:30Z",
@@ -111,7 +111,6 @@ query Extension(client_id: ID!) {
 
 | Parameter | Type                 | Default | Description |
 | --------- | -------------------- | ------- | ----------- |
-| ID        | <a href="#id">ID</a> | nil     |             |
 | client_id | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
