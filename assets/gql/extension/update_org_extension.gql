@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateOrganizationExtension($clientId: ID!, $input: ExtensionInput!) {
+  updateOrganizationExtension(clientId: $clientId, input: $input) {
+    ...ExtensionFields
+
+    ...ErrorFields
+  }
+}
