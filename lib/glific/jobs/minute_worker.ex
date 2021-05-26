@@ -9,7 +9,6 @@ defmodule Glific.Jobs.MinuteWorker do
 
   alias Glific.{
     BigQuery.BigQueryWorker,
-    Caches,
     Contacts,
     Flags,
     Flows.FlowContext,
@@ -23,83 +22,6 @@ defmodule Glific.Jobs.MinuteWorker do
     Triggers
   }
 
-  @global_organization_id 0
-
-  @spec get_organization_services :: map()
-  defp get_organization_services do
-    case Caches.fetch(
-           @global_organization_id,
-           "organization_services",
-           &load_organization_services/1
-         ) do
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve organization services: #{error}"
-        )
-
-      {_, services} ->
-        services
-    end
-  end
-
-  # this is a global cache, so we kinda ignore the cache key
-  @spec load_organization_services(tuple()) :: {:commit, map()}
-  defp load_organization_services(_cache_key) do
-    services =
-      Partners.active_organizations([])
-      |> Enum.reduce(
-        %{},
-        fn {id, _name}, acc ->
-          load_organization_service(id, acc)
-        end
-      )
-      |> combine_services()
-
-    {:commit, services}
-  end
-
-  @spec load_organization_service(non_neg_integer, map()) :: map()
-  defp load_organization_service(organization_id, services) do
-    organization = Partners.organization(organization_id)
-
-    service = %{
-      "fun_with_flags" =>
-        FunWithFlags.enabled?(
-          :enable_out_of_office,
-          for: %{organization_id: organization_id}
-        ),
-      "bigquery" => organization.services["bigquery"] != nil,
-      "google_cloud_storage" => organization.services["google_cloud_storage"] != nil
-    }
-
-    Map.put(services, organization_id, service)
-  end
-
-  @spec add_service(map(), String.t(), boolean(), non_neg_integer) :: map()
-  defp add_service(acc, _name, false, _org_id), do: acc
-
-  defp add_service(acc, name, true, org_id) do
-    value = Map.get(acc, name, [])
-    Map.put(acc, name, [org_id | value])
-  end
-
-  @spec combine_services(map()) :: map()
-  defp combine_services(services) do
-    combined =
-      services
-      |> Enum.reduce(
-        %{},
-        fn {org_id, service}, acc ->
-          acc
-          |> add_service("fun_with_flags", service["fun_with_flags"], org_id)
-          |> add_service("bigquery", service["bigquery"], org_id)
-          |> add_service("google_cloud_storage", service["google_cloud_storage"], org_id)
-        end
-      )
-
-    Map.merge(services, combined)
-  end
-
   @doc """
   Worker to implement cron job functionality as implemented by Oban. This
   is a work in progress and subject to change
@@ -108,7 +30,7 @@ defmodule Glific.Jobs.MinuteWorker do
   @spec perform(Oban.Job.t()) ::
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => _job}} = args) do
-    services = get_organization_services()
+    services = Partners.get_organization_services()
 
     perform(args, services)
   end
