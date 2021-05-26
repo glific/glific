@@ -1,6 +1,6 @@
 # Contacts Field
 
-## Get Contacts Fields
+## Get All Contacts Fields
 
 ```graphql
 query contactsFields($filter: contactsFieldFilter, $opts: Opts) {
@@ -153,6 +153,64 @@ mutation createContactsField($input:ContactsFieldInput!) {
 | Type                                                     | Description                       |
 | -------------------------------------------------------- | --------------------------------- |
 | <a href="#contacts_field_result">ContactsFieldResult</a> | The created contacts field object |
+
+## Get a Contacts Field by ID
+
+```graphql
+query contacts_field($id: ID!) {
+  contacts_field(id: $id) {
+    contacts_field {
+      valueType
+      updatedAt
+      shortcode
+      scope
+      name
+      insertedAt
+      id
+      organization {
+        shortcode
+        isApproved
+        isActive
+      }
+    }
+  }
+}
+
+{
+  "id": 2
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contacts_field": {
+      "contacts_field": {
+        "id": "2",
+        "insertedAt": "2021-05-11T07:15:24Z",
+        "name": "Age Group",
+        "organization": {
+          "isActive": true,
+          "isApproved": false,
+          "shortcode": "glific"
+        },
+        "scope": "contact",
+        "shortcode": "age_group",
+        "updatedAt": "2021-05-11T07:15:24Z",
+        "valueType": "text"
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
 
 ## Count all Contacts Fields
 
