@@ -655,6 +655,7 @@ defmodule Glific.Flows do
     value =
       Flow
       |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.is_active == true)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
       |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
       # the revisions table is potentially large, so we really want just a few rows from
