@@ -156,10 +156,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     classifiers = %{
       results: [
         %{
-          uuid: generate_uuid(),
+          uuid: "dialogflow_uuid",
           name: "Dialogflow",
           type: "dialogflow",
-          intents: ["glific.info", "glific.features"]
+          intents: ["glific.info", "glific.features", "all"]
         }
       ]
     }

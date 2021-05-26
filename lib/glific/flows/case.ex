@@ -179,7 +179,10 @@ defmodule Glific.Flows.Case do
     # this also works with "0.9"
     confidence = String.to_float("0" <> confidence)
 
-    msg.extra.intent == intent && msg.extra.confidence >= confidence
+    if intent == "all",
+      # any intent is fine, we are only interested in the confidence level
+      do: msg.extra.confidence >= confidence,
+    else: msg.extra.intent == intent && msg.extra.confidence >= confidence
   end
 
   def execute(%{type: "has_category"}, _context, _msg), do: true
