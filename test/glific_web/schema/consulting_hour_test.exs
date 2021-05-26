@@ -58,9 +58,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(query_data, [:data, "countConsultingHours"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user,
-        variables: %{"filter" => %{"staff" => "Ken Cavin"}}
-      )
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"staff" => "Ken Cavin"}})
 
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end
@@ -80,10 +78,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
         is_billable: false
       })
 
-    result =
-      auth_query_gql_by(:list, user,
-        variables: %{"opts" => %{"order" => "ASC"}}
-      )
+    result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
 
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
@@ -91,10 +86,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     [consulting_hour | _] = consulting_hours
     assert get_in(consulting_hour, ["staff"]) == "Jon Cavin"
 
-    result =
-      auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"isBillable" => false}}
-      )
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isBillable" => false}})
 
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
@@ -102,10 +94,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     [consulting_hour | _] = consulting_hours
     assert get_in(consulting_hour, ["staff"]) == "Ken Cavin"
 
-    result =
-      auth_query_gql_by(:list, user,
-        variables: %{"filter" => %{"participants" => "John"}}
-      )
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"participants" => "John"}})
 
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
