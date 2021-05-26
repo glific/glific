@@ -587,7 +587,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, flow} =
       Flows.get_cached_flow(
-        context.flow.organization_id,
+        context.organization_id,
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
