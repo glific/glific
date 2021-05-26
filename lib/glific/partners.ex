@@ -867,6 +867,9 @@ defmodule Glific.Partners do
   @spec get_global_field_map(integer) :: map()
   def get_global_field_map(organization_id), do: organization(organization_id).fields
 
+  @doc """
+  Returns a map of organizations services as key value pair
+  """
   @spec get_organization_services :: map()
   def get_organization_services do
     case Caches.fetch(
