@@ -1,0 +1,12 @@
+query organizationServices {
+  organizationServices {
+    google_cloud_storage
+    dialogflow
+    fun_with_flags
+    bigquery
+    errors {
+      key
+      message
+    }
+  }
+}

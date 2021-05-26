@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
   load_gql(:by_client_id, GlificWeb.Schema, "assets/gql/extension/by_client_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/extension/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/extension/update.gql")
+  load_gql(:get_organization_extension, GlificWeb.Schema, "assets/gql/extension/update_org_extension.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/extension/delete.gql")
 
   test "create a new extension", %{user: user} = attrs do
@@ -71,6 +72,29 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     extensions = get_in(query_data, [:data, "updateExtension", "extension"])
+    assert extensions["isActive"] == true
+    assert extensions["isValid"] == true
+    assert extensions["name"] == "Test extension"
+  end
+
+  test "update an extension by organization id", %{user: user} = attrs do
+    Fixtures.extension_fixture(%{organization_id: attrs.organization_id})
+
+    result =
+      auth_query_gql_by(:get_organization_extension, user,
+        variables: %{
+          "clientId" => attrs.organization_id,
+          "input" => %{
+            "clientId" => attrs.organization_id,
+            "isActive" => true,
+            "code" =>
+              "defmodule Extension.Schema.Test.Id, do: def default_id(), do: %{id: 9997123545}"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    extensions = get_in(query_data, [:data, "updateOrganizationExtension", "extension"])
     assert extensions["isActive"] == true
     assert extensions["isValid"] == true
     assert extensions["name"] == "Test extension"

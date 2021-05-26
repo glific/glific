@@ -721,6 +721,40 @@ defmodule Glific.PartnersTest do
       assert global_fields == %{"org_name" => "Glific"}
     end
 
+    @default_goth_json """
+    {
+    "project_id": "DEFAULT PROJECT ID",
+    "private_key_id": "DEFAULT API KEY",
+    "client_email": "DEFAULT CLIENT EMAIL",
+    "private_key": "DEFAULT PRIVATE KEY"
+    }
+    """
+
+    test "get_organization_services/2 for organization should return organization services key value pair",
+         %{organization_id: organization_id} = _attrs do
+      organization_services = Partners.get_organization_services()
+
+      assert organization_services[organization_id]["bigquery"] == false
+      assert organization_services[organization_id]["dialogflow"] == false
+      assert organization_services[organization_id]["fun_with_flags"] == true
+      assert organization_services[organization_id]["google_cloud_storage"] == false
+
+      valid_attrs = %{
+        secrets: %{"service_account" => @default_goth_json},
+        is_active: true,
+        shortcode: "bigquery",
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      updated_organization_services = Partners.get_organization_services()
+
+      assert updated_organization_services[organization_id]["bigquery"] == true
+      assert updated_organization_services[organization_id]["dialogflow"] == false
+      assert updated_organization_services[organization_id]["fun_with_flags"] == true
+      assert updated_organization_services[organization_id]["google_cloud_storage"] == false
+    end
+
     test "get_goth_token/2 should return goth token",
          %{organization_id: organization_id} = _attrs do
       with_mocks([

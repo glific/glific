@@ -48,6 +48,19 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get the organizations services
+  """
+  @spec organization_services(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
+  def organization_services(_, _, %{context: %{current_user: user}}) do
+    services =
+      Partners.get_organization_services()
+      |> Map.get(user.organization_id)
+      |> Glific.atomize_keys()
+
+    {:ok, services}
+  end
+
+  @doc """
   Creates an organization
   """
   @spec create_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

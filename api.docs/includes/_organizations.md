@@ -157,6 +157,40 @@ query organization {
 | ---------------------------------------------------- | --------------------------------------------------- |
 | <a href="#organizationresult">OrganizationResult</a> | Queried organization or Current user's organization |
 
+## Get Organization Services
+
+```graphql
+query organizationServices() {
+  bigquery
+  dialogflow
+  googleCloudStorage
+  errors {
+    key
+    message
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "organizationServices": {
+      "bigquery": true,
+      "funWithFlags": true,
+      "googleCloudStorage": true
+    }
+  }
+}
+```
+
+### Return Parameters
+
+| Type                                                                 | Description                                         |
+| -------------------------------------------------------------------- | --------------------------------------------------- |
+| <a href="#organizationservicesresult">organizationServicesResult</a> | Queried organization or Current user's organization |
+
 ## Count all Organizations
 
 ```graphql
@@ -722,6 +756,46 @@ subscription organization_subscriptions {
 <tr>
 <td colspan="2" valign="top"><strong>organization</strong></td>
 <td valign="top"><a href="#organization">Organization</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### Organization Services Result
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>fun_with_flags</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>dialogflow</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>google_cloud_storage</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>bigquery</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
 <td></td>
 </tr>
 </tbody>
