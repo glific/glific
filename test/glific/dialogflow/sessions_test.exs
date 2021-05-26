@@ -3,7 +3,13 @@ defmodule Glific.Dialogflow.SessionsTest do
   use Oban.Testing, repo: Glific.Repo
   import Mock
 
-  alias Glific.{Dialogflow.Sessions, Dialogflow.SessionWorker, Fixtures, Partners}
+  alias Glific.{
+    Dialogflow.Sessions,
+    Dialogflow.SessionWorker,
+    Fixtures,
+    Flows.FlowContext,
+    Partners
+  }
 
   @query %{
     "queryResult" => %{
@@ -70,7 +76,7 @@ defmodule Glific.Dialogflow.SessionsTest do
     [flow | _] = Glific.Flows.list_flows(%{organization_id: message.organization_id})
 
     {:ok, context} =
-      Glific.Flows.FlowContext.create_flow_context(%{
+      FlowContext.create_flow_context(%{
         contact_id: message.contact_id,
         flow_id: flow.id,
         flow_uuid: flow.uuid,
