@@ -145,6 +145,7 @@ mutation ($input: FlowInput!) {
       id
       name
       keywords
+      isActive
     }
     errors {
       key
@@ -159,7 +160,8 @@ mutation ($input: FlowInput!) {
       "tests",
       "testing"
     ],
-    "name": "test workflow"
+    "name": "test workflow",
+    "isActive": true
   }
 }
 ```
@@ -774,6 +776,11 @@ mutation copyFlow($id: ID!, $input:FlowInput!) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>ignoreKeywords</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>

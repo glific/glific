@@ -42,6 +42,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :name, :string
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
+    field :is_active, :boolean
   end
 
   @desc "Filtering options for flows"
