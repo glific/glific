@@ -110,6 +110,9 @@ defmodule Glific.Flows do
           )
         )
 
+      {:is_active, is_active}, query ->
+        from q in query, where: q.is_active == ^is_active
+
       _, query ->
         query
     end)

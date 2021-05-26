@@ -29,6 +29,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :name, :string
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
+    field :is_active, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
     field :inserted_at, :datetime
@@ -56,6 +57,9 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Match the status of flow revision"
     field :status, :string
+
+    @desc "Match the is_active flag of flow"
+    field :is_active, :boolean
   end
 
   object :flow_queries do
