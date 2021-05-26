@@ -89,14 +89,12 @@ query countNotifications($filter: NotificationFilter) {
 | --------- | ---------------------------------------------------- | ------- | --------------- |
 | filter    | <a href="#Notificationfilter">NotificationFilter</a> | nil     | filter the list |
 
-
 ## Mark all the notification as read
 
 ```graphql
 mutation markNotificationAsRead {
   markNotificationAsRead
 }
-
 ```
 
 > The above query returns JSON structured like this:
@@ -113,15 +111,15 @@ mutation markNotificationAsRead {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#contactinput">ContactInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#contactinput">ContactInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | The created contact object
 
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#contactresult">ContactResult</a> | The created contact object |
 
 ## Notification Objects
 
@@ -266,9 +264,13 @@ Filtering options for notifications
 <tr>
 <td colspan="2" valign="top"><strong>category</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td>Match the severity</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>severity</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td>Match the category</td>
 </tr>
-
 <tr>
 <td colspan="2" valign="top"><strong>is_read</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
