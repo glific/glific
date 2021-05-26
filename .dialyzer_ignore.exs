@@ -10,6 +10,5 @@
   {"lib/glific/flows/contact_field.ex"},
   {"lib/glific_web/channels/user_socket.ex"},
   {"lib/glific_web/misc/http_signature.ex"},
-  {"lib/glific/flags/ecto.ex"},
-  {"lib/glific_web/flows/flow_editor_controller"},
+  {"lib/glific/flags/ecto.ex"}
 ]

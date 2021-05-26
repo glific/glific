@@ -438,7 +438,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Ecto.UUID.generate()
   end
 
-  @spec remote_name(User.t(), String.t(), Ecto.UUID.t()) :: String.t()
+  @spec remote_name(User.t() | nil, String.t(), Ecto.UUID.t()) :: String.t()
   defp remote_name(_user, extension, uuid \\ Ecto.UUID.generate()) do
     {year, week} = Timex.iso_week(Timex.now())
     "outbound/#{year}-#{week}/#{uuid}.#{extension}"
