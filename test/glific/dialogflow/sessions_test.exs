@@ -92,6 +92,5 @@ defmodule Glific.Dialogflow.SessionsTest do
     #   |> Repo.preload([:tags])
 
     # assert hd(message.tags).label == "Greeting"
-
   end
 end

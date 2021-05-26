@@ -182,7 +182,7 @@ defmodule Glific.Flows.Case do
     if intent == "all",
       # any intent is fine, we are only interested in the confidence level
       do: msg.extra.confidence >= confidence,
-    else: msg.extra.intent == intent && msg.extra.confidence >= confidence
+      else: msg.extra.intent == intent && msg.extra.confidence >= confidence
   end
 
   def execute(%{type: "has_category"}, _context, _msg), do: true
