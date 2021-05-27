@@ -818,7 +818,7 @@ Filtering options for flows
 <tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
+<td>Match the isActive flag of flow</td>
 </tr>
 <tr>
   <td colspan="2" valign="top"><strong>status</strong></td>
