@@ -419,6 +419,11 @@ mutation deletecontactsField($id: ID!) {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>variable</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>scope</strong></td>
 <td valign="top"><a href="#string">ContactFieldScopeEnum</a></td>
 <td></td>
