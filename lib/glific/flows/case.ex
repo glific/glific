@@ -152,8 +152,10 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_file"}, _context, msg),
     do: msg.type == :document
 
-  def execute(%{type: "has_all_words"} = c, _context, msg),
-    do: is_has_all_the_words?(true, strip(msg), c.arguments)
+  def execute(%{type: "has_all_words"} = c, _context, msg) do
+    str = strip(msg)
+    Enum.all?(c.arguments, fn l -> String.contains?(str, l) end)
+  end
 
   def execute(%{type: "has_phone"} = _c, _context, msg) do
     phone = strip(msg)
@@ -178,14 +180,4 @@ defmodule Glific.Flows.Case do
       raise(UndefinedFunctionError,
         message: "Function not implemented for cases of type #{c.type}"
       )
-
-  @spec is_has_all_the_words?(boolean, String.t(), list()) :: boolean
-  defp is_has_all_the_words?(true, str, [head | tail]) do
-    String.contains?(str, head)
-    |> is_has_all_the_words?(str, tail)
-  end
-
-  defp is_has_all_the_words?(false, _, _), do: false
-
-  defp is_has_all_the_words?(_, _, []), do: true
 end
