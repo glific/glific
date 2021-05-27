@@ -37,22 +37,17 @@ query flows($filter: FlowFilter, $opts: Opts) {
       {
         "flowType": "MESSAGE",
         "id": "1",
-        "keywords": [
-          "help",
-          "मदद"
-        ],
+        "keywords": ["help", "मदद"],
         "name": "Help Workflow",
         "uuid": "3fa22108-f464-41e5-81d9-d8a298854429",
         "lastChangedAt": "2021-03-25T10:03:26Z",
         "lastPublishedAt": "2021-03-25T10:03:26Z",
-        "versionNumber": "13.1.0",
+        "versionNumber": "13.1.0"
       },
       {
         "flowType": "MESSAGE",
         "id": "2",
-        "keywords": [
-          "language"
-        ],
+        "keywords": ["language"],
         "name": "Language Workflow",
         "uuid": "f5f0c89e-d5f6-4610-babf-ca0f12cbfcbf",
         "lastChangedAt": "2021-03-25T10:03:26Z",
@@ -63,19 +58,21 @@ query flows($filter: FlowFilter, $opts: Opts) {
   }
 }
 ```
+
 This returns all the flows
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#flowfilter">FlowFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                 | Default | Description                         |
+| --------- | ------------------------------------ | ------- | ----------------------------------- |
+| filter    | <a href="#flowfilter">FlowFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>             | nil     | limit / offset / sort order options |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#flow">Flow</a>] | List of flows
+
+| Type                       | Description   |
+| -------------------------- | ------------- |
+| [<a href="#flow">Flow</a>] | List of flows |
 
 ## Get a specific Flow by ID
 
@@ -110,10 +107,10 @@ query flow($id: ID!) {
 ```
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#flowresult">FlowResult</a> | Queried Flow
 
+| Type                                 | Description  |
+| ------------------------------------ | ------------ |
+| <a href="#flowresult">FlowResult</a> | Queried Flow |
 
 ## Count all Flows
 
@@ -139,7 +136,6 @@ query countFlows($filter: FlowFilter) {
 }
 ```
 
-
 ## Create a Flow
 
 ```graphql
@@ -149,6 +145,7 @@ mutation ($input: FlowInput!) {
       id
       name
       keywords
+      isActive
     }
     errors {
       key
@@ -163,7 +160,8 @@ mutation ($input: FlowInput!) {
       "tests",
       "testing"
     ],
-    "name": "test workflow"
+    "name": "test workflow",
+    "isActive": true
   }
 }
 ```
@@ -177,10 +175,7 @@ mutation ($input: FlowInput!) {
       "errors": null,
       "flow": {
         "id": "12",
-        "keywords": [
-          "tests",
-          "testing"
-        ],
+        "keywords": ["tests", "testing"],
         "name": "test workflow"
       }
     }
@@ -208,14 +203,15 @@ In case of errors, above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#flowinput">FlowInput</a> | required ||
+| Parameter | Type                               | Default  | Description |
+| --------- | ---------------------------------- | -------- | ----------- |
+| input     | <a href="#flowinput">FlowInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#flowresult">FlowResult</a> | The created flow object
+
+| Type                                 | Description             |
+| ------------------------------------ | ----------------------- |
+| <a href="#flowresult">FlowResult</a> | The created flow object |
 
 ## Update a Flow
 
@@ -253,10 +249,7 @@ mutation updateFlow($id: ID!, $input:FlowInput!) {
       "flow": {
         "id": "1",
         "name": "updated name",
-        "keywords": [
-          "test",
-          "testing"
-        ]
+        "keywords": ["test", "testing"]
       }
     }
   }
@@ -283,16 +276,16 @@ In case of errors, above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#flowinput">FlowInput</a> | required ||
+| Parameter | Type                               | Default  | Description |
+| --------- | ---------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!              | required |             |
+| input     | <a href="#flowinput">FlowInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#flowresult">FlowResult</a> | The updated flow object
 
+| Type                                 | Description             |
+| ------------------------------------ | ----------------------- |
+| <a href="#flowresult">FlowResult</a> | The updated flow object |
 
 ## Delete a Flow
 
@@ -348,14 +341,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#flowresult">FlowResult</a> | An error object or empty
+
+| Type                                 | Description              |
+| ------------------------------------ | ------------------------ |
+| <a href="#flowresult">FlowResult</a> | An error object or empty |
 
 ## Publish a Flow
 
@@ -408,14 +402,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#publishflowresult">PublishFlowResult</a> | An error object or response true
+
+| Type                                               | Description                      |
+| -------------------------------------------------- | -------------------------------- |
+| <a href="#publishflowresult">PublishFlowResult</a> | An error object or response true |
 
 ## Start flow for a contact
 
@@ -469,16 +464,16 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-flowId | <a href="#id">ID</a>! | required ||
-contactId | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| flowId    | <a href="#id">ID</a>! | required |             |
+| contactId | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#startflowresult">StartFlowResult</a> | An error object or success response true
 
+| Type                                           | Description                              |
+| ---------------------------------------------- | ---------------------------------------- |
+| <a href="#startflowresult">StartFlowResult</a> | An error object or success response true |
 
 ## Start flow for a group contacts
 
@@ -532,16 +527,16 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-flowId | <a href="#id">ID</a>! | required ||
-groupId | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| flowId    | <a href="#id">ID</a>! | required |             |
+| groupId   | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#startflowresult">StartFlowResult</a> | An error object or success response true
 
+| Type                                           | Description                              |
+| ---------------------------------------------- | ---------------------------------------- |
+| <a href="#startflowresult">StartFlowResult</a> | An error object or success response true |
 
 ## Copy a Flow
 
@@ -587,16 +582,16 @@ mutation copyFlow($id: ID!, $input:FlowInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#flowinput">FlowInput</a> | required ||
+| Parameter | Type                               | Default  | Description |
+| --------- | ---------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!              | required |             |
+| input     | <a href="#flowinput">FlowInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#flowresult">FlowResult</a> | The copied flow object
 
+| Type                                 | Description            |
+| ------------------------------------ | ---------------------- |
+| <a href="#flowresult">FlowResult</a> | The copied flow object |
 
 ## Flow Objects
 
@@ -650,6 +645,11 @@ Type | Description
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>ignoreKeywords</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
@@ -751,7 +751,7 @@ Type | Description
 </tbody>
 </table>
 
-## Flow Inputs ##
+## Flow Inputs
 
 ### FlowInput
 
@@ -779,10 +779,15 @@ Type | Description
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
-### FlowFilter ###
+### FlowFilter
 
 Filtering options for flows
 
@@ -809,6 +814,11 @@ Filtering options for flows
 <td colspan="2" valign="top"><strong>uuid</strong></td>
 <td valign="top"><a href="#uuid4">UUID4</a></td>
 <td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Match the isActive flag of flow</td>
 </tr>
 <tr>
   <td colspan="2" valign="top"><strong>status</strong></td>
