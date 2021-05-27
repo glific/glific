@@ -55,7 +55,7 @@ defmodule GlificWeb.Schema.FlowTest do
     flow_uuid = get_in(query_data, [:data, "flows", Access.at(0), "uuid"])
     assert flow_uuid == flow.uuid
 
-    #testing flow filter with is_active
+    # testing flow filter with is_active
     result =
       auth_query_gql_by(:list, user, variables: %{"filter" => %{"is_active" => flow.is_active}})
 
