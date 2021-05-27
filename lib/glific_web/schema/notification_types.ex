@@ -39,6 +39,9 @@ defmodule GlificWeb.Schema.NotificationTypes do
 
     @desc "Match is read status"
     field :is_read, :boolean
+
+    @desc "Match is severity"
+    field :severity, :string
   end
 
   object :notification_queries do
