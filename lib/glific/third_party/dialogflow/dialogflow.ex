@@ -9,7 +9,7 @@ defmodule Glific.Dialogflow do
 
   alias Glific.{Dialogflow.Sessions, Messages.Message, Partners}
   alias Glific.Flows.{Action, FlowContext}
-  alias GoogleApi.Dialogflow.V2.Connection
+  alias GoogleApi.Dialogflow.V2.{Api.Projects, Connection, Model.GoogleCloudDialogflowV2ListIntentsResponse}
 
   @doc """
   The request controller which sends and parses requests.
@@ -22,7 +22,6 @@ defmodule Glific.Dialogflow do
 
     method
     |> do_request(dflow_url, body(body), headers(email, organization_id))
-    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
@@ -81,6 +80,7 @@ defmodule Glific.Dialogflow do
 
       credential ->
         service_account = Jason.decode!(credential.secrets["service_account"])
+
         %{
           url: "https://dialogflow.clients6.google.com/v2beta1/projects/",
           id: service_account["project_id"],
@@ -97,18 +97,27 @@ defmodule Glific.Dialogflow do
     Sessions.detect_intent(message, context.id, action.result_name)
   end
 
-  @doc """
-  Execute a webhook action, could be either get or post for now
-  """
-  def get_connection(organization_id) do
+  # get the connection object via the goth token for dialogflow
+  @spec get_connection(non_neg_integer) :: Connection.t()
+  defp get_connection(organization_id) do
     token = Partners.get_goth_token(organization_id, "dialogflow")
     Connection.new(token.token)
   end
 
+  @doc """
+  Get the list of all intents from the NLP agent
+  """
+  @spec get_intent_list(non_neg_integer) ::
+          {:ok, GoogleCloudDialogflowV2ListIntentsResponse.t()}
+          | {:ok, Tesla.Env.t()}
+          | {:ok, list()}
+          | {:error, any()}
   def get_intent_list(organization_id) do
     %{url: _url, id: project_id, email: _email} = project_info(organization_id)
     parent = "projects/#{project_id}/agent"
-    GoogleApi.Dialogflow.V2.Api.Projects.dialogflow_projects_agent_intents_list(get_connection(organization_id), parent)
-    |> IO.inspect()
+
+    organization_id
+    |> get_connection()
+    |> Projects.dialogflow_projects_agent_intents_list(parent)
   end
 end

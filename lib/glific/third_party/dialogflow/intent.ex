@@ -9,8 +9,7 @@ defmodule Glific.Dialogflow.Intent do
   import Ecto.Changeset
   import Ecto.Query, warn: false
 
-  alias Glific.Partners.Organization
-  alias Glific.Repo
+  alias Glific.{Partners.Organization, Repo}
 
   @required_fields [:name, :organization_id]
   @optional_fields []
@@ -44,10 +43,13 @@ defmodule Glific.Dialogflow.Intent do
     |> unique_constraint([:name, :organization_id])
   end
 
+  @doc """
+  Create an Intent for the NLP framework
+  """
+  @spec create_intent(map()) :: Intent.t()
   def create_intent(attrs) do
     %Intent{}
     |> changeset(attrs)
     |> Repo.insert()
   end
-
 end
