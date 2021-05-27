@@ -281,7 +281,7 @@ if Code.ensure_loaded?(Faker) do
         bsp_message_id: Faker.String.base64(10),
         bsp_status: :enqueued,
         sender_id: receiver3.id,
-        receiver_id: receiver4.id,
+        receiver_id: sender.id,
         contact_id: receiver3.id,
         organization_id: organization.id
       })
