@@ -9,18 +9,20 @@ defmodule Glific.Dialogflow do
 
   alias Glific.{Dialogflow.Sessions, Messages.Message, Partners}
   alias Glific.Flows.{Action, FlowContext}
+  alias GoogleApi.Dialogflow.V2.Connection
 
   @doc """
-  The request controller which sends and parses requests. We should move this to Tesla
+  The request controller which sends and parses requests.
   """
   @spec request(non_neg_integer, atom, String.t(), String.t() | map) :: tuple
   def request(organization_id, method, path, body) do
     %{url: url, id: id, email: email} = project_info(organization_id)
 
-    dflow_url = "#{url}#{id}/locations/global/agent/#{path}"
+    dflow_url = "#{url}/#{id}/locations/global/agent/#{path}"
 
     method
     |> do_request(dflow_url, body(body), headers(email, organization_id))
+    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
@@ -79,9 +81,8 @@ defmodule Glific.Dialogflow do
 
       credential ->
         service_account = Jason.decode!(credential.secrets["service_account"])
-
         %{
-          url: credential.keys["url"],
+          url: "https://dialogflow.clients6.google.com/v2beta1/projects/",
           id: service_account["project_id"],
           email: service_account["client_email"]
         }
@@ -94,5 +95,20 @@ defmodule Glific.Dialogflow do
   @spec execute(Action.t(), FlowContext.t(), Message.t()) :: :ok
   def execute(action, context, message) do
     Sessions.detect_intent(message, context.id, action.result_name)
+  end
+
+  @doc """
+  Execute a webhook action, could be either get or post for now
+  """
+  def get_connection(organization_id) do
+    token = Partners.get_goth_token(organization_id, "dialogflow")
+    Connection.new(token.token)
+  end
+
+  def get_intent_list(organization_id) do
+    %{url: _url, id: project_id, email: _email} = project_info(organization_id)
+    parent = "projects/#{project_id}/agent"
+    GoogleApi.Dialogflow.V2.Api.Projects.dialogflow_projects_agent_intents_list(get_connection(organization_id), parent)
+    |> IO.inspect()
   end
 end
