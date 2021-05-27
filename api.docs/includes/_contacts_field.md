@@ -157,8 +157,8 @@ mutation createContactsField($input:ContactsFieldInput!) {
 ## Get a Contacts Field by ID
 
 ```graphql
-query contacts_field($id: ID!) {
-  contacts_field(id: $id) {
+query ContactsField($id: ID!) {
+  ContactsField(id: $id) {
     contacts_field {
       valueType
       updatedAt
@@ -186,8 +186,8 @@ query contacts_field($id: ID!) {
 ```json
 {
   "data": {
-    "contacts_field": {
-      "contacts_field": {
+    "ContactsField": {
+      "ContactsField": {
         "id": "2",
         "insertedAt": "2021-05-11T07:15:24Z",
         "name": "Age Group",
@@ -318,7 +318,7 @@ mutation updateContactsField($id: ID!, $input:ContactsFieldInput!) {
 ## Delete a Contacts Fields
 
 ```graphql
-mutation  deletecontactsField($id: ID!) {
+mutation deletecontactsField($id: ID!) {
    deletecontactsField(id: $id!) {
     contactsField {
         valueType
