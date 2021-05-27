@@ -267,7 +267,7 @@ defmodule Glific.Flows.Flow do
       delay: context.delay,
       uuids_seen: context.uuids_seen,
       # lets keep only one level of results, rather than a lot of them
-      results: %{parent: parent}
+      results: %{"parent" => parent}
     )
   end
 
