@@ -4,6 +4,7 @@ fragment ContactsFieldFields on ContactsFieldResult {
     name
     scope
     shortcode
+    variable
     valueType
     insertedAt
     updatedAt

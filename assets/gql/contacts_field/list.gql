@@ -3,6 +3,7 @@ query contactsFields($filter: ContactsFieldFilter, $opts: Opts) {
     id
     name
     shortcode
+    variable
     value_type
     scope
     inserted_at

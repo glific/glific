@@ -57,9 +57,14 @@ defmodule Glific.Flows.ContactField do
   def list_contacts_fields(args) do
     Repo.list_filter(args, ContactsField, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
     |> Enum.map(fn contacts_field ->
-      contacts_field
-      |> Map.put(:variable, "@contact.fields.#{contacts_field.shortcode}")
+      add_variable_field(contacts_field)
     end)
+  end
+
+  @spec add_variable_field(ContactsField.t()) :: map()
+  defp add_variable_field(contacts_field) do
+    contacts_field
+    |> Map.put(:variable, "@contact.fields.#{contacts_field.shortcode}")
   end
 
   @doc """
@@ -74,9 +79,13 @@ defmodule Glific.Flows.ContactField do
   """
   @spec create_contact_field(map()) :: {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_field(attrs) do
-    %ContactsField{}
-    |> ContactsField.changeset(attrs)
-    |> Repo.insert()
+    with {:ok, contacts_field} <-
+           %ContactsField{}
+           |> ContactsField.changeset(attrs)
+           |> Repo.insert() do
+      contacts_field = add_variable_field(contacts_field)
+      {:ok, contacts_field}
+    end
   end
 
   @doc """
