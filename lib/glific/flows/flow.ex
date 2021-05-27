@@ -28,6 +28,7 @@ defmodule Glific.Flows.Flow do
     :uuid_map,
     :nodes,
     :ignore_keywords,
+    :is_active,
     :respond_other,
     :respond_no_response
   ]
@@ -40,6 +41,7 @@ defmodule Glific.Flows.Flow do
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
+          is_active: boolean() | nil,
           respond_other: boolean() | nil,
           respond_no_response: boolean() | nil,
           flow_type: String.t() | nil,
@@ -78,6 +80,7 @@ defmodule Glific.Flows.Flow do
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
+    field :is_active, :boolean, default: true
     field :respond_other, :boolean, default: false
     field :respond_no_response, :boolean, default: false
 

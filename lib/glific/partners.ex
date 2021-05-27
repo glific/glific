@@ -289,8 +289,8 @@ defmodule Glific.Partners do
     # first delete the cached organization
     remove_organization_cache(organization.id, organization.shortcode)
 
-    ## in case user updates the out of office flow it should udate the flow keyword map as well.
-    ## We need to think about a better approch to handle this one.
+    ## in case user updates the out of office flow it should update the flow keyword map as well.
+    ## We need to think about a better approach to handle this one.
     Caches.remove(organization.id, ["flow_keywords_map"])
 
     organization

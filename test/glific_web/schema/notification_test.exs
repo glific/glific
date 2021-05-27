@@ -68,6 +68,11 @@ defmodule GlificWeb.Schema.NotificationTest do
     assert {:ok, query_data} = result
     notifications = get_in(query_data, [:data, "notifications"])
     assert length(notifications) > 0
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"severity" => "Warning"}})
+    assert {:ok, query_data} = result
+    notifications = get_in(query_data, [:data, "notifications"])
+    assert length(notifications) > 0
   end
 
   test "notifications field obeys limit and offset", %{staff: user} = attrs do

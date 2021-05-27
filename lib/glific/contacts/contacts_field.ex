@@ -37,6 +37,7 @@ defmodule Glific.Contacts.ContactsField do
     field :shortcode, :string
     field :value_type, ContactFieldValueType, default: :text
     field :scope, ContactFieldScope, default: :contact
+    field :variable, :string, virtual: true
 
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime)
