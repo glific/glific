@@ -9,7 +9,12 @@ defmodule Glific.Dialogflow do
 
   alias Glific.{Dialogflow.Sessions, Messages.Message, Partners}
   alias Glific.Flows.{Action, FlowContext}
-  alias GoogleApi.Dialogflow.V2.{Api.Projects, Connection, Model.GoogleCloudDialogflowV2ListIntentsResponse}
+
+  alias GoogleApi.Dialogflow.V2.{
+    Api.Projects,
+    Connection,
+    Model.GoogleCloudDialogflowV2ListIntentsResponse
+  }
 
   @doc """
   The request controller which sends and parses requests.
