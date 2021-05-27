@@ -14,6 +14,7 @@ if Code.ensure_loaded?(Faker) do
       Groups.Group,
       Messages.Message,
       Messages.MessageMedia,
+      Notifications.Notification,
       Partners.Billing,
       Partners.Organization,
       Partners.Provider,
@@ -530,7 +531,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id,
         translations: translations,
         organization_id: organization.id,
-        status: "REJECTED",
+        status: "APPROVED",
         category: "ACCOUNT_UPDATE",
         example:
           "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
@@ -942,6 +943,54 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_notification(Organization.t()) :: nil
+    def seed_notification(organization) do
+      Repo.insert!(%Notification{
+        category: "Partner",
+        message:
+          "Disabling bigquery. Account does not have sufficient permissions to insert data to BigQuery.",
+        severity: "Critical",
+        organization_id: organization.id,
+        entity: %{
+          id: 2,
+          shortcode: "bigquery"
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Message",
+        message: "Cannot send session message to contact, invalid bsp status.",
+        severity: "Warning",
+        organization_id: organization.id,
+        entity: %{
+          id: 1,
+          name: "Adelle Cavin",
+          phone: "91987656789",
+          bsp_status: "hsm",
+          status: "valid",
+          last_message_at: "2021-03-23T17:05:01Z",
+          is_hsm: nil,
+          flow_id: 1,
+          group_id: nil
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Flow",
+        message: "Cannot send session message to contact, invalid bsp status.",
+        severity: "Warning",
+        organization_id: organization.id,
+        entity: %{
+          flow_id: 3,
+          parent_id: 6,
+          contact_id: 3,
+          flow_uuid: "12c25af0-37a2-4a69-8e26-9cfd98cab5c6",
+          name: "Preference Workflow"
+        }
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -981,6 +1030,8 @@ if Code.ensure_loaded?(Faker) do
       seed_messages_media(organization)
 
       hsm_templates(organization)
+
+      seed_notification(organization)
     end
   end
 end

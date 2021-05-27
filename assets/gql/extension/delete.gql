@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteExtension($id: ID!) {
+  deleteExtension(id: $id) {
+    ...ExtensionFields
+
+    ...ErrorFields
+  }
+}

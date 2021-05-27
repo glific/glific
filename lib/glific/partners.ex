@@ -289,8 +289,8 @@ defmodule Glific.Partners do
     # first delete the cached organization
     remove_organization_cache(organization.id, organization.shortcode)
 
-    ## in case user updates the out of office flow it should udate the flow keyword map as well.
-    ## We need to think about a better approch to handle this one.
+    ## in case user updates the out of office flow it should update the flow keyword map as well.
+    ## We need to think about a better approach to handle this one.
     Caches.remove(organization.id, ["flow_keywords_map"])
 
     organization
@@ -634,8 +634,6 @@ defmodule Glific.Partners do
         # first delete the cached organization
         organization = get_organization!(attrs.organization_id)
         remove_organization_cache(organization.id, organization.shortcode)
-        remove_organization_services_cache()
-
         attrs = Map.merge(attrs, %{provider_id: provider.id})
 
         %Credential{}
@@ -672,7 +670,6 @@ defmodule Glific.Partners do
     organization = organization(credential.organization_id)
 
     remove_organization_cache(organization.id, organization.shortcode)
-    remove_organization_services_cache()
 
     {:ok, credential} =
       credential
@@ -692,21 +689,17 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Removing organization cache
+  Removing organization and service cache
   """
   @spec remove_organization_cache(non_neg_integer, String.t()) :: any()
   def remove_organization_cache(organization_id, shortcode) do
+    Caches.remove(@global_organization_id, ["organization_services"])
+
     Caches.remove(
       @global_organization_id,
       [{:organization, organization_id}, {:organization, shortcode}]
     )
-  end
 
-  @doc """
-  Removing organization services cache
-  """
-  @spec remove_organization_services_cache() :: any()
-  def remove_organization_services_cache do
     Caches.remove(
       @global_organization_id,
       ["organization_services"]
@@ -756,7 +749,12 @@ defmodule Glific.Partners do
   @spec handle_token_error(non_neg_integer, String.t(), String.t() | any()) :: nil
   defp handle_token_error(organization_id, provider_shortcode, error) when is_binary(error) do
     if String.contains?(error, ["account not found", "invalid_grant"]),
-      do: disable_credential(organization_id, provider_shortcode)
+      do:
+        disable_credential(
+          organization_id,
+          provider_shortcode,
+          "Invalid credentials, service account not found"
+        )
 
     nil
   end
@@ -767,14 +765,13 @@ defmodule Glific.Partners do
   @doc """
   Disable a specific credential for the organization
   """
-  @spec disable_credential(non_neg_integer, String.t()) :: :ok
-  def disable_credential(organization_id, shortcode) do
+  @spec disable_credential(non_neg_integer, String.t(), String.t()) :: :ok
+  def disable_credential(organization_id, shortcode, error_message) do
     case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
       {:ok, provider} ->
         # first delete the cached organization
         organization = get_organization!(organization_id)
         remove_organization_cache(organization.id, organization.shortcode)
-        remove_organization_services_cache()
 
         Credential
         |> where([c], c.provider_id == ^provider.id)
@@ -785,7 +782,7 @@ defmodule Glific.Partners do
 
         Notifications.create_notification(%{
           category: "Partner",
-          message: "Disabling #{shortcode}. Something is wrong with the account.",
+          message: "Disabling #{shortcode}. #{error_message}",
           severity: "Critical",
           organization_id: organization_id,
           entity: %{
@@ -869,4 +866,84 @@ defmodule Glific.Partners do
   """
   @spec get_global_field_map(integer) :: map()
   def get_global_field_map(organization_id), do: organization(organization_id).fields
+
+  @doc """
+  Returns a map of organizations services as key value pair
+  """
+  @spec get_organization_services :: map()
+  def get_organization_services do
+    case Caches.fetch(
+           @global_organization_id,
+           "organization_services",
+           &load_organization_services/1
+         ) do
+      {:error, error} ->
+        raise(ArgumentError,
+          message: "Failed to retrieve organization services: #{error}"
+        )
+
+      {_, services} ->
+        services
+    end
+  end
+
+  # this is a global cache, so we kinda ignore the cache key
+  @spec load_organization_services(tuple()) :: {:commit, map()}
+  defp load_organization_services(_cache_key) do
+    services =
+      active_organizations([])
+      |> Enum.reduce(
+        %{},
+        fn {id, _name}, acc ->
+          load_organization_service(id, acc)
+        end
+      )
+      |> combine_services()
+
+    {:commit, services}
+  end
+
+  @spec load_organization_service(non_neg_integer, map()) :: map()
+  defp load_organization_service(organization_id, services) do
+    organization = organization(organization_id)
+
+    service = %{
+      "fun_with_flags" =>
+        FunWithFlags.enabled?(
+          :enable_out_of_office,
+          for: %{organization_id: organization_id}
+        ),
+      "bigquery" => organization.services["bigquery"] != nil,
+      "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
+      "dialogflow" => organization.services["dialogflow"] != nil
+    }
+
+    Map.put(services, organization_id, service)
+  end
+
+  @spec add_service(map(), String.t(), boolean(), non_neg_integer) :: map()
+  defp add_service(acc, _name, false, _org_id), do: acc
+
+  defp add_service(acc, name, true, org_id) do
+    value = Map.get(acc, name, [])
+    Map.put(acc, name, [org_id | value])
+  end
+
+  @spec combine_services(map()) :: map()
+  defp combine_services(services) do
+    combined =
+      services
+      |> Enum.reduce(
+        %{},
+        fn {org_id, service}, acc ->
+          acc
+          |> add_service("fun_with_flags", service["fun_with_flags"], org_id)
+          |> add_service("bigquery", service["bigquery"], org_id)
+          |> add_service("google_cloud_storage", service["google_cloud_storage"], org_id)
+          |> add_service("dialogflow", service["dialogflow"], org_id)
+        end
+      )
+
+    Map.merge(services, combined)
+  end
 end

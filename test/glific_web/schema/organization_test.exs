@@ -4,6 +4,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
   alias Glific.{
     Fixtures,
+    Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
@@ -36,6 +37,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/organizations/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
+  load_gql(:get_services, GlificWeb.Schema, "assets/gql/organizations/get_services.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
   load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
@@ -364,6 +366,42 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
     assert message == "default language must be updated according to active languages"
+  end
+
+  @default_goth_json """
+  {
+  "project_id": "DEFAULT PROJECT ID",
+  "private_key_id": "DEFAULT API KEY",
+  "client_email": "DEFAULT CLIENT EMAIL",
+  "private_key": "DEFAULT PRIVATE KEY"
+  }
+  """
+
+  test "get an organization services", %{user: user} = attrs do
+    Fixtures.organization_fixture()
+    result = auth_query_gql_by(:get_services, user)
+    assert {:ok, query_data} = result
+    services = get_in(query_data, [:data, "organizationServices"])
+    assert services["fun_with_flags"] == true
+    assert services["bigquery"] == false
+    assert services["google_cloud_storage"] == false
+
+    # should create credentials and update organization services
+
+    valid_attrs = %{
+      secrets: %{"service_account" => @default_goth_json},
+      is_active: true,
+      shortcode: "bigquery",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _credential} = Partners.create_credential(valid_attrs)
+    result = auth_query_gql_by(:get_services, user)
+    assert {:ok, query_data} = result
+    services = get_in(query_data, [:data, "organizationServices"])
+    assert services["fun_with_flags"] == true
+    assert services["bigquery"] == true
+    assert services["google_cloud_storage"] == false
   end
 
   test "update an organization with organization settings", %{user: user} do

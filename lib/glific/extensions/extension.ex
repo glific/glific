@@ -63,11 +63,13 @@ defmodule Glific.Extensions.Extension do
     extension
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint(:stripe_customer_id)
+    |> unique_constraint([:module, :name, :organization_id])
   end
 
-  @spec compile(String.t(), String.t() | nil) :: map()
-  defp compile(code, module \\ nil) do
+  @spec compile(map(), String.t(), String.t() | nil) :: map()
+  defp compile(attrs, code, module \\ nil)
+
+  defp compile(%{is_active: true}, code, module) do
     # unload the previous loaded module if it exists
     # typically in an update
     unload(module)
@@ -85,6 +87,16 @@ defmodule Glific.Extensions.Extension do
           module: nil
         }
     end
+  end
+
+  defp compile(_, _code, module) do
+    # incase of is_active as false we do not compile the code
+    unload(module)
+
+    %{
+      is_valid: false,
+      module: nil
+    }
   end
 
   @spec do_compile(String.t()) :: {:ok | :error, String.t()}
@@ -117,7 +129,7 @@ defmodule Glific.Extensions.Extension do
   """
   @spec create_extension(map()) :: {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
   def create_extension(attrs) do
-    attrs = Map.merge(attrs, compile(attrs.code))
+    attrs = Map.merge(attrs, compile(%{is_active: attrs.is_active}, attrs.code))
 
     %Extension{}
     |> Extension.changeset(Map.put(attrs, :organization_id, attrs.organization_id))
@@ -128,7 +140,7 @@ defmodule Glific.Extensions.Extension do
   Retrieve a extension record by clauses
   """
   @spec get_extension(map()) :: Extension.t() | nil
-  def get_extension(clauses), do: Repo.get_by(Extension, clauses)
+  def get_extension(clauses), do: Repo.get_by(Extension, clauses, skip_organization_id: true)
 
   @doc """
   Update the extension record
@@ -136,7 +148,7 @@ defmodule Glific.Extensions.Extension do
   @spec update_extension(Extension.t(), map()) ::
           {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
   def update_extension(%Extension{} = extension, attrs) do
-    attrs = Map.merge(attrs, compile(attrs.code, extension.module))
+    attrs = Map.merge(attrs, compile(%{is_active: attrs.is_active}, attrs.code, extension.module))
 
     extension
     |> Extension.changeset(attrs)
@@ -149,6 +161,6 @@ defmodule Glific.Extensions.Extension do
   @spec delete_extension(Extension.t()) ::
           {:ok, Extension.t()} | {:error, Ecto.Changeset.t()}
   def delete_extension(%Extension{} = extension) do
-    Repo.delete(extension)
+    Repo.delete(extension, skip_organization_id: true)
   end
 end

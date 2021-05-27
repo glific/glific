@@ -11,13 +11,13 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/consulting_hour/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
 
-  test "create a consulting hour entry", %{manager: user} do
+  test "create a consulting hour entry", %{user: user} = attrs do
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "participants" => "Adam",
-            "organizationId" => 1,
+            "clientId" => attrs.organization_id,
             "organizationName" => "Glific",
             "staff" => "Adelle Cavin",
             "content" => "GCS issue",
@@ -35,7 +35,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert consulting_hour["staff"] == "Adelle Cavin"
   end
 
-  test "count returns the number of consulting hours", %{staff: user} = attrs do
+  test "count returns the number of consulting hours", %{user: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
@@ -50,7 +50,9 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
 
     {:ok, query_data} =
       auth_query_gql_by(:count, user,
-        variables: %{"filter" => %{"organization_name" => "test organization"}}
+        variables: %{
+          "filter" => %{"organization_name" => "test organization"}
+        }
       )
 
     assert get_in(query_data, [:data, "countConsultingHours"]) == 0
@@ -61,7 +63,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
   end
 
-  test "consulting hours field returns list of consulting hours", %{staff: user} = attrs do
+  test "consulting hours field returns list of consulting hours", %{user: user} = attrs do
     _consulting_hour_1 =
       Fixtures.consulting_hour_fixture(%{
         organization_id: attrs.organization_id,
@@ -77,6 +79,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
       })
 
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) > 0
@@ -84,6 +87,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(consulting_hour, ["staff"]) == "Jon Cavin"
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isBillable" => false}})
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) > 0
@@ -91,6 +95,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(consulting_hour, ["staff"]) == "Ken Cavin"
 
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"participants" => "John"}})
+
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) > 0
@@ -98,21 +103,25 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert get_in(consulting_hour, ["participants"]) == "John Doe"
 
     result =
-      auth_query_gql_by(:list, user, variables: %{"opts" => %{"limit" => 1, "offset" => 0}})
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "opts" => %{"limit" => 1, "offset" => 0}
+        }
+      )
 
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) == 1
   end
 
-  test "update a consulting hours", %{manager: user} = attrs do
+  test "update a consulting hours", %{user: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => consulting_hour.id,
-          "input" => %{"duration" => 20}
+          "input" => %{"duration" => 20, "clientId" => attrs.organization_id}
         }
       )
 
@@ -163,7 +172,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
       )
 
     assert {:ok, query_data} = result
-    [error] = get_in(query_data, [:errors])
-    assert error.message == "No consulting hour found with inputted params"
+    [error] = get_in(query_data, [:data, "consultingHour", "errors"])
+    assert error["message"] == "Resource not found"
   end
 end

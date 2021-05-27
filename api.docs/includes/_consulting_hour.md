@@ -137,7 +137,7 @@ This returns all the consulting hours filtered by the input <a href="#Consulting
 | filter    | <a href="#ConsultingHourfilter">ConsultingHourfilter</a> | nil     | filter the list                     |
 | opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
 
-## Create a Consulting Hour
+## Create a Consulting Hours
 
 ```graphql
 mutation createConsultingHour($input:ConsultingHourInput!) {
@@ -164,7 +164,7 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 {
   "input": {
     "participants": "Adam",
-    "organizationId": 1,
+    "clientId": 1,
     "organizationName": "Glific",
     "staff": "Adelle Cavin",
     "content": "GCS issue",
@@ -266,7 +266,8 @@ mutation updateConsultingHour($id: ID!, $input:ConsultingHourInput!) {
 {
     "id": "2",
     "input": {
-        "participants": "Ken"
+        "participants": "Ken",
+        "clientId": 1
     }
 }
 ```
@@ -331,7 +332,7 @@ mutation  deleteConsultingHour($id: ID!) {
 }
 
 {
-    "id": "2",
+    "id": "2"
 }
 ```
 
@@ -485,7 +486,7 @@ mutation  deleteConsultingHour($id: ID!) {
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>organization_id</strong></td>
+<td colspan="2" valign="top"><strong>client_id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>

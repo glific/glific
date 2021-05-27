@@ -26,8 +26,8 @@ defmodule Glific.Notifications do
   """
   @spec update_notification(Notification.t(), map()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  def update_notification(log, attrs) do
-    log
+  def update_notification(notification, attrs) do
+    notification
     |> Notification.changeset(attrs)
     |> Repo.update()
   end
@@ -53,6 +53,9 @@ defmodule Glific.Notifications do
 
       {:message, message}, query ->
         from q in query, where: ilike(q.message, ^"%#{message}%")
+
+      {:severity, severity}, query ->
+        from q in query, where: ilike(q.severity, ^"%#{severity}%")
 
       {:is_read, is_read}, query ->
         from q in query, where: q.is_read == ^is_read
