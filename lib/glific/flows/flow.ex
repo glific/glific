@@ -325,9 +325,11 @@ defmodule Glific.Flows.Flow do
       |> Enum.reduce(
         {nil, 1_000_000, 1_000_000},
         fn {node_uuid, node}, {uuid, top, left} ->
-          if get_in(node, ["position", "top"]) <= top &&
-               get_in(node, ["position", "left"]) <= left do
-            {node_uuid, get_in(node, ["position", "top"]), get_in(node, ["position", "left"])}
+          pos_top = get_in(node, ["position", "top"])
+          pos_left = get_in(node, ["position", "left"])
+
+          if pos_top < top || (pos_top == top && pos_left < left) do
+            {node_uuid, pos_top, pos_left}
           else
             {uuid, top, left}
           end
