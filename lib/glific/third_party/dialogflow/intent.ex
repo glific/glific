@@ -1,7 +1,6 @@
 defmodule Glific.Dialogflow.Intent do
   @moduledoc """
-  The flow object which encapsulates the complete flow as emitted by
-  by `https://github.com/nyaruka/floweditor`
+  The intent object which has the intent information from any classifiers
   """
   alias __MODULE__
 
@@ -47,16 +46,20 @@ defmodule Glific.Dialogflow.Intent do
   Create an Intent for the NLP framework
   """
   @spec create_intent(map()) :: Intent.t()
-  def create_intent(attrs) do
+  def create_intent(attrs),
+  do:
     %Intent{}
     |> changeset(attrs)
     |> Repo.insert()
-  end
 
-  def get_intent_name_list(org_id) do
+  @doc """
+  Get a list of all the intent names.
+  """
+  @spec get_intent_name_list(non_neg_integer) :: list()
+  def get_intent_name_list(org_id),
+    do:
       Intent
       |> where([i], i.organization_id == ^org_id)
       |> select([i], i.name)
       |> Repo.all()
-  end
 end

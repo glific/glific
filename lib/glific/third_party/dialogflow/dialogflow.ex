@@ -136,15 +136,18 @@ defmodule Glific.Dialogflow do
     response
   end
 
-
   @spec sync_with_db(tuple, non_neg_integer) :: :ok
   defp sync_with_db({:ok, res}, organization_id) do
     existing_items = Intent.get_intent_name_list(organization_id)
     intent_name_list =
         res.intents
         |> Enum.map(fn intent
-          ->
-            %{name: intent.displayName, organization_id: organization_id, inserted_at: DateTime.utc_now, updated_at: DateTime.utc_now } end)
+          -> %{
+            name: intent.displayName,
+            organization_id: organization_id,
+            inserted_at: DateTime.utc_now,
+            updated_at: DateTime.utc_now
+            } end)
         |> Enum.filter(fn el -> !Enum.member?(existing_items, el.name) end)
 
         Intent

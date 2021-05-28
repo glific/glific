@@ -7,6 +7,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   alias Glific.{
     Contacts,
+    Dialogflow,
     Flows,
     Flows.ContactField,
     Flows.Flow,
@@ -163,7 +164,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
           uuid: "dialogflow_uuid",
           name: "Dialogflow",
           type: "dialogflow",
-          intents: Glific.Dialogflow.Intent.get_intent_name_list(organization_id)
+          intents: Dialogflow.Intent.get_intent_name_list(organization_id)
         }
       ]
     }
