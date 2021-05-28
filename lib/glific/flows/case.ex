@@ -128,6 +128,11 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
     do: strip(c.arguments) == strip(msg)
 
+  def execute(%{type: "has_all_words"} = c, _context, msg) do
+    str = strip(msg)
+    Enum.all?(c.arguments, fn l -> String.contains?(str, l) end)
+  end
+
   def execute(%{type: "has_multiple"} = c, _context, msg),
     do:
       msg.body
@@ -151,11 +156,6 @@ defmodule Glific.Flows.Case do
 
   def execute(%{type: "has_file"}, _context, msg),
     do: msg.type == :document
-
-  def execute(%{type: "has_all_words"} = c, _context, msg) do
-    str = strip(msg)
-    Enum.all?(c.arguments, fn l -> String.contains?(str, l) end)
-  end
 
   def execute(%{type: "has_phone"} = _c, _context, msg) do
     phone = strip(msg)

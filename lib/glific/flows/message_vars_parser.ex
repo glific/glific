@@ -31,6 +31,7 @@ defmodule Glific.Flows.MessageVarParser do
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]+[\.][\w]*/, &bound(&1, binding))
     |> String.replace(~r/@[\w]+[\.][\w]*/, &bound(&1, binding))
+    |> parse_results(binding["results"])
   end
 
   @spec bound(String.t(), map()) :: String.t()
@@ -96,16 +97,26 @@ defmodule Glific.Flows.MessageVarParser do
   """
   @spec parse_results(String.t(), map()) :: String.t()
   def parse_results(body, results) when is_map(results) do
-    if String.contains?(body, "@results.") do
+    body
+    |> do_parse_results("@results.", results)
+    |> do_parse_results("@results.parent.", results["parent"])
+    |> do_parse_results("@results.child.", results["child"])
+  end
+
+  def parse_results(body, _), do: body
+
+  @spec do_parse_results(String.t(), String.t(), map()) :: String.t()
+  defp do_parse_results(body, replace_prefix, results) when is_map(results) do
+    if String.contains?(body, replace_prefix) do
       Enum.reduce(
         results,
         body,
-        fn {key, value}, acc ->
+        fn
+          {key, value}, acc ->
           key = String.downcase(key)
-
           if Map.has_key?(value, "input") and !is_map(value["input"]) do
             value = to_string(value["input"])
-            String.replace(acc, "@results." <> key, value)
+            String.replace(acc, replace_prefix <> key, value)
           else
             acc
           end
@@ -116,7 +127,7 @@ defmodule Glific.Flows.MessageVarParser do
     end
   end
 
-  def parse_results(body, _), do: body
+  defp do_parse_results(body, _replace_prefix, _results), do: body
 
   @doc """
   Replace all the keys and values of a given map
