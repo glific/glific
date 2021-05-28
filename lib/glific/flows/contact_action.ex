@@ -42,7 +42,8 @@ defmodule Glific.Flows.ContactAction do
       context.contact_id,
       %{
         "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "results" => context.results
+        "results" => context.results,
+        "flow" => %{name: context.flow.name, id: context.flow.id}
       }
     }
   end

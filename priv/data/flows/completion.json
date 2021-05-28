@@ -1,6 +1,27 @@
 {
   "types": [
     {
+      "name": "flow",
+      "key_source": "flow",
+      "property_template": [
+        {
+          "key": "__default__",
+          "help": "the name",
+          "type": "text"
+        },
+        {
+          "key": "id",
+          "help": "the numeric ID of the flow",
+          "type": "text"
+        },
+        {
+          "key": "name",
+          "help": "the name of the flow",
+          "type": "text"
+        }
+      ]
+    },
+    {
       "name": "fields",
       "key_source": "fields",
       "property_template": {
@@ -379,6 +400,11 @@
   ],
   "root": [
     {
+      "key": "flow",
+      "help": "the flow",
+      "type": "flow"
+    },
+    {
       "key": "contact",
       "help": "the contact",
       "type": "contact"
@@ -430,6 +456,11 @@
     }
   ],
   "root_no_session": [
+    {
+      "key": "flow",
+      "help": "the flow",
+      "type": "flow"
+    },
     {
       "key": "contact",
       "help": "the contact",
