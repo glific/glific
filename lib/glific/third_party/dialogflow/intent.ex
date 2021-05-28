@@ -47,10 +47,10 @@ defmodule Glific.Dialogflow.Intent do
   """
   @spec create_intent(map()) :: Intent.t()
   def create_intent(attrs),
-  do:
-    %Intent{}
-    |> changeset(attrs)
-    |> Repo.insert()
+    do:
+      %Intent{}
+      |> changeset(attrs)
+      |> Repo.insert()
 
   @doc """
   Get a list of all the intent names.

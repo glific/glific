@@ -113,13 +113,14 @@ defmodule Glific.Flows.MessageVarParser do
         body,
         fn
           {key, value}, acc ->
-          key = String.downcase(key)
-          if Map.has_key?(value, "input") and !is_map(value["input"]) do
-            value = to_string(value["input"])
-            String.replace(acc, replace_prefix <> key, value)
-          else
-            acc
-          end
+            key = String.downcase(key)
+
+            if Map.has_key?(value, "input") and !is_map(value["input"]) do
+              value = to_string(value["input"])
+              String.replace(acc, replace_prefix <> key, value)
+            else
+              acc
+            end
         end
       )
     else

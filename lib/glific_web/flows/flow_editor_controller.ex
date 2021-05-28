@@ -158,6 +158,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
     organization_id = conn.assigns[:organization_id]
+
     classifiers = %{
       results: [
         %{

@@ -7,14 +7,15 @@ defmodule Glific.Dialogflow do
   seem to be maintained, that we could not use as is. The dependency list was quite old etc.
   """
   require Logger
+
   alias Glific.{
-      Dialogflow.Intent,
-      Dialogflow.Sessions,
-      Flows.Action,
-      Flows.FlowContext,
-      Messages.Message,
-      Partners,
-      Repo
+    Dialogflow.Intent,
+    Dialogflow.Sessions,
+    Flows.Action,
+    Flows.FlowContext,
+    Messages.Message,
+    Partners,
+    Repo
   }
 
   alias GoogleApi.Dialogflow.V2.{
@@ -127,10 +128,11 @@ defmodule Glific.Dialogflow do
   def get_intent_list(organization_id) do
     %{url: _url, id: project_id, email: _email} = project_info(organization_id)
     parent = "projects/#{project_id}/agent"
+
     response =
-    organization_id
-    |> get_connection()
-    |> Projects.dialogflow_projects_agent_intents_list(parent)
+      organization_id
+      |> get_connection()
+      |> Projects.dialogflow_projects_agent_intents_list(parent)
 
     sync_with_db(response, organization_id)
     response
@@ -139,26 +141,27 @@ defmodule Glific.Dialogflow do
   @spec sync_with_db(tuple, non_neg_integer) :: :ok
   defp sync_with_db({:ok, res}, organization_id) do
     existing_items = Intent.get_intent_name_list(organization_id)
+
     intent_name_list =
-        res.intents
-        |> Enum.map(fn intent
-          -> %{
-            name: intent.displayName,
-            organization_id: organization_id,
-            inserted_at: DateTime.utc_now,
-            updated_at: DateTime.utc_now
-            } end)
-        |> Enum.filter(fn el -> !Enum.member?(existing_items, el.name) end)
+      res.intents
+      |> Enum.map(fn intent ->
+        %{
+          name: intent.displayName,
+          organization_id: organization_id,
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        }
+      end)
+      |> Enum.filter(fn el -> !Enum.member?(existing_items, el.name) end)
 
-        Intent
-        |> Repo.insert_all(intent_name_list)
+    Intent
+    |> Repo.insert_all(intent_name_list)
 
-      :ok
+    :ok
   end
 
   defp sync_with_db({:error, message}, _organization_id) do
     Logger.error(message)
     :ok
   end
-
 end
