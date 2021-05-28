@@ -10,6 +10,8 @@ defmodule Glific.Dialogflow do
   alias Glific.{Dialogflow.Sessions, Messages.Message, Partners}
   alias Glific.Flows.{Action, FlowContext}
   alias GoogleApi.Dialogflow.V2.Connection
+  alias Glific.Dialogflow.Intent
+  alias Glific.Repo
 
   @doc """
   The request controller which sends and parses requests.
@@ -22,7 +24,6 @@ defmodule Glific.Dialogflow do
 
     method
     |> do_request(dflow_url, body(body), headers(email, organization_id))
-    |> IO.inspect()
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
@@ -82,7 +83,7 @@ defmodule Glific.Dialogflow do
       credential ->
         service_account = Jason.decode!(credential.secrets["service_account"])
         %{
-          url: "https://dialogflow.clients6.google.com/v2beta1/projects/",
+          url: "https://dialogflow.clients6.google.com/v2beta1/projects",
           id: service_account["project_id"],
           email: service_account["client_email"]
         }
@@ -100,15 +101,36 @@ defmodule Glific.Dialogflow do
   @doc """
   Execute a webhook action, could be either get or post for now
   """
+  @spec get_connection(non_neg_integer) :: Connection.t()
   def get_connection(organization_id) do
     token = Partners.get_goth_token(organization_id, "dialogflow")
     Connection.new(token.token)
   end
 
+  @spec get_intent_list(non_neg_integer) :: :ok | {:error, String.t()}
   def get_intent_list(organization_id) do
     %{url: _url, id: project_id, email: _email} = project_info(organization_id)
     parent = "projects/#{project_id}/agent"
     GoogleApi.Dialogflow.V2.Api.Projects.dialogflow_projects_agent_intents_list(get_connection(organization_id), parent)
-    |> IO.inspect()
+    |> case do
+      {:ok, res} ->
+        existing_items = Intent.get_intent_name_list(organization_id)
+        intent_name_list
+        = res.intents
+        |> Enum.map(fn intent ->
+            %{
+              name: intent.displayName,
+              organization_id: organization_id,
+              inserted_at: DateTime.utc_now,
+              updated_at: DateTime.utc_now
+            } end)
+        |> Enum.filter(fn el -> !Enum.member?(existing_items, el.name) end)
+
+        Intent
+        |> Repo.insert_all(intent_name_list)
+
+        :ok
+      {:error, message} -> {:error, message}
+    end
   end
 end

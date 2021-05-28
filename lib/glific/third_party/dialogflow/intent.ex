@@ -25,7 +25,7 @@ defmodule Glific.Dialogflow.Intent do
           updated_at: :utc_datetime | nil
         }
 
-  schema "flows" do
+  schema "intents" do
     field :name, :string
 
     belongs_to :organization, Organization
@@ -48,6 +48,13 @@ defmodule Glific.Dialogflow.Intent do
     %Intent{}
     |> changeset(attrs)
     |> Repo.insert()
+  end
+
+  def get_intent_name_list(org_id) do
+      Intent
+      |> where([i], i.organization_id == ^org_id)
+      |> select([i], i.name)
+      |> Repo.all()
   end
 
 end

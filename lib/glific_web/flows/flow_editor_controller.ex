@@ -156,13 +156,14 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
+    organization_id = conn.assigns[:organization_id]
     classifiers = %{
       results: [
         %{
           uuid: "dialogflow_uuid",
           name: "Dialogflow",
           type: "dialogflow",
-          intents: ["glific.info", "glific.features", "all"]
+          intents: Glific.Dialogflow.Intent.get_intent_name_list(organization_id)
         }
       ]
     }

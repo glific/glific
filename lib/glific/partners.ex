@@ -812,6 +812,11 @@ defmodule Glific.Partners do
     :ok
   end
 
+  def credential_update_callback(organization, "dialogflow") do
+    Glific.Dialogflow.get_intent_list(organization.id)
+    :ok
+  end
+
   def credential_update_callback(_organization, _provider), do: :ok
 
   @doc """
