@@ -404,7 +404,7 @@ defmodule Glific.Flows.Action do
       {:node, node} = context.uuid_map[action.node_uuid]
 
       {context, parent_id} =
-        if node.is_terminal,
+        if node.is_terminal == true,
           do: {FlowContext.reset_one_context(context), context.parent_id},
           else: {context, context.id}
 
@@ -587,6 +587,7 @@ defmodule Glific.Flows.Action do
       FlowContext
       |> where([fc], fc.contact_id == ^context.contact_id)
       |> where([fc], fc.flow_uuid == ^flow_uuid)
+      |> where([fc], is_nil(fc.completed_at))
       |> Repo.aggregate(:count)
 
     if matching > 0 do
