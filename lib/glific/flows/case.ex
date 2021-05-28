@@ -61,7 +61,7 @@ defmodule Glific.Flows.Case do
     }
 
     c =
-      if c.type == "has_multiple" do
+      if c.type in ["has_multiple", "has_any_word", "has_all_words"] do
         pargs =
           json["arguments"]
           |> hd()
@@ -125,8 +125,7 @@ defmodule Glific.Flows.Case do
   def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"] do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
 
-    args = c.arguments |> strip() |> Glific.make_set([",", ";", " "])
-    !MapSet.disjoint?(str, args)
+    !MapSet.disjoint?(str, c.parsed_arguments)
   end
 
   def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
@@ -135,7 +134,7 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_all_words"} = c, _context, msg) do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
 
-    c.arguments |> strip() |> Glific.make_set([",", ";", " "]) |> MapSet.subset?(str)
+    c.parsed_arguments |> MapSet.subset?(str)
   end
 
   def execute(%{type: "has_multiple"} = c, _context, msg),

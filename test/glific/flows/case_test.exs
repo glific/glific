@@ -37,13 +37,19 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_any_word" do
-    c = %Case{type: "has_any_word", arguments: ["first second third"]}
+    args = ["first second third"]
+    parsed_args = args |> hd() |> Glific.make_set()
+
+    c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
 
     assert wrap_execute(c, nil, "first") == true
     assert wrap_execute(c, nil, "second ") == true
     assert wrap_execute(c, nil, "fourth") == false
 
-    c = %Case{type: "has_any_word", arguments: ["none of these"]}
+    args = ["none of these"]
+    parsed_args = args |> hd() |> Glific.make_set()
+
+    c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
     assert wrap_execute(c, nil, "first") == false
     assert wrap_execute(c, nil, "second") == false
     assert wrap_execute(c, nil, "fourth") == false
@@ -62,7 +68,7 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "fourth") == false
     assert wrap_execute(c, nil, "first third fourth") == false
 
-    c = %Case{type: "has_any_word", arguments: ["first second third"]}
+    c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
     assert wrap_execute(c, nil, "first") == true
     assert wrap_execute(c, nil, "first second") == true
     assert wrap_execute(c, nil, "first second third") == true
@@ -94,7 +100,9 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_all_words" do
-    c = %Case{type: "has_all_words", arguments: ["one, two"]}
+    args = ["one, two"]
+    parsed_args = args |> hd() |> Glific.make_set()
+    c = %Case{type: "has_all_words", arguments: ["one, two"], parsed_arguments: parsed_args}
 
     assert wrap_execute(c, nil, "one1") == false
     assert wrap_execute(c, nil, "one, two") == true
