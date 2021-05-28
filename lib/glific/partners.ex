@@ -43,7 +43,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["dialogflow", "goth", "shortcode"], provider.shortcode)
+      Enum.member?(["goth", "shortcode"], provider.shortcode)
     end)
   end
 
@@ -809,6 +809,11 @@ defmodule Glific.Partners do
 
   def credential_update_callback(organization, "google_cloud_storage") do
     GCS.refresh_gcs_setup(organization.id)
+    :ok
+  end
+
+  def credential_update_callback(organization, "dialogflow") do
+    Glific.Dialogflow.get_intent_list(organization.id)
     :ok
   end
 

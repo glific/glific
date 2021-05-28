@@ -175,6 +175,20 @@ defmodule Glific.Flows.Case do
     end
   end
 
+  def execute(%{type: type} = c, _context, msg) when type in ["has_intent", "has_top_intent"] do
+    [intent, confidence] = c.arguments
+    # always prepend a 0 to the string, in case it is something like ".9",
+    # this also works with "0.9"
+    confidence = String.to_float("0" <> confidence)
+
+    if intent == "all",
+      # any intent is fine, we are only interested in the confidence level
+      do: msg.extra.confidence >= confidence,
+      else: msg.extra.intent == intent && msg.extra.confidence >= confidence
+  end
+
+  def execute(%{type: "has_category"}, _context, _msg), do: true
+
   def execute(c, _context, _msg),
     do:
       raise(UndefinedFunctionError,

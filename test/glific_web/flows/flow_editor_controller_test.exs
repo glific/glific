@@ -141,7 +141,9 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         get_auth_token(conn, token)
         |> get("/flow-editor/classifiers", %{})
 
-      assert json_response(conn, 200)["results"] == []
+      data = json_response(conn, 200)
+      assert [map] = data["results"]
+      assert map["name"] == "Dialogflow"
     end
 
     test "ticketers", %{conn: conn, access_token: token} do

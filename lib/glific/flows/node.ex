@@ -244,10 +244,14 @@ defmodule Glific.Flows.Node do
   defp execute_node_router(node, context, messages) do
     # need a better way to figure out if we should handle router or action
     # this is a hack for now
+    action = hd(node.actions)
+
     if messages != [] and
-         hd(messages).clean_body in ["completed", "expired", "success", "failure"],
-       do: Router.execute(node.router, context, messages),
-       else: Action.execute(hd(node.actions), context, messages)
+         hd(messages).clean_body in ["completed", "expired", "success", "failure"] do
+      Router.execute(node.router, context, messages)
+    else
+      Action.execute(action, context, messages)
+    end
   end
 
   @spec execute_node_actions(Node.t(), FlowContext.t(), [Message.t()]) ::

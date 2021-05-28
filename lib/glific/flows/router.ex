@@ -264,8 +264,8 @@ defmodule Glific.Flows.Router do
 
   # return the right category but also return if it is a "checkbox" related category
   @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: {Ecto.UUID.t() | nil, boolean}
-  defp find_category(router, _context, %{body: body} = _msg)
-       when body in ["No Response", "Exit Loop", "Success", "Failure"] do
+  defp find_category(router, _context, %{body: body, extra: %{intent: intent}} = _msg)
+       when body in ["No Response", "Exit Loop", "Success", "Failure"] and is_nil(intent) do
     # Find the category with above name
     category = Enum.find(router.categories, fn c -> c.name == body end)
 
@@ -321,7 +321,13 @@ defmodule Glific.Flows.Router do
 
         # this also handles msg.type in [:text]
         true ->
-          %{key => %{"input" => msg.body, "category" => category.name}}
+          %{
+            key =>
+              Map.merge(
+                %{"input" => msg.body, "category" => category.name},
+                msg.extra
+              )
+          }
       end
 
     FlowContext.update_results(context, results)

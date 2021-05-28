@@ -7,6 +7,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   alias Glific.{
     Contacts,
+    Dialogflow,
     Flows,
     Flows.ContactField,
     Flows.Flow,
@@ -151,12 +152,23 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-  A list of all the NLP classifiers. For Glific it's just WhatsApp.
+  A list of all the NLP classifiers. For Glific it's just Dialogflow
   We are not supporting them for now. We will come back to this in near future
   """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
-    classifiers = %{results: []}
+    organization_id = conn.assigns[:organization_id]
+    classifiers = %{
+      results: [
+        %{
+          uuid: "dialogflow_uuid",
+          name: "Dialogflow",
+          type: "dialogflow",
+          intents: Dialogflow.Intent.get_intent_name_list(organization_id)
+        }
+      ]
+    }
+
     json(conn, classifiers)
   end
 

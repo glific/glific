@@ -50,6 +50,7 @@ defmodule Glific.Messages.Message do
           body: String.t() | nil,
           clean_body: String.t() | nil,
           publish?: boolean,
+          extra: map(),
           bsp_message_id: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
@@ -107,6 +108,10 @@ defmodule Glific.Messages.Message do
     # number of contacts which will overwhelm the frontend. Hence we suppress the subscription
     # when sendign to a group
     field :publish?, :boolean, default: true, virtual: true
+
+    # adding an extra virtual field so we can hang dynamic data to pass during processing of
+    # agents and flows. Specifically used for now during dialogflow
+    field :extra, :map, default: %{}, virtual: true
 
     field :is_hsm, :boolean, default: false
 

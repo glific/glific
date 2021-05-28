@@ -132,24 +132,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           keys: %{
             url: %{
               type: :string,
-              label: "Dialogdlow Home Page",
-              default: "https://dialogflow.cloud.google.com/",
+              label: "Dialogflow API Endpoint",
+              default: "https://dialogflow.clients6.google.com/v2beta1/projects/",
               view_only: true
             }
           },
           secrets: %{
-            project_id: %{
-              type: :string,
-              label: "Project ID",
-              default: nil,
-              view_only: false
-            },
-            project_email: %{
-              type: :string,
-              label: "Project Email",
-              default: nil,
-              view_only: false
-            },
             service_account: %{
               type: :string,
               label: "Goth Credentials ",

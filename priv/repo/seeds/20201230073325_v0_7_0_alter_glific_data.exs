@@ -19,7 +19,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_7_0 do
 
     credentials
     |> Enum.each(fn credential ->
-      if Enum.member?(["dialogflow", "goth"], credential.provider.shortcode) do
+      if Enum.member?(["goth"], credential.provider.shortcode) do
         update_status(credential)
       end
     end)

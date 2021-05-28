@@ -587,7 +587,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, flow} =
       Flows.get_cached_flow(
-        context.flow.organization_id,
+        context.organization_id,
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
@@ -624,7 +624,10 @@ defmodule Glific.Flows.FlowContext do
 
     """
     DELETE FROM flow_contexts
-    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.completed_at < '#{back_date}' and f0.completed_at is not null LIMIT 500));
+    WHERE id = any (array(
+       SELECT id
+       FROM flow_contexts AS f0
+       WHERE f0.completed_at < '#{back_date}' AND F0.completed_at IS NOT NULL LIMIT 500));
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
