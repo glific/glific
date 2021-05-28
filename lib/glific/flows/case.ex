@@ -122,8 +122,12 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_number"}, _context, msg),
     do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
-  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"],
-    do: String.contains?(strip(c.arguments), strip(msg))
+  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"] do
+    str = msg |> strip() |> Glific.make_set([",", ";", " "])
+
+    args = c.arguments |> strip() |> Glific.make_set([",", ";", " "])
+    !MapSet.disjoint?(str, args)
+  end
 
   def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
     do: strip(c.arguments) == strip(msg)
