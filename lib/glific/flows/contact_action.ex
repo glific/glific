@@ -98,7 +98,6 @@ defmodule Glific.Flows.ContactAction do
     body =
       text
       |> MessageVarParser.parse(message_vars)
-      |> MessageVarParser.parse_results(context.results)
 
     {context, count} = update_recent(context, body)
 
