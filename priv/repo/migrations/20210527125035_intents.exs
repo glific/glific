@@ -3,8 +3,7 @@ defmodule Glific.Repo.Migrations.Intents do
 
   def change do
     create table(:intents,
-             comment:
-               "Lets store all the intents to utilize the nlp classifiers"
+             comment: "Lets store all the intents to utilize the nlp classifiers"
            ) do
       add :name, :string, comment: "The name of the Intent (for lookup)"
 

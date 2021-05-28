@@ -8,7 +8,13 @@ defmodule GlificWeb.Schema.ExtensionTest do
   load_gql(:by_client_id, GlificWeb.Schema, "assets/gql/extension/by_client_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/extension/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/extension/update.gql")
-  load_gql(:get_organization_extension, GlificWeb.Schema, "assets/gql/extension/update_org_extension.gql")
+
+  load_gql(
+    :get_organization_extension,
+    GlificWeb.Schema,
+    "assets/gql/extension/update_org_extension.gql"
+  )
+
   load_gql(:delete, GlificWeb.Schema, "assets/gql/extension/delete.gql")
 
   test "create a new extension", %{user: user} = attrs do

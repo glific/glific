@@ -432,15 +432,17 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec flow_attachment(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def flow_attachment(conn, %{"media" => media, "extension" => extension} = _params) do
     organization_id = conn.assigns[:organization_id]
+
     remote_name =
       conn.assigns[:current_user]
       |> remote_name(extension)
 
-    res = GcsWorker.upload_media(media.path, remote_name, organization_id)
-    |> case do
-      {:ok, gcs_url} -> %{url: gcs_url, error: nil}
-      {:error, error} -> %{url: nil, error: error}
-    end
+    res =
+      GcsWorker.upload_media(media.path, remote_name, organization_id)
+      |> case do
+        {:ok, gcs_url} -> %{url: gcs_url, error: nil}
+        {:error, error} -> %{url: nil, error: error}
+      end
 
     json(conn, res)
   end

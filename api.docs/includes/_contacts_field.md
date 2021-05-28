@@ -1,6 +1,6 @@
 # Contacts Field
 
-## Get Contacts Fields
+## Get All Contacts Fields
 
 ```graphql
 query contactsFields($filter: contactsFieldFilter, $opts: Opts) {
@@ -154,6 +154,64 @@ mutation createContactsField($input:ContactsFieldInput!) {
 | -------------------------------------------------------- | --------------------------------- |
 | <a href="#contacts_field_result">ContactsFieldResult</a> | The created contacts field object |
 
+## Get a Contacts Field by ID
+
+```graphql
+query ContactsField($id: ID!) {
+  ContactsField(id: $id) {
+    contacts_field {
+      valueType
+      updatedAt
+      shortcode
+      scope
+      name
+      insertedAt
+      id
+      organization {
+        shortcode
+        isApproved
+        isActive
+      }
+    }
+  }
+}
+
+{
+  "id": 2
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "ContactsField": {
+      "ContactsField": {
+        "id": "2",
+        "insertedAt": "2021-05-11T07:15:24Z",
+        "name": "Age Group",
+        "organization": {
+          "isActive": true,
+          "isApproved": false,
+          "shortcode": "glific"
+        },
+        "scope": "contact",
+        "shortcode": "age_group",
+        "updatedAt": "2021-05-11T07:15:24Z",
+        "valueType": "text"
+      }
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
+
 ## Count all Contacts Fields
 
 ```graphql
@@ -260,7 +318,7 @@ mutation updateContactsField($id: ID!, $input:ContactsFieldInput!) {
 ## Delete a Contacts Fields
 
 ```graphql
-mutation  deletecontactsField($id: ID!) {
+mutation deletecontactsField($id: ID!) {
    deletecontactsField(id: $id!) {
     contactsField {
         valueType
@@ -358,6 +416,11 @@ mutation  deletecontactsField($id: ID!) {
 <tr>
 <td colspan="2" valign="top"><strong>value_type</strong></td>
 <td valign="top"><a href="#string">ContactFieldValueTypeConst</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>variable</strong></td>
+<td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
 <tr>

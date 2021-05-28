@@ -28,6 +28,7 @@ defmodule Glific.Flows.Flow do
     :uuid_map,
     :nodes,
     :ignore_keywords,
+    :is_active,
     :respond_other,
     :respond_no_response
   ]
@@ -40,6 +41,7 @@ defmodule Glific.Flows.Flow do
           uuid_map: map() | nil,
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
+          is_active: boolean() | nil,
           respond_other: boolean() | nil,
           respond_no_response: boolean() | nil,
           flow_type: String.t() | nil,
@@ -78,6 +80,7 @@ defmodule Glific.Flows.Flow do
 
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
+    field :is_active, :boolean, default: true
     field :respond_other, :boolean, default: false
     field :respond_no_response, :boolean, default: false
 
@@ -264,7 +267,7 @@ defmodule Glific.Flows.Flow do
       delay: context.delay,
       uuids_seen: context.uuids_seen,
       # lets keep only one level of results, rather than a lot of them
-      results: %{parent: parent}
+      results: %{"parent" => parent}
     )
   end
 
@@ -317,14 +320,19 @@ defmodule Glific.Flows.Flow do
 
   @spec start_node(map()) :: Ecto.UUID.t()
   defp start_node(json) do
-    {node_uuid, _top} =
+    {node_uuid, _top, _left} =
       json["nodes"]
       |> Enum.reduce(
-        {nil, 1_000_000},
-        fn {node_uuid, node}, {uuid, top} ->
-          if get_in(node, ["position", "top"]) < top,
-            do: {node_uuid, get_in(node, ["position", "top"])},
-            else: {uuid, top}
+        {nil, 1_000_000, 1_000_000},
+        fn {node_uuid, node}, {uuid, top, left} ->
+          pos_top = get_in(node, ["position", "top"])
+          pos_left = get_in(node, ["position", "left"])
+
+          if pos_top < top || (pos_top == top && pos_left < left) do
+            {node_uuid, pos_top, pos_left}
+          else
+            {uuid, top, left}
+          end
         end
       )
 
