@@ -135,7 +135,7 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_all_words"} = c, _context, msg) do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
 
-    c.arguments |> strip() |> Glific.make_set([",", ";", " "]) |> MapSet.equal?(str)
+    c.arguments |> strip() |> Glific.make_set([",", ";", " "]) |> MapSet.subset?(str)
   end
 
   def execute(%{type: "has_multiple"} = c, _context, msg),

@@ -91,12 +91,13 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_all_words" do
-    c = %Case{type: "has_all_words", arguments: ["one", "two"]}
+    c = %Case{type: "has_all_words", arguments: ["one, two"]}
 
     assert wrap_execute(c, nil, "one1") == false
-    assert wrap_execute(c, nil, "onethresstwo") == true
-    assert wrap_execute(c, nil, "ONETHREETWO") == true
-    assert wrap_execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "one, two") == true
+    assert wrap_execute(c, nil, "two one") == true
+    assert wrap_execute(c, nil, "one two three") == true
+    assert wrap_execute(c, nil, "one") == false
   end
 
   test "test the execute function for has_location" do
