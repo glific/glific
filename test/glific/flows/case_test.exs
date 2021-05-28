@@ -62,10 +62,13 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "fourth") == false
     assert wrap_execute(c, nil, "first third fourth") == false
 
-    c = %Case{type: "has_any_word", arguments: ["none of these"]}
-    assert wrap_execute(c, nil, "first") == false
-    assert wrap_execute(c, nil, "second none") == false
-    assert wrap_execute(c, nil, "fourth these") == false
+    c = %Case{type: "has_any_word", arguments: ["first second third"]}
+    assert wrap_execute(c, nil, "first") == true
+    assert wrap_execute(c, nil, "first second") == true
+    assert wrap_execute(c, nil, "first second third") == true
+    assert wrap_execute(c, nil, "first second third forth") == true
+    assert wrap_execute(c, nil, "fifth") == false
+    assert wrap_execute(c, nil, "fifth first") == true
   end
 
   test "test the execute function for has_number_eq" do
