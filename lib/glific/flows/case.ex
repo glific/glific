@@ -61,7 +61,7 @@ defmodule Glific.Flows.Case do
     }
 
     c =
-      if c.type == "has_multiple" do
+      if c.type in ["has_multiple", "has_any_word", "has_all_words"] do
         pargs =
           json["arguments"]
           |> hd()
@@ -122,15 +122,19 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_number"}, _context, msg),
     do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
-  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"],
-    do: String.contains?(strip(c.arguments), strip(msg))
+  def execute(%{type: type} = c, _context, msg) when type in ["has_phrase", "has_any_word"] do
+    str = msg |> strip() |> Glific.make_set([",", ";", " "])
+
+    !MapSet.disjoint?(str, c.parsed_arguments)
+  end
 
   def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
     do: strip(c.arguments) == strip(msg)
 
   def execute(%{type: "has_all_words"} = c, _context, msg) do
-    str = strip(msg)
-    Enum.all?(c.arguments, fn l -> String.contains?(str, l) end)
+    str = msg |> strip() |> Glific.make_set([",", ";", " "])
+
+    c.parsed_arguments |> MapSet.subset?(str)
   end
 
   def execute(%{type: "has_multiple"} = c, _context, msg),
