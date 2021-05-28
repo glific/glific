@@ -115,12 +115,14 @@ defmodule Glific.Flows.Webhook do
         phone: context.contact.phone,
         fields: context.contact.fields
       },
-      results: context.results
+      results: context.results,
+      flow: %{name: context.flow.name, id: context.flow.id}
     }
 
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results
+      "results" => context.results,
+      "flow" => %{name: context.flow.name, id: context.flow.id}
     }
 
     action_body_map =

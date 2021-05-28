@@ -17,6 +17,11 @@ defmodule Glific.Flows.MessageVarParserTest do
                "organization" => %{"name" => "Glific"}
              })
 
+    assert "hello Help Workflow" ==
+             MessageVarParser.parse("hello @flow.name", %{
+               "flow" => %{"name" => "Help Workflow"}
+             })
+
     # binding with 2 or 2 dots will replace the variable
     parsed_test =
       MessageVarParser.parse("hello @contact.fields.name", %{
@@ -95,42 +100,39 @@ defmodule Glific.Flows.MessageVarParserTest do
     ## Parse all the results
     assert MessageVarParser.parse_results("@contact.name", nil) == "@contact.name"
 
-     MessageVarParser.parse(
-        "hello @contact.fields.name, your age is @contact.fields.age years.",
-        %{"contact" => contact}
-      )
+    MessageVarParser.parse(
+      "hello @contact.fields.name, your age is @contact.fields.age years.",
+      %{"contact" => contact}
+    )
 
+    assert MessageVarParser.parse(
+             "hello @results.name",
+             %{"results" => %{"name" => %{"input" => "Jatin"}}}
+           ) == "hello Jatin"
 
-      assert MessageVarParser.parse(
-        "hello @results.name",
-        %{"results" => %{"name" => %{"input" => "Jatin"} } }
-      ) == "hello Jatin"
+    assert MessageVarParser.parse(
+             "hello @results.name.input",
+             %{"results" => %{"name" => %{"input" => "Jatin"}}}
+           ) == "hello Jatin"
 
-      assert MessageVarParser.parse(
-        "hello @results.name.input",
-        %{"results" => %{"name" => %{"input" => "Jatin"} } }
-      ) == "hello Jatin"
+    assert MessageVarParser.parse(
+             "hello @results.parent.name",
+             %{"results" => %{"parent" => %{"name" => %{"input" => "Jatin"}}}}
+           ) == "hello Jatin"
 
-      assert MessageVarParser.parse(
-        "hello @results.parent.name",
-        %{"results" => %{"parent" => %{"name" => %{"input" => "Jatin"} }} }
-      ) == "hello Jatin"
+    assert MessageVarParser.parse(
+             "hello @results.parent.name.input",
+             %{"results" => %{"parent" => %{"name" => %{"input" => "Jatin"}}}}
+           ) == "hello Jatin"
 
-      assert MessageVarParser.parse(
-        "hello @results.parent.name.input",
-        %{"results" => %{"parent" => %{"name" => %{"input" => "Jatin"} }} }
-      ) == "hello Jatin"
+    assert MessageVarParser.parse(
+             "hello @results.child.name",
+             %{"results" => %{"child" => %{"name" => %{"input" => "Jatin"}}}}
+           ) == "hello Jatin"
 
-      assert MessageVarParser.parse(
-        "hello @results.child.name",
-        %{"results" => %{"child" => %{"name" => %{"input" => "Jatin"} }} }
-      ) == "hello Jatin"
-
-      assert MessageVarParser.parse(
-        "hello @results.child.name.input",
-        %{"results" => %{"child" => %{"name" => %{"input" => "Jatin"} }, "parent" => %{}} }
-      ) == "hello Jatin"
-
-
+    assert MessageVarParser.parse(
+             "hello @results.child.name.input",
+             %{"results" => %{"child" => %{"name" => %{"input" => "Jatin"}}, "parent" => %{}}}
+           ) == "hello Jatin"
   end
 end
