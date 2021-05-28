@@ -129,8 +129,9 @@ defmodule Glific.Flows.Case do
     do: strip(c.arguments) == strip(msg)
 
   def execute(%{type: "has_all_words"} = c, _context, msg) do
-    str = strip(msg)
-    Enum.all?(c.arguments, fn l -> String.contains?(str, l) end)
+    str = msg |> strip() |> Glific.make_set([",", ";", " "])
+
+    c.arguments |> strip() |> Glific.make_set([",", ";", " "]) |> MapSet.equal?(str)
   end
 
   def execute(%{type: "has_multiple"} = c, _context, msg),
