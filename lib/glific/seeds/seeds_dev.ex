@@ -286,6 +286,19 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
+      message =
+        Repo.insert!(%Message{
+          body: Shakespeare.hamlet(),
+          flow: :outbound,
+          type: :text,
+          bsp_message_id: Faker.String.base64(10),
+          bsp_status: :enqueued,
+          sender_id: sender.id,
+          receiver_id: receiver4.id,
+          contact_id: receiver4.id,
+          organization_id: organization.id
+        })
+
       Repo.insert!(%Message{
         body: Shakespeare.hamlet(),
         flow: :inbound,
@@ -295,7 +308,9 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver4.id,
         receiver_id: sender.id,
         contact_id: receiver4.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        context_id: message.bsp_message_id,
+        context_message_id: message.id
       })
     end
 
@@ -448,10 +463,10 @@ if Code.ensure_loaded?(Faker) do
       [_glific_admin | remainder] =
         Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
 
-      [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [_g1, _g2, g3, g4 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      add_to_group(remainder, g1, organization, 7)
-      add_to_group(remainder, g2, organization, -7)
+      add_to_group(remainder, g3, organization, 7)
+      add_to_group(remainder, g4, organization, -7)
     end
 
     @doc false
@@ -459,10 +474,11 @@ if Code.ensure_loaded?(Faker) do
     def seed_group_messages(organization \\ nil) do
       organization = get_organization(organization)
 
-      [g1, g2 | _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [_g1, _g2, g3, g4 | _] =
+        Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      do_seed_group_messages(g1, organization, 0)
-      do_seed_group_messages(g2, organization, 2)
+      do_seed_group_messages(g3, organization, 0)
+      do_seed_group_messages(g4, organization, 2)
     end
 
     defp do_seed_group_messages(group, organization, time_shift) do
@@ -527,6 +543,7 @@ if Code.ensure_loaded?(Faker) do
         type: :text,
         shortcode: "account_balance",
         is_hsm: true,
+        is_active: true,
         number_parameters: 1,
         language_id: en.id,
         translations: translations,
@@ -650,23 +667,23 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization(organization)
 
       [u1, u2 | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
-      [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [_g1, _g2, g3, g4 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u1.id,
-        group_id: g1.id,
+        group_id: g3.id,
         organization_id: organization.id
       })
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u2.id,
-        group_id: g1.id,
+        group_id: g3.id,
         organization_id: organization.id
       })
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u1.id,
-        group_id: g2.id,
+        group_id: g4.id,
         organization_id: organization.id
       })
     end
