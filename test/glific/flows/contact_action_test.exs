@@ -79,7 +79,7 @@ defmodule Glific.Flows.ContactActionTest do
         contact_id: contact.id,
         organization_id: contact.organization_id
       })
-      |> Repo.preload(:contact)
+      |> Repo.preload([:contact, :flow])
 
     [template | _] =
       Templates.list_session_templates(%{
@@ -119,7 +119,7 @@ defmodule Glific.Flows.ContactActionTest do
         contact_id: contact.id,
         organization_id: contact.organization_id
       })
-      |> Repo.preload(:contact)
+      |> Repo.preload([:contact, :flow])
 
     [template | _] =
       Templates.list_session_templates(%{

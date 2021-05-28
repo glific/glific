@@ -48,7 +48,7 @@ defmodule Glific.Flows.WebhookTest do
       }
 
       {:ok, context} = FlowContext.create_flow_context(attrs)
-      context = Repo.preload(context, :contact)
+      context = Repo.preload(context, [:contact, :flow])
 
       action = %Action{
         headers: %{"Accept" => "application/json"},
@@ -80,7 +80,7 @@ defmodule Glific.Flows.WebhookTest do
       }
 
       {:ok, context} = FlowContext.create_flow_context(attrs)
-      context = Repo.preload(context, :contact)
+      context = Repo.preload(context, [:contact, :flow])
 
       action = %Action{
         headers: %{"Accept" => "application/json"},
