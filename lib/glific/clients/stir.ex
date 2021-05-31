@@ -24,10 +24,11 @@ defmodule Glific.Clients.Stir do
   @spec get_value(String.t(), map()) :: integer()
   defp get_value(k, v) do
     k = String.downcase(k)
+
     input =
       if is_binary(v["input"]),
-      do: String.downcase(v["input"]),
-      else: ""
+        do: String.downcase(v["input"]),
+        else: ""
 
     if input == "y" do
       case k do
@@ -46,25 +47,20 @@ defmodule Glific.Clients.Stir do
   @spec get_art_content(String.t(), map()) :: String.t()
   defp get_art_content(k, v) do
     k = String.downcase(k)
-    input =
-      if is_binary(v["input"]),
-      do: String.downcase(v["input"]),
-      else: ""
 
-    if input == "n" do
-      case k do
-        "a1" -> " *1*. More reflective discussion on the teaching strategy \n"
-        "a2" -> " *2*. Space for practicing a classroom strategy \n"
-        "a3" -> " *3*. Teachers get improvement focused feedback \n"
-        "a4" -> " *4*. Teachers participation \n"
-        "a5" -> " *5*. Developing concrete action plans \n"
-        "a6" -> " *6*. Teachers asking question \n"
-        _ -> ""
-      end
-    else
-      ""
-    end
+    v["input"]
+    |> if(is_binary(v["input"]), do: String.downcase(v["input"]), else: "")
+    |> process(k)
   end
+
+  @spec process(String.t(), String.t()) :: String.t()
+  defp process("n", "a1"), do: " *1*. More reflective discussion on the teaching strategy \n"
+  defp process("n", "a2"), do: " *2*. Space for practicing a classroom strategy \n"
+  defp process("n", "a3"), do: " *3*. Teachers get improvement focused feedback \n"
+  defp process("n", "a4"), do: " *4*. Teachers participation \n"
+  defp process("n", "a5"), do: " *5*. Developing concrete action plans \n"
+  defp process("n", "a6"), do: " *6*. Teachers asking question \n"
+  defp process(_, _), do: ""
 
   @doc """
   Return art content
@@ -86,8 +82,8 @@ defmodule Glific.Clients.Stir do
       results
       |> Enum.map(fn {_k, v} ->
         if is_binary(v["input"]),
-        do: String.downcase(v["input"]),
-        else: ""
+          do: String.downcase(v["input"]),
+          else: ""
       end)
       |> Enum.reduce(%{}, fn x, acc -> Map.update(acc, x, 1, &(&1 + 1)) end)
 
