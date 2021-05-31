@@ -38,7 +38,7 @@ defmodule Glific.Notifications.Notification do
     field :category, :string
     field :entity, :map
     field :message, :string
-    field :severity, :string, default: "Error"
+    field :severity, :string, default: "Warning"
     field :is_read, :boolean, default: false
 
     belongs_to :organization, Organization

@@ -34,7 +34,7 @@ defmodule Glific.Notifications do
 
   @doc """
   Returns the list of notifications.
-  Since this is very basic and only listing funcatinality we added the status filter like this.
+  Since this is very basic and only listing functionality we added the status filter like this.
   In future we will put the status as virtual filed in the notifications itself.
   """
   @spec list_notifications(map()) :: list()

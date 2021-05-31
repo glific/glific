@@ -60,7 +60,7 @@ defmodule Glific.ExtensionTest do
 
     assert {:ok, %Extension{} = updated_extension} = Extension.update_extension(extension, attrs)
 
-    assert updated_extension.is_valid == false
+    assert updated_extension.is_valid == nil
     assert updated_extension.name == "Current Version"
 
     assert updated_extension.code ==

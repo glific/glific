@@ -91,10 +91,11 @@ defmodule Glific.Extensions.Extension do
 
   defp compile(_, _code, module) do
     # incase of is_active as false we do not compile the code
+    # unload the previous loaded module if it exists
     unload(module)
 
     %{
-      is_valid: false,
+      is_valid: nil,
       module: nil
     }
   end
