@@ -110,13 +110,6 @@ defmodule Glific.Dialogflow do
     Sessions.detect_intent(message, context.id, action.result_name)
   end
 
-  # get the connection object via the goth token for dialogflow
-  @spec get_connection(non_neg_integer) :: Connection.t()
-  defp get_connection(organization_id) do
-    token = Partners.get_goth_token(organization_id, "dialogflow")
-    Connection.new(token.token)
-  end
-
   @doc """
   Get the list of all intents from the NLP agent
   """
@@ -129,13 +122,15 @@ defmodule Glific.Dialogflow do
     %{url: _url, id: project_id, email: _email} = project_info(organization_id)
     parent = "projects/#{project_id}/agent"
 
-    response =
-      organization_id
-      |> get_connection()
-      |> Projects.dialogflow_projects_agent_intents_list(parent)
+    with token <- Partners.get_goth_token(organization_id, "dialogflow"),
+         false <- is_nil(token) do
+      response =
+        Connection.new(token.token)
+        |> Projects.dialogflow_projects_agent_intents_list(parent)
 
-    sync_with_db(response, organization_id)
-    response
+      sync_with_db(response, organization_id)
+      response
+    end
   end
 
   @spec sync_with_db(tuple, non_neg_integer) :: :ok
