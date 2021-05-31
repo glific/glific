@@ -48,8 +48,7 @@ defmodule Glific.Clients.Stir do
   defp get_art_content(k, v) do
     k = String.downcase(k)
 
-    v["input"]
-    |> if(is_binary(v["input"]), do: String.downcase(v["input"]), else: "")
+    if(is_binary(v["input"]), do: String.downcase(v["input"]), else: "")
     |> process(k)
   end
 
