@@ -110,7 +110,7 @@ These are the preliminary steps involved
   * [GraphQL API docs](https://glific.github.io/slate/)
   * [Code docs](https://glific.github.io/glific/doc/readme.html#documentation)
   * [Slab docs](https://docs.glific.org/)
-
+  * [Recipes](https://github.com/glific/recipes) - Framework for integration with Glific APIs, Webhooks and more.
 ## Learn more
 
 ### Glific
