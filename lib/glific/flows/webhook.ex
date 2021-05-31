@@ -1,7 +1,7 @@
 defmodule Glific.Flows.Webhook do
   @moduledoc """
   Lets wrap all webhook functionality here as we try and get
-  a better handle on the breadth and depth of webhooks
+  a better handle on the breadth and depth of webhooks.
   """
   import GlificWeb.Gettext
   require Logger
