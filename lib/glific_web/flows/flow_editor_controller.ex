@@ -80,20 +80,28 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def fields_post(conn, params) do
     # need to store this into DB, the value_type will default to text in this case
     # the shortcode is the name, lower cased, and camelized
-    {:ok, contact_field} =
-      ContactField.create_contact_field(%{
-        name: params["label"],
-        shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
-        organization_id: conn.assigns[:organization_id]
-      })
-
-    conn
-    |> json(%{
-      key: contact_field.shortcode,
-      name: contact_field.name,
-      label: contact_field.name,
-      value_type: contact_field.value_type
+    ContactField.create_contact_field(%{
+      name: params["label"],
+      shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
+      organization_id: conn.assigns[:organization_id]
     })
+    |> case do
+      {:ok, contact_field} ->
+        conn
+        |> json(%{
+          key: contact_field.shortcode,
+          name: contact_field.name,
+          label: contact_field.name,
+          value_type: contact_field.value_type
+        })
+
+      {:error, _} ->
+        conn
+        |> put_status(400)
+        |> json(%{
+          error: %{status: 400, message: "Cannot create new field with label #{params["label"]}"}
+        })
+    end
   end
 
   @doc """
