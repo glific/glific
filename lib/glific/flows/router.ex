@@ -235,7 +235,8 @@ defmodule Glific.Flows.Router do
       router.operand
       |> MessageVarParser.parse(%{
         "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "results" => context.results
+        "results" => context.results,
+        "flow" => %{name: context.flow.name, id: context.flow.id}
       })
       # Once we have the content, we send it over to EEx to execute
       |> execute_eex()
