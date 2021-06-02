@@ -17,6 +17,11 @@ defmodule Glific.Flows.MessageVarParserTest do
                "organization" => %{"name" => "Glific"}
              })
 
+    assert "hello Help Workflow" ==
+             MessageVarParser.parse("hello @flow.name", %{
+               "flow" => %{"name" => "Help Workflow"}
+             })
+
     # binding with 2 or 2 dots will replace the variable
     parsed_test =
       MessageVarParser.parse("hello @contact.fields.name", %{
