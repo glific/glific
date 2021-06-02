@@ -107,6 +107,22 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
              }
     end
 
+    test "creating a field with duplicate name in fields_post should return error", %{
+      conn: conn,
+      access_token: token
+    } do
+      conn =
+        get_auth_token(conn, token)
+        |> post("/flow-editor/fields", %{"label" => "Name"})
+
+      assert json_response(conn, 400) == %{
+               "error" => %{
+                 "message" => "Cannot create new field with label Name",
+                 "status" => 400
+               }
+             }
+    end
+
     test "labels", %{conn: conn, access_token: token} do
       flows = FlowLabel.get_all_flowlabel(conn.assigns[:organization_id])
 
