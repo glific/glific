@@ -545,11 +545,13 @@ defmodule Glific.BigQuery do
 
   @spec bigquery_error_status(map()) :: String.t() | atom()
   defp bigquery_error_status(response) do
-    with true <- Map.has_key?(response, :body),
+    with true <- is_map(response),
+         true <- Map.has_key?(response, :body),
          {:ok, error} <- Jason.decode(response.body) do
       error["error"]["status"]
     else
-      _ -> :unknown
+      _ -> Logger.info("Bigquery status error #{inspect(response)}")
+      :unknown
     end
   end
 
