@@ -54,6 +54,7 @@ defmodule Glific.Partners.Organization do
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           out_of_office: OutOfOffice.t() | nil,
+          in_office: OutOfOffice.t() | nil,
           hours: list() | nil,
           days: list() | nil,
           is_active: boolean() | true,
@@ -94,6 +95,7 @@ defmodule Glific.Partners.Organization do
     belongs_to :default_language, Language
 
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
+    embeds_one :in_office, OutOfOffice, on_replace: :update
 
     field :is_active, :boolean, default: true
     field :is_approved, :boolean, default: false
@@ -128,7 +130,9 @@ defmodule Glific.Partners.Organization do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> add_out_of_office_if_missing()
+    |> add_in_office_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
+    |> cast_embed(:in_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
     |> validate_inclusion(:timezone, Tzdata.zone_list())
     |> validate_active_languages()
@@ -181,8 +185,20 @@ defmodule Glific.Partners.Organization do
   @spec add_out_of_office_if_missing(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp add_out_of_office_if_missing(
          %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
-       ) do
-    out_of_office_default_data = %{
+       ),
+       do:
+         changeset
+         |> put_change(:out_of_office, default_flow())
+
+  defp add_out_of_office_if_missing(changeset), do: changeset
+
+  defp add_in_office_if_missing(%Ecto.Changeset{data: %Organization{in_office: nil}} = changeset),
+    do: changeset |> put_change(:in_office, default_flow())
+
+  defp add_in_office_if_missing(changeset), do: changeset
+
+  defp default_flow do
+    %{
       enabled: false,
       enabled_days: [
         %{enabled: false, id: 1},
@@ -194,13 +210,6 @@ defmodule Glific.Partners.Organization do
         %{enabled: false, id: 7}
       ]
     }
-
-    changeset
-    |> put_change(:out_of_office, out_of_office_default_data)
-  end
-
-  defp add_out_of_office_if_missing(changeset) do
-    changeset
   end
 end
 
