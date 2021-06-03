@@ -651,6 +651,7 @@ defmodule Glific.Flows do
     # this is of the form {organization_id, "flow_keywords_map}"
     # we want the organization_id
     organization_id = cache_key |> elem(0)
+    organization = Partners.organization(organization_id)
 
     value =
       Flow
@@ -666,20 +667,30 @@ defmodule Glific.Flows do
         %{},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
-
-    organization = Partners.organization(organization_id)
-
-    value =
-      if organization.out_of_office.enabled and organization.out_of_office.flow_id do
-        value
-        |> update_flow_keyword_map("published", "outofoffice", organization.out_of_office.flow_id)
-        |> update_flow_keyword_map("draft", "outofoffice", organization.out_of_office.flow_id)
-      else
-        value
-      end
+      |> check_out_of_office(
+        organization.out_of_office.enabled,
+        organization.out_of_office.flow_id
+      )
+      |> check_in_office(organization.out_of_office.enabled, organization.out_of_office.flow_id)
 
     {:commit, value}
   end
+
+  defp check_out_of_office(value, true, flow_id) when is_integer(flow_id) do
+    value
+    |> update_flow_keyword_map("published", "outofoffice", flow_id)
+    |> update_flow_keyword_map("draft", "outofoffice", flow_id)
+  end
+
+  defp check_out_of_office(value, _outofoffice_enabled, _flow_id), do: value
+
+  defp check_in_office(value, true, flow_id) when is_integer(flow_id) do
+    value
+    |> update_flow_keyword_map("published", "inoffice", flow_id)
+    |> update_flow_keyword_map("draft", "inoffice", flow_id)
+  end
+
+  defp check_in_office(value, _inoffice_enabled, _flow_id), do: value
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
