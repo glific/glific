@@ -394,6 +394,8 @@ defmodule Glific.Searches do
   @spec filtered_query(map()) :: Ecto.Query.t()
   defp filtered_query(args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+    # always cap out limit to 250, in case frontend sends too many
+    limit = min(limit, 250)
 
     query = from m in Message, as: :m
 
