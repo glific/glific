@@ -550,8 +550,9 @@ defmodule Glific.BigQuery do
          {:ok, error} <- Jason.decode(response.body) do
       error["error"]["status"]
     else
-      _ -> Logger.info("Bigquery status error #{inspect(response)}")
-      :unknown
+      _ ->
+        Logger.info("Bigquery status error #{inspect(response)}")
+        :unknown
     end
   end
 

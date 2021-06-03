@@ -111,7 +111,7 @@ defmodule Glific.Flows.LocalizationTest do
            }
   end
 
-   test "handle some edge cases for attachment input" do
+  test "handle some edge cases for attachment input" do
     attachment_node_uuid = "e46cc6ef-d037-4569-8fbe-64b4767c7734"
     attachment_node_uuid_2 = "e46cc6ef-d037-4569-8fbe-64b4767c7735"
     attachment_node_uuid_3 = "e46cc6ef-d037-4569-8fbe-64b4767c7736"
@@ -121,15 +121,12 @@ defmodule Glific.Flows.LocalizationTest do
         attachment_node_uuid => %{
           "attachments" => []
         },
-
         attachment_node_uuid_2 => %{
           "attachments" => [nil]
         },
-
         attachment_node_uuid_3 => %{
           "attachments" => :something_else
         },
-
         "e0171377-de7e-42ed-adbf-7c46da94a51c" => %{
           "text" => [
             "HINDI: Tell us your full name\n"

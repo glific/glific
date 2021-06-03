@@ -31,17 +31,17 @@ defmodule Glific.Flows.Localization do
 
   defp add_attachments(map, values) do
     cond do
-      is_nil(values["attachments"])
-        -> map
+      is_nil(values["attachments"]) ->
+        map
 
-      values["attachments"] == []
-        -> map
+      values["attachments"] == [] ->
+        map
 
-      not is_list(values["attachments"])
-        -> map
+      not is_list(values["attachments"]) ->
+        map
 
-      is_nil(hd(values["attachments"]))
-        -> map
+      is_nil(hd(values["attachments"])) ->
+        map
 
       true ->
         case String.split(hd(values["attachments"]), ":", parts: 2) do
