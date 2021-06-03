@@ -667,30 +667,27 @@ defmodule Glific.Flows do
         %{},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
-      |> check_out_of_office(
+      |> check_default_flow(
+        "outofoffice",
         organization.out_of_office.enabled,
         organization.out_of_office.flow_id
       )
-      |> check_in_office(organization.in_office.enabled, organization.in_office.flow_id)
+      |> check_default_flow(
+        "inoffice",
+        organization.in_office.enabled,
+        organization.in_office.flow_id
+      )
 
     {:commit, value}
   end
 
-  defp check_out_of_office(value, true, flow_id) when is_integer(flow_id) do
+  defp check_default_flow(value, flow_type,  true, flow_id) when is_integer(flow_id) do
     value
-    |> update_flow_keyword_map("published", "outofoffice", flow_id)
-    |> update_flow_keyword_map("draft", "outofoffice", flow_id)
+    |> update_flow_keyword_map("published", flow_type, flow_id)
+    |> update_flow_keyword_map("draft", flow_type, flow_id)
   end
 
-  defp check_out_of_office(value, _outofoffice_enabled, _flow_id), do: value
-
-  defp check_in_office(value, true, flow_id) when is_integer(flow_id) do
-    value
-    |> update_flow_keyword_map("published", "inoffice", flow_id)
-    |> update_flow_keyword_map("draft", "inoffice", flow_id)
-  end
-
-  defp check_in_office(value, _inoffice_enabled, _flow_id), do: value
+  defp check_default_flow(value, _flow_type, _outofoffice_enabled, _flow_id), do: value
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
