@@ -129,8 +129,10 @@ defmodule Glific.Partners.Organization do
   def changeset(organization, attrs) do
     organization
     |> cast(attrs, @required_fields ++ @optional_fields)
-    |> add_out_of_office_if_missing()
-    |> add_in_office_if_missing()
+    # check for out_of_office flow
+    |> add_default_flow_if_missing()
+    # check for in_office flow
+    |> add_default_flow_if_missing()
     |> cast_embed(:out_of_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> cast_embed(:in_office, with: &OutOfOffice.out_of_office_changeset/2)
     |> validate_required(@required_fields)
@@ -182,20 +184,20 @@ defmodule Glific.Partners.Organization do
         )
   end
 
-  @spec add_out_of_office_if_missing(Ecto.Changeset.t()) :: Ecto.Changeset.t()
-  defp add_out_of_office_if_missing(
+  @spec add_default_flow_if_missing(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp add_default_flow_if_missing(
          %Ecto.Changeset{data: %Organization{out_of_office: nil}} = changeset
        ),
        do:
          changeset
          |> put_change(:out_of_office, default_flow())
 
-  defp add_out_of_office_if_missing(changeset), do: changeset
+  defp add_default_flow_if_missing(
+         %Ecto.Changeset{data: %Organization{in_office: nil}} = changeset
+       ),
+       do: changeset |> put_change(:in_office, default_flow())
 
-  defp add_in_office_if_missing(%Ecto.Changeset{data: %Organization{in_office: nil}} = changeset),
-    do: changeset |> put_change(:in_office, default_flow())
-
-  defp add_in_office_if_missing(changeset), do: changeset
+  defp add_default_flow_if_missing(changeset), do: changeset
 
   defp default_flow do
     %{

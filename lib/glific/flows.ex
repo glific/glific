@@ -681,7 +681,7 @@ defmodule Glific.Flows do
     {:commit, value}
   end
 
-  defp check_default_flow(value, flow_type,  true, flow_id) when is_integer(flow_id) do
+  defp check_default_flow(value, flow_type, true, flow_id) when is_integer(flow_id) do
     value
     |> update_flow_keyword_map("published", flow_type, flow_id)
     |> update_flow_keyword_map("draft", flow_type, flow_id)
