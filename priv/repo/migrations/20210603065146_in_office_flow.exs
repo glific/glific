@@ -2,7 +2,7 @@ defmodule Glific.Repo.Migrations.InOfficeFlow do
   use Ecto.Migration
 
   def change do
-    organization
+    organization()
   end
 
   defp organization do
