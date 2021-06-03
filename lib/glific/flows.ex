@@ -671,7 +671,7 @@ defmodule Glific.Flows do
         organization.out_of_office.enabled,
         organization.out_of_office.flow_id
       )
-      |> check_in_office(organization.out_of_office.enabled, organization.out_of_office.flow_id)
+      |> check_in_office(organization.in_office.enabled, organization.in_office.flow_id)
 
     {:commit, value}
   end
