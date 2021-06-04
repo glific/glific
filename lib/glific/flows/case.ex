@@ -61,7 +61,7 @@ defmodule Glific.Flows.Case do
     }
 
     c =
-      if c.type in ["has_multiple", "has_any_word", "has_phrase" , "has_all_words"] do
+      if c.type in ["has_multiple", "has_any_word", "has_phrase", "has_all_words"] do
         pargs =
           json["arguments"]
           |> hd()
