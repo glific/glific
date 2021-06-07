@@ -38,7 +38,7 @@ defmodule Glific.Flows.CaseTest do
 
   test "test the execute function for has_any_word" do
     args = ["first second third"]
-    parsed_args = args |> hd() |> String.downcase() |> Glific.make_set()
+    parsed_args = args |> hd() |> Glific.make_set()
 
     c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
 
@@ -47,7 +47,7 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "fourth") == false
 
     args = ["none of these"]
-    parsed_args = args |> hd() |> String.downcase() |> Glific.make_set()
+    parsed_args = args |> hd() |> Glific.make_set()
 
     c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
     assert wrap_execute(c, nil, "first") == false
@@ -57,9 +57,8 @@ defmodule Glific.Flows.CaseTest do
 
   test "test the execute function for has_phrase" do
     args = ["This is a green apple"]
-    parsed_args = args |> hd() |> String.downcase() |> Glific.make_set()
 
-    c = %Case{type: "has_phrase", arguments: args, parsed_arguments: parsed_args}
+    c = %Case{type: "has_phrase", arguments: args}
 
     assert wrap_execute(c, nil, "This is a green") == true
     assert wrap_execute(c, nil, "This is a red apple ") == false
