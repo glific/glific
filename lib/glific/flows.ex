@@ -113,11 +113,10 @@ defmodule Glific.Flows do
       {:is_active, is_active}, query ->
         from q in query, where: q.is_active == ^is_active
 
-      #Using name and shortcode in search option
-      {:name, name}, query ->
+      {:name_keyword, name_keyword}, query ->
         query
-        |> where([fr], ilike(fr.name, ^"%#{name}%"))
-        |> or_where([fr], ^name in fr.keywords)
+        |> where([fr], ilike(fr.name, ^"%#{name_keyword}%"))
+        |> or_where([fr], ^name_keyword in fr.keywords)
 
       _, query ->
         query
