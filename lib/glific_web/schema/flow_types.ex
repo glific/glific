@@ -93,7 +93,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "export definition for a flow"
     field :export_flow_definition, :export_flow_definition do
       arg(:id, non_null(:id))
-      middleware(Authorise, :staff)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.export_flow_definition/3)
     end
   end
