@@ -806,6 +806,11 @@ Filtering options for flows
   <td>Match the flow name</td>
 </tr>
 <tr>
+  <td colspan="2" valign="top"><strong>nameOrKeyword</strong></td>
+  <td valign="top"><a href="#string">String</a></td>
+  <td>Match the flow name and keywords</td>
+</tr>
+<tr>
   <td colspan="2" valign="top"><strong>keyword</strong></td>
   <td valign="top"><a href="#string">String</a></td>
   <td>Match the flow keyword</td>
