@@ -34,6 +34,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :end_time, :time
     field :enabled_days, list_of(:enabled_day)
     field :flow_id, :id
+    field :default_flow_id, :id
   end
 
   object :organization do
@@ -121,6 +122,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :end_time, :time
     field :enabled_days, list_of(:enabled_day_input)
     field :flow_id, :id
+    field :default_flow_id, :id
   end
 
   input_object :organization_status_input do

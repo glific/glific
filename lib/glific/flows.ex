@@ -674,6 +674,8 @@ defmodule Glific.Flows do
         value
         |> update_flow_keyword_map("published", "outofoffice", organization.out_of_office.flow_id)
         |> update_flow_keyword_map("draft", "outofoffice", organization.out_of_office.flow_id)
+        |> update_flow_keyword_map("published", "defaultflow", 16)
+        |> update_flow_keyword_map("draft", "defaultflow", 16)
       else
         value
       end
