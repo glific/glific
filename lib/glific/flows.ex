@@ -668,7 +668,6 @@ defmodule Glific.Flows do
       )
 
     organization = Partners.organization(organization_id)
-    organization.out_of_office.default_flow_id|>IO.inspect()
 
     value =
       add_default_flow(
