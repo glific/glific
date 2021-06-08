@@ -668,19 +668,30 @@ defmodule Glific.Flows do
       )
 
     organization = Partners.organization(organization_id)
+    organization.out_of_office.default_flow_id|>IO.inspect()
 
     value =
-      if organization.out_of_office.enabled and organization.out_of_office.flow_id do
-        value
-        |> update_flow_keyword_map("published", "outofoffice", organization.out_of_office.flow_id)
-        |> update_flow_keyword_map("draft", "outofoffice", organization.out_of_office.flow_id)
-        |> update_flow_keyword_map("published", "defaultflow", organization.out_of_office.default_flow_id)
-        |> update_flow_keyword_map("draft", "defaultflow", organization.out_of_office.default_flow_id)
-      else
-        value
-      end
+      add_default_flow(
+        value,
+        organization.out_of_office.enabled,
+        "outofoffice",
+        organization.out_of_office.flow_id
+      )
+      |> add_default_flow(
+        organization.out_of_office.enabled,
+        "defaultflow",
+        organization.out_of_office.default_flow_id
+      )
 
     {:commit, value}
+  end
+
+  defp add_default_flow(value, _enabled, _flow_name, nil), do: value
+
+  defp add_default_flow(value, true, flow_name, flow_id) do
+    value
+    |> update_flow_keyword_map("published", flow_name, flow_id)
+    |> update_flow_keyword_map("draft", flow_name, flow_id)
   end
 
   @doc false

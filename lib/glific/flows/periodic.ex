@@ -44,7 +44,7 @@ defmodule Glific.Flows.Periodic do
   @spec compute_time(DateTime.t(), String.t()) :: DateTime.t()
   defp compute_time(now, "monthly"), do: Timex.beginning_of_month(now)
   defp compute_time(now, "weekly"), do: Timex.beginning_of_week(now, :mon)
-  defp compute_time(now, "outofoffice"), do: Glific.go_back_time(0, now, :hour)
+  defp compute_time(now, "outofoffice"), do: Glific.go_back_time(24, now, :hour)
 
   defp compute_time(now, period)
        when period in [
