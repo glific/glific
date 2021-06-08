@@ -103,6 +103,35 @@ defmodule Glific.Flows.PeriodicTest do
     assert length(rows) == 1
   end
 
+  test "run flows and we know the outofoffice flow should get going",
+       %{organization_id: organization_id} = attrs do
+    FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
+
+    organization = Partners.organization(organization_id)
+
+    # when office hours includes whole day of seven days
+    organization_settings =
+    @organization_settings
+    |> put_in([:out_of_office, :start_time], elem(Time.new(0, 0, 0, 0), 1))
+    |> put_in([:out_of_office, :end_time], elem(Time.new(23, 59, 59, 999_999), 1))
+
+    {:ok, _} = Partners.update_organization(organization, organization_settings)
+    _organization = Partners.organization(organization.id)
+
+    message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
+    state = Periodic.run_flows(%{}, message)
+
+    {:ok, %Postgrex.Result{rows: rows}} =
+      Repo.query(
+        "select id, flow_id from flow_contexts where flow_id = #{
+          state.flows["published"]["outofoffice"]
+        }"
+      )
+
+    # assert that we have one row which is th outofoffice flow
+    assert length(rows) == 1
+  end
+
   test "call the periodic flow function with non-existent flows", %{
     organization_id: organization_id
   } do
