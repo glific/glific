@@ -490,8 +490,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:messages, [:contact_id])
-    create index(:messages, [:user_id], where: "user_id IS NOT NULL")
+    create index(:messages, :contact_id)
+    create index(:messages, :user_id, where: "user_id IS NOT NULL")
+    create index(:messages, :media_id, where: "media_id IS NOT NULL")
     create index(:messages, :organization_id)
   end
 
