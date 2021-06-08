@@ -258,19 +258,11 @@ defmodule Glific.GCS.GcsWorker do
   end
 
   @spec update_gcs_url(String.t(), integer()) ::
-          {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp update_gcs_url(gcs_url, id) do
-    with {:ok, message} <- Repo.fetch_by(Message, %{media_id: id}),
-         {:ok, message_media} <- Repo.fetch_by(MessageMedia, %{id: id}) do
-      message_media
-      |> MessageMedia.changeset(%{gcs_url: gcs_url})
-      |> Repo.update()
-
-      # updating message updated_at. Might move to using trigger in future
-      message
-      |> Message.changeset(%{})
-      |> Repo.update(force: true)
-    end
+    Repo.get(MessageMedia, id)
+    |> MessageMedia.changeset(%{gcs_url: gcs_url})
+    |> Repo.update()
   end
 
   @spec get_media_extension(String.t()) :: String.t()
