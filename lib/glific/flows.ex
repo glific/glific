@@ -688,6 +688,8 @@ defmodule Glific.Flows do
     |> update_flow_keyword_map("published", flow_name, flow_id)
     |> update_flow_keyword_map("draft", flow_name, flow_id)
 
+  defp do_add_default_flow(keyword_map, _, _, _), do: keyword_map
+
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
   defp clean_cached_flow_keywords_map(organization_id),

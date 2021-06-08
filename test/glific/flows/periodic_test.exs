@@ -65,6 +65,8 @@ defmodule Glific.Flows.PeriodicTest do
       enabled: true,
       start_time: @start_time,
       end_time: @end_time,
+      flow_id: 1,
+      default_flow_id: 3,
       enabled_days: [
         %{id: 1, enabled: true},
         %{id: 2, enabled: true},
@@ -77,7 +79,7 @@ defmodule Glific.Flows.PeriodicTest do
     }
   }
 
-  test "run flows and we know the outofoffice flow should get going",
+  test "run flows and we know the default flow should get going",
        %{organization_id: organization_id} = attrs do
     FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
 
@@ -93,7 +95,7 @@ defmodule Glific.Flows.PeriodicTest do
     {:ok, %Postgrex.Result{rows: rows}} =
       Repo.query(
         "select id, flow_id from flow_contexts where flow_id = #{
-          state.flows["published"]["outofoffice"]
+          state.flows["published"]["defaultflow"]
         }"
       )
 

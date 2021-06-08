@@ -320,7 +320,8 @@ defmodule Glific.PartnersTest do
                 enabled: true
               }
             ],
-            flow_id: 3
+            flow_id: 3,
+            defualt_flow_id: 1
           }
         })
 
