@@ -651,8 +651,9 @@ defmodule Glific.Flows do
     # this is of the form {organization_id, "flow_keywords_map}"
     # we want the organization_id
     organization_id = cache_key |> elem(0)
+    organization = Partners.organization(organization_id)
 
-    value =
+    keyword_map =
       Flow
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.is_active == true)
@@ -666,32 +667,26 @@ defmodule Glific.Flows do
         %{},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
+      |> add_default_flows(organization.out_of_office)
 
-    organization = Partners.organization(organization_id)
-
-    value =
-      add_default_flow(
-        value,
-        organization.out_of_office.enabled,
-        "outofoffice",
-        organization.out_of_office.flow_id
-      )
-      |> add_default_flow(
-        organization.out_of_office.enabled,
-        "defaultflow",
-        organization.out_of_office.default_flow_id
-      )
-
-    {:commit, value}
+    {:commit, keyword_map}
   end
 
-  defp add_default_flow(value, _enabled, _flow_name, nil), do: value
+  @spec add_default_flows(map(), map()) :: map()
+  defp add_default_flows(keyword_map, out_of_office),
+  do:
+    keyword_map
+    |> do_add_default_flow(out_of_office.enabled, "outofoffice", out_of_office.flow_id)
+    |> do_add_default_flow(out_of_office.enabled, "defaultflow", out_of_office.default_flow_id)
 
-  defp add_default_flow(value, true, flow_name, flow_id) do
-    value
+  @spec do_add_default_flow(map(), boolean(), String.t(), nil | non_neg_integer()) :: map()
+  defp do_add_default_flow(keyword_map, _enabled, _flow_name, nil), do: keyword_map
+
+  defp do_add_default_flow(keyword_map, true, flow_name, flow_id),
+  do:
+    keyword_map
     |> update_flow_keyword_map("published", flow_name, flow_id)
     |> update_flow_keyword_map("draft", flow_name, flow_id)
-  end
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
