@@ -7,7 +7,7 @@ defmodule Glific.Repo.Migrations.MessageMediaTrigger do
 
   defp message_media_trigger do
     execute """
-    CREATE OR REPLACE FUNCTION update_message_updated_at()
+    CREATE OR REPLACE FUNCTION update_message_media_trigger()
       RETURNS trigger AS $$
 
       BEGIN
@@ -27,11 +27,11 @@ defmodule Glific.Repo.Migrations.MessageMediaTrigger do
     """
 
     execute """
-    CREATE TRIGGER update_message_updated_at_trigger
+    CREATE TRIGGER update_message_media_trigger
     AFTER UPDATE
     ON messages_media
     FOR EACH ROW
-    EXECUTE PROCEDURE update_message_updated_at();
+    EXECUTE PROCEDURE update_message_media_trigger();
     """
   end
 
