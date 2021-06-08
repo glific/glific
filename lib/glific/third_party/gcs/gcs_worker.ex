@@ -266,6 +266,7 @@ defmodule Glific.GCS.GcsWorker do
       |> MessageMedia.changeset(%{gcs_url: gcs_url})
       |> Repo.update()
 
+      # updating message updated_at. Might move to using trigger in future
       message
       |> Message.changeset(%{})
       |> Repo.update(force: true)
