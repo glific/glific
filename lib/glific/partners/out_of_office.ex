@@ -34,7 +34,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     field :start_time, :time
     field :end_time, :time
     belongs_to :flow, Flow
-    field :default_flow_id, :integer
+    belongs_to :default_flow, Flow
     embeds_many :enabled_days, EnabledDay, on_replace: :raise
   end
 
