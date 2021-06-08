@@ -345,6 +345,12 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "NULLABLE"
+      },
+      %{
+        description: "URL of media file stored in GCS",
+        name: "gcs_url",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
