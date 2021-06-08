@@ -538,12 +538,18 @@ defmodule Glific.BigQuery do
           "Account does not have sufficient permissions to insert data to BigQuery."
         )
 
+      "TIMEOUT"
+        -> Logger.info("Timeout while inserting the data. #{inspect(response)}")
+
       _ ->
-        raise("BigQuery Insert Error for table #{table}  #{response}")
+        raise("BigQuery Insert Error for table #{table} #{response}")
     end
   end
 
-  @spec bigquery_error_status(map()) :: String.t() | atom()
+  @spec bigquery_error_status(String.t() | map()) :: String.t() | atom()
+  defp bigquery_error_status(response) when is_binary(response),
+  do: String.upcase(response)
+
   defp bigquery_error_status(response) do
     with true <- is_map(response),
          true <- Map.has_key?(response, :body),

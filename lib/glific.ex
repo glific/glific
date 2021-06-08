@@ -196,6 +196,8 @@ defmodule Glific do
   @spec make_set(String.t(), list()) :: MapSet.t()
   def make_set(str, seperators \\ [",", ";"]) do
     str
+    # string downcase for making it case-insensitive
+    |> String.downcase()
     # First ALWAYS split by white space
     |> String.split()
     # then split by seperators
