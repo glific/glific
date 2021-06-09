@@ -130,7 +130,7 @@ defmodule Glific.Flows.Periodic do
          for: %{organization_id: message.organization_id}
        ),
        do: common_flow(state, period, message, since),
-       else: {state, false}
+       else: common_flow(state, "defaultflow", message, since)
   end
 
   defp periodic_flow(state, period, message, since),

@@ -14,7 +14,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     :enabled,
     :start_time,
     :end_time,
-    :flow_id
+    :flow_id,
+    :default_flow_id
   ]
 
   @type t() :: %__MODULE__{
@@ -22,7 +23,8 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
           start_time: :time | nil,
           end_time: :time | nil,
           enabled_days: [EnabledDay.t()] | [],
-          flow_id: non_neg_integer | nil
+          flow_id: non_neg_integer | nil,
+          default_flow_id: non_neg_integer | nil
         }
 
   @primary_key false
@@ -32,7 +34,7 @@ defmodule Glific.Partners.OrganizationSettings.OutOfOffice do
     field :start_time, :time
     field :end_time, :time
     belongs_to :flow, Flow
-
+    belongs_to :default_flow, Flow
     embeds_many :enabled_days, EnabledDay, on_replace: :raise
   end
 

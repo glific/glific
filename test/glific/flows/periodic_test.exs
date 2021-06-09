@@ -65,6 +65,8 @@ defmodule Glific.Flows.PeriodicTest do
       enabled: true,
       start_time: @start_time,
       end_time: @end_time,
+      flow_id: 1,
+      default_flow_id: 3,
       enabled_days: [
         %{id: 1, enabled: true},
         %{id: 2, enabled: true},
@@ -76,6 +78,35 @@ defmodule Glific.Flows.PeriodicTest do
       ]
     }
   }
+
+  test "run flows and we know the default flow should get going",
+       %{organization_id: organization_id} = attrs do
+    FunWithFlags.enable(:enable_out_of_office, for_actor: %{organization_id: organization_id})
+
+    organization = Partners.organization(organization_id)
+
+    organization_settings =
+    @organization_settings
+    |> put_in([:out_of_office, :start_time], elem(Time.new(0, 0, 0, 0), 1))
+    |> put_in([:out_of_office, :end_time], elem(Time.new(23, 59, 59, 999_999), 1))
+
+    # when office hours includes whole day of seven days
+    {:ok, _} = Partners.update_organization(organization, organization_settings)
+    _organization = Partners.organization(organization.id)
+
+    message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
+    state = Periodic.run_flows(%{}, message)
+
+    {:ok, %Postgrex.Result{rows: rows}} =
+      Repo.query(
+        "select id, flow_id from flow_contexts where flow_id = #{
+          state.flows["published"]["defaultflow"]
+        }"
+      )
+
+    # assert that we have one row which is th outofoffice flow
+    assert length(rows) == 1
+  end
 
   test "run flows and we know the outofoffice flow should get going",
        %{organization_id: organization_id} = attrs do

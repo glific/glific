@@ -377,6 +377,7 @@ mutation updateOrganization($id: ID!, $input: OrganizationInput!) {
       ],
       "endTime": "T19:00:00",
       "flowId": 1,
+      "defaultFlowId": 1,
       "startTime": "T09:00:00"
     }
   }
