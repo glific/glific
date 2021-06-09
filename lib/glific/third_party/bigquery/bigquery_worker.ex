@@ -361,7 +361,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
       flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
       longitude: if(!is_nil(row.location), do: row.location.longitude),
-      latitude: if(!is_nil(row.location), do: row.location.latitude)
+      latitude: if(!is_nil(row.location), do: row.location.latitude),
+      gcs_url: if(!is_nil(row.media), do: row.media.gcs_url)
     }
 
   @spec make_job(list(), atom(), non_neg_integer, map()) :: :ok
