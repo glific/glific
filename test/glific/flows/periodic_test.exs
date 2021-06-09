@@ -85,8 +85,13 @@ defmodule Glific.Flows.PeriodicTest do
 
     organization = Partners.organization(organization_id)
 
+    organization_settings =
+    @organization_settings
+    |> put_in([:out_of_office, :start_time], elem(Time.new(0, 0, 0, 0), 1))
+    |> put_in([:out_of_office, :end_time], elem(Time.new(23, 59, 59, 999_999), 1))
+
     # when office hours includes whole day of seven days
-    {:ok, _} = Partners.update_organization(organization, @organization_settings)
+    {:ok, _} = Partners.update_organization(organization, organization_settings)
     _organization = Partners.organization(organization.id)
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
@@ -110,12 +115,7 @@ defmodule Glific.Flows.PeriodicTest do
     organization = Partners.organization(organization_id)
 
     # when office hours includes whole day of seven days
-    organization_settings =
-    @organization_settings
-    |> put_in([:out_of_office, :start_time], elem(Time.new(0, 0, 0, 0), 1))
-    |> put_in([:out_of_office, :end_time], elem(Time.new(23, 59, 59, 999_999), 1))
-
-    {:ok, _} = Partners.update_organization(organization, organization_settings)
+    {:ok, _} = Partners.update_organization(organization, @organization_settings)
     _organization = Partners.organization(organization.id)
 
     message = Fixtures.message_fixture(attrs) |> Repo.preload(:contact)
