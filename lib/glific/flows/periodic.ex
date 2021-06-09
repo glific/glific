@@ -129,8 +129,8 @@ defmodule Glific.Flows.Periodic do
          :out_of_office_active,
          for: %{organization_id: message.organization_id}
        ),
-       do: common_flow(state, "defaultflow", message, since),
-       else: common_flow(state, period, message, since)
+       do: common_flow(state, period, message, since),
+       else: common_flow(state, "defaultflow", message, since)
   end
 
   defp periodic_flow(state, period, message, since),
