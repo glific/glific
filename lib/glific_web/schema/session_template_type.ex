@@ -110,6 +110,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :message_media_id, :id
     field :language_id, :id
     field :translations, :json
+    field :has_buttons, :boolean
+    field :button_type, :string
+    field :buttons, :json
   end
 
   input_object :message_to_template_input do

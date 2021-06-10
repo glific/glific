@@ -81,7 +81,6 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  @spec body(map(), Organization.t()) :: map()
   defp body(attrs, organization) do
     language =
       Enum.find(organization.languages, fn language ->
@@ -97,5 +96,20 @@ defmodule Glific.Providers.Gupshup.Template do
       templateType: String.upcase(Atom.to_string(attrs.type)),
       example: attrs.example
     }
+    |> update_as_button_template(attrs)
+  end
+
+  defp update_as_button_template(%{has_buttons: true} = attrs, template_payload) do
+    template_payload |> Map.merge(%{buttons: add_buttons(attrs.button_type, attrs.buttons)})
+  end
+
+  defp update_as_button_template(_attrs, template_payload), do: template_payload
+
+  defp add_buttons("QUICK_REPLY", buttons) do
+    buttons
+  end
+
+  defp add_buttons("Call_to_action", buttons) do
+    buttons
   end
 end
