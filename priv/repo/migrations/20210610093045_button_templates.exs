@@ -1,8 +1,15 @@
 defmodule Glific.Repo.Migrations.ButtonTemplates do
   use Ecto.Migration
 
-  def change do
+  alias Glific.Enums.TemplateButtonType
+
+  def up do
     add_button_session_templates()
+    TemplateButtonType.create_type()
+  end
+
+  def down do
+    TemplateButtonType.drop_type()
   end
 
   defp add_button_session_templates() do

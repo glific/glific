@@ -98,3 +98,9 @@ defenum(
   :user_roles_enum,
   Glific.Enums.user_roles_const()
 )
+
+defenum(
+  Glific.Enums.TemplateButtonType,
+  :template_button_type_enum,
+  Glific.Enums.template_button_type_const()
+)

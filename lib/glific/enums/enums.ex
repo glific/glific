@@ -97,6 +97,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.UserRoles.__enum_map__()
   Glific.Enums.user_roles_const()
 
+  iex> Glific.Enums.TemplateButtonType.__enum_map__()
+  Glific.Enums.template_button_type_const()
+
   """
 
   defmacro api_status_const,
@@ -143,4 +146,7 @@ defmodule Glific.Enums do
 
   defmacro user_roles_const,
     do: Macro.expand(@user_roles_const, __CALLER__)
+
+  defmacro template_button_type_const,
+    do: Macro.expand(@template_button_type_const, __CALLER__)
 end
