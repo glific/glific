@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :export_flow_definition do
+  object :export_flow do
     field :definition, :json
   end
 
@@ -94,10 +94,10 @@ defmodule GlificWeb.Schema.FlowTypes do
     end
 
     @desc "export definition for a flow"
-    field :export_flow_definition, :export_flow_definition do
+    field :export_flow, :export_flow do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Flows.export_flow_definition/3)
+      resolve(&Resolvers.Flows.export_flow/3)
     end
   end
 
