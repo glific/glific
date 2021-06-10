@@ -1,0 +1,5 @@
+query exportFlowDefinition($id: ID!) {
+  exportFlowDefinition(id: $id) {
+    definition
+  }
+}
