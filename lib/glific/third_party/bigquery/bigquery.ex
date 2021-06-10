@@ -546,7 +546,7 @@ defmodule Glific.BigQuery do
     end
   end
 
-  @spec bigquery_error_status(String.t() | map()) :: String.t() | atom()
+  @spec bigquery_error_status(any()) :: String.t() | atom()
   defp bigquery_error_status(response) when is_binary(response),
   do: String.upcase(response)
 

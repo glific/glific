@@ -722,29 +722,32 @@ defmodule Glific.Flows do
   @spec export_flow(non_neg_integer()) :: map()
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
-    %{}
-    |> export_sub_flows(flow.uuid)
+    %{"flows" => []}
+    |> init_export_flow(flow.uuid)
   end
 
   @doc """
     Process the flows and get all the subflow defination.
   """
-  @spec export_sub_flows(map(), String.t()) :: map()
-  def export_sub_flows(results, flow_uuid),
-  do: Map.put(results, "flows", get_subflow_defination([], flow_uuid) )
+  @spec init_export_flow(map(), String.t()) :: map()
+  def init_export_flow(results, flow_uuid),
+  do: export_flow_details(flow_uuid, results)
 
   @doc """
     process subflows and check if there is more subflows in it.
   """
-  @spec get_subflow_defination(list, String.t()) :: list()
-  def get_subflow_defination(list, flow_uuid) when is_list(list) do
+  @spec export_flow_details(String.t(), map()) :: map()
+  def export_flow_details(flow_uuid, results) do
     defination =  get_latest_definition(flow_uuid)
-    list = list ++ [defination]
+    results = Map.put(results, "flows", results["flows"] ++ [defination])
+    ## here we can export more details like fields, triggers, groups and all.
 
     defination
     |> Map.get("nodes", [])
     |> get_sub_flows()
-    |> Enum.reduce(list, fn sub_flow, acc -> get_subflow_defination(acc, sub_flow["uuid"]) end)
+    |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+
+    results
   end
 
   @doc """
