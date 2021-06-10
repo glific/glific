@@ -101,18 +101,10 @@ defmodule Glific.Providers.Gupshup.Template do
   end
 
   defp update_as_button_template(template_payload, %{has_buttons: true} = attrs) do
-    template_payload |> Map.merge(%{buttons: add_buttons(attrs.button_type, attrs.buttons)})
+    template_payload |> Map.merge(%{buttons: attrs.buttons})
   end
 
   defp update_as_button_template(template_payload, _attrs) do
     template_payload
-  end
-
-  defp add_buttons("QUICK_REPLY", buttons) do
-    buttons
-  end
-
-  defp add_buttons("Call_to_action", buttons) do
-    buttons
   end
 end
