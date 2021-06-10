@@ -716,7 +716,9 @@ defmodule Glific.Flows do
   def is_optin_flow?(nil), do: false
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
-
+  @doc """
+    Generate a json map with all the flows related fields.
+  """
   @spec export_flow(non_neg_integer()) :: map()
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
@@ -724,46 +726,46 @@ defmodule Glific.Flows do
     |> export_sub_flows(flow.uuid)
   end
 
+  @doc """
+    Process the flows and get all the subflow defination.
+  """
   @spec export_sub_flows(map(), String.t()) :: map()
-  def export_sub_flows(results, flow_uuid) do
-    flows = get_subflow_defination([], flow_uuid)
-    Map.put(results, "flows", flows )
-  end
+  def export_sub_flows(results, flow_uuid),
+  do: Map.put(results, "flows", get_subflow_defination([], flow_uuid) )
 
+  @doc """
+    process subflows and check if there is more subflows in it.
+  """
+  @spec get_subflow_defination(list, String.t()) :: list()
   def get_subflow_defination(list, flow_uuid) when is_list(list) do
     defination =  get_latest_definition(flow_uuid)
     list = list ++ [defination]
 
-    Map.delete(defination, "_ui")
-      |> get_sub_flows()
-      |> get_subflow_definations(list)
-
+    defination
+    |> Map.get("nodes", [])
+    |> get_sub_flows()
+    |> Enum.reduce(list, fn sub_flow, acc -> get_subflow_defination(acc, sub_flow["uuid"]) end)
   end
 
+  @doc """
+    Extract all the subflows form the parent flow defination.
+  """
+  @spec get_sub_flows(list()) :: list()
+  def get_sub_flows(nodes),
+  do: Enum.reduce(nodes, [], &do_get_sub_flows(&1, &2))
 
-  def get_sub_flows(json)  do
-    Enum.reduce(json["nodes"], [],
-    fn node, acc ->
-      Enum.reduce(node["actions"], acc,
-      fn action, acc ->
-        if(action["type"] == "enter_flow") do
-           acc  ++ [action["flow"]]
-        else
-          acc
-        end
+  @spec do_get_sub_flows(map(), list()) :: list()
+  defp do_get_sub_flows(%{"actions" => actions}, list),
+  do: Enum.reduce(actions, list, fn action, acc ->
+        if action["type"] == "enter_flow",
+        do: acc  ++ [action["flow"]],
+        else: acc
       end)
-    end)
-  end
 
-
-  def get_subflow_definations([], list),  do: list
-
-  def get_subflow_definations(sub_flows, list),
-  do: Enum.reduce(sub_flows, list,
-    fn sub_flow, acc -> get_subflow_defination(acc, sub_flow["uuid"])
-  end)
-
-   def get_latest_definition(flow_uuid) do
+  ## Get latest flow defination to export. There is one more function with the same name in
+  ## Glific.Flows.flow but that gives us the defination without UI placesments.
+  @spec get_latest_definition(String.t()) :: map()
+  defp get_latest_definition(flow_uuid) do
      json =
       FlowRevision
       |> select([fr], fr.definition)
@@ -771,7 +773,7 @@ defmodule Glific.Flows do
       |> where([fr, fl], fr.revision_number == 0 and fl.uuid == ^flow_uuid)
       |> Repo.one()
 
-     Map.get(json, "definition", json)
+      Map.get(json, "definition", json)
   end
 
 end
