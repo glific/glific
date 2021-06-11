@@ -4,8 +4,8 @@ defmodule Glific.Repo.Migrations.ButtonTemplates do
   alias Glific.Enums.TemplateButtonType
 
   def up do
-    add_button_session_templates()
     TemplateButtonType.create_type()
+    add_button_session_templates()
   end
 
   def down do
@@ -18,8 +18,7 @@ defmodule Glific.Repo.Migrations.ButtonTemplates do
         default: false,
         comment: "Does template have buttons"
 
-      add :button_type, :string,
-        default: "",
+      add :button_type, :template_button_type_enum,
         comment: "type of button QUICK_REPLY or CALL_TO_ACTION"
 
       add :buttons, :map, default: %{}, comment: "JSON object for storing buttons"
