@@ -551,11 +551,14 @@ if Code.ensure_loaded?(Faker) do
         status: "APPROVED",
         category: "ACCOUNT_UPDATE",
         example:
-          "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
+          "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below.",
         # spaces are important here, since gupshup pattern matches on it
         body:
-          "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
-        uuid: Ecto.UUID.generate()
+          "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below.",
+        uuid: Ecto.UUID.generate(),
+        button_type: "quick_reply",
+        has_buttons: true,
+        buttons: [%{"text" => "hello", "type" => "QUICK_REPLY"}]
       })
 
       translations = %{

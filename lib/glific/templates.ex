@@ -120,11 +120,10 @@ defmodule Glific.Templates do
     if Map.has_key?(attrs, :shortcode),
       do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)})
 
-    validation_result = validate_hsm(attrs)
-
-    if validation_result == :ok,
-      do: submit_for_approval(attrs),
-      else: validation_result
+    with :ok <- validate_hsm(attrs),
+         :ok <- validate_button_template(attrs) do
+      submit_for_approval(attrs)
+    end
   end
 
   def create_session_template(attrs) do
@@ -143,6 +142,19 @@ defmodule Glific.Templates do
   defp validate_hsm(_) do
     {:error,
      ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
+  end
+
+  @spec validate_button_template(map()) :: :ok | {:error, [String.t()]}
+  defp validate_button_template(%{has_button: false} = _attrs), do: :ok
+
+  defp validate_button_template(%{has_button: true, button_type: _, buttons: _} = _attrs), do: :ok
+
+  defp validate_button_template(_) do
+    {:error,
+     [
+       "Button Template",
+       "for Button Templates has_button, button_type and buttons fields are required"
+     ]}
   end
 
   @doc false
