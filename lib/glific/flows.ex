@@ -738,17 +738,19 @@ defmodule Glific.Flows do
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+      results
+    else
     defination =  get_latest_definition(flow_uuid)
-    results =
-      Map.put(results, "flows", results["flows"] ++ [defination])
+    results = Map.put(results, "flows", results["flows"] ++ [defination])
     ## here we can export more details like fields, triggers, groups and all.
 
     defination
     |> Map.get("nodes", [])
     |> get_sub_flows()
     |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+    end
 
-    results
   end
 
   @doc """
