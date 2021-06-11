@@ -37,6 +37,7 @@ defmodule Glific.Providers.Gupshup.Template do
             else: false
           )
       })
+      |> append_buttons(attrs)
       |> Templates.do_create_session_template()
     else
       {status, response} ->
@@ -47,6 +48,17 @@ defmodule Glific.Providers.Gupshup.Template do
         {:error, ["BSP", "couldn't submit for approval"]}
     end
   end
+
+  defp append_buttons(template, %{has_buttons: true} = attrs) do
+    template
+    |> Map.merge(%{
+      buttons:
+        attrs.buttons
+        |> Enum.reduce(%{}, fn button, acc -> acc |> Map.put_new(button["text"], button) end)
+    })
+  end
+
+  defp append_buttons(template, _attrs), do: template
 
   @spec handle_error_response(map() | String.t()) :: String.t()
   defp handle_error_response(response) when is_binary(response), do: response
@@ -100,8 +112,8 @@ defmodule Glific.Providers.Gupshup.Template do
     |> update_as_button_template(attrs)
   end
 
-  defp update_as_button_template(template_payload, %{has_buttons: true} = attrs) do
-    template_payload |> Map.merge(%{buttons: attrs.buttons})
+  defp update_as_button_template(template_payload, %{has_buttons: true, buttons: buttons}) do
+    template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
   end
 
   defp update_as_button_template(template_payload, _attrs) do
