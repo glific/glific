@@ -32,7 +32,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_source, :boolean
     field :translations, :json
     field :has_buttons, :boolean
-    field :button_type, :string
+    field :button_type, :template_button_type_enum
     field :buttons, :json
 
     field :inserted_at, :datetime
@@ -111,7 +111,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :language_id, :id
     field :translations, :json
     field :has_buttons, :boolean
-    field :button_type, :string
+    field :button_type, :template_button_type_enum
     field :buttons, :json
   end
 

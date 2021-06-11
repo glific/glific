@@ -45,6 +45,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Message Types enum"
   enum(:message_type_enum, values: Glific.Enums.message_type_const())
 
+  @desc "The Template Button Type enum"
+  enum(:template_button_type_enum, values: Glific.Enums.template_button_type_const())
+
   @desc "Enum for question types"
   enum(:question_type_enum, values: Glific.Enums.question_type_const())
 

@@ -6,11 +6,13 @@ defmodule Glific.Templates.SessionTemplate do
 
   alias Glific.{
     Enums.MessageType,
+    Enums.TemplateButtonType,
     Messages.MessageMedia,
     Partners.Organization,
     Settings.Language,
     Tags.Tag
   }
+
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -89,7 +91,7 @@ defmodule Glific.Templates.SessionTemplate do
     field :translations, :map, default: %{}
 
     field :has_buttons, :boolean, default: false
-    field :button_type, :string
+    field :button_type, TemplateButtonType
     field :buttons, :map, default: %{}
 
     belongs_to :language, Language
