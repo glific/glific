@@ -739,7 +739,8 @@ defmodule Glific.Flows do
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
     defination =  get_latest_definition(flow_uuid)
-    results = Map.put(results, "flows", results["flows"] ++ [defination])
+    results =
+      Map.put(results, "flows", results["flows"] ++ [defination])
     ## here we can export more details like fields, triggers, groups and all.
 
     defination
