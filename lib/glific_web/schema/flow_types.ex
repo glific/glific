@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.FlowTypes do
   end
 
   object :export_flow do
-    field :definition, :json
+    field :export_data, :json
   end
 
   object :flow do
@@ -93,7 +93,7 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.count_flows/3)
     end
 
-    @desc "export definition for a flow"
+    @desc "Export flow details so that we can import it again"
     field :export_flow, :export_flow do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
