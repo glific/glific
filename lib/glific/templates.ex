@@ -121,7 +121,7 @@ defmodule Glific.Templates do
       do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)})
 
     with :ok <- validate_hsm(attrs),
-         :ok <- validate_button_template(attrs) do
+         :ok <- validate_button_template(Map.put_new(attrs, :has_button, false)) do
       submit_for_approval(attrs)
     end
   end
