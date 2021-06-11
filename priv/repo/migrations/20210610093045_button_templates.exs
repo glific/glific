@@ -21,7 +21,7 @@ defmodule Glific.Repo.Migrations.ButtonTemplates do
       add :button_type, :template_button_type_enum,
         comment: "type of button QUICK_REPLY or CALL_TO_ACTION"
 
-      add :buttons, :map, default: %{}, comment: "JSON object for storing buttons"
+      add :buttons, :jsonb, default: "[]"
     end
   end
 end

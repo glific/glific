@@ -49,14 +49,8 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
-  defp append_buttons(template, %{has_buttons: true} = attrs) do
-    template
-    |> Map.merge(%{
-      buttons:
-        attrs.buttons
-        |> Enum.reduce(%{}, fn button, acc -> acc |> Map.put_new(button["text"], button) end)
-    })
-  end
+  defp append_buttons(template, %{has_buttons: true} = attrs),
+    do: template |> Map.merge(%{buttons: attrs.buttons})
 
   defp append_buttons(template, _attrs), do: template
 
