@@ -750,7 +750,6 @@ defmodule Glific.Flows do
     |> get_sub_flows()
     |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
     end
-
   end
 
   @doc """
