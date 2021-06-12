@@ -335,8 +335,9 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
-    test "create_session_template/1 for HSM button template should submit it for approval", attrs do
-      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9b94e53b4b"
+    test "create_session_template/1 for HSM button template should submit it for approval",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -348,13 +349,13 @@ defmodule Glific.TemplatesTest do
                 "template" => %{
                   "category" => "ACCOUNT_UPDATE",
                   "createdOn" => 1_595_904_220_495,
-                  "data" => "Your train ticket no. {{1}}",
-                  "elementName" => "ticket_update_status",
+                  "data" => "Your conference ticket no. {{1}}",
+                  "elementName" => "conference_ticket_status",
                   "id" => whatspp_hsm_uuid,
                   "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
-                  "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
+                  "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
                   "modifiedOn" => 1_595_904_220_495,
                   "status" => "PENDING",
                   "templateType" => "TEXT",
@@ -367,6 +368,31 @@ defmodule Glific.TemplatesTest do
       language = language_fixture()
 
       attrs = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: "quick_reply",
+        buttons: [%{"text" => "confirm", "type" => "QUICK_REPLY"}]
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "conference_ticket_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+
+      # Applying for button template with incomplete field should return error
+      attrs = %{
         body: "Your train ticket no. {{1}}",
         label: "New Label",
         language_id: language.id,
@@ -376,19 +402,14 @@ defmodule Glific.TemplatesTest do
         category: "ACCOUNT_UPDATE",
         example: "Your train ticket no. [1234]",
         organization_id: attrs.organization_id,
-        has_buttons: true,
-        button_type: "quick_reply",
-        buttons: [%{"text" => "hello", "type" => "QUICK_REPLY"}],
+        has_buttons: true
       }
 
-      assert {:ok, %SessionTemplate{} = session_template} =
-               Templates.create_session_template(attrs)
-
-      assert session_template.shortcode == "ticket_update_status"
-      assert session_template.is_hsm == true
-      assert session_template.status == "PENDING"
-      assert session_template.uuid == whatspp_hsm_uuid
-      assert session_template.language_id == language.id
+      assert {:error,
+              [
+                "Button Template",
+                "for Button Templates has_buttons, button_type and buttons fields are required"
+              ]} = Templates.create_session_template(attrs)
     end
 
     test "create_session_template/1 for HSM data wrong data should return BSP status and error message",
