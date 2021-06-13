@@ -1,5 +1,5 @@
-query exportFlowDefinition($id: ID!) {
-  exportFlowDefinition(id: $id) {
-    definition
+query exportFlow($id: ID!) {
+  exportFlow(id: $id) {
+    export_data
   }
 }

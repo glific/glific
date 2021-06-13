@@ -715,4 +715,70 @@ defmodule Glific.Flows do
   @spec is_optin_flow?(Flow.t()) :: boolean()
   def is_optin_flow?(nil), do: false
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
+
+  @doc """
+    Generate a json map with all the flows related fields.
+  """
+  @spec export_flow(non_neg_integer()) :: map()
+  def export_flow(flow_id) do
+    flow = Repo.get!(Flow, flow_id)
+    %{"flows" => []}
+    |> init_export_flow(flow.uuid)
+  end
+
+  @doc """
+    Process the flows and get all the subflow defination.
+  """
+  @spec init_export_flow(map(), String.t()) :: map()
+  def init_export_flow(results, flow_uuid),
+  do: export_flow_details(flow_uuid, results)
+
+  @doc """
+    process subflows and check if there is more subflows in it.
+  """
+  @spec export_flow_details(String.t(), map()) :: map()
+  def export_flow_details(flow_uuid, results) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+      results
+    else
+    defination =  get_latest_definition(flow_uuid)
+    results = Map.put(results, "flows", results["flows"] ++ [defination])
+    ## here we can export more details like fields, triggers, groups and all.
+
+    defination
+    |> Map.get("nodes", [])
+    |> get_sub_flows()
+    |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+    end
+  end
+
+  @doc """
+    Extract all the subflows form the parent flow defination.
+  """
+  @spec get_sub_flows(list()) :: list()
+  def get_sub_flows(nodes),
+  do: Enum.reduce(nodes, [], &do_get_sub_flows(&1, &2))
+
+  @spec do_get_sub_flows(map(), list()) :: list()
+  defp do_get_sub_flows(%{"actions" => actions}, list),
+  do: Enum.reduce(actions, list, fn action, acc ->
+        if action["type"] == "enter_flow",
+        do: acc  ++ [action["flow"]],
+        else: acc
+      end)
+
+  ## Get latest flow defination to export. There is one more function with the same name in
+  ## Glific.Flows.flow but that gives us the defination without UI placesments.
+  @spec get_latest_definition(String.t()) :: map()
+  defp get_latest_definition(flow_uuid) do
+     json =
+      FlowRevision
+      |> select([fr], fr.definition)
+      |> join(:inner, [fr], fl in Flow, on: fr.flow_id == fl.id)
+      |> where([fr, fl], fr.revision_number == 0 and fl.uuid == ^flow_uuid)
+      |> Repo.one()
+
+      Map.get(json, "definition", json)
+  end
+
 end
