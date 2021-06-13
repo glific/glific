@@ -96,8 +96,11 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "definiton field returns one flow definition or nil", %{staff: user} do
-    name = "Help Workflow"
-    flow_id = 1
+    [flow | _] = Glific.Flows.list_flows(%{filter: %{name: "activity"}})
+
+    name = flow.name
+    flow_id = flow.id
+
 
     {:ok, flow} =
       Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
@@ -113,6 +116,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert Enum.any?(data["flows"], fn flow -> Map.get(flow, "name") == name end)
   end
+
 
   test "create a flow and test possible scenarios and errors", %{manager: user} do
     name = "Flow Test Name"
