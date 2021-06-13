@@ -133,7 +133,8 @@ defmodule Glific.Flows.ContactAction do
     else
       do_send_template_message(context, action, messages, %{
         cid: cid,
-        session_template: session_template
+        session_template: session_template,
+        params: vars
       })
     end
   end
@@ -142,10 +143,10 @@ defmodule Glific.Flows.ContactAction do
           {:ok, map(), any()}
   defp do_send_template_message(context, action, messages, %{
          cid: cid,
-         session_template: session_template
+         session_template: session_template,
+         params: params
        }) do
     attachments = Localization.get_translation(context, action, :attachments)
-    params = action.templating.variables
 
     {type, media_id} =
       if is_nil(attachments) or attachments == %{},
