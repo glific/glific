@@ -6,6 +6,7 @@ defmodule Glific.Templates.SessionTemplate do
 
   alias Glific.{
     Enums.MessageType,
+    Enums.TemplateButtonType,
     Messages.MessageMedia,
     Partners.Organization,
     Settings.Language,
@@ -38,7 +39,10 @@ defmodule Glific.Templates.SessionTemplate do
           parent: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          translations: map() | nil
+          translations: map() | nil,
+          has_buttons: boolean(),
+          button_type: String.t() | nil,
+          buttons: [map()] | []
         }
 
   @required_fields [
@@ -61,7 +65,10 @@ defmodule Glific.Templates.SessionTemplate do
     :translations,
     :status,
     :category,
-    :example
+    :example,
+    :has_buttons,
+    :button_type,
+    :buttons
   ]
 
   schema "session_templates" do
@@ -81,6 +88,10 @@ defmodule Glific.Templates.SessionTemplate do
     field :is_active, :boolean, default: false
     field :is_reserved, :boolean, default: false
     field :translations, :map, default: %{}
+
+    field :has_buttons, :boolean, default: false
+    field :button_type, TemplateButtonType
+    field :buttons, {:array, :map}, default: []
 
     belongs_to :language, Language
     belongs_to :organization, Organization

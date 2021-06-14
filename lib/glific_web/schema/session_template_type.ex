@@ -31,6 +31,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :is_active, :boolean
     field :is_source, :boolean
     field :translations, :json
+    field :has_buttons, :boolean
+    field :button_type, :template_button_type_enum
+    field :buttons, :json
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -107,6 +110,9 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :message_media_id, :id
     field :language_id, :id
     field :translations, :json
+    field :has_buttons, :boolean
+    field :button_type, :template_button_type_enum
+    field :buttons, :json
   end
 
   input_object :message_to_template_input do

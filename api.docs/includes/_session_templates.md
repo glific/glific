@@ -759,5 +759,17 @@ Match the whatsapp status of hsm template message
 <td valign="top"><a href="#messagetypesenum">MessageTypesEnum</a></td>
 <td></td>
 </tr>
+<td colspan="2" valign="top"><strong>HasButtons</strong></td>
+<td valign="top"><a href="#boolean"></a>Boolean</td>
+<td></td>
+</tr>
+<td colspan="2" valign="top"><strong>buttonType</strong></td>
+<td valign="top"><a href="#template_button_type_enum">TemplateButtonTypeEnum</a></td>
+<td></td>
+</tr>
+<td colspan="2" valign="top"><strong>buttons</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
