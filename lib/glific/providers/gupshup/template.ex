@@ -49,6 +49,7 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
+  @spec append_buttons(map(), map()) :: map()
   defp append_buttons(template, %{has_buttons: true} = attrs),
     do: template |> Map.merge(%{buttons: attrs.buttons})
 
@@ -106,6 +107,7 @@ defmodule Glific.Providers.Gupshup.Template do
     |> update_as_button_template(attrs)
   end
 
+  @spec update_as_button_template(map(), map()) :: map()
   defp update_as_button_template(template_payload, %{has_buttons: true, buttons: buttons}) do
     template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
   end

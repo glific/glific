@@ -233,14 +233,12 @@ defmodule Glific.Messages do
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
-
       contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
       parsed_params = Enum.map(attrs.params, &MessageVarParser.parse(&1, contact_vars))
 
       attrs
       |> Map.put(:parameters, parsed_params)
       |> create_and_send_hsm_message()
-
     else
       Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
       |> do_send_message(attrs)
@@ -457,6 +455,7 @@ defmodule Glific.Messages do
     }
   end
 
+  @spec parse_buttons(SessionTemplate.t(), boolean() ) :: SessionTemplate.t()
   defp parse_buttons(session_template, true) do
     updated_body =
       session_template.buttons
