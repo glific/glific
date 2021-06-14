@@ -57,6 +57,13 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc false
+  @spec export_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, %{export_data: map}}
+  def export_flow(_, %{id: flow_id}, _) do
+    {:ok, %{export_data: Flows.export_flow(flow_id)}}
+  end
+
+  @doc false
   @spec delete_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_flow(_, %{id: id}, %{context: %{current_user: user}}) do

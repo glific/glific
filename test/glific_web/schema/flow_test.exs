@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.FlowTest do
     Contacts,
     Fixtures,
     Flows.Flow,
+    Flows.FlowRevision,
     Repo,
     Seeds.SeedsDev
   }
@@ -19,6 +20,7 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/flows/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/flows/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/flows/update.gql")
+  load_gql(:export_flow, GlificWeb.Schema, "assets/gql/flows/export_flow.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
   load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
@@ -92,6 +94,29 @@ defmodule GlificWeb.Schema.FlowTest do
     message = get_in(query_data, [:data, "flow", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
   end
+
+  test "definiton field returns one flow definition or nil", %{staff: user} do
+    [flow | _] = Glific.Flows.list_flows(%{filter: %{name: "activity"}})
+
+    name = flow.name
+    flow_id = flow.id
+
+
+    {:ok, flow} =
+      Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.flow_id})
+    assert {:ok, query_data} = result
+
+    data =
+      get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> Jason.decode!()
+
+    assert length(data["flows"]) > 0
+
+    assert Enum.any?(data["flows"], fn flow -> Map.get(flow, "name") == name end)
+  end
+
 
   test "create a flow and test possible scenarios and errors", %{manager: user} do
     name = "Flow Test Name"
