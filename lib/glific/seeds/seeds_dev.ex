@@ -558,7 +558,7 @@ if Code.ensure_loaded?(Faker) do
         uuid: Ecto.UUID.generate(),
         button_type: "quick_reply",
         has_buttons: true,
-        buttons: [%{"text" => "hello", "type" => "QUICK_REPLY"}]
+        buttons: [%{"text" => "View Account Balance", "type" => "QUICK_REPLY"}, %{"text" => "View Mini Statement", "type" => "QUICK_REPLY"}]
       })
 
       translations = %{

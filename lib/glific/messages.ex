@@ -430,7 +430,11 @@ defmodule Glific.Messages do
          %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
        ) do
     media_id = Map.get(attrs, :media_id, nil)
-    updated_template = parse_template_vars(session_template, parameters)
+
+    updated_template =
+      session_template
+      |> parse_template_vars(parameters)
+      |> parse_buttons(session_template.has_buttons)
 
     %{
       body: updated_template.body,
@@ -447,6 +451,17 @@ defmodule Glific.Messages do
       is_optin_flow: Map.get(attrs, :is_optin_flow, false)
     }
   end
+
+  defp parse_buttons(session_template, true) do
+    updated_body =
+      session_template.buttons
+      |> Enum.reduce("", fn arc, acc -> "#{acc}| [" <> arc["text"] <> "] " end)
+
+    session_template
+    |> Map.merge(%{body: session_template.body <> updated_body})
+  end
+
+  defp parse_buttons(session_template, false), do: session_template
 
   @doc """
   Send a hsm template message to the specific contact.
