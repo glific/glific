@@ -90,7 +90,7 @@ defmodule Glific.Partners.Billing do
     field :is_delinquent, :boolean, default: false
     field :is_active, :boolean, default: true
 
-    belongs_to(:organization, Organization)
+    belongs_to :organization, Organization
 
     timestamps(type: :utc_datetime)
   end
@@ -693,6 +693,7 @@ defmodule Glific.Partners.Billing do
     :ok
   end
 
+  @spec update_monthly_usage(Billing.t(), DateTime.t()) :: :ok
   defp update_monthly_usage(billing, anchor_date) do
     start_date =
       anchor_date
@@ -712,15 +713,21 @@ defmodule Glific.Partners.Billing do
     prices = stripe_ids()
     subscription_items = billing.stripe_subscription_items
 
-    record_subscription_item(
-      subscription_items[prices["consulting_hours"]],
-      calculate_consulting_hours(billing.organization_id, start_date, end_date).duration,
-      time,
-      "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
-    )
+    with consulting_hours <-
+           calculate_consulting_hours(billing.organization_id, start_date, end_date).duration,
+         false <- is_nil(consulting_hours) do
+      record_subscription_item(
+        subscription_items[prices["consulting_hours"]],
+        consulting_hours,
+        time,
+        "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
+      )
+    end
+
+    :ok
   end
 
-  @spec calculate_consulting_hours(any, any, any) :: map()
+  @spec calculate_consulting_hours(non_neg_integer(), DateTime.t(), DateTime.t()) :: map()
   defp calculate_consulting_hours(org_id, start_date, end_date) do
     ConsultingHour
     |> where([ch], ch.organization_id == ^org_id)
@@ -728,7 +735,7 @@ defmodule Glific.Partners.Billing do
     |> where([ch], ch.when > ^start_date)
     |> where([ch], ch.when < ^end_date)
     |> select([f], %{duration: sum(f.duration)})
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.oner(skip_organization_id: true)
   end
 
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
