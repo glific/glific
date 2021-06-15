@@ -15,7 +15,7 @@ defmodule Glific.Jobs.MinuteWorker do
     GCS.GcsWorker,
     Jobs.BSPBalanceWorker,
     Partners,
-    # Partners.Billing,
+    Partners.Billing,
     Searches.CollectionCount,
     Stats,
     Templates,
@@ -105,6 +105,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
+
+      "monthly_tasks" ->
+        Billing.update_monthly_usage()
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
