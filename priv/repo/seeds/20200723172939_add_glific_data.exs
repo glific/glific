@@ -161,10 +161,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       stripe_ids: %{
         product: "prod_JG5ns5s9yPRiOq",
         setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
-        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
-        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
-        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
+        monthly: "price_1IfMurEMShkCsLFnO3hoNK1c",
+        users: "price_1IfNdDEMShkCsLFncPmeG9bn",
+        messages: "price_1IfNf2EMShkCsLFnMcNQ0dZZ",
+        consulting_hours: "price_1J2YPOEMShkCsLFnweQC1ode",
         inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
       },
       tax_rates: %{
