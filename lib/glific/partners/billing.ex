@@ -19,6 +19,7 @@ defmodule Glific.Partners.Billing do
     Partners.Organization,
     Partners.Saas,
     Repo,
+    Saas.ConsultingHour,
     Stats
   }
 
@@ -89,7 +90,7 @@ defmodule Glific.Partners.Billing do
     field :is_delinquent, :boolean, default: false
     field :is_active, :boolean, default: true
 
-    belongs_to :organization, Organization
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -680,6 +681,54 @@ defmodule Glific.Partners.Billing do
     |> where([b], b.is_active == true)
     |> Repo.all()
     |> Enum.each(&update_period_usage(&1, end_date))
+  end
+
+  @spec update_monthly_usage :: :ok
+  def update_monthly_usage() do
+    Billing
+    |> where([b], b.is_active == true)
+    |> Repo.all()
+    |> Enum.each(&update_monthly_usage(&1, DateTime.utc_now()))
+
+    :ok
+  end
+
+  defp update_monthly_usage(billing, anchor_date) do
+    start_date =
+      anchor_date
+      |> Timex.shift(months: -1)
+      |> Timex.beginning_of_month()
+      |> Timex.beginning_of_day()
+
+    end_date =
+      anchor_date
+      |> Timex.shift(months: -1)
+      |> Timex.end_of_month()
+      |> Timex.end_of_day()
+
+    {start_usage_date, _end_usage_date, _end_usage_datetime, time} =
+      format_dates(start_date, end_date)
+
+    prices = stripe_ids()
+    subscription_items = billing.stripe_subscription_items
+
+    record_subscription_item(
+      subscription_items[prices["consulting_hours"]],
+      calculate_consulting_hours(billing.organization_id, start_date, end_date).duration,
+      time,
+      "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
+    )
+  end
+
+  @spec calculate_consulting_hours(any, any, any) :: map()
+  defp calculate_consulting_hours(org_id, start_date, end_date) do
+    ConsultingHour
+    |> where([ch], ch.organization_id == ^org_id)
+    |> where([ch], ch.is_billable == true)
+    |> where([ch], ch.when > ^start_date)
+    |> where([ch], ch.when < ^end_date)
+    |> select([f], %{duration: sum(f.duration)})
+    |> Repo.all(skip_organization_id: true)
   end
 
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
