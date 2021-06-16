@@ -46,6 +46,7 @@ defmodule GlificWeb.Schema.BillingTypes do
   end
 
   input_object :billing_input do
+    field :organization_id, :gid
     field :name, :string
     field :email, :string
     field :currency, :string
@@ -69,6 +70,7 @@ defmodule GlificWeb.Schema.BillingTypes do
 
     @desc "get the details of active billing of organization"
     field :get_organization_billing, :billing_result do
+      arg(:organization_id, :gid)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.get_organization_billing/3)
     end
@@ -113,5 +115,6 @@ defmodule GlificWeb.Schema.BillingTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.delete_billing/3)
     end
+
   end
 end
