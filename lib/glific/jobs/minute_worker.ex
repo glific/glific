@@ -87,7 +87,7 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "daily_tasks" ->
         # Billing.update_usage()
-        nil
+        Billing.update_monthly_usage()
 
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
@@ -98,7 +98,6 @@ defmodule Glific.Jobs.MinuteWorker do
       "hourly_tasks" ->
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
-        Billing.update_monthly_usage()
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])

@@ -693,7 +693,7 @@ defmodule Glific.Partners.Billing do
 
   @spec update_monthly_usage(Billing.t(), DateTime.t()) :: :ok
   defp update_monthly_usage(billing, end_date) do
-    start_date = end_date |> Timex.shift(hours: -1)
+    start_date = end_date |> Timex.shift(days: -1)
 
     {start_usage_date, _end_usage_date, _end_usage_datetime, time} =
       format_dates(start_date, end_date)
@@ -706,7 +706,7 @@ defmodule Glific.Partners.Billing do
          false <- is_nil(consulting_hours) do
       record_subscription_item(
         subscription_items[prices["consulting_hours"]],
-        consulting_hours,
+        div(consulting_hours, 15),
         time,
         "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
       )
@@ -720,8 +720,8 @@ defmodule Glific.Partners.Billing do
     ConsultingHour
     |> where([ch], ch.organization_id == ^organization_id)
     |> where([ch], ch.is_billable == true)
-    |> where([ch], ch.when > ^start_date)
-    |> where([ch], ch.when < ^end_date)
+    |> where([ch], ch.inserted_at > ^start_date)
+    |> where([ch], ch.inserted_at < ^end_date)
     |> select([f], %{duration: sum(f.duration)})
     |> Repo.one(skip_organization_id: true)
   end
