@@ -48,8 +48,7 @@ oban_crontab = [
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
   {"3 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-  {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-  {"1 * * */1 *", Glific.Jobs.MinuteWorker, args: %{job: :monthly_tasks}}
+  {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
 ]
 
 oban_engine = Oban.Pro.Queue.SmartEngine

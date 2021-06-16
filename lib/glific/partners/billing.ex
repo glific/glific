@@ -694,18 +694,10 @@ defmodule Glific.Partners.Billing do
   end
 
   @spec update_monthly_usage(Billing.t(), DateTime.t()) :: :ok
-  defp update_monthly_usage(billing, anchor_date) do
+  defp update_monthly_usage(billing, end_date) do
     start_date =
-      anchor_date
-      |> Timex.shift(months: -1)
-      |> Timex.beginning_of_month()
-      |> Timex.beginning_of_day()
-
-    end_date =
-      anchor_date
-      |> Timex.shift(months: -1)
-      |> Timex.end_of_month()
-      |> Timex.end_of_day()
+      end_date
+      |> Timex.shift(hours: -1)
 
     {start_usage_date, _end_usage_date, _end_usage_datetime, time} =
       format_dates(start_date, end_date)
@@ -735,7 +727,7 @@ defmodule Glific.Partners.Billing do
     |> where([ch], ch.when > ^start_date)
     |> where([ch], ch.when < ^end_date)
     |> select([f], %{duration: sum(f.duration)})
-    |> Repo.oner(skip_organization_id: true)
+    |> Repo.one(skip_organization_id: true)
   end
 
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok

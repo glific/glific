@@ -98,6 +98,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "hourly_tasks" ->
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
+        Billing.update_monthly_usage()
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
@@ -105,9 +106,6 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
-
-      "monthly_tasks" ->
-        Billing.update_monthly_usage()
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
