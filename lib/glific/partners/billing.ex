@@ -643,19 +643,17 @@ defmodule Glific.Partners.Billing do
   end
 
   # record the usage against a subscription item in stripe
-  @spec record_subscription_item(String.t(), pos_integer, pos_integer, String.t()) :: nil
+  @spec record_subscription_item(String.t(), pos_integer, pos_integer, String.t()) ::
+          {:ok, Usage.t()} | {:error, Stripe.Error.t()}
   defp record_subscription_item(subscription_item_id, quantity, time, idempotency) do
-    {:ok, _} =
-      Usage.create(
-        subscription_item_id,
-        %{
-          quantity: quantity,
-          timestamp: time
-        },
-        idempotency_key: idempotency
-      )
-
-    nil
+    Usage.create(
+      subscription_item_id,
+      %{
+        quantity: quantity,
+        timestamp: time
+      },
+      idempotency_key: idempotency
+    )
   end
 
   @doc """
@@ -695,9 +693,7 @@ defmodule Glific.Partners.Billing do
 
   @spec update_monthly_usage(Billing.t(), DateTime.t()) :: :ok
   defp update_monthly_usage(billing, end_date) do
-    start_date =
-      end_date
-      |> Timex.shift(hours: -1)
+    start_date = end_date |> Timex.shift(hours: -1)
 
     {start_usage_date, _end_usage_date, _end_usage_datetime, time} =
       format_dates(start_date, end_date)
@@ -720,9 +716,9 @@ defmodule Glific.Partners.Billing do
   end
 
   @spec calculate_consulting_hours(non_neg_integer(), DateTime.t(), DateTime.t()) :: map()
-  defp calculate_consulting_hours(org_id, start_date, end_date) do
+  defp calculate_consulting_hours(organization_id, start_date, end_date) do
     ConsultingHour
-    |> where([ch], ch.organization_id == ^org_id)
+    |> where([ch], ch.organization_id == ^organization_id)
     |> where([ch], ch.is_billable == true)
     |> where([ch], ch.when > ^start_date)
     |> where([ch], ch.when < ^end_date)
