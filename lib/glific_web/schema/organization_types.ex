@@ -62,6 +62,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :is_approved, :boolean
 
+    field :status, :organization_status_enum
+
     field :timezone, :string
 
     field :session_limit, :integer
@@ -147,6 +149,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :out_of_office, :out_of_office_input
 
+    field :status, :organization_status_enum
+
     field :is_active, :boolean
 
     field :timezone, :string
@@ -185,6 +189,13 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.count_organizations/3)
     end
 
+    @desc "Get a count of all organizations filtered by various criteria"
+    field :count_organizations, :integer do
+      arg(:filter, :organization_filter)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.count_organizations/3)
+    end
+
     @desc "Checks if organization has an active cloud storage setup"
     field :attachments_enabled, :boolean do
       middleware(Authorize, :staff)
@@ -198,6 +209,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :organization_services, :organization_services_result do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.organization_services/3)
+    end
+
+    @desc "Get a list of all organizations status"
+    field :organization_status, list_of(:organization_status_enum) do
+      middleware(Authorize, :admin)
+      resolve(fn _, _, _ ->
+        {:ok, Glific.Enums.OrganizationStatus.__enum_map__()}
+      end)
     end
 
     field :timezones, list_of(:string) do
