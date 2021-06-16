@@ -104,3 +104,10 @@ defenum(
   :template_button_type_enum,
   Glific.Enums.template_button_type_const()
 )
+
+
+defenum(
+  Glific.Enums.OrganizationStatus,
+  :organization_status_enum,
+  Glific.Enums.organization_status_const()
+)

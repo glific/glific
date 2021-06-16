@@ -100,6 +100,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.TemplateButtonType.__enum_map__()
   Glific.Enums.template_button_type_const()
 
+  iex> Glific.Enums.OrganizationStatus.__enum_map__()
+  Glific.Enums.organization_status_const()
+
   """
 
   defmacro api_status_const,
@@ -149,4 +152,7 @@ defmodule Glific.Enums do
 
   defmacro template_button_type_const,
     do: Macro.expand(@template_button_type_const, __CALLER__)
+
+  defmacro organization_status_const,
+    do: Macro.expand(@organization_status_const, __CALLER__)
 end
