@@ -681,8 +681,11 @@ defmodule Glific.Partners.Billing do
     |> Enum.each(&update_period_usage(&1, end_date))
   end
 
+  @doc """
+  Updating monthly usage of organization
+  """
   @spec update_monthly_usage :: :ok
-  def update_monthly_usage() do
+  def update_monthly_usage do
     Billing
     |> where([b], b.is_active == true)
     |> Repo.all()
