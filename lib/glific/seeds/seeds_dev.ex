@@ -869,8 +869,7 @@ if Code.ensure_loaded?(Faker) do
         is_active: true,
         stripe_subscription_id: "test_subscription_id",
         stripe_subscription_items: %{
-          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id",
-          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_subscription_id"
+          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id"
         }
       })
     end

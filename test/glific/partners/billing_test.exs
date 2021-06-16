@@ -134,7 +134,16 @@ defmodule Glific.BillingTest do
     test "update_monthly_usage/1 should update usage of metered subscription item", %{
       organization_id: organization_id
     } do
-      consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: organization_id})
+      _consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: organization_id})
+
+      Map.merge(@valid_attrs, %{
+        organization_id: organization_id,
+        stripe_subscription_items: %{
+          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id",
+          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_subscription_id"
+        }
+      })
+      |> Fixtures.billing_fixture()
 
       use_cassette "update_monthly_usage" do
         Billing.update_monthly_usage()
