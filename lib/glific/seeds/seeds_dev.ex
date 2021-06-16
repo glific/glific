@@ -558,7 +558,10 @@ if Code.ensure_loaded?(Faker) do
         uuid: Ecto.UUID.generate(),
         button_type: "quick_reply",
         has_buttons: true,
-        buttons: [%{"text" => "View Account Balance", "type" => "QUICK_REPLY"}, %{"text" => "View Mini Statement", "type" => "QUICK_REPLY"}]
+        buttons: [
+          %{"text" => "View Account Balance", "type" => "QUICK_REPLY"},
+          %{"text" => "View Mini Statement", "type" => "QUICK_REPLY"}
+        ]
       })
 
       translations = %{
@@ -865,7 +868,10 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id,
         is_active: true,
         stripe_subscription_id: "test_subscription_id",
-        stripe_subscription_items: %{price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id"}
+        stripe_subscription_items: %{
+          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id",
+          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_subscription_id"
+        }
       })
     end
 

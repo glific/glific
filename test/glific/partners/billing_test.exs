@@ -130,5 +130,15 @@ defmodule Glific.BillingTest do
         assert subscription.stripe_payment_method_id == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
       end
     end
+
+    test "update_monthly_usage/1 should update usage of metered subscription item", %{
+      organization_id: organization_id
+    } do
+      consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: organization_id})
+
+      use_cassette "update_monthly_usage" do
+        Billing.update_monthly_usage()
+      end
+    end
   end
 end

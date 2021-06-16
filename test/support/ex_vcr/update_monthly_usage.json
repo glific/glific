@@ -1,0 +1,50 @@
+[
+  {
+    "request": {
+      "body": "quantity=0&timestamp=1623887999",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer random_sk_test_51HZXWAEMShkCsLFnX5gePfEYnt2czwXjNg92lD7cC",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "consulting: 1, 2021-06-15",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/subscription_items/si_test_subscription_id/usage_records"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"id\": \"mbur_1J2vfVEMShkCsLFnmU81E4Bv\",\n  \"object\": \"usage_record\",\n  \"livemode\": false,\n  \"quantity\": 6,\n  \"subscription_item\": \"si_test_subscription_id\",\n  \"timestamp\": 1623887999\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Wed, 16 Jun 2021 11:54:10 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "181",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "idempotency-key": "consulting: 1, 2021-06-15",
+        "original-request": "req_D9DdXGOEdhODTo",
+        "request-id": "req_D9DdXGOEdhODTo",
+        "stripe-should-retry": "false",
+        "stripe-version": "2019-12-03",
+        "x-stripe-c-cost": "0",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 200,
+      "type": "ok"
+    }
+  }
+]
