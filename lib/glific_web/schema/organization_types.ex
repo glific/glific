@@ -127,12 +127,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :default_flow_id, :id
   end
 
-  input_object :organization_status_input do
-    field :update_organization_id, :id
-    field :is_active, :boolean
-    field :is_approved, :boolean
-  end
-
   input_object :delete_organization_input do
     field :delete_organization_id, :id
     field :is_confirmed, :boolean

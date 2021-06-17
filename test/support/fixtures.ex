@@ -128,6 +128,7 @@ defmodule Glific.Fixtures do
       name: "Fixture Organization",
       is_active: true,
       is_approved: true,
+      status: :active,
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       last_communication_at: DateTime.backward(0),
