@@ -22,7 +22,7 @@ defmodule Glific.Messages.Message do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           uuid: Ecto.UUID.t() | nil,
-          type: String.t() | nil,
+          type: String.t() | atom() | nil,
           is_hsm: boolean | nil,
           flow: String.t() | nil,
           flow_label: String.t() | nil,
@@ -50,7 +50,11 @@ defmodule Glific.Messages.Message do
           body: String.t() | nil,
           clean_body: String.t() | nil,
           publish?: boolean,
+          extra: map(),
           bsp_message_id: String.t() | nil,
+          context_id: String.t() | nil,
+          context_message_id: non_neg_integer | nil,
+          context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
@@ -76,6 +80,8 @@ defmodule Glific.Messages.Message do
     :status,
     :bsp_status,
     :bsp_message_id,
+    :context_id,
+    :context_message_id,
     :errors,
     :media_id,
     :group_id,
@@ -103,10 +109,18 @@ defmodule Glific.Messages.Message do
     # when sendign to a group
     field :publish?, :boolean, default: true, virtual: true
 
+    # adding an extra virtual field so we can hang dynamic data to pass during processing of
+    # agents and flows. Specifically used for now during dialogflow
+    field :extra, :map, default: %{intent: nil}, virtual: true
+
     field :is_hsm, :boolean, default: false
 
     field :bsp_message_id, :string
     field :bsp_status, MessageStatus
+
+    field :context_id, :string
+    belongs_to :context_message, Message, foreign_key: :context_message_id
+
     field :errors, :map, default: %{}
     field :send_at, :utc_datetime
     field :sent_at, :utc_datetime
@@ -138,6 +152,7 @@ defmodule Glific.Messages.Message do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_media(message)
+    |> unique_constraint([:bsp_message_id, :organization_id])
   end
 
   @doc """

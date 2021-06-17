@@ -42,7 +42,8 @@ defmodule Glific.Flows.ContactAction do
       context.contact_id,
       %{
         "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "results" => context.results
+        "results" => context.results,
+        "flow" => %{name: context.flow.name, id: context.flow.id}
       }
     }
   end
@@ -98,7 +99,6 @@ defmodule Glific.Flows.ContactAction do
     body =
       text
       |> MessageVarParser.parse(message_vars)
-      |> MessageVarParser.parse_results(context.results)
 
     {context, count} = update_recent(context, body)
 
@@ -133,7 +133,8 @@ defmodule Glific.Flows.ContactAction do
     else
       do_send_template_message(context, action, messages, %{
         cid: cid,
-        session_template: session_template
+        session_template: session_template,
+        params: vars
       })
     end
   end
@@ -142,7 +143,8 @@ defmodule Glific.Flows.ContactAction do
           {:ok, map(), any()}
   defp do_send_template_message(context, action, messages, %{
          cid: cid,
-         session_template: session_template
+         session_template: session_template,
+         params: params
        }) do
     attachments = Localization.get_translation(context, action, :attachments)
 
@@ -167,7 +169,8 @@ defmodule Glific.Flows.ContactAction do
       uuid: action.uuid,
       flow_id: context.flow_id,
       is_hsm: true,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay)
+      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      params: params
     }
 
     Messages.create_and_send_session_template(session_template, attrs)
@@ -250,7 +253,7 @@ defmodule Glific.Flows.ContactAction do
 
   @spec error(FlowContext.t(), any(), map()) :: {:ok, map(), any()}
   defp error(context, error, attrs) do
-    message = "Error sending message, resetting contect: #{inspect(error)}, #{inspect(attrs)}"
+    message = "Error sending message, resetting context: #{inspect(error)}, #{inspect(attrs)}"
 
     # returning for now, but resetting the context
     context = FlowContext.reset_all_contexts(context, message)

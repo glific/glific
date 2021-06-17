@@ -438,7 +438,7 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:ok, [contact1_id, contact2_id | _]} =
-               Messages.create_and_send_message_to_contacts(message_attrs, contact_ids)
+               Messages.create_and_send_message_to_contacts(message_attrs, contact_ids, :session)
 
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
@@ -488,7 +488,11 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
 
       assert {:ok, []} =
-               Messages.create_and_send_message_to_contacts(message_attrs, [receiver.id])
+               Messages.create_and_send_message_to_contacts(
+                 message_attrs,
+                 [receiver.id],
+                 :session
+               )
     end
 
     test "create_group_message/1 should create group message",
@@ -572,7 +576,7 @@ defmodule Glific.MessagesTest do
       org_contact = Glific.Partners.organization(organization_id).contact
 
       assert {:ok, [contact1_id, contact2_id | _]} =
-               Messages.create_and_send_message_to_group(message_attrs, group)
+               Messages.create_and_send_message_to_group(message_attrs, group, :session)
 
       # message should be sent only to the contacts of the group
       assert [contact1_id, contact2_id] -- contact_ids == []
@@ -604,6 +608,23 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "test message"
+    end
+
+    test "create and send message should send message to contact with replacing global vars",
+         attrs do
+      Partners.get_organization!(attrs.organization_id)
+      |> Partners.update_organization(%{fields: %{"org_name" => "Glific"}})
+
+      valid_attrs = %{
+        body: "test message from @global.org_name",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message from Glific"
     end
 
     test "create and send message should send message to contact should return error", attrs do
@@ -648,7 +669,7 @@ defmodule Glific.MessagesTest do
         %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
         |> Messages.create_and_send_hsm_message()
 
-      assert error_message == "You need to provide correct number of parameters for hsm template"
+      assert error_message == "Please provide the right number of parameters for the template."
 
       # Correct number of parameters should create and send hsm message
       parameters = ["param1", "param2", "param3"]
@@ -711,7 +732,7 @@ defmodule Glific.MessagesTest do
         %{template_id: hsm_template.id, receiver_id: contact.id, parameters: parameters}
         |> Messages.create_and_send_hsm_message()
 
-      assert error_message == "You need to provide media for media hsm template"
+      assert error_message == "Please provide media for media template."
 
       media = Fixtures.message_media_fixture(attrs)
 
@@ -874,6 +895,7 @@ defmodule Glific.MessagesTest do
                )
     end
 
+    # we suffix fix with ever increasing sizes to bypass the caching we've added
     @valid_media_url "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample02.jpg"
 
     test "validate media/2 check for size error", _attrs do
@@ -894,7 +916,7 @@ defmodule Glific.MessagesTest do
                message: "Size is too big for the image. Maximum size limit is 5120KB"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_1",
                  "image"
                )
     end
@@ -916,7 +938,7 @@ defmodule Glific.MessagesTest do
                message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_2",
                  "image"
                )
     end
@@ -939,7 +961,7 @@ defmodule Glific.MessagesTest do
                message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_3",
                  "video"
                )
     end
@@ -962,7 +984,7 @@ defmodule Glific.MessagesTest do
                message: "Media content-type is not valid"
              } ==
                Messages.validate_media(
-                 @valid_media_url,
+                 @valid_media_url <> "_4",
                  "text"
                )
     end
@@ -980,6 +1002,17 @@ defmodule Glific.MessagesTest do
           }
       end)
 
+      # we want this cached
+      assert %{is_valid: true, message: "success"} ==
+               Messages.validate_media(
+                 @valid_media_url,
+                 "image"
+               )
+
+      {:ok, value} = Glific.Caches.get_global({:validate_media, @valid_media_url, "image"})
+      assert value == %{is_valid: true, message: "success"}
+
+      # this time it should be fetching from the cache
       assert %{is_valid: true, message: "success"} ==
                Messages.validate_media(
                  @valid_media_url,

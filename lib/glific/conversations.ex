@@ -47,6 +47,9 @@ defmodule Glific.Conversations do
   """
   @spec add_special_offset(Ecto.Query.t(), integer, integer, integer) :: Ecto.Query.t()
   def add_special_offset(query, _, limit, 0) do
+    # always cap out limit to 250, in case frontend sends too many
+    limit = min(limit, 250)
+
     # this is for the latest messages, irrespective whether its for one or multiple contact/group
     query
     |> where([m: m, c: c], m.message_number <= c.last_message_number)

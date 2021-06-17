@@ -13,6 +13,7 @@ defmodule Glific.Searches do
     Conversations,
     Conversations.Conversation,
     ConversationsGroup,
+    Groups,
     Groups.ContactGroup,
     Groups.UserGroup,
     Messages.Message,
@@ -287,6 +288,12 @@ defmodule Glific.Searches do
   defp group_ids(%{filter: %{include_groups: gids}}), do: gids
   defp group_ids(%{filter: %{ids: gids}}), do: gids
   defp group_ids(%{filter: %{id: gid}}), do: [gid]
+
+  defp group_ids(%{filter: %{group_label: group_label}}) do
+    Groups.list_groups(%{filter: %{label: group_label}})
+    |> Enum.map(fn group -> group.id end)
+  end
+
   defp group_ids(_), do: nil
 
   @doc """
@@ -294,6 +301,17 @@ defmodule Glific.Searches do
   """
   @spec search(map(), boolean) :: [Conversation.t()] | integer
   def search(args, count \\ false)
+
+  def search(%{filter: %{search_group: true, group_label: group_label}} = args, _count) do
+    Logger.info(
+      "Searches.Search/2 with : args: #{inspect(args)} group label: #{inspect(group_label)}"
+    )
+
+    ConversationsGroup.list_conversations(
+      group_ids(args),
+      args
+    )
+  end
 
   def search(%{filter: %{search_group: true}} = args, _count) do
     Logger.info("Searches.Search/2 with : args: #{inspect(args)}")
@@ -376,10 +394,13 @@ defmodule Glific.Searches do
   @spec filtered_query(map()) :: Ecto.Query.t()
   defp filtered_query(args) do
     {limit, offset} = {args.message_opts.limit, args.message_opts.offset}
+    # always cap out limit to 250, in case frontend sends too many
+    limit = min(limit, 250)
 
     query = from m in Message, as: :m
 
     query
+    |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)

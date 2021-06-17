@@ -43,14 +43,13 @@ defmodule Glific.Communications.Message do
       }'"
     )
 
-    {:ok, _} =
-      apply(
-        Communications.provider_handler(message.organization_id),
-        @type_to_token[message.type],
-        [message, attrs]
-      )
-
-    publish_message(message)
+    with {:ok, _} <-
+           apply(
+             Communications.provider_handler(message.organization_id),
+             @type_to_token[message.type],
+             [message, attrs]
+           ),
+         do: publish_message(message)
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
@@ -71,11 +70,10 @@ defmodule Glific.Communications.Message do
   defp publish_message(message) do
     {
       :ok,
-      if message.publish? do
-        Communications.publish_data(message, :sent_message, message.organization_id)
-      else
-        message
-      end
+      if(message.publish?,
+        do: publish_data(message, :sent_message),
+        else: message
+      )
     }
   end
 
@@ -121,12 +119,7 @@ defmodule Glific.Communications.Message do
   @spec publish_message_status(Message.t()) :: any()
   defp publish_message_status(message) do
     if is_nil(message.group_id),
-      do:
-        Communications.publish_data(
-          message,
-          :update_message_status,
-          message.organization_id
-        )
+      do: publish_data(message, :update_message_status)
   end
 
   @doc """
@@ -219,7 +212,7 @@ defmodule Glific.Communications.Message do
   defp receive_text(message_params) do
     message_params
     |> Messages.create_message()
-    |> Communications.publish_data(:received_message, message_params.organization_id)
+    |> publish_data(:received_message)
     |> process_message()
   end
 
@@ -231,7 +224,7 @@ defmodule Glific.Communications.Message do
     message_params
     |> Map.put(:media_id, message_media.id)
     |> Messages.create_message()
-    |> Communications.publish_data(:received_message, message_params.organization_id)
+    |> publish_data(:received_message)
     |> process_message()
 
     :ok
@@ -248,24 +241,48 @@ defmodule Glific.Communications.Message do
     |> Contacts.create_location()
 
     message
-    |> Communications.publish_data(:received_message, message.organization_id)
+    |> publish_data(:received_message)
     |> process_message()
 
     :ok
   end
 
+  # preload the context message if it exists, so frontend can do the right thing
+  @spec publish_data(Message.t() | {:ok, Message.t()} | {:error, any()}, atom()) ::
+          Message.t() | nil
+  defp publish_data({:error, error}, _data_type) do
+    error("Create message error", error)
+  end
+
+  defp publish_data({:ok, message}, data_type),
+    do: publish_data(message, data_type)
+
+  defp publish_data(message, data_type) do
+    message
+    |> Repo.preload([:context_message])
+    |> Communications.publish_data(data_type, message.organization_id)
+  end
+
   # lets have a default timeout of 3 seconds for each call
   @timeout 4000
 
-  @spec error(String.t(), any(), any(), list()) :: :ok
-  defp error(error, e, r, stacktrace) do
+  @spec error(String.t(), any(), any(), list() | nil) :: :ok
+  defp error(error, e, r \\ nil, stacktrace \\ nil) do
     error = error <> ": #{inspect(e)}, #{inspect(r)}"
     Logger.error(error)
+
+    stacktrace =
+      if stacktrace == nil,
+        do: Process.info(self(), :current_stacktrace) |> elem(1),
+        else: stacktrace
+
     Appsignal.send_error(:error, error, stacktrace)
     :ok
   end
 
-  @spec process_message(Message.t()) :: :ok
+  @spec process_message(Message.t() | nil) :: :ok
+  defp process_message(nil), do: :ok
+
   defp process_message(message) do
     # lets transfer the organization id and current user to the poolboy worker
     process_state = {

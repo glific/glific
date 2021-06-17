@@ -59,7 +59,7 @@ defmodule Glific.TemplatesTest do
     @valid_language_attrs %{
       label: "English",
       label_locale: "English",
-      locale: "en_US",
+      locale: "en",
       is_active: true
     }
     @valid_language_attrs_1 %{
@@ -298,7 +298,7 @@ defmodule Glific.TemplatesTest do
                   "data" => "Your train ticket no. {{1}}",
                   "elementName" => "ticket_update_status",
                   "id" => whatspp_hsm_uuid,
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
                   "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -335,6 +335,83 @@ defmodule Glific.TemplatesTest do
       assert session_template.language_id == language.id
     end
 
+    test "create_session_template/1 for HSM button template should submit it for approval",
+         attrs do
+      whatspp_hsm_uuid = "16e84186-97fa-454e-ac3b-8c9c94e53b4b"
+
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "template" => %{
+                  "category" => "ACCOUNT_UPDATE",
+                  "createdOn" => 1_595_904_220_495,
+                  "data" => "Your conference ticket no. {{1}}",
+                  "elementName" => "conference_ticket_status",
+                  "id" => whatspp_hsm_uuid,
+                  "languageCode" => "en",
+                  "languagePolicy" => "deterministic",
+                  "master" => true,
+                  "meta" => "{\"example\":\"Your conference ticket no. [1234]\"}",
+                  "modifiedOn" => 1_595_904_220_495,
+                  "status" => "PENDING",
+                  "templateType" => "TEXT",
+                  "vertical" => "ACTION_BUTTON"
+                }
+              })
+          }
+      end)
+
+      language = language_fixture()
+
+      attrs = %{
+        body: "Your conference ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "conference_ticket_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your conference ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true,
+        button_type: "quick_reply",
+        buttons: [%{"text" => "confirm", "type" => "QUICK_REPLY"}]
+      }
+
+      assert {:ok, %SessionTemplate{} = session_template} =
+               Templates.create_session_template(attrs)
+
+      assert session_template.shortcode == "conference_ticket_status"
+      assert session_template.is_hsm == true
+      assert session_template.status == "PENDING"
+      assert session_template.uuid == whatspp_hsm_uuid
+      assert session_template.language_id == language.id
+
+      # Applying for button template with incomplete field should return error
+      attrs = %{
+        body: "Your train ticket no. {{1}}",
+        label: "New Label",
+        language_id: language.id,
+        is_hsm: true,
+        type: :text,
+        shortcode: "ticket_update_status",
+        category: "ACCOUNT_UPDATE",
+        example: "Your train ticket no. [1234]",
+        organization_id: attrs.organization_id,
+        has_buttons: true
+      }
+
+      assert {:error,
+              [
+                "Button Template",
+                "for Button Templates has_buttons, button_type and buttons fields are required"
+              ]} = Templates.create_session_template(attrs)
+    end
+
     test "create_session_template/1 for HSM data wrong data should return BSP status and error message",
          attrs do
       Tesla.Mock.mock(fn
@@ -365,7 +442,7 @@ defmodule Glific.TemplatesTest do
       assert {:error,
               [
                 "BSP response status: 400",
-                "{\"message\":\"Template Not Supported On Gupshup Platform\",\"status\":\"error\"}"
+                "Template Not Supported On Gupshup Platform"
               ]} = Templates.create_session_template(attrs)
     end
 
@@ -406,7 +483,7 @@ defmodule Glific.TemplatesTest do
                   "data" => "Your train ticket no. {{1}}",
                   "elementName" => "ticket_update_status",
                   "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
                   "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -459,7 +536,7 @@ defmodule Glific.TemplatesTest do
                   "data" => "Your train ticket no. {{1}}",
                   "elementName" => "ticket_update_status",
                   "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "languagePolicy" => "deterministic",
                   "master" => true,
                   "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -531,7 +608,7 @@ defmodule Glific.TemplatesTest do
                     "data" => "Your train ticket no. {{1}}",
                     "elementName" => "ticket_update_status",
                     "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
-                    "languageCode" => "en_US",
+                    "languageCode" => "en",
                     "languagePolicy" => "deterministic",
                     "master" => false,
                     "meta" => "{\"example\":\"Your train ticket no. [1234]\"}",
@@ -676,7 +753,7 @@ defmodule Glific.TemplatesTest do
                 "template" => %{
                   "elementName" => "common_otp",
                   "id" => Ecto.UUID.generate(),
-                  "languageCode" => "en_US",
+                  "languageCode" => "en",
                   "status" => status
                 }
               })
@@ -820,6 +897,63 @@ defmodule Glific.TemplatesTest do
 
       assert hsm2.status == "REJECTED"
       assert hsm2.is_active == false
+    end
+
+    test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do
+      l1 = Glific.Settings.get_language!(1)
+      l2 = Glific.Settings.get_language!(2)
+      otp_hsm_1 = otp_hsm_fixture(l1.id, "PENDING")
+      otp_hsm_2 = otp_hsm_fixture(l2.id, "PENDING")
+      # should update status of pending template
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "id" => otp_hsm_1.uuid,
+                    "elementName" => otp_hsm_1.shortcode,
+                    "data" => otp_hsm_1.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_1.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_1.example}),
+                    "languageCode" => l1.locale
+                  },
+                  %{
+                    "id" => otp_hsm_2.uuid,
+                    "elementName" => otp_hsm_2.shortcode,
+                    "data" => otp_hsm_2.body,
+                    "templateType" => "TEXT",
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(otp_hsm_2.updated_at, hours: 1), :millisecond),
+                    "status" => "APPROVED",
+                    "meta" => Jason.encode!(%{example: otp_hsm_2.example}),
+                    "languageCode" => l2.locale
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm1} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
+
+      assert {:ok, %SessionTemplate{} = hsm2} =
+               Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_2.uuid})
+
+      assert hsm1.status == "APPROVED"
+      assert hsm1.is_active == true
+      translation = hsm1.translations[Integer.to_string(l2.id)]
+
+      assert translation["status"] == "APPROVED"
+      assert translation["uuid"] == hsm2.uuid
     end
   end
 end

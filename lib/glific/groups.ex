@@ -221,30 +221,17 @@ defmodule Glific.Groups do
   """
   @spec create_contact_group(map()) :: {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
   def create_contact_group(attrs \\ %{}) do
-    # we allow errors here in case the contact already exists in the group
-    result =
-      %ContactGroup{}
-      |> ContactGroup.changeset(attrs)
-      |> Repo.insert()
+    # check if an entry exists
+    attrs = Map.take(attrs, [:contact_id, :group_id, :organization_id])
 
-    case result do
-      {:ok, _cg} -> result
-      {:error, cs} -> fetch_contact_group(attrs, cs)
-    end
-  end
+    case Repo.fetch_by(ContactGroup, attrs) do
+      {:ok, cg} ->
+        {:ok, cg}
 
-  @spec fetch_contact_group(map(), Ecto.Changeset.t()) ::
-          {:ok, ContactGroup.t()} | {:error, Ecto.Changeset.t()}
-  defp fetch_contact_group(attrs, changeset) do
-    result =
-      Repo.fetch_by(
-        ContactGroup,
-        Map.take(attrs, [:contact_id, :group_id, :organization_id])
-      )
-
-    case result do
-      {:ok, _cg} -> result
-      {:error, _} -> {:error, changeset}
+      {:error, _} ->
+        %ContactGroup{}
+        |> ContactGroup.changeset(attrs)
+        |> Repo.insert()
     end
   end
 
@@ -272,6 +259,21 @@ defmodule Glific.Groups do
       result,
       fn [name, count], result -> Map.put(result, name, count) end
     )
+  end
+
+  @doc """
+  Get the contacts ids for a specific group that have not opted out
+  """
+  @spec contact_ids(non_neg_integer) :: list(non_neg_integer)
+  def contact_ids(group_id) do
+    Contact
+    |> where([c], c.status != :blocked and is_nil(c.optout_time))
+    |> join(:inner, [c], cg in ContactGroup,
+      as: :cg,
+      on: cg.contact_id == c.id and cg.group_id == ^group_id
+    )
+    |> select([c], c.id)
+    |> Repo.all()
   end
 
   @doc """

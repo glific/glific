@@ -4,11 +4,12 @@ defmodule GlificWeb.APIAuthPlug do
 
   require Logger
 
+  alias Glific.Repo
+  alias GlificWeb.Endpoint
+
   alias Plug.Conn
   alias Pow.{Config, Store.CredentialsCache}
   alias PowPersistentSession.Store.PersistentSessionCache
-
-  alias GlificWeb.Endpoint
 
   @doc """
   Fetches the user from access token.
@@ -65,6 +66,9 @@ defmodule GlificWeb.APIAuthPlug do
       |> Conn.put_private(:api_access_token, sign_token(conn, access_token, config))
       |> Conn.put_private(:api_renewal_token, sign_token(conn, renewal_token, config))
       |> Conn.put_private(:api_token_expiry_time, token_expiry_time)
+
+    # Lets also preload the language object to the user, before we store
+    user = user |> Repo.preload(:language)
 
     # The store caches will use their default `:ttl` settting. To change the
     # `:ttl`, `Keyword.put(store_config, :ttl, :timer.minutes(10))` can be
@@ -181,8 +185,11 @@ defmodule GlificWeb.APIAuthPlug do
 
   defp fetch_access_token(conn) do
     case Conn.get_req_header(conn, "authorization") do
-      [token | _rest] -> {:ok, token}
-      _any -> :error
+      [token | _rest] ->
+        {:ok, token}
+
+      _any ->
+        :error
     end
   end
 

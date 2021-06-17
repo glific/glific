@@ -3,13 +3,15 @@ defmodule GlificWeb.Resolvers.Partners do
   Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{
     Partners,
     Partners.Credential,
     Partners.Organization,
     Partners.Provider,
-    Repo
+    Repo,
+    Saas.Onboard
   }
 
   @doc """
@@ -46,6 +48,19 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get the organizations services
+  """
+  @spec organization_services(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, map()}
+  def organization_services(_, _, %{context: %{current_user: user}}) do
+    services =
+      Partners.get_organization_services()
+      |> Map.get(user.organization_id)
+      |> Glific.atomize_keys()
+
+    {:ok, services}
+  end
+
+  @doc """
   Creates an organization
   """
   @spec create_organization(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
@@ -79,6 +94,59 @@ defmodule GlificWeb.Resolvers.Partners do
          {:ok, organization} <- Partners.delete_organization(organization) do
       {:ok, organization}
     end
+  end
+
+  @doc """
+  Updates an organization status is_active/is_approved. We will add checks to
+  validate approval and activation
+  """
+  @spec update_organization_status(Absinthe.Resolution.t(), map(), %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def update_organization_status(
+        _,
+        %{
+          update_organization_id: update_organization_id,
+          status: status
+        },
+        _
+      ) do
+    with organization <- Onboard.status(update_organization_id, status),
+         do: {:ok, %{organization: organization}}
+  end
+
+  @doc """
+  Delete an inactive organization
+  """
+  @spec delete_inactive_organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_inactive_organization(
+        _,
+        %{
+          delete_organization_id: delete_organization_id,
+          is_confirmed: is_confirmed
+        },
+        _
+      ) do
+    with {:ok, organization} <- Onboard.delete(delete_organization_id, is_confirmed) do
+      {:ok, %{organization: organization}}
+    end
+  end
+
+  @doc """
+  Resets table and some columns of an  organization
+  """
+  @spec reset_organization(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok | :error, String.t()}
+  def reset_organization(
+        _,
+        %{
+          reset_organization_id: reset_organization_id,
+          is_confirmed: is_confirmed
+        },
+        _
+      ) do
+    Onboard.reset(reset_organization_id, is_confirmed)
   end
 
   @doc """
@@ -123,7 +191,7 @@ defmodule GlificWeb.Resolvers.Partners do
     Partners.get_bsp_balance(organization_id)
     |> case do
       {:ok, data} -> {:ok, %{balance: data["balance"]}}
-      _ -> {:error, "Error while fetching the balance"}
+      _ -> {:error, dgettext("errors", "Error while fetching the BSP balance")}
     end
   end
 

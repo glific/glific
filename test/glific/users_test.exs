@@ -13,6 +13,7 @@ defmodule Glific.UsersTest do
     @valid_attrs %{
       name: "some name",
       phone: "some phone",
+      language_id: 1,
       password: @password,
       password_confirmation: @password,
       roles: ["admin"]
@@ -20,36 +21,42 @@ defmodule Glific.UsersTest do
     @valid_attrs_1 %{
       name: "some name 1",
       phone: "some phone 1",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_2 %{
       name: "some name 2",
       phone: "some phone 2",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_3 %{
       name: "some name 3",
       phone: "some phone 3",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_to_test_order_1 %{
       name: "aaaa name",
       phone: "some phone 4",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @valid_attrs_to_test_order_2 %{
       name: "zzzz name",
       phone: "some phone 5",
+      language_id: 1,
       password: @password,
       password_confirmation: @password
     }
     @update_attrs %{
       name: "some updated name",
       phone: "some updated phone",
+      language_id: 1,
       password: @password,
       password_confirmation: @password,
       roles: [:staff, :admin],
@@ -58,6 +65,7 @@ defmodule Glific.UsersTest do
     @invalid_attrs %{
       name: nil,
       phone: nil,
+      language_id: 1,
       password: nil,
       password_confirmation: nil
     }
@@ -123,6 +131,19 @@ defmodule Glific.UsersTest do
       assert user.name == "some updated name"
       assert user.roles == [:staff, :admin]
       assert user.is_restricted == true
+
+      # Check phone doesn't get updated
+      assert user.phone == "some phone"
+    end
+
+    test "update_user/2 with valid with only name updates the user", attrs do
+      user = user_fixture(attrs)
+
+      assert {:ok, %User{} = user} = Users.update_user(user, %{name: "some updated name"})
+      assert user.name == "some updated name"
+
+      # would be great if we can check that the user tokens were deleted
+      # but we never create them, so that code does not really run
 
       # Check phone doesn't get updated
       assert user.phone == "some phone"
@@ -239,5 +260,21 @@ defmodule Glific.UsersTest do
 
       assert auth_user.id == user.id
     end
+  end
+
+  test "promoting a user works for first user", attrs do
+    user = user_fixture(Map.put(attrs, :roles, [:none]))
+
+    assert user.roles == [:none]
+
+    user = Users.promote_first_user(user)
+    assert user.roles == [:admin]
+
+    user = user_fixture(Map.put(@valid_attrs_1, :roles, [:none]))
+
+    assert user.roles == [:none]
+
+    user = Users.promote_first_user(user)
+    assert user.roles == [:none]
   end
 end

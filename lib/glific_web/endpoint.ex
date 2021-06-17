@@ -76,6 +76,9 @@ defmodule GlificWeb.Endpoint do
   plug GlificWeb.SubdomainPlug
   plug GlificWeb.EnsurePlug
 
+  # we'll use the raw_body here for webhook
+  plug GlificWeb.StripeWebhook
+
   # gigalixir puts us behind a proxy, hence using this to get the right
   # IP
   plug RemoteIp

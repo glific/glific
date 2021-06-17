@@ -1,5 +1,5 @@
-mutation sendHsmMessage($id: [ID]!, $receiver_id: [ID]!, $parameters: [String]) {
-  sendHsmMessage(template_id: $id, receiver_id: $receiver_id, parameters: $parameters) {
+mutation sendHsmMessage($template_id: ID!, $receiver_id: ID!, $parameters: [String]) {
+  sendHsmMessage(template_id: $template_id, receiver_id: $receiver_id, parameters: $parameters) {
     message {
       id
       body

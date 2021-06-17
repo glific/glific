@@ -24,6 +24,7 @@ includes:
   - saved_searches
   - messages
   - messages_media
+  - media
   - session_templates
   - groups
   - contact_group
@@ -31,6 +32,7 @@ includes:
   - user_group
   - flows
   - import
+  - saas
   - types
   - scalars
   - enums

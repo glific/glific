@@ -111,7 +111,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   defp add_providers() do
     add_dialogflow()
 
-    add_chatbase()
+    add_bigquery()
 
     add_goth()
 
@@ -132,24 +132,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           keys: %{
             url: %{
               type: :string,
-              label: "Dialogdlow Home Page",
-              default: "https://dialogflow.cloud.google.com/",
+              label: "Dialogflow API Endpoint",
+              default: "https://dialogflow.clients6.google.com/v2beta1/projects/",
               view_only: true
             }
           },
           secrets: %{
-            project_id: %{
-              type: :string,
-              label: "Project ID",
-              default: nil,
-              view_only: false
-            },
-            project_email: %{
-              type: :string,
-              label: "Project Email",
-              default: nil,
-              view_only: false
-            },
             service_account: %{
               type: :string,
               label: "Goth Credentials ",
@@ -190,28 +178,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         })
   end
 
-  defp add_chatbase() do
-    # add chatbase
-    query = from p in Provider, where: p.shortcode == "chatbase"
-
-    if !Repo.exists?(query),
-      do:
-        Repo.insert!(%Provider{
-          name: "Chatbase",
-          shortcode: "chatbase",
-          group: nil,
-          is_required: false,
-          keys: %{},
-          secrets: %{
-            api_key: %{
-              type: :string,
-              label: "API Key",
-              default: nil,
-              view_only: false
-            }
-          }
-        })
-
+  defp add_bigquery() do
     # add bigquery
     query = from p in Provider, where: p.shortcode == "bigquery"
 
@@ -225,7 +192,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           keys: %{
             url: %{
               type: :string,
-              label: "Bigquery Url",
+              label: "BigQuery Url",
               default: "https://www.googleapis.com/auth/cloud-platform",
               view_only: true
             }

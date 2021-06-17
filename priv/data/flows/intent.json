@@ -1,0 +1,326 @@
+{
+  "_ui" : {
+    "nodes" : {
+      "2a057e98-3f7a-4dcf-93e2-86760f031b17" : {
+        "position" : {
+          "left" : 620,
+          "top" : 380
+        },
+        "type" : "execute_actions"
+      },
+      "ec61ada5-2b5f-4d6e-aed5-e867197bac94" : {
+        "position" : {
+          "left" : 0,
+          "top" : 440
+        },
+        "type" : "execute_actions"
+      },
+      "d035660a-cae8-4029-b28d-418bfbf55252" : {
+        "position" : {
+          "left" : 160,
+          "top" : 20
+        },
+        "type" : "execute_actions"
+      },
+      "ba63a82b-da54-4a7f-a393-225e990f56d6" : {
+        "position" : {
+          "left" : 200,
+          "top" : 140
+        },
+        "type" : "wait_for_response",
+        "config" : {
+          "cases" : {
+
+          }
+        }
+      },
+      "73f6b645-3321-4bac-80b3-8452220bf320" : {
+        "position" : {
+          "left" : 80,
+          "top" : 640
+        },
+        "type" : "execute_actions"
+      },
+      "1fcf4385-2c70-4c2a-8dee-23c7c7defa62" : {
+        "position" : {
+          "top" : 260,
+          "left" : 140
+        },
+        "type" : "split_by_intent",
+        "config" : {
+
+        }
+      },
+      "3713bbde-ba3c-4e47-9f96-4fe41c52c41f" : {
+        "position" : {
+          "left" : 520,
+          "top" : 580
+        },
+        "type" : "execute_actions"
+      }
+    }
+  },
+  "nodes" : [
+    {
+      "actions" : [
+        {
+          "uuid" : "6cc7896c-02ef-442f-8bcd-2533c2a2a357",
+          "text" : "Send me your intent\n",
+          "quick_replies" : [
+
+          ],
+          "type" : "send_msg",
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "ba63a82b-da54-4a7f-a393-225e990f56d6",
+          "uuid" : "1818adb1-12f7-4708-ae46-cdda5d0c7956"
+        }
+      ],
+      "uuid" : "d035660a-cae8-4029-b28d-418bfbf55252"
+    },
+    {
+      "actions" : [
+
+      ],
+      "uuid" : "ba63a82b-da54-4a7f-a393-225e990f56d6",
+      "exits" : [
+        {
+          "destination_uuid" : "1fcf4385-2c70-4c2a-8dee-23c7c7defa62",
+          "uuid" : "4710c78c-a425-4fc1-b059-19e443820b07"
+        }
+      ],
+      "router" : {
+        "type" : "switch",
+        "cases" : [
+
+        ],
+        "result_name" : "result_1",
+        "categories" : [
+          {
+            "exit_uuid" : "4710c78c-a425-4fc1-b059-19e443820b07",
+            "name" : "All Responses",
+            "uuid" : "9fb75abd-4b34-49f6-b8df-0116288ed749"
+          }
+        ],
+        "operand" : "@input.text",
+        "wait" : {
+          "type" : "msg"
+        },
+        "default_category_uuid" : "9fb75abd-4b34-49f6-b8df-0116288ed749"
+      }
+    },
+    {
+      "actions" : [
+        {
+          "uuid" : "a49df6fe-1359-4b8a-82b0-96dae83f06c9",
+          "result_name" : "_nlp Classification",
+          "classifier" : {
+            "name" : "Dialogflow",
+            "uuid" : "dialogflow_uuid"
+          },
+          "input" : "@input.text",
+          "type" : "call_classifier"
+        }
+      ],
+      "uuid" : "1fcf4385-2c70-4c2a-8dee-23c7c7defa62",
+      "exits" : [
+        {
+          "destination_uuid" : "ec61ada5-2b5f-4d6e-aed5-e867197bac94",
+          "uuid" : "ad6ed5f9-4031-4da8-841e-28773cec92e2"
+        },
+        {
+          "destination_uuid" : "73f6b645-3321-4bac-80b3-8452220bf320",
+          "uuid" : "e83b1f00-a30b-4c58-837c-a318cd58e044"
+        },
+        {
+          "destination_uuid" : "3713bbde-ba3c-4e47-9f96-4fe41c52c41f",
+          "uuid" : "b02d4f2c-3492-4c81-ad21-cc8c85f8dbc8"
+        },
+        {
+          "destination_uuid" : "2a057e98-3f7a-4dcf-93e2-86760f031b17",
+          "uuid" : "b53a0f5c-1788-412a-abdf-e7a2dacf60c8"
+        },
+        {
+          "destination_uuid" : "2a057e98-3f7a-4dcf-93e2-86760f031b17",
+          "uuid" : "6fc2351f-da58-4e4d-a21f-9a05d5068b5c"
+        }
+      ],
+      "router" : {
+        "result_name" : "nlp",
+        "operand" : "@results._nlp_classification",
+        "cases" : [
+          {
+            "category_uuid" : "5d68ba39-b74b-4aa1-9495-95df96c16c10",
+            "uuid" : "a8131ead-bd84-4515-b80b-c439b151782a",
+            "type" : "has_top_intent",
+            "arguments" : [
+              "glific.info",
+              ".85"
+            ]
+          },
+          {
+            "category_uuid" : "96227e00-fc7d-4688-9ebc-492ef6b69ea1",
+            "uuid" : "147068f8-24ce-478d-9b0c-535e81c3c9ef",
+            "type" : "has_top_intent",
+            "arguments" : [
+              "glific.features",
+              ".85"
+            ]
+          },
+          {
+            "category_uuid" : "9f0f2d3a-8007-4a42-9248-17a30186d450",
+            "uuid" : "70668bad-0cd3-4424-9182-b9889fc3317a",
+            "type" : "has_top_intent",
+            "arguments" : [
+              "all",
+              ".95"
+            ]
+          },
+          {
+            "category_uuid" : "3383e5c8-09b4-46ad-bee4-b181a31f92e7",
+            "uuid" : "c45e64ac-85ea-4351-b087-932c3227ce1c",
+            "type" : "has_category",
+            "arguments" : [
+              "Success",
+              "Skipped"
+            ]
+          }
+        ],
+        "categories" : [
+          {
+            "exit_uuid" : "ad6ed5f9-4031-4da8-841e-28773cec92e2",
+            "name" : "Glific.Info",
+            "uuid" : "5d68ba39-b74b-4aa1-9495-95df96c16c10"
+          },
+          {
+            "exit_uuid" : "e83b1f00-a30b-4c58-837c-a318cd58e044",
+            "name" : "Glific.Features",
+            "uuid" : "96227e00-fc7d-4688-9ebc-492ef6b69ea1"
+          },
+          {
+            "exit_uuid" : "b02d4f2c-3492-4c81-ad21-cc8c85f8dbc8",
+            "name" : "High Intent",
+            "uuid" : "9f0f2d3a-8007-4a42-9248-17a30186d450"
+          },
+          {
+            "exit_uuid" : "b53a0f5c-1788-412a-abdf-e7a2dacf60c8",
+            "name" : "Other",
+            "uuid" : "3383e5c8-09b4-46ad-bee4-b181a31f92e7"
+          },
+          {
+            "exit_uuid" : "6fc2351f-da58-4e4d-a21f-9a05d5068b5c",
+            "name" : "Failure",
+            "uuid" : "91eca86a-1d7d-4178-b5ea-6295dbb6d520"
+          }
+        ],
+        "type" : "switch",
+        "default_category_uuid" : "91eca86a-1d7d-4178-b5ea-6295dbb6d520"
+      }
+    },
+    {
+      "actions" : [
+        {
+          "text" : "No match or failed classifier call\n\nIntent: @results.nlp.intent\nConfidence: @results.nlp.confidence",
+          "type" : "send_msg",
+          "uuid" : "5a26c687-0297-4302-8cc5-bb4bf533a09e",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "f218abcc-8cab-4f08-b072-d41610f42b7e",
+          "destination_uuid" : "d035660a-cae8-4029-b28d-418bfbf55252"
+        }
+      ],
+      "uuid" : "2a057e98-3f7a-4dcf-93e2-86760f031b17"
+    },
+    {
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "text" : "You chose info",
+          "uuid" : "3e2d47bb-048d-4bd1-8a67-cc1a3ca01e94",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "d649a8c4-59a2-4698-8013-a87becc079c6",
+          "destination_uuid" : "d035660a-cae8-4029-b28d-418bfbf55252"
+        }
+      ],
+      "uuid" : "ec61ada5-2b5f-4d6e-aed5-e867197bac94"
+    },
+    {
+      "actions" : [
+        {
+          "type" : "send_msg",
+          "text" : "@results.nlp.response\n\nConfidence: @results.nlp.confidence\nIntent: @results.nlp.intent",
+          "uuid" : "e8a6bda9-ee25-4950-ac0e-4318021c0072",
+          "quick_replies" : [
+
+          ],
+          "attachments" : [
+
+          ]
+        }
+      ],
+      "exits" : [
+        {
+          "destination_uuid" : "d035660a-cae8-4029-b28d-418bfbf55252",
+          "uuid" : "a5f18836-d483-4b61-a69b-79b0d0bc533f"
+        }
+      ],
+      "uuid" : "3713bbde-ba3c-4e47-9f96-4fe41c52c41f"
+    },
+    {
+      "actions" : [
+        {
+          "uuid" : "4255c51f-72c1-4d78-b91b-32ef3ecf4e3b",
+          "attachments" : [
+
+          ],
+          "type" : "send_msg",
+          "quick_replies" : [
+
+          ],
+          "text" : "You chose features\n"
+        }
+      ],
+      "exits" : [
+        {
+          "uuid" : "2380ae32-123a-4551-af09-051348676d8c",
+          "destination_uuid" : "d035660a-cae8-4029-b28d-418bfbf55252"
+        }
+      ],
+      "uuid" : "73f6b645-3321-4bac-80b3-8452220bf320"
+    }
+  ],
+  "uuid" : "INTENT_UUID",
+  "type" : "messaging",
+  "localization" : {
+
+  },
+  "expire_after_minutes" : 10080,
+  "language" : "base",
+  "vars" : [
+    "INTENT_UUID"
+  ],
+  "name" : "Intent",
+  "spec_version" : "13.1.0"
+}

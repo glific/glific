@@ -1,0 +1,14 @@
+mutation updatePaymentMethod($StripePaymentMethodId: String!) {
+  updatePaymentMethod(StripePaymentMethodId: $StripePaymentMethodId) {
+    billing {
+      currency
+      email
+      isActive
+      StripePaymentMethodId
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

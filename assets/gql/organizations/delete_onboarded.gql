@@ -1,0 +1,16 @@
+mutation deleteInactiveOrganization($deleteOrganizationId: ID!, $isConfirmed: Boolean!) {
+  deleteInactiveOrganization(deleteOrganizationId: $deleteOrganizationId, isConfirmed: $isConfirmed) {
+    organization {
+      email
+      id
+      isApproved
+      isActive
+      name
+      shortcode
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

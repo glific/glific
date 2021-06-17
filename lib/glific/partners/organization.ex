@@ -10,6 +10,7 @@ defmodule Glific.Partners.Organization do
 
   alias Glific.{
     Contacts.Contact,
+    Enums.OrganizationStatus,
     Partners.OrganizationSettings.OutOfOffice,
     Partners.Provider,
     Repo,
@@ -29,15 +30,15 @@ defmodule Glific.Partners.Organization do
   @optional_fields [
     :contact_id,
     :is_active,
+    :is_approved,
+    :status,
     :timezone,
     :active_language_ids,
     :session_limit,
     :organization_id,
     :signature_phrase,
-    :last_communication_at
-    # commenting this out, since the tests were giving me an error
-    # about cast_embed etc
-    # :out_of_office
+    :last_communication_at,
+    :fields
   ]
 
   @type t() :: %__MODULE__{
@@ -58,15 +59,18 @@ defmodule Glific.Partners.Organization do
           hours: list() | nil,
           days: list() | nil,
           is_active: boolean() | true,
+          is_approved: boolean() | false,
+          status: String.t() | nil,
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,
           session_limit: non_neg_integer | nil,
           organization_id: non_neg_integer | nil,
           signature_phrase: binary | nil,
+          last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          last_communication_at: :utc_datetime | nil
+          fields: map() | nil
         }
 
   schema "organizations" do
@@ -95,6 +99,9 @@ defmodule Glific.Partners.Organization do
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
 
     field :is_active, :boolean, default: true
+    field :is_approved, :boolean, default: false
+
+    field :status, OrganizationStatus
 
     field :timezone, :string, default: "Asia/Kolkata"
 
@@ -113,6 +120,8 @@ defmodule Glific.Partners.Organization do
 
     field :last_communication_at, :utc_datetime
 
+    field :fields, :map, default: %{}
+
     timestamps(type: :utc_datetime)
   end
 
@@ -130,8 +139,13 @@ defmodule Glific.Partners.Organization do
     |> validate_active_languages()
     |> validate_default_language()
     |> unique_constraint(:shortcode)
-    |> unique_constraint(:email)
     |> unique_constraint(:contact_id)
+  end
+
+  @doc false
+  @spec to_minimal_map(Organization.t()) :: map()
+  def to_minimal_map(organization) do
+    Map.take(organization, [:id | @required_fields ++ @optional_fields])
   end
 
   @spec validate_active_languages(Ecto.Changeset.t()) :: Ecto.Changeset.t()

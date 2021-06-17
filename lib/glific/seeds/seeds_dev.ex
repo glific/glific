@@ -14,12 +14,15 @@ if Code.ensure_loaded?(Faker) do
       Groups.Group,
       Messages.Message,
       Messages.MessageMedia,
+      Notifications.Notification,
+      Partners.Billing,
       Partners.Organization,
       Partners.Provider,
       Repo,
       Seeds.SeedsFlows,
       Settings,
       Settings.Language,
+      Stats.Stat,
       Tags.Tag,
       Templates.SessionTemplate,
       Users
@@ -36,13 +39,13 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization(organization)
 
       [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       Repo.insert!(%Tag{
         label: "This is for testing",
         shortcode: "testing-only",
         description: "Marking message for testing purpose in English Language",
-        language: en_us,
+        language: en,
         organization: organization
       })
 
@@ -63,7 +66,7 @@ if Code.ensure_loaded?(Faker) do
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       [hi_in | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       contacts = [
         %{
@@ -78,17 +81,26 @@ if Code.ensure_loaded?(Faker) do
         %{
           name: "Adelle Cavin",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: hi_in.id
+          language_id: hi_in.id,
+          bsp_status: :session_and_hsm,
+          optin_time: utc_now,
+          optin_status: true
         },
         %{
           name: "Margarita Quinteros",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: hi_in.id
+          language_id: hi_in.id,
+          bsp_status: :session_and_hsm,
+          optin_time: utc_now,
+          optin_status: true
         },
         %{
           name: "Chrissy Cron",
           phone: Integer.to_string(Enum.random(123_456_789..9_876_543_210)),
-          language_id: en_us.id
+          language_id: en.id,
+          bsp_status: :session_and_hsm,
+          optin_time: utc_now,
+          optin_status: true
         }
       ]
 
@@ -275,6 +287,19 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
+      message =
+        Repo.insert!(%Message{
+          body: Shakespeare.hamlet(),
+          flow: :outbound,
+          type: :text,
+          bsp_message_id: Faker.String.base64(10),
+          bsp_status: :enqueued,
+          sender_id: sender.id,
+          receiver_id: receiver4.id,
+          contact_id: receiver4.id,
+          organization_id: organization.id
+        })
+
       Repo.insert!(%Message{
         body: Shakespeare.hamlet(),
         flow: :inbound,
@@ -284,7 +309,9 @@ if Code.ensure_loaded?(Faker) do
         sender_id: receiver4.id,
         receiver_id: sender.id,
         contact_id: receiver4.id,
-        organization_id: organization.id
+        organization_id: organization.id,
+        context_id: message.bsp_message_id,
+        context_message_id: message.id
       })
     end
 
@@ -331,7 +358,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     defp create_contact_user(
-           {organization, en_us, utc_now},
+           {organization, en, utc_now},
            {name, phone, roles}
          ) do
       password = "12345678"
@@ -340,7 +367,7 @@ if Code.ensure_loaded?(Faker) do
         Repo.insert!(%Contact{
           phone: phone,
           name: name,
-          language_id: en_us.id,
+          language_id: en.id,
           optin_time: utc_now,
           optin_status: true,
           optin_method: "BSP",
@@ -370,28 +397,28 @@ if Code.ensure_loaded?(Faker) do
     def seed_users(organization \\ nil) do
       organization = get_organization(organization)
 
-      {:ok, en_us} = Repo.fetch_by(Language, %{label_locale: "English"})
+      {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
 
       utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
       create_contact_user(
-        {organization, en_us, utc_now},
+        {organization, en, utc_now},
         {"NGO Staff", "919820112345", ["staff"]}
       )
 
       create_contact_user(
-        {organization, en_us, utc_now},
+        {organization, en, utc_now},
         {"NGO Manager", "9101234567890", ["manager"]}
       )
 
       create_contact_user(
-        {organization, en_us, utc_now},
+        {organization, en, utc_now},
         {"NGO Admin", "919999988888", ["admin"]}
       )
 
       {_, user} =
         create_contact_user(
-          {organization, en_us, utc_now},
+          {organization, en, utc_now},
           {"NGO Person who left", "919988776655", ["none"]}
         )
 
@@ -437,10 +464,10 @@ if Code.ensure_loaded?(Faker) do
       [_glific_admin | remainder] =
         Contacts.list_contacts(%{filter: %{organization_id: organization.id}})
 
-      [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [_g1, _g2, g3, g4 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      add_to_group(remainder, g1, organization, 7)
-      add_to_group(remainder, g2, organization, -7)
+      add_to_group(remainder, g3, organization, 7)
+      add_to_group(remainder, g4, organization, -7)
     end
 
     @doc false
@@ -448,10 +475,11 @@ if Code.ensure_loaded?(Faker) do
     def seed_group_messages(organization \\ nil) do
       organization = get_organization(organization)
 
-      [g1, g2 | _] = Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [_g1, _g2, g3, g4 | _] =
+        Glific.Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
-      do_seed_group_messages(g1, organization, 0)
-      do_seed_group_messages(g2, organization, 2)
+      do_seed_group_messages(g3, organization, 0)
+      do_seed_group_messages(g4, organization, 2)
     end
 
     defp do_seed_group_messages(group, organization, time_shift) do
@@ -499,7 +527,7 @@ if Code.ensure_loaded?(Faker) do
     @spec seed_session_templates(Organization.t() | nil) :: nil
     def seed_session_templates(organization \\ nil) do
       organization = get_organization(organization)
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
       [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
 
       translations = %{
@@ -516,18 +544,25 @@ if Code.ensure_loaded?(Faker) do
         type: :text,
         shortcode: "account_balance",
         is_hsm: true,
+        is_active: true,
         number_parameters: 1,
-        language_id: en_us.id,
+        language_id: en.id,
         translations: translations,
         organization_id: organization.id,
-        status: "REJECTED",
+        status: "APPROVED",
         category: "ACCOUNT_UPDATE",
         example:
-          "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
+          "You can now view your Account Balance or Mini statement for Account ending with [003] simply by selecting one of the options below.",
         # spaces are important here, since gupshup pattern matches on it
         body:
-          "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below. | [View Account Balance] | [View Mini Statement]",
-        uuid: Ecto.UUID.generate()
+          "You can now view your Account Balance or Mini statement for Account ending with {{1}} simply by selecting one of the options below.",
+        uuid: Ecto.UUID.generate(),
+        button_type: "quick_reply",
+        has_buttons: true,
+        buttons: [
+          %{"text" => "View Account Balance", "type" => "QUICK_REPLY"},
+          %{"text" => "View Mini Statement", "type" => "QUICK_REPLY"}
+        ]
       })
 
       translations = %{
@@ -546,7 +581,7 @@ if Code.ensure_loaded?(Faker) do
         is_hsm: true,
         is_active: true,
         number_parameters: 2,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "APPROVED",
@@ -572,7 +607,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "personalized_bill",
         is_hsm: true,
         number_parameters: 1,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "APPROVED",
@@ -598,7 +633,7 @@ if Code.ensure_loaded?(Faker) do
         is_hsm: true,
         number_parameters: 3,
         translations: translations,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         status: "PENDING",
         category: "ALERT_UPDATE",
@@ -622,7 +657,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "bill",
         is_hsm: true,
         number_parameters: 1,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "PENDING",
@@ -639,23 +674,23 @@ if Code.ensure_loaded?(Faker) do
       organization = get_organization(organization)
 
       [u1, u2 | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
-      [g1, g2 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
+      [_g1, _g2, g3, g4 | _] = Groups.list_groups(%{filter: %{organization_id: organization.id}})
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u1.id,
-        group_id: g1.id,
+        group_id: g3.id,
         organization_id: organization.id
       })
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u2.id,
-        group_id: g1.id,
+        group_id: g3.id,
         organization_id: organization.id
       })
 
       Repo.insert!(%Groups.UserGroup{
         user_id: u1.id,
-        group_id: g2.id,
+        group_id: g4.id,
         organization_id: organization.id
       })
     end
@@ -733,14 +768,16 @@ if Code.ensure_loaded?(Faker) do
         feedback: "6c21af89-d7de-49ac-9848-c9febbf737a5",
         optout: "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
         survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
-        help: "3fa22108-f464-41e5-81d9-d8a298854429"
+        help: "3fa22108-f464-41e5-81d9-d8a298854429",
+        intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519"
       }
 
       data = [
         {"Preference Workflow", ["preference"], uuid_map.preference, false, "preference.json"},
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
          "out_of_office.json"},
-        {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"}
+        {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"},
+        {"Intent", ["intent"], uuid_map.intent, false, "intent.json"}
       ]
 
       SeedsFlows.add_flow(organization, data, uuid_map)
@@ -822,10 +859,27 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_billing(Organization.t()) :: nil
+    def seed_billing(organization) do
+      Repo.insert!(%Billing{
+        name: "Billing name",
+        stripe_customer_id: "test_cus_JIdQjmJcjq",
+        email: "Billing person email",
+        currency: "inr",
+        organization_id: organization.id,
+        is_active: true,
+        stripe_subscription_id: "test_subscription_id",
+        stripe_subscription_items: %{
+          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id"
+        }
+      })
+    end
+
+    @doc false
     @spec hsm_templates(Organization.t()) :: nil
     def hsm_templates(organization) do
       [hi | _] = Settings.list_languages(%{filter: %{label: "hindi"}})
-      [en_us | _] = Settings.list_languages(%{filter: %{label: "english"}})
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       translations = %{
         hi.id => %{
@@ -842,7 +896,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "missed_message",
         is_hsm: true,
         number_parameters: 0,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         body: """
         I'm sorry that I wasn't able to respond to your concerns yesterday but I’m happy to assist you now.
@@ -857,8 +911,14 @@ if Code.ensure_loaded?(Faker) do
       translations = %{
         hi.id => %{
           body: "{{1}} के लिए आपका OTP {{2}} है। यह {{3}} के लिए मान्य है।",
+          example: "[अनिल को आदाता के रूप में जोड़ना] के लिए आपका OTP [1234] है। यह [15 मिनट] के लिए मान्य है।",
           language_id: hi.id,
-          number_parameters: 3
+          status: "APPROVED",
+          label: "OTP Message",
+          uuid: "98c7dec4-f05a-4a76-a25a-f7a50d821f27",
+          number_parameters: 3,
+          category: "ACCOUNT_UPDATE",
+          type: :text
         }
       }
 
@@ -868,7 +928,7 @@ if Code.ensure_loaded?(Faker) do
         shortcode: "otp",
         is_hsm: true,
         number_parameters: 3,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id,
         translations: translations,
         status: "REJECTED",
@@ -901,13 +961,83 @@ if Code.ensure_loaded?(Faker) do
         type: :text,
         shortcode: "user-registration",
         is_reserved: true,
-        language_id: en_us.id,
+        language_id: en.id,
         translations: translations,
         status: "REJECTED",
         category: "ALERT_UPDATE",
         organization_id: organization.id,
         number_parameters: 0,
         uuid: Ecto.UUID.generate()
+      })
+    end
+
+    @doc false
+    @spec seed_notification(Organization.t()) :: nil
+    def seed_notification(organization) do
+      Repo.insert!(%Notification{
+        category: "Partner",
+        message:
+          "Disabling bigquery. Account does not have sufficient permissions to insert data to BigQuery.",
+        severity: "Critical",
+        organization_id: organization.id,
+        entity: %{
+          id: 2,
+          shortcode: "bigquery"
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Message",
+        message: "Cannot send session message to contact, invalid bsp status.",
+        severity: "Warning",
+        organization_id: organization.id,
+        entity: %{
+          id: 1,
+          name: "Adelle Cavin",
+          phone: "91987656789",
+          bsp_status: "hsm",
+          status: "valid",
+          last_message_at: "2021-03-23T17:05:01Z",
+          is_hsm: nil,
+          flow_id: 1,
+          group_id: nil
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Flow",
+        message: "Cannot send session message to contact, invalid bsp status.",
+        severity: "Warning",
+        organization_id: organization.id,
+        entity: %{
+          flow_id: 3,
+          parent_id: 6,
+          contact_id: 3,
+          flow_uuid: "12c25af0-37a2-4a69-8e26-9cfd98cab5c6",
+          name: "Preference Workflow"
+        }
+      })
+    end
+
+    @doc false
+    @spec seed_stats(Organization.t()) :: nil
+    def seed_stats(organization) do
+      Repo.insert!(%Stat{
+        period: "day",
+        date: DateTime.utc_now() |> DateTime.to_date(),
+        contacts: 20,
+        active: 0,
+        optin: 18,
+        optout: 17,
+        messages: 201,
+        inbound: 120,
+        outbound: 81,
+        hsm: 20,
+        flows_started: 25,
+        flows_completed: 10,
+        users: 7,
+        hour: 0,
+        organization_id: organization.id
       })
     end
 
@@ -950,6 +1080,8 @@ if Code.ensure_loaded?(Faker) do
       seed_messages_media(organization)
 
       hsm_templates(organization)
+
+      seed_notification(organization)
     end
   end
 end

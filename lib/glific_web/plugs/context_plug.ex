@@ -22,11 +22,16 @@ defmodule GlificWeb.ContextPlug do
   def build_context(conn) do
     current_user = conn.assigns[:current_user]
 
-    # Add the current_user to the Process memory
-    Glific.Repo.put_current_user(current_user)
+    if current_user != nil do
+      # Add the current_user to the Process memory
+      Glific.Repo.put_current_user(current_user)
 
-    if current_user != nil,
-      do: %{current_user: current_user},
-      else: %{}
+      if current_user.language,
+        do: Gettext.put_locale(current_user.language.locale)
+
+      %{current_user: current_user}
+    else
+      %{}
+    end
   end
 end

@@ -4,11 +4,16 @@ defmodule Glific.MixProject do
   @github_url "https://github.com/glific/glific/"
   @home_url "https://glific.io"
   @test_envs [:test, :test_full]
+  @oban_envs [:prod, :dev] ++ @test_envs
+  # comment above line
+  # if you dont have Oban pro license, this is your best hack
+  # uncomment below line
+  # @oban_envs [:prod]
 
   def project do
     [
       app: :glific,
-      version: "1.3.3",
+      version: "1.6.4",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -22,6 +27,8 @@ defmodule Glific.MixProject do
           steps: [:assemble, :tar]
         ]
       ],
+      # to avoid compiler iex warning in application.ex
+      xref: [exclude: [IEx]],
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -104,11 +111,11 @@ defmodule Glific.MixProject do
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:dataloader, "~> 1.0"},
-      {:hackney, "~> 1.16"},
-      {:tesla, "~> 1.3"},
-      {:oban, "~> 2.0"},
-      {:oban_web, "~> 2.5", organization: "oban"},
-      {:oban_pro, "~> 0.6", organization: "oban"},
+      {:hackney, "~> 1.17"},
+      {:tesla, "~> 1.4"},
+      {:oban, "~> 2.6"},
+      {:oban_web, "~> 2.6", organization: "oban", only: @oban_envs},
+      {:oban_pro, "~> 0.7", organization: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},
@@ -129,6 +136,7 @@ defmodule Glific.MixProject do
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
       {:cloak_ecto, "~> 1.1"},
       {:google_api_big_query, "~> 0.47.0"},
+      {:google_api_dialogflow, "~> 0.62"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
@@ -136,8 +144,12 @@ defmodule Glific.MixProject do
       {:observer_cli, "~> 1.6"},
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.2"},
+      {:tzdata, "~> 1.1"},
+      {:stripity_stripe, "~> 2.0"},
+      {:stripe_mock, "~> 0.1.0", only: @test_envs},
       {:remote_ip, "~> 1.0"},
-      {:tzdata, "~> 1.1"}
+      {:exvcr, "~> 0.12.2", only: @test_envs},
+      {:dotenvy, "~> 0.1"}
     ]
   end
 
@@ -149,8 +161,8 @@ defmodule Glific.MixProject do
   # See the documentation for `Mix` for more info on aliases.
   defp aliases do
     [
-      setup: ["deps.get", "compile", "ecto.reset", "cmd npm install --prefix assets"],
-      reset: ["deps.get", "clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      setup: ["deps.get", "common"],
+      common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
       "ecto.setup": [
         "ecto.create --quiet",
         "ecto.migrate",

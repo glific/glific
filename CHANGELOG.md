@@ -4,6 +4,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.x] -- 2021-06-01
+
+### Added
+- SaaS deployments
+  * Billing
+  * Consulting Hours
+  * Code Extensions
+- Button template HSM messages in simulator
+- Floweditor improvements
+  * Split by Intent (integration with Dialogflow)
+  * Attachments support
+- Is Active field for Flows
+- Contact fields edit/update/delete
+- Propagating parent and child flow results in flows
+- Bugfixes in webhook calls (allowing 200..299) as valid response
+
+## [1.5.x] -- 2021-05-09
+
+### Added
+- Finalize Stripe integration, which allows our users to leverage already existing secure systems to
+make payments. This way we do not collect or store any of the private card details.
+- Integrated stripe Customer portal. Now NGOs can also easily update card details whenever it is
+required to make a switch to a different credit card.
+- Stripe has further enabled us to support a reduced monthly pricing when NGOs want to pause the
+use of platform for a few months. All your flows and staff accounts will continue to be supported
+at a lower than normal monthly price.
+- Added first cut of the organization onboarding form. New NGOs will simply fill out a form with
+some important details to start with glific.
+- In the flow editor The *has_any_words* selection for contact’s response was not working as
+expected with multiple words. This has been fixed.
+- the updates from new feature releases were not showing up immediately due to some caching.
+It would take some time or hard reload to get the latest version. We’ve made improvements in that.
+- WhatsApp has a reply feature which allows users to contextually respond to a message. Now, whenever
+a contact replies to a particular message you will be able to see it through contextual
+formatting in the contact's chat.
+- In the previous release we added the ability for users to change the interface language to
+Hindi if they wanted. We’ve been making progress to cover the entire application and leave no
+spots un-translated.
+- For windows, horizontal scrolling was slightly difficult since the scroll was not visible.
+We’ve corrected that so that there’s a greater control in accessing the flows horizontally.
+- NGOs will be able to directly record a voice message from the interface similar to how the
+WhatsApp supports it, and send to a contact from the Glific chat window.
+-  Previously the interface only supported attachment URLs to be included while sending a message,
+now you can also upload the file from your local computer if you have Google Cloud Storage(GCS)
+integration enabled. This way a GCS link gets automatically generated for your uploads.
+
+
+## [1.4.0] -- 2021-04-15
+
+### Added
+- Made frontend interface localizable. Using lokalise.com to manage transalations
+- Integrated Stripe Billing into code base, so we can switch to credit card payments
+- Lazy loading of javascript on frontend
+- Support for variables lookup between parent and children flows
+- Preview of HSM templates
+
 ## [1.3.0] -- 2021-03-31
 
 ### Added

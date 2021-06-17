@@ -8,10 +8,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.FlowLabel,
-    Jobs.BigqueryJob,
+    BigQuery.BigQueryJob,
     Partners,
     Partners.Organization,
     Partners.Provider,
+    Partners.Saas,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
@@ -35,25 +36,32 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     count_organizations = Partners.count_organizations()
 
-    [en_us, hi] = languages(count_organizations)
+    [en, hi] = languages(count_organizations)
 
     provider = providers(count_organizations)
 
-    organization = organization(count_organizations, provider, [en_us, hi])
+    organization = organization(count_organizations, provider, [en, hi])
 
     ## Added organization id in the query
     Glific.Repo.put_organization_id(organization.id)
 
-    # calling it gtags, since tags is a macro in philcolumns
-    gtags(organization, en_us)
+    # Add the SaaS row
+    saas(count_organizations, organization)
 
-    admin = contacts(organization, en_us)
+    # calling it gtags, since tags is a macro in philcolumns
+    gtags(organization, en)
+
+    admin = contacts(organization, en)
 
     users(admin, organization)
 
     SeedsMigration.migrate_data(:simulator, organization)
 
     SeedsMigration.migrate_data(:collection, organization)
+
+    SeedsMigration.migrate_data(:localized_language, organization)
+
+    SeedsMigration.migrate_data(:user_default_language, organization)
 
     saved_searches(organization)
 
@@ -88,11 +96,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def languages(0 = _count_organizations) do
-    en_us =
+    en =
       Repo.insert!(%Language{
         label: "English",
         label_locale: "English",
-        locale: "en_US"
+        locale: "en"
       })
 
     hi =
@@ -136,16 +144,38 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # seed languages
     Repo.insert_all(Language, languages)
 
-    [en_us, hi]
+    [en, hi]
   end
 
   def languages(_count_organizations) do
-    {:ok, en_us} = Repo.fetch_by(Language, %{label: "English"})
+    {:ok, en} = Repo.fetch_by(Language, %{label: "English"})
     {:ok, hi} = Repo.fetch_by(Language, %{label: "Hindi"})
-    [en_us, hi]
+    [en, hi]
   end
 
-  def gtags(organization, en_us) do
+  defp saas(0, organization) do
+    Repo.insert!(%Saas{
+      name: "Tides",
+      organization_id: organization.id,
+      phone: "91111222333",
+      stripe_ids: %{
+        product: "prod_JG5ns5s9yPRiOq",
+        setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
+        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
+        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
+        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
+        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
+        inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
+      },
+      tax_rates: %{
+        gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
+      }
+    })
+  end
+
+  defp saas(_count, _organization), do: nil
+
+  def gtags(organization, en) do
     # seed tags
     message_tags_mt =
       Repo.insert!(%Tag{
@@ -153,7 +183,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         shortcode: "messages",
         description: "A default message tag",
         is_reserved: true,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id
       })
 
@@ -163,7 +193,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         shortcode: "contacts",
         description: "A contact tag for users that are marked as contacts",
         is_reserved: true,
-        language_id: en_us.id,
+        language_id: en.id,
         organization_id: organization.id
       })
 
@@ -299,7 +329,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         fn tag ->
           tag
           |> Map.put(:organization_id, organization.id)
-          |> Map.put(:language_id, en_us.id)
+          |> Map.put(:language_id, en.id)
           |> Map.put(:is_reserved, true)
           |> Map.put(:inserted_at, utc_now)
           |> Map.put(:updated_at, utc_now)
@@ -367,7 +397,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     default
   end
 
-  def contacts(organization, en_us) do
+  def contacts(organization, en) do
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
     admin =
@@ -375,7 +405,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         phone: admin_phone(organization.id),
         name: "NGO Main Account",
         organization_id: organization.id,
-        language_id: en_us.id,
+        language_id: en.id,
         last_message_at: utc_now,
         last_communication_at: utc_now
       })
@@ -384,20 +414,23 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     admin
   end
 
-  defp create_org(0 = _count_organizations, provider, [en_us, hi], out_of_office_default_data) do
+  defp create_org(0 = _count_organizations, provider, [en, hi], out_of_office_default_data) do
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
       bsp_id: provider.id,
-      active_language_ids: [en_us.id, hi.id],
-      default_language_id: en_us.id,
+      active_language_ids: [en.id, hi.id],
+      default_language_id: en.id,
       out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!"
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true,
+      status: :active
     })
   end
 
-  defp create_org(count_organizations, provider, [en_us, hi], out_of_office_default_data) do
+  defp create_org(count_organizations, provider, [en, hi], out_of_office_default_data) do
     org_uniq_id = Integer.to_string(count_organizations + 1)
 
     Repo.insert!(%Organization{
@@ -405,14 +438,17 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
       bsp_id: provider.id,
-      active_language_ids: [en_us.id, hi.id],
-      default_language_id: en_us.id,
+      active_language_ids: [en.id, hi.id],
+      default_language_id: en.id,
       out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!"
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true,
+      status: :active
     })
   end
 
-  def organization(count_organization, provider, [en_us, hi]) do
+  def organization(count_organization, provider, [en, hi]) do
     out_of_office_default_data = %{
       enabled: true,
       start_time: elem(Time.new(9, 0, 0), 1),
@@ -428,7 +464,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       ]
     }
 
-    create_org(count_organization, provider, [en_us, hi], out_of_office_default_data)
+    create_org(count_organization, provider, [en, hi], out_of_office_default_data)
   end
 
   def users(admin, organization) do
@@ -541,7 +577,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp bigquery_jobs(organization) do
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "messages",
       table_id: 0,
       organization_id: organization.id,
@@ -549,7 +585,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "contacts",
       table_id: 0,
       organization_id: organization.id,
@@ -557,7 +593,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "flows",
       table_id: 0,
       organization_id: organization.id,
@@ -565,7 +601,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "flow_results",
       table_id: 0,
       organization_id: organization.id,
@@ -573,7 +609,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       updated_at: utc_now
     })
 
-    Repo.insert!(%BigqueryJob{
+    Repo.insert!(%BigQueryJob{
       table: "stats",
       table_id: 0,
       organization_id: organization.id,

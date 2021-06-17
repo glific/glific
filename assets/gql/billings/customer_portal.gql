@@ -1,0 +1,7 @@
+
+query customerPortal{
+  customerPortal{
+    returnUrl
+    url
+  }
+}

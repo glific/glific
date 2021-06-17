@@ -36,7 +36,9 @@ npm-debug.log
 .*credentials.json*
 
 # Not using env files now
-.env*
+.env
+.env.dev
+
 
 # Ignore the dialyzer cache files
 /priv/plts/
@@ -45,6 +47,9 @@ npm-debug.log
 .vscode/
 .vscode
 .DS_Store
+
+# ignore the certificate files
+/priv/cert/
 
 # don't commit mnesia files
 /Mnesia*

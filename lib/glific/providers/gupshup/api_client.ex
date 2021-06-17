@@ -4,6 +4,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   alias Glific.Partners
   alias Plug.Conn.Query
+  import GlificWeb.Gettext
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
   # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
@@ -32,7 +33,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
     organization = Partners.organization(org_id)
 
     if is_nil(organization.services["bsp"]) do
-      {:error, "No active BSP available"}
+      {:error, dgettext("errors", "No active BSP available")}
     else
       bsp_credentials = organization.services["bsp"]
 
@@ -118,11 +119,16 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec fetch_opted_in_contacts(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def fetch_opted_in_contacts(org_id) do
-    get_credentials(org_id)
+    with {:ok, credentials} <- get_credentials(org_id),
+         do: users_get(credentials.api_key, credentials.app_name)
+  end
 
-    with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_url <> "/users/" <> credentials.app_name
-      gupshup_get(url, credentials.api_key)
-    end
+  @doc """
+  Build the gupshup user list url
+  """
+  @spec users_get(String.t(), String.t()) :: Tesla.Env.result() | {:error, String.t()}
+  def users_get(api_key, app_name) do
+    url = @gupshup_url <> "/users/" <> app_name
+    gupshup_get(url, api_key)
   end
 end

@@ -211,4 +211,65 @@ defmodule Glific.Flows.NodeTest do
       {:ok, nil, []} = Node.execute(node, context, message_stream)
     end
   end
+
+  test "execute a node having a router and a wait_for_time action", attrs do
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    node_uuid_1 = Ecto.UUID.generate()
+
+    json = %{
+      "uuid" => node_uuid_1,
+      "actions" => [
+        %{
+          "uuid" => "UUID Act 1",
+          "type" => "wait_for_time",
+          "delay" => "10"
+        }
+      ],
+      "exits" => [
+        %{"uuid" => "UUID Exit 1", "destination_uuid" => nil}
+      ],
+      "router" => %{
+        "operand" => "@input.text",
+        "type" => "switch",
+        "default_category_uuid" => "Default Cat UUID",
+        "categories" => [
+          %{
+            "uuid" => "Default Cat UUID",
+            "exit_uuid" => "UUID Exit 1",
+            "name" => "Default Category"
+          }
+        ],
+        "cases" => []
+      }
+    }
+
+    {node, uuid_map} = Node.process(json, %{}, flow)
+
+    # create a simple flow context
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    {:ok, context} =
+      FlowContext.create_flow_context(%{
+        contact_id: contact.id,
+        flow_id: 1,
+        uuid_map: uuid_map,
+        flow_uuid: Ecto.UUID.generate(),
+        organization_id: attrs.organization_id
+      })
+
+    context =
+      context
+      |> Repo.preload(:contact)
+      |> Map.put(:flow, %{version: 1})
+
+    message = Messages.create_temp_message(Fixtures.get_org_id(), "completed")
+    message_stream = [message]
+
+    # execute node
+    assert elem(Node.execute(node, context, message_stream), 0) == :error
+
+    # execute node
+    {:ok, _context, []} = Node.execute(node, context, [])
+  end
 end

@@ -119,6 +119,12 @@ defmodule Glific.Contacts.Contact do
     |> foreign_key_constraint(:language_id)
   end
 
+  @doc false
+  @spec to_minimal_map(Contact.t()) :: map()
+  def to_minimal_map(contact) do
+    Map.take(contact, [:id | @required_fields ++ @optional_fields])
+  end
+
   @doc """
   Populate virtual field of masked phone number
   """

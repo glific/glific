@@ -29,6 +29,7 @@ defmodule Glific.Enums.Constants do
         :set_contact_field
       ]
 
+      ## We need to update the exiting value from message to messaging and then remove this enum.
       @flow_type_const [:message]
 
       # the direction of the messages: inbound: provider to glific, outbound: glific to provider
@@ -72,6 +73,23 @@ defmodule Glific.Enums.Constants do
 
       # User roles
       @user_roles_const [:none, :staff, :manager, :admin, :glific_admin]
+
+      # Template button types
+      @template_button_type_const [:call_to_action, :quick_reply]
+
+      # organization status types
+      @organization_status_const [
+        # when organization is there but not active
+        :inactive,
+        # Admin approves the organization and it's ready to setup.
+        :approved,
+        # Organization is fully funcational and activated
+        :active,
+        # organization is suspended and no activity can be performed on that
+        :suspended,
+        # admin wants to delete teh organization
+        :ready_to_delete
+      ]
     end
   end
 end

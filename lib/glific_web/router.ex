@@ -7,8 +7,6 @@ defmodule GlificWeb.Router do
   use Plug.ErrorHandler
   use Appsignal.Plug
 
-  import Oban.Web.Router
-
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -49,6 +47,8 @@ defmodule GlificWeb.Router do
     post "/registration/reset-password", RegistrationController, :reset_password
     resources "/session", SessionController, singleton: true, only: [:create, :delete]
     post "/session/renew", SessionController, :renew
+
+    post "/onboard/setup", OnboardController, :setup
   end
 
   scope "/", GlificWeb do
@@ -57,11 +57,7 @@ defmodule GlificWeb.Router do
     live "/", PageLive, :index
   end
 
-  scope "/" do
-    pipe_through [:browser, :auth]
-
-    oban_dashboard("/oban")
-  end
+  use GlificWeb.InjectOban
 
   # Enables LiveDashboard only for development
   #
@@ -82,11 +78,17 @@ defmodule GlificWeb.Router do
     pipe_through [:api, :api_protected]
 
     forward "/api", Absinthe.Plug, schema: GlificWeb.Schema
+  end
 
-    forward "/graphiql", Absinthe.Plug.GraphiQL,
-      schema: GlificWeb.Schema,
-      interface: :simple,
-      socket: GlificWeb.UserSocket
+  if Mix.env() in [:dev, :test] do
+    scope "/" do
+      pipe_through [:api, :api_protected]
+
+      forward "/graphiql",
+              Absinthe.Plug.GraphiQL,
+              schema: GlificWeb.Schema,
+              interface: :playground
+    end
   end
 
   # pipeline :gupshup do
@@ -107,14 +109,16 @@ defmodule GlificWeb.Router do
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
   end
 
+  scope "/webhook", GlificWeb do
+    post "/stripe", StripeController, :stripe_webhook
+    post "/stir/survey", Flows.WebhookController, :stir_survey
+  end
+
   scope "/flow-editor", GlificWeb.Flows do
-    get "/globals", FlowEditorController, :globals
+    pipe_through [:api, :api_protected]
 
     get "/groups", FlowEditorController, :groups
     post "/groups", FlowEditorController, :groups_post
-
-    get "/fields", FlowEditorController, :fields
-    post "/fields", FlowEditorController, :fields_post
 
     get "/labels", FlowEditorController, :labels
     post "/labels", FlowEditorController, :labels_post
@@ -135,11 +139,7 @@ defmodule GlificWeb.Router do
 
     get "/recipients", FlowEditorController, :recipients
 
-    get "/completion", FlowEditorController, :completion
-
     get "/activity", FlowEditorController, :activity
-
-    get "/functions", FlowEditorController, :functions
 
     get "/flows/*vars", FlowEditorController, :flows
 
@@ -147,11 +147,21 @@ defmodule GlificWeb.Router do
 
     post "/revisions/*vars", FlowEditorController, :save_revisions
 
-    get "/validate-media", FlowEditorController, :validate_media
-  end
+    get "/globals", FlowEditorController, :globals
 
-  scope "/webhook", GlificWeb.Flows do
-    post "/stir/survey", WebhookController, :stir_survey
+    get "/fields", FlowEditorController, :fields
+
+    post "/fields", FlowEditorController, :fields_post
+
+    get "/completion", FlowEditorController, :completion
+
+    get "/functions", FlowEditorController, :functions
+
+    get "/validate-media", FlowEditorController, :validate_media
+
+    get "/attachments-enabled", FlowEditorController, :attachments_enabled
+
+    post "/flow-attachment", FlowEditorController, :flow_attachment
   end
 
   # implement basic authentication for live dashboard and oban pro

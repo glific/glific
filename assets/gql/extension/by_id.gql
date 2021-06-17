@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query extension($id: ID!) {
+  extension(id: $id) {
+    ...ExtensionFields
+
+    ...ErrorFields
+  }
+}

@@ -9,6 +9,7 @@ defmodule Glific.Flows.FlowContext do
   use Ecto.Schema
   import Ecto.Changeset
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
   require Logger
 
   alias Glific.{
@@ -34,6 +35,7 @@ defmodule Glific.Flows.FlowContext do
     :wait_for_time,
     :completed_at,
     :delay,
+    :uuids_seen,
     :uuid_map,
     :recent_inbound,
     :recent_outbound
@@ -60,6 +62,7 @@ defmodule Glific.Flows.FlowContext do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
+          uuids_seen: map(),
           recent_inbound: [map()] | [],
           recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
@@ -86,6 +89,10 @@ defmodule Glific.Flows.FlowContext do
     field :wait_for_time, :boolean, default: false
 
     field :delay, :integer, default: 0, virtual: true
+
+    # keep a counter of all uuids we encounter (start with flows)
+    # this allows to to detect infinite loops and abort
+    field :uuids_seen, :map, default: %{}, virtual: true
 
     field :recent_inbound, {:array, :map}, default: []
     field :recent_outbound, {:array, :map}, default: []
@@ -134,16 +141,20 @@ defmodule Glific.Flows.FlowContext do
 
   @spec notification(FlowContext.t(), String.t()) :: nil
   defp notification(context, message) do
+    context = Repo.preload(context, [:flow])
+
     {:ok, _} =
       Notifications.create_notification(%{
         category: "Flow",
         message: message,
-        severity: "Error",
+        severity: "Warning",
         organization_id: context.organization_id,
         entity: %{
           contact_id: context.contact_id,
           flow_id: context.flow_id,
-          parent_id: context.parent_id
+          flow_uuid: context.flow.uuid,
+          parent_id: context.parent_id,
+          name: context.flow.name
         }
       })
 
@@ -156,8 +167,11 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec reset_all_contexts(FlowContext.t(), String.t()) :: FlowContext.t() | nil
   def reset_all_contexts(context, message) do
-    Logger.info(message)
-    notification(context, message)
+    # lets skip logging and notifications for things that occur quite often
+    if !ignore_error?(message) do
+      Logger.info(message)
+      notification(context, message)
+    end
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
@@ -167,8 +181,12 @@ defmodule Glific.Flows.FlowContext do
     reset_one_context(context)
   end
 
+  @doc """
+  Reset this context, but dont follow parent context tail. This is used
+  for tail call optimization
+  """
   @spec reset_one_context(FlowContext.t()) :: FlowContext.t()
-  defp reset_one_context(context) do
+  def reset_one_context(context) do
     {:ok, context} =
       FlowContext.update_flow_context(
         context,
@@ -208,12 +226,32 @@ defmodule Glific.Flows.FlowContext do
 
         parent
         |> load_context(Flow.get_flow(context.organization_id, parent.flow_uuid, context.status))
+        |> merge_child_results(context)
         |> step_forward(Messages.create_temp_message(context.organization_id, "completed"))
       end
     end
 
     # return the orginal context, which is now completed
     context
+  end
+
+  @spec merge_child_results(FlowContext.t(), FlowContext.t()) :: FlowContext.t()
+  defp merge_child_results(parent, child) do
+    # merge the child results into parent
+    # but lets remove the parent result field to keep the map simple
+    child_results = Map.delete(child.results, "parent")
+
+    if child_results == %{} do
+      parent
+    else
+      child_results = %{
+        # for now commenting this out since folks have complex flows
+        # "child #{child.flow_id}" => child_results,
+        "child" => child_results
+      }
+
+      update_results(parent, child_results)
+    end
   end
 
   @doc """
@@ -238,25 +276,14 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Update the contact results state as we step through the flow
-  """
-  @spec update_results(FlowContext.t(), String.t(), String.t() | map(), String.t()) ::
-          FlowContext.t()
-  def update_results(context, key, input, category),
-    do: update_results(context, key, %{"input" => input, "category" => category})
-
-  @doc """
   Update the contact results with each element of the json map
   """
-  @spec update_results(FlowContext.t(), String.t(), map() | String.t()) ::
-          FlowContext.t()
-  def update_results(context, key, json) do
+  @spec update_results(FlowContext.t(), map() | nil) :: FlowContext.t()
+  def update_results(context, result) do
     results =
-      if is_nil(context.results),
-        do: %{},
-        else:
-          context.results
-          |> Map.put(key, json)
+      if context.results == %{} || is_nil(context.results),
+        do: result,
+        else: Map.merge(context.results, result)
 
     {:ok, context} = update_flow_context(context, %{results: results})
 
@@ -316,7 +343,7 @@ defmodule Glific.Flows.FlowContext do
   @spec execute(FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%FlowContext{node: node} = _context, _messages) when is_nil(node),
-    do: {:error, "We have finished the flow"}
+    do: {:error, dgettext("errors", "We have finished the flow")}
 
   def execute(context, messages) do
     case Node.execute(context.node, context, messages) do
@@ -376,14 +403,16 @@ defmodule Glific.Flows.FlowContext do
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
   def seed_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
-    current_delay = Keyword.get(opts, :delay, 0)
+    delay = Keyword.get(opts, :delay, 0)
+    uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
+    results = Keyword.get(opts, :results, %{})
 
     Logger.info(
       "Seeding flow: id: '#{flow.id}', parent_id: '#{parent_id}', contact_id: '#{contact.id}'"
     )
 
-    node = hd(flow.nodes)
+    node = flow.start_node
 
     create_flow_context(%{
       contact_id: contact.id,
@@ -392,12 +421,13 @@ defmodule Glific.Flows.FlowContext do
       flow_uuid: flow.uuid,
       status: status,
       node: node,
-      results: %{},
+      results: results,
       flow_id: flow.id,
       flow: flow,
       organization_id: flow.organization_id,
       uuid_map: flow.uuid_map,
-      delay: current_delay,
+      delay: delay,
+      uuids_seen: uuids_seen,
       wakeup_at: wakeup_at
     })
   end
@@ -490,16 +520,18 @@ defmodule Glific.Flows.FlowContext do
     # to a large extent, its more a completion exit rather than an
     # error exit
     String.contains?(error, "Exit Loop") ||
-      String.contains?(error, "We have finished the flow")
+      String.contains?(error, "finished the flow")
   end
 
-  # log the error and also send it over to our friends at appsignal
+  @doc """
+  Log the error and also send it over to our friends at appsignal
+  """
   @spec log_error(String.t()) :: {:error, String.t()}
-  defp log_error(error) do
+  def log_error(error) do
     Logger.error(error)
 
-    # disable sending exit loop errors, since these are beneficiary errors
-    # and we dont need to be informed
+    # disable sending exit loop and finished flow errors, since
+    # these are beneficiary errors
     if !ignore_error?(error) do
       {_, stacktrace} = Process.info(self(), :current_stacktrace)
       Appsignal.send_error(:error, error, stacktrace)
@@ -544,7 +576,7 @@ defmodule Glific.Flows.FlowContext do
   Process one context at a time that is ready to be woken
   """
   @spec wakeup_one(FlowContext.t(), Message.t() | nil) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()}
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
@@ -555,7 +587,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, flow} =
       Flows.get_cached_flow(
-        context.flow.organization_id,
+        context.organization_id,
         {:flow_uuid, context.flow_uuid, context.status}
       )
 
@@ -564,12 +596,13 @@ defmodule Glific.Flows.FlowContext do
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
 
-    {:ok, context} =
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message)
-
-    {:ok, context, []}
+    context
+    |> FlowContext.load_context(flow)
+    |> FlowContext.step_forward(message)
+    |> case do
+      {:ok, context} -> {:ok, context, []}
+      {:error, message} -> {:error, message}
+    end
   end
 
   @doc """
@@ -578,7 +611,6 @@ defmodule Glific.Flows.FlowContext do
   @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
   def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
     MessageVarParser.parse(value, %{"results" => context.results})
-    |> MessageVarParser.parse_results(context.results)
   end
 
   def get_result_value(_context, value), do: value
@@ -590,29 +622,36 @@ defmodule Glific.Flows.FlowContext do
   def delete_completed_flow_contexts(back \\ 2) do
     back_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
-    {count, nil} =
-      FlowContext
-      |> where([fc], fc.completed_at < ^back_date)
-      |> Repo.delete_all(skip_organization_id: true)
+    """
+    DELETE FROM flow_contexts
+    WHERE id = any (array(
+       SELECT id
+       FROM flow_contexts AS f0
+       WHERE f0.completed_at < '#{back_date}' AND F0.completed_at IS NOT NULL LIMIT 500));
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts completed #{back} days back: count: '#{count}'")
+    Logger.info("Deleting flow contexts completed #{back} days back")
 
     :ok
   end
 
   @doc """
-  Delete all the contexts which are older than 30 days
+  Delete all the contexts which are older than 7 days
   """
   @spec delete_old_flow_contexts(non_neg_integer) :: :ok
-  def delete_old_flow_contexts(back \\ 30) do
+  def delete_old_flow_contexts(back \\ 7) do
     deletion_date = DateTime.utc_now() |> DateTime.add(-1 * back * 24 * 60 * 60, :second)
 
-    {count, nil} =
-      FlowContext
-      |> where([fc], fc.inserted_at < ^deletion_date)
-      |> Repo.delete_all(skip_organization_id: true)
+    """
+    DELETE FROM flow_contexts
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{
+      deletion_date
+    }' LIMIT 500));
+    """
+    |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
-    Logger.info("Deleting flow contexts older than #{back} days: count: '#{count}'")
+    Logger.info("Deleting flow contexts older than #{back} days")
 
     :ok
   end

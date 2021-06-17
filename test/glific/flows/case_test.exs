@@ -10,8 +10,8 @@ defmodule Glific.Flows.CaseTest do
   test "process extracts the right values from json" do
     json = %{
       "uuid" => "UUID 1",
-      "type" => "some type",
-      "arguments" => [1, 2, 3],
+      "type" => "has_multiple",
+      "arguments" => ["1, 2, 3"],
       "category_uuid" => "Cat UUID"
     }
 
@@ -19,7 +19,7 @@ defmodule Glific.Flows.CaseTest do
 
     assert case.uuid == "UUID 1"
     assert case.category_uuid == "Cat UUID"
-    assert case.arguments == [1, 2, 3]
+    assert case.arguments == ["1, 2, 3"]
     assert uuid_map[case.uuid] == {:case, case}
 
     # dont send a category UUID and it should raise an error
@@ -37,18 +37,54 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_any_word" do
-    c = %Case{type: "has_any_word", arguments: ["first"]}
+    args = ["first second third"]
+    parsed_args = args |> hd() |> Glific.make_set()
 
-    assert wrap_execute(c, nil, "first second third") == true
-    assert wrap_execute(c, nil, "second first") == true
+    c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
+
+    assert wrap_execute(c, nil, "First") == true
+    assert wrap_execute(c, nil, "second ") == true
     assert wrap_execute(c, nil, "fourth") == false
-    assert wrap_execute(c, nil, "") == false
 
-    c = %Case{type: "has_any_word", arguments: ["none of these"]}
+    args = ["none of these"]
+    parsed_args = args |> hd() |> Glific.make_set()
+
+    c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
     assert wrap_execute(c, nil, "first") == false
     assert wrap_execute(c, nil, "second") == false
     assert wrap_execute(c, nil, "fourth") == false
-    assert wrap_execute(c, nil, "") == false
+  end
+
+  test "test the execute function for has_phrase" do
+    args = ["This is a green apple"]
+
+    c = %Case{type: "has_phrase", arguments: args}
+
+    assert wrap_execute(c, nil, "This is a green") == true
+    assert wrap_execute(c, nil, "This is a red apple ") == false
+    assert wrap_execute(c, nil, "apple") == true
+  end
+
+  test "test the execute function for has_multiple" do
+    args = ["first second third"]
+    parsed_args = args |> hd() |> Glific.make_set()
+
+    c = %Case{type: "has_multiple", arguments: args, parsed_arguments: parsed_args}
+
+    assert wrap_execute(c, nil, "first") == true
+    assert wrap_execute(c, nil, "second ") == true
+    assert wrap_execute(c, nil, "second third first") == true
+    assert wrap_execute(c, nil, "second third") == true
+    assert wrap_execute(c, nil, "fourth") == false
+    assert wrap_execute(c, nil, "first third fourth") == false
+
+    c = %Case{type: "has_any_word", arguments: args, parsed_arguments: parsed_args}
+    assert wrap_execute(c, nil, "first") == true
+    assert wrap_execute(c, nil, "first second") == true
+    assert wrap_execute(c, nil, "first second third") == true
+    assert wrap_execute(c, nil, "first second third forth") == true
+    assert wrap_execute(c, nil, "fifth") == false
+    assert wrap_execute(c, nil, "fifth first") == true
   end
 
   test "test the execute function for has_number_eq" do
@@ -74,12 +110,15 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_all_words" do
-    c = %Case{type: "has_all_words", arguments: ["one", "two"]}
+    args = ["one, two"]
+    parsed_args = args |> hd() |> Glific.make_set()
+    c = %Case{type: "has_all_words", arguments: ["one, two"], parsed_arguments: parsed_args}
 
     assert wrap_execute(c, nil, "one1") == false
-    assert wrap_execute(c, nil, "onethresstwo") == true
-    assert wrap_execute(c, nil, "ONETHREETWO") == true
-    assert wrap_execute(c, nil, "") == false
+    assert wrap_execute(c, nil, "one, two") == true
+    assert wrap_execute(c, nil, "two one") == true
+    assert wrap_execute(c, nil, "one two three") == true
+    assert wrap_execute(c, nil, "one") == false
   end
 
   test "test the execute function for has_location" do

@@ -6,9 +6,11 @@ defmodule Glific.Flows.Action do
   alias __MODULE__
 
   use Ecto.Schema
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts.Contact,
+    Dialogflow,
     Flows,
     Flows.Flow,
     Groups,
@@ -38,6 +40,7 @@ defmodule Glific.Flows.Action do
   @required_fields_set_contact_field [:value, :field | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
+  @required_fields_classifier [:input, :result_name | @required_field_common]
   @required_fields [:text | @required_field_common]
   @required_fields_label [:labels | @required_field_common]
   @required_fields_group [:groups | @required_field_common]
@@ -177,6 +180,15 @@ defmodule Glific.Flows.Action do
     })
   end
 
+  def process(%{"type" => "call_classifier"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_classifier)
+
+    process(json, uuid_map, node, %{
+      input: json["input"],
+      result_name: json["result_name"]
+    })
+  end
+
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
     process(json, uuid_map, node, %{labels: json["labels"]})
@@ -281,7 +293,7 @@ defmodule Glific.Flows.Action do
             check_entity_exists(entity, errors, object)
 
           _ ->
-            [{object, "Could not parse #{get_name(object)} object"}] ++ errors
+            [{object, "Could not parse #{get_name(object)}"}] ++ errors
         end
       end
     )
@@ -390,21 +402,51 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
-    # we start off a new context here and dont really modify the current context
-    # hence ignoring the return value of start_sub_flow
-    # for now, we'll just delay by at least min_delay second
-    context = %{context | delay: max(context.delay + @min_delay, @min_delay)}
-    Flow.start_sub_flow(context, action.enter_flow_uuid)
+    # check if we've seen this flow in this execution
+    if Map.has_key?(context.uuids_seen, action.enter_flow_uuid) do
+      FlowContext.log_error("Repeated loop, hence finished the flow")
+    else
+      # check if we are looping with the same flow, if so reset
+      # and start from scratch, since we really dont want to have too deep a stack
+      maybe_reset_flows(context, action.enter_flow_uuid)
 
-    # We null the messages here, since we are going into a different flow
-    # this clears any potential errors
-    {:ok, context, []}
+      # if the action is part of a terminal node, then lets mark this context as
+      # complete, and use the parent context
+      {:node, node} = context.uuid_map[action.node_uuid]
+
+      {context, parent_id} =
+        if node.is_terminal == true,
+          do: {FlowContext.reset_one_context(context), context.parent_id},
+          else: {context, context.id}
+
+      # we start off a new context here and dont really modify the current context
+      # hence ignoring the return value of start_sub_flow
+      # for now, we'll just delay by at least min_delay second
+      context =
+        context
+        |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
+        |> Map.update!(:uuids_seen, &Map.put(&1, action.enter_flow_uuid, 1))
+
+      Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
+
+      # We null the messages here, since we are going into a different flow
+      # this clears any potential errors
+      {:ok, context, []}
+    end
   end
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # just call the webhook, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchrnously
     Webhook.execute(action, context)
+    # webhooks dont consume a message, so we send it forward
+    {:wait, context, messages}
+  end
+
+  def execute(%{type: "call_classifier"} = action, context, messages) do
+    # just call the classifier, and ask the caller to wait
+    # we are processing the webhook using Oban and this happens asynchronously
+    Dialogflow.execute(action, context, context.last_message)
     # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
   end
@@ -468,10 +510,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
-    if msg.body != "No Response",
-      do: raise(ArgumentError, "Unexpected message #{msg.body} received")
-
-    {:ok, context, []}
+    if msg.body != "No Response" do
+      FlowContext.log_error("Unexpected message #{msg.body} received")
+    else
+      {:ok, context, []}
+    end
   end
 
   def execute(%{type: "wait_for_time"} = action, context, []) do
@@ -517,10 +560,15 @@ defmodule Glific.Flows.Action do
         ContactAction.optout(context)
 
       "optin" ->
+        message_id =
+          if context.last_message == nil,
+            do: nil,
+            else: context.last_message.bsp_message_id
+
         ContactAction.optin(
           context,
           method: "WA",
-          message_id: context.last_message.bsp_message_id,
+          message_id: message_id,
           bsp_status: :session_and_hsm
         )
 
@@ -548,6 +596,24 @@ defmodule Glific.Flows.Action do
 
       _ ->
         acc
+    end
+  end
+
+  @spec maybe_reset_flows(FlowContext.t(), Ecto.UUID.t()) :: boolean
+  defp maybe_reset_flows(context, flow_uuid) do
+    # check and see if there are any matching flows that are not completed
+    matching =
+      FlowContext
+      |> where([fc], fc.contact_id == ^context.contact_id)
+      |> where([fc], fc.flow_uuid == ^flow_uuid)
+      |> where([fc], is_nil(fc.completed_at))
+      |> Repo.aggregate(:count)
+
+    if matching > 0 do
+      FlowContext.reset_all_contexts(context, "Repeated loop, hence finished the flow")
+      true
+    else
+      false
     end
   end
 end

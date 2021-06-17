@@ -2,7 +2,9 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
+  require Logger
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   use Tesla
   plug Tesla.Middleware.FormUrlencoded
@@ -118,11 +120,10 @@ defmodule Glific.Templates do
     if Map.has_key?(attrs, :shortcode),
       do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)})
 
-    validation_result = validate_hsm(attrs)
-
-    if validation_result == :ok,
-      do: submit_for_approval(attrs),
-      else: validation_result
+    with :ok <- validate_hsm(attrs),
+         :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)) do
+      submit_for_approval(attrs)
+    end
   end
 
   def create_session_template(attrs) do
@@ -143,6 +144,20 @@ defmodule Glific.Templates do
      ["HSM approval", "for HSM approval shortcode, category and example fields are required"]}
   end
 
+  @spec validate_button_template(map()) :: :ok | {:error, [String.t()]}
+  defp validate_button_template(%{has_buttons: false} = _attrs), do: :ok
+
+  defp validate_button_template(%{has_buttons: true, button_type: _, buttons: _} = _attrs),
+    do: :ok
+
+  defp validate_button_template(_) do
+    {:error,
+     [
+       "Button Template",
+       "for Button Templates has_buttons, button_type and buttons fields are required"
+     ]}
+  end
+
   @doc false
   @spec do_create_session_template(map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
@@ -159,7 +174,7 @@ defmodule Glific.Templates do
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Template.submit_for_approval(attrs)
-      _ -> {:error, "Invalid provider"}
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
@@ -243,7 +258,7 @@ defmodule Glific.Templates do
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Template.update_hsm_templates(organization_id)
-      _ -> {:error, "Invalid provider"}
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
@@ -268,12 +283,43 @@ defmodule Glific.Templates do
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
         Map.has_key?(db_templates, template["id"]) ->
-          do_update_hsm(template, db_templates)
+          update_hsm(template, organization, languages)
 
         true ->
           true
       end
     end)
+  end
+
+  @spec update_hsm(map(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp update_hsm(template, organization, languages) do
+    # get updated db templates to handle multiple approved translations
+    db_templates =
+      list_session_templates(%{filter: %{is_hsm: true}})
+      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+
+    db_template_translations =
+      db_templates
+      |> Map.values()
+      |> Enum.filter(fn db_template ->
+        db_template.shortcode == template["elementName"] and db_template.uuid != template["id"]
+      end)
+
+    approved_db_templates =
+      db_template_translations
+      |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
+
+    with true <- template["status"] == "APPROVED",
+         true <- length(db_template_translations) >= 1,
+         true <- length(approved_db_templates) >= 1 do
+      approved_db_templates
+      |> Enum.each(fn approved_db_template ->
+        update_hsm_translation(template, approved_db_template, organization, languages)
+      end)
+    end
+
+    do_update_hsm(template, db_templates)
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
@@ -287,6 +333,9 @@ defmodule Glific.Templates do
 
     # setting default language id if languageCode is not known
     language_id = languages[template["languageCode"]] || organization.default_language_id
+
+    Logger.info("Language id for template #{template["elementName"]}
+      org_id: #{organization.id} has been updated as #{language_id}")
 
     is_active =
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
@@ -345,5 +394,52 @@ defmodule Glific.Templates do
       db_templates[template["id"]]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
+  end
+
+  @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp update_hsm_translation(template, approved_db_template, organization, languages) do
+    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+
+    type =
+      template["templateType"]
+      |> String.downcase()
+      |> Glific.safe_string_to_atom()
+
+    # setting default language id if languageCode is not known
+    language_id = languages[template["languageCode"]] || organization.default_language_id
+
+    example =
+      case Jason.decode(template["meta"]) do
+        {:ok, meta} ->
+          meta["example"]
+
+        _ ->
+          nil
+      end
+
+    translation = %{
+      "#{language_id}" => %{
+        uuid: template["id"],
+        body: template["data"],
+        language_id: language_id,
+        status: template["status"],
+        type: type,
+        number_parameters: number_of_parameter,
+        example: example,
+        category: template["category"],
+        label: template["elementName"]
+      }
+    }
+
+    translations = Map.merge(approved_db_template.translations, translation)
+
+    update_attrs = %{
+      translations: translations
+    }
+
+    approved_db_template
+    |> SessionTemplate.changeset(update_attrs)
+    |> Repo.update()
   end
 end

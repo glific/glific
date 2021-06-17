@@ -1,9 +1,11 @@
 defmodule GlificWeb.Schema.OrganizationTest do
-  use GlificWeb.ConnCase, async: true
+  use GlificWeb.ConnCase, async: false
   use Wormwood.GQLCase
 
   alias Glific.{
+    Enums.OrganizationStatus,
     Fixtures,
+    Partners,
     Partners.Organization,
     Partners.Provider,
     Repo,
@@ -36,9 +38,19 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:list, GlificWeb.Schema, "assets/gql/organizations/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/organizations/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/organizations/create.gql")
+  load_gql(:get_services, GlificWeb.Schema, "assets/gql/organizations/get_services.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/organizations/update.gql")
+  load_gql(:update_status, GlificWeb.Schema, "assets/gql/organizations/update_status.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/organizations/delete.gql")
+  load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
+  load_gql(:attachments, GlificWeb.Schema, "assets/gql/organizations/attachments.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
+
+  load_gql(
+    :list_organization_status,
+    GlificWeb.Schema,
+    "assets/gql/organizations/list_organization_status.gql"
+  )
 
   test "organizations field returns list of organizations", %{user: user} do
     result = auth_query_gql_by(:list, user)
@@ -105,7 +117,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
-    language_locale = "en_US"
+    language_locale = "en"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
@@ -165,18 +177,52 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "has already been taken"
   end
 
-  test "update an organization and test possible scenarios and errors", %{user: user} do
+  test "update an organization status", %{user: user} do
     organization = Fixtures.organization_fixture()
 
+    result =
+      auth_query_gql_by(:update_status, user,
+        variables: %{
+          "updateOrganizationId" => organization.id,
+          "status" => "ACTIVE"
+        }
+      )
+
+    assert {:ok, query_data} = result
+    organization = get_in(query_data, [:data, "updateOrganizationStatus", "organization"])
+    assert organization["isActive"] == true
+    assert organization["isApproved"] == true
+    assert organization["name"] == "Fixture Organization"
+  end
+
+  test "delete organization inactive organization", %{user: user} do
+    organization = Fixtures.organization_fixture(%{is_active: false})
+
+    result =
+      auth_query_gql_by(:delete_onboarded, user,
+        variables: %{
+          "deleteOrganizationId" => organization.id,
+          "isConfirmed" => true
+        }
+      )
+
+    assert {:ok, query_data} = result
+    organization = get_in(query_data, [:data, "deleteInactiveOrganization", "organization"])
+    assert organization["isActive"] == false
+    assert organization["name"] == "Fixture Organization"
+  end
+
+  test "update an organization and test possible scenarios and errors", %{user: user} do
     name = "Organization Test Name"
     shortcode = "org_shortcode"
     email = "test2@glific.org"
     timezone = "America/Los_Angeles"
+    organization = Fixtures.organization_fixture()
 
     provider_name = "Default Provider"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
-    language_locale = "en_US"
+    language_locale = "en"
     {:ok, language} = Repo.fetch_by(Language, %{locale: language_locale})
 
     result =
@@ -250,6 +296,25 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
     assert message == "has already been taken"
+
+    # update organization fields with valid param
+    fields = %{"organization_name" => "Glific", "url" => "/registration"} |> Jason.encode!()
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => organization.id,
+          "input" => %{
+            "fields" => fields
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    updated_organization = get_in(query_data, [:data, "updateOrganization", "organization"])
+
+    assert updated_organization["fields"] ==
+             "{\"url\":\"/registration\",\"organization_name\":\"Glific\"}"
   end
 
   test "update an organization with default language and active languages", %{user: user} do
@@ -309,6 +374,42 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "default language must be updated according to active languages"
   end
 
+  @default_goth_json """
+  {
+  "project_id": "DEFAULT PROJECT ID",
+  "private_key_id": "DEFAULT API KEY",
+  "client_email": "DEFAULT CLIENT EMAIL",
+  "private_key": "DEFAULT PRIVATE KEY"
+  }
+  """
+
+  test "get an organization services", %{user: user} = attrs do
+    Fixtures.organization_fixture()
+    result = auth_query_gql_by(:get_services, user)
+    assert {:ok, query_data} = result
+    services = get_in(query_data, [:data, "organizationServices"])
+    assert services["fun_with_flags"] == true
+    assert services["bigquery"] == false
+    assert services["google_cloud_storage"] == false
+
+    # should create credentials and update organization services
+
+    valid_attrs = %{
+      secrets: %{"service_account" => @default_goth_json},
+      is_active: true,
+      shortcode: "bigquery",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, _credential} = Partners.create_credential(valid_attrs)
+    result = auth_query_gql_by(:get_services, user)
+    assert {:ok, query_data} = result
+    services = get_in(query_data, [:data, "organizationServices"])
+    assert services["fun_with_flags"] == true
+    assert services["bigquery"] == true
+    assert services["google_cloud_storage"] == false
+  end
+
   test "update an organization with organization settings", %{user: user} do
     {:ok, organization} = Repo.fetch_by(Organization, %{name: "Glific"})
 
@@ -359,6 +460,16 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "Resource not found"
   end
 
+  test "attachments enabled returns false by default, but true when we have GCS credential", %{
+    user: user
+  } do
+    result = auth_query_gql_by(:attachments, user, variables: %{"id" => user.organization_id})
+    assert {:ok, query_data} = result
+
+    enabled? = get_in(query_data, [:data, "attachmentsEnabled"])
+    assert enabled? == false
+  end
+
   test "timezones returns list of timezones", %{user: user} do
     result = auth_query_gql_by(:list_timezones, user)
     assert {:ok, query_data} = result
@@ -366,5 +477,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
     timezones = get_in(query_data, [:data, "timezones"])
     assert timezones != []
     assert "Asia/Kolkata" in timezones == true
+  end
+
+  test "organization status returns list of status", %{user: user} do
+    result = auth_query_gql_by(:list_organization_status, user)
+    assert {:ok, query_data} = result
+
+    statuses = get_in(query_data, [:data, "organizationStatus"])
+    assert statuses != []
+    assert length(statuses) == length(OrganizationStatus.__enum_map__())
   end
 end

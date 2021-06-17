@@ -7,15 +7,19 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
   import Ecto.Query, warn: false
 
-  alias Glific.Repo
-  alias Glific.Settings.Language
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
-
-  alias GlificWeb.Schema
+  alias Glific.{Enums.OrganizationStatus, Partners, Repo, Settings.Language}
+  alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
   object :organization_result do
     field :organization, :organization
+    field :errors, list_of(:input_error)
+  end
+
+  object :organization_services_result do
+    field :bigquery, :boolean
+    field :google_cloud_storage, :boolean
+    field :dialogflow, :boolean
+    field :fun_with_flags, :boolean
     field :errors, list_of(:input_error)
   end
 
@@ -30,6 +34,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :end_time, :time
     field :enabled_days, list_of(:enabled_day)
     field :flow_id, :id
+    field :default_flow_id, :id
   end
 
   object :organization do
@@ -37,6 +42,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :name, :string
     field :shortcode, :string
     field :email, :string
+    field :fields, :json
 
     field :bsp, :provider do
       resolve(dataloader(Repo))
@@ -53,6 +59,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :out_of_office, :out_of_office
 
     field :is_active, :boolean
+
+    field :is_approved, :boolean
+
+    field :status, :organization_status_enum
 
     field :timezone, :string
 
@@ -79,6 +89,10 @@ defmodule GlificWeb.Schema.OrganizationTypes do
           else: {:ok, organization.signature_phrase}
       end)
     end
+
+    field :inserted_at, :datetime
+
+    field :updated_at, :datetime
   end
 
   @desc "Filtering options for organizations"
@@ -110,6 +124,12 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :end_time, :time
     field :enabled_days, list_of(:enabled_day_input)
     field :flow_id, :id
+    field :default_flow_id, :id
+  end
+
+  input_object :delete_organization_input do
+    field :delete_organization_id, :id
+    field :is_confirmed, :boolean
   end
 
   input_object :organization_input do
@@ -125,6 +145,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :is_active, :boolean
 
+    field :status, :organization_status_enum
+
     field :timezone, :string
 
     field :session_limit, :integer
@@ -134,6 +156,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :signature_phrase, :string
 
     field :last_communication_at, :datetime
+
+    field :fields, :json
   end
 
   object :organization_queries do
@@ -159,11 +183,35 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(&Resolvers.Partners.count_organizations/3)
     end
 
+    @desc "Checks if organization has an active cloud storage setup"
+    field :attachments_enabled, :boolean do
+      middleware(Authorize, :staff)
+
+      resolve(fn _, _, %{context: %{current_user: user}} ->
+        {:ok, Partners.attachments_enabled?(user.organization_id)}
+      end)
+    end
+
+    @desc "Get a list of all organizations services"
+    field :organization_services, :organization_services_result do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Partners.organization_services/3)
+    end
+
     field :timezones, list_of(:string) do
       middleware(Authorize, :admin)
 
       resolve(fn _, _, _ ->
         {:ok, Tzdata.zone_list()}
+      end)
+    end
+
+    @desc "Get a list of all organizations status"
+    field :organization_status, list_of(:organization_status_enum) do
+      middleware(Authorize, :admin)
+
+      resolve(fn _, _, _ ->
+        {:ok, OrganizationStatus.__enum_map__()}
       end)
     end
   end
@@ -186,6 +234,27 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.delete_organization/3)
+    end
+
+    field :update_organization_status, :organization_result do
+      arg(:update_organization_id, non_null(:id))
+      arg(:status, :organization_status_enum)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.update_organization_status/3)
+    end
+
+    field :delete_inactive_organization, :organization_result do
+      arg(:delete_organization_id, non_null(:id))
+      arg(:is_confirmed, non_null(:boolean))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.delete_inactive_organization/3)
+    end
+
+    field :reset_organization, :string do
+      arg(:reset_organization_id, non_null(:id))
+      arg(:is_confirmed, non_null(:boolean))
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.reset_organization/3)
     end
   end
 

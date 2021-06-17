@@ -1,0 +1,10 @@
+mutation sendHsmMessageToGroup($template_id: ID!, $group_id: ID!, $parameters: [String]) {
+  sendHsmMessageToGroup(template_id: $template_id, group_id: $group_id, parameters: $parameters) {
+    success
+    contactIds
+    errors {
+      key
+      message
+    }
+  }
+}

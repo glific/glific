@@ -37,6 +37,8 @@ have the bandwidth to support earlier versions of the packages.
 
 ## Setup
   * Copy the file: `config/dev.secret.exs.txt` to `config/dev.secret.exs` and edit it with your credentials
+  * Copy the file: `config/.env.dev.txt` to `config/.env.dev` and edit it with your credentials
+  * Run `source config/.env.dev`
   * Start the postgres server
   * Run `mix setup`
   * This will setup Glific with default credentials as:
@@ -83,23 +85,32 @@ You will need to do the following:
 ## Updating your instance
 
 For v0.x releases, we will be resetting the DB and not saving existing state. Run the following commands
-to update your codebase from the glicic repository.
+to update your codebase from the glific repository.
 
   * Ensure you are in the top level directory of the glific api code.
   * Get the latest code from master: `git switch master; git pull`
   * Ensure you have not modified any files in this directory, by running: `git status`
   * Run the setup command: `mix setup`
 
-## Deploying release on ECS with CD
-1. If you are using AWS codebuild for CD, use buildspec.yml.sample file content for creating and pushing docker image.
-2. For using and alternative repository like docker hub, you just need to make some changes in the pre_build phase (REPOSITORY_URI and authentications), the rest of the phases will remains same.
+## Use SSL for frontend and backend
+
+(we'll be making the switch to using SSL for both frontend and backend in development post 1.5).
+These are the preliminary steps involved
+
+  * Install mkcert (https://github.com/FiloSottile/mkcert)
+  * ```mkcert --install```
+  * ```mkcert glific.test api.glific.test```
+  * ```mkdir priv/cert```
+  * ```mv glific.test+1* priv/cert```
+  * The backend config files for development will assume that the port is 4001 with the above hostnames
+  * Switch the frontend to use https port 4001 for the backend
 
 ## Documentation
 
   * [GraphQL API docs](https://glific.github.io/slate/)
   * [Code docs](https://glific.github.io/glific/doc/readme.html#documentation)
-  * [Slab docs](https://docs.glific.org/)
-
+  * [Slab docs](https://docs.glific.org)
+  * [Recipes](https://github.com/glific/recipes) - Framework for integration with Glific APIs, Webhooks and more.
 ## Learn more
 
 ### Glific

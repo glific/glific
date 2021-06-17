@@ -21,7 +21,7 @@ defmodule Glific.Flags do
 
     out_of_office_update(organization)
 
-    # dialogflow(organization)
+    dialogflow(organization)
   end
 
   @spec business_day?(DateTime.t(), [integer]) :: boolean
@@ -115,12 +115,11 @@ defmodule Glific.Flags do
     )
   end
 
-  _ = '''
   @doc """
   See if we have valid dialogflow credentials, if so, enable dialogflow
   else disable it
   """
-  @spec dialogflow(Organization.t()) :: {:ok, boolean()}
+  @spec dialogflow(Organization.t()) :: nil
   def dialogflow(organization) do
     organization.services["dialogflow"]
     |> case do
@@ -136,6 +135,7 @@ defmodule Glific.Flags do
           for_actor: %{organization_id: organization.id}
         )
     end
+
+    nil
   end
-  '''
 end

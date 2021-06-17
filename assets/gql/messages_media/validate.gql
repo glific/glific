@@ -1,0 +1,3 @@
+query validateMedia($url: String!, $type: String!) {
+  validateMedia(url: $url, type: $type)
+}

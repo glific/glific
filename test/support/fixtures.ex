@@ -10,7 +10,10 @@ defmodule Glific.Fixtures do
 
   alias Glific.{
     Contacts,
+    Contacts.ContactsField,
+    Extensions.Extension,
     Flows,
+    Flows.ContactField,
     Flows.WebhookLog,
     Groups,
     Messages,
@@ -18,8 +21,10 @@ defmodule Glific.Fixtures do
     Notifications,
     Notifications.Notification,
     Partners,
+    Partners.Billing,
     Partners.Organization,
     Repo,
+    Saas.ConsultingHour,
     Settings,
     Tags,
     Templates,
@@ -121,6 +126,9 @@ defmodule Glific.Fixtures do
 
     valid_attrs = %{
       name: "Fixture Organization",
+      is_active: true,
+      is_approved: true,
+      status: :active,
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       last_communication_at: DateTime.backward(0),
@@ -199,7 +207,7 @@ defmodule Glific.Fixtures do
       label: "some label",
       shortcode: "somelabel",
       description: "some fixed description",
-      locale: "en_US",
+      locale: "en",
       is_active: true,
       is_reserved: true
     }
@@ -481,6 +489,7 @@ defmodule Glific.Fixtures do
       password: "secret1234",
       password_confirmation: "secret1234",
       roles: ["admin"],
+      language_id: 1,
       # This should be static for all the user fixtures
       organization_id: get_org_id()
     }
@@ -558,8 +567,8 @@ defmodule Glific.Fixtures do
       organization_id: attrs.organization_id
     }
 
-    Messages.create_and_send_message_to_group(valid_attrs, group_1)
-    Messages.create_and_send_message_to_group(valid_attrs, group_2)
+    Messages.create_and_send_message_to_group(valid_attrs, group_1, :session)
+    Messages.create_and_send_message_to_group(valid_attrs, group_2, :session)
     nil
   end
 
@@ -629,7 +638,7 @@ defmodule Glific.Fixtures do
     valid_attrs = %{
       category: "Message",
       message: "Cannot send message",
-      severity: "Error",
+      severity: "Warning",
       organization_id: attrs.organization_id,
       entity: %{
         id: contact.id,
@@ -649,5 +658,83 @@ defmodule Glific.Fixtures do
     {:ok, notification} = Notifications.create_notification(valid_attrs)
 
     notification
+  end
+
+  @doc false
+  @spec billing_fixture(map()) :: Billing.t()
+  def billing_fixture(attrs) do
+    valid_attrs = %{
+      name: "some name",
+      stripe_customer_id: "random_id",
+      stripe_subscription_id: "random_subscription_id",
+      email: "some email",
+      currency: "inr"
+    }
+
+    {:ok, billing} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:organization_id, attrs.organization_id)
+      |> Billing.create_billing()
+
+    billing
+  end
+
+  @doc false
+  @spec consulting_hour_fixture(map()) :: ConsultingHour.t()
+  def consulting_hour_fixture(attrs) do
+    valid_attrs = %{
+      participants: "Adam",
+      organization_id: attrs.organization_id,
+      organization_name: "Glific",
+      staff: "Adelle Cavin",
+      content: "GCS issue",
+      when: DateTime.backward(10),
+      duration: 10,
+      is_billable: true
+    }
+
+    {:ok, consulting_hour} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> ConsultingHour.create_consulting_hour()
+
+    consulting_hour
+  end
+
+  @doc false
+  @spec contacts_field_fixture(map()) :: ContactsField.t()
+  def contacts_field_fixture(attrs) do
+    valid_attrs = %{
+      name: "Age",
+      shortcode: "age",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, contacts_field} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> ContactField.create_contact_field()
+
+    contacts_field
+  end
+
+  @doc false
+  @spec extension_fixture(map()) :: Extension.t()
+  def extension_fixture(attrs) do
+    valid_attrs = %{
+      code: "defmodule Glific.Test.Extension, do: def default_phone(), do: %{phone: 9876543210}",
+      is_active: true,
+      module: "Glific.Test.Extension",
+      name: "Test extension",
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, extension} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Extension.create_extension()
+
+    extension
   end
 end

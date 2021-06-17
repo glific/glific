@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateBilling($id: ID!, $input: BillingInput!) {
+  updateBilling(id: $id, input: $input) {
+    ...BillingFields
+
+    ...ErrorFields
+  }
+}

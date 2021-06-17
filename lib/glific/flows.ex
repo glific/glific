@@ -110,6 +110,14 @@ defmodule Glific.Flows do
           )
         )
 
+      {:is_active, is_active}, query ->
+        from q in query, where: q.is_active == ^is_active
+
+      {:name_or_keyword, name_or_keyword}, query ->
+        query
+        |> where([fr], ilike(fr.name, ^"%#{name_or_keyword}%"))
+        |> or_where([fr], ^name_or_keyword in fr.keywords)
+
       _, query ->
         query
     end)
@@ -200,7 +208,8 @@ defmodule Glific.Flows do
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
-    Caches.remove(flow.organization_id, [flow.uuid | flow.keywords])
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
     clean_cached_flow_keywords_map(flow.organization_id)
 
     attrs =
@@ -647,10 +656,12 @@ defmodule Glific.Flows do
     # this is of the form {organization_id, "flow_keywords_map}"
     # we want the organization_id
     organization_id = cache_key |> elem(0)
+    organization = Partners.organization(organization_id)
 
-    value =
+    keyword_map =
       Flow
       |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.is_active == true)
       |> join(:inner, [f], fr in FlowRevision, on: f.id == fr.flow_id)
       |> select([f, fr], %{keywords: f.keywords, id: f.id, status: fr.status})
       # the revisions table is potentially large, so we really want just a few rows from
@@ -661,20 +672,28 @@ defmodule Glific.Flows do
         %{},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
+      |> add_default_flows(organization.out_of_office)
 
-    organization = Partners.organization(organization_id)
-
-    value =
-      if organization.out_of_office.enabled and organization.out_of_office.flow_id do
-        value
-        |> update_flow_keyword_map("published", "outofoffice", organization.out_of_office.flow_id)
-        |> update_flow_keyword_map("draft", "outofoffice", organization.out_of_office.flow_id)
-      else
-        value
-      end
-
-    {:commit, value}
+    {:commit, keyword_map}
   end
+
+  @spec add_default_flows(map(), map()) :: map()
+  defp add_default_flows(keyword_map, out_of_office),
+    do:
+      keyword_map
+      |> do_add_default_flow(out_of_office.enabled, "outofoffice", out_of_office.flow_id)
+      |> do_add_default_flow(out_of_office.enabled, "defaultflow", out_of_office.default_flow_id)
+
+  @spec do_add_default_flow(map(), boolean(), String.t(), nil | non_neg_integer()) :: map()
+  defp do_add_default_flow(keyword_map, _enabled, _flow_name, nil), do: keyword_map
+
+  defp do_add_default_flow(keyword_map, true, flow_name, flow_id),
+    do:
+      keyword_map
+      |> update_flow_keyword_map("published", flow_name, flow_id)
+      |> update_flow_keyword_map("draft", flow_name, flow_id)
+
+  defp do_add_default_flow(keyword_map, _, _, _), do: keyword_map
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
@@ -696,4 +715,71 @@ defmodule Glific.Flows do
   @spec is_optin_flow?(Flow.t()) :: boolean()
   def is_optin_flow?(nil), do: false
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
+
+  @doc """
+    Generate a json map with all the flows related fields.
+  """
+  @spec export_flow(non_neg_integer()) :: map()
+  def export_flow(flow_id) do
+    flow = Repo.get!(Flow, flow_id)
+
+    %{"flows" => []}
+    |> init_export_flow(flow.uuid)
+  end
+
+  @doc """
+    Process the flows and get all the subflow defination.
+  """
+  @spec init_export_flow(map(), String.t()) :: map()
+  def init_export_flow(results, flow_uuid),
+    do: export_flow_details(flow_uuid, results)
+
+  @doc """
+    process subflows and check if there is more subflows in it.
+  """
+  @spec export_flow_details(String.t(), map()) :: map()
+  def export_flow_details(flow_uuid, results) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+      results
+    else
+      defination = get_latest_definition(flow_uuid)
+      results = Map.put(results, "flows", results["flows"] ++ [defination])
+      ## here we can export more details like fields, triggers, groups and all.
+
+      defination
+      |> Map.get("nodes", [])
+      |> get_sub_flows()
+      |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+    end
+  end
+
+  @doc """
+    Extract all the subflows form the parent flow defination.
+  """
+  @spec get_sub_flows(list()) :: list()
+  def get_sub_flows(nodes),
+    do: Enum.reduce(nodes, [], &do_get_sub_flows(&1, &2))
+
+  @spec do_get_sub_flows(map(), list()) :: list()
+  defp do_get_sub_flows(%{"actions" => actions}, list),
+    do:
+      Enum.reduce(actions, list, fn action, acc ->
+        if action["type"] == "enter_flow",
+          do: acc ++ [action["flow"]],
+          else: acc
+      end)
+
+  ## Get latest flow defination to export. There is one more function with the same name in
+  ## Glific.Flows.flow but that gives us the defination without UI placesments.
+  @spec get_latest_definition(String.t()) :: map()
+  defp get_latest_definition(flow_uuid) do
+    json =
+      FlowRevision
+      |> select([fr], fr.definition)
+      |> join(:inner, [fr], fl in Flow, on: fr.flow_id == fl.id)
+      |> where([fr, fl], fr.revision_number == 0 and fl.uuid == ^flow_uuid)
+      |> Repo.one()
+
+    Map.get(json, "definition", json)
+  end
 end

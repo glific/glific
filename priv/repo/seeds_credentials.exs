@@ -68,22 +68,6 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
-  def insert_chatbase_credentials(nil = _chatbase, _organization_id), do: nil
-
-  def insert_chatbase_credentials(chatbase, organization_id) do
-    {:ok, chatbase_db} = Repo.fetch_by(Provider, %{shortcode: "chatbase"})
-
-    Repo.insert!(%Credential{
-      organization_id: organization_id,
-      provider_id: chatbase_db.id,
-      is_active: true,
-      keys: %{},
-      secrets: %{
-        api_key: Keyword.get(chatbase, :api_key)
-      }
-    })
-  end
-
   def insert_biqquery_credentials(nil = _bigquery, _organization_id), do: nil
 
   def insert_biqquery_credentials(bigquery, organization_id) do
@@ -131,7 +115,6 @@ defmodule Glific.Seeds.Credentials do
     update_gupshup_credentials(Keyword.get(secrets, :gupshup), @organization_id)
     insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), @organization_id)
     insert_goth_credentials(Keyword.get(secrets, :goth), @organization_id)
-    insert_chatbase_credentials(Keyword.get(secrets, :chatbase), @organization_id)
     insert_biqquery_credentials(Keyword.get(secrets, :bigquery), @organization_id)
     insert_gcs_credentials(Keyword.get(secrets, :gcs), @organization_id)
   end

@@ -1,0 +1,24 @@
+fragment ExtensionFields on ExtensionResult {
+  extension {
+    code
+    id
+    insertedAt
+    updatedAt
+    isActive
+    isValid
+    module
+    name
+    organization {
+      name
+      shortcode
+      isActive
+    }
+  }
+}
+
+fragment ErrorFields on ExtensionResult {
+  errors {
+    key
+    message
+  }
+}

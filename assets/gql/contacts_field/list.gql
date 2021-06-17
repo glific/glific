@@ -1,0 +1,12 @@
+query contactsFields($filter: ContactsFieldFilter, $opts: Opts) {
+  contactsFields(filter: $filter, opts: $opts) {
+    id
+    name
+    shortcode
+    variable
+    value_type
+    scope
+    inserted_at
+    updated_at
+  }
+}

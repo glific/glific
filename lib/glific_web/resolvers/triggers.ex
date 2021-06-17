@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   Trigger Resolver which sits between the GraphQL schema and Glific Trigger Context API.
   This layer basically stiches together one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{Repo, Triggers.Trigger}
 
@@ -53,7 +54,9 @@ defmodule GlificWeb.Resolvers.Triggers do
          {:ok, trigger} <- Trigger.update_trigger(trigger, params) do
       {:ok, %{trigger: trigger}}
     else
-      _ -> {:error, "Trigger start_at should always be greater than current time"}
+      _ ->
+        {:error,
+         dgettext("errors", "Trigger start_at should always be greater than current time")}
     end
   end
 

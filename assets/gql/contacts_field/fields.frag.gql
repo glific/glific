@@ -1,0 +1,24 @@
+fragment ContactsFieldFields on ContactsFieldResult {
+  contactsField {
+    id
+    name
+    scope
+    shortcode
+    variable
+    valueType
+    insertedAt
+    updatedAt
+    organization {
+      isActive
+      name
+      shortcode
+    }
+  }
+}
+
+fragment ErrorFields on ContactsFieldResult {
+  errors {
+    key
+    message
+  }
+}

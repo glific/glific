@@ -1,0 +1,6 @@
+mutation createBillingSubscription($StripePaymentMethodId: String!, $couponCode: String) {
+  createBillingSubscription(StripePaymentMethodId: $StripePaymentMethodId, couponCode: $couponCode) {
+    subscription
+    errors
+  }
+}

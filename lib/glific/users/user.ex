@@ -66,7 +66,7 @@ defmodule Glific.Users.User do
   """
   def get_roles_list do
     # keeping the order alphabetical ASC for frontend dropdown display
-    ["Admin", "Manager", "No access", "Staff"]
+    ["Admin", "Glific admin", "Manager", "No access", "Staff"]
   end
 
   @doc """
@@ -109,7 +109,8 @@ defmodule Glific.Users.User do
       :password,
       :is_restricted,
       :last_login_at,
-      :last_login_from
+      :last_login_from,
+      :language_id
     ])
     |> Changeset.validate_required([:name, :roles])
     |> password_changeset(params, @pow_config)

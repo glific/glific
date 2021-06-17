@@ -1,0 +1,16 @@
+mutation updateOrganizationStatus($updateOrganizationId: ID!, $status: OrganizationStatusEnum!) {
+  updateOrganizationStatus(updateOrganizationId: $updateOrganizationId, status: $status) {
+    organization {
+      email
+      id
+      isApproved
+      isActive
+      name
+      shortcode
+    }
+    errors {
+      key
+      message
+    }
+  }
+}

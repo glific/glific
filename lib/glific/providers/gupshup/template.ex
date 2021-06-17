@@ -37,14 +37,35 @@ defmodule Glific.Providers.Gupshup.Template do
             else: false
           )
       })
+      |> append_buttons(attrs)
       |> Templates.do_create_session_template()
     else
       {status, response} ->
         # structure of response body can be different for different errors
-        {:error, ["BSP response status: #{to_string(status)}", response.body]}
+        {:error, ["BSP response status: #{to_string(status)}", handle_error_response(response)]}
 
       _ ->
         {:error, ["BSP", "couldn't submit for approval"]}
+    end
+  end
+
+  @spec append_buttons(map(), map()) :: map()
+  defp append_buttons(template, %{has_buttons: true} = attrs),
+    do: template |> Map.merge(%{buttons: attrs.buttons})
+
+  defp append_buttons(template, _attrs), do: template
+
+  @spec handle_error_response(map() | String.t()) :: String.t()
+  defp handle_error_response(response) when is_binary(response), do: response
+
+  defp handle_error_response(response) do
+    Jason.decode(response.body)
+    |> case do
+      {:ok, data} ->
+        if Map.has_key?(data, "message"), do: data["message"], else: "Something went wrong"
+
+      _ ->
+        "Error in decoding response body"
     end
   end
 
@@ -83,5 +104,15 @@ defmodule Glific.Providers.Gupshup.Template do
       templateType: String.upcase(Atom.to_string(attrs.type)),
       example: attrs.example
     }
+    |> update_as_button_template(attrs)
+  end
+
+  @spec update_as_button_template(map(), map()) :: map()
+  defp update_as_button_template(template_payload, %{has_buttons: true, buttons: buttons}) do
+    template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
+  end
+
+  defp update_as_button_template(template_payload, _attrs) do
+    template_payload
   end
 end

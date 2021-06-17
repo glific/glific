@@ -553,7 +553,7 @@ mutation createAndSendMessage($input: MessageInput!) {
 | ------------------------------------------ | ------------------------ | ------- | ----------- |
 | <a href="#messageresult">MessageResult</a> | An error object or empty |
 
-## Create and send Message to contacts of a group
+## Create and send Session Message to contacts of a collection
 
 ```graphql
 mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
@@ -605,7 +605,7 @@ mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {
 | ------------------------------------------------------ | ------------------- | ------- | ----------- |
 | [<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids |
 
-## Send hsm Message
+## Send HSM Message
 
 ```graphql
 mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {
@@ -684,7 +684,61 @@ mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String
 | Parameter                                  | Type                     | Default | Description |
 | ------------------------------------------ | ------------------------ | ------- | ----------- |
 | <a href="#messageresult">MessageResult</a> | An error object or empty |
-## Send media hsm Message
+
+## Send HSM Message to contacts of a collection
+
+```graphql
+mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {
+  sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {
+    success
+    contactIds
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "templateId": 34,
+  "groupId": 5,
+  "parameters": [
+    "100",
+    "30 Oct"
+  ]
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "sendHsmMessageToGroup": {
+      "errors": null,
+      "contactIds": ["8"],
+      "success": true
+    }
+  }
+}
+
+```
+
+### Query Parameters
+
+| Parameter  | Type                            | Default  | Description |
+| ---------- | ------------------------------- | -------- | ----------- |
+| templateId | <a href="#id">ID</a>!           | required |             |
+| groupId | <a href="#id">ID</a>!           | required |             |
+| parameters | [<a href="#string">List of String</a>]! | required |             |
+
+### Return Parameters
+
+| Parameter                                  | Type                     | Default | Description |
+| ------------------------------------------ | ------------------------ | ------- | ----------- |
+| [<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids |
+
+## Send Media HSM Message
 
 ```graphql
 mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {
@@ -1101,6 +1155,13 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 <td colspan="2" valign="top"><strong>Media</strong></td>
 <td valign="top"><a href="#messagemedia">MessageMedia</a></td>
 <td></td>
+</tr>
+
+
+<tr>
+<td colspan="2" valign="top"><strong>ContextMessage</strong></td>
+<td valign="top"><a href="#messagemedia">Message</a></td>
+<td>Context message that the user responded to</td>
 </tr>
 
 <tr>

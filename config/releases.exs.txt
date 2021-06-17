@@ -18,6 +18,10 @@ secret_key_base =
   System.get_env("SECRET_KEY_BASE") ||
     "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e"
 
+config :glific,
+  auth_username: System.get_env("AUTH_USERNAME") || "admin",
+  auth_password: System.get_env("AUTH_PASSWORD") || "admin"
+
 # [System.get_env("REQUEST_ORIGIN"), System.get_env("REQUEST_ORIGIN_WILDCARD")] ||
 check_origin = ["http://api.glific.test:3000", "//*.glific.test:3000"]
 
@@ -45,3 +49,17 @@ config :glific, Glific.Vault,
     default: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V2", key: Base.decode64!(cipher_key)},
     old_key: {Cloak.Ciphers.AES.GCM, tag: "AES.GCM.V1", key: Base.decode64!(old_cipher_key)}
   ]
+
+config :glific,
+stripe_ids: [
+      product: System.get_env("STRIPE_PRODUCT_ID"),
+      setup: System.get_env("STRIPE_SETUP_ID"),
+      monthly: System.get_env("STRIPE_MONTHLY_ID"),
+      users: System.get_env("STRIPE_USERS_ID"),
+      messages: System.get_env("STRIPE_MESSAGES_ID"),
+      consulting_hours: System.get_env("STRIPE_CONSULTING_HOURS_ID")
+]
+
+config :stripity_stripe,
+  api_key: System.get_env("STRIPE_API_KEY"),
+  signing_secret: System.get_env("STRIPE_SIGNING_SECRET")

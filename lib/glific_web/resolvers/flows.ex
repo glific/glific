@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.Flows do
   Flow Resolver which sits between the GraphQL schema and Glific Flow Context API.
   This layer basically stiches together one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{
     Contacts.Contact,
@@ -56,6 +57,13 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc false
+  @spec export_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, %{export_data: map}}
+  def export_flow(_, %{id: flow_id}, _) do
+    {:ok, %{export_data: Flows.export_flow(flow_id)}}
+  end
+
+  @doc false
   @spec delete_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_flow(_, %{id: id}, %{context: %{current_user: user}}) do
@@ -82,7 +90,7 @@ defmodule GlificWeb.Resolvers.Flows do
         {:ok, %{success: true, errors: %{key: hd(errors), message: hd(tl(errors))}}}
 
       _ ->
-        {:error, "Something went wrong."}
+        {:error, dgettext("errors", "Something went wrong.")}
     end
   end
 

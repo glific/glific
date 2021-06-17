@@ -5,9 +5,12 @@ defmodule Glific.FLowsTest do
     Fixtures,
     Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Flows.FlowRevision,
     Groups,
+    Messages,
     Messages.Message,
+    Processor.ConsumerWorker,
     Repo,
     Seeds.SeedsDev
   }
@@ -56,6 +59,20 @@ defmodule Glific.FLowsTest do
       assert flows == [f0]
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{keyword: "wrongkeyword"})})
+      assert flows == []
+
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
+      assert length(flows) >= 2
+    end
+
+    test "list_flows/1 returns flows filtered by name keyword", attrs do
+      f0 = flow_fixture(@valid_attrs)
+      f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
+
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "testkeyword"})})
+      assert flows == [f0, f1]
+
+      flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "wrongkeyword"})})
       assert flows == []
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{wrong_filter: "test"})})
@@ -368,7 +385,20 @@ defmodule Glific.FLowsTest do
     end
   end
 
-  test "test validate on help workflow" do
+  defp expected_error(str) do
+    errors = [
+      "Your flow has dangling nodes",
+      "Could not find Contact:",
+      "Could not find Group:",
+      "The next message after a long wait for time should be an HSM template",
+      "Could not find Sub Flow:",
+      "Could not parse"
+    ]
+
+    Enum.any?(errors, &String.contains?(str, &1))
+  end
+
+  test "test validate and response_other on test workflow" do
     SeedsDev.seed_test_flows()
 
     {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
@@ -382,16 +412,89 @@ defmodule Glific.FLowsTest do
     )
   end
 
-  defp expected_error(str) do
-    errors = [
-      "Your flow has dangling nodes",
-      "Could not find Contact:",
-      "Could not find Group:",
-      "The next message after a long wait for time should be an HSM template",
-      "Could not find Sub Flow:",
-      "Could not parse"
+  test "test not setting other option on test workflow",
+       %{organization_id: organization_id} = _attrs do
+    SeedsDev.seed_test_flows()
+
+    contact = Fixtures.contact_fixture()
+
+    opts = [
+      contact_id: contact.id,
+      sender_id: contact.id,
+      receiver_id: contact.id,
+      flow: :inbound
     ]
 
-    Enum.any?(errors, &String.contains?(str, &1))
+    message = Messages.create_temp_message(organization_id, "some random message", opts)
+
+    message_count = Repo.aggregate(Message, :count)
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "Test Workflow"})
+    {:ok, flow} = Flows.update_flow(flow, %{respond_other: true})
+
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
+    context |> FlowContext.load_context(flow) |> FlowContext.execute([message])
+    new_count = Repo.aggregate(Message, :count)
+
+    assert message_count < new_count
+    # since we should have recd 2 messages, hello and hello
+    assert message_count + 2 == new_count
+  end
+
+  test "test executing the new contact workflow and ensuring parent and child are set",
+       %{organization_id: organization_id} = _attrs do
+    contact = Fixtures.contact_fixture()
+
+    message_count = Repo.aggregate(Message, :count)
+    context_count = Repo.aggregate(FlowContext, :count)
+
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: "New Contact Workflow"})
+    {:ok, flow} = Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
+
+    {:ok, context} = FlowContext.seed_context(flow, contact, "published")
+
+    {:ok, context, _msgs} =
+      context
+      |> FlowContext.load_context(flow)
+      |> FlowContext.execute([])
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "submitted",
+              "messageId" => Faker.String.base64(36)
+            })
+        }
+    end)
+
+    state = ConsumerWorker.load_state(organization_id)
+
+    message = Fixtures.message_fixture(%{body: "1", sender_id: contact.id})
+    ConsumerWorker.process_message(message, state)
+
+    message = Fixtures.message_fixture(%{body: "2", sender_id: contact.id})
+    ConsumerWorker.process_message(message, state)
+
+    db_context = Repo.get!(FlowContext, context.id)
+    assert !is_nil(db_context.results)
+    assert !is_nil(db_context.results["child"])
+
+    child_context =
+      FlowContext
+      |> where([fc], is_nil(fc.completed_at))
+      |> where([fc], fc.parent_id == ^context.id)
+      |> Repo.one!()
+
+    assert !is_nil(child_context.results)
+    assert !is_nil(child_context.results["parent"])
+
+    assert message_count < Repo.aggregate(Message, :count)
+    assert context_count < Repo.aggregate(FlowContext, :count)
   end
 end

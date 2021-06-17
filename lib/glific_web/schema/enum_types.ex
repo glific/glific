@@ -12,6 +12,12 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "API Function Status enum"
   enum(:api_status_enum, values: Glific.Enums.api_status_const())
 
+  @desc "The Contact Field Scope Types enum"
+  enum(:contact_field_scope_enum, values: Glific.Enums.contact_field_scope_const())
+
+  @desc "The Contact Field Value Types enum"
+  enum(:contact_field_value_type_enum, values: Glific.Enums.contact_field_value_type_const())
+
   @desc "The Contact Status enum"
   enum(:contact_status_enum, values: Glific.Enums.contact_status_const())
 
@@ -39,8 +45,14 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Message Types enum"
   enum(:message_type_enum, values: Glific.Enums.message_type_const())
 
+  @desc "The Template Button Type enum"
+  enum(:template_button_type_enum, values: Glific.Enums.template_button_type_const())
+
   @desc "Enum for question types"
   enum(:question_type_enum, values: Glific.Enums.question_type_const())
+
+  @desc "The Organization Status enum"
+  enum(:organization_status_enum, values: Glific.Enums.organization_status_const())
 
   # doing this in a special way, since values: does not work
   # if we are using default values

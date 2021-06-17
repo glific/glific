@@ -11,16 +11,6 @@ config :glific,
   ecto_repos: [Glific.Repo],
   global_schema: "global"
 
-# Configures the endpoint
-config :glific, GlificWeb.Endpoint,
-  server: true,
-  http: [port: 4000],
-  url: [host: "glific.test"],
-  secret_key_base: "IN3UOAXU/FC6yPcBcC/iHg85F52QYPvjSiDkRdoydEobrrL+aNhat5I5+WA4IW0e",
-  render_errors: [view: GlificWeb.ErrorView, accepts: ~w(html json), layout: false],
-  pubsub_server: Glific.PubSub,
-  live_view: [signing_salt: "4htfH6BMHdxcuDKFHeSryT32amWvVvlX"]
-
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
@@ -36,40 +26,52 @@ config :glific, Glific.Repo, migration_timestamps: [type: :utc_datetime]
 config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 
 # Configure Oban, its queues and crontab entries
+
+oban_queues = [
+  bigquery: 5,
+  crontab: 10,
+  default: 10,
+  dialogflow: 5,
+  gcs: 5,
+  gupshup: 10,
+  webhook: 10
+]
+
+oban_crontab = [
+  {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+  {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :stats}},
+  {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+  {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
+  {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
+  {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
+  {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
+]
+
+oban_engine = Oban.Pro.Queue.SmartEngine
+
+oban_plugins = [
+  # Prune jobs after 5 mins, gives us some time to go investigate if needed
+  {Oban.Plugins.Pruner, max_age: 300},
+  {Oban.Plugins.Cron, crontab: oban_crontab},
+  Oban.Pro.Plugins.Lifeline,
+  Oban.Web.Plugins.Stats,
+  Oban.Plugins.Gossip
+]
+
 config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
-  queues: [
-    default: 10,
-    # dialogflow: 10,
-    gupshup: 10,
-    webhook: 10,
-    crontab: 10,
-    bigquery: 5,
-    gcs: 5
-  ],
-  plugins: [
-    # Prune jobs after 5 mins, gives us some time to go investigate if needed
-    {Oban.Plugins.Pruner, max_age: 300},
-    Oban.Pro.Plugins.Lifeline,
-    Oban.Web.Plugins.Stats,
-    {
-      Oban.Plugins.Cron,
-      crontab: [
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-        {"*/30 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :chatbase}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
-        {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
-        {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
-        {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-        {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
-      ]
-    }
-  ]
+  engine: oban_engine,
+  queues: oban_queues,
+  plugins: oban_plugins
 
 config :tesla, adapter: Tesla.Adapter.Hackney
+
+config :glific, :max_rate_limit_request, 60
 
 config :glific, :pow,
   user: Glific.Users.User,
@@ -109,12 +111,6 @@ config :fun_with_flags, :cache_bust_notifications,
   enabled: true,
   adapter: FunWithFlags.Notifications.PhoenixPubSub,
   client: Glific.PubSub
-
-# config goth in default disabled state
-config :goth,
-  disabled: true
-
-config :glific, Glific.Vault, ciphers: false
 
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,

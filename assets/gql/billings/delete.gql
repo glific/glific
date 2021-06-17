@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteBilling($id: ID!) {
+  deleteBilling(id: $id) {
+    ...BillingFields
+
+    ...ErrorFields
+  }
+}

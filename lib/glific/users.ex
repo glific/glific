@@ -11,6 +11,7 @@ defmodule Glific.Users do
 
   alias Glific.{
     Repo,
+    Settings.Language,
     Users.User
   }
 
@@ -66,10 +67,27 @@ defmodule Glific.Users do
   """
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def create_user(attrs) do
+    attrs =
+      attrs
+      |> Glific.atomize_keys()
+      |> get_default_language()
+
     %User{}
     |> User.changeset(attrs)
     |> Repo.insert()
   end
+
+  @spec get_default_language(map()) :: map()
+  defp get_default_language(attrs) do
+    {:ok, en} = Repo.fetch_by(Language, %{label_locale: "English"})
+    attrs |> Map.merge(%{language_id: en.id})
+  end
+
+  # special type of comparison to allow for nils, we permit comparing with
+  # nil (and treat it as not being updated), since we dont update these values
+  @spec is_updated?(any, any) :: boolean
+  defp is_updated?(_original, nil = _new), do: false
+  defp is_updated?(original, new), do: original != new
 
   @doc """
   Updates a user.
@@ -89,7 +107,8 @@ defmodule Glific.Users do
   def update_user(%User{} = user, attrs) do
     # lets invalidate the tokens and socket for this user
     # we do this ONLY if either the role or is_restricted has changed
-    if user.roles != attrs[:roles] || user.is_restricted != attrs[:is_restricted] do
+    if is_updated?(user.roles, attrs[:roles]) ||
+         is_updated?(user.is_restricted, attrs[:is_restricted]) do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
 
@@ -142,8 +161,11 @@ defmodule Glific.Users do
     |> Repo.get_by(phone: params["phone"], organization_id: organization_id)
     |> case do
       # Prevent timing attack
-      nil -> %User{password_hash: nil}
-      user -> user
+      nil ->
+        %User{password_hash: nil}
+
+      user ->
+        user |> Repo.preload(:language)
     end
     |> verify_password(params["password"])
   end
@@ -155,4 +177,28 @@ defmodule Glific.Users do
         do: user,
         else: nil
       )
+
+  @doc """
+  Promote the first user of the system to admin automatically.
+  Ignore NGO or SaaS users which are automatically created
+  """
+  @spec promote_first_user(User.t()) :: User.t()
+  def promote_first_user(user) do
+    User
+    |> where([u], u.id != ^user.id)
+    |> where([u], not ilike(u.name, "NGO %"))
+    |> where([u], not ilike(u.name, "SaaS %"))
+    |> select([u], [u.id])
+    |> Repo.all()
+    |> maybe_promote_user(user)
+  end
+
+  @spec maybe_promote_user(list(), User.t()) :: User.t()
+  defp maybe_promote_user([], user) do
+    # this is the first user, since the list of valid org users is empty
+    {:ok, user} = update_user(user, %{roles: [:admin]})
+    user
+  end
+
+  defp maybe_promote_user(_list, user), do: user
 end

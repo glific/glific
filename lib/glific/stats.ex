@@ -8,9 +8,11 @@ defmodule Glific.Stats do
   use Publicist
 
   alias Glific.{
+    BigQuery.BigQueryWorker,
     Flows.FlowContext,
     Messages.Message,
     Partners,
+    Partners.Saas,
     Repo,
     Stats.Stat,
     Users.User
@@ -79,7 +81,7 @@ defmodule Glific.Stats do
   Top level function to generate stats for all active organizations
   by default. Can control behavior by setting function parameters
   """
-  @spec generate_stats(list, boolean, Keyword.t()) :: nil
+  @spec generate_stats(list, boolean, Keyword.t()) :: :ok
   def generate_stats(list \\ [], recent \\ true, opts \\ []) do
     org_id_list = Partners.org_id_list(list, recent)
 
@@ -87,6 +89,10 @@ defmodule Glific.Stats do
     if org_id_list == [],
       do: nil,
       else: do_generate_stats(org_id_list, opts)
+
+    # Lets force push this to the BQ SaaS monitoring storage everytime we generate
+    # stats so, we get it soon
+    BigQueryWorker.perform_periodic(Saas.organization_id())
   end
 
   @spec do_generate_stats(list, Keyword.t()) :: nil
@@ -399,5 +405,22 @@ defmodule Glific.Stats do
 
     stats
     |> make_result(time_query, period_date, :users)
+  end
+
+  @doc """
+  Get the details of the usage for this organization, from start_date to end_date both inclusive
+  """
+  @spec usage(non_neg_integer, Date.t(), Date.t()) :: %{atom => pos_integer} | nil
+  def usage(organization_id, start_date, end_date) do
+    Stat
+    |> where([s], s.organization_id == ^organization_id)
+    |> where([s], s.period == "day")
+    |> where([s], s.date >= ^start_date and s.date <= ^end_date)
+    |> group_by([s], s.organization_id)
+    |> select([s], %{
+      messages: sum(s.messages),
+      users: max(s.users)
+    })
+    |> Repo.one()
   end
 end

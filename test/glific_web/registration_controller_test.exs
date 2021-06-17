@@ -309,7 +309,7 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
 
   describe "rate limit tests" do
     @password "secret12345"
-    @max_unauth_requests 5
+    @max_unauth_requests 50
 
     test "with invalid request", %{conn: conn} do
       receiver = Fixtures.contact_fixture()

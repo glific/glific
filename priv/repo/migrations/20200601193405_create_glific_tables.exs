@@ -79,10 +79,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # An optional description
       add :description, :string, null: true, comment: "Optional description for the language"
 
-      # The locale name of the language dialect, e.g. en_US, or hi
+      # The locale name of the language dialect, e.g. en, or hi
       add :locale, :string,
         null: false,
-        comment: "The locale name of the language dialect, e.g. en_US, or hi"
+        comment: "The locale name of the language dialect, e.g. en, or hi"
 
       # Is this language being currently used in the sysem
       add :is_active, :boolean,
@@ -353,7 +353,7 @@ defmodule Glific.Repo.Migrations.GlificCore do
       Store the settings of the user as a map (which is a jsonb object in psql).
       Preferences is one field in the settings (for now). The NGO can use this field to target
       the user with messages based on their preferences. The user can select one or
-      more options from the preferenes list. All settings are checkboxes or multi-select.
+      more options from the preferences list. All settings are checkboxes or multi-select.
       Merge this with fields, when we have type information
       """
 
@@ -490,8 +490,9 @@ defmodule Glific.Repo.Migrations.GlificCore do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:messages, [:contact_id])
-    create index(:messages, [:user_id], where: "user_id IS NOT NULL")
+    create index(:messages, :contact_id)
+    create index(:messages, :user_id, where: "user_id IS NOT NULL")
+    create index(:messages, :media_id, where: "media_id IS NOT NULL")
     create index(:messages, :organization_id)
   end
 

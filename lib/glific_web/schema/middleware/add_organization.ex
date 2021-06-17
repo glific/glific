@@ -24,8 +24,10 @@ defmodule GlificWeb.Schema.Middleware.AddOrganization do
   end
 
   @spec put_organization_id(map(), Glific.Users.User.t()) :: map()
-  defp put_organization_id(%{input: _input} = arguments, current_user) do
-    put_in(arguments, [:input, :organization_id], current_user.organization_id)
+  defp put_organization_id(%{input: input} = arguments, current_user) do
+    ## let's add a orgabization id form the current user if it's already not present.
+    ## By this we can allow user to put organization ids for root level features as well.
+    put_in(arguments, [:input], put_organization_id(input, current_user))
   end
 
   # defp put_organization_id(%{filter: _filter} = arguments, current_user) do

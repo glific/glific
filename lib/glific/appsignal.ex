@@ -38,7 +38,8 @@ defmodule Glific.Appsignal do
   @ignore_plugins [
     Elixir.Oban.Plugins.Stager,
     Elixir.Oban.Pro.Plugins.Lifeline,
-    Elixir.Oban.Plugins.Pruner
+    Elixir.Oban.Plugins.Pruner,
+    Elixir.Oban.Plugins.Gossip
   ]
 
   # ignore some internal Oban plugins which execute quite often

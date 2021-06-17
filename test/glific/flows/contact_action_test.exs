@@ -3,6 +3,7 @@ defmodule Glific.Flows.ContactActionTest do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.Action,
     Flows.ContactAction,
     Flows.FlowContext,
@@ -78,7 +79,7 @@ defmodule Glific.Flows.ContactActionTest do
         contact_id: contact.id,
         organization_id: contact.organization_id
       })
-      |> Repo.preload(:contact)
+      |> Repo.preload([:contact, :flow])
 
     [template | _] =
       Templates.list_session_templates(%{
@@ -100,7 +101,47 @@ defmodule Glific.Flows.ContactActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    assert message.body == "Your OTP for var_1 is var_2. This is valid for var_3."
+    assert message.body == "var_1 के लिए आपका OTP var_2 है। यह var_3 के लिए मान्य है।"
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send message translated template", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    l2 = Glific.Settings.get_language!(2)
+    assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, %{language_id: l2.id})
+    # preload contact
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [template | _] =
+      Templates.list_session_templates(%{
+        filter: Map.merge(attrs, %{shortcode: "otp", is_hsm: true})
+      })
+
+    templating = %Templating{
+      template: template,
+      variables: ["var_1", "var_2", "var_3"]
+    }
+
+    action = %Action{templating: templating}
+
+    ContactAction.send_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == "var_1 के लिए आपका OTP var_2 है। यह var_3 के लिए मान्य है।"
     assert message.flow_id == context.flow_id
   end
 
@@ -116,7 +157,7 @@ defmodule Glific.Flows.ContactActionTest do
         contact_id: contact.id,
         organization_id: contact.organization_id
       })
-      |> Repo.preload(:contact)
+      |> Repo.preload([:contact, :flow])
 
     [template | _] =
       Templates.list_session_templates(%{

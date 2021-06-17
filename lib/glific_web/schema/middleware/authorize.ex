@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   Implementing middleware functions to transform errors from Ecto Changeset into a format
   consumable and displayable to the API user. This version is specifically for mutations.
   """
+  import GlificWeb.Gettext
 
   @behaviour Absinthe.Middleware
 
@@ -20,7 +21,7 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
     else
       _ ->
         resolution
-        |> Absinthe.Resolution.put_result({:error, "Unauthorized"})
+        |> Absinthe.Resolution.put_result({:error, dgettext("errors", "Unauthorized")})
     end
   end
 
@@ -28,9 +29,13 @@ defmodule GlificWeb.Schema.Middleware.Authorize do
   @spec is_valid_role?(list(), atom() | list()) :: boolean()
   defp is_valid_role?(_, :any), do: true
   defp is_valid_role?(roles, :glific_admin), do: is_valid_role?(roles, [:glific_admin])
-  defp is_valid_role?(roles, :admin), do: is_valid_role?(roles, [:admin])
-  defp is_valid_role?(roles, :manager), do: is_valid_role?(roles, [:admin, :manager])
-  defp is_valid_role?(roles, :staff), do: is_valid_role?(roles, [:admin, :manager, :staff])
+  defp is_valid_role?(roles, :admin), do: is_valid_role?(roles, [:glific_admin, :admin])
+
+  defp is_valid_role?(roles, :manager),
+    do: is_valid_role?(roles, [:glific_admin, :admin, :manager])
+
+  defp is_valid_role?(roles, :staff),
+    do: is_valid_role?(roles, [:glific_admin, :admin, :manager, :staff])
 
   defp is_valid_role?(roles, role) when is_list(role), do: Enum.any?(roles, fn x -> x in role end)
   defp is_valid_role?(_, _), do: false

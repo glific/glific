@@ -5,7 +5,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
 
   alias Plug.Conn
 
-  alias Glific.{Partners, Repo}
+  alias Glific.{Partners, Partners.Organization, Repo}
   alias GlificWeb.Providers.Gupshup.Router
 
   @doc false
@@ -16,10 +16,11 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   Build the context with the root user for all gupshup calls, this
   gives us permission to update contacts etc
   """
-  @spec build_context(Conn.t()) :: nil
+  @spec build_context(Conn.t()) :: Organization.t()
   def build_context(conn) do
     organization = Partners.organization(conn.assigns[:organization_id])
     Repo.put_current_user(organization.root_user)
+    organization
   end
 
   @doc false
@@ -30,10 +31,16 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
           Plug.opts()
         ) :: Plug.Conn.t()
   def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
-    build_context(conn)
+    organization = build_context(conn)
+
+    path =
+      ["gupshup"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: [type, payload_type],
+          else: ["not_active_or_approved"]
 
     conn
-    |> change_path_info(["gupshup", type, payload_type])
+    |> change_path_info(path)
     |> Router.call(opts)
   end
 

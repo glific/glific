@@ -53,6 +53,15 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :send_at, :datetime
 
+    # the context of this message if applicable
+    # basically links to the message which the user
+    # replied to
+    field :context_id, :string
+
+    field :context_message, :message do
+      resolve(dataloader(Repo, use_parent: true))
+    end
+
     field :sender, :contact do
       resolve(dataloader(Repo, use_parent: true))
     end
@@ -170,10 +179,18 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :send_hsm_message, :message_result do
       arg(:template_id, non_null(:id))
-      arg(:receiver_id, non_null(:id))
       arg(:parameters, list_of(:string))
+      arg(:receiver_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Messages.send_hsm_message/3)
+    end
+
+    field :send_hsm_message_to_group, :group_message_result do
+      arg(:template_id, non_null(:id))
+      arg(:parameters, list_of(:string))
+      arg(:group_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Messages.send_hsm_message_to_group/3)
     end
 
     field :send_session_message, :message_result do

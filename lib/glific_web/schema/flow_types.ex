@@ -23,12 +23,17 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :export_flow do
+    field :export_data, :json
+  end
+
   object :flow do
     field :id, :id
     field :uuid, :uuid4
     field :name, :string
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
+    field :is_active, :boolean
     field :version_number, :string
     field :flow_type, :flow_type_enum
     field :inserted_at, :datetime
@@ -41,12 +46,16 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :name, :string
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
+    field :is_active, :boolean
   end
 
   @desc "Filtering options for flows"
   input_object :flow_filter do
     @desc "Match the name"
     field :name, :string
+
+    @desc "Match the name and keyword"
+    field :name_or_keyword, :string
 
     @desc "Match the keyword"
     field :keyword, :string
@@ -56,6 +65,9 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Match the status of flow revision"
     field :status, :string
+
+    @desc "Match the is_active flag of flow"
+    field :is_active, :boolean
   end
 
   object :flow_queries do
@@ -79,6 +91,13 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:filter, :flow_filter)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.count_flows/3)
+    end
+
+    @desc "Export flow details so that we can import it again"
+    field :export_flow, :export_flow do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.export_flow/3)
     end
   end
 

@@ -1,0 +1,18 @@
+fragment BillingFields on BillingResult {
+  billing {
+    id
+    email
+    stripe_customer_id
+    stripe_payment_method_id
+    currency
+    stripe_current_period_start
+    stripe_current_period_end
+  }
+}
+
+fragment ErrorFields on BillingResult {
+  errors {
+    key
+    message
+  }
+}

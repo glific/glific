@@ -14,15 +14,18 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_text(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_text(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
     %{type: :text, text: message.body, isHSM: message.is_hsm}
+    |> check_size()
     |> send_message(message, attrs)
   end
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_image(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_image(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
     message_media = message.media
 
@@ -30,8 +33,9 @@ defmodule Glific.Providers.Gupshup.Message do
       type: :image,
       originalUrl: message_media.source_url,
       previewUrl: message_media.url,
-      caption: check_caption(message_media.caption)
+      caption: caption(message_media.caption)
     }
+    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -51,15 +55,17 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec send_video(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  @spec send_video(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_video(message, attrs \\ %{}) do
     message_media = message.media
 
     %{
       type: :video,
       url: message_media.source_url,
-      caption: check_caption(message_media.caption)
+      caption: caption(message_media.caption)
     }
+    |> check_size()
     |> send_message(message, attrs)
   end
 
@@ -92,10 +98,13 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
-  @spec check_caption(nil | String.t()) :: String.t()
-  defp check_caption(caption) when caption == nil, do: ""
+  @spec caption(nil | String.t()) :: String.t()
+  defp caption(nil), do: ""
+  defp caption(caption), do: caption
 
-  defp check_caption(caption), do: caption
+  @spec context_id(map()) :: String.t() | nil
+  defp context_id(payload),
+    do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
@@ -106,6 +115,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
+      context_id: context_id(payload),
       body: message_payload["text"],
       sender: %{
         phone: payload["sender"]["phone"],
@@ -123,6 +133,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
+      context_id: context_id(payload),
       caption: message_payload["caption"],
       url: message_payload["url"],
       source_url: message_payload["url"],
@@ -142,6 +153,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
     %{
       bsp_message_id: payload["id"],
+      context_id: context_id(payload),
       longitude: message_payload["longitude"],
       latitude: message_payload["latitude"],
       sender: %{
@@ -162,9 +174,26 @@ defmodule Glific.Providers.Gupshup.Message do
     }
   end
 
+  @max_size 4096
+  @doc false
+  @spec check_size(map()) :: map()
+  defp check_size(%{text: text} = attrs) do
+    if String.length(text) < @max_size,
+      do: attrs,
+      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
+  end
+
+  defp check_size(%{caption: caption} = attrs) do
+    if String.length(caption) < @max_size,
+      do: attrs,
+      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
+  end
+
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
-          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
+
   defp send_message(payload, message, attrs) do
     request_body =
       %{"channel" => @channel}

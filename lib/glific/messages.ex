@@ -3,21 +3,23 @@ defmodule Glific.Messages do
   The Messages context.
   """
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   require Logger
 
   alias Glific.{
+    BigQuery.BigQueryWorker,
+    Caches,
     Communications,
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
     Flows.FlowContext,
     Flows.MessageVarParser,
+    Groups,
     Groups.Group,
-    Jobs.BigQueryWorker,
     Messages.Message,
     Messages.MessageMedia,
-    Messages.MessageVariables,
     Notifications,
     Partners,
     Repo,
@@ -56,29 +58,34 @@ defmodule Glific.Messages do
 
     Enum.reduce(filter, query, fn
       {:sender, sender}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :sender),
           where: ilike(c.name, ^"%#{sender}%")
+        )
 
       {:receiver, receiver}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :receiver),
           where: ilike(c.name, ^"%#{receiver}%")
+        )
 
       {:contact, contact}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.name, ^"%#{contact}%")
+        )
 
       {:either, phone}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :contact),
           where: ilike(c.phone, ^"%#{phone}%")
+        )
 
       {:user, user}, query ->
-        from q in query,
+        from(q in query,
           join: c in assoc(q, :user),
           where: ilike(c.name, ^"%#{user}%")
+        )
 
       {:tags_included, tags_included}, query ->
         message_ids =
@@ -99,7 +106,7 @@ defmodule Glific.Messages do
         query |> where([m], m.id not in ^message_ids)
 
       {:bsp_status, bsp_status}, query ->
-        from q in query, where: q.bsp_status == ^bsp_status
+        from(q in query, where: q.bsp_status == ^bsp_status)
 
       _, query ->
         query
@@ -145,7 +152,7 @@ defmodule Glific.Messages do
 
     %Message{}
     |> Message.changeset(attrs)
-    |> Repo.insert()
+    |> Repo.insert(returning: [:message_number, :session_uuid, :context_message_id])
   end
 
   @spec put_contact_id(map()) :: map()
@@ -226,19 +233,22 @@ defmodule Glific.Messages do
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
+      contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
+      parsed_params = Enum.map(attrs.params, &MessageVarParser.parse(&1, contact_vars))
+
       attrs
-      |> Map.put(:parameters, attrs.params)
+      |> Map.put(:parameters, parsed_params)
       |> create_and_send_hsm_message()
     else
       Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
-      |> create_and_send_message(attrs)
+      |> do_send_message(attrs)
     end
   end
 
   @doc false
-  @spec create_and_send_message({:ok | :error, any()}, map()) ::
+  @spec do_send_message({:ok | :error, any()}, map()) ::
           {:ok, Message.t()} | {:error, atom() | String.t()}
-  defp create_and_send_message(
+  defp do_send_message(
          {:ok, _} = _is_valid_contact,
          %{organization_id: organization_id} = attrs
        ) do
@@ -255,7 +265,7 @@ defmodule Glific.Messages do
     Communications.Message.send_message(message, attrs)
   end
 
-  defp create_and_send_message({:error, reason}, attrs) do
+  defp do_send_message({:error, reason}, attrs) do
     notify(attrs, reason)
     {:error, reason}
   end
@@ -266,7 +276,10 @@ defmodule Glific.Messages do
   """
   @spec notify(map(), String.t()) :: nil
   def notify(attrs, reason \\ "Cannot send the message to the contact.") do
-    contact = attrs.receiver
+    contact =
+      if is_nil(Map.get(attrs, :receiver, nil)),
+        do: Contacts.get_contact!(attrs.receiver_id),
+        else: attrs.receiver
 
     Logger.error(
       "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
@@ -278,7 +291,7 @@ defmodule Glific.Messages do
       Notifications.create_notification(%{
         category: "Message",
         message: reason,
-        severity: "Error",
+        severity: "Warning",
         organization_id: attrs.organization_id,
         entity: %{
           id: contact.id,
@@ -299,8 +312,7 @@ defmodule Glific.Messages do
   @spec parse_message_body(map()) :: String.t() | nil
   defp parse_message_body(attrs) do
     message_vars = %{
-      "contact" => Contacts.get_contact!(attrs.receiver_id) |> Map.from_struct(),
-      "global" => MessageVariables.get_global_field_map()
+      "contact" => Contacts.get_contact_field_map(attrs.receiver_id)
     }
 
     MessageVarParser.parse(attrs.body, message_vars)
@@ -385,6 +397,7 @@ defmodule Glific.Messages do
     message_params = %{
       body: session_template.body,
       type: session_template.type,
+      template_id: session_template.id,
       media_id: session_template.message_media_id,
       sender_id: Partners.organization_contact_id(session_template.organization_id),
       receiver_id: args[:receiver_id],
@@ -392,11 +405,67 @@ defmodule Glific.Messages do
       flow_id: args[:flow_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
-      organization_id: session_template.organization_id
+      organization_id: session_template.organization_id,
+      params: args[:params]
     }
 
     create_and_send_message(message_params)
   end
+
+  defp fetch_language_specific_template(session_template, id) do
+    contact = Contacts.get_contact!(id)
+
+    with true <- session_template.language_id != contact.language_id,
+         translation <- session_template.translations[Integer.to_string(contact.language_id)],
+         false <- is_nil(translation),
+         "APPROVED" <- translation["status"] do
+      session_template
+      |> Map.from_struct()
+      |> Map.put(:body, translation["body"])
+      |> Map.put(:uuid, translation["uuid"])
+    else
+      _ -> session_template
+    end
+  end
+
+  defp hsm_message_params(
+         session_template,
+         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
+       ) do
+    media_id = Map.get(attrs, :media_id, nil)
+
+    updated_template =
+      session_template
+      |> parse_template_vars(parameters)
+      |> parse_buttons(session_template.has_buttons)
+
+    %{
+      body: updated_template.body,
+      type: updated_template.type,
+      is_hsm: updated_template.is_hsm,
+      organization_id: session_template.organization_id,
+      sender_id: Partners.organization_contact_id(session_template.organization_id),
+      receiver_id: receiver_id,
+      template_uuid: session_template.uuid,
+      template_id: template_id,
+      template_type: session_template.type,
+      params: parameters,
+      media_id: media_id,
+      is_optin_flow: Map.get(attrs, :is_optin_flow, false)
+    }
+  end
+
+  @spec parse_buttons(SessionTemplate.t(), boolean()) :: SessionTemplate.t()
+  defp parse_buttons(session_template, true) do
+    updated_body =
+      session_template.buttons
+      |> Enum.reduce("", fn arc, acc -> "#{acc}| [" <> arc["text"] <> "] " end)
+
+    session_template
+    |> Map.merge(%{body: session_template.body <> updated_body})
+  end
+
+  defp parse_buttons(session_template, false), do: session_template
 
   @doc """
   Send a hsm template message to the specific contact.
@@ -407,37 +476,37 @@ defmodule Glific.Messages do
         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
       ) do
     media_id = Map.get(attrs, :media_id, nil)
-    contact = Glific.Contacts.get_contact!(receiver_id)
-    {:ok, session_template} = Repo.fetch(SessionTemplate, template_id)
+    {:ok, template} = Repo.fetch(SessionTemplate, template_id)
+
+    session_template = fetch_language_specific_template(template, receiver_id)
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
-      updated_template = parse_template_vars(session_template, parameters)
       # Passing uuid to save db call when sending template via provider
-      message_params = %{
-        body: updated_template.body,
-        type: updated_template.type,
-        is_hsm: updated_template.is_hsm,
-        organization_id: session_template.organization_id,
-        sender_id: Partners.organization_contact_id(session_template.organization_id),
-        receiver_id: receiver_id,
-        template_uuid: session_template.uuid,
-        template_id: template_id,
-        template_type: session_template.type,
-        params: parameters,
-        media_id: media_id,
-        is_optin_flow: Map.get(attrs, :is_optin_flow, false)
-      }
+      message_params =
+        session_template
+        |> hsm_message_params(attrs)
+        |> check_flow_id(attrs)
 
-      Contacts.can_send_message_to?(contact, true, attrs)
-      |> create_and_send_message(message_params)
+      receiver_id
+      |> Glific.Contacts.get_contact!()
+      |> Contacts.can_send_message_to?(true, attrs)
+      |> do_send_message(message_params)
     else
       false ->
-        {:error, "You need to provide correct number of parameters for hsm template"}
+        {:error,
+         dgettext("errors", "Please provide the right number of parameters for the template.")}
 
       {"type", false} ->
-        {:error, "You need to provide media for media hsm template"}
+        {:error, dgettext("errors", "Please provide media for media template.")}
     end
+  end
+
+  @spec check_flow_id(map(), map()) :: map()
+  defp check_flow_id(message_params, attrs) do
+    if Map.has_key?(attrs, :flow_id),
+      do: Map.put(message_params, :flow_id, attrs.flow_id),
+      else: message_params
   end
 
   @doc false
@@ -461,14 +530,19 @@ defmodule Glific.Messages do
   end
 
   @doc false
-  @spec create_and_send_message_to_contacts(map(), []) :: {:ok, list()}
-  def create_and_send_message_to_contacts(message_params, contact_ids) do
+  @spec create_and_send_message_to_contacts(map(), [], atom()) :: {:ok, list()}
+  def create_and_send_message_to_contacts(message_params, contact_ids, type) do
     contact_ids =
       contact_ids
       |> Enum.reduce([], fn contact_id, contact_ids ->
         message_params = Map.put(message_params, :receiver_id, contact_id)
 
-        case create_and_send_message(message_params) do
+        result =
+          if type == :session,
+            do: create_and_send_message(message_params),
+            else: create_and_send_hsm_message(message_params)
+
+        case result do
           {:ok, message} ->
             [message.contact_id | contact_ids]
 
@@ -522,20 +596,31 @@ defmodule Glific.Messages do
   @doc """
   Create and send message to all contacts of a group
   """
-  @spec create_and_send_message_to_group(map(), Group.t()) :: {:ok, list()}
-  def create_and_send_message_to_group(message_params, group) do
-    group = group |> Repo.preload(:contacts)
+  @spec create_and_send_message_to_group(map(), Group.t(), atom()) :: {:ok, list()}
+  def create_and_send_message_to_group(message_params, group, type) do
+    contact_ids = Groups.contact_ids(group.id)
 
-    contact_ids =
-      group.contacts
-      |> Enum.map(fn contact -> contact.id end)
-
-    {:ok, _group_message} = create_group_message(Map.put(message_params, :group_id, group.id))
+    {:ok, _group_message} =
+      if type == :session,
+        do: create_group_message(Map.put(message_params, :group_id, group.id)),
+        else:
+          create_group_message(
+            message_params
+            |> Map.put(:group_id, group.id)
+            |> Map.put(
+              :body,
+              "Sending HSM template #{message_params.template_id}, params: #{
+                message_params.parameters
+              }"
+            )
+            |> Map.put(:type, :text)
+          )
 
     create_and_send_message_to_contacts(
       # supress publishing a subscription for group messages
       Map.merge(message_params, %{publish?: false, group_id: group.id}),
-      contact_ids
+      contact_ids,
+      type
     )
   end
 
@@ -670,12 +755,10 @@ defmodule Glific.Messages do
 
   defp do_list_conversations(query, args, false = _count) do
     query
-    |> preload([:contact, :sender, :receiver, :tags, :user, :media])
+    |> preload([:contact, :sender, :receiver, :context_message, :tags, :user, :media])
     |> Repo.all()
     |> make_conversations()
     |> add_empty_conversations(args)
-
-    # |> adjust_message_numbers()
   end
 
   defp do_list_conversations(query, _args, true = _count) do
@@ -869,7 +952,8 @@ defmodule Glific.Messages do
         [
           organization_id: organization_id,
           body: body,
-          clean_body: Glific.string_clean(body)
+          clean_body: Glific.string_clean(body),
+          type: :text
         ],
         attrs
       )
@@ -896,7 +980,7 @@ defmodule Glific.Messages do
 
     MessageMedia
     |> where([m], m.id in ^messages_media_ids)
-    |> Repo.delete_all()
+    |> Repo.delete_all(timeout: 900_000)
 
     FlowContext.mark_flows_complete(contact.id)
 
@@ -954,12 +1038,30 @@ defmodule Glific.Messages do
     create_and_send_message(attrs)
   end
 
+  # cache ttl is 1 hour
+  @ttl_limit 1
+
   @doc false
   @spec validate_media(String.t(), String.t()) :: map()
   def validate_media(url, _type) when url in ["", nil],
     do: %{is_valid: false, message: "Please provide a media URL"}
 
   def validate_media(url, type) do
+    # We can cache this across all organizations
+    # We set a timeout of 60 minutes for this cache entry
+    case Caches.get_global({:validate_media, url, type}) do
+      {:ok, nil} ->
+        value = do_validate_media(url, type)
+        Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
+        value
+
+      {:ok, value} ->
+        value
+    end
+  end
+
+  @spec do_validate_media(String.t(), String.t()) :: map()
+  defp do_validate_media(url, type) do
     size_limit = %{
       "image" => 5120,
       "video" => 16_384,

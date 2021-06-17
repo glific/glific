@@ -26,15 +26,15 @@ defmodule Glific.Notifications do
   """
   @spec update_notification(Notification.t(), map()) ::
           {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
-  def update_notification(log, attrs) do
-    log
+  def update_notification(notification, attrs) do
+    notification
     |> Notification.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
   Returns the list of notifications.
-  Since this is very basic and only listing funcatinality we added the status filter like this.
+  Since this is very basic and only listing functionality we added the status filter like this.
   In future we will put the status as virtual filed in the notifications itself.
   """
   @spec list_notifications(map()) :: list()
@@ -54,6 +54,12 @@ defmodule Glific.Notifications do
       {:message, message}, query ->
         from q in query, where: ilike(q.message, ^"%#{message}%")
 
+      {:severity, severity}, query ->
+        from q in query, where: ilike(q.severity, ^"%#{severity}%")
+
+      {:is_read, is_read}, query ->
+        from q in query, where: q.is_read == ^is_read
+
       _, query ->
         query
     end)
@@ -65,4 +71,16 @@ defmodule Glific.Notifications do
   @spec count_notifications(map()) :: integer
   def count_notifications(args),
     do: Repo.count_filter(args, Notification, &filter_with/2)
+
+  @doc """
+  Mark all the unread messages as read.
+  """
+  @spec mark_notification_as_read() :: boolean
+  def mark_notification_as_read do
+    Notification
+    |> where([n], n.is_read == false)
+    |> Repo.update_all(set: [is_read: true])
+
+    true
+  end
 end

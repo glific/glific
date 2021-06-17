@@ -40,6 +40,9 @@ defmodule Glific.Application do
       # add poolboy and list of associated worker
       :poolboy.child_spec(message_poolname(), poolboy_config()),
 
+      # Add the flow metrics caching code
+      Glific.Metrics,
+
       # Add the process to manage simulator contacts
       Glific.Contacts.Simulator,
 
@@ -113,6 +116,18 @@ defmodule Glific.Application do
   end
 
   defp oban_config do
-    Application.get_env(:glific, Oban)
+    opts = Application.get_env(:glific, Oban)
+
+    if in_console?() do
+      opts
+      |> Keyword.put(:plugins, false)
+      |> Keyword.put(:queues, false)
+    else
+      opts
+    end
+  end
+
+  defp in_console? do
+    Code.ensure_loaded?(IEx) && IEx.started?()
   end
 end

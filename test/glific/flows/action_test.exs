@@ -474,6 +474,7 @@ defmodule Glific.Flows.ActionTest do
     context =
       %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
       |> Repo.preload([:contact, :flow])
+      |> Map.put(:uuid_map, %{"Test UUID" => {:node, %{is_terminal: false}}})
 
     # using uuid of language flow
     action = %Action{
@@ -489,7 +490,8 @@ defmodule Glific.Flows.ActionTest do
 
     assert {:ok, updated_context, _updated_message_stream} = result
 
-    assert Map.delete(updated_context, :delay) == Map.delete(context, :delay)
+    assert Glific.delete_multiple(updated_context, [:delay, :uuids_seen]) ==
+             Glific.delete_multiple(context, [:delay, :uuids_seen])
   end
 
   test "execute an action when type is wait_for_time", attrs do
@@ -511,7 +513,7 @@ defmodule Glific.Flows.ActionTest do
     }
 
     # bad message
-    assert_raise ArgumentError, fn -> Action.execute(action, context, [%{body: "FooBar"}]) end
+    assert elem(Action.execute(action, context, [%{body: "FooBar"}]), 0) == :error
 
     # good message, proceed ahead
     result = Action.execute(action, context, [%{body: "No Response"}])
@@ -521,10 +523,12 @@ defmodule Glific.Flows.ActionTest do
     result = Action.execute(action, context, [])
     assert elem(result, 1) == context
 
+    node = %{uuid: Ecto.UUID.generate()}
     # here we need a real context
     flow =
       Repo.get(Flow, 1)
-      |> Map.put(:nodes, [%{uuid: Ecto.UUID.generate()}])
+      |> Map.put(:nodes, [node])
+      |> Map.put(:start_node, node)
       |> Map.put(:uuid_map, %{})
 
     {:ok, context} = FlowContext.seed_context(flow, contact, "published")
@@ -548,13 +552,14 @@ defmodule Glific.Flows.ActionTest do
       %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
       |> Repo.preload([:contact, :flow])
 
-    url = "https://yahoo.com"
+    url = "https://postman-echo.com/post"
 
     # using uuid of language flow
     action = %Action{
       type: "call_webhook",
       uuid: "UUID 1",
       url: url,
+      body: "qbc",
       method: "POST",
       headers: %{
         Accept: "application/json",
@@ -575,6 +580,7 @@ defmodule Glific.Flows.ActionTest do
     # ensure we have an entry in the webhook log
     # webhooks are tested in a complete manner in webhook_test, so skipping here
     log = Repo.get_by(WebhookLog, %{url: url})
+
     assert String.contains?(log.error, "Error in decoding webhook body")
   end
 

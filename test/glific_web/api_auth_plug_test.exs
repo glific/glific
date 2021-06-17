@@ -21,11 +21,15 @@ defmodule GlificWeb.APIAuthPlugTest do
       Repo.insert!(%User{
         phone: "+919820198766",
         contact_id: contact.id,
-        organization_id: contact.organization_id
+        organization_id: contact.organization_id,
+        language_id: 1
       })
 
     {:ok, conn: conn, user: user}
   end
+
+  defp delete_fields(user),
+    do: user |> Glific.delete_multiple([:fingerprint, :language])
 
   test "can create, fetch, renew, and delete session", %{conn: conn, user: user} do
     assert {_no_auth_conn, nil} = APIAuthPlug.fetch(conn, @pow_config)
@@ -34,14 +38,14 @@ defmodule GlificWeb.APIAuthPlugTest do
     assert Map.has_key?(api_user, :fingerprint)
     assert !is_nil(api_user.fingerprint)
     assert %{private: %{api_access_token: access_token, api_renewal_token: renewal_token}} = data
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     :timer.sleep(100)
 
     {_conn, api_user} = APIAuthPlug.fetch(with_auth_header(conn, access_token), @pow_config)
     assert Map.has_key?(api_user, :fingerprint)
     assert !is_nil(api_user.fingerprint)
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     assert {%{
               private: %{
@@ -60,7 +64,7 @@ defmodule GlificWeb.APIAuthPlugTest do
 
     assert Map.has_key?(api_user, :fingerprint)
     assert !is_nil(api_user.fingerprint)
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     APIAuthPlug.delete(with_auth_header(conn, renewed_access_token), @pow_config)
     :timer.sleep(100)
@@ -79,7 +83,7 @@ defmodule GlificWeb.APIAuthPlugTest do
     assert Map.has_key?(api_user, :fingerprint)
     assert !is_nil(api_user.fingerprint)
     assert %{private: %{api_access_token: access_token, api_renewal_token: _renewal_token}} = data
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     {data, api_user} = APIAuthPlug.create(conn, user, @pow_config)
     assert Map.has_key?(api_user, :fingerprint)
@@ -87,19 +91,19 @@ defmodule GlificWeb.APIAuthPlugTest do
     assert %{private: %{api_access_token: access_token2, api_renewal_token: _renewal_token2}} =
              data
 
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     :timer.sleep(100)
 
     {conn, api_user} = APIAuthPlug.fetch(with_auth_header(conn, access_token), @pow_config)
     assert Map.has_key?(api_user, :fingerprint)
     assert !is_nil(api_user.fingerprint)
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     {conn, api_user} = APIAuthPlug.fetch(with_auth_header(conn, access_token2), @pow_config)
     assert Map.has_key?(api_user, :fingerprint)
     assert !is_nil(api_user.fingerprint)
-    assert Map.delete(user, :fingerprint) == Map.delete(api_user, :fingerprint)
+    assert delete_fields(user) == delete_fields(api_user)
 
     APIAuthPlug.delete_all_user_sessions(@pow_config, user)
 

@@ -42,7 +42,7 @@ query languages($opts: Opts) {
         "isActive": false,
         "label": "English",
         "labelLocale": "English",
-        "locale": "en_US",
+        "locale": "en",
         "localized": true
       }
     ]

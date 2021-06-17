@@ -3,6 +3,7 @@ defmodule GlificWeb.Resolvers.Groups do
   Group Resolver which sits between the GraphQL schema and Glific Group Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.{Groups, Repo}
   alias Glific.Groups.{ContactGroups, Group, UserGroups}
@@ -12,9 +13,10 @@ defmodule GlificWeb.Resolvers.Groups do
   """
   @spec group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def group(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{group: group}}
+  def group(_, %{id: id}, _context) do
+    {:ok, %{group: Groups.get_group!(id)}}
+  rescue
+    _ -> {:error, ["Group", dgettext("errors", "Group not found or permission denied.")]}
   end
 
   @doc """

@@ -6,6 +6,7 @@ defmodule Glific.Processor.Helper do
 
   alias Glific.{
     Messages.Message,
+    Repo,
     Tags
   }
 
@@ -25,14 +26,12 @@ defmodule Glific.Processor.Helper do
     message
   end
 
-  _ = '''
-  Commenting out the next few functions as we eliminate work that we are not using
-
   @doc """
   Helper function to add tag
   """
   @spec add_dialogflow_tag(Message.t(), map()) :: any()
   def add_dialogflow_tag(_message, %{"intent" => %{"isFallback" => true}}), do: nil
+  def add_dialogflow_tag(_message, %{"intent" => %{}}), do: nil
 
   def add_dialogflow_tag(message, %{"intent" => intent} = response) do
     tag_label =
@@ -65,6 +64,4 @@ defmodule Glific.Processor.Helper do
       organization_id: message.organization_id
     })
   end
-
-  '''
 end

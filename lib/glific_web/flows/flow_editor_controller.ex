@@ -7,12 +7,16 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
   alias Glific.{
     Contacts,
+    Dialogflow,
     Flows,
     Flows.ContactField,
     Flows.Flow,
     Flows.FlowCount,
     Flows.FlowLabel,
-    Settings
+    GCS.GcsWorker,
+    Partners,
+    Settings,
+    Users.User
   }
 
   @doc false
@@ -76,20 +80,28 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def fields_post(conn, params) do
     # need to store this into DB, the value_type will default to text in this case
     # the shortcode is the name, lower cased, and camelized
-    {:ok, contact_field} =
-      ContactField.create_contact_field(%{
-        name: params["label"],
-        shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
-        organization_id: conn.assigns[:organization_id]
-      })
-
-    conn
-    |> json(%{
-      key: contact_field.shortcode,
-      name: contact_field.name,
-      label: contact_field.name,
-      value_type: contact_field.value_type
+    ContactField.create_contact_field(%{
+      name: params["label"],
+      shortcode: String.downcase(params["label"]) |> String.replace(" ", "_"),
+      organization_id: conn.assigns[:organization_id]
     })
+    |> case do
+      {:ok, contact_field} ->
+        conn
+        |> json(%{
+          key: contact_field.shortcode,
+          name: contact_field.name,
+          label: contact_field.name,
+          value_type: contact_field.value_type
+        })
+
+      {:error, _} ->
+        conn
+        |> put_status(400)
+        |> json(%{
+          error: %{status: 400, message: "Cannot create new field with label #{params["label"]}"}
+        })
+    end
   end
 
   @doc """
@@ -148,12 +160,24 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-  A list of all the NLP classifiers. For Glific it's just WhatsApp.
+  A list of all the NLP classifiers. For Glific it's just Dialogflow
   We are not supporting them for now. We will come back to this in near future
   """
   @spec classifiers(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def classifiers(conn, _params) do
-    classifiers = %{results: []}
+    organization_id = conn.assigns[:organization_id]
+
+    classifiers = %{
+      results: [
+        %{
+          uuid: "dialogflow_uuid",
+          name: "Dialogflow",
+          type: "dialogflow",
+          intents: Dialogflow.Intent.get_intent_name_list(organization_id)
+        }
+      ]
+    }
+
     json(conn, classifiers)
   end
 
@@ -408,8 +432,40 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
+  @spec attachments_enabled(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def attachments_enabled(conn, _) do
+    organization_id = conn.assigns[:organization_id]
+    json(conn, %{is_enabled: Partners.attachments_enabled?(organization_id)})
+  end
+
+  @doc false
+  @spec flow_attachment(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def flow_attachment(conn, %{"media" => media, "extension" => extension} = _params) do
+    organization_id = conn.assigns[:organization_id]
+
+    remote_name =
+      conn.assigns[:current_user]
+      |> remote_name(extension)
+
+    res =
+      GcsWorker.upload_media(media.path, remote_name, organization_id)
+      |> case do
+        {:ok, gcs_url} -> %{url: gcs_url, error: nil}
+        {:error, error} -> %{url: nil, error: error}
+      end
+
+    json(conn, res)
+  end
+
+  @doc false
   @spec generate_uuid() :: String.t()
   defp generate_uuid do
     Ecto.UUID.generate()
+  end
+
+  @spec remote_name(User.t() | nil, String.t(), Ecto.UUID.t()) :: String.t()
+  defp remote_name(user, extension, uuid \\ Ecto.UUID.generate()) do
+    {year, week} = Timex.iso_week(Timex.now())
+    "outbound/#{year}-#{week}/#{user.name}/#{uuid}.#{extension}"
   end
 end

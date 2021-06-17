@@ -1,12 +1,12 @@
-defmodule Glific.BigqueryTest do
+defmodule Glific.BigQueryTest do
   use Glific.DataCase
   use Oban.Testing, repo: Glific.Repo
   use ExUnit.Case
   import Mock
 
   alias Glific.{
-    Bigquery,
-    Jobs.BigQueryWorker,
+    BigQuery,
+    BigQuery.BigQueryWorker,
     Partners,
     Seeds.SeedsDev
   }
@@ -53,7 +53,7 @@ defmodule Glific.BigqueryTest do
 
   defp get_max_id(table, attrs) do
     data =
-      Bigquery.get_table_struct(table)
+      BigQuery.get_table_struct(table)
       |> select([m], m.id)
       |> where([m], m.organization_id == ^attrs.organization_id)
       |> order_by([m], asc: m.id)
@@ -123,7 +123,7 @@ defmodule Glific.BigqueryTest do
   end
 
   test "handle_insert_query_response/3 should deactivate bigquery credentials", attrs do
-    Bigquery.handle_insert_query_response(
+    BigQuery.handle_insert_query_response(
       {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"PERMISSION_DENIED\"}}"}},
       attrs.organization_id,
       table: "messages",
@@ -142,7 +142,7 @@ defmodule Glific.BigqueryTest do
         }
     end)
 
-    assert :ok == Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
   end
 
   test "make_job_to_remove_duplicate/2 should raise info log", attrs do
@@ -162,13 +162,13 @@ defmodule Glific.BigqueryTest do
     ]) do
       # we'll need to figure out how to check if this did the right thing
       # making sure the log message is printed is quite useless
-      Bigquery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+      BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
     end
   end
 
   test "handle_insert_query_response/3 should raise error", attrs do
     assert_raise Protocol.UndefinedError, fn ->
-      Bigquery.handle_insert_query_response(
+      BigQuery.handle_insert_query_response(
         {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
         attrs.organization_id,
         table: "messages",
@@ -177,7 +177,17 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  @delete_query "DELETE FROM `test_dataset.messages` where struct(id, updated_at) in (select STRUCT(id, updated_at)  FROM( SELECT id, updated_at, ROW_NUMBER() OVER (PARTITION BY delta.id ORDER BY delta.updated_at DESC) as rn from `test_dataset.messages` delta where updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR), 'Asia/Kolkata')) a where a.rn <> 1 order by id);"
+  @delete_query """
+  DELETE FROM `test_dataset.messages`
+  WHERE struct(id, updated_at) IN (
+    SELECT STRUCT(id, updated_at)  FROM (
+      SELECT id, updated_at, ROW_NUMBER() OVER (
+        PARTITION BY delta.id ORDER BY delta.updated_at DESC
+      ) AS rn
+      FROM `test_dataset.messages` delta
+      WHERE updated_at < DATETIME(TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 HOUR),
+        'Asia/Kolkata')) a WHERE a.rn <> 1 ORDER BY id);
+  """
 
   test "generate_duplicate_removal_query/3 should create sql query", attrs do
     Tesla.Mock.mock(fn
@@ -203,7 +213,7 @@ defmodule Glific.BigqueryTest do
     }
 
     assert @delete_query ==
-             Bigquery.generate_duplicate_removal_query(
+             BigQuery.generate_duplicate_removal_query(
                "messages",
                %{conn: conn, project_id: "test_project", dataset_id: "test_dataset"},
                attrs.organization_id
@@ -213,7 +223,7 @@ defmodule Glific.BigqueryTest do
   test "handle_insert_query_response/3 should update table", attrs do
     job_table1 = Glific.Jobs.get_bigquery_job(attrs.organization_id, "messages")
 
-    Bigquery.handle_insert_query_response(
+    BigQuery.handle_insert_query_response(
       {:ok, %{insertErrors: nil}},
       attrs.organization_id,
       table: "messages",
@@ -224,7 +234,7 @@ defmodule Glific.BigqueryTest do
     assert job_table2.table_id > job_table1.table_id
 
     assert_raise RuntimeError, fn ->
-      Bigquery.handle_insert_query_response(
+      BigQuery.handle_insert_query_response(
         {:ok, %{insertErrors: %{error: "Some errors"}}},
         attrs.organization_id,
         table: "messages",
@@ -233,7 +243,7 @@ defmodule Glific.BigqueryTest do
     end
 
     assert :ok ==
-             Bigquery.handle_insert_query_response(
+             BigQuery.handle_insert_query_response(
                {:ok, %{insertErrors: nil}},
                attrs.organization_id,
                table: "messages",
@@ -243,7 +253,7 @@ defmodule Glific.BigqueryTest do
 
   test "handle_sync_errors/2 should raise error", attrs do
     assert_raise ArgumentError, fn ->
-      Bigquery.handle_sync_errors(
+      BigQuery.handle_sync_errors(
         {:error, "error"},
         attrs.organization_id,
         attrs
@@ -253,7 +263,7 @@ defmodule Glific.BigqueryTest do
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
     assert :ok ==
-             Bigquery.handle_sync_errors(
+             BigQuery.handle_sync_errors(
                %{body: "{\"error\":{\"code\":404,\"status\":\"NOT_FOUND\"}}"},
                attrs.organization_id,
                attrs
@@ -262,7 +272,7 @@ defmodule Glific.BigqueryTest do
 
   test "handle_sync_errors/2 should raise error when status is not ALREADY_EXISTS", attrs do
     assert_raise RuntimeError, fn ->
-      Bigquery.handle_sync_errors(
+      BigQuery.handle_sync_errors(
         %{body: ""},
         attrs.organization_id,
         attrs
@@ -271,7 +281,7 @@ defmodule Glific.BigqueryTest do
   end
 
   test "fetch_bigquery_credentials/2 should return credentials in ok tuple format", attrs do
-    assert {:ok, value} = Bigquery.fetch_bigquery_credentials(attrs.organization_id)
+    assert {:ok, value} = BigQuery.fetch_bigquery_credentials(attrs.organization_id)
     assert true == is_map(value)
   end
 
@@ -288,7 +298,7 @@ defmodule Glific.BigqueryTest do
         ]
       }
     ]) do
-      assert true = is_nil(Bigquery.fetch_bigquery_credentials(attrs.organization_id))
+      assert true = is_nil(BigQuery.fetch_bigquery_credentials(attrs.organization_id))
 
       {:ok, cred} =
         Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
@@ -297,22 +307,10 @@ defmodule Glific.BigqueryTest do
     end
   end
 
-  test "handle_duplicate_removal_job_error/2 should raise error about deletion in case of error",
-       attrs do
-    assert_raise RuntimeError, fn ->
-      Bigquery.handle_duplicate_removal_job_error(
-        {:error, "error"},
-        "messages",
-        %{},
-        attrs.organization_id
-      )
-    end
-  end
-
   test "handle_duplicate_removal_job_error/2 should log info on successful deletion",
        attrs do
     # we need to figure out how to check that this function did the right thing
-    Bigquery.handle_duplicate_removal_job_error(
+    BigQuery.handle_duplicate_removal_job_error(
       {:ok, "successful"},
       "messages",
       %{},
@@ -343,7 +341,7 @@ defmodule Glific.BigqueryTest do
       ]
     }
 
-    assert :ok == Bigquery.create_tables(conn, "test_dataset", "test_table")
+    assert :ok == BigQuery.create_tables(conn, 1, "test_dataset", "test_table")
   end
 
   test "alter_tables/3 should throw error tables" do
@@ -374,17 +372,17 @@ defmodule Glific.BigqueryTest do
       ]
     }
 
-    assert :ok == Bigquery.alter_tables(conn, "test_dataset", "test_table")
+    assert :ok == BigQuery.alter_tables(conn, 1, "test_dataset", "test_table")
   end
 
   @unix_time 1_464_096_368
   @formated_time "2016-05-24 18:56:08"
   test "format_date/2 should create job for contacts", attrs do
     {:ok, datetime} = DateTime.from_unix(@unix_time)
-    assert nil == Bigquery.format_date(nil, attrs.organization_id)
-    assert @formated_time == Bigquery.format_date(datetime, attrs.organization_id)
+    assert nil == BigQuery.format_date(nil, attrs.organization_id)
+    assert @formated_time == BigQuery.format_date(datetime, attrs.organization_id)
 
     assert @formated_time ==
-             Bigquery.format_date(DateTime.to_string(datetime), attrs.organization_id)
+             BigQuery.format_date(DateTime.to_string(datetime), attrs.organization_id)
   end
 end
