@@ -73,7 +73,6 @@ defmodule Glific.OnboardTest do
     # should update is_approved
     # updated_organization = Onboard.status(organization.id, :approved)
     # assert updated_organization.is_approved == true
-
   end
 
   test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",

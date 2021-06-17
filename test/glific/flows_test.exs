@@ -67,7 +67,7 @@ defmodule Glific.FLowsTest do
 
     test "list_flows/1 returns flows filtered by name keyword", attrs do
       f0 = flow_fixture(@valid_attrs)
-      f1 = flow_fixture(@valid_more_attrs|> Map.merge(%{name: "testkeyword"}))
+      f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
 
       flows = Flows.list_flows(%{filter: Map.merge(attrs, %{name_or_keyword: "testkeyword"})})
       assert flows == [f0, f1]

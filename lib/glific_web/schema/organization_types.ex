@@ -214,6 +214,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "Get a list of all organizations status"
     field :organization_status, list_of(:organization_status_enum) do
       middleware(Authorize, :admin)
+
       resolve(fn _, _, _ ->
         {:ok, OrganizationStatus.__enum_map__()}
       end)

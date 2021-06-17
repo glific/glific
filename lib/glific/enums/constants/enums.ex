@@ -77,15 +77,19 @@ defmodule Glific.Enums.Constants do
       # Template button types
       @template_button_type_const [:call_to_action, :quick_reply]
 
-      #organization status types
+      # organization status types
       @organization_status_const [
-        :inactive, # when organization is there but not active
-        :approved, # Admin approves the organization and it's ready to setup.
-        :active, # Organization is fully funcational and activated
-        :suspended, #organization is suspended and no activity can be performed on that
-        :ready_to_delete #admin wants to delete teh organization
+        # when organization is there but not active
+        :inactive,
+        # Admin approves the organization and it's ready to setup.
+        :approved,
+        # Organization is fully funcational and activated
+        :active,
+        # organization is suspended and no activity can be performed on that
+        :suspended,
+        # admin wants to delete teh organization
+        :ready_to_delete
       ]
-
     end
   end
 end

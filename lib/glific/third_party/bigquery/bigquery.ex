@@ -538,8 +538,8 @@ defmodule Glific.BigQuery do
           "Account does not have sufficient permissions to insert data to BigQuery."
         )
 
-      "TIMEOUT"
-        -> Logger.info("Timeout while inserting the data. #{inspect(response)}")
+      "TIMEOUT" ->
+        Logger.info("Timeout while inserting the data. #{inspect(response)}")
 
       _ ->
         raise("BigQuery Insert Error for table #{table} #{response}")
