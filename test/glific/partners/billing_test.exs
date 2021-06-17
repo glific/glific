@@ -141,8 +141,10 @@ defmodule Glific.BillingTest do
       Map.merge(@valid_attrs, %{
         organization_id: organization_id,
         stripe_subscription_items: %{
-          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id",
-          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_subscription_id"
+          price_1IgS7dEMShkCsLFnvIpyy5mL: "test_monthly_id",
+          price_1IgS5DEMShkCsLFne4pOqxqB: "si_test_subscription_id",
+          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_consulting_id",
+          price_1IdZdTEMShkCsLFnPAf9zzym: "si_test_message_id"
         }
       })
       |> Fixtures.billing_fixture()
