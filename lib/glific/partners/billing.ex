@@ -648,6 +648,7 @@ defmodule Glific.Partners.Billing do
     case Stats.usage(organization_id, start_usage_date, end_usage_date) do
       nil ->
         :ok
+
       usage ->
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
         prices = stripe_ids()
