@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="ExDoc v0.24.2">
+    <meta name="project" content="Glific v1.6.4">
+
+    <title>Glific.Partners.Billing — Glific v1.6.4</title>
+    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
+
+      <script src="docs_config.js"></script>
+
+    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+
+
+  </head>
+  <body data-type="modules">
+    <script>
+
+      try {
+        if (localStorage.getItem('night-mode') === 'true') {
+          document.body.classList.add('night-mode');
+        }
+      } catch (error) { }
+    </script>
+
+<div class="main">
+
+<button class="sidebar-button sidebar-toggle">
+  <span class="icon-menu" title="Collapse/expand sidebar"></span>
+</button>
+
+<section class="sidebar">
+  <form class="sidebar-search" action="search.html">
+    <button type="submit" class="search-button" aria-label="Submit Search">
+      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+    </button>
+    <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
+      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+    </button>
+    <label class="search-label">
+      <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
+    </label>
+  </form>
+
+  <div class="autocomplete">
+    <div class="autocomplete-results">
+    </div>
+  </div>
+
+  <div class="sidebar-header">
+    <div class="sidebar-projectDetails">
+      <a href="https://glific.io" class="sidebar-projectName">
+Glific
+      </a>
+      <strong class="sidebar-projectVersion">
+        v1.6.4
+      </strong>
+    </div>
+
+  </div>
+
+  <ul class="sidebar-listNav">
+    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
+
+      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+  </ul>
+  <div class="gradient"></div>
+  <ul id="full-list" class="sidebar-fullList"></ul>
+</section>
+
+<section class="content">
+  <div class="content-outer">
+    <div id="content" class="content-inner">
+
+      <h1>
+Glific.Partners.Billing <small class="app-vsn">(Glific v1.6.4)</small>
+
+          <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L1" title="View Source" class="view-source" rel="help">
+            <span class="icon-code" aria-hidden="true"></span>
+            <span class="sr-only">View Source</span>
+          </a>
+
+      </h1>
+
+
+        <section id="moduledoc">
+<p>We will use this as the main context interface for all billing subscriptions and the stripe
+interface.</p>
+        </section>
+
+
+        <section id="summary" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#summary">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+            Summary
+          </h1>
+
+  <div class="summary-types summary">
+    <h2>
+      <a href="#types">Types</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#t:t/0">t()</a>
+
+  </div>
+
+</div>
+
+  </div>
+
+  <div class="summary-functions summary">
+    <h2>
+      <a href="#functions">Functions</a>
+    </h2>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#changeset/2">changeset(billing, attrs)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Standard changeset pattern we use for all data types</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create/2">create(organization, attrs)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Create a billing record in glific, a billing customer in Stripe, given an organization</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_billing/1">create_billing(attrs \\ %{})</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Create a billing record</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#create_subscription/2">create_subscription(organization, params)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Once the organization has entered a new payment card we create a subscription for it.
+We'll do updating the card in a seperate function</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#customer_portal_link/1">customer_portal_link(billing)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>fetches customer portal url of organization with billing status as active</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#delete_billing/1">delete_billing(billing)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Delete the billing record</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_billing/1">get_billing(clauses)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Retrieve a billing record by clauses</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#get_promo_codes/1">get_promo_codes(code)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Validate entered coupon code and return with coupon details</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#make_stripe_request/4">make_stripe_request(endpoint, method, params, opts \\ [])</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A common function for making Stripe API calls with params that are not supported withing Stripity Stripe</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#record_usage/3">record_usage(organization_id, start_date, end_date)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Record the usage for a specific organization from start_date to end_date
+both dates inclusive</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#stripe_ids/0">stripe_ids()</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Fetch the stripe id's</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#tax_rates/0">tax_rates()</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Fetch the stripe tax rates</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_billing/2">update_billing(billing, attrs)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Upate the billing record</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_payment_method/2">update_payment_method(organization, stripe_payment_method_id)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Update organization and stripe customer with the current payment method as returned
+by stripe</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_stripe_customer/2">update_stripe_customer(billing, attrs)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Upate the stripe customer details record</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_subscription/2">update_subscription(billing, organization)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Update organization subscription plan</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_subscription_details/3">update_subscription_details(subscription, organization_id, billing)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Update subscription details. We will also use this method while updating the details form webhook.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="#update_usage/2">update_usage(organization_id, map)</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Update the usage record for all active subscriptions on a daily and weekly basis</p></div>
+
+</div>
+
+  </div>
+
+        </section>
+
+
+        <section id="types" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#types">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Types
+          </h1>
+          <div class="types-list">
+<section class="detail" id="t:t/0">
+
+  <div class="detail-header">
+    <a href="#t:t/0" class="detail-link" title="Link to this type">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this type</span>
+    </a>
+    <h1 class="signature">t()</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L54" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>t() :: %Glific.Partners.Billing{
+  __meta__: <a href="https://hexdocs.pm/ecto/3.6.1/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
+  currency: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  email: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
+  inserted_at: :utc_datetime | nil,
+  is_active: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>() | true,
+  is_delinquent: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>(),
+  name: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  organization: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  organization_id: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
+  stripe_current_period_end: <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>() | nil,
+  stripe_current_period_start: <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>() | nil,
+  stripe_customer_id: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  stripe_last_usage_recorded: <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>() | nil,
+  stripe_payment_method_id: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  stripe_subscription_id: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  stripe_subscription_items: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  stripe_subscription_status: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
+  updated_at: :utc_datetime | nil
+}</pre>
+
+      </div>
+
+
+  </section>
+</section>
+
+          </div>
+        </section>
+
+        <section id="functions" class="details-list">
+          <h1 class="section-heading">
+            <a class="hover-link" href="#functions">
+              <span class="icon-link" aria-hidden="true"></span>
+              <span class="sr-only">Link to this section</span>
+            </a>
+Functions
+          </h1>
+          <div class="functions-list">
+<section class="detail" id="changeset/2">
+
+  <div class="detail-header">
+    <a href="#changeset/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">changeset(billing, attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L102" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.6.1/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+
+      </div>
+
+<p>Standard changeset pattern we use for all data types</p>
+  </section>
+</section>
+<section class="detail" id="create/2">
+
+  <div class="detail-header">
+    <a href="#create/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create(organization, attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L173" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>create(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.6.1/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>() | <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>Create a billing record in glific, a billing customer in Stripe, given an organization</p>
+  </section>
+</section>
+<section class="detail" id="create_billing/1">
+
+    <span id="create_billing/0"></span>
+
+  <div class="detail-header">
+    <a href="#create_billing/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_billing(attrs \\ %{})</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L113" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>create_billing(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.6.1/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Create a billing record</p>
+  </section>
+</section>
+<section class="detail" id="create_subscription/2">
+
+  <div class="detail-header">
+    <a href="#create_subscription/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">create_subscription(organization, params)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L346" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>create_subscription(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/stripity_stripe/2.9.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>()} | {:pending, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>Once the organization has entered a new payment card we create a subscription for it.
+We'll do updating the card in a seperate function</p>
+  </section>
+</section>
+<section class="detail" id="customer_portal_link/1">
+
+  <div class="detail-header">
+    <a href="#customer_portal_link/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">customer_portal_link(billing)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L734" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>customer_portal_link(<a href="#t:t/0">t</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>fetches customer portal url of organization with billing status as active</p>
+  </section>
+</section>
+<section class="detail" id="delete_billing/1">
+
+  <div class="detail-header">
+    <a href="#delete_billing/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">delete_billing(billing)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L164" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>delete_billing(<a href="#t:t/0">t</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.6.1/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Delete the billing record</p>
+  </section>
+</section>
+<section class="detail" id="get_billing/1">
+
+  <div class="detail-header">
+    <a href="#get_billing/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_billing(clauses)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L131" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>get_billing(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="#t:t/0">t</a>() | nil</pre>
+
+      </div>
+
+<p>Retrieve a billing record by clauses</p>
+  </section>
+</section>
+<section class="detail" id="get_promo_codes/1">
+
+  <div class="detail-header">
+    <a href="#get_promo_codes/1" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">get_promo_codes(code)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L317" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>get_promo_codes(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+
+      </div>
+
+<p>Validate entered coupon code and return with coupon details</p>
+  </section>
+</section>
+<section class="detail" id="make_stripe_request/4">
+
+    <span id="make_stripe_request/3"></span>
+
+  <div class="detail-header">
+    <a href="#make_stripe_request/4" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">make_stripe_request(endpoint, method, params, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L407" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>make_stripe_request(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+
+      </div>
+
+<p>A common function for making Stripe API calls with params that are not supported withing Stripity Stripe</p>
+  </section>
+</section>
+<section class="detail" id="record_usage/3">
+
+  <div class="detail-header">
+    <a href="#record_usage/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">record_usage(organization_id, start_date, end_date)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L643" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>record_usage(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Record the usage for a specific organization from start_date to end_date
+both dates inclusive</p>
+  </section>
+</section>
+<section class="detail" id="stripe_ids/0">
+
+  <div class="detail-header">
+    <a href="#stripe_ids/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">stripe_ids()</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L235" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>stripe_ids() :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Fetch the stripe id's</p>
+  </section>
+</section>
+<section class="detail" id="tax_rates/0">
+
+  <div class="detail-header">
+    <a href="#tax_rates/0" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">tax_rates()</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L242" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>tax_rates() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+
+      </div>
+
+<p>Fetch the stripe tax rates</p>
+  </section>
+</section>
+<section class="detail" id="update_billing/2">
+
+  <div class="detail-header">
+    <a href="#update_billing/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_billing(billing, attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L138" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>update_billing(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.6.1/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Upate the billing record</p>
+  </section>
+</section>
+<section class="detail" id="update_payment_method/2">
+
+  <div class="detail-header">
+    <a href="#update_payment_method/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_payment_method(organization, stripe_payment_method_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L291" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>update_payment_method(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) ::
+  {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
+
+      </div>
+
+<p>Update organization and stripe customer with the current payment method as returned
+by stripe</p>
+  </section>
+</section>
+<section class="detail" id="update_stripe_customer/2">
+
+  <div class="detail-header">
+    <a href="#update_stripe_customer/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_stripe_customer(billing, attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L149" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>update_stripe_customer(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/stripity_stripe/2.9.0/Stripe.Error.html#t:t/0">Stripe.Error.t</a>()}</pre>
+
+      </div>
+
+<p>Upate the stripe customer details record</p>
+  </section>
+</section>
+<section class="detail" id="update_subscription/2">
+
+  <div class="detail-header">
+    <a href="#update_subscription/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_subscription(billing, organization)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L458" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>update_subscription(<a href="#t:t/0">t</a>(), <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()) ::
+  <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()</pre>
+
+      </div>
+
+<p>Update organization subscription plan</p>
+  </section>
+</section>
+<section class="detail" id="update_subscription_details/3">
+
+  <div class="detail-header">
+    <a href="#update_subscription_details/3" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_subscription_details(subscription, organization_id, billing)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L550" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>update_subscription_details(
+  <a href="https://hexdocs.pm/stripity_stripe/2.9.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="#t:t/0">t</a>() | nil
+) :: {:ok, <a href="https://hexdocs.pm/stripity_stripe/2.9.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>Update subscription details. We will also use this method while updating the details form webhook.</p>
+  </section>
+</section>
+<section class="detail" id="update_usage/2">
+
+  <div class="detail-header">
+    <a href="#update_usage/2" class="detail-link" title="Link to this function">
+      <span class="icon-link" aria-hidden="true"></span>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature">update_usage(organization_id, map)</h1>
+
+      <a href="https://github.com/glific/glific/blob/master/lib/glific/partners/billing.ex#L604" class="view-source" rel="help" title="View Source">
+       <span class="icon-code" aria-hidden="true"></span>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <h2>Specs</h2>
+      <div class="specs">
+
+          <pre>update_usage(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: :ok</pre>
+
+      </div>
+
+<p>Update the usage record for all active subscriptions on a daily and weekly basis</p>
+  </section>
+</section>
+
+          </div>
+        </section>
+
+      <footer class="footer">
+        <p>
+          <span class="line">
+            Built using
+            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.2) for the
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
+          </span>
+          <span class="line">
+            Designed by
+            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
+          </span>
+        </p>
+        <p>
+
+            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+
+          <button class="line footer-button display-shortcuts-help">
+            Display keyboard shortcuts
+          </button>
+          <button class="line footer-button night-mode-toggle">
+            Toggle night mode
+          </button>
+          <button class="line footer-button display-quick-switch">
+            Go to a HexDocs package
+          </button>
+          <button class="line footer-button tooltips-toggle">
+            <span class="tooltips-option-disable">Disable tooltips</span>
+            <span class="tooltips-option-enable">Enable tooltips</span>
+          </button>
+        </p>
+      </footer>
+    </div>
+  </div>
+</section>
+</div>
+
+
+  </body>
+</html>
