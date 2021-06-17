@@ -723,8 +723,8 @@ defmodule Glific.Partners.Billing do
     ConsultingHour
     |> where([ch], ch.organization_id == ^organization_id)
     |> where([ch], ch.is_billable == true)
-    |> where([ch], ch.inserted_at > ^start_date)
-    |> where([ch], ch.inserted_at < ^end_date)
+    |> where([ch], ch.inserted_at >= ^start_date)
+    |> where([ch], ch.inserted_at <= ^end_date)
     |> select([f], %{duration: sum(f.duration)})
     |> Repo.one(skip_organization_id: true)
   end
