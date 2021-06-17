@@ -86,7 +86,7 @@ defmodule Glific.Jobs.MinuteWorker do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "daily_tasks" ->
-        # Billing.update_usage()
+        Billing.update_usage()
         Billing.update_monthly_usage()
 
       "delete_tasks" ->

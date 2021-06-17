@@ -661,12 +661,12 @@ defmodule Glific.Partners.Billing do
   """
   @spec update_usage :: :ok
   def update_usage do
-    record_date = DateTime.utc_now() |> end_of_previous_day()
+    record_date = DateTime.utc_now() |> Timex.end_of_day()
 
     # if record date is sunday, we need to record previous weeks usage
-    # else we'll record daily usage for subscriptions near end of month
+    # or if it is the end of month then record usage for the remaining days of week
     if Date.day_of_week(record_date) == 7 ||
-         Timex.days_in_month(record_date) - record_date.day <= 3,
+         Timex.days_in_month(record_date) - record_date.day == 0,
        do: period_usage(record_date)
 
     :ok
@@ -679,6 +679,19 @@ defmodule Glific.Partners.Billing do
     |> where([b], b.is_active == true)
     |> Repo.all()
     |> Enum.each(&update_period_usage(&1, end_date))
+  end
+
+  @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
+  defp update_period_usage(billing, end_date) do
+    start_date =
+      if is_nil(billing.stripe_last_usage_recorded),
+        # if we dont have last_usage, set it from the subscription period date
+        do: Timex.beginning_of_month(end_date),
+        # We know the last time recorded usage, we bump the date
+        # to the next day for this period
+        else: billing.stripe_last_usage_recorded
+
+    record_usage(billing.organization_id, start_date, end_date)
   end
 
   @doc """
@@ -727,19 +740,6 @@ defmodule Glific.Partners.Billing do
     |> where([ch], ch.inserted_at <= ^end_date)
     |> select([f], %{duration: sum(f.duration)})
     |> Repo.one(skip_organization_id: true)
-  end
-
-  @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
-  defp update_period_usage(billing, end_date) do
-    start_date =
-      if is_nil(billing.stripe_last_usage_recorded),
-        # if we dont have last_usage, set it from the subscription period date
-        do: Timex.beginning_of_month(end_date),
-        # We know the last time recorded usage, we bump the date
-        # to the next day for this period
-        else: Timex.shift(billing.stripe_last_usage_recorded, days: 1)
-
-    record_usage(billing.organization_id, start_date, end_date)
   end
 
   @doc """
