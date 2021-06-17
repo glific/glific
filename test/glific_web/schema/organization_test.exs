@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Enums.OrganizationStatus,
     Fixtures,
     Partners,
     Partners.Organization,
@@ -480,7 +481,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     statuses = get_in(query_data, [:data, "organizationStatus"])
     assert statuses != []
-    assert statuses == Glific.Enums.OrganizationStatus.__enum_map__()
+    assert statuses == OrganizationStatus.__enum_map__()
   end
 
 end

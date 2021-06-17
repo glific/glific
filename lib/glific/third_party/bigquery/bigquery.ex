@@ -546,13 +546,9 @@ defmodule Glific.BigQuery do
     end
   end
 
-  @spec bigquery_error_status(any()) :: String.t() | atom()
-  defp bigquery_error_status(response) when is_binary(response),
-  do: String.upcase(response)
-
-  defp bigquery_error_status(response) do
-    with true <- is_map(response),
-         true <- Map.has_key?(response, :body),
+  @spec bigquery_error_status(any()) :: any()
+  defp bigquery_error_status(response) when is_map(response) do
+    with true <- Map.has_key?(response, :body),
          {:ok, error} <- Jason.decode(response.body) do
       error["error"]["status"]
     else
@@ -561,6 +557,11 @@ defmodule Glific.BigQuery do
         :unknown
     end
   end
+
+  defp bigquery_error_status(response) when is_binary(response),
+  do: String.upcase(response)
+
+  defp bigquery_error_status(response), do: response
 
   @doc """
     Merge delta and main tables.

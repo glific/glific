@@ -31,12 +31,31 @@ defmodule Glific.Saas.Onboard do
   @doc """
   Update the active and/or approved status of an organization
   """
-  @spec status(non_neg_integer, boolean | nil, boolean | nil) :: Organization.t() | nil
-  def status(update_organization_id, is_active, is_approved) do
-    changes =
-      %{}
-      |> add_map(:is_active, is_active)
-      |> add_map(:is_approved, is_approved)
+  @spec status(non_neg_integer, atom()) :: Organization.t() | nil
+  def status(update_organization_id, status) do
+  changes
+    = %{}
+    |> add_map(:status, status)
+
+  changes =
+    status
+    |> case do
+      :active ->
+        changes
+        |> add_map(:is_active, true)
+        |> add_map(:is_approved, true)
+
+      :approved ->
+        changes
+        |> add_map(:is_active, false)
+        |> add_map(:is_approved, true)
+
+      _
+        ->
+        changes
+        |> add_map(:is_active, false)
+        |> add_map(:is_approved, false)
+    end
 
     {:ok, organization} =
       update_organization_id

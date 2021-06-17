@@ -7,7 +7,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
   import Ecto.Query, warn: false
 
-  alias Glific.{Partners, Repo, Settings.Language}
+  alias Glific.{Enums.OrganizationStatus, Partners, Repo, Settings.Language}
   alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
   object :organization_result do
@@ -215,7 +215,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :organization_status, list_of(:organization_status_enum) do
       middleware(Authorize, :admin)
       resolve(fn _, _, _ ->
-        {:ok, Glific.Enums.OrganizationStatus.__enum_map__()}
+        {:ok, OrganizationStatus.__enum_map__()}
       end)
     end
 
@@ -250,8 +250,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :update_organization_status, :organization_result do
       arg(:update_organization_id, non_null(:id))
-      arg(:is_active, :boolean)
-      arg(:is_approved, :boolean)
+      arg(:status, :organization_status_enum)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.update_organization_status/3)
     end

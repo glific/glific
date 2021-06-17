@@ -107,14 +107,13 @@ defmodule GlificWeb.Resolvers.Partners do
         _,
         %{
           update_organization_id: update_organization_id,
-          is_active: is_active,
-          is_approved: is_approved
+          status: status,
         },
         _
       ) do
-    with organization <- Onboard.status(update_organization_id, is_active, is_approved) do
-      {:ok, %{organization: organization}}
-    end
+    with organization <- Onboard.status(update_organization_id, status),
+    do: {:ok, %{organization: organization}}
+
   end
 
   @doc """
