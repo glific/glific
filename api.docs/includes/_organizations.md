@@ -567,6 +567,39 @@ This returns list of timezones
 | ------------------------------ | ----------------- |
 | [<a href="#string">String</a>] | List of timezones |
 
+## Get List of Organization Status
+
+```graphql
+query organizationStatus {
+  organizationStatus
+}
+```
+
+> The above query returns A list of all the organization status:
+
+```json
+
+{
+  "data": {
+    "organizationStatus": [
+      "INACTIVE",
+      "APPROVED",
+      "ACTIVE",
+      "SUSPENDED",
+      "READY_TO_DELETE"
+    ]
+  }
+}
+```
+
+This returns list of timezones
+
+### Return Parameters
+
+| Type                           | Description       |
+| ------------------------------ | ----------------- |
+| [<a href="#string">String</a>] | List of status |
+
 ## Subscription for Wallet Balance
 
 ```graphql

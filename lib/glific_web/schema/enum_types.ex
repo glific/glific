@@ -51,6 +51,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "Enum for question types"
   enum(:question_type_enum, values: Glific.Enums.question_type_const())
 
+  @desc "The Organization Status enum"
+  enum(:organization_status_enum, values: Glific.Enums.organization_status_const())
+
   # doing this in a special way, since values: does not work
   # if we are using default values
   @desc "Enum for ordering results"

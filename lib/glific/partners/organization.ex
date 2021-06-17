@@ -10,6 +10,7 @@ defmodule Glific.Partners.Organization do
 
   alias Glific.{
     Contacts.Contact,
+    Enums.OrganizationStatus,
     Partners.OrganizationSettings.OutOfOffice,
     Partners.Provider,
     Repo,
@@ -30,6 +31,7 @@ defmodule Glific.Partners.Organization do
     :contact_id,
     :is_active,
     :is_approved,
+    :status,
     :timezone,
     :active_language_ids,
     :session_limit,
@@ -58,6 +60,7 @@ defmodule Glific.Partners.Organization do
           days: list() | nil,
           is_active: boolean() | true,
           is_approved: boolean() | false,
+          status: String.t() | nil,
           timezone: String.t() | nil,
           active_language_ids: [integer] | [],
           languages: [Language.t()] | nil,
@@ -97,6 +100,8 @@ defmodule Glific.Partners.Organization do
 
     field :is_active, :boolean, default: true
     field :is_approved, :boolean, default: false
+
+    field :status, OrganizationStatus
 
     field :timezone, :string, default: "Asia/Kolkata"
 

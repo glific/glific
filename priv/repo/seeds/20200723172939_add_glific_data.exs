@@ -425,7 +425,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       out_of_office: out_of_office_default_data,
       signature_phrase: "Please change me, NOW!",
       is_active: true,
-      is_approved: true
+      is_approved: true,
+      status: :active
     })
   end
 
@@ -442,7 +443,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       out_of_office: out_of_office_default_data,
       signature_phrase: "Please change me, NOW!",
       is_active: true,
-      is_approved: true
+      is_approved: true,
+      status: :active
     })
   end
 

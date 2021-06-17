@@ -1,5 +1,5 @@
-mutation updateOrganizationStatus($updateOrganizationId: ID!, $isActive: Boolean, $isApproved: Boolean) {
-  updateOrganizationStatus(updateOrganizationId: $updateOrganizationId, isActive: $isActive, isApproved: $isApproved) {
+mutation updateOrganizationStatus($updateOrganizationId: ID!, $status: OrganizationStatusEnum!) {
+  updateOrganizationStatus(updateOrganizationId: $updateOrganizationId, status: $status) {
     organization {
       email
       id

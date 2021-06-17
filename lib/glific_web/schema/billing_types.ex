@@ -115,6 +115,5 @@ defmodule GlificWeb.Schema.BillingTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Billings.delete_billing/3)
     end
-
   end
 end

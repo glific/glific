@@ -35,9 +35,9 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
 
     path =
       ["gupshup"] ++
-        if !organization.is_active || !organization.is_approved,
-          do: ["not_active_or_approved"],
-          else: [type, payload_type]
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: [type, payload_type],
+          else: ["not_active_or_approved"]
 
     conn
     |> change_path_info(path)

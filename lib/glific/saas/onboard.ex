@@ -24,19 +24,18 @@ defmodule Glific.Saas.Onboard do
     |> format_results()
   end
 
-  @spec add_map(map(), atom(), boolean()) :: map()
+  @spec add_map(map(), atom(), any()) :: map()
   defp add_map(map, _key, nil), do: map
   defp add_map(map, key, value), do: Map.put(map, key, value)
 
   @doc """
   Update the active and/or approved status of an organization
   """
-  @spec status(non_neg_integer, boolean | nil, boolean | nil) :: Organization.t() | nil
-  def status(update_organization_id, is_active, is_approved) do
+  @spec status(non_neg_integer, atom()) :: Organization.t() | nil
+  def status(update_organization_id, status) do
     changes =
-      %{}
-      |> add_map(:is_active, is_active)
-      |> add_map(:is_approved, is_approved)
+      status
+      |> organization_status(add_map(%{}, :status, status))
 
     {:ok, organization} =
       update_organization_id
@@ -44,6 +43,25 @@ defmodule Glific.Saas.Onboard do
       |> Partners.update_organization(changes)
 
     update_organization_billing(organization)
+  end
+
+  @spec organization_status(atom(), map()) :: map()
+  defp organization_status(:active, changes) do
+    changes
+    |> add_map(:is_active, true)
+    |> add_map(:is_approved, true)
+  end
+
+  defp organization_status(:approved, changes) do
+    changes
+    |> add_map(:is_active, false)
+    |> add_map(:is_approved, true)
+  end
+
+  defp organization_status(_, changes) do
+    changes
+    |> add_map(:is_active, false)
+    |> add_map(:is_approved, false)
   end
 
   @spec update_organization_billing(Organization.t()) :: Organization.t()

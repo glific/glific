@@ -14,7 +14,7 @@ defmodule GlificWeb.TenantsTest do
     test "organization_handler/1 returns organization id for the currect shortcode" do
       shortcode = "org_shortcode"
 
-      organization = Fixtures.organization_fixture(%{shortcode: shortcode})
+      organization = Fixtures.organization_fixture(%{shortcode: shortcode, status: :active})
       assert Tenants.organization_handler(shortcode) == organization.id
 
       # for incorrect shortcode it should return organization id of default organization

@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Enums.OrganizationStatus,
     Fixtures,
     Partners,
     Partners.Organization,
@@ -44,6 +45,12 @@ defmodule GlificWeb.Schema.OrganizationTest do
   load_gql(:delete_onboarded, GlificWeb.Schema, "assets/gql/organizations/delete_onboarded.gql")
   load_gql(:attachments, GlificWeb.Schema, "assets/gql/organizations/attachments.gql")
   load_gql(:list_timezones, GlificWeb.Schema, "assets/gql/organizations/list_timezones.gql")
+
+  load_gql(
+    :list_organization_status,
+    GlificWeb.Schema,
+    "assets/gql/organizations/list_organization_status.gql"
+  )
 
   test "organizations field returns list of organizations", %{user: user} do
     result = auth_query_gql_by(:list, user)
@@ -177,8 +184,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       auth_query_gql_by(:update_status, user,
         variables: %{
           "updateOrganizationId" => organization.id,
-          "isActive" => true,
-          "isApproved" => true
+          "status" => "ACTIVE"
         }
       )
 
@@ -471,5 +477,14 @@ defmodule GlificWeb.Schema.OrganizationTest do
     timezones = get_in(query_data, [:data, "timezones"])
     assert timezones != []
     assert "Asia/Kolkata" in timezones == true
+  end
+
+  test "organization status returns list of status", %{user: user} do
+    result = auth_query_gql_by(:list_organization_status, user)
+    assert {:ok, query_data} = result
+
+    statuses = get_in(query_data, [:data, "organizationStatus"])
+    assert statuses != []
+    assert length(statuses) == length(OrganizationStatus.__enum_map__())
   end
 end

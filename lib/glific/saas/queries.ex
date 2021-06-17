@@ -59,7 +59,8 @@ defmodule Glific.Saas.Queries do
       active_language_ids: [1],
       timezone: "Asia/Kolkata",
       is_active: false,
-      is_approved: false
+      is_approved: false,
+      status: :inactive
     }
 
     case Partners.create_organization(attrs) do

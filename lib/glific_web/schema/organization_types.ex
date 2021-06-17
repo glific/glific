@@ -7,7 +7,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   import Absinthe.Resolution.Helpers, only: [dataloader: 1]
   import Ecto.Query, warn: false
 
-  alias Glific.{Partners, Repo, Settings.Language}
+  alias Glific.{Enums.OrganizationStatus, Partners, Repo, Settings.Language}
   alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
   object :organization_result do
@@ -61,6 +61,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :is_active, :boolean
 
     field :is_approved, :boolean
+
+    field :status, :organization_status_enum
 
     field :timezone, :string
 
@@ -125,12 +127,6 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :default_flow_id, :id
   end
 
-  input_object :organization_status_input do
-    field :update_organization_id, :id
-    field :is_active, :boolean
-    field :is_approved, :boolean
-  end
-
   input_object :delete_organization_input do
     field :delete_organization_id, :id
     field :is_confirmed, :boolean
@@ -148,6 +144,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :out_of_office, :out_of_office_input
 
     field :is_active, :boolean
+
+    field :status, :organization_status_enum
 
     field :timezone, :string
 
@@ -207,6 +205,15 @@ defmodule GlificWeb.Schema.OrganizationTypes do
         {:ok, Tzdata.zone_list()}
       end)
     end
+
+    @desc "Get a list of all organizations status"
+    field :organization_status, list_of(:organization_status_enum) do
+      middleware(Authorize, :admin)
+
+      resolve(fn _, _, _ ->
+        {:ok, OrganizationStatus.__enum_map__()}
+      end)
+    end
   end
 
   object :organization_mutations do
@@ -231,8 +238,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :update_organization_status, :organization_result do
       arg(:update_organization_id, non_null(:id))
-      arg(:is_active, :boolean)
-      arg(:is_approved, :boolean)
+      arg(:status, :organization_status_enum)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.update_organization_status/3)
     end

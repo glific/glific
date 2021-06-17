@@ -22,7 +22,8 @@ defmodule GlificWeb.Resolvers.Billings do
           {:ok, any} | {:error, any}
   def get_organization_billing(_, input, %{context: %{current_user: user}}) do
     ## here we are assuming that there will be a single active billing entry for the organization.
-    organization_id =  input[:organization_id] || user.organization_id
+    organization_id = input[:organization_id] || user.organization_id
+
     with {:ok, billing} <-
            Repo.fetch_by(Billing, %{is_active: true, organization_id: organization_id}),
          do: {:ok, %{billing: billing}}
@@ -110,5 +111,4 @@ defmodule GlificWeb.Resolvers.Billings do
       {:ok, billing}
     end
   end
-
 end

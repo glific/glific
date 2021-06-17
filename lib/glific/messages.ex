@@ -455,7 +455,7 @@ defmodule Glific.Messages do
     }
   end
 
-  @spec parse_buttons(SessionTemplate.t(), boolean() ) :: SessionTemplate.t()
+  @spec parse_buttons(SessionTemplate.t(), boolean()) :: SessionTemplate.t()
   defp parse_buttons(session_template, true) do
     updated_body =
       session_template.buttons
