@@ -604,59 +604,6 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Record the usage for a specific organization from start_date to end_date
-  both dates inclusive
-  """
-  @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
-  def record_usage(organization_id, start_date, end_date) do
-    # get the billing record
-    {start_usage_date, end_usage_date, end_usage_datetime, time} =
-      format_dates(start_date, end_date)
-
-    case Stats.usage(organization_id, start_usage_date, end_usage_date) do
-      # temp fix for testing, since we dont really have any data streaming into our DB
-      # to test for invoices
-      usage ->
-        billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
-
-        prices = stripe_ids()
-        subscription_items = billing.stripe_subscription_items
-
-        record_subscription_item(
-          subscription_items[prices["messages"]],
-          usage.messages,
-          time,
-          "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
-        )
-
-        record_subscription_item(
-          subscription_items[prices["users"]],
-          usage.users,
-          time,
-          "users: #{organization_id}, #{Date.to_string(start_usage_date)}"
-        )
-
-        {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: end_usage_datetime})
-    end
-
-    :ok
-  end
-
-  # record the usage against a subscription item in stripe
-  @spec record_subscription_item(String.t(), pos_integer, pos_integer, String.t()) ::
-          {:ok, Usage.t()} | {:error, Stripe.Error.t()}
-  defp record_subscription_item(subscription_item_id, quantity, time, idempotency) do
-    Usage.create(
-      subscription_item_id,
-      %{
-        quantity: quantity,
-        timestamp: time
-      },
-      idempotency_key: idempotency
-    )
-  end
-
-  @doc """
   Update the usage record for all active subscriptions on a daily and weekly basis
   """
   @spec update_usage :: :ok
@@ -695,40 +642,67 @@ defmodule Glific.Partners.Billing do
   end
 
   @doc """
-  Updating monthly usage of organization
+  Record the usage for a specific organization from start_date to end_date
+  both dates inclusive
   """
-  @spec update_monthly_usage :: :ok
-  def update_monthly_usage do
-    Billing
-    |> where([b], b.is_active == true)
-    |> Repo.all()
-    |> Enum.each(&update_monthly_usage(&1, DateTime.utc_now()))
+  @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
+  def record_usage(organization_id, start_date, end_date) do
+    # get the billing record
+    {start_usage_date, end_usage_date, end_usage_datetime, time} =
+      format_dates(start_date, end_date)
+
+    case Stats.usage(organization_id, start_usage_date, end_usage_date) do
+      # temp fix for testing, since we dont really have any data streaming into our DB
+      # to test for invoices
+      usage ->
+        billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
+
+        prices = stripe_ids()
+        subscription_items = billing.stripe_subscription_items
+
+        record_subscription_item(
+          subscription_items[prices["messages"]],
+          usage.messages,
+          time,
+          "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
+        )
+
+        record_subscription_item(
+          subscription_items[prices["users"]],
+          usage.users,
+          time,
+          "users: #{organization_id}, #{Date.to_string(start_usage_date)}"
+        )
+
+        with consulting_hours <-
+               calculate_consulting_hours(billing.organization_id, start_date, end_date).duration,
+             false <- is_nil(consulting_hours) do
+          record_subscription_item(
+            subscription_items[prices["consulting_hours"]],
+            div(consulting_hours, 15),
+            time,
+            "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
+          )
+        end
+
+        {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: end_usage_datetime})
+    end
 
     :ok
   end
 
-  @spec update_monthly_usage(Billing.t(), DateTime.t()) :: :ok
-  defp update_monthly_usage(billing, end_date) do
-    start_date = end_date |> Timex.shift(days: -1)
-
-    {start_usage_date, _end_usage_date, _end_usage_datetime, time} =
-      format_dates(start_date, end_date)
-
-    prices = stripe_ids()
-    subscription_items = billing.stripe_subscription_items
-
-    with consulting_hours <-
-           calculate_consulting_hours(billing.organization_id, start_date, end_date).duration,
-         false <- is_nil(consulting_hours) do
-      record_subscription_item(
-        subscription_items[prices["consulting_hours"]],
-        div(consulting_hours, 15),
-        time,
-        "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
-      )
-    end
-
-    :ok
+  # record the usage against a subscription item in stripe
+  @spec record_subscription_item(String.t(), pos_integer, pos_integer, String.t()) ::
+          {:ok, Usage.t()} | {:error, Stripe.Error.t()}
+  defp record_subscription_item(subscription_item_id, quantity, time, idempotency) do
+    Usage.create(
+      subscription_item_id,
+      %{
+        quantity: quantity,
+        timestamp: time
+      },
+      idempotency_key: idempotency
+    )
   end
 
   @spec calculate_consulting_hours(non_neg_integer(), DateTime.t(), DateTime.t()) :: map()

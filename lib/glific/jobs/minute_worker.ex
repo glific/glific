@@ -87,7 +87,6 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "daily_tasks" ->
         Billing.update_usage()
-        Billing.update_monthly_usage()
 
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
