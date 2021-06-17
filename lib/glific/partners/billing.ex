@@ -600,9 +600,9 @@ defmodule Glific.Partners.Billing do
   @doc """
   Update the usage record for all active subscriptions on a daily and weekly basis
   """
-  @spec update_usage(non_neg_integer) :: :ok
-  def update_usage(_organization_id) do
-    record_date = DateTime.utc_now() |> Timex.end_of_day()
+  @spec update_usage(non_neg_integer, map()) :: :ok
+  def update_usage(_organization_id, %{time: time}) do
+    record_date = time |> Timex.end_of_day()
 
     # if record date is sunday, we need to record previous weeks usage
     # or if it is the end of month then record usage for the remaining days of week
@@ -646,6 +646,8 @@ defmodule Glific.Partners.Billing do
       format_dates(start_date, end_date)
 
     case Stats.usage(organization_id, start_usage_date, end_usage_date) do
+      nil ->
+        :ok
       usage ->
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
         prices = stripe_ids()
