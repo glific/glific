@@ -22,6 +22,7 @@ if Code.ensure_loaded?(Faker) do
       Seeds.SeedsFlows,
       Settings,
       Settings.Language,
+      Stats.Stat,
       Tags.Tag,
       Templates.SessionTemplate,
       Users
@@ -1015,6 +1016,28 @@ if Code.ensure_loaded?(Faker) do
           flow_uuid: "12c25af0-37a2-4a69-8e26-9cfd98cab5c6",
           name: "Preference Workflow"
         }
+      })
+    end
+
+    @doc false
+    @spec seed_stats(Organization.t()) :: nil
+    def seed_stats(organization) do
+      Repo.insert!(%Stat{
+        period: "day",
+        date: DateTime.utc_now() |> DateTime.to_date(),
+        contacts: 20,
+        active: 0,
+        optin: 18,
+        optout: 17,
+        messages: 201,
+        inbound: 120,
+        outbound: 81,
+        hsm: 20,
+        flows_started: 25,
+        flows_completed: 10,
+        users: 7,
+        hour: 0,
+        organization_id: organization.id
       })
     end
 

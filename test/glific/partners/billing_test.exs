@@ -7,12 +7,14 @@ defmodule Glific.BillingTest do
     Fixtures,
     Partners,
     Partners.Billing,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Stats
   }
 
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
+    SeedsDev.seed_stats(organization)
     HTTPoison.start()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
     :ok
@@ -128,6 +130,34 @@ defmodule Glific.BillingTest do
                  |> Billing.update_payment_method(payment_method_id)
 
         assert subscription.stripe_payment_method_id == "pm_1IgT1nEMShkCsLFnOd4GdL9I"
+      end
+    end
+
+    test "update_monthly_usage/1 should update usage of metered subscription item", %{
+      organization_id: organization_id
+    } do
+      _consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: organization_id})
+
+      Map.merge(@valid_attrs, %{
+        organization_id: organization_id,
+        stripe_subscription_items: %{
+          price_1IdZbfEMShkCsLFn8TF0NLPO: "test_monthly_id",
+          price_1IdZe5EMShkCsLFncGatvTCk: "si_test_subscription_id"
+        }
+      })
+      |> Fixtures.billing_fixture()
+
+      time = DateTime.utc_now() |> Timex.end_of_week() |> Timex.end_of_day()
+
+      Stats.generate_stats([], false)
+
+      use_cassette "update_monthly_usage" do
+        Billing.update_usage(organization_id, %{time: time})
+
+        {:ok, billing} =
+          Repo.fetch_by(Billing, %{is_active: true, organization_id: organization_id})
+
+        assert false == is_nil(billing.stripe_last_usage_recorded)
       end
     end
   end
