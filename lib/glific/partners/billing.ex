@@ -642,14 +642,13 @@ defmodule Glific.Partners.Billing do
   """
   @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization_id, start_date, end_date) do
-    #formatting dates
+    # formatting dates
     {start_usage_date, end_usage_date, end_usage_datetime, time} =
       format_dates(start_date, end_date)
 
     case Stats.usage(organization_id, start_usage_date, end_usage_date) do
       usage ->
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
-
         prices = stripe_ids()
         subscription_items = billing.stripe_subscription_items
 
@@ -659,13 +658,6 @@ defmodule Glific.Partners.Billing do
           div(usage.messages, 10),
           time,
           "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
-        )
-
-        record_subscription_item(
-          subscription_items[prices["users"]],
-          usage.users,
-          time,
-          "users: #{organization_id}, #{Date.to_string(start_usage_date)}"
         )
 
         with consulting_hours <-
@@ -680,7 +672,29 @@ defmodule Glific.Partners.Billing do
           )
         end
 
+        if Timex.days_in_month(end_date) - end_date.day == 0,
+          do: add_metered_users(organization_id, end_date, prices, subscription_items)
+
         {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: end_usage_datetime})
+    end
+
+    :ok
+  end
+
+  defp add_metered_users(organization_id, end_date, prices, subscription_items) do
+    start_date = end_date |> Timex.beginning_of_month() |> Timex.beginning_of_day()
+
+    {start_usage_date, end_usage_date, _end_usage_datetime, time} =
+      format_dates(start_date, end_date)
+
+    case Stats.usage(organization_id, start_usage_date, end_usage_date) do
+      usage ->
+        record_subscription_item(
+          subscription_items[prices["users"]],
+          usage.users,
+          time,
+          "users: #{organization_id}, #{Date.to_string(start_usage_date)}"
+        )
     end
 
     :ok
