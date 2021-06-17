@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema do
   # Important: Needed to use the `:upload` type
   import_types(Absinthe.Plug.Types)
 
+  import_types(__MODULE__.OrganizationTypes)
   import_types(__MODULE__.ContactTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
@@ -23,7 +24,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.MessageTypes)
   import_types(__MODULE__.MessageMediaTypes)
   import_types(__MODULE__.MessageTagTypes)
-  import_types(__MODULE__.OrganizationTypes)
+
   import_types(__MODULE__.CredentialTypes)
   import_types(__MODULE__.ProviderTypes)
   import_types(__MODULE__.SessionTemplateTypes)
