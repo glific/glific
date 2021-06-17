@@ -583,12 +583,6 @@ defmodule Glific.Partners.Billing do
     {:ok, subscription}
   end
 
-  defp end_of_previous_day(date),
-    do:
-      date
-      |> Timex.shift(days: -1)
-      |> Timex.end_of_day()
-
   # get dates and times in the right format for other functions
   @spec format_dates(DateTime.t(), DateTime.t()) ::
           {Date.t(), Date.t(), DateTime.t(), non_neg_integer}
@@ -612,9 +606,10 @@ defmodule Glific.Partners.Billing do
 
     # if record date is sunday, we need to record previous weeks usage
     # or if it is the end of month then record usage for the remaining days of week
-    if Date.day_of_week(record_date) == 7 ||
-         Timex.days_in_month(record_date) - record_date.day == 0,
-       do: period_usage(record_date)
+    period_usage(record_date)
+    # if Date.day_of_week(record_date) == 7 ||
+    #      Timex.days_in_month(record_date) - record_date.day == 0,
+    #    do: period_usage(record_date)
 
     :ok
   end
@@ -647,13 +642,11 @@ defmodule Glific.Partners.Billing do
   """
   @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization_id, start_date, end_date) do
-    # get the billing record
+    #formatting dates
     {start_usage_date, end_usage_date, end_usage_datetime, time} =
       format_dates(start_date, end_date)
 
     case Stats.usage(organization_id, start_usage_date, end_usage_date) do
-      # temp fix for testing, since we dont really have any data streaming into our DB
-      # to test for invoices
       usage ->
         billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
 
@@ -662,7 +655,8 @@ defmodule Glific.Partners.Billing do
 
         record_subscription_item(
           subscription_items[prices["messages"]],
-          usage.messages,
+          # dividing the messages as every 10 message is 1 unit in stripe messages subscription item
+          div(usage.messages, 10),
           time,
           "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
         )
@@ -679,6 +673,7 @@ defmodule Glific.Partners.Billing do
              false <- is_nil(consulting_hours) do
           record_subscription_item(
             subscription_items[prices["consulting_hours"]],
+            # dividing the consulting hours as every 15 min is 1 unit in stripe consulting hour subscription item
             div(consulting_hours, 15),
             time,
             "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
