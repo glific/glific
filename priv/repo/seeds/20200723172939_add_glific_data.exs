@@ -426,6 +426,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       signature_phrase: "Please change me, NOW!",
       is_active: true,
       is_approved: true
+      status: :active
     })
   end
 
@@ -443,6 +444,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       signature_phrase: "Please change me, NOW!",
       is_active: true,
       is_approved: true
+      status: :active
     })
   end
 
