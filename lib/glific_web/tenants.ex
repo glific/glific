@@ -82,7 +82,7 @@ defmodule GlificWeb.Tenants do
 
       # if not active or approved, lets return an error
       organization ->
-        if organization.status == :active,
+        if Glific.safe_string_to_atom(organization.status) == :active,
           do: organization.id,
           else: 0
     end
