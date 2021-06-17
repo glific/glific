@@ -600,16 +600,15 @@ defmodule Glific.Partners.Billing do
   @doc """
   Update the usage record for all active subscriptions on a daily and weekly basis
   """
-  @spec update_usage :: :ok
-  def update_usage do
+  @spec update_usage(non_neg_integer) :: :ok
+  def update_usage(_organization_id) do
     record_date = DateTime.utc_now() |> Timex.end_of_day()
 
     # if record date is sunday, we need to record previous weeks usage
     # or if it is the end of month then record usage for the remaining days of week
-    period_usage(record_date)
-    # if Date.day_of_week(record_date) == 7 ||
-    #      Timex.days_in_month(record_date) - record_date.day == 0,
-    #    do: period_usage(record_date)
+    if Date.day_of_week(record_date) == 7 ||
+         Timex.days_in_month(record_date) - record_date.day == 0,
+       do: period_usage(record_date)
 
     :ok
   end

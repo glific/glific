@@ -146,7 +146,7 @@ defmodule Glific.BillingTest do
       |> Fixtures.billing_fixture()
 
       use_cassette "update_monthly_usage" do
-        Billing.update_monthly_usage()
+        Billing.update_usage(organization_id)
       end
     end
   end
