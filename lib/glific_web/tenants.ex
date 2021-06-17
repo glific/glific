@@ -82,9 +82,9 @@ defmodule GlificWeb.Tenants do
 
       # if not active or approved, lets return an error
       organization ->
-        if !organization.is_active || !organization.is_approved,
-          do: 0,
-          else: organization.id
+        if organization.status == :active,
+          do: organization.id,
+          else: 0
     end
   end
 
