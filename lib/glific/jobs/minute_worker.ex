@@ -15,7 +15,7 @@ defmodule Glific.Jobs.MinuteWorker do
     GCS.GcsWorker,
     Jobs.BSPBalanceWorker,
     Partners,
-    # Partners.Billing,
+    Partners.Billing,
     Searches.CollectionCount,
     Stats,
     Templates,
@@ -86,8 +86,7 @@ defmodule Glific.Jobs.MinuteWorker do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "daily_tasks" ->
-        # Billing.update_usage()
-        nil
+        Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
 
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
