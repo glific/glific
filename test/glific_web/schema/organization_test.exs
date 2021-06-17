@@ -179,8 +179,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
       auth_query_gql_by(:update_status, user,
         variables: %{
           "updateOrganizationId" => organization.id,
-          "isActive" => true,
-          "isApproved" => true
+          "status" => "ACTIVE",
         }
       )
 
@@ -481,7 +480,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
 
     statuses = get_in(query_data, [:data, "organizationStatus"])
     assert statuses != []
-    assert statuses == OrganizationStatus.__enum_map__()
+    assert length(statuses) == length(OrganizationStatus.__enum_map__())
   end
 
 end
