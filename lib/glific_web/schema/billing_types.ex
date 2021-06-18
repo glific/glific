@@ -35,6 +35,8 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :email, :string
     field :currency, :string
     field :is_active, :boolean
+    field :deduct_tds, :boolean
+    field :tds_amount, :integer
     field :stripe_customer_id, :string
     field :stripe_payment_method_id, :string
     field :stripe_subscription_id, :string
@@ -52,6 +54,8 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :name, :string
     field :email, :string
     field :currency, :string
+    field :deduct_tds, :boolean
+    field :tds_amount, :integer
     field :stripe_subscription_status, :string
     field :stripe_subscription_id, :string
   end
