@@ -258,7 +258,8 @@ defmodule Glific.Partners.Billing do
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      prorate: false,
+      proration_behavior: "create_prorations",
+      prorate: true,
       items: [
         %{
           price: prices["monthly"],
