@@ -412,7 +412,7 @@ defmodule Glific.Partners.Billing do
   @doc """
   Adding credit to customer in Stripe
   """
-  @spec add_credit_to_user(map()) :: any
+  @spec add_credit_to_user(map()) :: any | non_neg_integer()
   def add_credit_to_user(transaction) do
     with billing <-
            get_billing(%{organization_id: transaction.organization_id}),
@@ -431,6 +431,8 @@ defmodule Glific.Partners.Billing do
         footer:
           "TDS INR #{credit} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
       })
+
+      credit
     end
   end
 

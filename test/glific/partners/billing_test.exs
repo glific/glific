@@ -133,6 +133,26 @@ defmodule Glific.BillingTest do
       end
     end
 
+    test "add_credit_to_user/1 with valid data should add credit to customer and add footer", %{
+      organization_id: organization_id
+    } do
+      Billing.get_billing(%{organization_id: organization_id})
+      |> Billing.update_billing(%{tds_amount: 10, deduct_tds: true})
+
+      use_cassette "add_credit_to_user" do
+        credit =
+          %{
+            invoice_id: "test_invoice_id",
+            organization_id: organization_id,
+            status: "draft",
+            amount_due: 75000
+          }
+          |> Billing.add_credit_to_user()
+
+        assert credit == 7500
+      end
+    end
+
     test "update_monthly_usage/1 should update usage of metered subscription item", %{
       organization_id: organization_id
     } do
