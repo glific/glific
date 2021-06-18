@@ -244,7 +244,6 @@ defmodule Glific.Partners.Billing do
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
-    prices = stripe_ids()
 
     # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
@@ -253,17 +252,14 @@ defmodule Glific.Partners.Billing do
       |> Timex.shift(days: 1)
       |> Timex.beginning_of_day()
       |> DateTime.to_unix()
+      prices = stripe_ids()
 
     %{
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      prorate: true,
+      prorate: false,
       items: [
-        %{
-          price: prices["monthly"],
-          quantity: 1
-        },
         %{
           price: prices["users"]
         },
@@ -487,7 +483,8 @@ defmodule Glific.Partners.Billing do
     organization
   end
 
-  def update_subscription(billing, %{status: status} = organization) when status in [:inactive, :ready_to_delete] do
+  def update_subscription(billing, %{status: status} = organization)
+      when status in [:inactive, :ready_to_delete] do
     ## let's delete the subscription by end of that month and deactivate the
     ## billing when we change the status to inactive and ready to delete.
     Stripe.Subscription.delete(billing.stripe_customer_id, %{at_period_end: true})
@@ -591,6 +588,20 @@ defmodule Glific.Partners.Billing do
 
     update_billing(billing, params)
     {:ok, subscription}
+  end
+
+  def subscription_created_callback(subscription, organization_id) do
+    prices = stripe_ids()
+    proration_date = DateTime.utc_now() |> DateTime.to_unix()
+
+    Stripe.SubscriptionItem.create(%{
+      subscription: subscription.id,
+      prorate: true,
+      proration_date: proration_date,
+      price: prices["monthly"],
+      quantity: 1
+    })
+    |> IO.inspect()
   end
 
   # get dates and times in the right format for other functions
