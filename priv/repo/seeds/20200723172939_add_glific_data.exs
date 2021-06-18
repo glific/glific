@@ -158,15 +158,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       name: "Tides",
       organization_id: organization.id,
       phone: "91111222333",
-      stripe_ids: %{
-        product: "prod_JG5ns5s9yPRiOq",
-        setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
-        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
-        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
-        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
-        inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
-      },
+      stripe_ids: Enum.into(get_stripe_ids(), %{}),
       tax_rates: %{
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
       }
@@ -174,6 +166,20 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   defp saas(_count, _organization), do: nil
+
+  defp get_stripe_ids(),
+  do: Application.get_env(:glific, :stripe_ids, default_ids())
+
+
+  defp default_ids(), do: [
+      product: "prod_JG5ns5s9yPRiOq",
+      setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
+      monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
+      users: "price_1IdZehEMShkCsLFnyYhuDu6p",
+      messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
+      consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
+      inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
+  ]
 
   def gtags(organization, en) do
     # seed tags

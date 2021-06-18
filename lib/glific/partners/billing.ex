@@ -26,6 +26,7 @@ defmodule Glific.Partners.Billing do
   alias Stripe.{
     BillingPortal,
     Request,
+    Subscription,
     SubscriptionItem.Usage
   }
 
@@ -258,7 +259,6 @@ defmodule Glific.Partners.Billing do
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
-      proration_behavior: "create_prorations",
       prorate: true,
       items: [
         %{
@@ -364,6 +364,10 @@ defmodule Glific.Partners.Billing do
 
   @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
   defp setup(billing, organization, params) do
+
+    ## let's create an invocie items. We are not attaching this to the invoice
+    ## so it will be attahed automatically to the next invoice create.
+
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
@@ -393,8 +397,8 @@ defmodule Glific.Partners.Billing do
   end
 
   @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
-  defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
-    make_stripe_request("invoiceitems/#{invoice_id}", :post, %{
+  defp apply_coupon(invoice_item_id, %{coupon_code: coupon_code}) do
+    make_stripe_request("invoiceitems/#{invoice_item_id}", :post, %{
       discounts: [%{coupon: coupon_code}]
     })
   end
@@ -416,16 +420,19 @@ defmodule Glific.Partners.Billing do
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   defp subscription(billing, organization) do
-    # now create and attach the subscriptions to this organization
-    params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    make_stripe_request("subscriptions", :post, params, opts)
+    billing
+    |> subscription_params(organization)
+    |> IO.inspect()
+    |> Subscription.create(opts)
     |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
+
       {:ok, subscription} ->
+
         update_subscription_details(subscription, organization.id, billing)
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
