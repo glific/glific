@@ -45,8 +45,6 @@ defmodule GlificWeb.Schema.BillingTypes do
     field :stripe_last_usage_recorded, :datetime
     field :stripe_current_period_start, :datetime
     field :stripe_current_period_end, :datetime
-    field :deduct_tds, :boolean
-    field :tds_amount, :integer
   end
 
   input_object :billing_input do
