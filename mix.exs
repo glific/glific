@@ -145,7 +145,7 @@ defmodule Glific.MixProject do
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.2"},
       {:tzdata, "~> 1.1"},
-      {:stripity_stripe, "~> 2.0"},
+      {:stripity_stripe, "~> 2.10"},
       {:stripe_mock, "~> 0.1.0", only: @test_envs},
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.12.2", only: @test_envs},
