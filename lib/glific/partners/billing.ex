@@ -455,7 +455,7 @@ defmodule Glific.Partners.Billing do
   Update organization subscription plan
   """
   @spec update_subscription(Billing.t(), Organization.t()) :: Organization.t()
-  def update_subscription(billing, organization) do
+  def update_subscription(billing, %{status: :suspended} = organization) do
     billing.stripe_subscription_items
     |> Map.values()
     |> Enum.each(fn subscription_item ->
@@ -486,6 +486,16 @@ defmodule Glific.Partners.Billing do
     Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
     organization
   end
+
+  def update_subscription(billing, %{status: status} = organization) when status in [:inactive, :ready_to_delete] do
+    ## let's delete the subscription by end of that month and deactivate the
+    ## billing when we change the status to inactive and ready to delete.
+    Stripe.Subscription.delete(billing.stripe_customer_id, %{at_period_end: true})
+    update_billing(billing, %{is_active: false})
+    organization
+  end
+
+  def update_subscription(_billing, organization), do: organization
 
   # return a map which maps glific product ids to subscription item ids
   @spec subscription_details(Stripe.Subscription.t()) :: map()
