@@ -424,7 +424,6 @@ defmodule Glific.Partners.Billing do
 
     billing
     |> subscription_params(organization)
-    |> IO.inspect()
     |> Subscription.create(opts)
     |> case do
       # subscription is active, we need to update the same information via the
