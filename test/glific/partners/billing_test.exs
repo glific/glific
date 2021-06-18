@@ -145,7 +145,7 @@ defmodule Glific.BillingTest do
             invoice_id: "test_invoice_id",
             organization_id: organization_id,
             status: "draft",
-            amount_due: 75000
+            amount_due: 75_000
           }
           |> Billing.add_credit_to_user()
 
