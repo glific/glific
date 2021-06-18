@@ -48,7 +48,9 @@ defmodule Glific.Partners.Billing do
     :stripe_last_usage_recorded,
     :currency,
     :is_delinquent,
-    :is_active
+    :is_active,
+    :deduct_tds,
+    :tds_amount
   ]
 
   @type t() :: %__MODULE__{
@@ -67,6 +69,8 @@ defmodule Glific.Partners.Billing do
           currency: String.t() | nil,
           is_delinquent: boolean,
           is_active: boolean() | true,
+          deduct_tds: boolean() | false,
+          tds_amount: integer() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -89,6 +93,10 @@ defmodule Glific.Partners.Billing do
 
     field :is_delinquent, :boolean, default: false
     field :is_active, :boolean, default: true
+
+    field  :deduct_tds, :boolean, default: false
+
+    field  :tds_amount, :integer
 
     belongs_to :organization, Organization
 
