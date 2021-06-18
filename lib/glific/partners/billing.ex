@@ -409,7 +409,10 @@ defmodule Glific.Partners.Billing do
 
   defp apply_coupon(_, _), do: nil
 
-  @spec add_credit_to_user(map()):: any
+  @doc """
+  Adding credit to customer in Stripe
+  """
+  @spec add_credit_to_user(map()) :: any
   def add_credit_to_user(transaction) do
     with billing <-
            get_billing(%{organization_id: transaction.organization_id}),
@@ -417,18 +420,22 @@ defmodule Glific.Partners.Billing do
          true <- billing.deduct_tds do
       credit = calculate_credit(billing, transaction)
 
+      # Add credit to customer
       Stripe.CustomerBalanceTransaction.create(billing.stripe_customer_id, %{
         amount: credit,
         currency: billing.currency
       })
 
-      Stripe.Invoice.update(billing.stripe_customer_id, %{
+      # Update invoice footer with message
+      Stripe.Invoice.update(transaction.invoice_id, %{
         footer:
           "TDS INR #{credit} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
       })
     end
   end
 
+  # Calculate the amount to be credited to customer account
+  @spec calculate_credit(Billing.t(), map()) :: non_neg_integer()
   defp calculate_credit(billing, transaction) do
     (billing.tds_amount / 100 * transaction.amount_due) |> trunc()
   end
