@@ -412,8 +412,8 @@ defmodule Glific.Partners.Billing do
   @doc """
   Adding credit to customer in Stripe
   """
-  @spec add_credit_to_user(map()) :: any | non_neg_integer()
-  def add_credit_to_user(transaction) do
+  @spec credit_customer(map()) :: any | non_neg_integer()
+  def credit_customer(transaction) do
     with billing <-
            get_billing(%{organization_id: transaction.organization_id}),
          "draft" <- transaction.status,

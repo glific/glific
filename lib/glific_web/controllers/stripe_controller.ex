@@ -76,7 +76,7 @@ defmodule GlificWeb.StripeController do
          %{type: "invoice.created", data: %{object: invoice}} = _stripe_event,
          organization_id
        ) do
-    Billing.add_credit_to_user(%{
+    Billing.credit_customer(%{
       invoice_id: invoice.id,
       organization_id: organization_id,
       status: invoice.status,
