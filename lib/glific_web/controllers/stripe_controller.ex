@@ -108,6 +108,13 @@ defmodule GlificWeb.StripeController do
        do: Billing.update_subscription_details(subscription, organization_id, nil)
 
   defp handle_webhook(
+         %{type: "customer.subscription.created", data: %{object: subscription}} = _stripe_event,
+         organization_id
+       ),
+       do:
+       Billing.subscription_created_callback(subscription, organization_id)
+
+  defp handle_webhook(
          %{type: "customer.updated", data: %{object: customer}} = _stripe_event,
          organization_id
        ) do
