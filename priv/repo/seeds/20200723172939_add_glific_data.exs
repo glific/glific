@@ -168,7 +168,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp saas(_count, _organization), do: nil
 
   defp get_stripe_ids(),
-    do: Application.get_env(:glific, :stripe_ids, default_ids())
+    do: default_ids()
 
   defp default_ids(),
     do: [
