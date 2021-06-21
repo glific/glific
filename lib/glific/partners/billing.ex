@@ -654,10 +654,10 @@ defmodule Glific.Partners.Billing do
       prorate: true,
       proration_date: proration_date,
       price: prices["monthly"],
-      quantity: 1.0
+      quantity: 1
     })
     |> case do
-      {:ok, _t} -> :ok
+      {:ok, _t} -> {:ok, subscription}
       {:error, error}  ->  {:error, error}
     end
   end
