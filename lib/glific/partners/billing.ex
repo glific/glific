@@ -253,7 +253,6 @@ defmodule Glific.Partners.Billing do
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
-    prices = stripe_ids()
 
     # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
@@ -262,6 +261,7 @@ defmodule Glific.Partners.Billing do
       |> Timex.shift(days: 1)
       |> Timex.beginning_of_day()
       |> DateTime.to_unix()
+      prices = stripe_ids()
 
     %{
       customer: billing.stripe_customer_id,
@@ -269,10 +269,6 @@ defmodule Glific.Partners.Billing do
       billing_cycle_anchor: anchor_timestamp,
       prorate: false,
       items: [
-        %{
-          price: prices["monthly"],
-          quantity: 1
-        },
         %{
           price: prices["users"]
         },
@@ -372,6 +368,10 @@ defmodule Glific.Partners.Billing do
 
   @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
   defp setup(billing, organization, params) do
+
+    ## let's create an invocie items. We are not attaching this to the invoice
+    ## so it will be attached automatically to the next invoice create.
+
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
@@ -401,8 +401,8 @@ defmodule Glific.Partners.Billing do
   end
 
   @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
-  defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
-    make_stripe_request("invoiceitems/#{invoice_id}", :post, %{
+  defp apply_coupon(invoice_item_id, %{coupon_code: coupon_code}) do
+    make_stripe_request("invoiceitems/#{invoice_item_id}", :post, %{
       discounts: [%{coupon: coupon_code}]
     })
   end
@@ -457,7 +457,6 @@ defmodule Glific.Partners.Billing do
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   defp subscription(billing, organization) do
-    # now create and attach the subscriptions to this organization
     params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
@@ -466,7 +465,9 @@ defmodule Glific.Partners.Billing do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
+
       {:ok, subscription} ->
+
         update_subscription_details(subscription, organization.id, billing)
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
@@ -634,6 +635,31 @@ defmodule Glific.Partners.Billing do
 
     update_billing(billing, params)
     {:ok, subscription}
+  end
+
+  @doc """
+    Stripe subscription created callback via webhooks.
+    We are using this to update the prorate data with monthly billing.
+  """
+  @spec subscription_created_callback(Stripe.Subscription.t(), non_neg_integer()) :: :ok | {:error, Stripe.Error.t()}
+  def subscription_created_callback(subscription, _org_id) do
+    ## we can not add prorate for 3d secure cards. That's why we are using the
+    ## subscription created callback to add the monthly subscription with prorate
+    ## data.
+    prices = stripe_ids()
+    proration_date = DateTime.utc_now() |> DateTime.to_unix()
+
+    Stripe.SubscriptionItem.create(%{
+      subscription: subscription.id,
+      prorate: true,
+      proration_date: proration_date,
+      price: prices["monthly"],
+      quantity: 1.0
+    })
+    |> case do
+      {:ok, _t} -> :ok
+      {:error, error}  ->  {:error, error}
+    end
   end
 
   # get dates and times in the right format for other functions
