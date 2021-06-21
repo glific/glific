@@ -107,7 +107,7 @@ defmodule Glific.Saas.Queries do
           })
         )
 
-        Partners.set_root_user(organization)
+        Partners.remove_organization_cache(organization.id, organization.shortcode)
 
         result
         |> Map.put(:organization, organization)
