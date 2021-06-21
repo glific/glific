@@ -590,7 +590,15 @@ defmodule Glific.Partners.Billing do
     {:ok, subscription}
   end
 
-  def subscription_created_callback(subscription, organization_id) do
+  @doc """
+    Stripe subscription created callback via webhooks.
+    We are using this to update the prorate data with monthly billing.
+  """
+  @spec subscription_created_callback(Stripe.Subscription.t(), non_neg_integer()) :: :ok | {:error, Stripe.Error.t()}
+  def subscription_created_callback(subscription, _org_id) do
+    ## we can not add prorate for 3d secure cards. That's why we are using the
+    ## subscription created callback to add the monthly subscription with prorate
+    ## data.
     prices = stripe_ids()
     proration_date = DateTime.utc_now() |> DateTime.to_unix()
 
@@ -601,7 +609,10 @@ defmodule Glific.Partners.Billing do
       price: prices["monthly"],
       quantity: 1
     })
-    |> IO.inspect()
+    |> case do
+      {:ok, _t} -> :ok
+      {:error, error}  ->  {:error, error}
+    end
   end
 
   # get dates and times in the right format for other functions
