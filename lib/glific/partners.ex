@@ -448,6 +448,9 @@ defmodule Glific.Partners do
   def organization_timezone(organization_id),
     do: organization(organization_id).timezone
 
+  @doc """
+  Set root user for organization
+  """
   @spec set_root_user(Organization.t()) :: Organization.t()
   def set_root_user(organization) do
     {:ok, root_user} = Repo.fetch_by(User, %{contact_id: organization.contact_id})

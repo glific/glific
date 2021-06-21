@@ -457,11 +457,10 @@ defmodule Glific.Partners.Billing do
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   defp subscription(billing, organization) do
+    params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    billing
-    |> subscription_params(organization)
-    |> Subscription.create(opts)
+    make_stripe_request("subscriptions", :post, params, opts)
     |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
@@ -646,13 +645,13 @@ defmodule Glific.Partners.Billing do
   def subscription_created_callback(subscription, _org_id) do
     ## we can not add prorate for 3d secure cards. That's why we are using the
     ## subscription created callback to add the monthly subscription with prorate
-    ## data.
+    ## data. Using make_stripe_request as proration_behavior is not in the package as field
     prices = stripe_ids()
     proration_date = DateTime.utc_now() |> DateTime.to_unix()
 
-    Stripe.SubscriptionItem.create(%{
+    make_stripe_request("subscription_items}", :post, %{
       subscription: subscription.id,
-      prorate: true,
+      proration_behavior: "create_prorations",
       proration_date: proration_date,
       price: prices["monthly"],
       quantity: 1
