@@ -26,7 +26,6 @@ defmodule Glific.Partners.Billing do
   alias Stripe.{
     BillingPortal,
     Request,
-    Subscription,
     SubscriptionItem,
     SubscriptionItem.Usage
   }
@@ -695,7 +694,7 @@ defmodule Glific.Partners.Billing do
 
   # daily usage and weekly usage are the same
   @spec period_usage(DateTime.t()) :: :ok
-  def period_usage(end_date) do
+  defp period_usage(end_date) do
     Billing
     |> where([b], b.is_active == true)
     |> Repo.all()
