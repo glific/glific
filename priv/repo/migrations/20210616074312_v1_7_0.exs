@@ -26,7 +26,7 @@ defmodule Glific.Repo.Migrations.V170 do
         comment: "check if we should deduct the tds or not"
       )
 
-      add_if_not_exists(:tds_amount, :integer,
+      add_if_not_exists(:tds_amount, :float,
         default: 0,
         comment: "% of tds deduction on principle amount"
       )
