@@ -458,11 +458,10 @@ defmodule Glific.Partners.Billing do
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   defp subscription(billing, organization) do
+    params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    billing
-    |> subscription_params(organization)
-    |> Subscription.create(opts)
+    make_stripe_request("subscriptions", :post, params, opts)
     |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
