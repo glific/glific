@@ -656,7 +656,7 @@ defmodule Glific.Partners.Billing do
       prorate: true,
       proration_date: proration_date,
       price: prices["monthly"],
-      quantity: 1
+      quantity: 1.0
     })
     |> case do
       {:ok, _t} -> :ok
@@ -696,7 +696,7 @@ defmodule Glific.Partners.Billing do
 
   # daily usage and weekly usage are the same
   @spec period_usage(DateTime.t()) :: :ok
-  defp period_usage(end_date) do
+  def period_usage(end_date) do
     Billing
     |> where([b], b.is_active == true)
     |> Repo.all()
