@@ -72,7 +72,7 @@ defmodule Glific.Partners.Billing do
           is_delinquent: boolean,
           is_active: boolean() | true,
           deduct_tds: boolean() | false,
-          tds_amount: integer() | nil,
+          tds_amount: float() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -98,7 +98,7 @@ defmodule Glific.Partners.Billing do
 
     field :deduct_tds, :boolean, default: false
 
-    field :tds_amount, :integer
+    field :tds_amount, :float
 
     belongs_to :organization, Organization
 
@@ -254,7 +254,6 @@ defmodule Glific.Partners.Billing do
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
-
     # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
       DateTime.utc_now()
@@ -262,7 +261,8 @@ defmodule Glific.Partners.Billing do
       |> Timex.shift(days: 1)
       |> Timex.beginning_of_day()
       |> DateTime.to_unix()
-      prices = stripe_ids()
+
+    prices = stripe_ids()
 
     %{
       customer: billing.stripe_customer_id,
@@ -369,7 +369,6 @@ defmodule Glific.Partners.Billing do
 
   @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
   defp setup(billing, organization, params) do
-
     ## let's create an invocie items. We are not attaching this to the invoice
     ## so it will be attached automatically to the next invoice create.
 
@@ -469,7 +468,6 @@ defmodule Glific.Partners.Billing do
       # a later date
 
       {:ok, subscription} ->
-
         update_subscription_details(subscription, organization.id, billing)
         # if subscription requires client intervention (most likely for India, we need this)
         # we need to send back info to the frontend
@@ -643,25 +641,21 @@ defmodule Glific.Partners.Billing do
     Stripe subscription created callback via webhooks.
     We are using this to update the prorate data with monthly billing.
   """
-  @spec subscription_created_callback(Stripe.Subscription.t(), non_neg_integer()) :: :ok | {:error, Stripe.Error.t()}
+  @spec subscription_created_callback(Stripe.Subscription.t(), non_neg_integer()) ::
+          :ok | {:error, Stripe.Error.t()}
   def subscription_created_callback(subscription, _org_id) do
     ## we can not add prorate for 3d secure cards. That's why we are using the
     ## subscription created callback to add the monthly subscription with prorate
     ## data.
-    prices = stripe_ids()
     proration_date = DateTime.utc_now() |> DateTime.to_unix()
 
-    Stripe.SubscriptionItem.create(%{
+    make_stripe_request("subscription_items", :post, %{
       subscription: subscription.id,
       prorate: true,
       proration_date: proration_date,
-      price: prices["monthly"],
-      quantity: 1.0
+      price: stripe_ids()["monthly"],
+      quantity: 1
     })
-    |> case do
-      {:ok, _t} -> :ok
-      {:error, error}  ->  {:error, error}
-    end
   end
 
   # get dates and times in the right format for other functions

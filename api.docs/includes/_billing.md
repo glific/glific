@@ -536,7 +536,7 @@ Parameter | Type | Default | Description
 
 <tr>
 <td colspan="2" valign="top"><strong>tds_amount</strong></td>
-<td valign="top"><a href="#integer">Integer</a></td>
+<td valign="top"><a href="#float">Float</a></td>
 <td></td>
 </tr>
 
