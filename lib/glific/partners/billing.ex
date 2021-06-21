@@ -26,6 +26,7 @@ defmodule Glific.Partners.Billing do
   alias Stripe.{
     BillingPortal,
     Request,
+    SubscriptionItem,
     SubscriptionItem.Usage
   }
 
@@ -48,7 +49,9 @@ defmodule Glific.Partners.Billing do
     :stripe_last_usage_recorded,
     :currency,
     :is_delinquent,
-    :is_active
+    :is_active,
+    :deduct_tds,
+    :tds_amount
   ]
 
   @type t() :: %__MODULE__{
@@ -67,6 +70,8 @@ defmodule Glific.Partners.Billing do
           currency: String.t() | nil,
           is_delinquent: boolean,
           is_active: boolean() | true,
+          deduct_tds: boolean() | false,
+          tds_amount: integer() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -89,6 +94,10 @@ defmodule Glific.Partners.Billing do
 
     field :is_delinquent, :boolean, default: false
     field :is_active, :boolean, default: true
+
+    field :deduct_tds, :boolean, default: false
+
+    field :tds_amount, :integer
 
     belongs_to :organization, Organization
 
@@ -401,6 +410,39 @@ defmodule Glific.Partners.Billing do
   defp apply_coupon(_, _), do: nil
 
   @doc """
+  Adding credit to customer in Stripe
+  """
+  @spec credit_customer(map()) :: any | non_neg_integer()
+  def credit_customer(transaction) do
+    with billing <-
+           get_billing(%{organization_id: transaction.organization_id}),
+         "draft" <- transaction.status,
+         true <- billing.deduct_tds do
+      credit = calculate_credit(billing, transaction)
+
+      # Add credit to customer
+      Stripe.CustomerBalanceTransaction.create(billing.stripe_customer_id, %{
+        amount: credit,
+        currency: billing.currency
+      })
+
+      # Update invoice footer with message
+      Stripe.Invoice.update(transaction.invoice_id, %{
+        footer:
+          "TDS INR #{credit} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
+      })
+
+      credit
+    end
+  end
+
+  # Calculate the amount to be credited to customer account
+  @spec calculate_credit(Billing.t(), map()) :: non_neg_integer()
+  defp calculate_credit(billing, transaction) do
+    (billing.tds_amount / 100 * transaction.amount_due) |> trunc()
+  end
+
+  @doc """
   A common function for making Stripe API calls with params that are not supported withing Stripity Stripe
   """
   @spec make_stripe_request(String.t(), atom(), map(), list()) :: any()
@@ -459,7 +501,7 @@ defmodule Glific.Partners.Billing do
     billing.stripe_subscription_items
     |> Map.values()
     |> Enum.each(fn subscription_item ->
-      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
+      SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
     end)
 
     params = %{
@@ -477,7 +519,7 @@ defmodule Glific.Partners.Billing do
       }
     }
 
-    Stripe.SubscriptionItem.delete(
+    SubscriptionItem.delete(
       billing.stripe_subscription_items[stripe_ids()["monthly"]],
       %{},
       []
@@ -487,7 +529,8 @@ defmodule Glific.Partners.Billing do
     organization
   end
 
-  def update_subscription(billing, %{status: status} = organization) when status in [:inactive, :ready_to_delete] do
+  def update_subscription(billing, %{status: status} = organization)
+      when status in [:inactive, :ready_to_delete] do
     ## let's delete the subscription by end of that month and deactivate the
     ## billing when we change the status to inactive and ready to delete.
     Stripe.Subscription.delete(billing.stripe_customer_id, %{at_period_end: true})

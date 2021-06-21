@@ -147,6 +147,12 @@ defmodule Glific.Dialogflow do
           updated_at: DateTime.utc_now()
         }
       end)
+      |> List.insert_at(0, %{
+          name: "all", ## Default list items.
+          organization_id: organization_id,
+          inserted_at: DateTime.utc_now(),
+          updated_at: DateTime.utc_now()
+        })
       |> Enum.filter(fn el -> !Enum.member?(existing_items, el.name) end)
 
     Intent
