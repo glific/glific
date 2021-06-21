@@ -89,12 +89,6 @@ defmodule Glific.Saas.Queries do
 
     case Contacts.create_contact(attrs) do
       {:ok, contact} ->
-        {:ok, organization} =
-          Partners.update_organization(
-            result.organization,
-            %{contact_id: contact.id}
-          )
-
         Users.create_user(
           Map.merge(attrs, %{
             password: password,
@@ -103,11 +97,15 @@ defmodule Glific.Saas.Queries do
             contact_id: contact.id,
             last_login_at: DateTime.utc_now(),
             last_login_from: "127.0.0.1",
-            organization_id: organization.id
+            organization_id: result.organization.id
           })
         )
 
-        Partners.set_root_user(organization)
+        {:ok, organization} =
+          Partners.update_organization(
+            result.organization,
+            %{contact_id: contact.id}
+          )
 
         result
         |> Map.put(:organization, organization)
