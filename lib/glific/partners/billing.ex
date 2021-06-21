@@ -371,7 +371,7 @@ defmodule Glific.Partners.Billing do
   defp setup(billing, organization, params) do
 
     ## let's create an invocie items. We are not attaching this to the invoice
-    ## so it will be attahed automatically to the next invoice create.
+    ## so it will be attached automatically to the next invoice create.
 
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
