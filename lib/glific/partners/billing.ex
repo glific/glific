@@ -645,14 +645,13 @@ defmodule Glific.Partners.Billing do
     ## we can not add prorate for 3d secure cards. That's why we are using the
     ## subscription created callback to add the monthly subscription with prorate
     ## data.
-    prices = stripe_ids()
     proration_date = DateTime.utc_now() |> DateTime.to_unix()
 
-    Stripe.SubscriptionItem.create(%{
+    make_stripe_request("subscription_items", :post, %{
       subscription: subscription.id,
       prorate: true,
       proration_date: proration_date,
-      price: prices["monthly"],
+      price: stripe_ids()["monthly"],
       quantity: 1
     })
   end
