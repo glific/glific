@@ -1,0 +1,88 @@
+[
+  {
+    "request": {
+      "body": "amount=7500&currency=inr",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer this_is_not_the_key",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2q57sk2ra3kv0ji5o0005172",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/customers/test_cus_JIdQjmJcjq/balance_transactions"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"error\": {\n    \"message\": \"Invalid API Key provided: this_is_*******_key\",\n    \"type\": \"invalid_request_error\"\n  }\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Mon, 21 Jun 2021 04:25:01 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "121",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "www-authenticate": "Bearer realm=\"Stripe\"",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 401,
+      "type": "ok"
+    }
+  },
+  {
+    "request": {
+      "body": "footer=TDS+INR+7500+for+Month+of+June+deducted+above+under+Applied+Balance+section",
+      "headers": {
+        "Accept": "application/json; charset=utf8",
+        "Accept-Encoding": "gzip",
+        "Authorization": "Bearer this_is_not_the_key",
+        "Connection": "keep-alive",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Idempotency-Key": "2q57sk6rfkfrgji5o0005182",
+        "Stripe-Version": "2019-12-03",
+        "User-Agent": "Stripe/v1 stripity-stripe/2019-12-03"
+      },
+      "method": "post",
+      "options": {
+        "pool": "Elixir.Stripe.API",
+        "with_body": "true"
+      },
+      "request_body": "",
+      "url": "https://api.stripe.com/v1/invoices/test_invoice_id"
+    },
+    "response": {
+      "binary": false,
+      "body": "{\n  \"error\": {\n    \"message\": \"Invalid API Key provided: this_is_*******_key\",\n    \"type\": \"invalid_request_error\"\n  }\n}\n",
+      "headers": {
+        "Server": "nginx",
+        "Date": "Mon, 21 Jun 2021 04:25:01 GMT",
+        "Content-Type": "application/json",
+        "Content-Length": "121",
+        "Connection": "keep-alive",
+        "access-control-allow-credentials": "true",
+        "access-control-allow-methods": "GET, POST, HEAD, OPTIONS, DELETE",
+        "access-control-allow-origin": "*",
+        "access-control-expose-headers": "Request-Id, Stripe-Manage-Version, X-Stripe-External-Auth-Required, X-Stripe-Privileged-Session-Required",
+        "access-control-max-age": "300",
+        "cache-control": "no-cache, no-store",
+        "www-authenticate": "Bearer realm=\"Stripe\"",
+        "Strict-Transport-Security": "max-age=31556926; includeSubDomains; preload"
+      },
+      "status_code": 401,
+      "type": "ok"
+    }
+  }
+]
