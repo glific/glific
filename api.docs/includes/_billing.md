@@ -217,7 +217,9 @@ mutation updateBilling($id: ID!, $input:BillingInput!) {
   "id": "26",
   "input": {
     "name": "frank",
-    "email": "frank@gmail.com"
+    "email": "frank@gmail.com",
+    "deduct_tds": "true",
+    "tds_amount": "7.5"
   }
 }```
 
@@ -523,6 +525,18 @@ Parameter | Type | Default | Description
 <tr>
 <td colspan="2" valign="top"><strong>currency</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>deduct_tds</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>tds_amount</strong></td>
+<td valign="top"><a href="#integer">Integer</a></td>
 <td></td>
 </tr>
 

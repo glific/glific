@@ -76,6 +76,13 @@ defmodule GlificWeb.StripeController do
          %{type: "invoice.created", data: %{object: invoice}} = _stripe_event,
          organization_id
        ) do
+    Billing.credit_customer(%{
+      invoice_id: invoice.id,
+      organization_id: organization_id,
+      status: invoice.status,
+      amount_due: invoice.amount_due
+    })
+
     case Invoice.create_invoice(%{stripe_invoice: invoice, organization_id: organization_id}) do
       {:ok, invoice} -> {:ok, "success, #{invoice.id}"}
       {:error, error} -> {:error, error}
