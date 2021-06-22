@@ -3,6 +3,7 @@ defmodule Glific.Flows.RouterTest do
 
   alias Glific.{
     Fixtures,
+    Groups,
     Messages
   }
 
@@ -311,4 +312,57 @@ defmodule Glific.Flows.RouterTest do
     [recent_inbound_message] = updated_context.recent_inbound
     assert recent_inbound_message["message"] == "Invalid Code"
   end
+
+  test "router with split by groups" do
+    flow = %Flow{uuid: "Flow UUID 1"}
+    exit_uuid = Ecto.UUID.generate()
+    uuid_map = %{}
+
+    json = %{
+      "uuid" => "Node UUID",
+      "actions" => [],
+      "exits" => [
+        %{"uuid" => exit_uuid, "destination_uuid" => nil}
+      ]
+    }
+
+    {node, uuid_map} = Node.process(json, uuid_map, flow)
+
+    json = %{
+      "type" => "switch",
+      "default_category_uuid" => "Default Cat UUID",
+      "result_name" => "Language",
+      "categories" => [
+        %{
+          "uuid" => "Default Cat UUID",
+          "exit_uuid" => exit_uuid,
+          "name" => "Default Category"
+        }
+      ],
+      "cases" => []
+    }
+
+    # correct EEx expression
+    {router, uuid_map} =
+      json
+      |> Map.merge(%{"operand" => "@contact.groups"})
+      |> Router.process(uuid_map, node)
+
+    context = flow_context_fixture(%{uuid_map: uuid_map})
+    [group | _ ] = Groups.list_groups(%{filter: %{organization_id: context.organization_id}})
+
+    Groups.create_contact_group(%{
+      contact_id: context.contact_id,
+      group_id: group.id,
+      organization_id: context.organization_id
+    })
+
+    Router.execute(router, context, [])
+
+    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
+    [recent_inbound_message] = updated_context.recent_inbound
+    assert recent_inbound_message["message"] == "#{inspect([group.label])}"
+
+  end
+
 end
