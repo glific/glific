@@ -225,6 +225,13 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "") == false
   end
 
+  test "test the execute function for has_groups" do
+    c = %Case{type: "has_group", arguments: ["3", "Default groups"]}
+    assert wrap_execute(c, nil, "", [extra: %{contact_groups: ["Default groups"]}]) == true
+
+    assert wrap_execute(c, nil, "", [extra: %{contact_groups: []}]) == false
+  end
+
   test "test exceptions" do
     c = %Case{type: "no_such_function", arguments: ["only phrase"]}
     assert_raise UndefinedFunctionError, fn -> wrap_execute(c, nil, "only phrase 1") end

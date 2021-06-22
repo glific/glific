@@ -180,7 +180,7 @@ defmodule Glific.Flows.Router do
     {msg, rest} =
       if messages == [] do
         ## split by group is also calling the same function.
-        ## we need to find a differentiator between them
+        ## currently we are diffrenciating based on operand
         split_by_expression(router, context)
       else
         [msg | rest] = messages
@@ -225,14 +225,13 @@ defmodule Glific.Flows.Router do
     Category.execute(category, context, rest)
   end
 
-  @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
-
   ## We are using this operand for split contats by groups
+  @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
   defp split_by_expression(%{operand: "@contact.groups"} = _router, context) do
     contact = Contacts.get_contact_field_map(context.contact_id)
     msg =
       context.organization_id
-      |> Messages.create_temp_message("", extra: %{contact_groups: contact.in_groups} )
+      |> Messages.create_temp_message("#{inspect(contact.in_groups)}", extra: %{contact_groups: contact.in_groups} )
 
     {msg, []}
   end
