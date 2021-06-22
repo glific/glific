@@ -175,14 +175,12 @@ defmodule Glific.Flows.Router do
   def execute(%{wait: wait} = _router, context, []) when wait != nil,
     do: Wait.execute(wait, context, [])
 
-  def execute(
-        %{type: type} = router,
-        context,
-        messages
-      )
-      when type == "switch" do
+  def execute( %{type: type} = router, context, messages ) when type == "switch" do
+
     {msg, rest} =
       if messages == [] do
+        ## split by group is also calling the same function.
+        ## we need to find a differentiator between them
         split_by_expression(router, context)
       else
         [msg | rest] = messages
@@ -231,13 +229,15 @@ defmodule Glific.Flows.Router do
   defp split_by_expression(router, context) do
     # get the value from the "input" version of the operand field
     # this is the split by result flow
-    content =
-      router.operand
-      |> MessageVarParser.parse(%{
+    vars = %{
         "contact" => Contacts.get_contact_field_map(context.contact_id),
         "results" => context.results,
         "flow" => %{name: context.flow.name, id: context.flow.id}
-      })
+    }
+
+    content =
+      router.operand
+      |> MessageVarParser.parse(vars)
       # Once we have the content, we send it over to EEx to execute
       |> execute_eex()
 

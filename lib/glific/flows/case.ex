@@ -193,6 +193,13 @@ defmodule Glific.Flows.Case do
       else: msg.extra.intent == intent && msg.extra.confidence >= confidence
   end
 
+  def execute(%{type: "has_group"} = c, _context, msg) do
+    [_group_id, group_label] = c.arguments
+    ## Since we are coming form split by express
+    ## message body will be like this "[\"Default Group\"]"
+    String.contains?(msg.body, group_label)
+  end
+
   def execute(%{type: "has_category"}, _context, _msg), do: true
 
   def execute(c, _context, _msg),
