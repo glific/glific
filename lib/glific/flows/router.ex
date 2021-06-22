@@ -226,6 +226,17 @@ defmodule Glific.Flows.Router do
   end
 
   @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
+
+  ## We are using this operand for split contats by groups
+  defp split_by_expression(%{operand: "@contact.groups"} = _router, context) do
+    contact = Contacts.get_contact_field_map(context.contact_id)
+    msg =
+      context.organization_id
+      |> Messages.create_temp_message("", extra: %{contact_groups: contact.in_groups} )
+
+    {msg, []}
+  end
+
   defp split_by_expression(router, context) do
     # get the value from the "input" version of the operand field
     # this is the split by result flow

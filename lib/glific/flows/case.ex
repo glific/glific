@@ -195,9 +195,7 @@ defmodule Glific.Flows.Case do
 
   def execute(%{type: "has_group"} = c, _context, msg) do
     [_group_id, group_label] = c.arguments
-    ## Since we are coming form split by express
-    ## message body will be like this "[\"Default Group\"]"
-    String.contains?(msg.body, group_label)
+    group_label in msg.extra.contact_groups
   end
 
   def execute(%{type: "has_category"}, _context, _msg), do: true

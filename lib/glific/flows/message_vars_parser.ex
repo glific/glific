@@ -45,9 +45,8 @@ defmodule Glific.Flows.MessageVarParser do
     language["label"]
   end
 
-  defp bound("@contact.groups", binding) do
-    "#{inspect(get_in(binding, ["contact", "in_groups"]))}"
-  end
+  defp bound("@contact.groups", binding),
+  do: bound("@contact.in_groups", binding)
 
   # since this is a list we need to convert that into a string.
   defp bound("@contact.in_groups", binding) do
