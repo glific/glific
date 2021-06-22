@@ -175,7 +175,7 @@ defmodule Glific.Flows.Router do
   def execute(%{wait: wait} = _router, context, []) when wait != nil,
     do: Wait.execute(wait, context, [])
 
-  def execute( %{type: type} = router, context, messages ) when type == "switch" do
+  def execute(%{type: type} = router, context, messages ) when type == "switch" do
 
     {msg, rest} =
       if messages == [] do
