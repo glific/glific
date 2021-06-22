@@ -86,6 +86,7 @@ defmodule Glific.Flows.MessageVarParserTest do
     ## for contact groups
     conatct_fields = Contacts.get_contact_field_map(contact.id)
     assert MessageVarParser.parse("@contact.in_groups", %{"contact" => conatct_fields}) == "[]"
+    assert MessageVarParser.parse("@contact.groups", %{"contact" => conatct_fields}) == "[]"
     assert MessageVarParser.parse("Hello world", nil) == "Hello world"
     assert MessageVarParser.parse("Hello world", %{}) == "Hello world"
 
