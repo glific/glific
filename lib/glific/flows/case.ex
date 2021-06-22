@@ -193,6 +193,11 @@ defmodule Glific.Flows.Case do
       else: msg.extra.intent == intent && msg.extra.confidence >= confidence
   end
 
+  def execute(%{type: "has_group"} = c, _context, msg) do
+    [_group_id, group_label] = c.arguments
+    group_label in msg.extra.contact_groups
+  end
+
   def execute(%{type: "has_category"}, _context, _msg), do: true
 
   def execute(c, _context, _msg),
