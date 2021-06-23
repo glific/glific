@@ -2,7 +2,6 @@ defmodule Glific.Providers.Gupshup.Worker do
   @moduledoc """
   A worker to handle send message processes
   """
-  require Logger
 
   use Oban.Worker,
     queue: :gupshup,
@@ -151,16 +150,12 @@ defmodule Glific.Providers.Gupshup.Worker do
   defp check_media_template(template_payload, _payload, _template_type), do: template_payload
 
   @spec parse_media_url(map(), String.t()) :: String.t()
-  defp parse_media_url(template_payload, template_type) when template_type in ["image"] do
-    media = Jason.decode!(template_payload["message"])
-    media["originalUrl"]
-  end
+  defp parse_media_url(template_payload, template_type) when template_type in ["image"],
+    do: Jason.decode!(template_payload["message"])["originalUrl"]
 
   defp parse_media_url(template_payload, template_type)
-       when template_type in ["video", "document"] do
-    media = Jason.decode!(template_payload["message"])
-    media["url"]
-  end
+       when template_type in ["video", "document"],
+       do: Jason.decode!(template_payload["message"])["url"]
 
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::

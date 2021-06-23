@@ -26,11 +26,7 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   Making Tesla post call and adding api key in header
   """
   @spec gupshup_post(String.t(), any(), String.t()) :: Tesla.Env.result()
-  def gupshup_post(url, payload, api_key) do
-    IO.inspect("debug002gupshup_post")
-IO.inspect(payload)
-    post(url, payload, headers: [{"apikey", api_key}])
-  end
+  def gupshup_post(url, payload, api_key), do: post(url, payload, headers: [{"apikey", api_key}])
 
   @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   defp get_credentials(org_id) do
