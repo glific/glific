@@ -25,7 +25,7 @@ defmodule GlificWeb.Resolvers.Billings do
     organization_id = input[:organization_id] || user.organization_id
 
     with {:ok, billing} <-
-           Repo.fetch_by(Billing, %{is_active: true, organization_id: organization_id}),
+           Repo.fetch_by(Billing, %{is_active: true, organization_id: organization_id}, skip_organization_id: true),
          do: {:ok, %{billing: billing}}
   end
 
