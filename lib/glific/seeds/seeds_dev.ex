@@ -679,11 +679,9 @@ if Code.ensure_loaded?(Faker) do
         status: "APPROVED",
         category: "ALERT_UPDATE",
         body: "Hi {{1}},\n\nYour image file was updated today",
-        example:
-          "Hi [Anil],\n\nYour image file was updated today",
+        example: "Hi [Anil],\n\nYour image file was updated today",
         uuid: Ecto.UUID.generate()
       })
-
     end
 
     @doc false
