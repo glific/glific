@@ -666,6 +666,22 @@ if Code.ensure_loaded?(Faker) do
         example: "Hi [Anil],\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
+
+      Repo.insert!(%SessionTemplate{
+        label: "File Update",
+        type: :video,
+        shortcode: "file_update",
+        is_hsm: true,
+        number_parameters: 1,
+        translations: translations,
+        language_id: en.id,
+        organization_id: organization.id,
+        status: "APPROVED",
+        category: "ALERT_UPDATE",
+        body: "Hi {{1}},\n\nYour image file was updated today",
+        example: "Hi [Anil],\n\nYour image file was updated today",
+        uuid: Ecto.UUID.generate()
+      })
     end
 
     @doc false

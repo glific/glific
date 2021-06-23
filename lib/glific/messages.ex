@@ -432,7 +432,8 @@ defmodule Glific.Messages do
          session_template,
          %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
        ) do
-    media_id = Map.get(attrs, :media_id, nil)
+    # sending default media when media type is not defined
+    media_id = Map.get(attrs, :media_id, session_template.message_media_id)
 
     updated_template =
       session_template

@@ -117,7 +117,7 @@ defmodule Glific.Providers.Gupshup.Worker do
         "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
         "src.name" => payload["src.name"]
       }
-      |> check_media_template(template_type, message)
+      |> check_media_template(payload, template_type)
 
     ApiClient.send_template(
       org_id,
@@ -134,13 +134,28 @@ defmodule Glific.Providers.Gupshup.Worker do
     |> handle_response(message)
   end
 
-  defp check_media_template(template_payload, template_type, message)
+  @spec check_media_template(map(), map(), String.t()) :: map()
+  defp check_media_template(template_payload, payload, template_type)
        when template_type in ["image", "video", "document"] do
     template_payload
-    |> Map.merge(%{"message" => message})
+    |> Map.merge(%{
+      "message" =>
+        Jason.encode!(%{
+          "type" => template_type,
+          template_type => %{"link" => parse_media_url(payload, template_type)}
+        })
+    })
   end
 
-  defp check_media_template(template_payload, _template_type, _message), do: template_payload
+  defp check_media_template(template_payload, _payload, _template_type), do: template_payload
+
+  @spec parse_media_url(map(), String.t()) :: String.t()
+  defp parse_media_url(template_payload, template_type) when template_type in ["image"],
+    do: Jason.decode!(template_payload["message"])["originalUrl"]
+
+  defp parse_media_url(template_payload, template_type)
+       when template_type in ["video", "document"],
+       do: Jason.decode!(template_payload["message"])["url"]
 
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
