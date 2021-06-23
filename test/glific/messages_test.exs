@@ -755,6 +755,33 @@ defmodule Glific.MessagesTest do
       assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.sent_at != nil
+
+
+      parameters = ["anil"]
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: "file_update", organization_id: organization_id}
+        )
+        {:ok, message} =
+          %{
+            template_id: hsm_template.id,
+            receiver_id: contact.id,
+            parameters: parameters,
+            media_id: media.id
+          }
+          |> Messages.create_and_send_hsm_message()
+          assert_enqueued(worker: Worker, prefix: global_schema)
+          Oban.drain_queue(queue: :gupshup)
+
+          message = Messages.get_message!(message.id)
+
+          assert message.is_hsm == true
+          assert message.flow == :outbound
+          assert message.bsp_message_id != nil
+          assert message.bsp_status == :enqueued
+          assert message.sent_at != nil
+
     end
 
     test "prepare hsm template",
