@@ -142,16 +142,16 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
 
-    conatct_id_list =
+    contact_id_list =
       contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
         |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
         |> get_contact_id_list(organization_id)
 
-      %{group_id: group.id, add_contact_ids: conatct_id_list, delete_contact_ids: [], organization_id: organization_id}
+      %{group_id: group.id, add_contact_ids: contact_id_list, delete_contact_ids: [], organization_id: organization_id}
       |> GroupContacts.update_group_contacts()
 
-      {:ok, %{status: "#{length(conatct_id_list)} contacts added to group #{group_label}"}}
+      {:ok, %{status: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
   end
 
   @spec clean_contact_for_group(map(), non_neg_integer()) :: map()
