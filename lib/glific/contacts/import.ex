@@ -9,6 +9,7 @@ defmodule Glific.Contacts.Import do
     Contacts.Contact,
     Groups,
     Groups.ContactGroup,
+    Groups.GroupContacts,
     Partners,
     Providers.GupshupContacts,
     Repo,
@@ -148,14 +149,14 @@ defmodule Glific.Contacts.Import do
         |> get_contact_id_list(organization_id)
 
       %{group_id: group.id, add_contact_ids: conatct_id_list, delete_contact_ids: [], organization_id: organization_id}
-      |> Glific.Groups.GroupContacts.update_group_contacts();
+      |> GroupContacts.update_group_contacts()
 
       {:ok, %{status: "#{length(conatct_id_list)} contacts added to group #{group_label}"}}
   end
 
   @spec clean_contact_for_group(map(), non_neg_integer()) :: map()
   defp clean_contact_for_group(data, _organization_id),
-  do: %{ phone: data["Contact Number"]}
+  do: %{phone: data["Contact Number"]}
 
   @spec get_contact_id_list(list(), non_neg_integer()) :: list()
   defp get_contact_id_list(contacts, org_id) do
