@@ -145,7 +145,7 @@ defmodule Glific.Contacts.Import do
         |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
         |> get_contact_id_list(organization_id)
 
-      %{group_id: group.id, add_contact_ids: conatct_id_list, delete_contact_ids: []}
+      %{group_id: group.id, add_contact_ids: conatct_id_list, delete_contact_ids: [], organization_id: organization_id}
       |> Glific.Groups.GroupContacts.update_group_contacts();
 
       {:ok, %{status: "#{length(conatct_id_list)} contacts added to group #{group_label}"}}
