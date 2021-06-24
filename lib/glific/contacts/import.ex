@@ -133,7 +133,9 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-
+  @doc """
+    Import the existing contacts to a group.
+  """
   @spec import_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
   def import_contacts_to_group(organization_id, group_label, opts \\ []) do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
