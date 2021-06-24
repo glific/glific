@@ -28,8 +28,9 @@ defmodule Glific.Flows.Webhook do
   @spec execute(Action.t(), FlowContext.t()) :: nil
   def execute(action, context) do
     case String.downcase(action.method) do
-      "get" -> get(action, context)
-      "post" -> post(action, context)
+      "get" -> method(action, context)
+      "post" -> method(action, context)
+      "patch" -> method(action, context)
     end
 
     nil
@@ -58,10 +59,10 @@ defmodule Glific.Flows.Webhook do
     update_log(webhook_log, message)
   end
 
-  defp update_log(webhook_log, message) when is_map(message) do
+  defp update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
     # handle incorrect json body
     json_body =
-      case Jason.decode(message.body) do
+      case Jason.decode(body) do
         {:ok, json_body} ->
           json_body
 
@@ -72,6 +73,17 @@ defmodule Glific.Flows.Webhook do
     attrs = %{
       response_json: json_body,
       status_code: message.status
+    }
+
+    webhook_log
+    |> WebhookLog.update_webhook_log(attrs)
+  end
+
+  # this is when we are storing the return from an internal function call
+  defp update_log(webhook_log, result) when is_map(result) do
+    attrs = %{
+      response_json: result,
+      status_code: 200
     }
 
     webhook_log
@@ -133,6 +145,7 @@ defmodule Glific.Flows.Webhook do
         {k, v} -> {k, v}
       end)
       |> Enum.into(%{})
+      |> Map.put("organization_id", context.organization_id)
 
     Jason.encode(action_body_map)
     |> case do
@@ -150,8 +163,10 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec post(Action.t(), FlowContext.t()) :: nil
-  defp post(action, context) do
+  # method can be either a get or a post. The do_oban function
+  # does the right thing based on if it is a get or post
+  @spec method(Action.t(), FlowContext.t()) :: nil
+  defp method(action, context) do
     case create_body(context, action.body) do
       {:error, message} ->
         action
@@ -196,10 +211,15 @@ defmodule Glific.Flows.Webhook do
   ## We need to figure out a way to send the data with urls.
   ## Currently we can not send the json map as a query string
   ## We will come back on this one in the future.
+  defp do_action("get", url, body, headers),
+    do: Tesla.get(url, headers: headers, query: [data: body])
 
-  defp do_action("get", url, body, headers) do
-    Tesla.get(url, headers: headers, query: [data: body])
-  end
+  defp do_action("function", _function, body, headers),
+    do: {
+      :ok,
+      :function,
+      Glific.Clients.webhook_function("function", body)
+    }
 
   @doc """
   Standard perform method to use Oban worker
@@ -230,6 +250,10 @@ defmodule Glific.Flows.Webhook do
 
     result =
       case do_action(method, url, body, headers) do
+        {:ok, :function, result} ->
+          update_log(webhook_log_id, result)
+          result
+
         {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           case Jason.decode(message.body) do
             {:ok, json_response} ->
@@ -276,19 +300,5 @@ defmodule Glific.Flows.Webhook do
 
     FlowContext.wakeup_one(context, message)
     :ok
-  end
-
-  # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), FlowContext.t()) :: nil
-  defp get(action, context) do
-    case create_body(context, action.body) do
-      {:error, message} ->
-        action
-        |> create_log(%{}, action.headers, context)
-        |> update_log(message)
-
-      {map, body} ->
-        do_oban(action, context, {map, body})
-    end
   end
 end
