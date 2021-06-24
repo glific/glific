@@ -31,6 +31,7 @@ defmodule Glific.Flows.Webhook do
       "get" -> method(action, context)
       "post" -> method(action, context)
       "patch" -> method(action, context)
+      "function" -> method(action, context)
     end
 
     nil
@@ -63,9 +64,7 @@ defmodule Glific.Flows.Webhook do
     # handle incorrect json body
     json_body =
       case Jason.decode(body) do
-        {:ok, json_body} ->
-          json_body
-
+        {:ok, json_body} -> json_body
         _ ->
           nil
       end
@@ -77,6 +76,7 @@ defmodule Glific.Flows.Webhook do
 
     webhook_log
     |> WebhookLog.update_webhook_log(attrs)
+
   end
 
   # this is when we are storing the return from an internal function call
@@ -214,11 +214,11 @@ defmodule Glific.Flows.Webhook do
   defp do_action("get", url, body, headers),
     do: Tesla.get(url, headers: headers, query: [data: body])
 
-  defp do_action("function", _function, body, headers),
+  defp do_action("function", function, body, _headers),
     do: {
       :ok,
       :function,
-      Glific.Clients.webhook_function("function", body)
+      Glific.Clients.webhook(function, Jason.decode!(body))
     }
 
   @doc """

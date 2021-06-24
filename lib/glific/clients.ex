@@ -118,9 +118,9 @@ defmodule Glific.Clients do
   @spec webhook(String.t(), map()) :: map()
   def webhook(name, fields) do
     module_name = get_in(plugins(), [fields["organization_id"], :webhook])
-
     if module_name,
-      do: apply(module_name, :webhook, [name, fields])
+      do: apply(module_name, :webhook, [name, fields]),
       else: %{error: "Missing webhook function implementation"}
+
   end
 end

@@ -10,8 +10,10 @@ defmodule Glific.Clients.DigitalGreen do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("daily", fields) do
-    fields
-  end
+  def webhook("daily", fields),
+  do: fields
+
+  def webhook(_, _fields),
+  do: %{}
 
 end
