@@ -2,12 +2,14 @@ defmodule Glific.Contacts.Import do
   @moduledoc """
   The Contact Importer Module
   """
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts,
     Contacts.Contact,
     Groups,
     Groups.ContactGroup,
+    Groups.GroupContacts,
     Partners,
     Providers.GupshupContacts,
     Repo,
@@ -131,4 +133,40 @@ defmodule Glific.Contacts.Import do
          }}
     end
   end
+
+  @doc """
+    Import the existing contacts to a group.
+  """
+  @spec import_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
+  def import_contacts_to_group(organization_id, group_label, opts \\ []) do
+    contact_data_as_stream = fetch_contact_data_as_string(opts)
+    {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
+
+    contact_id_list =
+      contact_data_as_stream
+        |> CSV.decode(headers: true, strip_fields: true)
+        |> Enum.map(fn {_, data} -> clean_contact_for_group(data, organization_id) end)
+        |> get_contact_id_list(organization_id)
+
+      %{group_id: group.id, add_contact_ids: contact_id_list, delete_contact_ids: [], organization_id: organization_id}
+      |> GroupContacts.update_group_contacts()
+
+      {:ok, %{status: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
+  end
+
+  @spec clean_contact_for_group(map(), non_neg_integer()) :: map()
+  defp clean_contact_for_group(data, _organization_id),
+  do: %{phone: data["Contact Number"]}
+
+  @spec get_contact_id_list(list(), non_neg_integer()) :: list()
+  defp get_contact_id_list(contacts, org_id) do
+   contact_phone_list =  Enum.map(contacts, fn contact -> contact.phone end)
+   Repo.put_organization_id(org_id)
+   Contact
+    |> where([c], c.organization_id == ^org_id)
+    |> where([c], c.phone in ^contact_phone_list)
+    |> select([c], c.id)
+    |> Repo.all()
+  end
+
 end
