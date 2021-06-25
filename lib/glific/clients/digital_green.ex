@@ -3,7 +3,6 @@ defmodule Glific.Clients.DigitalGreen do
   Tweak and support some custom logic for a customer DigitalGreen
   """
 
-
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
