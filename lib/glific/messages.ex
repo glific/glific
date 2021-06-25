@@ -147,6 +147,7 @@ defmodule Glific.Messages do
     attrs =
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
+      |> update_message_attrs()
       |> put_contact_id()
       |> put_clean_body()
 
@@ -259,7 +260,6 @@ defmodule Glific.Messages do
         sender_id: Partners.organization_contact_id(organization_id),
         flow: :outbound
       })
-      |> update_message_attrs()
       |> create_message()
 
     Communications.Message.send_message(message, attrs)
@@ -310,7 +310,11 @@ defmodule Glific.Messages do
   end
 
   defp update_message_attrs(attrs) do
-    message_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
+
+    message_vars =
+      if not is_nil(attrs[:receiver_id]),
+      do: %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)},
+      else: %{}
 
     ## if message media is present change the variables in caption
     if not is_nil(attrs[:media_id]) do
