@@ -326,6 +326,8 @@ defmodule Glific.Messages do
         uuid: attrs[:uuid] || msg_uuid,
         body: MessageVarParser.parse(attrs.body, message_vars)
       })
+    else
+      attrs
     end
   end
 
