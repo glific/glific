@@ -3,7 +3,7 @@
         "lib/glific.ex",
         "lib/glific/application.ex",
         "lib/glific/appsignal.ex",
-        "lib/glific/clients/stir.ex",
+        "lib/glific/clients",
         "lib/glific/csv",
         "lib/glific/dialogflow",
         "lib/glific/dialogflow.ex",

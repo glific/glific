@@ -14,7 +14,8 @@ defmodule Glific.Clients do
     name: "Glific",
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
-    broadcast: Glific.Clients.Weunlearn
+    broadcast: Glific.Clients.Weunlearn,
+    webhook: Glific.Clients.DigitalGreen,
   }
 
   @sol %{
@@ -45,12 +46,18 @@ defmodule Glific.Clients do
     # broadcast: Glific.Clients.Weunlearn
   }
 
+  @digital_green %{
+    id: 26,
+    webhook: Glific.Clients.DigitalGreen
+  }
+
   @plugins %{
     @sol[:id] => @sol,
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,
-    @weunlearn[:id] => @weunlearn
+    @weunlearn[:id] => @weunlearn,
+    @digital_green[:id] => @digital_green,
   }
 
   @spec env(atom() | nil) :: atom()
@@ -102,5 +109,18 @@ defmodule Glific.Clients do
     if module_name,
       do: apply(module_name, :broadcast, [action, contact, staff_id]),
       else: staff_id
+  end
+
+  @doc """
+  Allow an organization to use glific functions to implement webhooks. A faster way
+  of modifying the DB and doing some advanced stuff in an easy manner
+  """
+  @spec webhook(String.t(), map()) :: map()
+  def webhook(name, fields) do
+    module_name = get_in(plugins(), [fields["organization_id"], :webhook])
+    if module_name,
+      do: apply(module_name, :webhook, [name, fields]),
+      else: %{error: "Missing webhook function implementation"}
+
   end
 end
