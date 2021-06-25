@@ -313,13 +313,13 @@ defmodule Glific.Messages do
     message_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
 
     ## if message media is present change the variables in caption
-    if not is_nil(attrs.media_id) do
+    if not is_nil(attrs[:media_id]) do
       message_media = get_message_media!(attrs.media_id)
       message_media
       |> update_message_media(%{caption: MessageVarParser.parse(message_media.caption, message_vars)})
     end
 
-    if not is_nil(attrs.body) do
+    if not is_nil(attrs[:body]) do
       {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
       attrs
       |> Map.merge(%{
