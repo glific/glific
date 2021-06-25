@@ -147,6 +147,7 @@ defmodule Glific.Messages do
     attrs =
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
+      |> update_message_attrs()
       |> put_contact_id()
       |> put_clean_body()
 
@@ -259,7 +260,6 @@ defmodule Glific.Messages do
         sender_id: Partners.organization_contact_id(organization_id),
         flow: :outbound
       })
-      |> update_message_attrs()
       |> create_message()
 
     Communications.Message.send_message(message, attrs)
@@ -309,26 +309,30 @@ defmodule Glific.Messages do
     nil
   end
 
-  @spec parse_message_body(map()) :: String.t() | nil
-  defp parse_message_body(attrs) do
-    message_vars = %{
-      "contact" => Contacts.get_contact_field_map(attrs.receiver_id)
-    }
-
-    MessageVarParser.parse(attrs.body, message_vars)
-  end
-
-  @spec update_message_attrs(map()) :: map()
-  defp update_message_attrs(%{body: nil} = attrs), do: attrs
-
   defp update_message_attrs(attrs) do
-    {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+    message_vars =
+      if is_integer(attrs[:receiver_id]) or is_binary(attrs[:receiver_id]),
+      do: %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)},
+      else: %{}
 
-    attrs
-    |> Map.merge(%{
-      uuid: attrs[:uuid] || msg_uuid,
-      body: parse_message_body(attrs)
-    })
+      ## if message media is present change the variables in caption
+    if is_integer(attrs[:media_id]) or is_binary(attrs[:media_id]) do
+      message_media = get_message_media!(attrs.media_id)
+      message_media
+      |> update_message_media(%{caption: MessageVarParser.parse(message_media.caption, message_vars)})
+    end
+
+    if is_binary(attrs[:body]) do
+      {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+
+      attrs
+      |> Map.merge(%{
+        uuid: attrs[:uuid] || msg_uuid,
+        body: MessageVarParser.parse(attrs.body, message_vars)
+      })
+    else
+      attrs
+    end
   end
 
   @doc false

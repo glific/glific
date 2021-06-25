@@ -151,7 +151,7 @@ defmodule Glific.Flows.ContactAction do
     {type, media_id} =
       if is_nil(attachments) or attachments == %{},
         do: {session_template.type, session_template.message_media_id},
-        else: get_media_from_attachment(attachments, "", context.organization_id)
+        else: get_media_from_attachment(attachments, "", context, cid)
 
     session_template =
       session_template
@@ -222,7 +222,7 @@ defmodule Glific.Flows.ContactAction do
 
     attachments = Localization.get_translation(context, action, :attachments)
 
-    {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
+    {type, media_id} = get_media_from_attachment(attachments, text, context, cid)
 
     attrs = %{
       uuid: action.uuid,
@@ -260,11 +260,11 @@ defmodule Glific.Flows.ContactAction do
     {:ok, context, []}
   end
 
-  @spec get_media_from_attachment(any(), any(), non_neg_integer()) :: any()
-  defp get_media_from_attachment(attachment, _, _) when attachment == %{} or is_nil(attachment),
+  @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer()) :: any()
+  defp get_media_from_attachment(attachment, _, _, _) when attachment == %{} or is_nil(attachment),
     do: {:text, nil}
 
-  defp get_media_from_attachment(attachment, caption, organization_id) do
+  defp get_media_from_attachment(attachment, caption, context, cid) do
     [type | _tail] = Map.keys(attachment)
 
     url =
@@ -273,14 +273,16 @@ defmodule Glific.Flows.ContactAction do
 
     type = Glific.safe_string_to_atom(type)
 
+    {_cid, message_vars} = resolve_cid(context, cid)
+
     {:ok, message_media} =
       %{
         type: type,
         url: url,
         source_url: url,
         thumbnail: url,
-        caption: caption,
-        organization_id: organization_id
+        caption: MessageVarParser.parse(caption, message_vars),
+        organization_id: context.organization_id
       }
       |> Messages.create_message_media()
 

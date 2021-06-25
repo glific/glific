@@ -544,6 +544,7 @@ defmodule Glific.Fixtures do
         provider_media_id: Faker.String.base64(10),
         organization_id: attrs.organization_id
       }
+      |> Map.merge(attrs)
       |> Messages.create_message_media()
 
     message_media
