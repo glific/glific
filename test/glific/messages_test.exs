@@ -413,6 +413,26 @@ defmodule Glific.MessagesTest do
                |> Messages.create_message()
     end
 
+    test "variable will be replaced in media caption after creating a message", attrs do
+      media =
+        attrs
+        |> Map.merge(%{caption: "Hello @contact.phone"})
+        |> Fixtures.message_media_fixture()
+
+       {:ok, message} =
+        @valid_attrs
+        |> Map.merge(foreign_key_constraint(attrs))
+        |> Map.merge(%{type: :image, media_id: media.id})
+        |> Messages.create_message()
+
+       message_media = Messages.get_message_media!(media.id)
+
+       receiver =  Contacts.get_contact!(message.receiver_id)
+
+       assert message_media.caption == "Hello #{receiver.phone}"
+
+    end
+
     test "create and send message to multiple contacts should update the bsp_message_id field in message",
          %{organization_id: organization_id, global_schema: global_schema} = attrs do
       {:ok, receiver_1} =

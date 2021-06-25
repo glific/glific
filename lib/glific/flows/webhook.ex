@@ -30,7 +30,6 @@ defmodule Glific.Flows.Webhook do
     case String.downcase(action.method) do
       "get" -> method(action, context)
       "post" -> method(action, context)
-      "patch" -> method(action, context)
       "function" -> method(action, context)
     end
 
