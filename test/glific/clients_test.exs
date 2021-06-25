@@ -101,7 +101,8 @@ defmodule Glific.ClientsTest do
   test "check that webhook always returns a map" do
     # a contact not in any group should return the same staff id
     assert is_map Clients.webhook("daily", %{fields: "some fields"})
-    assert {:error, _} ==  Clients.webhook("function", %{fields: "some fields"})
+    response = Clients.webhook("function", %{fields: "some fields"})
+    assert is_binary(response.error)
   end
 
 end
