@@ -97,4 +97,10 @@ defmodule Glific.ClientsTest do
     contact = Contacts.get_contact!(cg.contact_id)
     assert Clients.broadcast(nil, contact, -1) == ug.user.contact_id
   end
+
+  test "check that webhook always returns a map" do
+    # a contact not in any group should return the same staff id
+    assert is_map Clients.webhook("function", %{fields: "some fields"})
+  end
+
 end
