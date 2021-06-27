@@ -395,7 +395,8 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    context = %FlowContext{contact_id: contact.id, flow_id: 1}
+    |> Repo.preload([:contact, :flow])
 
     action = %Action{type: "set_contact_name", value: "Updated Name"}
 
@@ -411,8 +412,8 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
-      %FlowContext{contact_id: contact.id, results: %{"test_result" => "preference1"}}
-      |> Repo.preload(:contact)
+      %FlowContext{contact_id: contact.id, flow_id: 1, results: %{"test_result" => "preference1"}}
+      |> Repo.preload([:contact, :flow])
 
     action = %Action{
       type: "set_contact_field",
@@ -445,8 +446,8 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
-      %FlowContext{contact_id: contact.id, results: %{"test_result" => "field1"}}
-      |> Repo.preload(:contact)
+      %FlowContext{contact_id: contact.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      |> Repo.preload([:contact, :flow])
 
     action = %Action{
       type: "set_contact_field",
