@@ -249,28 +249,10 @@ defmodule Glific.Flows.Router do
       router.operand
       |> MessageVarParser.parse(vars)
       # Once we have the content, we send it over to EEx to execute
-      |> execute_eex()
+      |> Glific.execute_eex()
 
     msg = Messages.create_temp_message(context.organization_id, content)
     {msg, []}
-  end
-
-  @spec execute_eex(String.t()) :: String.t()
-  defp execute_eex(content) do
-    if Glific.suspicious_code(content) do
-      Logger.error("EEx suspicious code: #{content}")
-      "Invalid Code"
-    else
-      EEx.eval_string(content)
-    end
-  rescue
-    EEx.SyntaxError ->
-      Logger.error("EEx threw a SyntaxError: #{content}")
-      "Invalid Code"
-
-    _ ->
-      Logger.error("EEx threw a Error: #{content}")
-      "Invalid Code"
   end
 
   # return the right category but also return if it is a "checkbox" related category
