@@ -693,7 +693,7 @@ defmodule Glific.Partners.Billing do
   defp period_usage(end_date) do
     Billing
     |> where([b], b.is_active == true)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
     |> Enum.each(&update_period_usage(&1, end_date))
   end
 
