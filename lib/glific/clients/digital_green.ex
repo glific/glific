@@ -136,7 +136,7 @@ defmodule Glific.Clients.DigitalGreen do
       ) do
     with {:ok, group1} <-
            Repo.fetch_by(Group, %{label: first_group_name, organization_id: organization_id}),
-         {:ok, group2} =
+         {:ok, group2} <-
            Repo.fetch_by(Group, %{label: second_group_name, organization_id: organization_id}) do
       move_to_group(group1, group2, contact_field_name, sentinel_value, organization_id)
       remove_from_group(group1, contact_field_name, sentinel_value)
