@@ -716,6 +716,9 @@ defmodule Glific.Partners.Billing do
   """
   @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization_id, start_date, end_date) do
+    #putting organization id in process for fetching stat data
+    Repo.put_process_state(organization_id)
+
     # formatting dates
     {start_usage_date, end_usage_date, end_usage_datetime, time} =
       format_dates(start_date, end_date)
