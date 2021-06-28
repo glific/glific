@@ -12,6 +12,8 @@ defmodule Glific do
   a new file
   """
 
+  require Logger
+
   alias Glific.{
     Partners,
     Repo
@@ -147,6 +149,27 @@ defmodule Glific do
     do: String.contains?(code, @not_allowed)
 
   @doc """
+    execute string in eex
+  """
+  @spec execute_eex(String.t()) :: String.t()
+  def execute_eex(content) do
+    if suspicious_code(content) do
+      Logger.error("EEx suspicious code: #{content}")
+      "Invalid Code"
+    else
+      EEx.eval_string(content)
+    end
+  rescue
+    EEx.SyntaxError ->
+      Logger.error("EEx threw a SyntaxError: #{content}")
+      "Invalid Code"
+
+    _ ->
+      Logger.error("EEx threw a Error: #{content}")
+      "Invalid Code"
+  end
+
+  @doc """
   Compute the signature at a specific time for the body
   """
   @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
@@ -223,4 +246,5 @@ defmodule Glific do
     |> Map.put(:organization_id, value)
     |> Map.delete(key)
   end
+
 end

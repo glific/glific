@@ -17,7 +17,6 @@ defmodule Glific.Flows.FlowContext do
     Flows,
     Flows.Flow,
     Flows.FlowResult,
-    Flows.MessageVarParser,
     Flows.Node,
     Messages,
     Messages.Message,
@@ -604,16 +603,6 @@ defmodule Glific.Flows.FlowContext do
       {:error, message} -> {:error, message}
     end
   end
-
-  @doc """
-  Retrieve the value from a results string
-  """
-  @spec get_result_value(FlowContext.t(), String.t()) :: String.t() | nil
-  def get_result_value(context, value) when binary_part(value, 0, 9) == "@results." do
-    MessageVarParser.parse(value, %{"results" => context.results})
-  end
-
-  def get_result_value(_context, value), do: value
 
   @doc """
   Delete all the contexts which are completed before two days

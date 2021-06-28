@@ -369,7 +369,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_name"} = action, context, messages) do
-    value = FlowContext.get_result_value(context, action.value)
+    value = ContactField.parse_contact_field_value(context, action.value)
     context = ContactSetting.set_contact_name(context, value)
     {:ok, context, messages}
   end
@@ -378,7 +378,7 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
     name = action.field.name
     key = String.downcase(name) |> String.replace(" ", "_")
-    value = FlowContext.get_result_value(context, action.value)
+    value = ContactField.parse_contact_field_value(context, action.value)
 
     context =
       if key == "settings",
