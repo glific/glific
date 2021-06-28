@@ -60,9 +60,10 @@ defmodule GlificWeb.Resolvers.Billings do
   @doc false
   @spec update_billing(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_billing(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+  def update_billing(_, %{id: id, input: params}, _) do
+    # Using skip organization as this function can be called by glific_admin
     with {:ok, billing} <-
-           Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
+           Repo.fetch_by(Billing, %{id: id}, skip_organization_id: true),
          {:ok, billing} <- Billing.update_stripe_customer(billing, params),
          {:ok, billing} <- Billing.update_billing(billing, params) do
       {:ok, %{billing: billing}}

@@ -169,26 +169,6 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
   end
 
-  test "get_result_value/2 will return the result value for a key" do
-    flow_context = flow_context_fixture()
-    json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
-    {category, _uuid_map} = Category.process(json, %{})
-
-    FlowContext.update_results(flow_context, %{
-      "test_key" => %{"input" => "test_input", "category" => category.name}
-    })
-
-    flow_context = Repo.get!(FlowContext, flow_context.id)
-
-    # now results value will always return the input if there is a map.
-    assert FlowContext.get_result_value(flow_context, "@results.test_key") == "test_input"
-
-    assert FlowContext.get_result_value(flow_context, "@results.test_key.category") ==
-             "Default Category"
-
-    assert FlowContext.get_result_value(flow_context, "@results.test_key.input") == "test_input"
-  end
-
   test "delete_completed_flow_contexts will delete all contexts completed before two days" do
     flow_context =
       flow_context_fixture(%{
