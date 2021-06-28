@@ -20,18 +20,36 @@ defmodule Glific.Clients.DigitalGreen do
   @spec webhook(String.t(), map()) :: map()
   def webhook("daily", fields) do
     update_contact_field_value(
-      fields["group_name"],
+      fields["contact_id"],
       fields["contact_field_name"],
-      fields["increment_value"],
-      fields["organization_id"]
+      fields["increment_value"]
     )
 
     swap_groups(
-      fields["first_group"],
-      fields["second_group"],
+      fields["stage_one_group_name"],
+      fields["stage_two_group_name"],
       fields["contact_field_name"],
-      fields["sentinel_value"],
-      fields["organization_id"]
+      fields["stage_one_upper_limit"],
+      fields["organization_id"],
+      fields["contact_id"]
+    )
+
+    swap_groups(
+      fields["stage_two_group_name"],
+      fields["stage_three_group_name"],
+      fields["contact_field_name"],
+      fields["stage_two_upper_limit"],
+      fields["organization_id"],
+      fields["contact_id"]
+    )
+
+    swap_groups(
+      fields["stage_three_group_name"],
+      nil,
+      fields["contact_field_name"],
+      fields["stage_two_upper_limit"],
+      fields["organization_id"],
+      fields["contact_id"]
     )
 
     fields
@@ -43,23 +61,10 @@ defmodule Glific.Clients.DigitalGreen do
   @doc """
   Update contact field with updated value
   """
-  @spec update_contact_field_value(String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
-          :ok
-  def update_contact_field_value(group_name, contact_field_name, increment_value, organization_id) do
-    {:ok, group} = Repo.fetch_by(Group, %{label: group_name, organization_id: organization_id})
-
-    contact_ids = Groups.contact_ids(group.id)
-
-    contact_ids
-    |> Enum.each(fn contact_id ->
-      update_contact_field(contact_id, contact_field_name, increment_value)
-    end)
-  end
-
-  # updating value for each contact of a collection
-  @spec update_contact_field(non_neg_integer(), String.t(), non_neg_integer()) ::
+  @spec update_contact_field_value(String.t(), String.t(), non_neg_integer()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp update_contact_field(contact_id, contact_field_name, increment_value) do
+  def update_contact_field_value(id, contact_field_name, increment_value) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(id)
     contact = Contacts.get_contact!(contact_id)
 
     contact_fields =
@@ -95,16 +100,48 @@ defmodule Glific.Clients.DigitalGreen do
   @doc """
   Swap contacts from collection based on sentinal value
   """
-  @spec swap_groups(String.t(), String.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
+  @spec swap_groups(
+          String.t(),
+          String.t() | nil,
+          String.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          map()
+        ) ::
           :ok
-  def swap_groups(first_group, second_group, contact_field_name, sentinel_value, organization_id) do
-    IO.inspect("swap_groups")
-    IO.inspect(second_group)
-    {:ok, group1} = Repo.fetch_by(Group, %{label: first_group, organization_id: organization_id})
-    {:ok, group2} = Repo.fetch_by(Group, %{label: second_group, organization_id: organization_id})
-    move_to_group(group1, group2, contact_field_name, sentinel_value, organization_id)
-    remove_from_group(group1, contact_field_name, sentinel_value)
-    :ok
+  def swap_groups(
+        first_group_name,
+        nil,
+        contact_field_name,
+        sentinel_value,
+        organization_id,
+        contact_id
+      ) do
+    with {:ok, group} <-
+           Repo.fetch_by(Group, %{label: first_group_name, organization_id: organization_id}),
+         {:ok, contact_id} <- Glific.parse_maybe_integer(contact_id) do
+      filtered_id = [contact_id] |> compute_threshold(contact_field_name, sentinel_value)
+
+      Groups.delete_group_contacts_by_ids(group.id, filtered_id)
+    end
+  end
+
+  def swap_groups(
+        first_group_name,
+        second_group_name,
+        contact_field_name,
+        sentinel_value,
+        organization_id,
+        _contact_id
+      ) do
+    with {:ok, group1} <-
+           Repo.fetch_by(Group, %{label: first_group_name, organization_id: organization_id}),
+         {:ok, group2} =
+           Repo.fetch_by(Group, %{label: second_group_name, organization_id: organization_id}) do
+      move_to_group(group1, group2, contact_field_name, sentinel_value, organization_id)
+      remove_from_group(group1, contact_field_name, sentinel_value)
+      :ok
+    end
   end
 
   # adding contact to a group
