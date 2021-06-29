@@ -54,6 +54,7 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("crop_stage", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     update_crop_days(fields["crop_stage"], contact_id)
+    fields
   end
 
   def webhook(_, _fields),
