@@ -25,6 +25,9 @@ defmodule Glific.Flows.ContactField do
     Map.put(context, :contact, contact)
   end
 
+  @doc """
+  Add contact field taking contact as parameter
+  """
   @spec do_add_contact_field(Contact.t(), String.t(), String.t(), String.t(), String.t()) ::
           Contact.t()
   def do_add_contact_field(contact, field, label, value, type) do
