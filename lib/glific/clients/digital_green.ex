@@ -60,17 +60,17 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
-  defp update_crop_days("1", contact_id) do
+  defp update_crop_days(@stage_1, contact_id) do
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field("crop_day", "crop_day", "13", "string")
   end
 
-  defp update_crop_days("2", contact_id) do
+  defp update_crop_days(@stage_2, contact_id) do
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field("crop_day", "crop_day", "33", "string")
   end
 
-  defp update_crop_days("3", contact_id) do
+  defp update_crop_days(@stage_3, contact_id) do
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field("crop_day", "crop_day", "50", "string")
   end
@@ -92,7 +92,7 @@ defmodule Glific.Clients.DigitalGreen do
     })
 
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "1", "string")
+    |> ContactField.do_add_contact_field("crop_stage", "crop_stage", @stage_1, "string")
 
     :ok
   end
@@ -109,7 +109,7 @@ defmodule Glific.Clients.DigitalGreen do
       })
 
       Contacts.get_contact!(contact_id)
-      |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "2", "string")
+      |> ContactField.do_add_contact_field("crop_stage", "crop_stage", @stage_2, "string")
 
       Groups.delete_group_contacts_by_ids(stage_one_group.id, [contact_id])
     end
@@ -129,7 +129,7 @@ defmodule Glific.Clients.DigitalGreen do
       })
 
       Contacts.get_contact!(contact_id)
-      |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "3", "string")
+      |> ContactField.do_add_contact_field("crop_stage", "crop_stage", @stage_3, "string")
 
       Groups.delete_group_contacts_by_ids(stage_two_group.id, [contact_id])
     end
