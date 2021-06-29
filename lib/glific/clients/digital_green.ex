@@ -6,12 +6,14 @@ defmodule Glific.Clients.DigitalGreen do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts,
-    Contacts.Contact,
     Groups,
     Groups.Group,
     Repo
   }
+
+  @stage_1 "Stage 1"
+  @stage_2 "Stage 2"
+  @stage_3 "Stage 3"
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -19,37 +21,26 @@ defmodule Glific.Clients.DigitalGreen do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("daily", fields) do
-    update_contact_field_value(
-      fields["contact_id"],
-      fields["contact_field_name"],
-      fields["increment_value"]
-    )
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
 
-    swap_groups(
-      fields["stage_one_group_name"],
-      fields["stage_two_group_name"],
-      fields["contact_field_name"],
-      fields["stage_one_upper_limit"],
-      fields["organization_id"],
-      fields["contact_id"]
-    )
+    enrolled_date = format_date(fields["contact"]["fields"]["enrolled_day"]["value"])
 
-    swap_groups(
-      fields["stage_two_group_name"],
-      fields["stage_three_group_name"],
-      fields["contact_field_name"],
-      fields["stage_two_upper_limit"],
-      fields["organization_id"],
-      fields["contact_id"]
-    )
+    number_of_days = Timex.now() |> Timex.diff(enrolled_date, :days)
 
-    swap_groups(
-      fields["stage_three_group_name"],
-      nil,
-      fields["contact_field_name"],
-      fields["stage_two_upper_limit"],
-      fields["organization_id"],
-      fields["contact_id"]
+    next_flow = fields["contact"]["fields"]["next_flow"]["value"]
+
+    next_flow_at =
+      fields["contact"]["fields"]["next_flow_at"]["value"]
+      |> format_date
+
+    move_to_group(number_of_days, contact_id, organization_id)
+
+    add_to_next_flow_group(
+      next_flow,
+      next_flow_at,
+      contact_id,
+      organization_id
     )
 
     fields
@@ -58,136 +49,62 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
-  @doc """
-  Update contact field with updated value
-  """
-  @spec update_contact_field_value(String.t(), String.t(), non_neg_integer()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def update_contact_field_value(id, contact_field_name, increment_value) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(id)
-    contact = Contacts.get_contact!(contact_id)
-
-    contact_fields =
-      if is_nil(contact.fields),
-        do: %{},
-        else: contact.fields
-
-    value =
-      contact_fields[contact_field_name]["value"]
-      |> increment(increment_value)
-
-    fields =
-      contact_fields
-      |> Map.put(contact_field_name, %{
-        value: value,
-        label: contact_field_name,
-        type: contact_fields[contact_field_name]["type"],
-        inserted_at: DateTime.utc_now()
-      })
-
-    Contacts.update_contact(
-      contact,
-      %{fields: fields}
-    )
-  end
-
-  @spec increment(non_neg_integer() | String.t(), non_neg_integer()) :: non_neg_integer()
-  defp increment(value, increment_value) do
-    {:ok, value} = Glific.parse_maybe_integer(value)
-    value + increment_value
-  end
-
-  @doc """
-  Swap contacts from collection based on sentinal value
-  """
-  @spec swap_groups(
-          String.t(),
-          String.t() | nil,
-          String.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          map()
-        ) ::
-          :ok
-  def swap_groups(
-        first_group_name,
-        nil,
-        contact_field_name,
-        sentinel_value,
-        organization_id,
-        contact_id
-      ) do
-    with {:ok, group} <-
-           Repo.fetch_by(Group, %{label: first_group_name, organization_id: organization_id}),
-         {:ok, contact_id} <- Glific.parse_maybe_integer(contact_id) do
-      filtered_id = [contact_id] |> compute_threshold(contact_field_name, sentinel_value)
-
-      Groups.delete_group_contacts_by_ids(group.id, filtered_id)
-    end
-  end
-
-  def swap_groups(
-        first_group_name,
-        second_group_name,
-        contact_field_name,
-        sentinel_value,
-        organization_id,
-        _contact_id
-      ) do
-    with {:ok, group1} <-
-           Repo.fetch_by(Group, %{label: first_group_name, organization_id: organization_id}),
-         {:ok, group2} <-
-           Repo.fetch_by(Group, %{label: second_group_name, organization_id: organization_id}) do
-      move_to_group(group1, group2, contact_field_name, sentinel_value, organization_id)
-      remove_from_group(group1, contact_field_name, sentinel_value)
-      :ok
-    end
-  end
-
-  # adding contact to a group
-  @spec move_to_group(Group.t(), Group.t(), String.t(), non_neg_integer(), non_neg_integer()) ::
-          :ok
-  defp move_to_group(
-         first_group,
-         second_group,
-         contact_field_name,
-         sentinel_value,
-         organization_id
-       ) do
-    contact_ids = Groups.contact_ids(first_group.id)
-
-    contact_ids
-    |> compute_threshold(contact_field_name, sentinel_value)
-    |> Enum.each(fn contact_id ->
+  @spec move_to_group(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
+  defp move_to_group(2, contact_id, organization_id) do
+    with {:ok, stage_one_group} <-
+           Repo.fetch_by(Group, %{label: @stage_1, organization_id: organization_id}),
+         {:ok, stage_two_group} <-
+           Repo.fetch_by(Group, %{label: @stage_2, organization_id: organization_id}) do
       Groups.create_contact_group(%{
         contact_id: contact_id,
-        group_id: second_group.id,
+        group_id: stage_two_group.id,
         organization_id: organization_id
       })
-    end)
+
+      Groups.delete_group_contacts_by_ids(stage_one_group.id, [contact_id])
+    end
+
+    :ok
   end
 
-  # removing contact from a group
-  @spec remove_from_group(Group.t(), String.t(), non_neg_integer()) :: {integer(), nil | [term()]}
-  defp remove_from_group(group, contact_field_name, sentinel_value) do
-    contact_ids =
-      Groups.contact_ids(group.id)
-      |> compute_threshold(contact_field_name, sentinel_value)
+  defp move_to_group(4, contact_id, organization_id) do
+    with {:ok, stage_three_group} <-
+           Repo.fetch_by(Group, %{label: @stage_3, organization_id: organization_id}),
+         {:ok, stage_two_group} <-
+           Repo.fetch_by(Group, %{label: @stage_2, organization_id: organization_id}) do
+      Groups.create_contact_group(%{
+        contact_id: contact_id,
+        group_id: stage_three_group.id,
+        organization_id: organization_id
+      })
 
-    Groups.delete_group_contacts_by_ids(group.id, contact_ids)
+      Groups.delete_group_contacts_by_ids(stage_two_group.id, [contact_id])
+    end
+
+    :ok
   end
 
-  @doc """
-  return list of contact_ids that matches the filter criteria
-  """
-  @spec compute_threshold(list(), String.t(), non_neg_integer()) :: list()
-  def compute_threshold(contact_ids, contact_field_name, sentinel_value) do
-    {:ok, sentinel_value} = Glific.parse_maybe_integer(sentinel_value)
+  defp move_to_group(_, _contact_id, _organization_id), do: :ok
 
-    contact_ids
-    |> Enum.filter(fn contact_id ->
-      fields_map = Contacts.get_contact!(contact_id).fields[contact_field_name]
-      fields_map["value"] > sentinel_value
-    end)
+  @spec add_to_next_flow_group(String.t(), Date.t(), non_neg_integer(), non_neg_integer()) :: :ok
+  defp add_to_next_flow_group(next_flow, next_flow_at, contact_id, organization_id) do
+    with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
+         {:ok, next_flow_group} <-
+           Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
+      Groups.create_contact_group(%{
+        contact_id: contact_id,
+        group_id: next_flow_group.id,
+        organization_id: organization_id
+      })
+    end
+
+    :ok
+  end
+
+  @spec format_date(String.t()) :: Date.t()
+  defp format_date(date) do
+    date
+    |> Timex.parse!("{YYYY}-{0M}-{D}")
+    |> Timex.to_date()
   end
 end
