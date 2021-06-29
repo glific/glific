@@ -50,7 +50,7 @@ defmodule Glific.Clients.DigitalGreen do
     do: %{}
 
   @spec move_to_group(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
-  defp move_to_group(2, contact_id, organization_id) do
+  defp move_to_group(26, contact_id, organization_id) do
     with {:ok, stage_one_group} <-
            Repo.fetch_by(Group, %{label: @stage_1, organization_id: organization_id}),
          {:ok, stage_two_group} <-
@@ -67,7 +67,7 @@ defmodule Glific.Clients.DigitalGreen do
     :ok
   end
 
-  defp move_to_group(4, contact_id, organization_id) do
+  defp move_to_group(40, contact_id, organization_id) do
     with {:ok, stage_three_group} <-
            Repo.fetch_by(Group, %{label: @stage_3, organization_id: organization_id}),
          {:ok, stage_two_group} <-
