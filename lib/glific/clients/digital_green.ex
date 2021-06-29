@@ -61,23 +61,23 @@ defmodule Glific.Clients.DigitalGreen do
     do: %{}
 
   defp update_crop_days("1", contact_id) do
-    contact = Contacts.get_contact!(contact_id)
-    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "13", "string")
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field("crop_day", "crop_day", "13", "string")
   end
 
   defp update_crop_days("2", contact_id) do
-    contact = Contacts.get_contact!(contact_id)
-    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "33", "string")
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field("crop_day", "crop_day", "33", "string")
   end
 
   defp update_crop_days("3", contact_id) do
-    contact = Contacts.get_contact!(contact_id)
-    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "50", "string")
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field("crop_day", "crop_day", "50", "string")
   end
 
   defp update_crop_days(_, contact_id) do
-    contact = Contacts.get_contact!(contact_id)
-    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "0", "string")
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field("crop_day", "crop_day", "0", "string")
   end
 
   @spec move_to_group(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
@@ -90,6 +90,9 @@ defmodule Glific.Clients.DigitalGreen do
       group_id: stage_one_group.id,
       organization_id: organization_id
     })
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "1", "string")
 
     :ok
   end
@@ -104,6 +107,9 @@ defmodule Glific.Clients.DigitalGreen do
         group_id: stage_two_group.id,
         organization_id: organization_id
       })
+
+      Contacts.get_contact!(contact_id)
+      |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "2", "string")
 
       Groups.delete_group_contacts_by_ids(stage_one_group.id, [contact_id])
     end
@@ -122,6 +128,9 @@ defmodule Glific.Clients.DigitalGreen do
         organization_id: organization_id
       })
 
+      Contacts.get_contact!(contact_id)
+      |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "3", "string")
+
       Groups.delete_group_contacts_by_ids(stage_two_group.id, [contact_id])
     end
 
@@ -131,6 +140,9 @@ defmodule Glific.Clients.DigitalGreen do
   defp move_to_group(@stage_3_threshold, contact_id, organization_id) do
     {:ok, stage_three_group} =
       Repo.fetch_by(Group, %{label: @stage_3, organization_id: organization_id})
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field("crop_stage", "crop_stage", "completed", "string")
 
     Groups.delete_group_contacts_by_ids(stage_three_group.id, [contact_id])
 
