@@ -6,6 +6,8 @@ defmodule Glific.Clients.DigitalGreen do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
+    Flows.ContactField,
     Groups,
     Groups.Group,
     Repo
@@ -14,6 +16,9 @@ defmodule Glific.Clients.DigitalGreen do
   @stage_1 "Stage 1"
   @stage_2 "Stage 2"
   @stage_3 "Stage 3"
+  @stage_1_threshold 26
+  @stage_2_threshold 40
+  @stage_3_threshold 60
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -23,18 +28,18 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("daily", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    {:ok, crop_day} = Glific.parse_maybe_integer(fields["contact"]["fields"]["crop_day"]["value"])
 
     enrolled_date = format_date(fields["contact"]["fields"]["enrolled_day"]["value"])
-
     number_of_days = Timex.now() |> Timex.diff(enrolled_date, :days)
-
+    total_days = number_of_days + crop_day
     next_flow = fields["contact"]["fields"]["next_flow"]["value"]
 
     next_flow_at =
       fields["contact"]["fields"]["next_flow_at"]["value"]
       |> format_date
 
-    move_to_group(number_of_days, contact_id, organization_id)
+    move_to_group(total_days, contact_id, organization_id)
 
     add_to_next_flow_group(
       next_flow,
@@ -46,11 +51,49 @@ defmodule Glific.Clients.DigitalGreen do
     fields
   end
 
+  def webhook("crop_stage", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    update_crop_days(fields["crop_stage"], contact_id)
+  end
+
   def webhook(_, _fields),
     do: %{}
 
+  defp update_crop_days("1", contact_id) do
+    contact = Contacts.get_contact!(contact_id)
+    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "13", "string")
+  end
+
+  defp update_crop_days("2", contact_id) do
+    contact = Contacts.get_contact!(contact_id)
+    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "33", "string")
+  end
+
+  defp update_crop_days("3", contact_id) do
+    contact = Contacts.get_contact!(contact_id)
+    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "50", "string")
+  end
+
+  defp update_crop_days(_, contact_id) do
+    contact = Contacts.get_contact!(contact_id)
+    ContactField.do_add_contact_field(contact, "crop_day", "crop_day", "0", "string")
+  end
+
   @spec move_to_group(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
-  defp move_to_group(26, contact_id, organization_id) do
+  defp move_to_group(0, contact_id, organization_id) do
+    {:ok, stage_one_group} =
+      Repo.fetch_by(Group, %{label: @stage_1, organization_id: organization_id})
+
+    Groups.create_contact_group(%{
+      contact_id: contact_id,
+      group_id: stage_one_group.id,
+      organization_id: organization_id
+    })
+
+    :ok
+  end
+
+  defp move_to_group(@stage_1_threshold, contact_id, organization_id) do
     with {:ok, stage_one_group} <-
            Repo.fetch_by(Group, %{label: @stage_1, organization_id: organization_id}),
          {:ok, stage_two_group} <-
@@ -67,7 +110,7 @@ defmodule Glific.Clients.DigitalGreen do
     :ok
   end
 
-  defp move_to_group(40, contact_id, organization_id) do
+  defp move_to_group(@stage_2_threshold, contact_id, organization_id) do
     with {:ok, stage_three_group} <-
            Repo.fetch_by(Group, %{label: @stage_3, organization_id: organization_id}),
          {:ok, stage_two_group} <-
@@ -80,6 +123,15 @@ defmodule Glific.Clients.DigitalGreen do
 
       Groups.delete_group_contacts_by_ids(stage_two_group.id, [contact_id])
     end
+
+    :ok
+  end
+
+  defp move_to_group(@stage_3_threshold, contact_id, organization_id) do
+    {:ok, stage_three_group} =
+      Repo.fetch_by(Group, %{label: @stage_3, organization_id: organization_id})
+
+    Groups.delete_group_contacts_by_ids(stage_three_group.id, [contact_id])
 
     :ok
   end
