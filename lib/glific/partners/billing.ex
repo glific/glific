@@ -643,19 +643,25 @@ defmodule Glific.Partners.Billing do
   """
   @spec subscription_created_callback(Stripe.Subscription.t(), non_neg_integer()) ::
           :ok | {:error, Stripe.Error.t()}
-  def subscription_created_callback(subscription, _org_id) do
+  def subscription_created_callback(subscription, org_id) do
     ## we can not add prorate for 3d secure cards. That's why we are using the
     ## subscription created callback to add the monthly subscription with prorate
     ## data.
-    proration_date = DateTime.utc_now() |> DateTime.to_unix()
 
-    make_stripe_request("subscription_items", :post, %{
-      subscription: subscription.id,
-      prorate: true,
-      proration_date: proration_date,
-      price: stripe_ids()["monthly"],
-      quantity: 1
-    })
+    with billing <- get_billing(%{organization_id: org_id}),
+         false <- billing.stripe_subscription_items |> Map.has_key?(stripe_ids()["monthly"]) do
+      proration_date = DateTime.utc_now() |> DateTime.to_unix()
+
+      make_stripe_request("subscription_items", :post, %{
+        subscription: subscription.id,
+        prorate: true,
+        proration_date: proration_date,
+        price: stripe_ids()["monthly"],
+        quantity: 1
+      })
+    else
+      _ -> {:ok, subscription}
+    end
   end
 
   # get dates and times in the right format for other functions
