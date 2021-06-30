@@ -10,6 +10,7 @@ defmodule Glific.Clients.DigitalGreen do
     Flows.ContactField,
     Groups,
     Groups.Group,
+    Navanatech,
     Repo
   }
 
@@ -28,7 +29,9 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("daily", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    {:ok, initial_crop_day} = Glific.parse_maybe_integer(fields["contact"]["fields"]["initial_crop_day"]["value"])
+
+    {:ok, initial_crop_day} =
+      Glific.parse_maybe_integer(fields["contact"]["fields"]["initial_crop_day"]["value"])
 
     enrolled_date = format_date(fields["contact"]["fields"]["enrolled_day"]["value"])
     number_of_days = Timex.now() |> Timex.diff(enrolled_date, :days)
@@ -55,6 +58,29 @@ defmodule Glific.Clients.DigitalGreen do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     update_crop_days(fields["crop_stage"], contact_id)
     fields
+  end
+
+  def webhook("leaf_curl_check_again", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    enrolled_date = format_date(fields["contact"]["fields"]["enrolled_day"]["value"])
+
+    with 15 <- Timex.now() |> Timex.diff(enrolled_date, :days),
+         {:ok, group} <-
+           Repo.fetch_by(Group, %{
+             label: "Leaf curl check again",
+             organization_id: organization_id
+           }) do
+      Groups.create_contact_group(%{
+        contact_id: contact_id,
+        group_id: group.id,
+        organization_id: organization_id
+      })
+    end
+  end
+
+  def webhook("navanatech", fields) do
+    Navanatech.navatech_post(fields)
   end
 
   def webhook(_, _fields),
