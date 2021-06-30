@@ -28,11 +28,11 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("daily", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    {:ok, crop_day} = Glific.parse_maybe_integer(fields["contact"]["fields"]["crop_day"]["value"])
+    {:ok, initial_crop_day} = Glific.parse_maybe_integer(fields["contact"]["fields"]["initial_crop_day"]["value"])
 
     enrolled_date = format_date(fields["contact"]["fields"]["enrolled_day"]["value"])
     number_of_days = Timex.now() |> Timex.diff(enrolled_date, :days)
-    total_days = number_of_days + crop_day
+    total_days = number_of_days + initial_crop_day
     next_flow = fields["contact"]["fields"]["next_flow"]["value"]
 
     next_flow_at =
@@ -62,22 +62,22 @@ defmodule Glific.Clients.DigitalGreen do
 
   defp update_crop_days(@stage_1, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("crop_day", "crop_day", "13", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "13", "string")
   end
 
   defp update_crop_days(@stage_2, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("crop_day", "crop_day", "33", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "33", "string")
   end
 
   defp update_crop_days(@stage_3, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("crop_day", "crop_day", "50", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "50", "string")
   end
 
   defp update_crop_days(_, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("crop_day", "crop_day", "0", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "0", "string")
   end
 
   @spec move_to_group(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: :ok
