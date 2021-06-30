@@ -65,7 +65,8 @@ defmodule Glific.Clients.DigitalGreen do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     enrolled_date = format_date(fields["contact"]["fields"]["enrolled_day"]["value"])
 
-    with 15 <- Timex.now() |> Timex.diff(enrolled_date, :days),
+    with days <- Timex.now() |> Timex.diff(enrolled_date, :days),
+         0 <- rem(days, 15),
          {:ok, group} <-
            Repo.fetch_by(Group, %{
              label: "Leaf curl check again",
