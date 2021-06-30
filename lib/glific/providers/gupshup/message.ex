@@ -97,6 +97,12 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message, attrs)
   end
 
+  def send_intractive_message(message, attrs \\ %{}) do
+    message.intarctive_content
+    |> Map.merge(%{type: message.type})
+    |> send_message(message, attrs)
+  end
+
   @doc false
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""

@@ -27,7 +27,9 @@ defmodule Glific.Communications.Message do
     audio: :send_audio,
     video: :send_video,
     document: :send_document,
-    sticker: :send_sticker
+    sticker: :send_sticker,
+    list: :send_intractive_message,
+    quick_reply: :send_intractive_message
   }
 
   @doc """
