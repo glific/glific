@@ -53,7 +53,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     field :send_at, :datetime
 
-    field :intarctive_content, :json
+    field :interactive_content, :json
 
     # the context of this message if applicable
     # basically links to the message which the user

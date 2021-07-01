@@ -98,7 +98,7 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   def send_intractive_message(message, attrs \\ %{}) do
-    message.intarctive_content
+    message.interactive_content
     |> Map.merge(%{type: message.type})
     |> send_message(message, attrs)
   end
