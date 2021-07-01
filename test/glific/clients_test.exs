@@ -100,8 +100,9 @@ defmodule Glific.ClientsTest do
 
   test "check that webhook always returns a map" do
     # a contact not in any group should return the same staff id
-    assert is_map Clients.webhook("daily", %{fields: "some fields"})
-    assert %{error: "Missing webhook function implementation"} == Clients.webhook("function", %{fields: "some fields"})
-  end
+    assert is_map(Clients.webhook("daily", %{fields: "some fields"}))
 
+    assert %{error: "Missing webhook function implementation"} ==
+             Clients.webhook("function", %{fields: "some fields"})
+  end
 end
