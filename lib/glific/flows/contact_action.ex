@@ -159,7 +159,7 @@ defmodule Glific.Flows.ContactAction do
 
     ## This is bit expansive and we will optimize it bit more
     # session_template =
-    if type in [:image, :video, :audio] and media_id != nil do
+    if Flows.is_media_type?(type) and media_id != nil do
       Messages.get_message_media!(media_id)
       |> Messages.update_message_media(%{caption: session_template.body})
     end
@@ -261,8 +261,9 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer()) :: any()
-  defp get_media_from_attachment(attachment, _, _, _) when attachment == %{} or is_nil(attachment),
-    do: {:text, nil}
+  defp get_media_from_attachment(attachment, _, _, _)
+       when attachment == %{} or is_nil(attachment),
+       do: {:text, nil}
 
   defp get_media_from_attachment(attachment, caption, context, cid) do
     [type | _tail] = Map.keys(attachment)

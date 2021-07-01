@@ -15,7 +15,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.DigitalGreen,
+    webhook: Glific.Clients.DigitalGreen
   }
 
   @sol %{
@@ -57,7 +57,7 @@ defmodule Glific.Clients do
     @stir[:id] => @stir,
     @tap[:id] => @tap,
     @weunlearn[:id] => @weunlearn,
-    @digital_green[:id] => @digital_green,
+    @digital_green[:id] => @digital_green
   }
 
   @spec env(atom() | nil) :: atom()
@@ -118,9 +118,9 @@ defmodule Glific.Clients do
   @spec webhook(String.t(), map()) :: map()
   def webhook(name, fields) do
     module_name = get_in(plugins(), [fields["organization_id"], :webhook])
+
     if module_name,
       do: apply(module_name, :webhook, [name, fields]),
       else: %{error: "Missing webhook function implementation"}
-
   end
 end
