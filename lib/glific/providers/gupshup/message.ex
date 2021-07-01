@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Message do
   @moduledoc """
-  Messgae API layer between application and Gupshup
+  Message API layer between application and Gupshup
   """
 
   @channel "whatsapp"
@@ -97,6 +97,8 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message, attrs)
   end
 
+  @doc false
+  @spec send_interactive_message(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_interactive_message(message, attrs \\ %{}) do
     message.interactive_content
     |> Map.merge(%{type: message.type})
