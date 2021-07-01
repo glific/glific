@@ -57,10 +57,11 @@ defmodule Glific.Flows.ContactField do
   @spec parse_contact_field_value(FlowContext.t(), String.t()) :: String.t()
   def parse_contact_field_value(context, value) do
     message_vars = %{
-        "results" => context.results,
-        "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "flow" => %{name: context.flow.name, id: context.flow.id}
+      "results" => context.results,
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "flow" => %{name: context.flow.name, id: context.flow.id}
     }
+
     value
     |> MessageVarParser.parse(message_vars)
     |> Glific.execute_eex()

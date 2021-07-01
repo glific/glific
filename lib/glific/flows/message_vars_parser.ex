@@ -46,7 +46,7 @@ defmodule Glific.Flows.MessageVarParser do
   end
 
   defp bound("@contact.groups", binding),
-  do: bound("@contact.in_groups", binding)
+    do: bound("@contact.in_groups", binding)
 
   # since this is a list we need to convert that into a string.
   defp bound("@contact.in_groups", binding) do
