@@ -37,7 +37,7 @@ defmodule Glific.Flows.ContactAction do
   @spec send_interactive_message(FlowContext.t(), Action.t(), [Message.t()]) ::
           {:ok, map(), any()}
   def send_interactive_message(context, action, messages) do
-    ## We might need to think how to send the intrative message to a group
+    ## We might need to think how to send the interactive message to a group
     {cid, message_vars} = resolve_cid(context, nil)
     interactive_content =
       action.text
