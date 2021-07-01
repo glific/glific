@@ -354,6 +354,10 @@ defmodule Glific.Flows.Action do
     ContactAction.send_message(context, action, messages)
   end
 
+  def execute(%{type: "send_intrative_msg"} = action, context, messages) do
+    ContactAction.send_intrative_message(context, action, messages)
+  end
+
   def execute(%{type: "send_broadcast"} = action, context, messages) do
     ContactAction.send_broadcast(context, action, messages)
   end

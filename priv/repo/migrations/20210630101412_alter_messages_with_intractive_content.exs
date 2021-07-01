@@ -7,8 +7,9 @@ defmodule Glific.Repo.Migrations.AlterMessagesWithIntractiveContent do
 
   def alter_messages_with_intarctive_content do
     alter table(:messages) do
-      add_if_not_exists(:intarctive_content, :jsonb,
-        comment: "the json data for list and payload"
+      add_if_not_exists(:intarctive_content, :map,
+        default: %{},
+        comment: "the json data for intrative messages"
       )
     end
   end

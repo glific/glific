@@ -31,6 +31,33 @@ defmodule Glific.Flows.ContactAction do
     )
   end
 
+  @doc """
+  Send Intractive messages
+  """
+  @spec send_intrative_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
+  def send_intrative_message(context, action, messages) do
+    ## We might need to think how to send the intrative message to a group
+    {cid, message_vars} = resolve_cid(context, nil)
+    intrative_content =
+      action.body
+      |> Jason.decode!()
+      |> MessageVarParser.parse_map(message_vars)
+
+     attrs = %{
+      uuid: action.uuid,
+      type: intrative_content.type,
+      receiver_id: cid,
+      organization_id: context.organization_id,
+      flow_id: context.flow_id,
+      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      is_optin_flow: Flows.is_optin_flow?(context.flow),
+      intrative_content: intrative_content
+    }
+    attrs
+    |> Messages.create_and_send_message()
+    |> handle_message_result(context, messages, attrs)
+  end
+
   # handle the case if we are sending a notification to another contact who is
   # staff, so we need info for both
   # the nil case is the regular case of sending a message

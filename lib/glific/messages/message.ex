@@ -51,6 +51,7 @@ defmodule Glific.Messages.Message do
           clean_body: String.t() | nil,
           publish?: boolean,
           extra: map(),
+          intarctive_content: map(),
           bsp_message_id: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
@@ -89,7 +90,8 @@ defmodule Glific.Messages.Message do
     :sent_at,
     :user_id,
     :flow_id,
-    :session_uuid
+    :session_uuid,
+    :intarctive_content
   ]
 
   schema "messages" do
@@ -126,6 +128,7 @@ defmodule Glific.Messages.Message do
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0, read_after_writes: true
     field :session_uuid, Ecto.UUID, read_after_writes: true
+    field :intarctive_content, :map, default: %{}
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
