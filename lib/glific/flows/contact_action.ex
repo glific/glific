@@ -32,10 +32,10 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @doc """
-  Send Intractive messages
+  Send interactive messages
   """
   @spec send_intrative_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
-  def send_intrative_message(context, action, messages) do
+  def send_interactive_message(context, action, messages) do
     ## We might need to think how to send the intrative message to a group
     {cid, message_vars} = resolve_cid(context, nil)
     intrative_content =

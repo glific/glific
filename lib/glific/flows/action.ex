@@ -355,7 +355,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "send_interactive_msg"} = action, context, messages) do
-    ContactAction.send_intrative_message(context, action, messages)
+    ContactAction.send_interactive_message(context, action, messages)
   end
 
   def execute(%{type: "send_broadcast"} = action, context, messages) do

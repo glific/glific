@@ -28,8 +28,8 @@ defmodule Glific.Communications.Message do
     video: :send_video,
     document: :send_document,
     sticker: :send_sticker,
-    list: :send_intractive_message,
-    quick_reply: :send_intractive_message
+    list: :send_interactive_message,
+    quick_reply: :send_interactive_message
   }
 
   @doc """
