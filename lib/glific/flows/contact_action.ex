@@ -34,25 +34,27 @@ defmodule Glific.Flows.ContactAction do
   @doc """
   Send interactive messages
   """
-  @spec send_interactive_message(FlowContext.t(), Action.t(), [Message.t()]) :: {:ok, map(), any()}
+  @spec send_interactive_message(FlowContext.t(), Action.t(), [Message.t()]) ::
+          {:ok, map(), any()}
   def send_interactive_message(context, action, messages) do
-    ## We might need to think how to send the intrative message to a group
+    ## We might need to think how to send the interactive message to a group
     {cid, message_vars} = resolve_cid(context, nil)
-    intrative_content =
-      action.body
+    interactive_content =
+      action.text
       |> Jason.decode!()
       |> MessageVarParser.parse_map(message_vars)
 
-     attrs = %{
+    attrs = %{
       uuid: action.uuid,
-      type: intrative_content.type,
+      type: interactive_content["type"],
       receiver_id: cid,
       organization_id: context.organization_id,
       flow_id: context.flow_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       is_optin_flow: Flows.is_optin_flow?(context.flow),
-      intrative_content: intrative_content
+      interactive_content: interactive_content
     }
+
     attrs
     |> Messages.create_and_send_message()
     |> handle_message_result(context, messages, attrs)
@@ -288,8 +290,9 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer()) :: any()
-  defp get_media_from_attachment(attachment, _, _, _) when attachment == %{} or is_nil(attachment),
-    do: {:text, nil}
+  defp get_media_from_attachment(attachment, _, _, _)
+       when attachment == %{} or is_nil(attachment),
+       do: {:text, nil}
 
   defp get_media_from_attachment(attachment, caption, context, cid) do
     [type | _tail] = Map.keys(attachment)

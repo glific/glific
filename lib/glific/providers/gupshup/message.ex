@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Message do
   @moduledoc """
-  Messgae API layer between application and Gupshup
+  Message API layer between application and Gupshup
   """
 
   @channel "whatsapp"

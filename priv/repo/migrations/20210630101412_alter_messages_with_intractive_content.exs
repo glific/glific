@@ -9,7 +9,7 @@ defmodule Glific.Repo.Migrations.AlterMessagesWithIntractiveContent do
     alter table(:messages) do
       add_if_not_exists(:interactive_content, :map,
         default: %{},
-        comment: "the json data for intrative messages"
+        comment: "the json data for interactive messages"
       )
     end
   end
