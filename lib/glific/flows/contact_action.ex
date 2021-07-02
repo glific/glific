@@ -39,6 +39,7 @@ defmodule Glific.Flows.ContactAction do
   def send_interactive_message(context, action, messages) do
     ## We might need to think how to send the interactive message to a group
     {cid, message_vars} = resolve_cid(context, nil)
+
     interactive_content =
       action.text
       |> Jason.decode!()

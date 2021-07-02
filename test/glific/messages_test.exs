@@ -419,18 +419,17 @@ defmodule Glific.MessagesTest do
         |> Map.merge(%{caption: "Hello @contact.phone"})
         |> Fixtures.message_media_fixture()
 
-       {:ok, message} =
+      {:ok, message} =
         @valid_attrs
         |> Map.merge(foreign_key_constraint(attrs))
         |> Map.merge(%{type: :image, media_id: media.id})
         |> Messages.create_message()
 
-       message_media = Messages.get_message_media!(media.id)
+      message_media = Messages.get_message_media!(media.id)
 
-       receiver =  Contacts.get_contact!(message.receiver_id)
+      receiver = Contacts.get_contact!(message.receiver_id)
 
-       assert message_media.caption == "Hello #{receiver.phone}"
-
+      assert message_media.caption == "Hello #{receiver.phone}"
     end
 
     test "create and send message to multiple contacts should update the bsp_message_id field in message",
@@ -805,7 +804,6 @@ defmodule Glific.MessagesTest do
       assert message.bsp_message_id != nil
       assert message.bsp_status == :enqueued
       assert message.sent_at != nil
-
     end
 
     test "prepare hsm template",

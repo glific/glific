@@ -13,5 +13,4 @@ defmodule Glific.Repo.Migrations.AlterMessagesWithIntractiveContent do
       )
     end
   end
-
 end
