@@ -47,7 +47,7 @@ defmodule Glific.Clients do
   }
 
   @digital_green %{
-    id: 26,
+    id: 31,
     webhook: Glific.Clients.DigitalGreen
   }
 
