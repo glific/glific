@@ -5,69 +5,57 @@ defmodule Glific.DigitalGreenTest do
     Clients.DigitalGreenDGSeed,
     Clients.DigitalGreen,
     Contacts,
-    Flows.ContactField,
     Fixtures,
     Groups,
     Groups.Group,
     Seeds.SeedsDev
   }
 
-  describe "digital green" do
+  describe "digital green webhook tests" do
     setup do
       organization = SeedsDev.seed_organizations()
       DigitalGreenDGSeed.seed_data([organization])
       :ok
     end
 
-    test "testdaily/1 with valid data creates a group", attrs do
+    test "webhook/2 with daily as first param should move contact to stage group based on total days, update number of days and add to next flow group",
+         attrs do
       enrolled_day = Timex.shift(Timex.now(), days: -10) |> Timex.to_date()
-      next_flow_at = Timex.now()|> Timex.to_date()
+      next_flow_at = Timex.now() |> Timex.to_date()
 
-      contact =
-        Fixtures.contact_fixture(attrs)
-        |> ContactField.do_add_contact_field("total_days", "total_days", "10", "string")
-        |> ContactField.do_add_contact_field(
-          "enrolled_day",
-          "enrolled_day",
-          enrolled_day,
-          "string"
-        )
-        |> ContactField.do_add_contact_field(
-          "initial_crop_day",
-          "initial_crop_day",
-          "10",
-          "string"
-        )
-        |> ContactField.do_add_contact_field(
-          "next_flow",
-          "next_flow",
-          "adoption",
-          "string"
-        )
-        |> ContactField.do_add_contact_field(
-          "next_flow_at",
-          "next_flow_at",
-          next_flow_at,
-          "string"
-        )
+      dg_contact =
+        attrs
+        |> Map.merge(%{enrolled_day: enrolled_day, next_flow_at: next_flow_at})
+        |> Fixtures.dg_contact_fixture()
 
-      updated_contact = Contacts.get_contact!(contact.id)
+      contact = Contacts.get_contact!(dg_contact.id)
 
       webhook_fields = %{
-        "contact" => %{"fields" => updated_contact.fields},
+        "contact" => %{"fields" => contact.fields},
         "organization_id" => attrs.organization_id,
         "contact_id" => contact.id |> Integer.to_string()
       }
 
-      DigitalGreen.webhook("daily", webhook_fields)
-      updated_contact2 = Contacts.get_contact!(contact.id)
-
-      {:ok, group} =
+      {:ok, adoption_group} =
         Repo.fetch_by(Group, %{label: "adoption", organization_id: attrs.organization_id})
 
-      info = Groups.info_group_contacts(group.id)|>IO.inspect
-      assert updated_contact2.fields["total_days"]["value"] == 20
-      assert info.total >= 0
+      adoption_group_info = Groups.info_group_contacts(adoption_group.id)
+
+      {:ok, stage_2_group} =
+        Repo.fetch_by(Group, %{label: "Stage 2", organization_id: attrs.organization_id})
+
+      stage_2_group_info = Groups.info_group_contacts(stage_2_group.id)
+
+      DigitalGreen.webhook("daily", webhook_fields)
+
+      updated_contact = Contacts.get_contact!(contact.id)
+
+      updated_adoption_group_info = Groups.info_group_contacts(adoption_group.id)
+      updated_stage_2_group_info = Groups.info_group_contacts(stage_2_group.id)
+
+      assert updated_contact.fields["total_days"]["value"] == 26
+      assert updated_adoption_group_info.total >= adoption_group_info.total
+      assert updated_stage_2_group_info.total >= stage_2_group_info.total
     end
   end
 end
