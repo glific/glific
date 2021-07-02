@@ -24,9 +24,14 @@ defmodule Glific.Providers.MessageBehaviour do
   @callback send_sticker(message :: Glific.Messages.Message.t(), attrs :: map()) ::
               {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
 
+   @callback send_interactive(message :: Glific.Messages.Message.t(), attrs :: map()) ::
+              {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+
   @callback receive_text(payload :: map()) :: map()
 
   @callback receive_media(payload :: map()) :: map()
 
   @callback receive_location(payload :: map()) :: map()
+
+  @callback receive_interactive(payload :: map()) :: map()
 end

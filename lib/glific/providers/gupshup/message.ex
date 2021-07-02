@@ -97,7 +97,10 @@ defmodule Glific.Providers.Gupshup.Message do
     |> send_message(message, attrs)
   end
 
-  def send_interactive_message(message, attrs \\ %{}) do
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs \\ %{}) do
     message.interactive_content
     |> Map.merge(%{type: message.type})
     |> send_message(message, attrs)
@@ -162,6 +165,25 @@ defmodule Glific.Providers.Gupshup.Message do
       context_id: context_id(payload),
       longitude: message_payload["longitude"],
       latitude: message_payload["latitude"],
+      sender: %{
+        phone: payload["sender"]["phone"],
+        name: payload["sender"]["name"]
+      }
+    }
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec receive_interactive(map()) :: map()
+  def receive_interactive(params) do
+    payload = params["payload"]
+    message_payload = payload["payload"]
+
+    %{
+      bsp_message_id: payload["id"],
+      context_id: context_id(payload),
+      body: message_payload["title"],
+      interactive_content: message_payload,
       sender: %{
         phone: payload["sender"]["phone"],
         name: payload["sender"]["name"]

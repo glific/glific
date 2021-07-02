@@ -28,8 +28,8 @@ defmodule Glific.Communications.Message do
     video: :send_video,
     document: :send_document,
     sticker: :send_sticker,
-    list: :send_interactive_message,
-    quick_reply: :send_interactive_message
+    list: :send_interactive,
+    quick_reply: :send_interactive
   }
 
   @doc """
@@ -204,6 +204,7 @@ defmodule Glific.Communications.Message do
 
     cond do
       type == :text -> receive_text(message_params)
+      type in [:quick_reply, :list] -> receive_text(message_params)
       type == :location -> receive_location(message_params)
       true -> receive_media(message_params)
     end
