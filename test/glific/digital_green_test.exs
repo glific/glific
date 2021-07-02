@@ -25,7 +25,11 @@ defmodule Glific.DigitalGreenTest do
 
       dg_contact =
         attrs
-        |> Map.merge(%{enrolled_day: enrolled_day, next_flow_at: next_flow_at})
+        |> Map.merge(%{
+          enrolled_day: enrolled_day,
+          next_flow_at: next_flow_at,
+          initial_crop_day: "16"
+        })
         |> Fixtures.dg_contact_fixture()
 
       contact = Contacts.get_contact!(dg_contact.id)
