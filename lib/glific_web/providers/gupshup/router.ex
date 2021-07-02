@@ -51,8 +51,8 @@ defmodule GlificWeb.Providers.Gupshup.Router do
 
     scope "/message" do
       post("/text", MessageController, :text)
-      post("/quick_reply", MessageEventController, :quick_reply)
-      post("/list_reply", MessageEventController, :list)
+      post("/quick_reply", MessageController, :quick_reply)
+      post("/list_reply", MessageController, :list)
       post("/image", MessageController, :image)
       post("/file", MessageController, :file)
       post("/audio", MessageController, :audio)
