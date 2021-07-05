@@ -46,6 +46,7 @@ defmodule Glific.Flows.ContactAction do
       |> MessageVarParser.parse_map(message_vars)
 
     attrs = %{
+      body: get_interactive_body(interactive_content, interactive_content["type"]),
       uuid: action.uuid,
       type: interactive_content["type"],
       receiver_id: cid,
@@ -60,6 +61,15 @@ defmodule Glific.Flows.ContactAction do
     |> Messages.create_and_send_message()
     |> handle_message_result(context, messages, attrs)
   end
+
+  @spec get_interactive_body(map(), String.t()) :: String.t()
+  defp get_interactive_body(interactive_content, "quick_reply"),
+    do: interactive_content["content"]["text"]
+
+  defp get_interactive_body(interactive_content, "list"),
+    do: interactive_content["body"]
+
+  defp get_interactive_body(_, _), do: ""
 
   # handle the case if we are sending a notification to another contact who is
   # staff, so we need info for both
