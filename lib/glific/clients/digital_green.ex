@@ -14,9 +14,9 @@ defmodule Glific.Clients.DigitalGreen do
     Repo
   }
 
-  @stage_1 "Stage 1"
-  @stage_2 "Stage 2"
-  @stage_3 "Stage 3"
+  @stage_1 "stage 1"
+  @stage_2 "stage 2"
+  @stage_3 "stage 3"
   @stage_1_threshold 26
   @stage_2_threshold 40
   @stage_3_threshold 60
@@ -44,6 +44,7 @@ defmodule Glific.Clients.DigitalGreen do
 
     next_flow_at =
       fields["contact"]["fields"]["next_flow_at"]["value"]
+      |> String.trim()
       |> format_date
 
     move_to_group(total_days, contact_id, organization_id)
