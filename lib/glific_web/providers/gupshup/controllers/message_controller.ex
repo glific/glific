@@ -74,13 +74,13 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   end
 
   @doc """
-  Callback for gupshup sticker image
+  Callback for interactive quick reply
   """
   @spec quick_reply(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def quick_reply(conn, params), do: interactive(conn, params, :quick_reply)
 
   @doc """
-  Callback for gupshup sticker image
+  Callback for interactive list
   """
   @spec list(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def list(conn, params), do: interactive(conn, params, :list)
