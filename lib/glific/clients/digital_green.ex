@@ -30,6 +30,27 @@ defmodule Glific.Clients.DigitalGreen do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
 
+    next_flow = fields["contact"]["fields"]["next_flow"]["value"]
+
+    next_flow_at =
+      fields["contact"]["fields"]["next_flow_at"]["value"]
+      |> String.trim()
+      |> format_date
+
+    add_to_next_flow_group(
+      next_flow,
+      next_flow_at,
+      contact_id,
+      organization_id
+    )
+
+    fields
+  end
+
+  def webhook("total_days", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+
     {:ok, initial_crop_day} =
       Glific.parse_maybe_integer(fields["contact"]["fields"]["initial_crop_day"]["value"])
 
@@ -40,23 +61,7 @@ defmodule Glific.Clients.DigitalGreen do
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field("total_days", "total_days", total_days, "string")
 
-    next_flow = fields["contact"]["fields"]["next_flow"]["value"]
-
-    next_flow_at =
-      fields["contact"]["fields"]["next_flow_at"]["value"]
-      |> String.trim()
-      |> format_date
-
     move_to_group(total_days, contact_id, organization_id)
-
-    add_to_next_flow_group(
-      next_flow,
-      next_flow_at,
-      contact_id,
-      organization_id
-    )
-
-    fields
   end
 
   def webhook("crop_stage", fields) do
