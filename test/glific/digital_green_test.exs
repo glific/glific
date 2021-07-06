@@ -2,8 +2,8 @@ defmodule Glific.DigitalGreenTest do
   use Glific.DataCase
 
   alias Glific.{
-    Clients.DigitalGreenDGSeed,
     Clients.DigitalGreen,
+    Clients.DigitalGreenDGSeed,
     Contacts,
     Fixtures,
     Groups,
