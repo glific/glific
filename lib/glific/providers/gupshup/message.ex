@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Message do
   @moduledoc """
-  Messgae API layer between application and Gupshup
+  Message API layer between application and Gupshup
   """
 
   @channel "whatsapp"
@@ -98,6 +98,15 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs \\ %{}) do
+    message.interactive_content
+    |> Map.merge(%{type: message.type})
+    |> send_message(message, attrs)
+  end
+
+  @doc false
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""
   defp caption(caption), do: caption
@@ -156,6 +165,25 @@ defmodule Glific.Providers.Gupshup.Message do
       context_id: context_id(payload),
       longitude: message_payload["longitude"],
       latitude: message_payload["latitude"],
+      sender: %{
+        phone: payload["sender"]["phone"],
+        name: payload["sender"]["name"]
+      }
+    }
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec receive_interactive(map()) :: map()
+  def receive_interactive(params) do
+    payload = params["payload"]
+    message_payload = payload["payload"]
+
+    %{
+      bsp_message_id: payload["id"],
+      context_id: context_id(payload),
+      body: message_payload["title"],
+      interactive_content: message_payload,
       sender: %{
         phone: payload["sender"]["phone"],
         name: payload["sender"]["name"]

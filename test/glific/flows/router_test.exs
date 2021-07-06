@@ -349,7 +349,7 @@ defmodule Glific.Flows.RouterTest do
       |> Router.process(uuid_map, node)
 
     context = flow_context_fixture(%{uuid_map: uuid_map})
-    [group | _ ] = Groups.list_groups(%{filter: %{organization_id: context.organization_id}})
+    [group | _] = Groups.list_groups(%{filter: %{organization_id: context.organization_id}})
 
     Groups.create_contact_group(%{
       contact_id: context.contact_id,
@@ -362,7 +362,5 @@ defmodule Glific.Flows.RouterTest do
     {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
     [recent_inbound_message] = updated_context.recent_inbound
     assert recent_inbound_message["message"] == "#{inspect([group.label])}"
-
   end
-
 end
