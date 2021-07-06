@@ -52,12 +52,9 @@ defmodule Glific.DigitalGreenTest do
 
       DigitalGreen.webhook("daily", webhook_fields)
 
-      updated_contact = Contacts.get_contact!(contact.id)
-
       updated_adoption_group_info = Groups.info_group_contacts(adoption_group.id)
       updated_stage_2_group_info = Groups.info_group_contacts(stage_2_group.id)
 
-      assert updated_contact.fields["total_days"]["value"] == 26
       assert updated_adoption_group_info.total >= adoption_group_info.total
       assert updated_stage_2_group_info.total >= stage_2_group_info.total
     end
