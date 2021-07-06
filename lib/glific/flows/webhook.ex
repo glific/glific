@@ -63,7 +63,9 @@ defmodule Glific.Flows.Webhook do
     # handle incorrect json body
     json_body =
       case Jason.decode(body) do
-        {:ok, json_body} -> json_body
+        {:ok, json_body} ->
+          json_body
+
         _ ->
           nil
       end
@@ -75,7 +77,6 @@ defmodule Glific.Flows.Webhook do
 
     webhook_log
     |> WebhookLog.update_webhook_log(attrs)
-
   end
 
   # this is when we are storing the return from an internal function call

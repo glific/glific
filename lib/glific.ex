@@ -246,5 +246,4 @@ defmodule Glific do
     |> Map.put(:organization_id, value)
     |> Map.delete(key)
   end
-
 end

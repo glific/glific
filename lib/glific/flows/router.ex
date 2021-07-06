@@ -175,8 +175,7 @@ defmodule Glific.Flows.Router do
   def execute(%{wait: wait} = _router, context, []) when wait != nil,
     do: Wait.execute(wait, context, [])
 
-  def execute(%{type: type} = router, context, messages ) when type == "switch" do
-
+  def execute(%{type: type} = router, context, messages) when type == "switch" do
     {msg, rest} =
       if messages == [] do
         ## split by group is also calling the same function.
@@ -229,9 +228,12 @@ defmodule Glific.Flows.Router do
   @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
   defp split_by_expression(%{operand: "@contact.groups"} = _router, context) do
     contact = Contacts.get_contact_field_map(context.contact_id)
+
     msg =
       context.organization_id
-      |> Messages.create_temp_message("#{inspect(contact.in_groups)}", extra: %{contact_groups: contact.in_groups} )
+      |> Messages.create_temp_message("#{inspect(contact.in_groups)}",
+        extra: %{contact_groups: contact.in_groups}
+      )
 
     {msg, []}
   end
@@ -240,9 +242,9 @@ defmodule Glific.Flows.Router do
     # get the value from the "input" version of the operand field
     # this is the split by result flow
     vars = %{
-        "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "results" => context.results,
-        "flow" => %{name: context.flow.name, id: context.flow.id}
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results,
+      "flow" => %{name: context.flow.name, id: context.flow.id}
     }
 
     content =
@@ -286,7 +288,7 @@ defmodule Glific.Flows.Router do
   defp update_context_results(context, key, msg, {category, is_checkbox}) do
     results =
       cond do
-        msg.type in [:image, :video, :audio] ->
+        Flows.is_media_type?(msg.type) ->
           json =
             msg.media
             |> Map.take([:id, :source_url, :url, :caption])

@@ -782,4 +782,11 @@ defmodule Glific.Flows do
 
     Map.get(json, "definition", json)
   end
+
+  @doc """
+  Check if the type is a media type we handle in flows
+  """
+  @spec is_media_type?(atom()) :: boolean()
+  def is_media_type?(type),
+    do: type in [:audio, :document, :image, :video]
 end

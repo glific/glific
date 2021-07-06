@@ -31,8 +31,9 @@ defmodule Glific.Triggers do
       [t],
       is_nil(t.last_trigger_at) or
         fragment(
-          "date_trunc('day', ?) != (SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')::date)",
-          t.last_trigger_at
+          "date_trunc('day', ?) != ?",
+          t.last_trigger_at,
+          ^Timex.beginning_of_day(now)
         )
     )
     |> where([t], t.next_trigger_at < ^now)
