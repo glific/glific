@@ -17,7 +17,6 @@ defmodule Glific.Seeds.SeedsMigration do
     Partners.Saas,
     Repo,
     Searches.SavedSearch,
-    Seeds.SeedsDg,
     Seeds.SeedsFlows,
     Seeds.SeedsStats,
     Settings,
@@ -57,8 +56,6 @@ defmodule Glific.Seeds.SeedsMigration do
     org_id_list = Enum.map(organizations, fn o -> o.id end)
     SeedsStats.seed_stats(org_id_list)
   end
-
-  defp do_migrate_data(:dg, organizations), do: SeedsDg.seed_data(organizations)
 
   defp do_migrate_data(:sync_bigquery, _organizations) do
     bigquery_enabled_org_ids()
