@@ -6,6 +6,7 @@ defmodule Glific.Flows.ContactField do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Contacts.ContactsField,
     Flows.FlowContext,
     Flows.MessageVarParser,
@@ -19,10 +20,21 @@ defmodule Glific.Flows.ContactField do
   @spec add_contact_field(FlowContext.t(), String.t(), String.t(), String.t(), String.t()) ::
           FlowContext.t()
   def add_contact_field(context, field, label, value, type) do
+    contact = do_add_contact_field(context.contact, field, label, value, type)
+
+    Map.put(context, :contact, contact)
+  end
+
+  @doc """
+  Add contact field taking contact as parameter
+  """
+  @spec do_add_contact_field(Contact.t(), String.t(), String.t(), any(), String.t()) ::
+          Contact.t()
+  def do_add_contact_field(contact, field, label, value, type) do
     contact_fields =
-      if is_nil(context.contact.fields),
+      if is_nil(contact.fields),
         do: %{},
-        else: context.contact.fields
+        else: contact.fields
 
     fields =
       contact_fields
@@ -30,11 +42,11 @@ defmodule Glific.Flows.ContactField do
 
     {:ok, contact} =
       Contacts.update_contact(
-        context.contact,
+        contact,
         %{fields: fields}
       )
 
-    Map.put(context, :contact, contact)
+    contact
   end
 
   @doc """

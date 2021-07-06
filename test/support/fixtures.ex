@@ -738,4 +738,35 @@ defmodule Glific.Fixtures do
 
     extension
   end
+
+  @doc false
+  @spec dg_contact_fixture(map()) :: Contacts.Contact.t()
+  def dg_contact_fixture(%{enrolled_day: enrolled_day, next_flow_at: next_flow_at, initial_crop_day: initial_crop_day} = attrs) do
+    contact_fixture(attrs)
+    |> ContactField.do_add_contact_field("total_days", "total_days", "10", "string")
+    |> ContactField.do_add_contact_field(
+      "enrolled_day",
+      "enrolled_day",
+      enrolled_day,
+      "string"
+    )
+    |> ContactField.do_add_contact_field(
+      "initial_crop_day",
+      "initial_crop_day",
+      initial_crop_day,
+      "string"
+    )
+    |> ContactField.do_add_contact_field(
+      "next_flow",
+      "next_flow",
+      "adoption",
+      "string"
+    )
+    |> ContactField.do_add_contact_field(
+      "next_flow_at",
+      "next_flow_at",
+      next_flow_at,
+      "string"
+    )
+  end
 end

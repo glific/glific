@@ -280,7 +280,7 @@ defmodule Glific.Groups do
   Delete group contacts
 
   """
-  @spec delete_group_contacts_by_ids(integer, []) :: {integer(), nil | [term()]}
+  @spec delete_group_contacts_by_ids(integer, list()) :: {integer(), nil | [term()]}
   def delete_group_contacts_by_ids(group_id, contact_ids) do
     fields = {{:group_id, group_id}, {:contact_id, contact_ids}}
     Repo.delete_relationships_by_ids(ContactGroup, fields)
@@ -289,7 +289,7 @@ defmodule Glific.Groups do
   @doc """
   Delete contact groups
   """
-  @spec delete_contact_groups_by_ids(integer, []) :: {integer(), nil | [term()]}
+  @spec delete_contact_groups_by_ids(integer, list()) :: {integer(), nil | [term()]}
   def delete_contact_groups_by_ids(contact_id, group_ids) do
     fields = {{:contact_id, contact_id}, {:group_id, group_ids}}
     Repo.delete_relationships_by_ids(ContactGroup, fields)
