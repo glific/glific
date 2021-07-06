@@ -45,8 +45,15 @@ defmodule Glific.Flows.ContactAction do
       |> Jason.decode!()
       |> MessageVarParser.parse_map(message_vars)
 
+    body =
+      get_interactive_body(
+        interactive_content,
+        interactive_content["type"],
+        interactive_content["content"]["type"]
+      )
+
     attrs = %{
-      body: get_interactive_body(interactive_content, interactive_content["type"]),
+      body: body,
       uuid: action.uuid,
       type: interactive_content["type"],
       receiver_id: cid,
@@ -62,14 +69,21 @@ defmodule Glific.Flows.ContactAction do
     |> handle_message_result(context, messages, attrs)
   end
 
-  @spec get_interactive_body(map(), String.t()) :: String.t()
-  defp get_interactive_body(interactive_content, "quick_reply"),
+  @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
+  defp get_interactive_body(interactive_content, "quick_reply", type)
+       when type in ["image", "video"],
+       do: interactive_content["content"]["caption"]
+
+  defp get_interactive_body(interactive_content, "quick_reply", "file"),
+    do: interactive_content["content"]["url"]
+
+  defp get_interactive_body(interactive_content, "quick_reply", "text"),
     do: interactive_content["content"]["text"]
 
-  defp get_interactive_body(interactive_content, "list"),
+  defp get_interactive_body(interactive_content, "list", _),
     do: interactive_content["body"]
 
-  defp get_interactive_body(_, _), do: ""
+  defp get_interactive_body(_, _, _), do: ""
 
   # handle the case if we are sending a notification to another contact who is
   # staff, so we need info for both
