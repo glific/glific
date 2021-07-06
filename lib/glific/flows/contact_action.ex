@@ -31,6 +31,46 @@ defmodule Glific.Flows.ContactAction do
     )
   end
 
+  @doc """
+  Send interactive messages
+  """
+  @spec send_interactive_message(FlowContext.t(), Action.t(), [Message.t()]) ::
+          {:ok, map(), any()}
+  def send_interactive_message(context, action, messages) do
+    ## We might need to think how to send the interactive message to a group
+    {cid, message_vars} = resolve_cid(context, nil)
+
+    interactive_content =
+      action.text
+      |> Jason.decode!()
+      |> MessageVarParser.parse_map(message_vars)
+
+    attrs = %{
+      body: get_interactive_body(interactive_content, interactive_content["type"]),
+      uuid: action.uuid,
+      type: interactive_content["type"],
+      receiver_id: cid,
+      organization_id: context.organization_id,
+      flow_id: context.flow_id,
+      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      is_optin_flow: Flows.is_optin_flow?(context.flow),
+      interactive_content: interactive_content
+    }
+
+    attrs
+    |> Messages.create_and_send_message()
+    |> handle_message_result(context, messages, attrs)
+  end
+
+  @spec get_interactive_body(map(), String.t()) :: String.t()
+  defp get_interactive_body(interactive_content, "quick_reply"),
+    do: interactive_content["content"]["text"]
+
+  defp get_interactive_body(interactive_content, "list"),
+    do: interactive_content["body"]
+
+  defp get_interactive_body(_, _), do: ""
+
   # handle the case if we are sending a notification to another contact who is
   # staff, so we need info for both
   # the nil case is the regular case of sending a message

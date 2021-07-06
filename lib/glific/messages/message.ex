@@ -51,6 +51,7 @@ defmodule Glific.Messages.Message do
           clean_body: String.t() | nil,
           publish?: boolean,
           extra: map(),
+          interactive_content: map(),
           bsp_message_id: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
@@ -89,7 +90,8 @@ defmodule Glific.Messages.Message do
     :sent_at,
     :user_id,
     :flow_id,
-    :session_uuid
+    :session_uuid,
+    :interactive_content
   ]
 
   schema "messages" do
@@ -126,6 +128,7 @@ defmodule Glific.Messages.Message do
     field :sent_at, :utc_datetime
     field :message_number, :integer, default: 0, read_after_writes: true
     field :session_uuid, Ecto.UUID, read_after_writes: true
+    field :interactive_content, :map, default: %{}
 
     belongs_to :sender, Contact
     belongs_to :receiver, Contact
@@ -172,7 +175,7 @@ defmodule Glific.Messages.Message do
     media_id = changeset.changes[:media_id] || message.media_id
 
     cond do
-      type in [nil, :text, :location] ->
+      type in [nil, :text, :location, :list, :quick_reply] ->
         changeset
 
       media_id == nil ->
