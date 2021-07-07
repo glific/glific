@@ -28,7 +28,7 @@ defmodule Glific.Interactives do
   """
   @spec count_interactives(map()) :: integer
   def count_interactives(args),
-    do: Repo.count_filter(args, Interactive, &Repo.filter_with/2)
+    do: Repo.count_filter(args, Interactive, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do

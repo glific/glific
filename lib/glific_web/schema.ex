@@ -45,6 +45,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.ConsultingHourTypes)
   import_types(__MODULE__.ContactsFieldTypes)
   import_types(__MODULE__.ExtensionTypes)
+  import_types(__MODULE__.InteractiveTypes)
 
   query do
     import_fields(:contact_queries)
@@ -88,6 +89,8 @@ defmodule GlificWeb.Schema do
     import_fields(:contacts_field_queries)
 
     import_fields(:extensions_queries)
+
+    import_fields(:interactive_queries)
   end
 
   mutation do
@@ -140,6 +143,8 @@ defmodule GlificWeb.Schema do
     import_fields(:contacts_field_mutations)
 
     import_fields(:extensions_mutations)
+
+    import_fields(:interactive_mutations)
   end
 
   subscription do
