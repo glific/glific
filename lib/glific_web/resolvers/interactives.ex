@@ -1,12 +1,23 @@
 defmodule GlificWeb.Resolvers.Interactives do
   @moduledoc """
-  Templates Resolver which sits between the GraphQL schema and Glific Interactives Context API. This layer basically stiches together
+  Interactives Resolver which sits between the GraphQL schema and Glific Interactives Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
   alias Glific.{Repo, Interactives, Messages.Interactive}
 
   @doc """
-  Get the list of session templates filtered by args
+  Get a specific session template by id
+  """
+  @spec interactive(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def interactive(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, interactive} <-
+           Repo.fetch_by(Interactive, %{id: id, organization_id: user.organization_id}),
+         do: {:ok, %{interactive: interactive}}
+  end
+
+  @doc """
+  Get the list of session Interactives filtered by args
   """
   @spec interactives(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
@@ -15,11 +26,44 @@ defmodule GlificWeb.Resolvers.Interactives do
   end
 
   @doc """
-  Get the count of session templates filtered by args
+  Get the count of session Interactives filtered by args
   """
   @spec count_interactives(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, integer}
   def count_interactives(_, args, _) do
     {:ok, Interactives.count_interactives(args)}
+  end
+
+  @doc false
+  @spec create_interactive(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def create_interactive(_, %{input: params}, _) do
+    with {:ok, interactive} <- Interactives.create_interactive(params) do
+      {:ok, %{interactive: interactive}}
+    end
+  end
+
+  @doc false
+  @spec update_interactive(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def update_interactive(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, interactive} <-
+           Repo.fetch_by(Interactive, %{id: id, organization_id: user.organization_id}),
+         {:ok, interactive} <- Interactives.update_interactive(interactive, params) do
+      {:ok, %{interactive: interactive}}
+    end
+  end
+
+  @doc false
+  @spec delete_interactive(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def delete_interactive(_, %{id: id}, %{context: %{current_user: user}}) do
+    with {:ok, interactive} <-
+           Repo.fetch_by(Interactive, %{id: id, organization_id: user.organization_id}),
+         {:ok, interactive} <- Interactives.delete_interactive(interactive) do
+      {:ok, interactive}
+    end
   end
 end

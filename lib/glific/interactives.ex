@@ -76,7 +76,6 @@ defmodule Glific.Interactives do
   def create_interactive(attrs) do
     %Interactive{}
     |> Interactive.changeset(attrs)
-    |> IO.inspect()
     |> Repo.insert()
   end
 

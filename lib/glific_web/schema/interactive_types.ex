@@ -42,20 +42,12 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   end
 
   object :interactive_queries do
-    # field :whatsapp_hsm_categories, list_of(:string) do
-    #   middleware(Authorize, :manager)
-
-    #   resolve(fn _, _, _ ->
-    #     {:ok, SessionTemplate.list_whatsapp_hsm_categories()}
-    #   end)
-    # end
-
-    # @desc "get the details of one interactive"
-    # field :interactive, :interactive_result do
-    #   arg(:id, non_null(:id))
-    #   middleware(Authorize, :staff)
-    #   resolve(&Resolvers.Templates.interactive/3)
-    # end
+    @desc "get the details of one interactive"
+    field :interactive, :interactive_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Interactives.interactive/3)
+    end
 
     @desc "Get a list of all interactives filtered by various criteria"
     field :interactives, list_of(:interactive) do
@@ -74,30 +66,23 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   end
 
   object :interactive_mutations do
-    # field :create_interactive, :interactive_result do
-    #   arg(:input, non_null(:interactive_input))
-    #   middleware(Authorize, :staff)
-    #   resolve(&Resolvers.Templates.create_interactive/3)
-    # end
+    field :create_interactive, :interactive_result do
+      arg(:input, non_null(:interactive_input))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Interactives.create_interactive/3)
+    end
 
-    # field :update_interactive, :interactive_result do
-    #   arg(:id, non_null(:id))
-    #   arg(:input, :interactive_input)
-    #   middleware(Authorize, :staff)
-    #   resolve(&Resolvers.Templates.update_interactive/3)
-    # end
+    field :update_interactive, :interactive_result do
+      arg(:id, non_null(:id))
+      arg(:input, :interactive_input)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Interactives.update_interactive/3)
+    end
 
-    # field :delete_interactive, :interactive_result do
-    #   arg(:id, non_null(:id))
-    #   middleware(Authorize, :staff)
-    #   resolve(&Resolvers.Templates.delete_interactive/3)
-    # end
-
-    # field :create_template_form_message, :interactive_result do
-    #   arg(:message_id, non_null(:id))
-    #   arg(:input, :message_to_template_input)
-    #   middleware(Authorize, :staff)
-    #   resolve(&Resolvers.Templates.create_template_from_message/3)
-    # end
+    field :delete_interactive, :interactive_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Interactives.delete_interactive/3)
+    end
   end
 end
