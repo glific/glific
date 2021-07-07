@@ -7,7 +7,7 @@ defmodule Glific.Repo.Migrations.AddInteractiveMessage do
 
   defp interactive do
     create table(:interactives, comment: "Lets add interactive messages here") do
-      add :title, :string, comment: "The title of the interactive message"
+      add :label, :string, comment: "The label of the interactive message"
 
       add :type, :string, comment: "The type of interactive message- quick_reply or list"
 
@@ -20,7 +20,7 @@ defmodule Glific.Repo.Migrations.AddInteractiveMessage do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:interactives, [:title, :type, :organization_id])
+    create unique_index(:interactives, [:label, :type, :organization_id])
     create index(:interactives, :organization_id)
   end
 end
