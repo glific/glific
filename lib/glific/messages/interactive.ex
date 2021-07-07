@@ -23,7 +23,8 @@ defmodule Glific.Messages.Interactive do
   @required_fields [
     :label,
     :type,
-    :interactive_content
+    :interactive_content,
+    :organization_id
   ]
 
   schema "interactives" do

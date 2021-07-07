@@ -8,6 +8,7 @@ defmodule Glific.Interactives do
     Repo
   }
 
+  import Ecto.Query, warn: false
 
   @doc """
   Returns the list of interactives.
@@ -20,7 +21,7 @@ defmodule Glific.Interactives do
   """
   @spec list_interactives(map()) :: [Interactive.t()]
   def list_interactives(args),
-    do: Repo.list_filter(args, Interactive, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    do: Repo.list_filter(args, Interactive, &Repo.opts_with_label/2, &filter_with/2)
 
   @doc """
   Return the count of interactives, using the same filter as list_interactives
@@ -28,6 +29,19 @@ defmodule Glific.Interactives do
   @spec count_interactives(map()) :: integer
   def count_interactives(args),
     do: Repo.count_filter(args, Interactive, &Repo.filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specific to consulting hours only.
+    Enum.reduce(filter, query, fn
+      {:type, type}, query ->
+        from q in query, where: q.type == ^type
+
+      _, query ->
+        query
+    end)
+  end
 
   @doc """
   Gets a single interactive.
@@ -61,7 +75,8 @@ defmodule Glific.Interactives do
   @spec create_interactive(map()) :: {:ok, Interactive.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive(attrs) do
     %Interactive{}
-    |> Interactive.changeset(attrs)|>IO.inspect()
+    |> Interactive.changeset(attrs)
+    |> IO.inspect()
     |> Repo.insert()
   end
 
