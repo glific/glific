@@ -64,7 +64,7 @@ defmodule Glific.Flows.Wait do
 
   def execute(wait, context, _messages) do
     wait_seconds = get_wait_timeout(wait, context)
-    if is_integer(wait_seconds) do
+    if wait_seconds > 0 do
       {:ok, context} =
         FlowContext.update_flow_context(
           context,
