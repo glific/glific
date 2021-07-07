@@ -103,6 +103,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.OrganizationStatus.__enum_map__()
   Glific.Enums.organization_status_const()
 
+  iex> Glific.Enums.InteractiveMessageType.__enum_map__()
+  Glific.Enums.interactive_message_type_const()
+
   """
 
   defmacro api_status_const,
@@ -155,4 +158,7 @@ defmodule Glific.Enums do
 
   defmacro organization_status_const,
     do: Macro.expand(@organization_status_const, __CALLER__)
+
+  defmacro interactive_message_type_const,
+    do: Macro.expand(@interactive_message_type_const, __CALLER__)
 end

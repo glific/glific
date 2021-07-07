@@ -8,11 +8,13 @@ defmodule Glific.Messages.Interactive do
     Partners.Organization
   }
 
+  alias Glific.Enums.InteractiveMessageType
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           label: String.t() | nil,
-          type: String.t() | atom() | nil,
+          type: String.t() | nil,
           interactive_content: map() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -29,7 +31,7 @@ defmodule Glific.Messages.Interactive do
 
   schema "interactives" do
     field :label, :string
-    field :type, :string
+    field :type, InteractiveMessageType
     field :interactive_content, :map, default: %{}
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime_usec)

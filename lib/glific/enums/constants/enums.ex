@@ -60,6 +60,9 @@ defmodule Glific.Enums.Constants do
         :sticker
       ]
 
+      # the different possible types of interactive message
+      @interactive_message_type_const [:list, :quick_reply]
+
       # the possible question type constants
       @question_type_const [:text, :numeric, :date]
 

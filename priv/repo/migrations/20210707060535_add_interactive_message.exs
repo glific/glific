@@ -1,15 +1,22 @@
 defmodule Glific.Repo.Migrations.AddInteractiveMessage do
   use Ecto.Migration
+  alias Glific.Enums.InteractiveMessageType
 
-  def change do
+  def up do
+    InteractiveMessageType.create_type()
     interactive()
+  end
+
+  def down do
+    InteractiveMessageType.drop_type()
   end
 
   defp interactive do
     create table(:interactives, comment: "Lets add interactive messages here") do
       add :label, :string, comment: "The label of the interactive message"
 
-      add :type, :string, comment: "The type of interactive message- quick_reply or list"
+      add :type, :interactive_message_type_enum,
+        comment: "The type of interactive message- quick_reply or list"
 
       add :interactive_content, :jsonb,
         default: "[]",

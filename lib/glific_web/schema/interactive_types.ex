@@ -4,10 +4,7 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
-  alias Glific.Repo
-  alias Glific.Messages.Interactive
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -19,7 +16,7 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   object :interactive do
     field :id, :id
     field :label, :string
-    field :type, :string
+    field :type, :interactive_message_type_enum
     field :interactive_content, :json
 
     field :inserted_at, :datetime
@@ -32,12 +29,12 @@ defmodule GlificWeb.Schema.InteractiveTypes do
     field :label, :string
 
     @desc "Match the type of interactive"
-    field :type, :string
+    field :type, :interactive_message_type_enum
   end
 
   input_object :interactive_input do
     field :label, :string
-    field :type, :string
+    field :type, :interactive_message_type_enum
     field :interactive_content, :json
   end
 
