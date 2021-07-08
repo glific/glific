@@ -1062,7 +1062,7 @@ if Code.ensure_loaded?(Faker) do
     @spec seed_interactives(Organization.t()) :: nil
     def seed_interactives(organization) do
       Repo.insert!(%Interactive{
-        label: "Status",
+        label: "Quick Reply Image",
         type: :quick_reply,
         interactive_content: %{
           "type" => "quick_reply",
@@ -1146,50 +1146,50 @@ if Code.ensure_loaded?(Faker) do
         type: :quick_reply,
         interactive_content: %{
           "type" => "list",
-          "title" => "title text",
-          "body" => "body text",
+          "title" => "Glific",
+          "body" => "Glific",
           "globalButtons" => [%{"type" => "text", "title" => "button text"}],
           "items" => [
             %{
-              "title" => "first Section",
+              "title" => "Glific Features",
               "subtitle" => "first Subtitle",
               "options" => [
                 %{
                   "type" => "text",
-                  "title" => "section 1 row 1",
-                  "description" => "first row of first section desctiption"
+                  "title" => "Custom flows for automating conversation",
+                  "description" => "Flow Editor for creating flows"
                 },
                 %{
                   "type" => "text",
-                  "title" => "section 1 row 2",
-                  "description" => "second row of first section desctiption"
+                  "title" => "Custom reports for  analytics",
+                  "description" => "DataStudio for report generation"
                 },
                 %{
                   "type" => "text",
-                  "title" => "section 1 row 3",
-                  "description" => "third row of first section desctiption"
+                  "title" => "ML/AI",
+                  "description" => "Dialogflow for AI/ML"
                 }
               ]
             },
             %{
-              "title" => "second section",
-              "subtitle" => "second Subtitle",
+              "title" => "Glific Usecases",
+              "subtitle" => "some usecases of Glific",
               "options" => [
                 %{
                   "type" => "text",
-                  "title" => "section 2 row 1",
-                  "description" => "first row of second section desctiption"
+                  "title" => "Educational programs",
+                  "description" => "Sharing education content with school student"
                 }
               ]
             },
             %{
-              "title" => "third Section",
-              "subtitle" => "third Subtitle",
+              "title" => "Onboarded NGOs",
+              "subtitle" => "List of NGOs onboarded",
               "options" => [
                 %{
                   "type" => "text",
-                  "title" => "section 3 row 1",
-                  "description" => "first row of third section desctiption"
+                  "title" => "SOL",
+                  "description" => "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
                 }
               ]
             }
