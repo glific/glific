@@ -19,7 +19,6 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
-    MessageVarParser,
     Node,
     Wait
   }
@@ -239,17 +238,8 @@ defmodule Glific.Flows.Router do
   end
 
   defp split_by_expression(router, context) do
-    # get the value from the "input" version of the operand field
-    # this is the split by result flow
-    vars = %{
-      "contact" => Contacts.get_contact_field_map(context.contact_id),
-      "results" => context.results,
-      "flow" => %{name: context.flow.name, id: context.flow.id}
-    }
-
     content =
-      router.operand
-      |> MessageVarParser.parse(vars)
+      FlowContext.parse_context_string(context, router.operand)
       # Once we have the content, we send it over to EEx to execute
       |> Glific.execute_eex()
 
