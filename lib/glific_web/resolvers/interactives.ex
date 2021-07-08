@@ -3,7 +3,7 @@ defmodule GlificWeb.Resolvers.Interactives do
   Interactives Resolver which sits between the GraphQL schema and Glific Interactives Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
-  alias Glific.{Repo, Interactives, Messages.Interactive}
+  alias Glific.{Interactives, Messages.Interactive, Repo}
 
   @doc """
   Get a specific session template by id
