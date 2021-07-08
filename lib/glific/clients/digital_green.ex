@@ -14,6 +14,8 @@ defmodule Glific.Clients.DigitalGreen do
     Repo
   }
 
+  alias Glific.Sheets.ApiClient
+
   @stage_1 "stage 1"
   @stage_2 "stage 2"
   @stage_3 "stage 3"
@@ -74,8 +76,64 @@ defmodule Glific.Clients.DigitalGreen do
     Navanatech.navatech_post(fields)
   end
 
+  @published_csv "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
+
+  def webhook("weather_updates", fields) do
+    today = Timex.today()
+
+    opts = [
+      start_date: Timex.beginning_of_week(today, :mon),
+      end_date: Timex.end_of_week(today, :sun),
+      village: String.downcase(fields["village_name"])
+    ]
+
+      ApiClient.get_csv_content(url: @published_csv)
+      |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
+      |> generate_weather_results()
+  end
+
   def webhook(_, _fields),
     do: %{}
+
+  defp filter_weather_records(row, acc, opts) do
+    village = Keyword.get(opts, :village, "")
+    start_date = Keyword.get(opts, :start_date)
+    end_date = Keyword.get(opts, :end_date)
+
+    row_village = String.downcase(row["Village"])
+
+    row_date =
+      Timex.parse!(row["Date"], "{M}/{D}/{YYYY}")
+      |> Timex.to_date()
+
+    row = Map.put(row, :date_struct, row_date)
+
+    if String.contains?(row_village, village) and Timex.between?(row_date, start_date, end_date),
+      do: [row] ++ acc,
+      else: acc
+  end
+
+  defp generate_weather_results(rows) do
+    %{message: "", is_extream_condition: false}
+    |> generate_weather_message(rows)
+    |> check_for_extream_condition(rows)
+  end
+
+  defp generate_weather_message(results, rows) do
+    message =
+      Enum.map(rows, fn row -> "Date: #{row["Date"]} Summery: #{row["Summary"]}" end)
+      |> Enum.join("\n")
+
+    Map.put(results, :message, message)
+  end
+
+  defp check_for_extream_condition(results, rows) do
+    is_extream =
+      rows
+      |> Enum.find(false, fn row -> String.downcase(row["Is_extream_condition"]) == "yes" end)
+
+    Map.put(results, :is_extream_condition, is_map(is_extream))
+  end
 
   defp update_crop_days(@stage_1, contact_id) do
     Contacts.get_contact!(contact_id)

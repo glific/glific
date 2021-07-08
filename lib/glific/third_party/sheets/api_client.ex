@@ -13,13 +13,13 @@ defmodule Glific.Sheets.ApiClient do
   Get the CSV content from the url.
   """
   @spec get_csv_content(Keyword.t()) :: Keyword.t()
-  defp get_csv_content([url: url] = _opts) do
+  def get_csv_content([url: url] = _opts) do
     {:ok, response} = get(url)
     {:ok, stream} = StringIO.open(response.body)
     IO.binstream(stream, :line)
     |> CSV.decode(headers: true, strip_fields: true)
   end
 
-  defp get_csv_content(_opts), do: [ok: %{}]
+  def get_csv_content(_opts), do: [ok: %{}]
 
 end
