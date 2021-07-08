@@ -74,6 +74,17 @@ defmodule Glific.Clients.DigitalGreen do
     Navanatech.navatech_post(fields)
   end
 
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("timeframe", fields) do
+    time_difference =
+      fields["contact"]["fields"]["next_flow_at"]["value"]
+      |> String.trim()
+      |> Timex.parse!("{ISO:Extended}")
+      |> Timex.diff(Timex.now(), :seconds)
+
+    %{timeframe: time_difference}
+  end
+
   def webhook(_, _fields),
     do: %{}
 
