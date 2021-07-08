@@ -214,6 +214,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
           %{
             id: interactive.id,
             name: interactive.label,
+            type: interactive.type,
+            interactive_content: interactive.interactive_content,
             created_on: interactive.inserted_at,
             modified_on: interactive.updated_at
           }
