@@ -1062,7 +1062,7 @@ if Code.ensure_loaded?(Faker) do
     @spec seed_interactives(Organization.t()) :: nil
     def seed_interactives(organization) do
       Repo.insert!(%Interactive{
-        label: "Quick Reply Image",
+        label: "Quick Reply Text",
         type: :quick_reply,
         interactive_content: %{
           "type" => "quick_reply",
