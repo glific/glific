@@ -12,6 +12,7 @@ if Code.ensure_loaded?(Faker) do
       Flows.FlowRevision,
       Groups,
       Groups.Group,
+      Messages.Interactive,
       Messages.Message,
       Messages.MessageMedia,
       Notifications.Notification,
@@ -1057,6 +1058,147 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_interactives(Organization.t()) :: nil
+    def seed_interactives(organization) do
+      Repo.insert!(%Interactive{
+        label: "Status",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "text",
+            "text" => "How excited are you for Glific?"
+          },
+          "options" => [
+            %{
+              "type" => "text",
+              "title" => "Excited"
+            },
+            %{
+              "type" => "text",
+              "title" => "Very Excited"
+            }
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Interactive{
+        label: "Quick Reply Image",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "image",
+            "url" => "https://picsum.photos/200/300",
+            "caption" => "body text"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Interactive{
+        label: "Quick Reply Document",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "file",
+            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
+            "filename" => "Sample file"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Interactive{
+        label: "Quick Reply Video",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "video",
+            "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+            "caption" => "Sample video"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Interactive{
+        label: "Interactive list",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "list",
+          "title" => "title text",
+          "body" => "body text",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "first Section",
+              "subtitle" => "first Subtitle",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "section 1 row 1",
+                  "description" => "first row of first section desctiption"
+                },
+                %{
+                  "type" => "text",
+                  "title" => "section 1 row 2",
+                  "description" => "second row of first section desctiption"
+                },
+                %{
+                  "type" => "text",
+                  "title" => "section 1 row 3",
+                  "description" => "third row of first section desctiption"
+                }
+              ]
+            },
+            %{
+              "title" => "second section",
+              "subtitle" => "second Subtitle",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "section 2 row 1",
+                  "description" => "first row of second section desctiption"
+                }
+              ]
+            },
+            %{
+              "title" => "third Section",
+              "subtitle" => "third Subtitle",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "section 3 row 1",
+                  "description" => "first row of third section desctiption"
+                }
+              ]
+            }
+          ]
+        },
+        organization_id: organization.id
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1098,6 +1240,8 @@ if Code.ensure_loaded?(Faker) do
       hsm_templates(organization)
 
       seed_notification(organization)
+
+      seed_interactives(organization)
     end
   end
 end
