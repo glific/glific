@@ -128,6 +128,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :sender_id, :id
     field :receiver_id, :id
     field :media_id, :id
+    field :interactive_content, :json
 
     field :send_at, :datetime
     field :is_hsm, :boolean
