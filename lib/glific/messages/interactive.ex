@@ -18,8 +18,8 @@ defmodule Glific.Messages.Interactive do
           interactive_content: map() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          inserted_at: :utc_datetime_usec | nil,
-          updated_at: :utc_datetime_usec | nil
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil
         }
 
   @required_fields [
@@ -34,7 +34,7 @@ defmodule Glific.Messages.Interactive do
     field :type, InteractiveMessageType
     field :interactive_content, :map, default: %{}
     belongs_to :organization, Organization
-    timestamps(type: :utc_datetime_usec)
+    timestamps(type: :utc_datetime)
   end
 
   @doc """

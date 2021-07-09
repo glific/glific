@@ -1143,7 +1143,7 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.insert!(%Interactive{
         label: "Interactive list",
-        type: :quick_reply,
+        type: :list,
         interactive_content: %{
           "type" => "list",
           "title" => "Glific",

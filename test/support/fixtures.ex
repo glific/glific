@@ -16,7 +16,9 @@ defmodule Glific.Fixtures do
     Flows.ContactField,
     Flows.WebhookLog,
     Groups,
+    Interactives,
     Messages,
+    Messages.Interactive,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -741,7 +743,13 @@ defmodule Glific.Fixtures do
 
   @doc false
   @spec dg_contact_fixture(map()) :: Contacts.Contact.t()
-  def dg_contact_fixture(%{enrolled_day: enrolled_day, next_flow_at: next_flow_at, initial_crop_day: initial_crop_day} = attrs) do
+  def dg_contact_fixture(
+        %{
+          enrolled_day: enrolled_day,
+          next_flow_at: next_flow_at,
+          initial_crop_day: initial_crop_day
+        } = attrs
+      ) do
     contact_fixture(attrs)
     |> ContactField.do_add_contact_field("total_days", "total_days", "10", "string")
     |> ContactField.do_add_contact_field(
@@ -768,5 +776,39 @@ defmodule Glific.Fixtures do
       next_flow_at,
       "string"
     )
+  end
+
+  @doc false
+  @spec interactive_fixture(map()) :: Interactive.t()
+  def interactive_fixture(attrs) do
+    valid_attrs = %{
+      label: "Quick Reply Fixture",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "text",
+          "text" => "Test glific quick reply?"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Test 1"
+          },
+          %{
+            "type" => "text",
+            "title" => "Test 2"
+          }
+        ]
+      },
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, interactive} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Interactives.create_interactive()
+
+    interactive
   end
 end
