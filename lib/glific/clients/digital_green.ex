@@ -87,9 +87,9 @@ defmodule Glific.Clients.DigitalGreen do
       village: String.downcase(fields["village_name"])
     ]
 
-      ApiClient.get_csv_content(url: @published_csv)
-      |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
-      |> generate_weather_results()
+    ApiClient.get_csv_content(url: @published_csv)
+    |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
+    |> generate_weather_results()
   end
 
   def webhook(_, _fields),
@@ -130,7 +130,7 @@ defmodule Glific.Clients.DigitalGreen do
   defp check_for_extream_condition(results, rows) do
     is_extream =
       rows
-      |> Enum.find(false, fn row -> String.downcase(row["Is_extream_condition"]) == "yes" end)
+      |> Enum.find(false, fn row -> row["Is_extream_condition"] == "yes" end)
 
     Map.put(results, :is_extream_condition, is_map(is_extream))
   end
