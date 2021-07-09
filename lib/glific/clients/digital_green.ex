@@ -76,7 +76,7 @@ defmodule Glific.Clients.DigitalGreen do
     Navanatech.navatech_post(fields)
   end
 
-  @published_csv "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
+  @published_csv_weather_updates "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
 
   def webhook("weather_updates", fields) do
     today = Timex.today()
@@ -87,7 +87,7 @@ defmodule Glific.Clients.DigitalGreen do
       village: String.downcase(fields["village_name"])
     ]
 
-    ApiClient.get_csv_content(url: @published_csv)
+    ApiClient.get_csv_content(url: @published_csv_weather_updates)
     |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
     |> generate_weather_results()
   end
@@ -131,6 +131,25 @@ defmodule Glific.Clients.DigitalGreen do
     is_extream =
       rows
       |> Enum.find(false, fn row -> row["Is_extream_condition"] == "yes" end)
+
+    {tempratures, humidity} =
+      Enum.reduce(rows, {[], []}, fn row, {t, h} ->
+        tempratures = t ++ [row["Temperature"]]
+        humidity = h ++ [row["Relative humidity"]]
+
+        {tempratures, humidity}
+      end)
+
+    IO.inspect(tempratures)
+    IO.inspect(humidity)
+
+    Enum.max(tempratures)
+    |> IO.inspect()
+
+    Enum.max(humidity)
+    |> IO.inspect()
+
+
 
     Map.put(results, :is_extream_condition, is_map(is_extream))
   end
