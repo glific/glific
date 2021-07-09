@@ -1,11 +1,8 @@
 fragment InteractiveFields on InteractiveResult {
 interactive {
-    insertedAt
     interactiveContent
     label
     type
-    updatedAt
-    id
   }
 }
 

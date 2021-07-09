@@ -1,6 +1,6 @@
 #import "./fields.frag.gql"
 
-mutation createInteractive($input:InteractiveInput!) {
+mutation createInteractive($input: InteractiveInput!) {
   createInteractive(input: $input) {
     ...InteractiveFields
 
