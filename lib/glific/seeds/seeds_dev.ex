@@ -1189,7 +1189,8 @@ if Code.ensure_loaded?(Faker) do
                 %{
                   "type" => "text",
                   "title" => "SOL",
-                  "description" => "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
+                  "description" =>
+                    "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
                 }
               ]
             }
