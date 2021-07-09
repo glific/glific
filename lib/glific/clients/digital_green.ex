@@ -102,12 +102,12 @@ defmodule Glific.Clients.DigitalGreen do
 
   defp update_crop_days(@stage_2, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "33", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "32", "string")
   end
 
   defp update_crop_days(@stage_3, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "50", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "47", "string")
   end
 
   defp update_crop_days(_, contact_id) do
