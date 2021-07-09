@@ -1,0 +1,3 @@
+query count_interactives($filter: InteractiveFilter) {
+  countInteractives(filter: $filter)
+}

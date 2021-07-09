@@ -1,0 +1,10 @@
+query interactives($filter: InteractiveFilter, $opts: Opts) {
+  interactives(filter: $filter, opts: $opts) {
+    insertedAt
+    interactiveContent
+    label
+    type
+    updatedAt
+    id
+  }
+}

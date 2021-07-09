@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query interactive($id: ID!) {
+  interactive(id: $id) {
+    ...InteractiveFields
+
+    ...ErrorFields
+  }
+}
