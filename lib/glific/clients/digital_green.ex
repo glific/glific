@@ -23,6 +23,12 @@ defmodule Glific.Clients.DigitalGreen do
   @stage_2_threshold 40
   @stage_3_threshold 60
 
+  @weather_updates %{
+    "temp_threshold" =>  35,
+    "humidity_threshold" => 95,
+    "published_csv" => "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
+  }
+
   @doc """
   Returns time in second till next defined Timeslot
   """
@@ -94,8 +100,6 @@ defmodule Glific.Clients.DigitalGreen do
     Navanatech.navatech_post(fields)
   end
 
-  @published_csv_weather_updates "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
-
   def webhook("weather_updates", fields) do
     today = Timex.today()
 
@@ -105,7 +109,7 @@ defmodule Glific.Clients.DigitalGreen do
       village: String.downcase(fields["village_name"])
     ]
 
-    ApiClient.get_csv_content(url: @published_csv_weather_updates)
+    ApiClient.get_csv_content(url: @weather_updates["published_csv"])
     |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
     |> generate_weather_results()
   end
@@ -113,6 +117,8 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
+  ## filter record based on the contact village, and current week.
+  @spec filter_weather_records(map(), list(), Keyword.t()) :: list()
   defp filter_weather_records(row, acc, opts) do
     village = Keyword.get(opts, :village, "")
     start_date = Keyword.get(opts, :start_date)
@@ -126,11 +132,13 @@ defmodule Glific.Clients.DigitalGreen do
 
     row = Map.put(row, :date_struct, row_date)
 
-    if String.contains?(row_village, village) and Timex.between?(row_date, start_date, end_date),
+    if String.contains?(row_village, village) and Timex.between?(row_date, start_date, end_date, inclusive: true),
       do: [row] ++ acc,
       else: acc
   end
 
+  ## filter record based on the contact village, and current week.
+  @spec generate_weather_results(list()) :: map()
   defp generate_weather_results(rows) do
     %{message: "", is_extream_condition: false}
     |> generate_weather_message(rows)
@@ -145,32 +153,44 @@ defmodule Glific.Clients.DigitalGreen do
     Map.put(results, :message, message)
   end
 
+  @spec check_for_extream_condition(map(), list()) :: map()
   defp check_for_extream_condition(results, rows) do
-    is_extream =
-      rows
-      |> Enum.find(false, fn row -> row["Is_extream_condition"] == "yes" end)
-
     {tempratures, humidity} =
       Enum.reduce(rows, {[], []}, fn row, {t, h} ->
-        tempratures = t ++ [row["Temperature"]]
-        humidity = h ++ [row["Relative humidity"]]
-
+        tempratures = t ++ [clean_weather_record(row["Temperature"])]
+        humidity = h ++ [clean_weather_record(row["Relative humidity"])]
         {tempratures, humidity}
       end)
 
-    IO.inspect(tempratures)
-    IO.inspect(humidity)
+    extream_condition = extream_condition_type(tempratures, humidity)
 
-    Enum.max(tempratures)
-    |> IO.inspect()
+    results
+    |> Map.put(:is_extream_condition, (extream_condition in ["temp", "humidity"]))
+    |> Map.put(:extream_condition_type, extream_condition)
 
-    Enum.max(humidity)
-    |> IO.inspect()
-
-
-
-    Map.put(results, :is_extream_condition, is_map(is_extream))
   end
+
+  @spec extream_condition_type(list(), list()) :: String.t()
+  defp extream_condition_type(tempratures, humidity) do
+    is_high_temp = Enum.any?(tempratures, fn t -> t >= @weather_updates["temp_threshold"] end)
+    is_high_humidity = Enum.any?(humidity, fn h -> h >= @weather_updates["humidity_threshold"] end)
+    cond do
+      is_high_temp -> "temp"
+      is_high_humidity -> "humidity"
+      true -> "none"
+    end
+  end
+
+  @spec clean_weather_record(String.t()) :: String.t()
+  defp clean_weather_record(record) when is_binary(record) do
+    record
+    |> String.replace(["°C", "%", "C", "°"], "")
+    |> String.trim()
+    |> Glific.parse_maybe_integer()
+    |> elem(1)
+  end
+
+  defp clean_weather_record(str), do: str
 
   defp update_crop_days(@stage_1, contact_id) do
     Contacts.get_contact!(contact_id)
