@@ -50,30 +50,30 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   ## Examples
 
-      iex> get_interactive!(123)
+      iex> get_interactive_template!(123)
       %InterativeTemplate{}
 
-      iex> get_interactive!(456)
+      iex> get_interactive_template!(456)
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_interactive!(integer) :: InterativeTemplate.t()
-  def get_interactive!(id), do: Repo.get!(InterativeTemplate, id)
+  @spec get_interactive_template!(integer) :: InterativeTemplate.t()
+  def get_interactive_template!(id), do: Repo.get!(InterativeTemplate, id)
 
   @doc """
   Creates an interactive template
 
   ## Examples
 
-      iex> create_interactive(%{field: value})
+      iex> create_interactive_template(%{field: value})
       {:ok, %InterativeTemplate{}}
 
-      iex> create_interactive(%{field: bad_value})
+      iex> create_interactive_template(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_interactive(map()) :: {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
-  def create_interactive(attrs) do
+  @spec create_interactive_template(map()) :: {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
+  def create_interactive_template(attrs) do
     %InterativeTemplate{}
     |> InterativeTemplate.changeset(attrs)
     |> Repo.insert()
@@ -84,16 +84,16 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   ## Examples
 
-      iex> update_interactive(interactive, %{field: new_value})
+      iex> update_interactive_template(interactive, %{field: new_value})
       {:ok, %InterativeTemplate{}}
 
-      iex> update_interactive(interactive, %{field: bad_value})
+      iex> update_interactive_template(interactive, %{field: bad_value})
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_interactive(InterativeTemplate.t(), map()) ::
+  @spec update_interactive_template(InterativeTemplate.t(), map()) ::
           {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
-  def update_interactive(%InterativeTemplate{} = interactive, attrs) do
+  def update_interactive_template(%InterativeTemplate{} = interactive, attrs) do
     interactive
     |> InterativeTemplate.changeset(attrs)
     |> Repo.update()
@@ -104,16 +104,16 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   ## Examples
 
-      iex> delete_interactive(interactive)
+      iex> delete_interactive_template(interactive)
       {:ok, %InterativeTemplate{}}
 
-      iex> delete_interactive(interactive)
+      iex> delete_interactive_template(interactive)
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_interactive(InterativeTemplate.t()) ::
+  @spec delete_interactive_template(InterativeTemplate.t()) ::
           {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
-  def delete_interactive(%InterativeTemplate{} = interactive) do
+  def delete_interactive_template(%InterativeTemplate{} = interactive) do
     interactive
     |> InterativeTemplate.changeset(%{})
     |> Repo.delete()

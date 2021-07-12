@@ -76,55 +76,55 @@ defmodule Glific.InteractivesTest do
              }) == 1
     end
 
-    test "get_interactive!/1 returns the interactive with given id", %{
+    test "get_interactive_template!/1 returns the interactive with given id", %{
       organization_id: organization_id
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
-      assert InteractiveTemplates.get_interactive!(interactive.id) == interactive
+      assert InteractiveTemplates.get_interactive_template!(interactive.id) == interactive
     end
 
-    test "create_interactive/1 with valid data creates an interactive message", %{
+    test "create_interactive_template/1 with valid data creates an interactive message", %{
       organization_id: organization_id
     } do
       attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
 
-      assert {:ok, %InterativeTemplate{} = interactive} = InteractiveTemplates.create_interactive(attrs)
+      assert {:ok, %InterativeTemplate{} = interactive} = InteractiveTemplates.create_interactive_template(attrs)
       assert interactive.label == "Quick Reply Test Text"
       assert interactive.type == :quick_reply
       assert interactive.organization_id == organization_id
     end
 
-    test "create_interactive/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = InteractiveTemplates.create_interactive(@invalid_attrs)
+    test "create_interactive_template/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = InteractiveTemplates.create_interactive_template(@invalid_attrs)
     end
 
-    test "update_interactive/2 with valid data updates the interactive", %{
+    test "update_interactive_template/2 with valid data updates the interactive", %{
       organization_id: organization_id
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
       assert {:ok, %InterativeTemplate{} = interactive} =
-               InteractiveTemplates.update_interactive(interactive, @update_attrs)
+               InteractiveTemplates.update_interactive_template(interactive, @update_attrs)
 
       assert interactive.label == "Updated Quick Reply label"
       assert interactive.type == :quick_reply
     end
 
-    test "update_interactive/2 with invalid data returns error changeset", %{
+    test "update_interactive_template/2 with invalid data returns error changeset", %{
       organization_id: organization_id
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
-               InteractiveTemplates.update_interactive(interactive, @invalid_attrs)
+               InteractiveTemplates.update_interactive_template(interactive, @invalid_attrs)
 
-      assert interactive == InteractiveTemplates.get_interactive!(interactive.id)
+      assert interactive == InteractiveTemplates.get_interactive_template!(interactive.id)
     end
 
-    test "delete_interactive/1 deletes an interactive", %{organization_id: organization_id} do
+    test "delete_interactive_template/1 deletes an interactive", %{organization_id: organization_id} do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
-      assert {:ok, %InterativeTemplate{}} = InteractiveTemplates.delete_interactive(interactive)
-      assert_raise Ecto.NoResultsError, fn -> InteractiveTemplates.get_interactive!(interactive.id) end
+      assert {:ok, %InterativeTemplate{}} = InteractiveTemplates.delete_interactive_template(interactive)
+      assert_raise Ecto.NoResultsError, fn -> InteractiveTemplates.get_interactive_template!(interactive.id) end
     end
 
     test "list_interactives/1 with multiple items",

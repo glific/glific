@@ -807,7 +807,7 @@ defmodule Glific.Fixtures do
     {:ok, interactive} =
       valid_attrs
       |> Map.merge(attrs)
-      |> InteractiveTemplates.create_interactive()
+      |> InteractiveTemplates.create_interactive_template()
 
     interactive
   end

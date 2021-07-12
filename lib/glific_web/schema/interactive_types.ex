@@ -63,23 +63,23 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   end
 
   object :interactive_template_mutations do
-    field :create_interactive, :interactive_result do
+    field :create_interactive_template, :interactive_result do
       arg(:input, non_null(:interactive_input))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.create_interactive/3)
+      resolve(&Resolvers.InterativeTemplates.create_interactive_template/3)
     end
 
-    field :update_interactive, :interactive_result do
+    field :update_interactive_template, :interactive_result do
       arg(:id, non_null(:id))
       arg(:input, :interactive_input)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.update_interactive/3)
+      resolve(&Resolvers.InterativeTemplates.update_interactive_template/3)
     end
 
-    field :delete_interactive, :interactive_result do
+    field :delete_interactive_template, :interactive_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.delete_interactive/3)
+      resolve(&Resolvers.InterativeTemplates.delete_interactive_template/3)
     end
   end
 end

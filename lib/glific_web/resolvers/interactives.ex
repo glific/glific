@@ -39,34 +39,34 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
   end
 
   @doc false
-  @spec create_interactive(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
+  @spec create_interactive_template(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def create_interactive(_, %{input: params}, _) do
-    with {:ok, interactive} <- InteractiveTemplates.create_interactive(params) do
+  def create_interactive_template(_, %{input: params}, _) do
+    with {:ok, interactive} <- InteractiveTemplates.create_interactive_template(params) do
       {:ok, %{interactive: interactive}}
     end
   end
 
   @doc false
-  @spec update_interactive(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_interactive(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+  def update_interactive_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, interactive} <-
            Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
-         {:ok, interactive} <- InteractiveTemplates.update_interactive(interactive, params) do
+         {:ok, interactive} <- InteractiveTemplates.update_interactive_template(interactive, params) do
       {:ok, %{interactive: interactive}}
     end
   end
 
   @doc false
-  @spec delete_interactive(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+  @spec delete_interactive_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_interactive(_, %{id: id}, %{context: %{current_user: user}}) do
+  def delete_interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, interactive} <-
            Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
-         {:ok, interactive} <- InteractiveTemplates.delete_interactive(interactive) do
+         {:ok, interactive} <- InteractiveTemplates.delete_interactive_template(interactive) do
       {:ok, interactive}
     end
   end
