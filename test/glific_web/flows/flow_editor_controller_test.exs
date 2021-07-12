@@ -8,7 +8,8 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     Groups,
     Seeds.SeedsDev,
     Settings,
-    Templates
+    Templates,
+    Templates.InteractiveTemplates
   }
 
   alias GlificWeb.Flows.FlowEditorController
@@ -193,7 +194,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       templates = json_response(conn, 200)["results"]
 
       assert length(
-               Glific.Templates.list_session_templates(%{
+               Templates.list_session_templates(%{
                  filter: %{organization_id: conn.assigns[:organization_id]}
                })
              ) ==
@@ -203,12 +204,12 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     test "interactives", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
-        |> get("/flow-editor/interactives", %{})
+        |> get("/flow-editor/interactive-templates", %{})
 
       interactives = json_response(conn, 200)["results"]
 
       assert length(
-               Glific.Templates.InteractiveTemplates.list_interactives(%{
+               InteractiveTemplates.list_interactives(%{
                  filter: %{organization_id: conn.assigns[:organization_id]}
                })
              ) ==
