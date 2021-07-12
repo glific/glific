@@ -34,17 +34,21 @@ defmodule Glific.Clients.DigitalGreen do
   """
   @spec time_till_next_slot(DateTime.t()) :: non_neg_integer()
   def time_till_next_slot(time \\ DateTime.utc_now()) do
+    current_time = Timex.now() |> Timex.beginning_of_day()
     # Morning slot at 7am
-    morning_slot = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 7)
-
+    morning_slot = current_time |> Timex.shift(hours: 7)
     # Evening slot at 6:30pm
-    evening_slot = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 18, minutes: 30)
+    evening_slot = current_time |> Timex.shift(hours: 18, minutes: 30)
 
+    ## get next define slots
     next_slot =
       if Timex.compare(time, morning_slot, :seconds) == -1, do: morning_slot, else: evening_slot
 
     next_slot
     |> Timex.diff(time, :seconds)
+
+    ## the minmum wait unit in glific is 1 minute.
+    max(next_slot, 61)
   end
 
   @doc """
