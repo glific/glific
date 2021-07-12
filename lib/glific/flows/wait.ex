@@ -18,13 +18,15 @@ defmodule Glific.Flows.Wait do
   @type t() :: %__MODULE__{
           type: String.t() | nil,
           seconds: non_neg_integer | nil,
-          category_uuid: :uuid | nil
+          category_uuid: :uuid | nil,
+          expression: String.t()
         }
 
   embedded_schema do
     field :type, :string
     field :seconds, :integer
     field :category_uuid, Ecto.UUID
+    field :expression, :string
   end
 
   @doc """
@@ -37,7 +39,8 @@ defmodule Glific.Flows.Wait do
     wait = %Wait{
       type: json["type"],
       seconds: json["timeout"]["seconds"],
-      category_uuid: json["timeout"]["category_uuid"]
+      category_uuid: json["timeout"]["category_uuid"],
+      expression: json["timeout"]["expression"]
     }
 
     {wait, uuid_map}
@@ -60,16 +63,32 @@ defmodule Glific.Flows.Wait do
     do: {:ok, context, []}
 
   def execute(wait, context, _messages) do
-    if is_nil(wait.seconds) do
-      {:ok, context, []}
-    else
+    wait_seconds = get_wait_timeout(wait, context)
+
+    if wait_seconds > 0 do
       {:ok, context} =
         FlowContext.update_flow_context(
           context,
-          %{wakeup_at: DateTime.add(DateTime.utc_now(), wait.seconds)}
+          %{wakeup_at: DateTime.add(DateTime.utc_now(), wait_seconds)}
         )
 
       {:ok, context, []}
+    else
+      {:ok, context, []}
     end
   end
+
+  ## Check if the wait for response is dynamic.
+  @spec get_wait_timeout(map(), FlowContext.t()) :: integer()
+  defp get_wait_timeout(%{expression: expression} = _wait, context)
+       when expression not in ["", nil] do
+    {:ok, seconds} =
+      FlowContext.parse_context_string(context, expression)
+      |> Glific.execute_eex()
+      |> Glific.parse_maybe_integer()
+
+    seconds
+  end
+
+  defp get_wait_timeout(wait, _), do: wait.seconds || 0
 end
