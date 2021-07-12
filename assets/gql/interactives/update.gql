@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-mutation updateInteractive($id: ID!, $input: InteractiveInput!) {
-  updateInteractive(id: $id, input: $input) {
-    ...InteractiveFields
+mutation updateInteractiveTemplate($id: ID!, $input: InteractiveTemplateInput!) {
+  updateInteractiveTemplate(id: $id, input: $input) {
+    ...InteractiveTemplateFields
 
     ...ErrorFields
   }

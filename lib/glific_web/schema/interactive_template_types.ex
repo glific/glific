@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.InteractiveTypes do
+defmodule GlificWeb.Schema.InteractiveTemplateTypes do
   @moduledoc """
   GraphQL Representation of Glific's Interactive DataType
   """
@@ -8,12 +8,12 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
-  object :interactive_result do
-    field :interactive, :interactive
+  object :interactive_template_result do
+    field :interactive_template, :interactive_template
     field :errors, list_of(:input_error)
   end
 
-  object :interactive do
+  object :interactive_template do
     field :id, :id
     field :label, :string
     field :type, :interactive_message_type_enum
@@ -24,7 +24,7 @@ defmodule GlificWeb.Schema.InteractiveTypes do
   end
 
   @desc "Filtering options for interactives"
-  input_object :interactive_filter do
+  input_object :interactive_template_filter do
     @desc "Match the label"
     field :label, :string
 
@@ -32,51 +32,51 @@ defmodule GlificWeb.Schema.InteractiveTypes do
     field :type, :interactive_message_type_enum
   end
 
-  input_object :interactive_input do
+  input_object :interactive_template_input do
     field :label, :string
     field :type, :interactive_message_type_enum
     field :interactive_content, :json
   end
 
   object :interactive_template_queries do
-    @desc "get the details of one interactive"
-    field :interactive, :interactive_result do
+    @desc "get the details of one interactive template"
+    field :interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.interactive/3)
+      resolve(&Resolvers.InterativeTemplates.interactive_template/3)
     end
 
-    @desc "Get a list of all interactives filtered by various criteria"
-    field :interactives, list_of(:interactive) do
-      arg(:filter, :interactive_filter)
+    @desc "Get a list of all interactive templates filtered by various criteria"
+    field :interactive_templates, list_of(:interactive_template) do
+      arg(:filter, :interactive_template_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.interactives/3)
+      resolve(&Resolvers.InterativeTemplates.interactive_templates/3)
     end
 
     @desc "Get a count of all interactives filtered by various criteria"
-    field :count_interactives, :integer do
-      arg(:filter, :interactive_filter)
+    field :count_interactive_templates, :integer do
+      arg(:filter, :interactive_template_filter)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.count_interactives/3)
+      resolve(&Resolvers.InterativeTemplates.count_interactive_templates/3)
     end
   end
 
   object :interactive_template_mutations do
-    field :create_interactive_template, :interactive_result do
-      arg(:input, non_null(:interactive_input))
+    field :create_interactive_template, :interactive_template_result do
+      arg(:input, non_null(:interactive_template_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.InterativeTemplates.create_interactive_template/3)
     end
 
-    field :update_interactive_template, :interactive_result do
+    field :update_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
-      arg(:input, :interactive_input)
+      arg(:input, :interactive_template_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.InterativeTemplates.update_interactive_template/3)
     end
 
-    field :delete_interactive_template, :interactive_result do
+    field :delete_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.InterativeTemplates.delete_interactive_template/3)

@@ -1,4 +1,4 @@
-defmodule GlificWeb.Schema.InteractiveTest do
+defmodule GlificWeb.Schema.InteractiveTemplateTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
@@ -25,7 +25,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
   test "session templates field returns list of interactives", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
-    interactives = get_in(query_data, [:data, "interactives"])
+    interactives = get_in(query_data, [:data, "interactiveTemplates"])
     assert length(interactives) > 0
 
     res =
@@ -38,19 +38,19 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
   test "count returns the number of interactives", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
-    assert get_in(query_data, [:data, "countInteractives"]) > 4
+    assert get_in(query_data, [:data, "countInteractiveTemplates"]) > 4
 
     {:ok, query_data} =
       auth_query_gql_by(:count, user,
         variables: %{"filter" => %{"label" => "Quick Reply Text Update"}}
       )
 
-    assert get_in(query_data, [:data, "countInteractives"]) == 0
+    assert get_in(query_data, [:data, "countInteractiveTemplates"]) == 0
 
     {:ok, query_data} =
       auth_query_gql_by(:count, user, variables: %{"filter" => %{"label" => "Quick Reply Text"}})
 
-    assert get_in(query_data, [:data, "countInteractives"]) == 1
+    assert get_in(query_data, [:data, "countInteractiveTemplates"]) == 1
   end
 
   test "interactives field returns list of interactives in asc order", %{staff: user} do
@@ -59,7 +59,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
     assert {:ok, query_data} = result
 
-    interactives = get_in(query_data, [:data, "interactives"])
+    interactives = get_in(query_data, [:data, "interactiveTemplates"])
     assert length(interactives) > 0
 
     [interactive | _] = interactives
@@ -72,14 +72,14 @@ defmodule GlificWeb.Schema.InteractiveTest do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
 
-    interactives = get_in(query_data, [:data, "interactives"])
+    interactives = get_in(query_data, [:data, "interactiveTemplates"])
     assert length(interactives) > 0
 
     [interactive | _] = interactives
     assert get_in(interactive, ["label"]) == "Quick Reply Video"
   end
 
-  test "interactive by id returns one interactive or nil", %{staff: user} do
+  test "interactive template by id returns one interactive or nil", %{staff: user} do
     label = "Quick Reply Video"
 
     {:ok, interactive} =
@@ -87,14 +87,15 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => interactive.id})
     assert {:ok, query_data} = result
-
-    interactive = get_in(query_data, [:data, "interactive", "interactive", "label"])
+    interactive = get_in(query_data, [:data, "interactiveTemplate", "interactiveTemplate", "label"])
     assert interactive == label
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "interactive", "errors", Access.at(0), "message"])
+    message =
+      get_in(query_data, [:data, "interactiveTemplate", "errors", Access.at(0), "message"])
+
     assert message == "Resource not found"
   end
 
@@ -111,7 +112,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createInteractive", "interactive", "label"])
+    label = get_in(query_data, [:data, "createInteractiveTemplate", "interactiveTemplate", "label"])
     assert label == "Quick Reply Text Reply"
 
     # try creating the same session template of a language twice
@@ -139,7 +140,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "createInteractive", "errors", Access.at(0), "message"])
+    message = get_in(query_data, [:data, "createInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message == "has already been taken"
   end
@@ -156,8 +157,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
       )
 
     assert {:ok, query_data} = result
-
-    label = get_in(query_data, [:data, "updateInteractive", "interactive", "label"])
+    label = get_in(query_data, [:data, "updateInteractiveTemplate", "interactiveTemplate", "label"])
     assert label == "Updated Quick Reply Text"
 
     # Try to update a template with same label
@@ -171,7 +171,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "updateInteractive", "errors", Access.at(0), "message"])
+    message = get_in(query_data, [:data, "updateInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message == "has already been taken"
   end
@@ -185,12 +185,13 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => interactive.id})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "deleteInteractive", "errors"]) == nil
+    assert get_in(query_data, [:data, "deleteInteractiveTemplate", "errors"]) == nil
 
     result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "deleteInteractive", "errors", Access.at(0), "message"])
+    message =
+      get_in(query_data, [:data, "deleteInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message == "Resource not found"
   end

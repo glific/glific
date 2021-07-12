@@ -1,5 +1,5 @@
-query interactives($filter: InteractiveFilter, $opts: Opts) {
-  interactives(filter: $filter, opts: $opts) {
+query interactiveTemplates($filter: InteractiveTemplateFilter, $opts: Opts) {
+  interactiveTemplates(filter: $filter, opts: $opts) {
     insertedAt
     interactiveContent
     label

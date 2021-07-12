@@ -1,4 +1,4 @@
-defmodule Glific.InteractivesTest do
+defmodule Glific.InteractiveTemplatesTest do
   use Glific.DataCase
   use ExUnit.Case
 
@@ -8,7 +8,7 @@ defmodule Glific.InteractivesTest do
     Templates.InterativeTemplate
   }
 
-  describe "interactives" do
+  describe "interactive_templates" do
     @valid_attrs %{
       label: "Quick Reply Test Text",
       type: :quick_reply,
@@ -62,16 +62,16 @@ defmodule Glific.InteractivesTest do
       interactive_content: nil
     }
 
-    test "count_interactives/1 returns count of all interactives",
+    test "count_interactive_templates/1 returns count of all interactives",
          %{organization_id: _organization_id} = attrs do
-      interactive_count = InteractiveTemplates.count_interactives(%{filter: attrs})
+      interactive_count = InteractiveTemplates.count_interactive_templates(%{filter: attrs})
       _ = Fixtures.interactive_fixture(attrs)
-      assert InteractiveTemplates.count_interactives(%{filter: attrs}) == interactive_count + 1
+      assert InteractiveTemplates.count_interactive_templates(%{filter: attrs}) == interactive_count + 1
 
       _ = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
-      assert InteractiveTemplates.count_interactives(%{filter: attrs}) == interactive_count + 2
+      assert InteractiveTemplates.count_interactive_templates(%{filter: attrs}) == interactive_count + 2
 
-      assert InteractiveTemplates.count_interactives(%{
+      assert InteractiveTemplates.count_interactive_templates(%{
                filter: Map.merge(attrs, %{label: "Quick Reply Test Text 2"})
              }) == 1
     end
@@ -129,7 +129,7 @@ defmodule Glific.InteractivesTest do
 
     test "list_interactives/1 with multiple items",
          %{organization_id: _organization_id} = attrs do
-      interactive_count = InteractiveTemplates.count_interactives(%{filter: attrs})
+      interactive_count = InteractiveTemplates.count_interactive_templates(%{filter: attrs})
 
       interactive1 = Fixtures.interactive_fixture(attrs)
       interactive2 = Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
@@ -143,7 +143,7 @@ defmodule Glific.InteractivesTest do
 
     test "list_interactives/1 with multiple items sorted",
          %{organization_id: _organization_id} = attrs do
-      interactive_count = InteractiveTemplates.count_interactives(%{filter: attrs})
+      interactive_count = InteractiveTemplates.count_interactive_templates(%{filter: attrs})
 
       interactive1 = Fixtures.interactive_fixture(attrs)
       interactive2 = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))

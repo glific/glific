@@ -26,8 +26,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   @doc """
   Return the count of interactive templates, using the same filter as list_interactives
   """
-  @spec count_interactives(map()) :: integer
-  def count_interactives(args),
+  @spec count_interactive_templates(map()) :: integer
+  def count_interactive_templates(args),
     do: Repo.count_filter(args, InterativeTemplate, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()

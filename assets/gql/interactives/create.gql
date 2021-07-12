@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-mutation createInteractive($input: InteractiveInput!) {
-  createInteractive(input: $input) {
-    ...InteractiveFields
+mutation createInteractiveTemplate($input: InteractiveInput!) {
+  createInteractiveTemplate(input: $input) {
+    ...InteractiveTemplateFields
 
     ...ErrorFields
   }

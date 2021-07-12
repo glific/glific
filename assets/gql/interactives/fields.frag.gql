@@ -1,12 +1,12 @@
-fragment InteractiveFields on InteractiveResult {
-interactive {
+fragment InteractiveTemplateFields on InteractiveTemplateResult {
+interactiveTemplate {
     interactiveContent
     label
     type
   }
 }
 
-fragment ErrorFields on InteractiveResult {
+fragment ErrorFields on InteractiveTemplateResult {
   errors {
     key
     message

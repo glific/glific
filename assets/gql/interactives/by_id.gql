@@ -1,8 +1,8 @@
 #import "./fields.frag.gql"
 
-query interactive($id: ID!) {
-  interactive(id: $id) {
-    ...InteractiveFields
+query interactiveTemplate($id: ID!) {
+  interactiveTemplate(id: $id) {
+    ...InteractiveTemplateFields
 
     ...ErrorFields
   }

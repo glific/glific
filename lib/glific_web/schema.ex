@@ -45,7 +45,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.ConsultingHourTypes)
   import_types(__MODULE__.ContactsFieldTypes)
   import_types(__MODULE__.ExtensionTypes)
-  import_types(__MODULE__.InteractiveTypes)
+  import_types(__MODULE__.InteractiveTemplateTypes)
 
   query do
     import_fields(:contact_queries)

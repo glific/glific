@@ -1,10 +1,10 @@
 # Interactive
 
-## Get All Interactives
+## Get All InteractiveTemplates
 
 ```graphql
-query interactives($filter: InteractiveFilter, $opts: Opts) {
-  interactives(filter: $filter, opts:$opts) {
+query interactiveTemplates($filter: InteractiveTemplateFilter, $opts: Opts) {
+  interactiveTemplates(filter: $filter, opts:$opts) {
     id
     insertedAt
     interactiveContent
@@ -32,7 +32,7 @@ query interactives($filter: InteractiveFilter, $opts: Opts) {
 ```json
 {
   "data": {
-    "interactives": [
+    "interactiveTemplates": [
       {
         "id": "1",
         "insertedAt": "2021-07-07T15:38:20.000000Z",
@@ -54,27 +54,27 @@ query interactives($filter: InteractiveFilter, $opts: Opts) {
 }
 ```
 
-This returns all the Interactives filtered by the input <a href="#InteractiveFilter">InteractiveFilter</a>
+This returns all the Interactive Templates filtered by the input <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a>
 
 ### Query Parameters
 
 | Parameter | Type                                               | Default | Description                         |
 | --------- | -------------------------------------------------- | ------- | ----------------------------------- |
-| filter    | <a href="#InteractiveFilter">InteractiveFilter</a> | nil     | filter the list                     |
+| filter    | <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a> | nil     | filter the list                     |
 | opts      | <a href="#opts">Opts</a>                           | nil     | limit / offset / sort order options |
 
 ### Return Parameters
 
 | Type                                     | Description          |
 | ---------------------------------------- | -------------------- |
-| [<a href="#interactive">interactive</a>] | List of Interactives |
+| [<a href="#interactiveTemplate">interactiveTemplate</a>] | List of InteractiveTemplates |
 
-## Get a specific interactive by ID
+## Get a specific interactiveTemplate by ID
 
 ```graphql
-query interactive($id: ID!) {
-  interactive(id: $id) {
-    interactive {
+query interactiveTemplate($id: ID!) {
+  interactiveTemplate(id: $id) {
+    interactiveTemplate {
         id
         insertedAt
         interactiveContent
@@ -95,8 +95,8 @@ query interactive($id: ID!) {
 ```json
 {
   "data": {
-    "interactive": {
-      "interactive": {
+    "interactiveTemplate": {
+      "interactiveTemplate": {
         "id": "12",
         "insertedAt": "2021-07-07T15:38:20.000000Z",
         "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"London\"},{\"type\":\"text\",\"title\":\"Berlin\"},{\"type\":\"text\",\"title\":\"Paris\"}],\"content\":{\"type\":\"text\",\"text\":\"Where have you been?\"}}",
@@ -113,19 +113,19 @@ query interactive($id: ID!) {
 
 | Parameter | Type                                               | Default | Description     |
 | --------- | -------------------------------------------------- | ------- | --------------- |
-| filter    | <a href="#InteractiveFilter">InteractiveFilter</a> | nil     | filter the list |
+| filter    | <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a> | nil     | filter the list |
 
 ### Return Parameters
 
 | Type                                               | Description         |
 | -------------------------------------------------- | ------------------- |
-| <a href="#interactiveresult">interactiveResult</a> | Queried interactive |
+| <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | Queried interactiveTemplate |
 
-## Count all Interactives
+## Count all InteractiveTemplates
 
 ```graphql
-query countInteractives($filter: InteractiveFilter) {
-  countInteractives(filter: $filter)
+query countInteractiveTemplates($filter: InteractiveTemplateFilter) {
+  countInteractiveTemplates(filter: $filter)
 }
 
 {
@@ -140,7 +140,7 @@ query countInteractives($filter: InteractiveFilter) {
 ```json
 {
   "data": {
-    "countInteractives": 15
+    "countInteractiveTemplates": 15
   }
 }
 ```
@@ -149,20 +149,20 @@ query countInteractives($filter: InteractiveFilter) {
 
 | Parameter | Type                                               | Default | Description     |
 | --------- | -------------------------------------------------- | ------- | --------------- |
-| filter    | <a href="#InteractiveFilter">InteractiveFilter</a> | nil     | filter the list |
+| filter    | <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a> | nil     | filter the list |
 
 ### Return Parameters
 
 | Type                   | Description                    |
 | ---------------------- | ------------------------------ |
-| <a href="#int">Int</a> | Count of filtered Interactives |
+| <a href="#int">Int</a> | Count of filtered InteractiveTemplates |
 
-## Create a Interactive
+## Create a InteractiveTemplate
 
 ```graphql
-mutation createInteractive($input:interactiveInput!) {
-  createInteractive(input: $input) {
-    interactive {
+mutation createInteractiveTemplate($input:interactiveTemplateInput!) {
+  createInteractiveTemplate(input: $input) {
+    interactiveTemplate {
       type
       label
       interactiveContent
@@ -188,7 +188,7 @@ mutation createInteractive($input:interactiveInput!) {
 ```json
 {
   "data": {
-    "createInteractive": {
+    "createInteractiveTemplate": {
       "errors": null,
       "interactive": {
         "id": "2",
@@ -207,19 +207,19 @@ mutation createInteractive($input:interactiveInput!) {
 
 | Parameter | Type                                             | Default  | Description |
 | --------- | ------------------------------------------------ | -------- | ----------- |
-| input     | <a href="#interactiveinput">interactiveInput</a> | required |             |
+| input     | <a href="#interactiveTemplateinput">interactiveTemplateInput</a> | required |             |
 
 ### Return Parameters
 
 | Type                                               | Description                    |
 | -------------------------------------------------- | ------------------------------ |
-| <a href="#interactiveresult">interactiveResult</a> | The created Interactive object |
+| <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | The created Interactive object |
 
-## Update a interactive
+## Update a interactiveTemplate
 
 ```graphql
-mutation updateInteractive($id: ID!, $input:interactiveInput!) {
-  updateInteractive(id: $id, input: $input) {
+mutation updateInteractiveTemplate($id: ID!, $input:interactiveTemplateInput!) {
+  updateInteractiveTemplate(id: $id, input: $input) {
     interactive {
       insertedAt
       interactiveContent
@@ -248,7 +248,7 @@ mutation updateInteractive($id: ID!, $input:interactiveInput!) {
 ```json
 {
   "data": {
-    "updateinteractive": {
+    "updateinteractiveTemplate": {
       "errors": null,
       "interactive": {
         "id": "2",
@@ -268,19 +268,19 @@ mutation updateInteractive($id: ID!, $input:interactiveInput!) {
 | Parameter | Type                                             | Default  | Description |
 | --------- | ------------------------------------------------ | -------- | ----------- |
 | id        | <a href="#id">ID</a>!                            | required |             |
-| input     | <a href="#interactiveinput">interactiveInput</a> | required |             |
+| input     | <a href="#interactiveTemplateinput">interactiveTemplateInput</a> | required |             |
 
 ### Return Parameters
 
 | Type                                               | Description                    |
 | -------------------------------------------------- | ------------------------------ |
-| <a href="#interactiveresult">interactiveResult</a> | The updated Interactive object |
+| <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | The updated Interactive object |
 
-## Delete a interactive
+## Delete a interactiveTemplate
 
 ```graphql
-mutation deleteInteractive($id: ID!) {
-  deleteInteractive(id: $id) {
+mutation deleteInteractiveTemplate($id: ID!) {
+  deleteInteractiveTemplate(id: $id) {
     errors {
       key
       message
@@ -298,7 +298,7 @@ mutation deleteInteractive($id: ID!) {
 ```json
 {
   "data": {
-    "deleteinteractive": {
+    "deleteinteractiveTemplate": {
       "errors": null
     }
   }
@@ -310,7 +310,7 @@ In case of errors, all the above functions return an error object like the below
 ```json
 {
   "data": {
-    "deleteinteractive": {
+    "deleteinteractiveTemplate": {
       "errors": [
         {
           "key": "Elixir.Glific.Templates.InterativeTemplate",
@@ -332,11 +332,11 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                               | Description              |
 | -------------------------------------------------- | ------------------------ |
-| <a href="#interactiveresult">interactiveResult</a> | An error object or empty |
+| <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | An error object or empty |
 
-## Interactive Objects
+## InteractiveTemplate Objects
 
-### interactive
+### interactiveTemplate
 
 <table>
 <thead>
@@ -376,7 +376,7 @@ In case of errors, all the above functions return an error object like the below
 </tbody>
 </table>
 
-### interactiveResult
+### interactiveTemplateResult
 
 <table>
 <thead>
@@ -394,16 +394,16 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>interactive</strong></td>
-<td valign="top"><a href="#interactive">interactive</a></td>
+<td colspan="2" valign="top"><strong>interactiveTemplate</strong></td>
+<td valign="top"><a href="#interactiveTemplate">interactiveTemplate</a></td>
 <td></td>
 </tr>
 </tbody>
 </table>
 
-## Interactive Inputs
+## InteractiveTemplate Inputs
 
-### InteractiveFilter
+### InteractiveTemplateFilter
 
 Filtering options for session_templates
 
@@ -435,7 +435,7 @@ Match the type of interactive message
 </tbody>
 </table>
 
-### interactiveInput
+### interactiveTemplateInput
 
 <table>
 <thead>
