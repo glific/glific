@@ -193,6 +193,21 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
                length(templates)
     end
 
+    test "interactives", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/interactives", %{})
+
+      templates = json_response(conn, 200)["results"]
+
+      assert length(
+        Glific.Interactives.list_interactives(%{
+                 filter: %{organization_id: conn.assigns[:organization_id]}
+               })
+             ) ==
+               length(templates)
+    end
+
     def language_fixture(attrs \\ %{}) do
       {:ok, language} =
         attrs
