@@ -24,6 +24,24 @@ defmodule Glific.Clients.DigitalGreen do
   @stage_3_threshold 60
 
   @doc """
+  Returns time in second till next defined Timeslot
+  """
+  @spec time_till_next_slot(DateTime.t()) :: non_neg_integer()
+  def time_till_next_slot(time \\ DateTime.utc_now()) do
+    # Morning slot at 7am
+    morning_slot = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 7)
+
+    # Evening slot at 6:30pm
+    evening_slot = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 18, minutes: 30)
+
+    next_slot =
+      if Timex.compare(time, morning_slot, :seconds) == -1, do: morning_slot, else: evening_slot
+
+    next_slot
+    |> Timex.diff(time, :seconds)
+  end
+
+  @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
@@ -161,12 +179,12 @@ defmodule Glific.Clients.DigitalGreen do
 
   defp update_crop_days(@stage_2, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "33", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "32", "string")
   end
 
   defp update_crop_days(@stage_3, contact_id) do
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "50", "string")
+    |> ContactField.do_add_contact_field("initial_crop_day", "initial_crop_day", "47", "string")
   end
 
   defp update_crop_days(_, contact_id) do

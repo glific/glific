@@ -13,10 +13,12 @@ defmodule Glific.Flows.FlowContext do
   require Logger
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows,
     Flows.Flow,
     Flows.FlowResult,
+    Flows.MessageVarParser,
     Flows.Node,
     Messages,
     Messages.Message,
@@ -643,5 +645,20 @@ defmodule Glific.Flows.FlowContext do
     Logger.info("Deleting flow contexts older than #{back} days")
 
     :ok
+  end
+
+  @doc """
+    A single place to parse the variable in a string related to flows.
+  """
+  @spec parse_context_string(FlowContext.t(), String.t()) :: String.t()
+  def parse_context_string(context, str) do
+  vars =
+  %{
+      "results" => context.results,
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "flow" => %{name: context.flow.name, id: context.flow.id}
+   }
+   str
+   |> MessageVarParser.parse(vars)
   end
 end
