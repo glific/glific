@@ -4,10 +4,10 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
   one or more calls to resolve the incoming queries.
   """
   alias Glific.{
-  Repo,
-  Templates.InteractiveTemplates,
-  Templates.InterativeTemplate
-}
+    Repo,
+    Templates.InteractiveTemplates,
+    Templates.InterativeTemplate
+  }
 
   @doc """
   Get a specific session template by id
@@ -55,7 +55,8 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
   def update_interactive_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, interactive_template} <-
            Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
-         {:ok, interactive_template} <- InteractiveTemplates.update_interactive_template(interactive_template, params) do
+         {:ok, interactive_template} <-
+           InteractiveTemplates.update_interactive_template(interactive_template, params) do
       {:ok, %{interactive_template: interactive_template}}
     end
   end
@@ -66,7 +67,8 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
   def delete_interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, interactive_template} <-
            Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
-         {:ok, interactive_template} <- InteractiveTemplates.delete_interactive_template(interactive_template) do
+         {:ok, interactive_template} <-
+           InteractiveTemplates.delete_interactive_template(interactive_template) do
       {:ok, interactive_template}
     end
   end
