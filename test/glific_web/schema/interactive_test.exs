@@ -4,11 +4,9 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
   alias Glific.{
     Fixtures,
-    # Messages,
-    Repo,
     Messages.Interactive,
+    Repo,
     Seeds.SeedsDev
-    # Templates.SessionTemplate
   }
 
   setup do
@@ -112,11 +110,9 @@ defmodule GlificWeb.Schema.InteractiveTest do
         }
       )
 
-
     assert {:ok, query_data} = result
     label = get_in(query_data, [:data, "createInteractive", "interactive", "label"])
     assert label == "Quick Reply Text Reply"
-
 
     # try creating the same session template of a language twice
     _ =
@@ -143,8 +139,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     assert {:ok, query_data} = result
 
-    message =
-      get_in(query_data, [:data, "createInteractive", "errors", Access.at(0), "message"])
+    message = get_in(query_data, [:data, "createInteractive", "errors", Access.at(0), "message"])
 
     assert message == "has already been taken"
   end
@@ -162,7 +157,6 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     assert {:ok, query_data} = result
 
-
     label = get_in(query_data, [:data, "updateInteractive", "interactive", "label"])
     assert label == "Updated Quick Reply Text"
 
@@ -177,8 +171,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
 
     assert {:ok, query_data} = result
 
-    message =
-      get_in(query_data, [:data, "updateInteractive", "errors", Access.at(0), "message"])
+    message = get_in(query_data, [:data, "updateInteractive", "errors", Access.at(0), "message"])
 
     assert message == "has already been taken"
   end
@@ -186,7 +179,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
   test "delete an interactive", %{staff: user} do
     {:ok, interactive} =
       Repo.fetch_by(Interactive, %{
-        body: "Quick Reply Text",
+        label: "Quick Reply Text",
         organization_id: user.organization_id
       })
 
@@ -197,8 +190,7 @@ defmodule GlificWeb.Schema.InteractiveTest do
     result = auth_query_gql_by(:delete, user, variables: %{"id" => 123_456_789})
     assert {:ok, query_data} = result
 
-    message =
-      get_in(query_data, [:data, "deleteInteractive", "errors", Access.at(0), "message"])
+    message = get_in(query_data, [:data, "deleteInteractive", "errors", Access.at(0), "message"])
 
     assert message == "Resource not found"
   end
