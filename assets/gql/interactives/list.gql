@@ -1,0 +1,10 @@
+query interactiveTemplates($filter: InteractiveTemplateFilter, $opts: Opts) {
+  interactiveTemplates(filter: $filter, opts: $opts) {
+    insertedAt
+    interactiveContent
+    label
+    type
+    updatedAt
+    id
+  }
+}

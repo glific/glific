@@ -24,6 +24,7 @@ if Code.ensure_loaded?(Faker) do
       Settings.Language,
       Stats.Stat,
       Tags.Tag,
+      Templates.InterativeTemplate,
       Templates.SessionTemplate,
       Users
     }
@@ -1057,6 +1058,148 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_interactives(Organization.t()) :: nil
+    def seed_interactives(organization) do
+      Repo.insert!(%InterativeTemplate{
+        label: "Quick Reply Text",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "text",
+            "text" => "How excited are you for Glific?"
+          },
+          "options" => [
+            %{
+              "type" => "text",
+              "title" => "Excited"
+            },
+            %{
+              "type" => "text",
+              "title" => "Very Excited"
+            }
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%InterativeTemplate{
+        label: "Quick Reply Image",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "image",
+            "url" => "https://picsum.photos/200/300",
+            "caption" => "body text"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%InterativeTemplate{
+        label: "Quick Reply Document",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "file",
+            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
+            "filename" => "Sample file"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%InterativeTemplate{
+        label: "Quick Reply Video",
+        type: :quick_reply,
+        interactive_content: %{
+          "type" => "quick_reply",
+          "content" => %{
+            "type" => "video",
+            "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+            "caption" => "Sample video"
+          },
+          "options" => [
+            %{"type" => "text", "title" => "First"},
+            %{"type" => "text", "title" => "Second"},
+            %{"type" => "text", "title" => "Third"}
+          ]
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%InterativeTemplate{
+        label: "Interactive list",
+        type: :list,
+        interactive_content: %{
+          "type" => "list",
+          "title" => "Glific",
+          "body" => "Glific",
+          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+          "items" => [
+            %{
+              "title" => "Glific Features",
+              "subtitle" => "first Subtitle",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "Custom flows for automating conversation",
+                  "description" => "Flow Editor for creating flows"
+                },
+                %{
+                  "type" => "text",
+                  "title" => "Custom reports for  analytics",
+                  "description" => "DataStudio for report generation"
+                },
+                %{
+                  "type" => "text",
+                  "title" => "ML/AI",
+                  "description" => "Dialogflow for AI/ML"
+                }
+              ]
+            },
+            %{
+              "title" => "Glific Usecases",
+              "subtitle" => "some usecases of Glific",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "Educational programs",
+                  "description" => "Sharing education content with school student"
+                }
+              ]
+            },
+            %{
+              "title" => "Onboarded NGOs",
+              "subtitle" => "List of NGOs onboarded",
+              "options" => [
+                %{
+                  "type" => "text",
+                  "title" => "SOL",
+                  "description" =>
+                    "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
+                }
+              ]
+            }
+          ]
+        },
+        organization_id: organization.id
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1098,6 +1241,8 @@ if Code.ensure_loaded?(Faker) do
       hsm_templates(organization)
 
       seed_notification(organization)
+
+      seed_interactives(organization)
     end
   end
 end

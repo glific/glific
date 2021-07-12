@@ -415,10 +415,10 @@ defmodule Glific.Repo.Migrations.GlificCore do
       # The body of the message
       add :body, :text, comment: "Body of the message"
 
-      # Options are: text, audio, video, image, contact, location, file, sticker
+      # Options are: text, audio, video, image, contact, location, file, sticker, quick_reply, list
       add :type, :message_type_enum,
         comment:
-          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker"
+          "Type of the message; options are - text, audio, video, image, location, contact, file, sticker, quick_reply, list"
 
       # Field to check hsm message type
       add :is_hsm, :boolean, default: false, comment: "Field to check hsm message type"

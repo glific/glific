@@ -15,7 +15,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.FlowLabel,
     GCS.GcsWorker,
     Partners,
+    Repo,
     Settings,
+    Templates.InteractiveTemplates,
     Users.User
   }
 
@@ -201,6 +203,30 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
+  @spec interactive_templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def interactive_templates(conn, _params) do
+    results =
+      InteractiveTemplates.list_interactives(%{
+        filter: %{organization_id: conn.assigns[:organization_id]}
+      })
+      |> Enum.reduce([], fn interactive, acc ->
+        [
+          %{
+            id: interactive.id,
+            name: interactive.label,
+            type: interactive.type,
+            interactive_content: interactive.interactive_content,
+            created_on: interactive.inserted_at,
+            modified_on: interactive.updated_at
+          }
+          | acc
+        ]
+      end)
+
+    json(conn, %{results: results})
+  end
+
+  @doc false
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
     results =
@@ -381,7 +407,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
         [flow_uuid] ->
           with {:ok, flow} <-
-                 Glific.Repo.fetch_by(Flow, %{
+                 Repo.fetch_by(Flow, %{
                    uuid: flow_uuid,
                    organization_id: conn.assigns[:organization_id]
                  }),

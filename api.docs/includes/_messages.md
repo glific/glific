@@ -1434,6 +1434,12 @@ Match the tags excluded
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>interactive_content</strong></td>
+<td valign="top"><a href="#json">InteractiveContent</a></td>
+<td></td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>sender_id</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
