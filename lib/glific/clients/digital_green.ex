@@ -36,13 +36,15 @@ defmodule Glific.Clients.DigitalGreen do
   def time_till_next_slot(time \\ DateTime.utc_now()) do
     current_time = Timex.now() |> Timex.beginning_of_day()
     # Morning slot at 7am
-    morning_slot = current_time |> Timex.shift(hours: 7)
+    morning_slot =  Timex.shift(current_time, hours: 7)
     # Evening slot at 6:30pm
-    evening_slot = current_time |> Timex.shift(hours: 18, minutes: 30)
+    evening_slot =  Timex.shift(current_time, hours: 18, minutes: 30)
 
     ## get next define slots
     next_slot =
-      if Timex.compare(time, morning_slot, :seconds) == -1, do: morning_slot, else: evening_slot
+      if Timex.compare(time, morning_slot, :seconds) < 0,
+      do: morning_slot,
+      else: evening_slot
 
     next_slot
     |> Timex.diff(time, :seconds)
