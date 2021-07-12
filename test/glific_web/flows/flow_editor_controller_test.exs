@@ -208,7 +208,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       interactives = json_response(conn, 200)["results"]
 
       assert length(
-               Glific.Interactives.list_interactives(%{
+               Glific.Templates.InteractiveTemplates.list_interactives(%{
                  filter: %{organization_id: conn.assigns[:organization_id]}
                })
              ) ==
