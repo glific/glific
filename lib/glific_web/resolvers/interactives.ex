@@ -1,4 +1,4 @@
-defmodule GlificWeb.Resolvers.Interactives do
+defmodule GlificWeb.Resolvers.InterativeTemplates do
   @moduledoc """
   Interactives Resolver which sits between the GraphQL schema and Glific Interactives Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.

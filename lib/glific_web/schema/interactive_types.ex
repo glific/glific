@@ -43,7 +43,7 @@ defmodule GlificWeb.Schema.InteractiveTypes do
     field :interactive, :interactive_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Interactives.interactive/3)
+      resolve(&Resolvers.InterativeTemplates.interactive/3)
     end
 
     @desc "Get a list of all interactives filtered by various criteria"
@@ -51,14 +51,14 @@ defmodule GlificWeb.Schema.InteractiveTypes do
       arg(:filter, :interactive_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Interactives.interactives/3)
+      resolve(&Resolvers.InterativeTemplates.interactives/3)
     end
 
     @desc "Get a count of all interactives filtered by various criteria"
     field :count_interactives, :integer do
       arg(:filter, :interactive_filter)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Interactives.count_interactives/3)
+      resolve(&Resolvers.InterativeTemplates.count_interactives/3)
     end
   end
 
@@ -66,20 +66,20 @@ defmodule GlificWeb.Schema.InteractiveTypes do
     field :create_interactive, :interactive_result do
       arg(:input, non_null(:interactive_input))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Interactives.create_interactive/3)
+      resolve(&Resolvers.InterativeTemplates.create_interactive/3)
     end
 
     field :update_interactive, :interactive_result do
       arg(:id, non_null(:id))
       arg(:input, :interactive_input)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Interactives.update_interactive/3)
+      resolve(&Resolvers.InterativeTemplates.update_interactive/3)
     end
 
     field :delete_interactive, :interactive_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Interactives.delete_interactive/3)
+      resolve(&Resolvers.InterativeTemplates.delete_interactive/3)
     end
   end
 end
