@@ -14,10 +14,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.FlowCount,
     Flows.FlowLabel,
     GCS.GcsWorker,
-    Interactives,
     Partners,
     Repo,
     Settings,
+    Templates.InteractiveTemplates,
     Users.User
   }
 
@@ -203,10 +203,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
-  @spec interactives(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def interactives(conn, _params) do
+  @spec interactive_templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def interactive_templates(conn, _params) do
     results =
-      Interactives.list_interactives(%{
+      InteractiveTemplates.list_interactives(%{
         filter: %{organization_id: conn.assigns[:organization_id]}
       })
       |> Enum.reduce([], fn interactive, acc ->

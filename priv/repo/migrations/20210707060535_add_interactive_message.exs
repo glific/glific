@@ -12,7 +12,7 @@ defmodule Glific.Repo.Migrations.AddInteractiveMessage do
   end
 
   defp interactive do
-    create table(:interactives, comment: "Lets add interactive messages here") do
+    create table(:interactive_templates, comment: "Lets add interactive messages here") do
       add :label, :string, comment: "The label of the interactive message"
 
       add :type, :interactive_message_type_enum,
@@ -27,7 +27,7 @@ defmodule Glific.Repo.Migrations.AddInteractiveMessage do
       timestamps(type: :utc_datetime)
     end
 
-    create unique_index(:interactives, [:label, :type, :organization_id])
-    create index(:interactives, :organization_id)
+    create unique_index(:interactive_templates, [:label, :type, :organization_id])
+    create index(:interactive_templates, :organization_id)
   end
 end

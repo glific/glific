@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:extensions_queries)
 
-    import_fields(:interactive_queries)
+    import_fields(:interactive_template_queries)
   end
 
   mutation do
@@ -144,7 +144,7 @@ defmodule GlificWeb.Schema do
 
     import_fields(:extensions_mutations)
 
-    import_fields(:interactive_mutations)
+    import_fields(:interactive_template_mutations)
   end
 
   subscription do

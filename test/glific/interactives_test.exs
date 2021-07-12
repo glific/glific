@@ -4,8 +4,8 @@ defmodule Glific.InteractivesTest do
 
   alias Glific.{
     Fixtures,
-    Interactives,
-    Messages.Interactive
+    Templates.InteractiveTemplates,
+    Templates.InterativeTemplate
   }
 
   describe "interactives" do
@@ -64,14 +64,14 @@ defmodule Glific.InteractivesTest do
 
     test "count_interactives/1 returns count of all interactives",
          %{organization_id: _organization_id} = attrs do
-      interactive_count = Interactives.count_interactives(%{filter: attrs})
+      interactive_count = InteractiveTemplates.count_interactives(%{filter: attrs})
       _ = Fixtures.interactive_fixture(attrs)
-      assert Interactives.count_interactives(%{filter: attrs}) == interactive_count + 1
+      assert InteractiveTemplates.count_interactives(%{filter: attrs}) == interactive_count + 1
 
       _ = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
-      assert Interactives.count_interactives(%{filter: attrs}) == interactive_count + 2
+      assert InteractiveTemplates.count_interactives(%{filter: attrs}) == interactive_count + 2
 
-      assert Interactives.count_interactives(%{
+      assert InteractiveTemplates.count_interactives(%{
                filter: Map.merge(attrs, %{label: "Quick Reply Test Text 2"})
              }) == 1
     end
@@ -80,7 +80,7 @@ defmodule Glific.InteractivesTest do
       organization_id: organization_id
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
-      assert Interactives.get_interactive!(interactive.id) == interactive
+      assert InteractiveTemplates.get_interactive!(interactive.id) == interactive
     end
 
     test "create_interactive/1 with valid data creates an interactive message", %{
@@ -88,14 +88,14 @@ defmodule Glific.InteractivesTest do
     } do
       attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
 
-      assert {:ok, %Interactive{} = interactive} = Interactives.create_interactive(attrs)
+      assert {:ok, %InterativeTemplate{} = interactive} = InteractiveTemplates.create_interactive(attrs)
       assert interactive.label == "Quick Reply Test Text"
       assert interactive.type == :quick_reply
       assert interactive.organization_id == organization_id
     end
 
     test "create_interactive/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Interactives.create_interactive(@invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} = InteractiveTemplates.create_interactive(@invalid_attrs)
     end
 
     test "update_interactive/2 with valid data updates the interactive", %{
@@ -103,8 +103,8 @@ defmodule Glific.InteractivesTest do
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %Interactive{} = interactive} =
-               Interactives.update_interactive(interactive, @update_attrs)
+      assert {:ok, %InterativeTemplate{} = interactive} =
+               InteractiveTemplates.update_interactive(interactive, @update_attrs)
 
       assert interactive.label == "Updated Quick Reply label"
       assert interactive.type == :quick_reply
@@ -116,24 +116,24 @@ defmodule Glific.InteractivesTest do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
-               Interactives.update_interactive(interactive, @invalid_attrs)
+               InteractiveTemplates.update_interactive(interactive, @invalid_attrs)
 
-      assert interactive == Interactives.get_interactive!(interactive.id)
+      assert interactive == InteractiveTemplates.get_interactive!(interactive.id)
     end
 
     test "delete_interactive/1 deletes an interactive", %{organization_id: organization_id} do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
-      assert {:ok, %Interactive{}} = Interactives.delete_interactive(interactive)
-      assert_raise Ecto.NoResultsError, fn -> Interactives.get_interactive!(interactive.id) end
+      assert {:ok, %InterativeTemplate{}} = InteractiveTemplates.delete_interactive(interactive)
+      assert_raise Ecto.NoResultsError, fn -> InteractiveTemplates.get_interactive!(interactive.id) end
     end
 
     test "list_interactives/1 with multiple items",
          %{organization_id: _organization_id} = attrs do
-      interactive_count = Interactives.count_interactives(%{filter: attrs})
+      interactive_count = InteractiveTemplates.count_interactives(%{filter: attrs})
 
       interactive1 = Fixtures.interactive_fixture(attrs)
       interactive2 = Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
-      interactives = Interactives.list_interactives(%{filter: attrs})
+      interactives = InteractiveTemplates.list_interactives(%{filter: attrs})
 
       assert length(interactives) == interactive_count + 2
 
@@ -143,11 +143,11 @@ defmodule Glific.InteractivesTest do
 
     test "list_interactives/1 with multiple items sorted",
          %{organization_id: _organization_id} = attrs do
-      interactive_count = Interactives.count_interactives(%{filter: attrs})
+      interactive_count = InteractiveTemplates.count_interactives(%{filter: attrs})
 
       interactive1 = Fixtures.interactive_fixture(attrs)
       interactive2 = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
-      interactives = Interactives.list_interactives(%{opts: %{order: :asc}, filter: attrs})
+      interactives = InteractiveTemplates.list_interactives(%{opts: %{order: :asc}, filter: attrs})
 
       assert length(interactives) == interactive_count + 2
 
@@ -161,7 +161,7 @@ defmodule Glific.InteractivesTest do
       interactive2 = Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
 
       interactives =
-        Interactives.list_interactives(%{
+        InteractiveTemplates.list_interactives(%{
           opts: %{order: :asc},
           filter: Map.merge(%{label: "Quick Reply Test"}, attrs)
         })
@@ -177,7 +177,7 @@ defmodule Glific.InteractivesTest do
       interactive2 = Fixtures.interactive_fixture(Map.merge(@valid_more_attrs, attrs))
 
       interactives =
-        Interactives.list_interactives(%{
+        InteractiveTemplates.list_interactives(%{
           opts: %{order: :asc},
           filter: Map.merge(%{type: :quick_reply}, attrs)
         })

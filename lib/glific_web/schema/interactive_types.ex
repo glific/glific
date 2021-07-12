@@ -38,7 +38,7 @@ defmodule GlificWeb.Schema.InteractiveTypes do
     field :interactive_content, :json
   end
 
-  object :interactive_queries do
+  object :interactive_template_queries do
     @desc "get the details of one interactive"
     field :interactive, :interactive_result do
       arg(:id, non_null(:id))
@@ -62,7 +62,7 @@ defmodule GlificWeb.Schema.InteractiveTypes do
     end
   end
 
-  object :interactive_mutations do
+  object :interactive_template_mutations do
     field :create_interactive, :interactive_result do
       arg(:input, non_null(:interactive_input))
       middleware(Authorize, :staff)

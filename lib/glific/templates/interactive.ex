@@ -1,4 +1,4 @@
-defmodule Glific.Messages.Interactive do
+defmodule Glific.Templates.InterativeTemplate do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
@@ -29,7 +29,7 @@ defmodule Glific.Messages.Interactive do
     :organization_id
   ]
 
-  schema "interactives" do
+  schema "interactive_templates" do
     field :label, :string
     field :type, InteractiveMessageType
     field :interactive_content, :map, default: %{}
@@ -40,7 +40,7 @@ defmodule Glific.Messages.Interactive do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(Interactive.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(InterativeTemplate.t(), map()) :: Ecto.Changeset.t()
   def changeset(interactive, attrs) do
     interactive
     |> cast(attrs, @required_fields)

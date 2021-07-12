@@ -16,9 +16,7 @@ defmodule Glific.Fixtures do
     Flows.ContactField,
     Flows.WebhookLog,
     Groups,
-    Interactives,
     Messages,
-    Messages.Interactive,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -30,6 +28,8 @@ defmodule Glific.Fixtures do
     Settings,
     Tags,
     Templates,
+    Templates.InteractiveTemplates,
+    Templates.InterativeTemplate,
     Templates.SessionTemplate,
     Triggers.Trigger,
     Users
@@ -779,7 +779,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec interactive_fixture(map()) :: Interactive.t()
+  @spec interactive_fixture(map()) :: InterativeTemplate.t()
   def interactive_fixture(attrs) do
     valid_attrs = %{
       label: "Quick Reply Fixture",
@@ -807,7 +807,7 @@ defmodule Glific.Fixtures do
     {:ok, interactive} =
       valid_attrs
       |> Map.merge(attrs)
-      |> Interactives.create_interactive()
+      |> InteractiveTemplates.create_interactive()
 
     interactive
   end

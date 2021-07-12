@@ -6,6 +6,7 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     Flows,
     Flows.FlowLabel,
     Groups,
+    Seeds.SeedsDev,
     Settings,
     Templates
   }
@@ -28,6 +29,12 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     is_reserved: true,
     status: "APPROVED"
   }
+
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.seed_interactives(organization)
+    :ok
+  end
 
   defp get_auth_token(conn, token) do
     conn
@@ -193,19 +200,12 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
                length(templates)
     end
 
-    setup do
-      organization = Glific.Seeds.SeedsDev.seed_organizations()
-      Glific.Seeds.SeedsDev.seed_interactives(organization)
-      :ok
-    end
-
     test "interactives", %{conn: conn, access_token: token} do
       conn =
         get_auth_token(conn, token)
         |> get("/flow-editor/interactives", %{})
 
       interactives = json_response(conn, 200)["results"]
-      IO.inspect(interactives)
 
       assert length(
                Glific.Interactives.list_interactives(%{

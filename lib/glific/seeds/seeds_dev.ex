@@ -12,7 +12,6 @@ if Code.ensure_loaded?(Faker) do
       Flows.FlowRevision,
       Groups,
       Groups.Group,
-      Messages.Interactive,
       Messages.Message,
       Messages.MessageMedia,
       Notifications.Notification,
@@ -25,6 +24,7 @@ if Code.ensure_loaded?(Faker) do
       Settings.Language,
       Stats.Stat,
       Tags.Tag,
+      Templates.InterativeTemplate,
       Templates.SessionTemplate,
       Users
     }
@@ -1061,7 +1061,7 @@ if Code.ensure_loaded?(Faker) do
     @doc false
     @spec seed_interactives(Organization.t()) :: nil
     def seed_interactives(organization) do
-      Repo.insert!(%Interactive{
+      Repo.insert!(%InterativeTemplate{
         label: "Quick Reply Text",
         type: :quick_reply,
         interactive_content: %{
@@ -1084,7 +1084,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
-      Repo.insert!(%Interactive{
+      Repo.insert!(%InterativeTemplate{
         label: "Quick Reply Image",
         type: :quick_reply,
         interactive_content: %{
@@ -1103,7 +1103,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
-      Repo.insert!(%Interactive{
+      Repo.insert!(%InterativeTemplate{
         label: "Quick Reply Document",
         type: :quick_reply,
         interactive_content: %{
@@ -1122,7 +1122,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
-      Repo.insert!(%Interactive{
+      Repo.insert!(%InterativeTemplate{
         label: "Quick Reply Video",
         type: :quick_reply,
         interactive_content: %{
@@ -1141,7 +1141,7 @@ if Code.ensure_loaded?(Faker) do
         organization_id: organization.id
       })
 
-      Repo.insert!(%Interactive{
+      Repo.insert!(%InterativeTemplate{
         label: "Interactive list",
         type: :list,
         interactive_content: %{
