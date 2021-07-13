@@ -80,7 +80,7 @@ defmodule GlificWeb.StripeController do
       invoice_id: invoice.id,
       organization_id: organization_id,
       status: invoice.status,
-      amount_due: invoice.amount_due
+      amount_due: invoice.subtotal
     })
 
     case Invoice.create_invoice(%{stripe_invoice: invoice, organization_id: organization_id}) do

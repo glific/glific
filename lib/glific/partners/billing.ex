@@ -422,14 +422,16 @@ defmodule Glific.Partners.Billing do
 
       # Add credit to customer
       Stripe.CustomerBalanceTransaction.create(billing.stripe_customer_id, %{
-        amount: credit,
+        amount: -credit,
         currency: billing.currency
       })
 
       # Update invoice footer with message
       Stripe.Invoice.update(transaction.invoice_id, %{
         footer:
-          "TDS INR #{credit} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
+          "TDS INR #{(credit / 100) |> trunc()} for Month of #{
+            DateTime.utc_now().month |> Timex.month_name()
+          } deducted above under Applied Balance section"
       })
 
       credit
