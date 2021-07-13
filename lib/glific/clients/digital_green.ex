@@ -79,7 +79,11 @@ defmodule Glific.Clients.DigitalGreen do
     |> Timex.diff(time, :seconds)
 
     ## the minmum wait unit in glific is 1 minute.
-    max(next_slot, 61)
+    defined_slot = max(next_slot, 61)
+
+    Logger.info("Dynamic wait for response defined slot is #{defined_slot}")
+    ## sending this for testing purpose
+    61
   end
 
   @doc """
