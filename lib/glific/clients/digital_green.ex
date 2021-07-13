@@ -22,32 +22,27 @@ defmodule Glific.Clients.DigitalGreen do
     "stage 1" => %{
       "group" => "stage 1",
       "initial_offset" => 17,
-      "threshold" => 31,
-      "day_range" => 17..31
+      "threshold" => 31
     },
     "stage 2" => %{
       "group" => "stage 2",
       "initial_offset" => 32,
-      "threshold" => 46,
-      "day_range" => 32..46
+      "threshold" => 46
     },
     "stage 3" => %{
       "group" => "stage 3",
       "initial_offset" => 47,
-      "threshold" => 61,
-      "day_range" => 47..61
+      "threshold" => 61
     },
     "stage 4" => %{
       "group" => "stage 4",
       "initial_offset" => 62,
-      "threshold" => 76,
-      "day_range" => 62..76
+      "threshold" => 76
     },
     "stage 5" => %{
       "group" => "stage 5",
       "initial_offset" => 77,
-      "threshold" => 92,
-      "day_range" => 77..92
+      "threshold" => 92
     }
   }
 
