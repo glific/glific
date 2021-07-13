@@ -46,7 +46,7 @@ defmodule Glific.DigitalGreenTest do
       adoption_group_info = Groups.info_group_contacts(adoption_group.id)
 
       {:ok, stage_2_group} =
-        Repo.fetch_by(Group, %{label: "Stage 2", organization_id: attrs.organization_id})
+        Repo.fetch_by(Group, %{label: "stage 2", organization_id: attrs.organization_id})
 
       stage_2_group_info = Groups.info_group_contacts(stage_2_group.id)
 
