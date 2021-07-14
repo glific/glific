@@ -1,4 +1,4 @@
-  defmodule Glific.Flows do
+defmodule Glific.Flows do
   @moduledoc """
   The Flows context.
   """
@@ -721,7 +721,7 @@
   """
   # @spec import_flow(flow()) :: Flow.t()
   def import_flow(import_flow) do
-    Enum.map(import_flow["flows"], fn flow_revision ->
+    [head | tail] = Enum.map(import_flow["flows"], fn flow_revision ->
       with {:ok, flow} <-
              create_flow(%{
                name: flow_revision["definition"]["name"],
@@ -734,9 +734,10 @@
           flow_id: flow.id,
           organization_id: flow.organization_id
         })
-        flow.name
+        flow
       end
     end)
+    head
   end
 
   @doc """
