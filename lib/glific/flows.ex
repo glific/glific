@@ -169,10 +169,9 @@ defmodule Glific.Flows do
       Map.merge(
         attrs,
         %{
-          uuid: Ecto.UUID.generate(),
           keywords: sanitize_flow_keywords(attrs[:keywords])
         }
-      )
+      )|> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -725,6 +724,28 @@ defmodule Glific.Flows do
 
     %{"flows" => []}
     |> init_export_flow(flow.uuid)
+  end
+
+  @doc """
+  import a flow from json
+  """
+  # @spec import_flow(flow()) :: map()
+  def import_flow(flow) do
+    Enum.each(flow["flows"], fn flow_revision ->
+      with {:ok, flow} <-
+             create_flow(%{
+               name: flow_revision["name"],
+               uuid: flow_revision["uuid"],
+               organization_id: 1
+             }) do
+        {:ok, _} =
+          FlowRevision.create_flow_revision(%{
+            definition: flow_revision,
+            flow_id: flow.id,
+            organization_id: flow.organization_id
+          })
+      end
+    end)
   end
 
   @doc """
