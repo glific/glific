@@ -21,14 +21,14 @@ defmodule Glific.Clients.DigitalGreenDGSeed do
 
       seed_group(
         [
-          "Stage 1",
-          "Stage 2",
-          "Stage 3",
+          "stage 1",
+          "stage 2",
+          "stage 3",
           "adoption",
           "preventive",
           "curative",
-          "Farmer",
-          "Leaf curl check again"
+          "farmer",
+          "leaf curl check again"
         ],
         organization.id
       )
