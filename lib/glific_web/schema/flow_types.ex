@@ -147,5 +147,11 @@ defmodule GlificWeb.Schema.FlowTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
+
+    field :import_flow, :flow_result do
+      arg(:flow, :json)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.import_flow/3)
+    end
   end
 end

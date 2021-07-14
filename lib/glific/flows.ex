@@ -1,4 +1,4 @@
-defmodule Glific.Flows do
+  defmodule Glific.Flows do
   @moduledoc """
   The Flows context.
   """
@@ -171,7 +171,8 @@ defmodule Glific.Flows do
         %{
           keywords: sanitize_flow_keywords(attrs[:keywords])
         }
-      )|> Map.put_new(:uuid, Ecto.UUID.generate())
+      )
+      |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -715,13 +716,12 @@ defmodule Glific.Flows do
   def is_optin_flow?(nil), do: false
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
-
   @doc """
   import a flow from json
   """
-  # @spec import_flow(flow()) :: map()
-  def import_flow(flow) do
-    Enum.each(flow["flows"], fn flow_revision ->
+  # @spec import_flow(flow()) :: Flow.t()
+  def import_flow(import_flow) do
+    Enum.map(import_flow["flows"], fn flow_revision ->
       with {:ok, flow} <-
              create_flow(%{
                name: flow_revision["definition"]["name"],
@@ -729,12 +729,12 @@ defmodule Glific.Flows do
                keywords: flow_revision["keywords"],
                organization_id: 1
              }) do
-        {:ok, _} =
-          FlowRevision.create_flow_revision(%{
-            definition: flow_revision["definition"],
-            flow_id: flow.id,
-            organization_id: flow.organization_id
-          })
+        FlowRevision.create_flow_revision(%{
+          definition: flow_revision["definition"],
+          flow_id: flow.id,
+          organization_id: flow.organization_id
+        })
+        flow.name
       end
     end)
   end
@@ -749,7 +749,6 @@ defmodule Glific.Flows do
     %{"flows" => []}
     |> init_export_flow(%{uuid: flow.uuid, keywords: flow.keywords})
   end
-
 
   @doc """
     Process the flows and get all the subflow definition.
@@ -767,7 +766,14 @@ defmodule Glific.Flows do
       results
     else
       definition = get_latest_definition(flow.uuid)
-      results = Map.put(results, "flows", results["flows"] ++ [%{definition: definition, keywords: flow.keywords}])
+
+      results =
+        Map.put(
+          results,
+          "flows",
+          results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
+        )
+
       ## here we can export more details like fields, triggers, groups and all.
 
       definition
