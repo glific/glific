@@ -715,16 +715,6 @@ defmodule Glific.Flows do
   def is_optin_flow?(nil), do: false
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
-  @doc """
-    Generate a json map with all the flows related fields.
-  """
-  @spec export_flow(non_neg_integer()) :: map()
-  def export_flow(flow_id) do
-    flow = Repo.get!(Flow, flow_id)
-
-    %{"flows" => []}
-    |> init_export_flow(flow.uuid)
-  end
 
   @doc """
   import a flow from json
@@ -734,13 +724,14 @@ defmodule Glific.Flows do
     Enum.each(flow["flows"], fn flow_revision ->
       with {:ok, flow} <-
              create_flow(%{
-               name: flow_revision["name"],
-               uuid: flow_revision["uuid"],
+               name: flow_revision["definition"]["name"],
+               uuid: flow_revision["definition"]["uuid"],
+               keywords: flow_revision["keywords"],
                organization_id: 1
              }) do
         {:ok, _} =
           FlowRevision.create_flow_revision(%{
-            definition: flow_revision,
+            definition: flow_revision["definition"],
             flow_id: flow.id,
             organization_id: flow.organization_id
           })
@@ -749,25 +740,37 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Process the flows and get all the subflow defination.
+    Generate a json map with all the flows related fields.
   """
-  @spec init_export_flow(map(), String.t()) :: map()
-  def init_export_flow(results, flow_uuid),
-    do: export_flow_details(flow_uuid, results)
+  @spec export_flow(non_neg_integer()) :: map()
+  def export_flow(flow_id) do
+    flow = Repo.get!(Flow, flow_id)
+
+    %{"flows" => []}
+    |> init_export_flow(%{uuid: flow.uuid, keywords: flow.keywords})
+  end
+
+
+  @doc """
+    Process the flows and get all the subflow definition.
+  """
+  @spec init_export_flow(map(), map()) :: map()
+  def init_export_flow(results, flow),
+    do: export_flow_details(flow, results)
 
   @doc """
     process subflows and check if there is more subflows in it.
   """
-  @spec export_flow_details(String.t(), map()) :: map()
-  def export_flow_details(flow_uuid, results) do
-    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+  @spec export_flow_details(map(), map()) :: map()
+  def export_flow_details(flow, results) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow.uuid end) do
       results
     else
-      defination = get_latest_definition(flow_uuid)
-      results = Map.put(results, "flows", results["flows"] ++ [defination])
+      definition = get_latest_definition(flow.uuid)
+      results = Map.put(results, "flows", results["flows"] ++ [%{definition: definition, keywords: flow.keywords}])
       ## here we can export more details like fields, triggers, groups and all.
 
-      defination
+      definition
       |> Map.get("nodes", [])
       |> get_sub_flows()
       |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
@@ -775,7 +778,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Extract all the subflows form the parent flow defination.
+    Extract all the subflows form the parent flow definition.
   """
   @spec get_sub_flows(list()) :: list()
   def get_sub_flows(nodes),
@@ -790,8 +793,8 @@ defmodule Glific.Flows do
           else: acc
       end)
 
-  ## Get latest flow defination to export. There is one more function with the same name in
-  ## Glific.Flows.flow but that gives us the defination without UI placesments.
+  ## Get latest flow definition to export. There is one more function with the same name in
+  ## Glific.Flows.flow but that gives us the definition without UI placesments.
   @spec get_latest_definition(String.t()) :: map()
   defp get_latest_definition(flow_uuid) do
     json =
