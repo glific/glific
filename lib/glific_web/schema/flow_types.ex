@@ -23,6 +23,11 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :import_flow_result do
+    field :success, :boolean
+    field :errors, list_of(:input_error)
+  end
+
   object :export_flow do
     field :export_data, :json
   end
@@ -148,7 +153,7 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
 
-    field :import_flow, :flow_result do
+    field :import_flow, :import_flow_result do
       arg(:flow, :json)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.import_flow/3)

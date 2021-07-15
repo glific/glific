@@ -719,8 +719,8 @@ defmodule Glific.Flows do
   @doc """
   import a flow from json
   """
-  @spec import_flow(map()) :: [Flow.t()]
-  def import_flow(import_flow) do
+  @spec import_flow(map(), non_neg_integer()) :: boolean()
+  def import_flow(import_flow, organization_id) do
     import_flow_list =
       Enum.map(import_flow["flows"], fn flow_revision ->
         with {:ok, flow} <-
@@ -728,7 +728,7 @@ defmodule Glific.Flows do
                  name: flow_revision["definition"]["name"],
                  uuid: flow_revision["definition"]["uuid"],
                  keywords: flow_revision["keywords"],
-                 organization_id: 1
+                 organization_id: organization_id
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
@@ -736,11 +736,13 @@ defmodule Glific.Flows do
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
-          flow
+          true
+        else
+          _ -> false
         end
       end)
-    #Return the first flow that is imported
-    hd(import_flow_list)
+
+    !Enum.member?(import_flow_list, false)
   end
 
   @doc """
