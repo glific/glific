@@ -167,12 +167,12 @@ defmodule Glific.Flows do
   def create_flow(attrs) do
     attrs =
       Map.merge(
-        attrs,
         %{
+          uuid: Ecto.UUID.generate(),
           keywords: sanitize_flow_keywords(attrs[:keywords])
-        }
+        },
+        attrs
       )
-      |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -721,7 +721,7 @@ defmodule Glific.Flows do
   """
   @spec import_flow(map()) :: [Flow.t()]
   def import_flow(import_flow) do
-    flow_list =
+    import_flow_list =
       Enum.map(import_flow["flows"], fn flow_revision ->
         with {:ok, flow} <-
                create_flow(%{
@@ -729,18 +729,18 @@ defmodule Glific.Flows do
                  uuid: flow_revision["definition"]["uuid"],
                  keywords: flow_revision["keywords"],
                  organization_id: 1
+               }),
+             {:ok, _flow_revision} <-
+               FlowRevision.create_flow_revision(%{
+                 definition: flow_revision["definition"],
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id
                }) do
-          FlowRevision.create_flow_revision(%{
-            definition: flow_revision["definition"],
-            flow_id: flow.id,
-            organization_id: flow.organization_id
-          })
-
           flow
         end
       end)
-
-    hd(flow_list)
+    #Return the first flow that is imported
+    hd(import_flow_list)
   end
 
   @doc """
@@ -751,25 +751,26 @@ defmodule Glific.Flows do
     flow = Repo.get!(Flow, flow_id)
 
     %{"flows" => []}
-    |> init_export_flow(%{uuid: flow.uuid, keywords: flow.keywords})
+    |> init_export_flow(flow.uuid)
   end
 
   @doc """
     Process the flows and get all the subflow definition.
   """
-  @spec init_export_flow(map(), map()) :: map()
-  def init_export_flow(results, flow),
-    do: export_flow_details(flow, results)
+  @spec init_export_flow(map(), String.t()) :: map()
+  def init_export_flow(results, flow_uuid),
+    do: export_flow_details(flow_uuid, results)
 
   @doc """
     process subflows and check if there is more subflows in it.
   """
-  @spec export_flow_details(map(), map()) :: map()
-  def export_flow_details(flow, results) do
-    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow.uuid end) do
+  @spec export_flow_details(String.t(), map()) :: map()
+  def export_flow_details(flow_uuid, results) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
       results
     else
-      definition = get_latest_definition(flow.uuid)
+      definition = get_latest_definition(flow_uuid)
+      flow = Repo.get_by(Flow, %{uuid: flow_uuid})
 
       results =
         Map.put(
