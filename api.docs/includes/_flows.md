@@ -593,7 +593,94 @@ mutation copyFlow($id: ID!, $input:FlowInput!) {
 | ------------------------------------ | ---------------------- |
 | <a href="#flowresult">FlowResult</a> | The copied flow object |
 
+## Import a Flow
 
+```graphql
+mutation ($input: FlowInput!) {
+  createFlow(input: $input) {
+    flow {
+      id
+      name
+      keywords
+      isActive
+    }
+    errors {
+      key
+      message
+    }
+  }
+
+   importFlow(input: $input){
+    flow {
+      flowType
+      id
+      updatedAt
+      keywords
+      insertedAt
+      uuid
+    }
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "flow": "{\"flows\":[{\"keywords\":[\"import\"],\"definition\":{\"vars\":[\"38e1054f-271e-4317-8772-755c557daf82\"],\"uuid\":\"38e1054f-271e-4317-8772-755c557daf82\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"7da0dcfd-0a6a-4541-bbc1-afca5fb6dff8\",\"exits\":[{\"uuid\":\"323d0104-5631-4043-b248-5283682a3783\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"868009c8-d08d-419b-b4fd-12f04a69ddf8\",\"type\":\"send_msg\",\"text\":\"hi\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"import\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"7da0dcfd-0a6a-4541-bbc1-afca5fb6dff8\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}]}"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "importFlow": {
+      "flow": {
+        "flowType": null,
+        "id": "21",
+        "insertedAt": "2021-07-15T06:00:21.945835Z",
+        "keywords": ["import"],
+        "updatedAt": "2021-07-15T06:00:21.945835Z",
+        "uuid": "38e1054f-271e-4317-8772-755c557daf82"
+      }
+    }
+  }
+}
+```
+
+In case of errors, above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "createFlow": {
+      "errors": [
+        {
+          "key": "name",
+          "message": "can't be blank"
+        }
+      ],
+      "flow": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                               | Default  | Description |
+| --------- | ---------------------------------- | -------- | ----------- |
+| input     | <a href="#flowinput">FlowInput</a> | required |             |
+
+### Return Parameters
+
+| Type                                 | Description             |
+| ------------------------------------ | ----------------------- |
+| <a href="#flowresult">FlowResult</a> | The created flow object |
 
 ## Export a Flow
 
@@ -636,8 +723,8 @@ mutation exportFlow($id: ID!) {
 
 ### Return Parameters
 
-| Type                                               | Description                      |
-| -------------------------------------------------- | -------------------------------- |
+| Type                                        | Description                      |
+| ------------------------------------------- | -------------------------------- |
 | <a href="#exportFlow">ExportFlowResults</a> | An error object or response true |
 
 ## Flow Objects

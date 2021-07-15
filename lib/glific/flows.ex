@@ -719,25 +719,28 @@ defmodule Glific.Flows do
   @doc """
   import a flow from json
   """
-  # @spec import_flow(flow()) :: Flow.t()
+  @spec import_flow(map()) :: [Flow.t()]
   def import_flow(import_flow) do
-    [head | tail] = Enum.map(import_flow["flows"], fn flow_revision ->
-      with {:ok, flow} <-
-             create_flow(%{
-               name: flow_revision["definition"]["name"],
-               uuid: flow_revision["definition"]["uuid"],
-               keywords: flow_revision["keywords"],
-               organization_id: 1
-             }) do
-        FlowRevision.create_flow_revision(%{
-          definition: flow_revision["definition"],
-          flow_id: flow.id,
-          organization_id: flow.organization_id
-        })
-        flow
-      end
-    end)
-    head
+    flow_list =
+      Enum.map(import_flow["flows"], fn flow_revision ->
+        with {:ok, flow} <-
+               create_flow(%{
+                 name: flow_revision["definition"]["name"],
+                 uuid: flow_revision["definition"]["uuid"],
+                 keywords: flow_revision["keywords"],
+                 organization_id: 1
+               }) do
+          FlowRevision.create_flow_revision(%{
+            definition: flow_revision["definition"],
+            flow_id: flow.id,
+            organization_id: flow.organization_id
+          })
+
+          flow
+        end
+      end)
+
+    hd(flow_list)
   end
 
   @doc """

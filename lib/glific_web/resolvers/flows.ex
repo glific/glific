@@ -65,9 +65,9 @@ defmodule GlificWeb.Resolvers.Flows do
 
   @doc false
   @spec import_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, %{flow: map}}
+          {:ok, %{flow: any()}}
   def import_flow(_, %{flow: flow}, _) do
-    {:ok, %{flow: Flows.import_flow(flow)}}|>IO.inspect()
+    {:ok, %{flow: Flows.import_flow(flow)}}
   end
 
   @doc false
