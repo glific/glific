@@ -791,7 +791,7 @@ defmodule Glific.Flows do
           "flows",
           results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
         )
-        |> Map.merge(%{contact_field: add_contact_fields(definition)})
+        |> Map.merge(%{contact_field: export_contact_fields(definition)})
 
       ## here we can export more details like fields, triggers, groups and all.
 
@@ -802,14 +802,16 @@ defmodule Glific.Flows do
     end
   end
 
-  defp add_contact_fields(definition) do
+  defp export_contact_fields(definition) do
     definition
     |> Map.get("nodes", [])
-    |> Enum.map(fn node -> do_add_contact_fields(node) end)
+    |> Enum.map(fn node -> do_export_contact_fields(node) end)
     |> Enum.reject(fn field -> field in [nil, ""] end)
   end
 
-  defp do_add_contact_fields(%{"actions" => actions}) do
+  defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: ""
+
+  defp do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
     if action["type"] == "set_contact_field", do: action["field"]["key"]
   end
