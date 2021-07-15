@@ -10,6 +10,7 @@ defmodule Glific.Flows do
     Caches,
     Contacts.Contact,
     Groups.Group,
+    Flows.ContactField,
     Partners,
     Repo
   }
@@ -736,6 +737,12 @@ defmodule Glific.Flows do
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
+          flow_revision["definition"]["nodes"]
+          |> Enum.each(fn node ->
+            action = node["actions"] |> hd
+            add_contact_field(action, action["type"], organization_id)
+          end)
+
           true
         else
           _ -> false
@@ -744,6 +751,20 @@ defmodule Glific.Flows do
 
     !Enum.member?(import_flow_list, false)
   end
+
+  @spec add_contact_field(map, String.t(), non_neg_integer()) :: :ok
+  defp add_contact_field(attrs, "set_contact_field", organization_id) do
+    %{
+      name: attrs["field"]["key"],
+      organization_id: organization_id,
+      shortcode: attrs["field"]["key"]
+    }
+    |> ContactField.create_contact_field()
+
+    :ok
+  end
+
+  defp add_contact_field(_attrs, _type, _organization_id), do: :ok
 
   @doc """
     Generate a json map with all the flows related fields.
