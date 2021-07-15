@@ -652,35 +652,17 @@ mutation ($input: FlowInput!) {
 }
 ```
 
-In case of errors, above functions return an error object like the below
-
-```json
-{
-  "data": {
-    "createFlow": {
-      "errors": [
-        {
-          "key": "name",
-          "message": "can't be blank"
-        }
-      ],
-      "flow": null
-    }
-  }
-}
-```
-
 ### Query Parameters
 
 | Parameter | Type                               | Default  | Description |
 | --------- | ---------------------------------- | -------- | ----------- |
-| input     | <a href="#flowinput">FlowInput</a> | required |             |
+| input     | <a href="#json">Json</a> | required |             |
 
 ### Return Parameters
 
 | Type                                 | Description             |
 | ------------------------------------ | ----------------------- |
-| <a href="#flowresult">FlowResult</a> | The created flow object |
+| <a href="#importflowresult">ImportFlowResult</a> | The imported flow status |
 
 ## Export a Flow
 
@@ -836,6 +818,31 @@ mutation exportFlow($id: ID!) {
 </table>
 
 ### PublishFlowResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ImportFlowResult
 
 <table>
 <thead>
