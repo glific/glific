@@ -737,10 +737,14 @@ defmodule Glific.Flows do
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
-          flow_revision["definition"]["nodes"]
-          |> Enum.each(fn node ->
-            action = node["actions"] |> hd
-            add_contact_field(action, action["type"], organization_id)
+          import_flow["contact_field"]
+          |> Enum.each(fn contact_field ->
+            %{
+              name: contact_field,
+              organization_id: organization_id,
+              shortcode: contact_field
+            }
+            |> ContactField.create_contact_field()
           end)
 
           true
@@ -751,20 +755,6 @@ defmodule Glific.Flows do
 
     !Enum.member?(import_flow_list, false)
   end
-
-  @spec add_contact_field(map, String.t(), non_neg_integer()) :: :ok
-  defp add_contact_field(attrs, "set_contact_field", organization_id) do
-    %{
-      name: attrs["field"]["key"],
-      organization_id: organization_id,
-      shortcode: attrs["field"]["key"]
-    }
-    |> ContactField.create_contact_field()
-
-    :ok
-  end
-
-  defp add_contact_field(_attrs, _type, _organization_id), do: :ok
 
   @doc """
     Generate a json map with all the flows related fields.
@@ -801,6 +791,7 @@ defmodule Glific.Flows do
           "flows",
           results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
         )
+        |> Map.merge(%{contact_field: add_contact_fields(definition)})
 
       ## here we can export more details like fields, triggers, groups and all.
 
@@ -809,6 +800,18 @@ defmodule Glific.Flows do
       |> get_sub_flows()
       |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
     end
+  end
+
+  defp add_contact_fields(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.map(fn node -> do_add_contact_fields(node) end)
+    |> Enum.reject(fn field -> field in [nil, ""] end)
+  end
+
+  defp do_add_contact_fields(%{"actions" => actions}) do
+    action = actions |> hd
+    if action["type"] == "set_contact_field", do: action["field"]["key"]
   end
 
   @doc """
