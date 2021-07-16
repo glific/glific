@@ -777,7 +777,7 @@ defmodule Glific.Flows do
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
-    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow.definition, "uuid") == flow_uuid end) do
       results
     else
       definition = get_latest_definition(flow_uuid)
