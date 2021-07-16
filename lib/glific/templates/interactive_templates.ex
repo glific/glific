@@ -72,7 +72,8 @@ defmodule Glific.Templates.InteractiveTemplates do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_interactive_template(map()) :: {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_interactive_template(map()) ::
+          {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
     %InterativeTemplate{}
     |> InterativeTemplate.changeset(attrs)

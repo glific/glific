@@ -247,7 +247,12 @@ defmodule Glific.Clients.DigitalGreen do
     })
 
     Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field("crop_stage", "crop_stage", current_stage["group"], "string")
+    |> ContactField.do_add_contact_field(
+      "crop_stage",
+      "crop_stage",
+      current_stage["group"],
+      "string"
+    )
     |> ContactField.do_add_contact_field("total_days", "total_days", total_days, "string")
 
     current_stage
@@ -255,7 +260,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec get_total_stage_days(map()) :: integer()
   defp get_total_stage_days(fields) do
-     {:ok, initial_crop_day} =
+    {:ok, initial_crop_day} =
       get_in(fields, ["contact", "fields", "initial_crop_day", "value"])
       |> Glific.parse_maybe_integer()
 
@@ -265,12 +270,11 @@ defmodule Glific.Clients.DigitalGreen do
 
     days_since_enrolled = Timex.diff(Timex.now(), enrolled_date, :days)
     days_since_enrolled + initial_crop_day
-
   end
 
   @spec check_for_next_scheduled_flow(map(), non_neg_integer(), non_neg_integer()) :: :ok
   defp check_for_next_scheduled_flow(fields, contact_id, organization_id) do
-    contact_fields =  get_in(fields, ["contact", "fields"])
+    contact_fields = get_in(fields, ["contact", "fields"])
     next_flow = get_in(contact_fields, ["next_flow", "value"])
 
     next_flow_at =

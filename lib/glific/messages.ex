@@ -1137,13 +1137,13 @@ defmodule Glific.Messages do
   """
   @spec get_media_type_from_url(String.t()) :: tuple()
   def get_media_type_from_url(url) do
-     case Tesla.get(url |> URI.decode() |> URI.encode()) do
+    case Tesla.get(url |> URI.decode() |> URI.encode()) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
-        headers
-        = headers
-        |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
-        |> Map.put_new("content-type", "")
-        |> Map.put_new("content-length", 0)
+        headers =
+          headers
+          |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
+          |> Map.put_new("content-type", "")
+          |> Map.put_new("content-length", 0)
 
         cond do
           String.contains?(headers["content-type"], "image") -> {:image, url}

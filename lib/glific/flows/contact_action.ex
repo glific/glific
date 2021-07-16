@@ -345,12 +345,13 @@ defmodule Glific.Flows.ContactAction do
 
   @spec handle_attachment_expression(FlowContext.t(), String.t(), String.t()) :: tuple()
   defp handle_attachment_expression(context, "expression", expression),
-  do: FlowContext.parse_context_string(context, expression)
+    do:
+      FlowContext.parse_context_string(context, expression)
       |> Glific.execute_eex()
       |> Messages.get_media_type_from_url()
 
   defp handle_attachment_expression(_context, type, url),
-  do: {type, url}
+    do: {type, url}
 
   @doc """
   Contact opts in via a flow
