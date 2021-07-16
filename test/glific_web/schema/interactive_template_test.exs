@@ -87,7 +87,10 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => interactive.id})
     assert {:ok, query_data} = result
-    interactive = get_in(query_data, [:data, "interactiveTemplate", "interactiveTemplate", "label"])
+
+    interactive =
+      get_in(query_data, [:data, "interactiveTemplate", "interactiveTemplate", "label"])
+
     assert interactive == label
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
@@ -112,7 +115,10 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "createInteractiveTemplate", "interactiveTemplate", "label"])
+
+    label =
+      get_in(query_data, [:data, "createInteractiveTemplate", "interactiveTemplate", "label"])
+
     assert label == "Quick Reply Text Reply"
 
     # try creating the same session template of a language twice
@@ -140,7 +146,8 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "createInteractiveTemplate", "errors", Access.at(0), "message"])
+    message =
+      get_in(query_data, [:data, "createInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message == "has already been taken"
   end
@@ -157,7 +164,10 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
       )
 
     assert {:ok, query_data} = result
-    label = get_in(query_data, [:data, "updateInteractiveTemplate", "interactiveTemplate", "label"])
+
+    label =
+      get_in(query_data, [:data, "updateInteractiveTemplate", "interactiveTemplate", "label"])
+
     assert label == "Updated Quick Reply Text"
 
     # Try to update a template with same label
@@ -171,7 +181,8 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
 
     assert {:ok, query_data} = result
 
-    message = get_in(query_data, [:data, "updateInteractiveTemplate", "errors", Access.at(0), "message"])
+    message =
+      get_in(query_data, [:data, "updateInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message == "has already been taken"
   end

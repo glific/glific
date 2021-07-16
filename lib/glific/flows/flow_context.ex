@@ -652,13 +652,13 @@ defmodule Glific.Flows.FlowContext do
   """
   @spec parse_context_string(FlowContext.t(), String.t()) :: String.t()
   def parse_context_string(context, str) do
-  vars =
-  %{
+    vars = %{
       "results" => context.results,
       "contact" => Contacts.get_contact_field_map(context.contact_id),
       "flow" => %{name: context.flow.name, id: context.flow.id}
-   }
-   str
-   |> MessageVarParser.parse(vars)
+    }
+
+    str
+    |> MessageVarParser.parse(vars)
   end
 end
