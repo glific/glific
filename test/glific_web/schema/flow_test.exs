@@ -113,7 +113,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert length(data["flows"]) > 0
 
-    assert Enum.any?(data["flows"], fn flow -> Map.get(flow, "name") == name end)
+    assert Enum.any?(data["flows"], fn flow -> flow["definition"]["name"] == name end)
   end
 
   test "create a flow and test possible scenarios and errors", %{manager: user} do
