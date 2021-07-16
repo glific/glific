@@ -120,6 +120,9 @@ defmodule Glific.Templates.InteractiveTemplates do
     |> Repo.delete()
   end
 
+  @doc """
+  get interactive body from the interactive content
+  """
   @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
   def get_interactive_body(interactive_content, "quick_reply", type)
       when type in ["image", "video"],

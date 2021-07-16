@@ -234,6 +234,7 @@ defmodule Glific.Messages do
     check_for_hsm_message(attrs, contact)
   end
 
+  @spec check_for_interactive(map()) :: map()
   defp check_for_interactive(%{interactive_content: interactive_content} = attrs) do
     body =
       InteractiveTemplates.get_interactive_body(
