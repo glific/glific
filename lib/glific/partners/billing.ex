@@ -148,7 +148,7 @@ defmodule Glific.Partners.Billing do
   def update_billing(%Billing{} = billing, attrs) do
     billing
     |> Billing.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc """
