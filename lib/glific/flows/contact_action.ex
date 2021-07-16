@@ -4,7 +4,15 @@ defmodule Glific.Flows.ContactAction do
   centralizing it here
   """
 
-  alias Glific.{Contacts, Flows, Messages, Messages.Message, Templates.SessionTemplate}
+  alias Glific.{
+    Contacts,
+    Flows,
+    Messages,
+    Messages.Message,
+    Templates.InteractiveTemplates,
+    Templates.SessionTemplate
+  }
+
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
 
   require Logger
@@ -46,7 +54,7 @@ defmodule Glific.Flows.ContactAction do
       |> MessageVarParser.parse_map(message_vars)
 
     body =
-      get_interactive_body(
+      InteractiveTemplates.get_interactive_body(
         interactive_content,
         interactive_content["type"],
         interactive_content["content"]["type"]
@@ -68,22 +76,6 @@ defmodule Glific.Flows.ContactAction do
     |> Messages.create_and_send_message()
     |> handle_message_result(context, messages, attrs)
   end
-
-  @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
-  defp get_interactive_body(interactive_content, "quick_reply", type)
-       when type in ["image", "video"],
-       do: interactive_content["content"]["caption"]
-
-  defp get_interactive_body(interactive_content, "quick_reply", "file"),
-    do: interactive_content["content"]["url"]
-
-  defp get_interactive_body(interactive_content, "quick_reply", "text"),
-    do: interactive_content["content"]["text"]
-
-  defp get_interactive_body(interactive_content, "list", _),
-    do: interactive_content["body"]
-
-  defp get_interactive_body(_, _, _), do: ""
 
   # handle the case if we are sending a notification to another contact who is
   # staff, so we need info for both

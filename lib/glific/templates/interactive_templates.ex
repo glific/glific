@@ -72,7 +72,8 @@ defmodule Glific.Templates.InteractiveTemplates do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_interactive_template(map()) :: {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_interactive_template(map()) ::
+          {:ok, InterativeTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_interactive_template(attrs) do
     %InterativeTemplate{}
     |> InterativeTemplate.changeset(attrs)
@@ -118,4 +119,20 @@ defmodule Glific.Templates.InteractiveTemplates do
     |> InterativeTemplate.changeset(%{})
     |> Repo.delete()
   end
+
+  @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
+  def get_interactive_body(interactive_content, "quick_reply", type)
+      when type in ["image", "video"],
+      do: interactive_content["content"]["caption"]
+
+  def get_interactive_body(interactive_content, "quick_reply", "file"),
+    do: interactive_content["content"]["url"]
+
+  def get_interactive_body(interactive_content, "quick_reply", "text"),
+    do: interactive_content["content"]["text"]
+
+  def get_interactive_body(interactive_content, "list", _),
+    do: interactive_content["body"]
+
+  def get_interactive_body(_, _, _), do: ""
 end

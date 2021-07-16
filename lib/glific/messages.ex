@@ -26,6 +26,7 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
 
@@ -225,9 +226,26 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
-    attrs = Map.put(attrs, :receiver, contact)
+
+    attrs =
+      Map.put(attrs, :receiver, contact)
+      |> check_for_interactive()
+
     check_for_hsm_message(attrs, contact)
   end
+
+  defp check_for_interactive(%{interactive_content: interactive_content} = attrs) do
+    body =
+      InteractiveTemplates.get_interactive_body(
+        interactive_content,
+        interactive_content["type"],
+        interactive_content["content"]["type"]
+      )
+
+    Map.put(attrs, :body, body)
+  end
+
+  defp check_for_interactive(attrs), do: attrs
 
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
