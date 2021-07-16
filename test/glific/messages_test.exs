@@ -656,6 +656,58 @@ defmodule Glific.MessagesTest do
       assert message.body == "body text"
     end
 
+    test "create and send message interactive quick reply message should have message body text",
+         attrs do
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_content: %{
+          "content" => %{
+            "text" => "How excited are you for Glific?",
+            "type" => "text"
+          },
+          "options" => [
+            %{"title" => "Excited", "type" => "text"},
+            %{"title" => "Very Excited", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "How excited are you for Glific?"
+    end
+
+    test "create and send message interactive quick reply message with document should have message body as ",
+         attrs do
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_content: %{
+          "content" => %{
+            "filename" => "Sample file",
+            "type" => "file",
+            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
+          },
+          "options" => [
+            %{"title" => "First", "type" => "text"},
+            %{"title" => "Second", "type" => "text"},
+            %{"title" => "Third", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
+    end
+
     test "create and send message interactive list message should have message body as list body",
          attrs do
       interactive_content = %{
