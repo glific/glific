@@ -1143,7 +1143,6 @@ defmodule Glific.Messages do
           headers
           |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
           |> Map.put_new("content-type", "")
-          |> Map.put_new("content-length", 0)
 
         cond do
           String.contains?(headers["content-type"], "image") -> {:image, url}
