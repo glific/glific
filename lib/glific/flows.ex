@@ -167,13 +167,8 @@ defmodule Glific.Flows do
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
     attrs =
-      Map.merge(
-        %{
-          uuid: Ecto.UUID.generate(),
-          keywords: sanitize_flow_keywords(attrs[:keywords])
-        },
-        attrs
-      )
+      Map.put(attrs, :keywords, sanitize_flow_keywords(attrs[:keywords]))
+      |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -737,16 +732,7 @@ defmodule Glific.Flows do
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
-          import_flow["contact_field"]
-          |> Enum.each(fn contact_field ->
-            %{
-              name: contact_field,
-              organization_id: organization_id,
-              shortcode: contact_field
-            }
-            |> ContactField.create_contact_field()
-          end)
-
+          import_contact_field(import_flow, organization_id)
           true
         else
           _ -> false
@@ -756,6 +742,18 @@ defmodule Glific.Flows do
     !Enum.member?(import_flow_list, false)
   end
 
+  defp import_contact_field(import_flow, organization_id) do
+    import_flow["contact_field"]
+    |> Enum.each(fn contact_field ->
+      %{
+        name: contact_field,
+        organization_id: organization_id,
+        shortcode: contact_field
+      }
+      |> ContactField.create_contact_field()
+    end)
+  end
+
   @doc """
     Generate a json map with all the flows related fields.
   """
@@ -763,7 +761,7 @@ defmodule Glific.Flows do
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    %{"flows" => []}
+    %{"flows" => [], "contact_field" => []}
     |> init_export_flow(flow.uuid)
   end
 
@@ -791,7 +789,10 @@ defmodule Glific.Flows do
           "flows",
           results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
         )
-        |> Map.merge(%{contact_field: export_contact_fields(definition)})
+        |> Map.put(
+          "contact_field",
+          results["contact_field"] ++ export_contact_fields(definition)
+        )
 
       ## here we can export more details like fields, triggers, groups and all.
 
