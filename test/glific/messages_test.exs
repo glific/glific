@@ -925,19 +925,16 @@ defmodule Glific.MessagesTest do
           url: "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg",
           content_type: "image/png"
         },
-
         %{
           type: :video,
           url: "https://www.buildquickbots.com/whatsapp/media/sample/video/sample01.mp4",
           content_type: "video/x-msvideo"
         },
-
         %{
           type: :audio,
           url: "https://www.buildquickbots.com/whatsapp/media/sample/audio/sample01.mp3",
           content_type: "audio/aac"
         },
-
         %{
           type: :document,
           url: "https://www.buildquickbots.com/whatsapp/media/sample/pdf/sample01.pdf",
@@ -947,44 +944,46 @@ defmodule Glific.MessagesTest do
 
       Enum.each(media_types, fn media_type ->
         Tesla.Mock.mock(fn
-            %{method: :get} ->
-              %Tesla.Env{
-                headers: [
-                  {"content-type", media_type.content_type},
-                  {"content-length", "3209581"}
-                ],
-                method: :get,
-                status: 200
-              }
-            end)
-            assert {media_type.type, media_type.url} == Messages.get_media_type_from_url(media_type.url)
+          %{method: :get} ->
+            %Tesla.Env{
+              headers: [
+                {"content-type", media_type.content_type},
+                {"content-length", "3209581"}
+              ],
+              method: :get,
+              status: 200
+            }
+        end)
+
+        assert {media_type.type, media_type.url} ==
+                 Messages.get_media_type_from_url(media_type.url)
       end)
 
-       Tesla.Mock.mock(fn
-            %{method: :get} ->
-              %Tesla.Env{
-                headers: [
-                  {"content-type", "unknown"},
-                ],
-                method: :get,
-                status: 200
-              }
-        end)
-        assert {:text, nil} == Messages.get_media_type_from_url("any url")
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "unknown"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
 
+      assert {:text, nil} == Messages.get_media_type_from_url("any url")
 
-        Tesla.Mock.mock(fn
-            %{method: :get} ->
-              %Tesla.Env{
-                headers: [
-                  {"content-typess", "anthing"},
-                ],
-                method: :get,
-                status: 400
-              }
-        end)
-        assert {:text, nil} == Messages.get_media_type_from_url("any url")
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-typess", "anthing"}
+            ],
+            method: :get,
+            status: 400
+          }
+      end)
 
+      assert {:text, nil} == Messages.get_media_type_from_url("any url")
     end
 
     test "validate media/2 check for nil or empty media url", _attrs do
