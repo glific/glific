@@ -82,9 +82,8 @@ defmodule Glific.Contacts.Import do
 
       url != nil ->
         {:ok, response} = Tesla.get(url)
-        {:ok, stream} =
-          StringIO.open(response.body)
-          stream |> IO.binstream(:line)
+        {:ok, stream} = StringIO.open(response.body)
+        stream |> IO.binstream(:line)
 
       data != nil ->
         {:ok, stream} = StringIO.open(data)

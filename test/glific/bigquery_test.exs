@@ -174,8 +174,6 @@ defmodule Glific.BigQueryTest do
         table: "messages",
         max_id: 10
       )
-
-
     end
   end
 

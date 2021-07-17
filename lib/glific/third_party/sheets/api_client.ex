@@ -16,10 +16,10 @@ defmodule Glific.Sheets.ApiClient do
   def get_csv_content([url: url] = _opts) do
     {:ok, response} = get(url)
     {:ok, stream} = StringIO.open(response.body)
+
     IO.binstream(stream, :line)
     |> CSV.decode(headers: true, strip_fields: true)
   end
 
   def get_csv_content(_opts), do: [ok: %{}]
-
 end

@@ -313,10 +313,9 @@ defmodule Glific.Flows.ContactAction do
 
   defp get_media_from_attachment(attachment, caption, context, cid) do
     [type | _tail] = Map.keys(attachment)
+    url = String.trim(attachment[type])
 
-    url =
-      attachment[type]
-      |> String.trim()
+    {type, url} = handle_attachment_expression(context, type, url)
 
     type = Glific.safe_string_to_atom(type)
 
@@ -335,6 +334,16 @@ defmodule Glific.Flows.ContactAction do
 
     {type, message_media.id}
   end
+
+  @spec handle_attachment_expression(FlowContext.t(), String.t(), String.t()) :: tuple()
+  defp handle_attachment_expression(context, "expression", expression),
+    do:
+      FlowContext.parse_context_string(context, expression)
+      |> Glific.execute_eex()
+      |> Messages.get_media_type_from_url()
+
+  defp handle_attachment_expression(_context, type, url),
+    do: {type, url}
 
   @doc """
   Contact opts in via a flow
