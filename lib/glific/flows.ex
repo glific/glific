@@ -9,8 +9,8 @@ defmodule Glific.Flows do
   alias Glific.{
     Caches,
     Contacts.Contact,
-    Groups.Group,
     Flows.ContactField,
+    Groups.Group,
     Partners,
     Repo
   }
