@@ -596,29 +596,9 @@ mutation copyFlow($id: ID!, $input:FlowInput!) {
 ## Import a Flow
 
 ```graphql
-mutation ($input: FlowInput!) {
-  createFlow(input: $input) {
-    flow {
-      id
-      name
-      keywords
-      isActive
-    }
-    errors {
-      key
-      message
-    }
-  }
-
-   importFlow(input: $input){
-    flow {
-      flowType
-      id
-      updatedAt
-      keywords
-      insertedAt
-      uuid
-    }
+mutation ($flow: JSON!) {
+  importFlow(flow: $flow){
+    success
     errors {
       key
       message
@@ -628,7 +608,7 @@ mutation ($input: FlowInput!) {
 
 {
   "input": {
-    "flow": "{\"flows\":[{\"keywords\":[\"import\"],\"definition\":{\"vars\":[\"38e1054f-271e-4317-8772-755c557daf82\"],\"uuid\":\"38e1054f-271e-4317-8772-755c557daf82\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"7da0dcfd-0a6a-4541-bbc1-afca5fb6dff8\",\"exits\":[{\"uuid\":\"323d0104-5631-4043-b248-5283682a3783\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"868009c8-d08d-419b-b4fd-12f04a69ddf8\",\"type\":\"send_msg\",\"text\":\"hi\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"import\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"7da0dcfd-0a6a-4541-bbc1-afca5fb6dff8\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}]}"
+    "{\"flows\":[{\"keywords\":[\"hello\"],\"definition\":{\"vars\":[\"a941004f-adc8-43f2-b819-68eec8d1e912\"],\"uuid\":\"a941004f-adc8-43f2-b819-68eec8d1e912\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"59c67035-59ab-47fa-a1fd-a50978aa78c5\",\"exits\":[{\"uuid\":\"49d2775d-a658-4c74-be10-b7d605b4ea6f\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\",\"type\":\"send_msg\",\"text\":\"hehlo\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"hello\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"59c67035-59ab-47fa-a1fd-a50978aa78c5\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}],\"contact_field\":[],\"collections\":[]}"
   }
 }
 ```
@@ -639,14 +619,8 @@ mutation ($input: FlowInput!) {
 {
   "data": {
     "importFlow": {
-      "flow": {
-        "flowType": null,
-        "id": "21",
-        "insertedAt": "2021-07-15T06:00:21.945835Z",
-        "keywords": ["import"],
-        "updatedAt": "2021-07-15T06:00:21.945835Z",
-        "uuid": "38e1054f-271e-4317-8772-755c557daf82"
-      }
+      "errors": null,
+      "success": false
     }
   }
 }
@@ -654,15 +628,15 @@ mutation ($input: FlowInput!) {
 
 ### Query Parameters
 
-| Parameter | Type                               | Default  | Description |
-| --------- | ---------------------------------- | -------- | ----------- |
+| Parameter | Type                     | Default  | Description |
+| --------- | ------------------------ | -------- | ----------- |
 | input     | <a href="#json">Json</a> | required |             |
 
 ### Return Parameters
 
-| Type                                 | Description             |
-| ------------------------------------ | ----------------------- |
-| <a href="#importflowresult">ImportFlowResult</a> | The imported flow status |
+| Type                                             | Description                      |
+| ------------------------------------------------ | -------------------------------- |
+| <a href="#importflowresult">ImportFlowResult</a> | The imported flow success status |
 
 ## Export a Flow
 

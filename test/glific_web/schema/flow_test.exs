@@ -4,11 +4,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
   alias Glific.{
     Contacts,
-    Groups,
     Fixtures,
     Flows,
     Flows.Flow,
     Flows.FlowRevision,
+    Groups,
     Repo,
     Seeds.SeedsDev
   }
@@ -137,11 +137,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # Deleting all existing flows as importing New Contact Flow creates sub flows as well
     Flows.list_flows(%{})
-    |>Enum.each(fn flow -> Flows.delete_flow(flow) end)
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
 
-        # Deleting all existing collections as importing New Contact Flow creates collections
+    # Deleting all existing collections as importing New Contact Flow creates collections
     Groups.list_groups(%{})
-    |>Enum.each(fn flow -> Groups.delete_group(flow) end)
+    |> Enum.each(fn flow -> Groups.delete_group(flow) end)
 
     import_flow = data |> Jason.encode!()
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
@@ -149,7 +149,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert true = get_in(query_data, [:data, "importFlow", "success"])
     [group | _] = Groups.list_groups(%{filter: %{label: "Optin contacts"}})
     assert group.label == "Optin contacts"
-    end
+  end
 
   test "create a flow and test possible scenarios and errors", %{manager: user} do
     name = "Flow Test Name"

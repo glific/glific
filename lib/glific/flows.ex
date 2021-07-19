@@ -10,8 +10,8 @@ defmodule Glific.Flows do
     Caches,
     Contacts.Contact,
     Flows.ContactField,
-    Groups.Group,
     Groups,
+    Groups.Group,
     Partners,
     Repo
   }
