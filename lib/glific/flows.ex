@@ -759,8 +759,9 @@ defmodule Glific.Flows do
 
   defp import_groups(import_flow, organization_id) do
     import_flow["collections"]
-    |> Enum.each(fn contact_field ->
-      Groups.get_or_create_group_by_label(contact_field, organization_id)
+
+    |> Enum.each(fn collection ->
+      Groups.get_or_create_group_by_label(collection, organization_id)
     end)
   end
 
