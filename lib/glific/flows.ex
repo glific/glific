@@ -761,7 +761,7 @@ defmodule Glific.Flows do
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    %{"flows" => [], "contact_field" => []}
+    %{"flows" => [], "contact_field" => [], "collections" => []}
     |> init_export_flow(flow.uuid)
   end
 
@@ -793,6 +793,10 @@ defmodule Glific.Flows do
           "contact_field",
           results["contact_field"] ++ export_contact_fields(definition)
         )
+        |> Map.put(
+          "collections",
+          results["collections"] ++ export_collections(definition)
+        )
 
       ## here we can export more details like fields, triggers, groups and all.
 
@@ -800,6 +804,24 @@ defmodule Glific.Flows do
       |> Map.get("nodes", [])
       |> get_sub_flows()
       |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+    end
+  end
+
+  defp export_collections(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.map(fn node -> do_export_collections(node) end)
+    |> Enum.reject(fn field -> field in [nil, ""] end)
+  end
+
+  defp do_export_collections(%{"actions" => actions}) when actions == [], do: ""
+
+  defp do_export_collections(%{"actions" => actions}) do
+    action = actions |> hd
+
+    if action["type"] == "add_contact_groups" do
+      [group] = action["groups"]
+      group["name"]
     end
   end
 
