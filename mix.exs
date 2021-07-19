@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "1.8.0",
+      version: "2.0.0",
       elixir: "~> 1.11",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -137,6 +137,7 @@ defmodule Glific.MixProject do
       {:cloak_ecto, "~> 1.1"},
       {:google_api_big_query, "~> 0.47.0"},
       {:google_api_dialogflow, "~> 0.62"},
+      {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},

@@ -138,7 +138,7 @@ defmodule Glific.Partners.Billing do
   Retrieve a billing record by clauses
   """
   @spec get_billing(map()) :: Billing.t() | nil
-  def get_billing(clauses), do: Repo.get_by(Billing, clauses)
+  def get_billing(clauses), do: Repo.get_by(Billing, clauses, skip_organization_id: true)
 
   @doc """
   Upate the billing record
@@ -148,7 +148,7 @@ defmodule Glific.Partners.Billing do
   def update_billing(%Billing{} = billing, attrs) do
     billing
     |> Billing.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc """
@@ -422,14 +422,16 @@ defmodule Glific.Partners.Billing do
 
       # Add credit to customer
       Stripe.CustomerBalanceTransaction.create(billing.stripe_customer_id, %{
-        amount: credit,
+        amount: -credit,
         currency: billing.currency
       })
 
       # Update invoice footer with message
       Stripe.Invoice.update(transaction.invoice_id, %{
         footer:
-          "TDS INR #{credit} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
+          "TDS INR #{(credit / 100) |> trunc()} for Month of #{
+            DateTime.utc_now().month |> Timex.month_name()
+          } deducted above under Applied Balance section"
       })
 
       credit

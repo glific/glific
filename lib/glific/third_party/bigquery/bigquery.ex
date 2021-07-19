@@ -542,7 +542,7 @@ defmodule Glific.BigQuery do
         Logger.info("Timeout while inserting the data. #{inspect(response)}")
 
       _ ->
-        raise("BigQuery Insert Error for table #{table} #{response}")
+        raise("BigQuery Insert Error for table #{table} #{inspect(response)}")
     end
   end
 

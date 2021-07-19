@@ -167,7 +167,7 @@ defmodule Glific.BigQueryTest do
   end
 
   test "handle_insert_query_response/3 should raise error", attrs do
-    assert_raise Protocol.UndefinedError, fn ->
+    assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(
         {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
         attrs.organization_id,

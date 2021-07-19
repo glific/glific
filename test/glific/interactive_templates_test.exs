@@ -66,10 +66,14 @@ defmodule Glific.InteractiveTemplatesTest do
          %{organization_id: _organization_id} = attrs do
       interactive_count = InteractiveTemplates.count_interactive_templates(%{filter: attrs})
       _ = Fixtures.interactive_fixture(attrs)
-      assert InteractiveTemplates.count_interactive_templates(%{filter: attrs}) == interactive_count + 1
+
+      assert InteractiveTemplates.count_interactive_templates(%{filter: attrs}) ==
+               interactive_count + 1
 
       _ = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
-      assert InteractiveTemplates.count_interactive_templates(%{filter: attrs}) == interactive_count + 2
+
+      assert InteractiveTemplates.count_interactive_templates(%{filter: attrs}) ==
+               interactive_count + 2
 
       assert InteractiveTemplates.count_interactive_templates(%{
                filter: Map.merge(attrs, %{label: "Quick Reply Test Text 2"})
@@ -88,14 +92,17 @@ defmodule Glific.InteractiveTemplatesTest do
     } do
       attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
 
-      assert {:ok, %InterativeTemplate{} = interactive} = InteractiveTemplates.create_interactive_template(attrs)
+      assert {:ok, %InterativeTemplate{} = interactive} =
+               InteractiveTemplates.create_interactive_template(attrs)
+
       assert interactive.label == "Quick Reply Test Text"
       assert interactive.type == :quick_reply
       assert interactive.organization_id == organization_id
     end
 
     test "create_interactive_template/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = InteractiveTemplates.create_interactive_template(@invalid_attrs)
+      assert {:error, %Ecto.Changeset{}} =
+               InteractiveTemplates.create_interactive_template(@invalid_attrs)
     end
 
     test "update_interactive_template/2 with valid data updates the interactive", %{
@@ -121,10 +128,17 @@ defmodule Glific.InteractiveTemplatesTest do
       assert interactive == InteractiveTemplates.get_interactive_template!(interactive.id)
     end
 
-    test "delete_interactive_template/1 deletes an interactive", %{organization_id: organization_id} do
+    test "delete_interactive_template/1 deletes an interactive", %{
+      organization_id: organization_id
+    } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
-      assert {:ok, %InterativeTemplate{}} = InteractiveTemplates.delete_interactive_template(interactive)
-      assert_raise Ecto.NoResultsError, fn -> InteractiveTemplates.get_interactive_template!(interactive.id) end
+
+      assert {:ok, %InterativeTemplate{}} =
+               InteractiveTemplates.delete_interactive_template(interactive)
+
+      assert_raise Ecto.NoResultsError, fn ->
+        InteractiveTemplates.get_interactive_template!(interactive.id)
+      end
     end
 
     test "list_interactives/1 with multiple items",
@@ -147,7 +161,9 @@ defmodule Glific.InteractiveTemplatesTest do
 
       interactive1 = Fixtures.interactive_fixture(attrs)
       interactive2 = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
-      interactives = InteractiveTemplates.list_interactives(%{opts: %{order: :asc}, filter: attrs})
+
+      interactives =
+        InteractiveTemplates.list_interactives(%{opts: %{order: :asc}, filter: attrs})
 
       assert length(interactives) == interactive_count + 2
 

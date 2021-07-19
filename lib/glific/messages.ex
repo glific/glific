@@ -26,6 +26,7 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
 
@@ -225,9 +226,27 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
-    attrs = Map.put(attrs, :receiver, contact)
+
+    attrs =
+      Map.put(attrs, :receiver, contact)
+      |> check_for_interactive()
+
     check_for_hsm_message(attrs, contact)
   end
+
+  @spec check_for_interactive(map()) :: map()
+  defp check_for_interactive(%{interactive_content: interactive_content} = attrs) do
+    body =
+      InteractiveTemplates.get_interactive_body(
+        interactive_content,
+        interactive_content["type"],
+        interactive_content["content"]["type"]
+      )
+
+    Map.put(attrs, :body, body)
+  end
+
+  defp check_for_interactive(attrs), do: attrs
 
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
@@ -1113,7 +1132,7 @@ defmodule Glific.Messages do
 
   @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
   defp do_validate_headers(headers, "document", _url),
-    do: String.contains?(headers["content-type"], "pdf")
+    do: String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"])
 
   defp do_validate_headers(headers, "sticker", _url),
     do: String.contains?(headers["content-type"], "image")
@@ -1130,6 +1149,31 @@ defmodule Glific.Messages do
     {:ok, content_length} = Glific.parse_maybe_integer(content_length)
     content_length_in_kb = content_length / 1024
     size_limit >= content_length_in_kb
+  end
+
+  @doc """
+    Get Media type from a url. We will primary use it for when we receive the url from EEX call.
+  """
+  @spec get_media_type_from_url(String.t()) :: tuple()
+  def get_media_type_from_url(url) do
+    case Tesla.get(url |> URI.decode() |> URI.encode()) do
+      {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
+        headers =
+          headers
+          |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
+          |> Map.put_new("content-type", "")
+
+        cond do
+          String.contains?(headers["content-type"], "image") -> {:image, url}
+          String.contains?(headers["content-type"], "video") -> {:video, url}
+          String.contains?(headers["content-type"], "audio") -> {:audio, url}
+          String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"]) -> {:document, url}
+          true -> {:text, nil}
+        end
+
+      _ ->
+        {:text, nil}
+    end
   end
 
   @doc """

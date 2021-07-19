@@ -629,6 +629,144 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
+    test "create and send message interactive quick reply message with image should have message body as image caption",
+         attrs do
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_content: %{
+          "content" => %{
+            "caption" => "body text",
+            "type" => "image",
+            "url" => "https://picsum.photos/200/300"
+          },
+          "options" => [
+            %{"title" => "First", "type" => "text"},
+            %{"title" => "Second", "type" => "text"},
+            %{"title" => "Third", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "body text"
+    end
+
+    test "create and send message interactive quick reply message should have message body text",
+         attrs do
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_content: %{
+          "content" => %{
+            "text" => "How excited are you for Glific?",
+            "type" => "text"
+          },
+          "options" => [
+            %{"title" => "Excited", "type" => "text"},
+            %{"title" => "Very Excited", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "How excited are you for Glific?"
+    end
+
+    test "create and send message interactive quick reply message with document should have message body as ",
+         attrs do
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_content: %{
+          "content" => %{
+            "filename" => "Sample file",
+            "type" => "file",
+            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
+          },
+          "options" => [
+            %{"title" => "First", "type" => "text"},
+            %{"title" => "Second", "type" => "text"},
+            %{"title" => "Third", "type" => "text"}
+          ],
+          "type" => "quick_reply"
+        },
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
+    end
+
+    test "create and send message interactive list message should have message body as list body",
+         attrs do
+      interactive_content = %{
+        "body" => "Glific",
+        "globalButtons" => [%{"title" => "button text", "type" => "text"}],
+        "items" => [
+          %{
+            "options" => [
+              %{
+                "description" => "Flow Editor",
+                "title" => "Custom flows for chat",
+                "type" => "text"
+              },
+              %{
+                "description" => "DataStudio",
+                "title" => "Custom reports",
+                "type" => "text"
+              },
+              %{"description" => "Dialogflow", "title" => "ML/AI", "type" => "text"}
+            ],
+            "subtitle" => "Glific Features",
+            "title" => "Glific Features"
+          },
+          %{
+            "options" => [
+              %{
+                "description" => "Sharing",
+                "title" => "Educationa",
+                "type" => "text"
+              }
+            ],
+            "subtitle" => "Glific Usecases",
+            "title" => "Glific Usecases"
+          },
+          %{
+            "options" => [
+              %{"description" => "cool new", "title" => "SOL", "type" => "text"}
+            ],
+            "subtitle" => "Onboarded NGOs",
+            "title" => "Onboarded NGOs"
+          }
+        ],
+        "title" => "Glific",
+        "type" => "list"
+      }
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_content: interactive_content,
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "Glific"
+    end
+
     test "create and send message should send message to contact with replacing global vars",
          attrs do
       Partners.get_organization!(attrs.organization_id)
@@ -916,6 +1054,74 @@ defmodule Glific.MessagesTest do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert {:ok, %MessageMedia{}} = Messages.delete_message_media(message_media)
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
+    end
+
+    test "get_media_type_from_url/1 check the url and share the type", _attrs do
+      media_types = [
+        %{
+          type: :image,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg",
+          content_type: "image/png"
+        },
+        %{
+          type: :video,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/video/sample01.mp4",
+          content_type: "video/x-msvideo"
+        },
+        %{
+          type: :audio,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/audio/sample01.mp3",
+          content_type: "audio/aac"
+        },
+        %{
+          type: :document,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/pdf/sample01.pdf",
+          content_type: "application/pdf"
+        }
+      ]
+
+      Enum.each(media_types, fn media_type ->
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              headers: [
+                {"content-type", media_type.content_type},
+                {"content-length", "3209581"}
+              ],
+              method: :get,
+              status: 200
+            }
+        end)
+
+        assert {media_type.type, media_type.url} ==
+                 Messages.get_media_type_from_url(media_type.url)
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "unknown"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert {:text, nil} == Messages.get_media_type_from_url("any url")
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-typess", "anthing"}
+            ],
+            method: :get,
+            status: 400
+          }
+      end)
+
+      assert {:text, nil} == Messages.get_media_type_from_url("any url")
     end
 
     test "validate media/2 check for nil or empty media url", _attrs do
