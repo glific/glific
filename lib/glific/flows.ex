@@ -11,6 +11,7 @@ defmodule Glific.Flows do
     Contacts.Contact,
     Flows.ContactField,
     Groups.Group,
+    Groups,
     Partners,
     Repo
   }
@@ -733,6 +734,8 @@ defmodule Glific.Flows do
                  organization_id: flow.organization_id
                }) do
           import_contact_field(import_flow, organization_id)
+          import_groups(import_flow, organization_id)
+
           true
         else
           _ -> false
@@ -751,6 +754,13 @@ defmodule Glific.Flows do
         shortcode: contact_field
       }
       |> ContactField.create_contact_field()
+    end)
+  end
+
+  defp import_groups(import_flow, organization_id) do
+    import_flow["collections"]
+    |> Enum.each(fn contact_field ->
+      Groups.get_or_create_group_by_label(contact_field, organization_id)
     end)
   end
 
