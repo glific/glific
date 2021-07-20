@@ -60,6 +60,8 @@ defmodule Glific.Flows.ContactAction do
         interactive_content["content"]["type"]
       )
 
+    {context, count} = update_recent(context, body)
+
     attrs = %{
       body: body,
       uuid: action.uuid,
