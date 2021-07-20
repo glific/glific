@@ -71,7 +71,10 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
     with {:ok, credentials} <- get_credentials(org_id) do
       template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
-      gupshup_post(template_url, payload, credentials.api_key)
+      # Adding a delay of 1 min when applying for template
+      post(template_url, payload,
+        headers: [{"apikey", credentials.api_key}, opts: [adapter: [recv_timeout: 60_000]]]
+      )
     end
   end
 
