@@ -62,21 +62,25 @@ defmodule Glific.Flows.ContactAction do
 
     {context, count} = update_recent(context, body)
 
-    attrs = %{
-      body: body,
-      uuid: action.uuid,
-      type: interactive_content["type"],
-      receiver_id: cid,
-      organization_id: context.organization_id,
-      flow_id: context.flow_id,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay),
-      is_optin_flow: Flows.is_optin_flow?(context.flow),
-      interactive_content: interactive_content
-    }
+      if count >= 5 do
+        process_loops(context, count, messages, body)
+      else
+        attrs = %{
+          body: body,
+          uuid: action.uuid,
+          type: interactive_content["type"],
+          receiver_id: cid,
+          organization_id: context.organization_id,
+          flow_id: context.flow_id,
+          send_at: DateTime.add(DateTime.utc_now(), context.delay),
+          is_optin_flow: Flows.is_optin_flow?(context.flow),
+          interactive_content: interactive_content
+        }
 
-    attrs
-    |> Messages.create_and_send_message()
-    |> handle_message_result(context, messages, attrs)
+        attrs
+        |> Messages.create_and_send_message()
+        |> handle_message_result(context, messages, attrs)
+      end
   end
 
   # handle the case if we are sending a notification to another contact who is
