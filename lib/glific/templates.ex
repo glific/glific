@@ -2,7 +2,6 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
-  require Logger
   import Ecto.Query, warn: false
   import GlificWeb.Gettext
 
@@ -169,6 +168,7 @@ defmodule Glific.Templates do
 
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
+    Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
     organization = Partners.organization(attrs.organization_id)
 
     organization.bsp.shortcode
