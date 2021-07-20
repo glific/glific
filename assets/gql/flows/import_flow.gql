@@ -1,0 +1,9 @@
+mutation importFlow($flow: JSON!) {
+  importFlow(flow: $flow) {
+    errors {
+      key
+      message
+    }
+    success
+  }
+}
