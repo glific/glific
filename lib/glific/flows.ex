@@ -823,6 +823,7 @@ defmodule Glific.Flows do
     |> Map.get("nodes", [])
     |> Enum.map(fn node -> do_export_collections(node) end)
     |> Enum.reject(fn field -> field in [nil, ""] end)
+    |> Enum.uniq()
   end
 
   defp do_export_collections(%{"actions" => actions}) when actions == [], do: ""
@@ -841,6 +842,7 @@ defmodule Glific.Flows do
     |> Map.get("nodes", [])
     |> Enum.map(fn node -> do_export_contact_fields(node) end)
     |> Enum.reject(fn field -> field in [nil, ""] end)
+    |> Enum.uniq()
   end
 
   defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: ""
