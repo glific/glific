@@ -8,7 +8,22 @@ defmodule Glific.Templates.InterativeTemplate do
     Partners.Organization
   }
 
-  alias Glific.Enums.InteractiveMessageType
+  alias Glific.{
+    Enums.InteractiveMessageType,
+    Settings.Language
+  }
+
+  @required_fields [
+    :label,
+    :type,
+    :interactive_content,
+    :organization_id,
+    :language_id
+  ]
+
+  @optional_fields [
+    :translations
+  ]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -18,22 +33,22 @@ defmodule Glific.Templates.InterativeTemplate do
           interactive_content: map() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          language_id: non_neg_integer | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          translations: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
-
-  @required_fields [
-    :label,
-    :type,
-    :interactive_content,
-    :organization_id
-  ]
 
   schema "interactive_templates" do
     field :label, :string
     field :type, InteractiveMessageType
     field :interactive_content, :map, default: %{}
+    field :translations, :map, default: %{}
+
+    belongs_to :language, Language
     belongs_to :organization, Organization
+
     timestamps(type: :utc_datetime)
   end
 
@@ -43,7 +58,7 @@ defmodule Glific.Templates.InterativeTemplate do
   @spec changeset(InterativeTemplate.t(), map()) :: Ecto.Changeset.t()
   def changeset(interactive, attrs) do
     interactive
-    |> cast(attrs, @required_fields)
+    |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:label, :type, :organization_id])
   end
