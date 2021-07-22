@@ -58,15 +58,15 @@ This returns all the Interactive Templates filtered by the input <a href="#Inter
 
 ### Query Parameters
 
-| Parameter | Type                                               | Default | Description                         |
-| --------- | -------------------------------------------------- | ------- | ----------------------------------- |
+| Parameter | Type                                                               | Default | Description                         |
+| --------- | ------------------------------------------------------------------ | ------- | ----------------------------------- |
 | filter    | <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a> | nil     | filter the list                     |
-| opts      | <a href="#opts">Opts</a>                           | nil     | limit / offset / sort order options |
+| opts      | <a href="#opts">Opts</a>                                           | nil     | limit / offset / sort order options |
 
 ### Return Parameters
 
-| Type                                     | Description          |
-| ---------------------------------------- | -------------------- |
+| Type                                                     | Description                  |
+| -------------------------------------------------------- | ---------------------------- |
 | [<a href="#interactiveTemplate">interactiveTemplate</a>] | List of InteractiveTemplates |
 
 ## Get a specific interactiveTemplate by ID
@@ -111,14 +111,14 @@ query interactiveTemplate($id: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type                                               | Default | Description     |
-| --------- | -------------------------------------------------- | ------- | --------------- |
+| Parameter | Type                                                               | Default | Description     |
+| --------- | ------------------------------------------------------------------ | ------- | --------------- |
 | filter    | <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a> | nil     | filter the list |
 
 ### Return Parameters
 
-| Type                                               | Description         |
-| -------------------------------------------------- | ------------------- |
+| Type                                                               | Description                 |
+| ------------------------------------------------------------------ | --------------------------- |
 | <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | Queried interactiveTemplate |
 
 ## Count all InteractiveTemplates
@@ -147,14 +147,14 @@ query countInteractiveTemplates($filter: InteractiveTemplateFilter) {
 
 ### Query Parameters
 
-| Parameter | Type                                               | Default | Description     |
-| --------- | -------------------------------------------------- | ------- | --------------- |
+| Parameter | Type                                                               | Default | Description     |
+| --------- | ------------------------------------------------------------------ | ------- | --------------- |
 | filter    | <a href="#InteractiveTemplateFilter">InteractiveTemplateFilter</a> | nil     | filter the list |
 
 ### Return Parameters
 
-| Type                   | Description                    |
-| ---------------------- | ------------------------------ |
+| Type                   | Description                            |
+| ---------------------- | -------------------------------------- |
 | <a href="#int">Int</a> | Count of filtered InteractiveTemplates |
 
 ## Create a InteractiveTemplate
@@ -205,14 +205,14 @@ mutation createInteractiveTemplate($input:interactiveTemplateInput!) {
 
 ### Query Parameters
 
-| Parameter | Type                                             | Default  | Description |
-| --------- | ------------------------------------------------ | -------- | ----------- |
+| Parameter | Type                                                             | Default  | Description |
+| --------- | ---------------------------------------------------------------- | -------- | ----------- |
 | input     | <a href="#interactiveTemplateinput">interactiveTemplateInput</a> | required |             |
 
 ### Return Parameters
 
-| Type                                               | Description                    |
-| -------------------------------------------------- | ------------------------------ |
+| Type                                                               | Description                    |
+| ------------------------------------------------------------------ | ------------------------------ |
 | <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | The created Interactive object |
 
 ## Update a interactiveTemplate
@@ -265,15 +265,15 @@ mutation updateInteractiveTemplate($id: ID!, $input:interactiveTemplateInput!) {
 
 ### Query Parameters
 
-| Parameter | Type                                             | Default  | Description |
-| --------- | ------------------------------------------------ | -------- | ----------- |
-| id        | <a href="#id">ID</a>!                            | required |             |
+| Parameter | Type                                                             | Default  | Description |
+| --------- | ---------------------------------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                                            | required |             |
 | input     | <a href="#interactiveTemplateinput">interactiveTemplateInput</a> | required |             |
 
 ### Return Parameters
 
-| Type                                               | Description                    |
-| -------------------------------------------------- | ------------------------------ |
+| Type                                                               | Description                    |
+| ------------------------------------------------------------------ | ------------------------------ |
 | <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | The updated Interactive object |
 
 ## Delete a interactiveTemplate
@@ -330,8 +330,8 @@ In case of errors, all the above functions return an error object like the below
 
 ### Return Parameters
 
-| Type                                               | Description              |
-| -------------------------------------------------- | ------------------------ |
+| Type                                                               | Description              |
+| ------------------------------------------------------------------ | ------------------------ |
 | <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | An error object or empty |
 
 ## InteractiveTemplate Objects
@@ -360,6 +360,16 @@ In case of errors, all the above functions return an error object like the below
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>interactive_content</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>language</strong></td>
+<td valign="top"><a href="#language">Language</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
@@ -421,6 +431,24 @@ Filtering options for session_templates
 <td valign="top"><a href="#string">String</a></td>
 <td>
 
+Match a language
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>languageId</strong></td>
+<td valign="top"><a href="#int">Int</a></td>
+<td>
+
+Match a language id
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>parent</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
 Match term with label interactive message
 
 </td>
@@ -458,6 +486,16 @@ Match the type of interactive message
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>interactive_content</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>languageId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>translations</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
