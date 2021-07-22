@@ -11,6 +11,8 @@ defmodule Glific.Providers.Gupshup.Template do
     Templates.SessionTemplate
   }
 
+  require Logger
+
   @doc """
   Submitting HSM template for approval
   """
@@ -41,6 +43,12 @@ defmodule Glific.Providers.Gupshup.Template do
       |> Templates.do_create_session_template()
     else
       {status, response} ->
+        Logger.info(
+          "Error submitting Template for approval Status: #{inspect(status)} Response: #{
+            inspect(response)
+          } "
+        )
+
         # structure of response body can be different for different errors
         {:error, ["BSP response status: #{to_string(status)}", handle_error_response(response)]}
 

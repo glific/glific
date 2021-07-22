@@ -593,7 +593,50 @@ mutation copyFlow($id: ID!, $input:FlowInput!) {
 | ------------------------------------ | ---------------------- |
 | <a href="#flowresult">FlowResult</a> | The copied flow object |
 
+## Import a Flow
 
+```graphql
+mutation ($flow: JSON!) {
+  importFlow(flow: $flow){
+    success
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "{\"flows\":[{\"keywords\":[\"hello\"],\"definition\":{\"vars\":[\"a941004f-adc8-43f2-b819-68eec8d1e912\"],\"uuid\":\"a941004f-adc8-43f2-b819-68eec8d1e912\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"59c67035-59ab-47fa-a1fd-a50978aa78c5\",\"exits\":[{\"uuid\":\"49d2775d-a658-4c74-be10-b7d605b4ea6f\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\",\"type\":\"send_msg\",\"text\":\"hehlo\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"hello\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"59c67035-59ab-47fa-a1fd-a50978aa78c5\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}],\"contact_field\":[],\"collections\":[]}"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "importFlow": {
+      "errors": null,
+      "success": false
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                     | Default  | Description |
+| --------- | ------------------------ | -------- | ----------- |
+| input     | <a href="#json">Json</a> | required |             |
+
+### Return Parameters
+
+| Type                                             | Description                      |
+| ------------------------------------------------ | -------------------------------- |
+| <a href="#importflowresult">ImportFlowResult</a> | The imported flow success status |
 
 ## Export a Flow
 
@@ -636,8 +679,8 @@ mutation exportFlow($id: ID!) {
 
 ### Return Parameters
 
-| Type                                               | Description                      |
-| -------------------------------------------------- | -------------------------------- |
+| Type                                        | Description                      |
+| ------------------------------------------- | -------------------------------- |
 | <a href="#exportFlow">ExportFlowResults</a> | An error object or response true |
 
 ## Flow Objects
@@ -749,6 +792,31 @@ mutation exportFlow($id: ID!) {
 </table>
 
 ### PublishFlowResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>success</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ImportFlowResult
 
 <table>
 <thead>

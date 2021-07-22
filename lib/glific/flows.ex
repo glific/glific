@@ -9,6 +9,8 @@ defmodule Glific.Flows do
   alias Glific.{
     Caches,
     Contacts.Contact,
+    Flows.ContactField,
+    Groups,
     Groups.Group,
     Partners,
     Repo
@@ -166,13 +168,8 @@ defmodule Glific.Flows do
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
     attrs =
-      Map.merge(
-        attrs,
-        %{
-          uuid: Ecto.UUID.generate(),
-          keywords: sanitize_flow_keywords(attrs[:keywords])
-        }
-      )
+      Map.put(attrs, :keywords, sanitize_flow_keywords(attrs[:keywords]))
+      |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -717,18 +714,70 @@ defmodule Glific.Flows do
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
   @doc """
+  import a flow from json
+  """
+  @spec import_flow(map(), non_neg_integer()) :: boolean()
+  def import_flow(import_flow, organization_id) do
+    import_flow_list =
+      Enum.map(import_flow["flows"], fn flow_revision ->
+        with {:ok, flow} <-
+               create_flow(%{
+                 name: flow_revision["definition"]["name"],
+                 uuid: flow_revision["definition"]["uuid"],
+                 keywords: flow_revision["keywords"],
+                 organization_id: organization_id
+               }),
+             {:ok, _flow_revision} <-
+               FlowRevision.create_flow_revision(%{
+                 definition: flow_revision["definition"],
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id
+               }) do
+          import_contact_field(import_flow, organization_id)
+          import_groups(import_flow, organization_id)
+
+          true
+        else
+          _ -> false
+        end
+      end)
+
+    !Enum.member?(import_flow_list, false)
+  end
+
+  defp import_contact_field(import_flow, organization_id) do
+    import_flow["contact_field"]
+    |> Enum.each(fn contact_field ->
+      %{
+        name: contact_field,
+        organization_id: organization_id,
+        shortcode: contact_field
+      }
+      |> ContactField.create_contact_field()
+    end)
+  end
+
+  defp import_groups(import_flow, organization_id) do
+    import_flow["collections"]
+
+    |> Enum.each(fn collection ->
+      Groups.get_or_create_group_by_label(collection, organization_id)
+    end)
+  end
+
+  @doc """
     Generate a json map with all the flows related fields.
   """
   @spec export_flow(non_neg_integer()) :: map()
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    %{"flows" => []}
+    %{"flows" => [], "contact_field" => [], "collections" => []}
     |> init_export_flow(flow.uuid)
   end
 
   @doc """
-    Process the flows and get all the subflow defination.
+    Process the flows and get all the subflow definition.
   """
   @spec init_export_flow(map(), String.t()) :: map()
   def init_export_flow(results, flow_uuid),
@@ -739,22 +788,70 @@ defmodule Glific.Flows do
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
-    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow.definition, "uuid") == flow_uuid end) do
       results
     else
-      defination = get_latest_definition(flow_uuid)
-      results = Map.put(results, "flows", results["flows"] ++ [defination])
+      definition = get_latest_definition(flow_uuid)
+      flow = Repo.get_by(Flow, %{uuid: flow_uuid})
+
+      results =
+        Map.put(
+          results,
+          "flows",
+          results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
+        )
+        |> Map.put(
+          "contact_field",
+          results["contact_field"] ++ export_contact_fields(definition)
+        )
+        |> Map.put(
+          "collections",
+          results["collections"] ++ export_collections(definition)
+        )
+
       ## here we can export more details like fields, triggers, groups and all.
 
-      defination
+      definition
       |> Map.get("nodes", [])
       |> get_sub_flows()
       |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
     end
   end
 
+  defp export_collections(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.map(fn node -> do_export_collections(node) end)
+    |> Enum.reject(fn field -> field in [nil, ""] end)
+  end
+
+  defp do_export_collections(%{"actions" => actions}) when actions == [], do: ""
+
+  defp do_export_collections(%{"actions" => actions}) do
+    action = actions |> hd
+
+    if action["type"] == "add_contact_groups" do
+      [group] = action["groups"]
+      group["name"]
+    end
+  end
+
+  defp export_contact_fields(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.map(fn node -> do_export_contact_fields(node) end)
+    |> Enum.reject(fn field -> field in [nil, ""] end)
+  end
+
+  defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: ""
+
+  defp do_export_contact_fields(%{"actions" => actions}) do
+    action = actions |> hd
+    if action["type"] == "set_contact_field", do: action["field"]["key"]
+  end
+
   @doc """
-    Extract all the subflows form the parent flow defination.
+    Extract all the subflows form the parent flow definition.
   """
   @spec get_sub_flows(list()) :: list()
   def get_sub_flows(nodes),
@@ -769,8 +866,8 @@ defmodule Glific.Flows do
           else: acc
       end)
 
-  ## Get latest flow defination to export. There is one more function with the same name in
-  ## Glific.Flows.flow but that gives us the defination without UI placesments.
+  ## Get latest flow definition to export. There is one more function with the same name in
+  ## Glific.Flows.flow but that gives us the definition without UI placesments.
   @spec get_latest_definition(String.t()) :: map()
   defp get_latest_definition(flow_uuid) do
     json =
