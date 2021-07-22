@@ -1061,6 +1061,8 @@ if Code.ensure_loaded?(Faker) do
     @doc false
     @spec seed_interactives(Organization.t()) :: nil
     def seed_interactives(organization) do
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
       Repo.insert!(%InterativeTemplate{
         label: "Quick Reply Text",
         type: :quick_reply,
@@ -1081,7 +1083,8 @@ if Code.ensure_loaded?(Faker) do
             }
           ]
         },
-        organization_id: organization.id
+        organization_id: organization.id,
+        language_id: en.id
       })
 
       Repo.insert!(%InterativeTemplate{
@@ -1100,7 +1103,8 @@ if Code.ensure_loaded?(Faker) do
             %{"type" => "text", "title" => "Third"}
           ]
         },
-        organization_id: organization.id
+        organization_id: organization.id,
+        language_id: en.id
       })
 
       Repo.insert!(%InterativeTemplate{
@@ -1119,7 +1123,8 @@ if Code.ensure_loaded?(Faker) do
             %{"type" => "text", "title" => "Third"}
           ]
         },
-        organization_id: organization.id
+        organization_id: organization.id,
+        language_id: en.id
       })
 
       Repo.insert!(%InterativeTemplate{
@@ -1138,7 +1143,8 @@ if Code.ensure_loaded?(Faker) do
             %{"type" => "text", "title" => "Third"}
           ]
         },
-        organization_id: organization.id
+        organization_id: organization.id,
+        language_id: en.id
       })
 
       Repo.insert!(%InterativeTemplate{
@@ -1196,7 +1202,8 @@ if Code.ensure_loaded?(Faker) do
             }
           ]
         },
-        organization_id: organization.id
+        organization_id: organization.id,
+        language_id: en.id
       })
     end
 
