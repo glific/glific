@@ -1,0 +1,39 @@
+{
+  "_ui": {
+    "nodes": {
+      "e7d4776b-165d-4467-8edf-a69c0ac657fd": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 0 }
+      }
+    }
+  },
+  "name": "interactive",
+  "type": "messaging",
+  "uuid": "09436f30-b331-43fd-a376-f24ef1cc5337",
+  "vars": ["09436f30-b331-43fd-a376-f24ef1cc5337"],
+  "nodes": [
+    {
+      "uuid": "e7d4776b-165d-4467-8edf-a69c0ac657fd",
+      "exits": [
+        {
+          "uuid": "33f8e060-4fdc-4f7d-b7b8-a8ef44975e9e",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "id": 1,
+          "name": "Quick Reply Text",
+          "text": "{\"content\":{\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "d5aa7f4b-7599-4ae9-9344-7fcd710e0984"
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "revision": 1,
+  "localization": {},
+  "spec_version": "13.1.0",
+  "expire_after_minutes": 10080
+}

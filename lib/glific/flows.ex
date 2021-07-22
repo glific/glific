@@ -759,7 +759,6 @@ defmodule Glific.Flows do
 
   defp import_groups(import_flow, organization_id) do
     import_flow["collections"]
-
     |> Enum.each(fn collection ->
       Groups.get_or_create_group_by_label(collection, organization_id)
     end)
@@ -815,14 +814,31 @@ defmodule Glific.Flows do
       |> Map.get("nodes", [])
       |> get_sub_flows()
       |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+      |> clean_export()
     end
   end
+
+  @spec clean_export(map()) :: map()
+  defp clean_export(exported_flow) do
+    ["collections", "contact_field"]
+    |> Enum.reduce(exported_flow, fn export_item, acc ->
+      Map.merge(acc, do_clean_export(acc, export_item))
+    end)
+  end
+
+  @spec do_clean_export(map(), String.t()) :: map()
+  defp do_clean_export(exported_flow, item),
+    do:
+      Map.put(
+        exported_flow,
+        item,
+        exported_flow[item] |> Enum.reject(fn field -> field in [nil, ""] end) |> Enum.uniq()
+      )
 
   defp export_collections(definition) do
     definition
     |> Map.get("nodes", [])
     |> Enum.map(fn node -> do_export_collections(node) end)
-    |> Enum.reject(fn field -> field in [nil, ""] end)
   end
 
   defp do_export_collections(%{"actions" => actions}) when actions == [], do: ""
@@ -840,7 +856,6 @@ defmodule Glific.Flows do
     definition
     |> Map.get("nodes", [])
     |> Enum.map(fn node -> do_export_contact_fields(node) end)
-    |> Enum.reject(fn field -> field in [nil, ""] end)
   end
 
   defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: ""
