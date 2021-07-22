@@ -110,8 +110,27 @@ defmodule Glific.Clients.DigitalGreen do
     |> set_initial_crop_state(contact_id, organization_id)
   end
 
-  def webhook("navanatech", fields) do
-    Navanatech.navatech_post(fields)
+  def webhook("decode_message", fields) do
+
+    params =
+      if Map.has_key?(fields, "media_url"), do:
+        %{
+          media_url: fields["media_url"],
+          case_id: fields["case_id"],
+          organization_id: fields["organization_id"]
+        },
+      else:
+        %{
+          text: fields["text"],
+          case_id: fields["case_id"],
+          organization_id: fields["organization_id"]
+        }
+
+      Navanatech.decode_message(params)
+      |> case do
+        {:ok, %{"keywords" => keywords} = _attrs} -> %{decoded_message: hd(keywords)}
+        {:error, message} -> %{decoded_message: "Error in decode #{inspect params} with message #{message}" }
+      end
   end
 
   def webhook("weather_updates", fields) do
