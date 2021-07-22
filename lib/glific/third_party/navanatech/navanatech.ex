@@ -15,9 +15,9 @@ defmodule Glific.Navanatech do
   def decode_message(%{media_url: media_url, case_id: case_id, organization_id: org_id} = _attrs) do
     extension =
       Path.extname(media_url)
-      |> String.replace( ".", "")
+      |> String.replace(".", "")
 
-    params =  %{use_case_id: case_id, url: media_url, extension:  extension}
+    params = %{use_case_id: case_id, url: media_url, extension: extension}
 
     client(org_id)
     |> Tesla.post("/usecase/decode/audio", params)
@@ -25,7 +25,7 @@ defmodule Glific.Navanatech do
   end
 
   def decode_message(%{text: text, case_id: case_id, organization_id: org_id} = _attrs) do
-    params =  %{use_case_id: case_id, text: text}
+    params = %{use_case_id: case_id, text: text}
 
     client(org_id)
     |> Tesla.post("/usecase/decode/text", params)
@@ -41,8 +41,8 @@ defmodule Glific.Navanatech do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, body}
 
-      {_status, response}
-        -> {:error, "invalid response #{inspect response}"}
+      {_status, response} ->
+        {:error, "invalid response #{inspect(response)}"}
     end
   end
 
@@ -51,13 +51,14 @@ defmodule Glific.Navanatech do
   """
   @spec client(non_neg_integer()) :: Tesla.Client.t()
   def client(_org_id) do
-    token =  Application.get_env(:glific, :navanatech_token, "")
+    token = Application.get_env(:glific, :navanatech_token, "")
+
     middleware = [
       {Tesla.Middleware.BaseUrl, "https://speechapi.southeastasia.cloudapp.azure.com/digigreen"},
       Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> token }]}
+      {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> token}]}
     ]
+
     Tesla.client(middleware)
   end
-
 end
