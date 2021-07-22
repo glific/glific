@@ -820,9 +820,10 @@ defmodule Glific.Flows do
 
   @spec clean_export(map()) :: map()
   defp clean_export(exported_flow) do
-    exported_flow
-    |> do_clean_export("collections")
-    |> do_clean_export("contact_field")
+    ["collections", "contact_field"]
+    |> Enum.reduce(exported_flow, fn export_item, acc ->
+      Map.merge(acc, do_clean_export(acc, export_item))
+    end)
   end
 
   @spec do_clean_export(map(), String.t()) :: map()
