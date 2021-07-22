@@ -17,6 +17,7 @@ defmodule Glific.Flows.ContactAction do
 
   require Logger
   @min_delay 2
+  @max_loop_limit 4
 
   @doc """
   This is just a think wrapper for send_message, since its basically the same,
@@ -82,7 +83,7 @@ defmodule Glific.Flows.ContactAction do
   @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) :: {:ok, map(), any()} | false
   defp has_loops?(context, body, messages) do
     {context, count} = update_recent(context, body)
-    if count >= 5, do: process_loops(context, count, messages, body), else: false
+    if count <= @max_loop_limit, do: false, else: process_loops(context, count, messages, body)
   end
 
   # handle the case if we are sending a notification to another contact who is

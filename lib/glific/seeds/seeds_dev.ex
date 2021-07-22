@@ -786,7 +786,8 @@ if Code.ensure_loaded?(Faker) do
         optout: "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
         survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
         help: "3fa22108-f464-41e5-81d9-d8a298854429",
-        intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519"
+        intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519",
+        interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7"
       }
 
       data = [
@@ -794,7 +795,8 @@ if Code.ensure_loaded?(Faker) do
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
          "out_of_office.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"},
-        {"Intent", ["intent"], uuid_map.intent, false, "intent.json"}
+        {"Intent", ["intent"], uuid_map.intent, false, "intent.json"},
+        {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"}
       ]
 
       SeedsFlows.add_flow(organization, data, uuid_map)
