@@ -3,6 +3,8 @@ defmodule Glific.Navanatech do
   Glific Navanatech for all api calls to navatech
   """
 
+  alias Glific.Partners
+
   ## params =  %{media_url: "https://storage.googleapis.com/cc-tides/uploads/20210721140700_C717_F0_M539582.mp3", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
   ## params_text =  %{text: "వుంది", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
   # Glific.Navanatech.decode_message(params)
@@ -11,11 +13,14 @@ defmodule Glific.Navanatech do
   @doc """
   Decode a text or audio file
   """
+
   @spec decode_message(map()) :: tuple()
   def decode_message(%{media_url: media_url, case_id: case_id, organization_id: org_id} = _attrs) do
     extension =
       Path.extname(media_url)
       |> String.replace(".", "")
+
+    extension = if extension in [""], do: "mp3", else: extension
 
     params = %{use_case_id: case_id, url: media_url, extension: extension}
 
@@ -50,15 +55,29 @@ defmodule Glific.Navanatech do
     Get the tesla client with existing configurations.
   """
   @spec client(non_neg_integer()) :: Tesla.Client.t()
-  def client(_org_id) do
-    token = Application.get_env(:glific, :navanatech_token, "")
-
+  def client(org_id) do
+    {:ok, %{ url: base_url,  token: token }} = credentials(org_id)
     middleware = [
-      {Tesla.Middleware.BaseUrl, "https://speechapi.southeastasia.cloudapp.azure.com/digigreen"},
+      {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> token}]}
     ]
 
     Tesla.client(middleware)
+  end
+
+
+  @spec credentials(non_neg_integer()) :: tuple()
+  defp credentials(org_id) do
+    organization = Partners.organization(org_id)
+    organization.services["navana_tech"]
+    |> case do
+      nil ->
+        {:error, "Secret not found."}
+
+      credentials ->
+        {:ok, %{ url: credentials.keys["url"],  token: credentials.secrets["token"] } }
+
+    end
   end
 end
