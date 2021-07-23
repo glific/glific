@@ -56,7 +56,8 @@ defmodule Glific.Navanatech do
   """
   @spec client(non_neg_integer()) :: Tesla.Client.t()
   def client(org_id) do
-    {:ok, %{ url: base_url,  token: token }} = credentials(org_id)
+    {:ok, %{url: base_url, token: token}} = credentials(org_id)
+
     middleware = [
       {Tesla.Middleware.BaseUrl, base_url},
       Tesla.Middleware.JSON,
@@ -66,18 +67,17 @@ defmodule Glific.Navanatech do
     Tesla.client(middleware)
   end
 
-
   @spec credentials(non_neg_integer()) :: tuple()
   defp credentials(org_id) do
     organization = Partners.organization(org_id)
+
     organization.services["navana_tech"]
     |> case do
       nil ->
         {:error, "Secret not found."}
 
       credentials ->
-        {:ok, %{ url: credentials.keys["url"],  token: credentials.secrets["token"] } }
-
+        {:ok, %{url: credentials.keys["url"], token: credentials.secrets["token"]}}
     end
   end
 end
