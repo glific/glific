@@ -721,21 +721,20 @@ mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [St
     }
   }
 }
-
 ```
 
 ### Query Parameters
 
-| Parameter  | Type                            | Default  | Description |
-| ---------- | ------------------------------- | -------- | ----------- |
-| templateId | <a href="#id">ID</a>!           | required |             |
-| groupId | <a href="#id">ID</a>!           | required |             |
+| Parameter  | Type                                    | Default  | Description |
+| ---------- | --------------------------------------- | -------- | ----------- |
+| templateId | <a href="#id">ID</a>!                   | required |             |
+| groupId    | <a href="#id">ID</a>!                   | required |             |
 | parameters | [<a href="#string">List of String</a>]! | required |             |
 
 ### Return Parameters
 
-| Parameter                                  | Type                     | Default | Description |
-| ------------------------------------------ | ------------------------ | ------- | ----------- |
+| Parameter                                              | Type                | Default | Description |
+| ------------------------------------------------------ | ------------------- | ------- | ----------- |
 | [<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids |
 
 ## Send Media HSM Message
@@ -1157,7 +1156,6 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 <td></td>
 </tr>
 
-
 <tr>
 <td colspan="2" valign="top"><strong>ContextMessage</strong></td>
 <td valign="top"><a href="#messagemedia">Message</a></td>
@@ -1434,13 +1432,19 @@ Match the tags excluded
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>interactive_content</strong></td>
-<td valign="top"><a href="#json">InteractiveContent</a></td>
+<td colspan="2" valign="top"><strong>sender_id</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>sender_id</strong></td>
+<td colspan="2" valign="top"><strong>template_id</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>interactive_template_id</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
