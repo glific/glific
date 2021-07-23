@@ -230,26 +230,42 @@ defmodule Glific.Messages do
 
     attrs =
       Map.put(attrs, :receiver, contact)
-      |> check_for_interactive()
+      |> check_for_interactive(contact.language_id)
 
     check_for_hsm_message(attrs, contact)
   end
 
-  @spec check_for_interactive(map()) :: map()
-  defp check_for_interactive(%{interactive_template_id: interactive_template_id} = attrs) do
-    {:ok, interactive_template} = Repo.fetch(InterativeTemplate, interactive_template_id)
+  @spec check_for_interactive(map(), non_neg_integer()) :: map()
+  defp check_for_interactive(
+         %{interactive_template_id: interactive_template_id} = attrs,
+         language_id
+       ) do
+    with {:ok, interactive_template} <-
+           Repo.fetch(
+             InterativeTemplate,
+             interactive_template_id
+           ),
+         interactive_content <- check_translations(interactive_template, language_id) do
+      body =
+        InteractiveTemplates.get_interactive_body(
+          interactive_content,
+          interactive_content["type"],
+          interactive_content["content"]["type"]
+        )
 
-    body =
-      InteractiveTemplates.get_interactive_body(
-        interactive_template.interactive_content,
-        interactive_template.interactive_content["type"],
-        interactive_template.interactive_content["content"]["type"]
-      )
-
-    Map.merge(attrs, %{body: body, interactive_content: interactive_template.interactive_content})
+      Map.merge(attrs, %{body: body, interactive_content: interactive_content})
+    end
   end
 
-  defp check_for_interactive(attrs), do: attrs
+  defp check_for_interactive(attrs, _language_id), do: attrs
+
+  defp check_translations(interactive_template, language_id) do
+    Map.get(
+      interactive_template.translations,
+      Integer.to_string(language_id),
+      interactive_template.interactive_content
+    )
+  end
 
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
