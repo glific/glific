@@ -26,6 +26,7 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates.InterativeTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
@@ -235,15 +236,17 @@ defmodule Glific.Messages do
   end
 
   @spec check_for_interactive(map()) :: map()
-  defp check_for_interactive(%{interactive_content: interactive_content} = attrs) do
+  defp check_for_interactive(%{interactive_template_id: interactive_template_id} = attrs) do
+    {:ok, interactive_template} = Repo.fetch(InterativeTemplate, interactive_template_id)
+
     body =
       InteractiveTemplates.get_interactive_body(
-        interactive_content,
-        interactive_content["type"],
-        interactive_content["content"]["type"]
+        interactive_template.interactive_content,
+        interactive_template.interactive_content["type"],
+        interactive_template.interactive_content["content"]["type"]
       )
 
-    Map.put(attrs, :body, body)
+    Map.merge(attrs, %{body: body, interactive_content: interactive_template.interactive_content})
   end
 
   defp check_for_interactive(attrs), do: attrs
