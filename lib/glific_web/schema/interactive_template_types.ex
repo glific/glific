@@ -43,7 +43,6 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
 
     @desc "Match a language id"
     field :language_id, :integer
-
   end
 
   input_object :interactive_template_input do

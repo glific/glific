@@ -58,7 +58,6 @@ config :stripity_stripe,
   api_key: env!("STRIPE_API_KEY", :string!),
   signing_secret: env!("STRIPE_SIGNING_SECRET", :string!)
 
-
 ## We will move this to organization credetials.
 config :glific,
   navanatech_token: env!("NAVANATECH_TOKEN", :string!)

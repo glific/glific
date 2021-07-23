@@ -111,26 +111,27 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   def webhook("decode_message", fields) do
-
     params =
-      if Map.has_key?(fields, "media_url"), do:
-        %{
+      if Map.has_key?(fields, "media_url"),
+        do: %{
           media_url: fields["media_url"],
           case_id: fields["case_id"],
           organization_id: fields["organization_id"]
         },
-      else:
-        %{
+        else: %{
           text: fields["text"],
           case_id: fields["case_id"],
           organization_id: fields["organization_id"]
         }
 
-      Navanatech.decode_message(params)
-      |> case do
-        {:ok, %{"keywords" => keywords} = _attrs} -> %{decoded_message: hd(keywords)}
-        {:error, message} -> %{decoded_message: "Error in decode #{inspect params} with message #{message}" }
-      end
+    Navanatech.decode_message(params)
+    |> case do
+      {:ok, %{"keywords" => keywords} = _attrs} ->
+        %{decoded_message: hd(keywords)}
+
+      {:error, message} ->
+        %{decoded_message: "Error in decode #{inspect(params)} with message #{message}"}
+    end
   end
 
   def webhook("weather_updates", fields) do
@@ -181,6 +182,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   defp generate_weather_info(results, rows, opts) do
     village = Keyword.get(opts, :village, "")
+
     message =
       Enum.map(rows, fn row -> "Date: #{row["Date"]} Summery: #{row["Summary"]}" end)
       |> Enum.join("\n")

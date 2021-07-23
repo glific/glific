@@ -26,8 +26,8 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
-    Templates.InterativeTemplate,
     Templates.InteractiveTemplates,
+    Templates.InterativeTemplate,
     Templates.SessionTemplate
   }
 
