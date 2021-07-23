@@ -110,8 +110,27 @@ defmodule Glific.Clients.DigitalGreen do
     |> set_initial_crop_state(contact_id, organization_id)
   end
 
-  def webhook("navanatech", fields) do
-    Navanatech.navatech_post(fields)
+  def webhook("decode_message", fields) do
+
+    params =
+      if Map.has_key?(fields, "media_url"), do:
+        %{
+          media_url: fields["media_url"],
+          case_id: fields["case_id"],
+          organization_id: fields["organization_id"]
+        },
+      else:
+        %{
+          text: fields["text"],
+          case_id: fields["case_id"],
+          organization_id: fields["organization_id"]
+        }
+
+      Navanatech.decode_message(params)
+      |> case do
+        {:ok, %{"keywords" => keywords} = _attrs} -> %{decoded_message: hd(keywords)}
+        {:error, message} -> %{decoded_message: "Error in decode #{inspect params} with message #{message}" }
+      end
   end
 
   def webhook("weather_updates", fields) do
@@ -125,7 +144,7 @@ defmodule Glific.Clients.DigitalGreen do
 
     ApiClient.get_csv_content(url: @weather_updates["published_csv"])
     |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
-    |> generate_weather_results()
+    |> generate_weather_results(opts)
   end
 
   def webhook(_, _fields),
@@ -153,19 +172,24 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   ## filter record based on the contact village, and current week.
-  @spec generate_weather_results(list()) :: map()
-  defp generate_weather_results(rows) do
-    %{message: "", is_extream_condition: false}
-    |> generate_weather_message(rows)
+  @spec generate_weather_results(list(), Keyword.t()) :: map()
+  defp generate_weather_results(rows, opts) do
+    %{message: "", image: "", is_extream_condition: false}
+    |> generate_weather_info(rows, opts)
     |> check_for_extream_condition(rows)
   end
 
-  defp generate_weather_message(results, rows) do
+  defp generate_weather_info(results, rows, opts) do
+    village = Keyword.get(opts, :village, "")
     message =
       Enum.map(rows, fn row -> "Date: #{row["Date"]} Summery: #{row["Summary"]}" end)
       |> Enum.join("\n")
 
-    Map.put(results, :message, message)
+    image = "https://storage.googleapis.com/dg-weather/#{village}.png"
+
+    results
+    |> Map.put(:message, message)
+    |> Map.put(:image, image)
   end
 
   @spec check_for_extream_condition(map(), list()) :: map()
