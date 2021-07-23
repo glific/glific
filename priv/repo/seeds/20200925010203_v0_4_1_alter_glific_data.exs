@@ -248,7 +248,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         Repo.insert!(%Provider{
           name: "Navana Tech",
           shortcode: "navana_tech",
-          description: "Setup Navana tech apis for NLP."
+          description: "Setup Navana tech apis for NLP.",
           group: nil,
           is_required: false,
           keys: %{
