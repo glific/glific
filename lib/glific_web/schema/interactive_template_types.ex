@@ -4,7 +4,9 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
   """
 
   use Absinthe.Schema.Notation
+  import Absinthe.Resolution.Helpers, only: [dataloader: 1]
 
+  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -21,6 +23,11 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
+    field :translations, :json
+
+    field :language, :language do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for interactives"
@@ -30,12 +37,21 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
 
     @desc "Match the type of interactive"
     field :type, :interactive_message_type_enum
+
+    @desc "Match a language"
+    field :language, :string
+
+    @desc "Match a language id"
+    field :language_id, :integer
+
   end
 
   input_object :interactive_template_input do
     field :label, :string
     field :type, :interactive_message_type_enum
     field :interactive_content, :json
+    field :language_id, :id
+    field :translations, :json
   end
 
   object :interactive_template_queries do

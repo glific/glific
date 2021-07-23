@@ -90,7 +90,8 @@ defmodule Glific.InteractiveTemplatesTest do
     test "create_interactive_template/1 with valid data creates an interactive message", %{
       organization_id: organization_id
     } do
-      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+      interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
+      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id, language_id: interactive.language_id})
 
       assert {:ok, %InterativeTemplate{} = interactive} =
                InteractiveTemplates.create_interactive_template(attrs)

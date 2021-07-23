@@ -103,13 +103,21 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
   end
 
   test "create a interactive and test possible scenarios and errors", %{staff: user} do
+    label = "Quick Reply Video"
+
+    {:ok, interactive} =
+      Repo.fetch_by(InterativeTemplate, %{label: label, organization_id: user.organization_id})
+
+    language_id = interactive.language_id
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
             "label" => "Quick Reply Text Reply",
             "type" => "QUICK_REPLY",
-            "interactive_content" => "{}"
+            "interactive_content" => "{}",
+            "languageId" => language_id
           }
         }
       )
@@ -128,7 +136,8 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
           "input" => %{
             "label" => "Quick Reply interactive",
             "type" => "QUICK_REPLY",
-            "interactive_content" => "{}"
+            "interactive_content" => "{}",
+            "languageId" => language_id
           }
         }
       )
@@ -139,7 +148,8 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
           "input" => %{
             "label" => "Quick Reply interactive",
             "type" => "QUICK_REPLY",
-            "interactive_content" => "{}"
+            "interactive_content" => "{}",
+            "languageId" => language_id
           }
         }
       )
