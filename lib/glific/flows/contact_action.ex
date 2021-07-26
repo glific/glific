@@ -10,7 +10,7 @@ defmodule Glific.Flows.ContactAction do
     Messages,
     Messages.Message,
     Repo,
-    Templates.InteractiveTemplate,
+    Templates.InterativeTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
