@@ -138,4 +138,12 @@ defmodule Glific.Templates.InteractiveTemplates do
     do: interactive_content["body"]
 
   def get_interactive_body(_, _, _), do: ""
+
+  def check_translations(interactive_template, language_id) do
+    Map.get(
+      interactive_template.translations,
+      Integer.to_string(language_id),
+      interactive_template.interactive_content
+    )
+  end
 end

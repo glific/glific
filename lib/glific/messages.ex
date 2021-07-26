@@ -245,7 +245,8 @@ defmodule Glific.Messages do
              InterativeTemplate,
              interactive_template_id
            ),
-         interactive_content <- check_translations(interactive_template, language_id) do
+         interactive_content <-
+           InteractiveTemplates.check_translations(interactive_template, language_id) do
       body =
         InteractiveTemplates.get_interactive_body(
           interactive_content,
@@ -253,19 +254,15 @@ defmodule Glific.Messages do
           interactive_content["content"]["type"]
         )
 
-      Map.merge(attrs, %{body: body, interactive_content: interactive_content})
+      Map.merge(attrs, %{
+        body: body,
+        interactive_content: interactive_content,
+        type: interactive_content["type"]
+      })
     end
   end
 
   defp check_for_interactive(attrs, _language_id), do: attrs
-
-  defp check_translations(interactive_template, language_id) do
-    Map.get(
-      interactive_template.translations,
-      Integer.to_string(language_id),
-      interactive_template.interactive_content
-    )
-  end
 
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::

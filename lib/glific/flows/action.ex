@@ -46,6 +46,7 @@ defmodule Glific.Flows.Action do
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
+  @required_fields_interactive_template [:name, :id | @required_field_common]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -70,7 +71,8 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          wait_time: integer() | nil
+          wait_time: integer() | nil,
+          interactive_template_id: integer() | nil
         }
 
   embedded_schema do
@@ -101,6 +103,7 @@ defmodule Glific.Flows.Action do
     field :contacts, :map
 
     field :wait_time, :integer
+    field :interactive_template_id, :integer
 
     field :node_uuid, Ecto.UUID
     embeds_one :node, Node
@@ -210,6 +213,17 @@ defmodule Glific.Flows.Action do
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
     attrs = Map.put(attrs, :templating, templating)
+    process(json, uuid_map, node, attrs)
+  end
+
+  def process(%{"type" => "send_interactive_msg"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_interactive_template)
+
+    attrs = %{
+      interactive_template_id: json["id"],
+      text: json["text"]
+    }
+
     process(json, uuid_map, node, attrs)
   end
 
