@@ -19,6 +19,7 @@ defmodule Glific.Flows.ContactActionTest do
     SeedsDev.seed_contacts()
     SeedsDev.seed_session_templates()
     SeedsDev.hsm_templates(organization)
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -119,10 +120,12 @@ defmodule Glific.Flows.ContactActionTest do
       })
       |> Repo.preload([:contact, :flow])
 
-    interactive =
-      "{\"content\":{\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}"
+    [interactive_template | _] =
+      Templates.InteractiveTemplates.list_interactives(%{
+        filter: Map.merge(attrs, %{label: "Quick Reply Text"})
+      })
 
-    action = %Action{text: interactive}
+    action = %Action{interactive_template_id: interactive_template.id}
 
     ContactAction.send_interactive_message(context, action, [])
 
