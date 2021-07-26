@@ -210,6 +210,28 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
+  test "process extracts the right values from json for send_interactive_msg" do
+    node = %Node{uuid: "Test UUID"}
+
+    json =%{
+      "id" => 1,
+      "name" => "Quick Reply Text",
+      "text" => "{\"content\":{\"caption\":\"Glific is a two way communication platform\",\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+      "type" => "send_interactive_msg",
+      "uuid" => "UUID 1"
+    }
+    {action, uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "send_interactive_msg"
+    assert action.node_uuid == node.uuid
+    assert action.interactive_template_id == 1
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "send_interactive_msg"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
   test "process extracts the right values from json for add_contact_groups" do
     node = %Node{uuid: "Test UUID"}
     json = %{"uuid" => "UUID 1", "type" => "add_contact_groups", "groups" => ["23", "45"]}
