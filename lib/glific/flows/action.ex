@@ -218,13 +218,7 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "send_interactive_msg"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_interactive_template)
-
-    attrs = %{
-      interactive_template_id: json["id"],
-      text: json["text"]
-    }
-
-    process(json, uuid_map, node, attrs)
+    process(json, uuid_map, node, %{interactive_template_id: json["id"]})
   end
 
   def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do

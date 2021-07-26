@@ -9,6 +9,8 @@ defmodule Glific.Flows.ContactAction do
     Flows,
     Messages,
     Messages.Message,
+    Repo,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
@@ -49,17 +51,15 @@ defmodule Glific.Flows.ContactAction do
     ## We might need to think how to send the interactive message to a group
     {cid, message_vars} = resolve_cid(context, nil)
 
-    contact = Glific.Contacts.get_contact!(cid)
-
     {:ok, interactive_template} =
-      Glific.Repo.fetch_by(
-        Glific.Templates.InterativeTemplate,
+      Repo.fetch_by(
+        InterativeTemplate,
         %{id: action.interactive_template_id, organization_id: context.organization_id}
       )
 
     interactive_content =
       interactive_template
-      |> InteractiveTemplates.check_translations(contact.language_id)
+      |> InteractiveTemplates.check_translations(context.contact.language_id)
       |> MessageVarParser.parse_map(message_vars)
 
     body =
