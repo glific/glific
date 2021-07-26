@@ -213,13 +213,15 @@ defmodule Glific.Flows.ActionTest do
   test "process extracts the right values from json for send_interactive_msg" do
     node = %Node{uuid: "Test UUID"}
 
-    json =%{
+    json = %{
       "id" => 1,
       "name" => "Quick Reply Text",
-      "text" => "{\"content\":{\"caption\":\"Glific is a two way communication platform\",\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+      "text" =>
+        "{\"content\":{\"caption\":\"Glific is a two way communication platform\",\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
       "type" => "send_interactive_msg",
       "uuid" => "UUID 1"
     }
+
     {action, uuid_map} = Action.process(json, %{}, node)
     assert action.uuid == "UUID 1"
     assert action.type == "send_interactive_msg"
