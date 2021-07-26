@@ -1072,7 +1072,8 @@ if Code.ensure_loaded?(Faker) do
           "type" => "quick_reply",
           "content" => %{
             "type" => "text",
-            "text" => "How excited are you for Glific?"
+            "text" => "How excited are you for Glific?",
+            "caption" => "Glific is a two way communication platform"
           },
           "options" => [
             %{
