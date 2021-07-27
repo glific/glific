@@ -114,7 +114,12 @@ defmodule Glific.Clients.DigitalGreen do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
 
-    @stages[fields["crop_stage"]]
+    stage =
+      fields["crop_stage"]
+      |> String.downcase()
+      |> String.trim()
+
+    @stages[stage]
     |> set_initial_crop_state(contact_id, organization_id)
   end
 
