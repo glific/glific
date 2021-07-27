@@ -75,6 +75,8 @@ defmodule Glific.Clients.DigitalGreen do
 
     ## the minmum wait unit in glific is 1 minute.
     max(next_slot, 61)
+
+    62
   end
 
   @doc """
@@ -106,7 +108,12 @@ defmodule Glific.Clients.DigitalGreen do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
 
-    @stages[fields["crop_stage"]]
+    stage =
+      fields["crop_stage"]
+      |> String.downcase()
+      |> String.trim()
+
+    @stages[stage]
     |> set_initial_crop_state(contact_id, organization_id)
   end
 
