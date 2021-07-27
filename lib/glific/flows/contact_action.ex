@@ -17,6 +17,7 @@ defmodule Glific.Flows.ContactAction do
 
   require Logger
   @min_delay 2
+  @max_loop_limit 4
 
   @doc """
   This is just a think wrapper for send_message, since its basically the same,
@@ -60,21 +61,29 @@ defmodule Glific.Flows.ContactAction do
         interactive_content["content"]["type"]
       )
 
-    attrs = %{
-      body: body,
-      uuid: action.uuid,
-      type: interactive_content["type"],
-      receiver_id: cid,
-      organization_id: context.organization_id,
-      flow_id: context.flow_id,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay),
-      is_optin_flow: Flows.is_optin_flow?(context.flow),
-      interactive_content: interactive_content
-    }
+    with false <- has_loops?(context, body, messages) do
+      attrs = %{
+        body: body,
+        uuid: action.uuid,
+        type: interactive_content["type"],
+        receiver_id: cid,
+        organization_id: context.organization_id,
+        flow_id: context.flow_id,
+        send_at: DateTime.add(DateTime.utc_now(), context.delay),
+        is_optin_flow: Flows.is_optin_flow?(context.flow),
+        interactive_content: interactive_content
+      }
 
-    attrs
-    |> Messages.create_and_send_message()
-    |> handle_message_result(context, messages, attrs)
+      attrs
+      |> Messages.create_and_send_message()
+      |> handle_message_result(context, messages, attrs)
+    end
+  end
+
+  @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) :: {:ok, map(), any()} | false
+  defp has_loops?(context, body, messages) do
+    {context, count} = update_recent(context, body)
+    if count <= @max_loop_limit, do: false, else: process_loops(context, count, messages, body)
   end
 
   # handle the case if we are sending a notification to another contact who is
@@ -146,11 +155,7 @@ defmodule Glific.Flows.ContactAction do
       text
       |> MessageVarParser.parse(message_vars)
 
-    {context, count} = update_recent(context, body)
-
-    if count >= 5 do
-      process_loops(context, count, messages, body)
-    else
+    with false <- has_loops?(context, body, messages) do
       do_send_message(context, action, messages, %{
         cid: cid,
         body: body,
@@ -172,11 +177,8 @@ defmodule Glific.Flows.ContactAction do
     session_template = Messages.parse_template_vars(templating.template, vars)
 
     body = get_body(session_template)
-    {context, count} = update_recent(context, body)
 
-    if count >= 5 do
-      process_loops(context, count, messages, body)
-    else
+    with false <- has_loops?(context, body, messages) do
       do_send_template_message(context, action, messages, %{
         cid: cid,
         session_template: session_template,

@@ -92,9 +92,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
 
     @desc "Match the reserved flag"
     field :is_reserved, :boolean
-
-    @desc "Match the translations"
-    field :translations, :json
   end
 
   input_object :session_template_input do

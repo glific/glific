@@ -781,6 +781,8 @@ defmodule Glific.Fixtures do
   @doc false
   @spec interactive_fixture(map()) :: InterativeTemplate.t()
   def interactive_fixture(attrs) do
+    language = language_fixture()
+
     valid_attrs = %{
       label: "Quick Reply Fixture",
       type: :quick_reply,
@@ -801,7 +803,8 @@ defmodule Glific.Fixtures do
           }
         ]
       },
-      organization_id: attrs.organization_id
+      organization_id: attrs.organization_id,
+      language_id: language.id
     }
 
     {:ok, interactive} =
