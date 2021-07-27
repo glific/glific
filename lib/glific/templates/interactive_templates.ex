@@ -140,10 +140,10 @@ defmodule Glific.Templates.InteractiveTemplates do
   def get_interactive_body(_, _, _), do: ""
 
   @doc """
-  Check for translation of interactive message
+  Fetch for translation of interactive message
   """
-  @spec check_translations(InteractiveTemplate.t(), non_neg_integer()) :: map()
-  def check_translations(interactive_template, language_id) do
+  @spec get_translations(InteractiveTemplate.t(), non_neg_integer()) :: map()
+  def get_translations(interactive_template, language_id) do
     Map.get(
       interactive_template.translations,
       Integer.to_string(language_id),

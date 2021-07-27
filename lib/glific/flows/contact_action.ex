@@ -59,7 +59,7 @@ defmodule Glific.Flows.ContactAction do
 
     interactive_content =
       interactive_template
-      |> InteractiveTemplates.check_translations(context.contact.language_id)
+      |> InteractiveTemplates.get_translations(context.contact.language_id)
       |> MessageVarParser.parse_map(message_vars)
 
     body =
