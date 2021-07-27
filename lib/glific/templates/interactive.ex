@@ -1,4 +1,4 @@
-defmodule Glific.Templates.InterativeTemplate do
+defmodule Glific.Templates.InteractiveTemplate do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
@@ -55,7 +55,7 @@ defmodule Glific.Templates.InterativeTemplate do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(InterativeTemplate.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(InteractiveTemplate.t(), map()) :: Ecto.Changeset.t()
   def changeset(interactive, attrs) do
     interactive
     |> cast(attrs, @required_fields ++ @optional_fields)

@@ -16,7 +16,7 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
-    Templates.InterativeTemplate,
+    Templates.InteractiveTemplate,
     Templates.SessionTemplate,
     Users
   }
@@ -637,7 +637,7 @@ defmodule Glific.MessagesTest do
 
       {:ok, interactive_template} =
         Repo.fetch_by(
-          InterativeTemplate,
+          InteractiveTemplate,
           %{label: label, organization_id: organization_id}
         )
 
@@ -660,7 +660,7 @@ defmodule Glific.MessagesTest do
 
       {:ok, interactive_template} =
         Repo.fetch_by(
-          InterativeTemplate,
+          InteractiveTemplate,
           %{label: label, organization_id: organization_id}
         )
 
@@ -683,7 +683,7 @@ defmodule Glific.MessagesTest do
 
       {:ok, interactive_template} =
         Repo.fetch_by(
-          InterativeTemplate,
+          InteractiveTemplate,
           %{label: label, organization_id: organization_id}
         )
 
@@ -706,7 +706,7 @@ defmodule Glific.MessagesTest do
 
       {:ok, interactive_template} =
         Repo.fetch_by(
-          InterativeTemplate,
+          InteractiveTemplate,
           %{label: label, organization_id: organization_id}
         )
 

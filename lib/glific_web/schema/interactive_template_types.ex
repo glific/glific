@@ -58,7 +58,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.interactive_template/3)
+      resolve(&Resolvers.InteractiveTemplates.interactive_template/3)
     end
 
     @desc "Get a list of all interactive templates filtered by various criteria"
@@ -66,14 +66,14 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
       arg(:filter, :interactive_template_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.interactive_templates/3)
+      resolve(&Resolvers.InteractiveTemplates.interactive_templates/3)
     end
 
     @desc "Get a count of all interactives filtered by various criteria"
     field :count_interactive_templates, :integer do
       arg(:filter, :interactive_template_filter)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.count_interactive_templates/3)
+      resolve(&Resolvers.InteractiveTemplates.count_interactive_templates/3)
     end
   end
 
@@ -81,20 +81,20 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :create_interactive_template, :interactive_template_result do
       arg(:input, non_null(:interactive_template_input))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.create_interactive_template/3)
+      resolve(&Resolvers.InteractiveTemplates.create_interactive_template/3)
     end
 
     field :update_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       arg(:input, :interactive_template_input)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.update_interactive_template/3)
+      resolve(&Resolvers.InteractiveTemplates.update_interactive_template/3)
     end
 
     field :delete_interactive_template, :interactive_template_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.InterativeTemplates.delete_interactive_template/3)
+      resolve(&Resolvers.InteractiveTemplates.delete_interactive_template/3)
     end
   end
 end

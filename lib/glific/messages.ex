@@ -26,8 +26,8 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.InterativeTemplate,
     Templates.SessionTemplate
   }
 
@@ -242,7 +242,7 @@ defmodule Glific.Messages do
        ) do
     with {:ok, interactive_template} <-
            Repo.fetch(
-             InterativeTemplate,
+             InteractiveTemplate,
              interactive_template_id
            ),
          interactive_content <-

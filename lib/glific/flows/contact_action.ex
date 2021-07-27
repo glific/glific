@@ -10,8 +10,8 @@ defmodule Glific.Flows.ContactAction do
     Messages,
     Messages.Message,
     Repo,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.InterativeTemplate,
     Templates.SessionTemplate
   }
 
@@ -53,7 +53,7 @@ defmodule Glific.Flows.ContactAction do
 
     {:ok, interactive_template} =
       Repo.fetch_by(
-        InterativeTemplate,
+        InteractiveTemplate,
         %{id: action.interactive_template_id, organization_id: context.organization_id}
       )
 

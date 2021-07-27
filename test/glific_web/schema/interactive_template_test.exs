@@ -6,7 +6,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     Fixtures,
     Repo,
     Seeds.SeedsDev,
-    Templates.InterativeTemplate
+    Templates.InteractiveTemplate
   }
 
   setup do
@@ -83,7 +83,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     label = "Quick Reply Video"
 
     {:ok, interactive} =
-      Repo.fetch_by(InterativeTemplate, %{label: label, organization_id: user.organization_id})
+      Repo.fetch_by(InteractiveTemplate, %{label: label, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => interactive.id})
     assert {:ok, query_data} = result
@@ -106,7 +106,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     label = "Quick Reply Video"
 
     {:ok, interactive} =
-      Repo.fetch_by(InterativeTemplate, %{label: label, organization_id: user.organization_id})
+      Repo.fetch_by(InteractiveTemplate, %{label: label, organization_id: user.organization_id})
 
     language_id = interactive.language_id
 
@@ -166,7 +166,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     label = "Quick Reply Text"
 
     {:ok, interactive} =
-      Repo.fetch_by(InterativeTemplate, %{label: label, organization_id: user.organization_id})
+      Repo.fetch_by(InteractiveTemplate, %{label: label, organization_id: user.organization_id})
 
     result =
       auth_query_gql_by(:update, user,
@@ -199,7 +199,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
 
   test "delete an interactive", %{staff: user} do
     {:ok, interactive} =
-      Repo.fetch_by(InterativeTemplate, %{
+      Repo.fetch_by(InteractiveTemplate, %{
         label: "Quick Reply Text",
         organization_id: user.organization_id
       })

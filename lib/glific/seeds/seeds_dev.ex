@@ -24,7 +24,7 @@ if Code.ensure_loaded?(Faker) do
       Settings.Language,
       Stats.Stat,
       Tags.Tag,
-      Templates.InterativeTemplate,
+      Templates.InteractiveTemplate,
       Templates.SessionTemplate,
       Users
     }
@@ -1065,7 +1065,7 @@ if Code.ensure_loaded?(Faker) do
     def seed_interactives(organization) do
       [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-      Repo.insert!(%InterativeTemplate{
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Text",
         type: :quick_reply,
         interactive_content: %{
@@ -1090,7 +1090,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id
       })
 
-      Repo.insert!(%InterativeTemplate{
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Image",
         type: :quick_reply,
         interactive_content: %{
@@ -1110,7 +1110,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id
       })
 
-      Repo.insert!(%InterativeTemplate{
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Document",
         type: :quick_reply,
         interactive_content: %{
@@ -1130,7 +1130,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id
       })
 
-      Repo.insert!(%InterativeTemplate{
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Video",
         type: :quick_reply,
         interactive_content: %{
@@ -1150,7 +1150,7 @@ if Code.ensure_loaded?(Faker) do
         language_id: en.id
       })
 
-      Repo.insert!(%InterativeTemplate{
+      Repo.insert!(%InteractiveTemplate{
         label: "Interactive list",
         type: :list,
         interactive_content: %{
