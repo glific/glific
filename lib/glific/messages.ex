@@ -26,6 +26,7 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
@@ -229,24 +230,39 @@ defmodule Glific.Messages do
 
     attrs =
       Map.put(attrs, :receiver, contact)
-      |> check_for_interactive()
+      |> check_for_interactive(contact.language_id)
 
     check_for_hsm_message(attrs, contact)
   end
 
-  @spec check_for_interactive(map()) :: map()
-  defp check_for_interactive(%{interactive_content: interactive_content} = attrs) do
-    body =
-      InteractiveTemplates.get_interactive_body(
-        interactive_content,
-        interactive_content["type"],
-        interactive_content["content"]["type"]
-      )
+  @spec check_for_interactive(map(), non_neg_integer()) :: map()
+  defp check_for_interactive(
+         %{interactive_template_id: interactive_template_id} = attrs,
+         language_id
+       ) do
+    with {:ok, interactive_template} <-
+           Repo.fetch(
+             InteractiveTemplate,
+             interactive_template_id
+           ),
+         interactive_content <-
+           InteractiveTemplates.get_translations(interactive_template, language_id) do
+      body =
+        InteractiveTemplates.get_interactive_body(
+          interactive_content,
+          interactive_content["type"],
+          interactive_content["content"]["type"]
+        )
 
-    Map.put(attrs, :body, body)
+      Map.merge(attrs, %{
+        body: body,
+        interactive_content: interactive_content,
+        type: interactive_content["type"]
+      })
+    end
   end
 
-  defp check_for_interactive(attrs), do: attrs
+  defp check_for_interactive(attrs, _language_id), do: attrs
 
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::

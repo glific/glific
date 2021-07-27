@@ -24,7 +24,7 @@ if Code.ensure_loaded?(Faker) do
       Settings.Language,
       Stats.Stat,
       Tags.Tag,
-      Templates.InterativeTemplate,
+      Templates.InteractiveTemplate,
       Templates.SessionTemplate,
       Users
     }
@@ -1065,147 +1065,213 @@ if Code.ensure_loaded?(Faker) do
     def seed_interactives(organization) do
       [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
-      Repo.insert!(%InterativeTemplate{
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "text",
+          "text" => "How excited are you for Glific?",
+          "caption" => "Glific is a two way communication platform"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Excited"
+          },
+          %{
+            "type" => "text",
+            "title" => "Very Excited"
+          }
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Text",
         type: :quick_reply,
-        interactive_content: %{
-          "type" => "quick_reply",
-          "content" => %{
-            "type" => "text",
-            "text" => "How excited are you for Glific?"
-          },
-          "options" => [
-            %{
-              "type" => "text",
-              "title" => "Excited"
-            },
-            %{
-              "type" => "text",
-              "title" => "Very Excited"
-            }
-          ]
-        },
+        interactive_content: interactive_content,
         organization_id: organization.id,
-        language_id: en.id
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
       })
 
-      Repo.insert!(%InterativeTemplate{
+      interactive_content_eng = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "Are you excited for Glific?",
+          "type" => "text",
+          "caption" => "Glific comes with all new features"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "yes"},
+          %{"type" => "text", "title" => "no"}
+        ]
+      }
+
+      interactive_content_hin = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" => "आप ग्लिफ़िक के लिए कितने उत्साहित हैं?",
+          "type" => "text",
+          "caption" => "ग्लिफ़िक सभी नई सुविधाओं के साथ आता है"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "हाँ"},
+          %{"type" => "text", "title" => "ना"}
+        ]
+      }
+
+      translation = %{
+        "1" => interactive_content_eng,
+        "2" => interactive_content_hin
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: "Quick Reply Multilingual",
+        type: :quick_reply,
+        interactive_content: interactive_content_eng,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: translation
+      })
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "image",
+          "url" => "https://picsum.photos/200/300",
+          "caption" => "body text"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "First"},
+          %{"type" => "text", "title" => "Second"},
+          %{"type" => "text", "title" => "Third"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Image",
         type: :quick_reply,
-        interactive_content: %{
-          "type" => "quick_reply",
-          "content" => %{
-            "type" => "image",
-            "url" => "https://picsum.photos/200/300",
-            "caption" => "body text"
-          },
-          "options" => [
-            %{"type" => "text", "title" => "First"},
-            %{"type" => "text", "title" => "Second"},
-            %{"type" => "text", "title" => "Third"}
-          ]
-        },
+        interactive_content: interactive_content,
         organization_id: organization.id,
-        language_id: en.id
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
       })
 
-      Repo.insert!(%InterativeTemplate{
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "file",
+          "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
+          "filename" => "Sample file"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "First"},
+          %{"type" => "text", "title" => "Second"},
+          %{"type" => "text", "title" => "Third"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Document",
         type: :quick_reply,
-        interactive_content: %{
-          "type" => "quick_reply",
-          "content" => %{
-            "type" => "file",
-            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
-            "filename" => "Sample file"
-          },
-          "options" => [
-            %{"type" => "text", "title" => "First"},
-            %{"type" => "text", "title" => "Second"},
-            %{"type" => "text", "title" => "Third"}
-          ]
-        },
+        interactive_content: interactive_content,
         organization_id: organization.id,
-        language_id: en.id
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
       })
 
-      Repo.insert!(%InterativeTemplate{
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "video",
+          "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+          "caption" => "Sample video"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "First"},
+          %{"type" => "text", "title" => "Second"},
+          %{"type" => "text", "title" => "Third"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
         label: "Quick Reply Video",
         type: :quick_reply,
-        interactive_content: %{
-          "type" => "quick_reply",
-          "content" => %{
-            "type" => "video",
-            "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
-            "caption" => "Sample video"
-          },
-          "options" => [
-            %{"type" => "text", "title" => "First"},
-            %{"type" => "text", "title" => "Second"},
-            %{"type" => "text", "title" => "Third"}
-          ]
-        },
+        interactive_content: interactive_content,
         organization_id: organization.id,
-        language_id: en.id
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
       })
 
-      Repo.insert!(%InterativeTemplate{
+      interactive_content = %{
+        "type" => "list",
+        "title" => "Glific",
+        "body" => "Glific",
+        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+        "items" => [
+          %{
+            "title" => "Glific Features",
+            "subtitle" => "first Subtitle",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "Custom flows for automating conversation",
+                "description" => "Flow Editor for creating flows"
+              },
+              %{
+                "type" => "text",
+                "title" => "Custom reports for  analytics",
+                "description" => "DataStudio for report generation"
+              },
+              %{
+                "type" => "text",
+                "title" => "ML/AI",
+                "description" => "Dialogflow for AI/ML"
+              }
+            ]
+          },
+          %{
+            "title" => "Glific Usecases",
+            "subtitle" => "some usecases of Glific",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "Educational programs",
+                "description" => "Sharing education content with school student"
+              }
+            ]
+          },
+          %{
+            "title" => "Onboarded NGOs",
+            "subtitle" => "List of NGOs onboarded",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "SOL",
+                "description" =>
+                  "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
+              }
+            ]
+          }
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
         label: "Interactive list",
         type: :list,
-        interactive_content: %{
-          "type" => "list",
-          "title" => "Glific",
-          "body" => "Glific",
-          "globalButtons" => [%{"type" => "text", "title" => "button text"}],
-          "items" => [
-            %{
-              "title" => "Glific Features",
-              "subtitle" => "first Subtitle",
-              "options" => [
-                %{
-                  "type" => "text",
-                  "title" => "Custom flows for automating conversation",
-                  "description" => "Flow Editor for creating flows"
-                },
-                %{
-                  "type" => "text",
-                  "title" => "Custom reports for  analytics",
-                  "description" => "DataStudio for report generation"
-                },
-                %{
-                  "type" => "text",
-                  "title" => "ML/AI",
-                  "description" => "Dialogflow for AI/ML"
-                }
-              ]
-            },
-            %{
-              "title" => "Glific Usecases",
-              "subtitle" => "some usecases of Glific",
-              "options" => [
-                %{
-                  "type" => "text",
-                  "title" => "Educational programs",
-                  "description" => "Sharing education content with school student"
-                }
-              ]
-            },
-            %{
-              "title" => "Onboarded NGOs",
-              "subtitle" => "List of NGOs onboarded",
-              "options" => [
-                %{
-                  "type" => "text",
-                  "title" => "SOL",
-                  "description" =>
-                    "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
-                }
-              ]
-            }
-          ]
-        },
+        interactive_content: interactive_content,
         organization_id: organization.id,
-        language_id: en.id
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
       })
     end
 

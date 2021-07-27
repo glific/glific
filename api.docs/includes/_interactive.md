@@ -313,7 +313,7 @@ In case of errors, all the above functions return an error object like the below
     "deleteinteractiveTemplate": {
       "errors": [
         {
-          "key": "Elixir.Glific.Templates.InterativeTemplate",
+          "key": "Elixir.Glific.Templates.InteractiveTemplate",
           "message": "Resource not found"
         }
       ]

@@ -1,12 +1,12 @@
-defmodule GlificWeb.Resolvers.InterativeTemplates do
+defmodule GlificWeb.Resolvers.InteractiveTemplates do
   @moduledoc """
   Interactives Resolver which sits between the GraphQL schema and Glific Interactives Context API. This layer basically stiches together
   one or more calls to resolve the incoming queries.
   """
   alias Glific.{
     Repo,
-    Templates.InteractiveTemplates,
-    Templates.InterativeTemplate
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates
   }
 
   @doc """
@@ -16,7 +16,7 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
           {:ok, any} | {:error, any}
   def interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
+           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
          do: {:ok, %{interactive_template: interactive_template}}
   end
 
@@ -54,7 +54,7 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
           {:ok, any} | {:error, any}
   def update_interactive_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
+           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
          {:ok, interactive_template} <-
            InteractiveTemplates.update_interactive_template(interactive_template, params) do
       {:ok, %{interactive_template: interactive_template}}
@@ -66,7 +66,7 @@ defmodule GlificWeb.Resolvers.InterativeTemplates do
           {:ok, any} | {:error, any}
   def delete_interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InterativeTemplate, %{id: id, organization_id: user.organization_id}),
+           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
          {:ok, interactive_template} <-
            InteractiveTemplates.delete_interactive_template(interactive_template) do
       {:ok, interactive_template}

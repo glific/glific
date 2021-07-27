@@ -19,6 +19,7 @@ defmodule Glific.Flows.ContactActionTest do
     SeedsDev.seed_contacts()
     SeedsDev.seed_session_templates()
     SeedsDev.hsm_templates(organization)
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -119,10 +120,12 @@ defmodule Glific.Flows.ContactActionTest do
       })
       |> Repo.preload([:contact, :flow])
 
-    interactive =
-      "{\"content\":{\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}"
+    [interactive_template | _] =
+      Templates.InteractiveTemplates.list_interactives(%{
+        filter: Map.merge(attrs, %{label: "Quick Reply Text"})
+      })
 
-    action = %Action{text: interactive}
+    action = %Action{interactive_template_id: interactive_template.id}
 
     ContactAction.send_interactive_message(context, action, [])
 
@@ -133,6 +136,41 @@ defmodule Glific.Flows.ContactActionTest do
       |> Repo.one()
 
     assert message.body == "How excited are you for Glific?"
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with language changed", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    l2 = Glific.Settings.get_language!(2)
+    assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, %{language_id: l2.id})
+    # preload contact
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [interactive_template | _] =
+      Templates.InteractiveTemplates.list_interactives(%{
+        filter: Map.merge(attrs, %{label: "Quick Reply Multilingual"})
+      })
+
+    action = %Action{interactive_template_id: interactive_template.id}
+
+    ContactAction.send_interactive_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == "आप ग्लिफ़िक के लिए कितने उत्साहित हैं?"
     assert message.flow_id == context.flow_id
   end
 

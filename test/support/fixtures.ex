@@ -28,8 +28,8 @@ defmodule Glific.Fixtures do
     Settings,
     Tags,
     Templates,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
-    Templates.InterativeTemplate,
     Templates.SessionTemplate,
     Triggers.Trigger,
     Users
@@ -779,7 +779,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
-  @spec interactive_fixture(map()) :: InterativeTemplate.t()
+  @spec interactive_fixture(map()) :: InteractiveTemplate.t()
   def interactive_fixture(attrs) do
     language = language_fixture()
 

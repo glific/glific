@@ -16,6 +16,7 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
+    Templates.InteractiveTemplate,
     Templates.SessionTemplate,
     Users
   }
@@ -25,6 +26,7 @@ defmodule Glific.MessagesTest do
     SeedsDev.seed_contacts(organization)
     SeedsDev.hsm_templates(organization)
     SeedsDev.seed_users(organization)
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -630,23 +632,19 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message interactive quick reply message with image should have message body as image caption",
-         attrs do
+         %{organization_id: organization_id} = attrs do
+      label = "Quick Reply Image"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
       valid_attrs = %{
         body: nil,
         flow: :outbound,
-        interactive_content: %{
-          "content" => %{
-            "caption" => "body text",
-            "type" => "image",
-            "url" => "https://picsum.photos/200/300"
-          },
-          "options" => [
-            %{"title" => "First", "type" => "text"},
-            %{"title" => "Second", "type" => "text"},
-            %{"title" => "Third", "type" => "text"}
-          ],
-          "type" => "quick_reply"
-        },
+        interactive_template_id: interactive_template.id,
         type: :quick_reply
       }
 
@@ -657,21 +655,19 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message interactive quick reply message should have message body text",
-         attrs do
+         %{organization_id: organization_id} = attrs do
+      label = "Quick Reply Text"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
       valid_attrs = %{
         body: nil,
         flow: :outbound,
-        interactive_content: %{
-          "content" => %{
-            "text" => "How excited are you for Glific?",
-            "type" => "text"
-          },
-          "options" => [
-            %{"title" => "Excited", "type" => "text"},
-            %{"title" => "Very Excited", "type" => "text"}
-          ],
-          "type" => "quick_reply"
-        },
+        interactive_template_id: interactive_template.id,
         type: :quick_reply
       }
 
@@ -682,23 +678,19 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message interactive quick reply message with document should have message body as ",
-         attrs do
+         %{organization_id: organization_id} = attrs do
+      label = "Quick Reply Document"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
       valid_attrs = %{
         body: nil,
         flow: :outbound,
-        interactive_content: %{
-          "content" => %{
-            "filename" => "Sample file",
-            "type" => "file",
-            "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
-          },
-          "options" => [
-            %{"title" => "First", "type" => "text"},
-            %{"title" => "Second", "type" => "text"},
-            %{"title" => "Third", "type" => "text"}
-          ],
-          "type" => "quick_reply"
-        },
+        interactive_template_id: interactive_template.id,
         type: :quick_reply
       }
 
@@ -709,55 +701,19 @@ defmodule Glific.MessagesTest do
     end
 
     test "create and send message interactive list message should have message body as list body",
-         attrs do
-      interactive_content = %{
-        "body" => "Glific",
-        "globalButtons" => [%{"title" => "button text", "type" => "text"}],
-        "items" => [
-          %{
-            "options" => [
-              %{
-                "description" => "Flow Editor",
-                "title" => "Custom flows for chat",
-                "type" => "text"
-              },
-              %{
-                "description" => "DataStudio",
-                "title" => "Custom reports",
-                "type" => "text"
-              },
-              %{"description" => "Dialogflow", "title" => "ML/AI", "type" => "text"}
-            ],
-            "subtitle" => "Glific Features",
-            "title" => "Glific Features"
-          },
-          %{
-            "options" => [
-              %{
-                "description" => "Sharing",
-                "title" => "Educationa",
-                "type" => "text"
-              }
-            ],
-            "subtitle" => "Glific Usecases",
-            "title" => "Glific Usecases"
-          },
-          %{
-            "options" => [
-              %{"description" => "cool new", "title" => "SOL", "type" => "text"}
-            ],
-            "subtitle" => "Onboarded NGOs",
-            "title" => "Onboarded NGOs"
-          }
-        ],
-        "title" => "Glific",
-        "type" => "list"
-      }
+         %{organization_id: organization_id} = attrs do
+      label = "Interactive list"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
 
       valid_attrs = %{
         body: nil,
         flow: :outbound,
-        interactive_content: interactive_content,
+        interactive_template_id: interactive_template.id,
         type: :quick_reply
       }
 

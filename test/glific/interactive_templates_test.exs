@@ -4,8 +4,8 @@ defmodule Glific.InteractiveTemplatesTest do
 
   alias Glific.{
     Fixtures,
-    Templates.InteractiveTemplates,
-    Templates.InterativeTemplate
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates
   }
 
   describe "interactive_templates" do
@@ -91,9 +91,14 @@ defmodule Glific.InteractiveTemplatesTest do
       organization_id: organization_id
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
-      attrs = Map.merge(@valid_attrs, %{organization_id: organization_id, language_id: interactive.language_id})
 
-      assert {:ok, %InterativeTemplate{} = interactive} =
+      attrs =
+        Map.merge(@valid_attrs, %{
+          organization_id: organization_id,
+          language_id: interactive.language_id
+        })
+
+      assert {:ok, %InteractiveTemplate{} = interactive} =
                InteractiveTemplates.create_interactive_template(attrs)
 
       assert interactive.label == "Quick Reply Test Text"
@@ -111,7 +116,7 @@ defmodule Glific.InteractiveTemplatesTest do
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %InterativeTemplate{} = interactive} =
+      assert {:ok, %InteractiveTemplate{} = interactive} =
                InteractiveTemplates.update_interactive_template(interactive, @update_attrs)
 
       assert interactive.label == "Updated Quick Reply label"
@@ -134,7 +139,7 @@ defmodule Glific.InteractiveTemplatesTest do
     } do
       interactive = Fixtures.interactive_fixture(%{organization_id: organization_id})
 
-      assert {:ok, %InterativeTemplate{}} =
+      assert {:ok, %InteractiveTemplate{}} =
                InteractiveTemplates.delete_interactive_template(interactive)
 
       assert_raise Ecto.NoResultsError, fn ->
