@@ -5,11 +5,16 @@ defmodule Glific.Clients.Stir do
   """
 
   @doc false
-  @spec webhook(map) :: map()
-  def webhook(%{results: results}),
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("fetch_mt", fields) do
+    group_label = fields["group_label"]
+    %{mt_list: group_label}
+  end
+
+  def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
-  def webhook(_), do: %{}
+  def webhook(_, fields), do: fields
 
   @doc false
   @spec blocked?(String.t()) :: boolean

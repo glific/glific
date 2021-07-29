@@ -68,6 +68,8 @@ defmodule Glific.Clients.DigitalGreen do
     next_slot(time, morning_slot, evening_slot)
     |> Timex.diff(time, :seconds)
     |> max(61)
+
+    62
   end
 
   defp next_slot(time, morning_slot, evening_slot) do
@@ -142,8 +144,11 @@ defmodule Glific.Clients.DigitalGreen do
       {:ok, %{"keywords" => keywords} = _attrs} ->
         %{decoded_message: hd(keywords)}
 
+      {:ok, message} ->
+        %{decoded_message: message}
+
       {:error, message} ->
-        %{decoded_message: "Error in decode #{inspect(params)} with message #{message}"}
+        %{decoded_message: "could not decode", error_message: "Error in decode #{inspect(params)} with message #{message}"}
     end
   end
 
