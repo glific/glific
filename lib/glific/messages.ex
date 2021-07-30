@@ -246,18 +246,24 @@ defmodule Glific.Messages do
              interactive_template_id
            ),
          interactive_content <-
-           InteractiveTemplates.get_translations(interactive_template, language_id) do
-      body =
-        InteractiveTemplates.get_interactive_body(
-          interactive_content,
-          interactive_content["type"],
-          interactive_content["content"]["type"]
-        )
-
+           InteractiveTemplates.get_translations(interactive_template, language_id),
+         body <-
+           InteractiveTemplates.get_interactive_body(
+             interactive_content,
+             interactive_content["type"],
+             interactive_content["content"]["type"]
+           ),
+         media_id <-
+           interactive_template.interactive_content
+           |> InteractiveTemplates.get_media(
+             interactive_content["content"]["type"],
+             attrs.organization_id
+           ) do
       Map.merge(attrs, %{
         body: body,
         interactive_content: interactive_content,
-        type: interactive_content["type"]
+        type: interactive_content["type"],
+        media_id: media_id
       })
     end
   end

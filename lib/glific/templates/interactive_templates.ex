@@ -150,4 +150,24 @@ defmodule Glific.Templates.InteractiveTemplates do
       interactive_template.interactive_content
     )
   end
+
+  @doc """
+  Create a message media from interactive content and return id
+  """
+  @spec get_media(map(), String.t(), non_neg_integer()) :: non_neg_integer() | nil
+  def get_media(%{"content" => content}, type, organization_id)
+      when type in ["image", "file", "video"] do
+    {:ok, media} =
+      %{
+        caption: content["caption"],
+        organization_id: organization_id,
+        source_url: content["url"],
+        url: content["url"]
+      }
+      |> Glific.Messages.create_message_media()
+
+    media.id
+  end
+
+  def get_media(_interactive_content, _type, _organization_id), do: nil
 end
