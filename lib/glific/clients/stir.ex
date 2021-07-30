@@ -35,10 +35,10 @@ defmodule Glific.Clients.Stir do
 
     mt_list =
       get_mt_list(fields["district"], organization_id)
-      |> Enum.map(fn contact -> "Type #{contact.id} for #{contact.name}" end)
+      |> Enum.map(fn contact -> "Type *#{contact.id}* for #{contact.name}" end)
       |> Enum.join("\n")
 
-    %{mt_list: mt_list}
+    %{mt_list_message: mt_list}
   end
 
   def webhook("set_mt_for_tdc", fields) do
@@ -46,11 +46,11 @@ defmodule Glific.Clients.Stir do
     # {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     {:ok, mt_contact_id} = Glific.parse_maybe_integer(fields["mt_contact_id"])
 
-    {:ok, tdc} = Contacts.get_contact!(contact_id)
-    {:ok, mt} = Contacts.get_contact!(mt_contact_id)
+    tdc =  Contacts.get_contact!(contact_id)
+    mt = Contacts.get_contact!(mt_contact_id)
 
     %{"mt_name" => mt.name, "mt_contact_id" => mt.id}
-    |> Enum.reduce(fn {key, value} ->
+    |> Enum.map(fn {key, value} ->
       ContactField.do_add_contact_field(tdc, key, key, value, "string")
     end)
 
