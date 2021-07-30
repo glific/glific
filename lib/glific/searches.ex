@@ -265,7 +265,6 @@ defmodule Glific.Searches do
 
   defp add_message_clause(query, _args),
   do: query
-
   # codebeat:enable[ABC]
 
   # common function to build query between count and search
