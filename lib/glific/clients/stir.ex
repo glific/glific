@@ -4,17 +4,79 @@ defmodule Glific.Clients.Stir do
   Glific.Clients.Stir.compute_art_content(res)
   """
 
+  alias Glific.{
+    Contacts,
+    Flows.ContactField,
+    Groups,
+    Groups.Group,
+    Repo
+  }
+
   @doc false
   @spec webhook(String.t(), map()) :: map()
-  def webhook("fetch_mt", fields) do
-    group_label = fields["group_label"]
-    %{mt_list: group_label}
+  def webhook("move_mt_to_district_group", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    group_label = district_group(fields["district"], :mt)
+    {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
+
+    Groups.create_contact_group(%{
+      contact_id: contact_id,
+      group_id: group.id,
+      organization_id: organization_id
+    })
+
+    %{group: group.label, is_moved: true}
+  end
+
+  def webhook("fetch_mt_list", fields) do
+    # {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+
+    mt_list =
+      get_mt_list(fields["district"], organization_id)
+      |> Enum.map(fn contact -> "Type #{contact.id} for #{contact.name}" end)
+      |> Enum.join("\n")
+
+    %{mt_list: mt_list}
+  end
+
+  def webhook("set_mt_for_tdc", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    # {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    {:ok, mt_contact_id} = Glific.parse_maybe_integer(fields["mt_contact_id"])
+
+    {:ok, tdc} = Contacts.get_contact!(contact_id)
+    {:ok, mt} = Contacts.get_contact!(mt_contact_id)
+
+    %{"mt_name" => mt.name, "mt_contact_id" => mt.id}
+    |> Enum.reduce(fn {key, value} ->
+      ContactField.do_add_contact_field(tdc, key, key, value, "string")
+    end)
+
+    %{selected_mt: mt}
   end
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
   def webhook(_, fields), do: fields
+
+  defp get_mt_list(district, organization_id) do
+    group_label = district_group(district, :mt)
+    {:ok, group} = Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
+    Contacts.list_contacts(%{filter: %{include_groups: [group.id]}})
+  end
+
+  defp district_group(district, :mt) when is_binary(district) do
+    district =
+      String.trim(district)
+      |> String.downcase()
+
+    "MT-#{district}"
+  end
+
+  defp district_group(_, _), do: nil
 
   @doc false
   @spec blocked?(String.t()) :: boolean
