@@ -260,10 +260,11 @@ defmodule Glific.Searches do
 
   @spec add_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
   defp add_message_clause(query, %{filter: filters} = _args)
-       when is_map(filters) and map_size(filters) != 0,
-       do:
-         query
-         |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
+       when is_map(filters) do
+    if map_size(filters) > 1,
+      do: query |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id),
+      else: query
+  end
 
   defp add_message_clause(query, _args),
     do: query
