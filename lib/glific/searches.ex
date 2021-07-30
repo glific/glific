@@ -259,12 +259,15 @@ defmodule Glific.Searches do
   end
 
   @spec add_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
-  defp add_message_clause(query, %{filter: filters} = _args) when is_map(filters) and filters != %{},
-  do: query
-    |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
+  defp add_message_clause(query, %{filter: filters} = _args)
+       when is_map(filters) and map_size(filters) != 0,
+       do:
+         query
+         |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
 
   defp add_message_clause(query, _args),
-  do: query
+    do: query
+
   # codebeat:enable[ABC]
 
   # common function to build query between count and search
