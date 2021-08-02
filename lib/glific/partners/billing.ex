@@ -559,7 +559,6 @@ defmodule Glific.Partners.Billing do
     %{
       stripe_current_period_start: period_start,
       stripe_current_period_end: period_end,
-      stripe_last_usage_recorded: nil
     }
   end
 
@@ -711,7 +710,7 @@ defmodule Glific.Partners.Billing do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
         # if we dont have last_usage, set it from the subscription period date
-        do: Timex.beginning_of_month(end_date),
+        do: Timex.beginning_of_week(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period
         else: billing.stripe_last_usage_recorded
