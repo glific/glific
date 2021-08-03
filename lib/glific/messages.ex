@@ -965,12 +965,17 @@ defmodule Glific.Messages do
   defp include_label_filter(query, []), do: query
 
   defp include_label_filter(query, label_ids) do
-    flow_labels = Glific.Flows.FlowLabel
-    |> where([f], f.id in ^label_ids)
-    |> select([f], f.name)
-    |> Repo.all()
+    flow_labels =
+      Glific.Flows.FlowLabel
+      |> where([f], f.id in ^label_ids)
+      |> select([f], f.name)
+      |> Repo.all()
 
-    query |> where([m], m.flow_label in ^flow_labels)
+    flow_labels
+    |> Enum.reduce(query, fn flow_label, query ->
+      where(query, [c], ilike(c.flow_label, ^"%#{flow_label}%"))
+    end)
+    |> or_where([m], m.flow_label in ^flow_labels)
   end
 
   # apply filter for message tags
