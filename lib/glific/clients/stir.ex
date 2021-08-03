@@ -52,11 +52,31 @@ defmodule Glific.Clients.Stir do
       get_mt_list(fields["district"], organization_id)
       |> Enum.find(fn contact -> contact.index == mt_contact_index end)
 
-    ContactField.do_add_contact_field(tdc, "mt_name", "mt_name", mt.name, "string")
-    ContactField.do_add_contact_field(tdc, "mt_contact_id", "mt_contact_id", mt.id, "string")
+    ## this is not correct we will fix that.
+    tdc
+    |> ContactField.do_add_contact_field("mt_name", "mt_name", mt.name, "string")
+    |> ContactField.do_add_contact_field("mt_contact_id", "mt_contact_id", mt.id, "string")
 
     %{selected_mt: mt.name}
   end
+
+  # def webhook("praority_selection_frequecy", fields) do
+  #   {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+  #   {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+  #   {:ok, mt_contact_index} = Glific.parse_maybe_integer(fields["mt_contact_id"])
+
+  #   %{selected_mt: mt.name}
+  # end
+
+  # def webhook("select_first_priority", fields) do
+  #   {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+  #   ContactField.do_add_contact_field(tdc, "first_priority", "first_priority", fields["first_priority"], "string")
+  # end
+
+  # def webhook("select_second_priority", fields) do
+  #   ContactField.do_add_contact_field(tdc, "second_priority", "second_priority", fields["second_priority"], "string")
+  # end
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
@@ -69,6 +89,7 @@ defmodule Glific.Clients.Stir do
     Contacts.list_contacts(%{filter: %{include_groups: [group.id]}})
     |> Enum.with_index(1)
     |> Enum.map(fn {contact, index} -> %{index: index, name: contact.name, id: contact.id} end)
+    |> IO.inspect()
   end
 
   defp district_group(district, :mt) when is_binary(district) do
