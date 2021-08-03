@@ -652,6 +652,7 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "body text"
+      assert false == is_nil(message.media_id)
     end
 
     test "create and send message interactive quick reply message should have message body text",
@@ -698,6 +699,7 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
+      assert false == is_nil(message.media_id)
     end
 
     test "create and send message interactive list message should have message body as list body",

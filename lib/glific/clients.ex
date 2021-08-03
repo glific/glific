@@ -32,7 +32,8 @@ defmodule Glific.Clients do
 
   @stir %{
     id: 13,
-    name: "STiR Education"
+    name: "STiR Education",
+    webhook: Glific.Clients.Stir
     # blocked?: Glific.Clients.Stir
   }
 
