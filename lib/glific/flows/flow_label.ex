@@ -104,4 +104,19 @@ defmodule Glific.Flows.FlowLabel do
       _ -> create_flow_label(attrs)
     end
   end
+
+  @doc """
+  Return the count of flow labels, using the same filter as list_flow_labels
+  """
+  @spec list_flow_labels(map()) :: list()
+  def list_flow_labels(args) do
+    Repo.list_filter(args, FlowLabel, &Repo.opts_with_inserted_at/2, &Repo.filter_with/2)
+  end
+
+  @doc """
+  Return the count of flow labels, using the same filter as list_flow_labels
+  """
+  @spec count_flow_labels(map()) :: integer
+  def count_flow_labels(args),
+    do: Repo.count_filter(args, FlowLabel, &Repo.filter_with/2)
 end
