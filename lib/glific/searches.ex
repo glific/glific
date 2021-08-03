@@ -399,7 +399,8 @@ defmodule Glific.Searches do
     contacts = get_filtered_contacts(term, args)
     messages = get_filtered_messages_with_term(term, args)
     tags = get_filtered_tagged_message(term, args)
-    Search.new(contacts, messages, tags)
+    labels = get_filtered_labled_message(term, args)
+    Search.new(contacts, messages, tags, labels)
   end
 
   @spec filtered_query(map()) :: Ecto.Query.t()
@@ -436,7 +437,15 @@ defmodule Glific.Searches do
   @spec get_filtered_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_messages_with_term(term, args) do
     filtered_query(args)
-    |> where([m: m], ilike(m.body, ^"%#{term}%") or ilike(m.flow_label, ^"%#{term}%"))
+    |> where([m: m], ilike(m.body, ^"%#{term}%"))
+    |> order_by([m: m], desc: m.inserted_at)
+    |> Repo.all()
+  end
+
+  @spec get_filtered_labled_message(String.t(), map()) :: list()
+  defp get_filtered_labled_message(term, args) do
+    filtered_query(args)
+    |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.inserted_at)
     |> Repo.all()
   end

@@ -31,6 +31,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :contacts, list_of(:contact)
     field :messages, list_of(:message)
     field :tags, list_of(:message)
+    field :labels, list_of(:message)
   end
 
   input_object :saved_search_filter do
