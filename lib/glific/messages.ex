@@ -965,12 +965,12 @@ defmodule Glific.Messages do
   defp include_label_filter(query, []), do: query
 
   defp include_label_filter(query, label_ids) do
-    result = Glific.Flows.FlowLabel
+    flow_labels = Glific.Flows.FlowLabel
     |> where([f], f.id in ^label_ids)
     |> select([f], f.name)
     |> Repo.all()
 
-    query |> where([m], m.flow_label in ^result)
+    query |> where([m], m.flow_label in ^flow_labels)
   end
 
   # apply filter for message tags
