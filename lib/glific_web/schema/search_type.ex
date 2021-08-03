@@ -72,6 +72,9 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "Include conversations with these tags"
     field :include_tags, list_of(:gid)
 
+    @desc "Include conversations with these labels"
+    field :include_labels, list_of(:gid)
+
     @desc "Include conversations with these groups"
     field :include_groups, list_of(:gid)
 

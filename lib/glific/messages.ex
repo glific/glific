@@ -888,6 +888,9 @@ defmodule Glific.Messages do
   defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
     do: results
 
+  defp add_empty_conversations(results, %{filter: %{include_labels: _labels}}),
+    do: results
+
   defp add_empty_conversations(results, %{filter: %{include_users: _users}}),
     do: results
 
@@ -946,12 +949,28 @@ defmodule Glific.Messages do
       {:include_tags, tag_ids}, query ->
         include_tag_filter(query, tag_ids)
 
+      {:include_labels, label_ids}, query ->
+        include_label_filter(query, label_ids)
+
       {:include_users, user_ids}, query ->
         include_user_filter(query, user_ids)
 
       _filter, query ->
         query
     end)
+  end
+
+  # apply filter for message labels
+  @spec include_label_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  defp include_label_filter(query, []), do: query
+
+  defp include_label_filter(query, label_ids) do
+    result = Glific.Flows.FlowLabel
+    |> where([f], f.id in ^label_ids)
+    |> select([f], f.name)
+    |> Repo.all()
+
+    query |> where([m], m.flow_label in ^result)
   end
 
   # apply filter for message tags
