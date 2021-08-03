@@ -558,7 +558,7 @@ defmodule Glific.Partners.Billing do
 
     %{
       stripe_current_period_start: period_start,
-      stripe_current_period_end: period_end,
+      stripe_current_period_end: period_end
     }
   end
 
@@ -595,7 +595,7 @@ defmodule Glific.Partners.Billing do
   defp subscription_requires_auth?(subscription),
     do:
       !is_nil(subscription.pending_setup_intent) &&
-        subscription.pending_setup_intent.status == "requires_action"
+        Map.get(subscription.pending_setup_intent, :status, "") == "requires_action"
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
