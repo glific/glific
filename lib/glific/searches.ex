@@ -436,7 +436,7 @@ defmodule Glific.Searches do
   @spec get_filtered_messages_with_term(String.t(), map()) :: list()
   defp get_filtered_messages_with_term(term, args) do
     filtered_query(args)
-    |> where([m: m], ilike(m.body, ^"%#{term}%"))
+    |> where([m: m], ilike(m.body, ^"%#{term}%") or ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.inserted_at)
     |> Repo.all()
   end
