@@ -709,7 +709,7 @@ defmodule Glific.Partners.Billing do
   defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
-        # if we dont have last_usage, set it from the subscription period date
+        # if we dont have last_usage, set it to start of the week as we update it on weekly basis
         do: Timex.beginning_of_week(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period
