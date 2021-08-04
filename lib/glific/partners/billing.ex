@@ -592,10 +592,11 @@ defmodule Glific.Partners.Billing do
 
   # function to check if the subscription requires another authentcation i.e 3D
   @spec subscription_requires_auth?(Stripe.Subscription.t()) :: boolean()
-  defp subscription_requires_auth?(subscription),
-    do:
-      !is_nil(subscription.pending_setup_intent) &&
-        Map.get(subscription.pending_setup_intent, :status, "") == "requires_action"
+  defp subscription_requires_auth?(%{pending_setup_intent: pending_setup_intent})
+       when is_map(pending_setup_intent),
+       do: Map.get(pending_setup_intent, :status, "") == "requires_action"
+
+  defp subscription_requires_auth?(_subscription), do: false
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
