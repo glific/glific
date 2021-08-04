@@ -23,8 +23,7 @@ defmodule GlificWeb.Flows.WebhookController do
     |> json(json)
   end
 
-  @dg_call_sid "911234567890"
-  @dg_flow_id "23"
+  @dg_call_to "911234567890"
   @dg_glific_flow_id 45
   @dg_glific_organization_id 23
 
@@ -38,15 +37,14 @@ defmodule GlificWeb.Flows.WebhookController do
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         %{
           "CallFrom" => phone,
-          "CallSid" => call_sid,
-          "flow_id" => flow_id
+          "CallTo" => call_to,
+          "Direction" => direction
         } = _params
       ) do
     # check and ensure that this is a valid callback from exotel
-    # use call_sid and flow_id for that
-
-    if call_sid == @dg_call_sid &&
-         flow_id == @dg_flow_id &&
+    # use call_to and direction for this
+    if call_to == @dg_call_to &&
+         direction == "incoming" &&
          organization_id == @dg_glific_organization_id do
       # first create and optin the contact
       attrs = %{
