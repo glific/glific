@@ -1178,23 +1178,22 @@ defmodule Glific.Messages do
   """
   @spec get_media_type_from_url(String.t()) :: tuple()
   def get_media_type_from_url(url) do
-    case Tesla.get(url |> URI.decode() |> URI.encode()) do
-      {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
-        headers =
-          headers
-          |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
-          |> Map.put_new("content-type", "")
+    extension = url
+      |> Path.extname()
+      |> String.downcase()
+      |> String.replace(".", "")
 
-        cond do
-          String.contains?(headers["content-type"], "image") -> {:image, url}
-          String.contains?(headers["content-type"], "video") -> {:video, url}
-          String.contains?(headers["content-type"], "audio") -> {:audio, url}
-          String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"]) -> {:document, url}
-          true -> {:text, nil}
-        end
+    mime_types = [
+      {:image, ["png", "jpg", "jpeg"]},
+      {:video, ["mp4", "3gp", "3gpp"]},
+      {:audio, ["mp3", "wav", "acc"]},
+      {:document, ["pdf", "docx", "xlxs"]},
+    ]
 
-      _ ->
-        {:text, nil}
+    Enum.find(mime_types, fn {type, extension_list} ->  extension in extension_list end)
+    |> case do
+      {type, _} -> {type, url}
+      _ -> {:text, nil}
     end
   end
 
