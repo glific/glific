@@ -104,18 +104,21 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc """
   Start a flow for a contact
   """
-  @spec start_contact_flow(Absinthe.Resolution.t(), %{flow_id: integer, contact_id: integer}, %{
-          context: map()
-        }) ::
+  @spec start_contact_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer | String.t(), contact_id: integer},
+          %{
+            context: map()
+          }
+        ) ::
           {:ok, any} | {:error, any}
   def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
-         {:ok, contact} <-
+    with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {:ok, _flow} <- Flows.start_contact_flow(flow, contact) do
+         {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact) do
       {:ok, %{success: true}}
     end
   end

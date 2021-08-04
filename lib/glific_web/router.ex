@@ -112,6 +112,7 @@ defmodule GlificWeb.Router do
   scope "/webhook", GlificWeb do
     post "/stripe", StripeController, :stripe_webhook
     post "/stir/survey", Flows.WebhookController, :stir_survey
+    get "/exotel/optin", Flows.WebhookController, :exotel_optin
   end
 
   scope "/flow-editor", GlificWeb.Flows do
