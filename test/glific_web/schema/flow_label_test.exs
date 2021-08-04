@@ -1,17 +1,8 @@
-defmodule GlificWeb.Schema.FlowTest do
+defmodule GlificWeb.Schema.FlowLabelTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{
-    # Contacts,
-    # Fixtures,
-    # Flows,
-    # Flows.Flow,
-    # Flows.FlowRevision,
-    # Groups,
-    # Repo,
-    Seeds.SeedsDev
-  }
+  alias Glific.Seeds.SeedsDev
 
   setup do
     SeedsDev.seed_flow_labels()
