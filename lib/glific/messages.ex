@@ -1100,9 +1100,7 @@ defmodule Glific.Messages do
     # We set a timeout of 60 minutes for this cache entry
     case Caches.get_global({:validate_media, url, type}) do
       {:ok, nil} ->
-        value = do_validate_media(url, type)
-        Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
-        value
+        do_validate_media(url, type)
 
       {:ok, value} ->
         value
@@ -1122,7 +1120,7 @@ defmodule Glific.Messages do
     # we first decode the string since we have no idea if it was encoded or not
     # if the string was not encoded, decode should not really matter
     # once decoded we encode the string
-    case Tesla.get(url |> URI.decode() |> URI.encode()) do
+    case Tesla.get(url |> URI.decode() |> URI.encode(), opts: [adapter: [recv_timeout: 10_000]]) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
         headers
         |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
@@ -1148,7 +1146,9 @@ defmodule Glific.Messages do
         }
 
       true ->
-        %{is_valid: true, message: "success"}
+        value = %{is_valid: true, message: "success"}
+        Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
+        value
     end
   end
 
@@ -1178,23 +1178,22 @@ defmodule Glific.Messages do
   """
   @spec get_media_type_from_url(String.t()) :: tuple()
   def get_media_type_from_url(url) do
-    case Tesla.get(url |> URI.decode() |> URI.encode()) do
-      {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
-        headers =
-          headers
-          |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
-          |> Map.put_new("content-type", "")
+    extension = url
+      |> Path.extname()
+      |> String.downcase()
+      |> String.replace(".", "")
 
-        cond do
-          String.contains?(headers["content-type"], "image") -> {:image, url}
-          String.contains?(headers["content-type"], "video") -> {:video, url}
-          String.contains?(headers["content-type"], "audio") -> {:audio, url}
-          String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"]) -> {:document, url}
-          true -> {:text, nil}
-        end
+    mime_types = [
+      {:image, ["png", "jpg", "jpeg"]},
+      {:video, ["mp4", "3gp", "3gpp"]},
+      {:audio, ["mp3", "wav", "acc"]},
+      {:document, ["pdf", "docx", "xlxs"]},
+    ]
 
-      _ ->
-        {:text, nil}
+    Enum.find(mime_types, fn {_type, extension_list} ->  extension in extension_list end)
+    |> case do
+      {type, _} -> {type, url}
+      _ -> {:text, nil}
     end
   end
 
