@@ -1190,7 +1190,7 @@ defmodule Glific.Messages do
       {:document, ["pdf", "docx", "xlxs"]},
     ]
 
-    Enum.find(mime_types, fn {type, extension_list} ->  extension in extension_list end)
+    Enum.find(mime_types, fn {_type, extension_list} ->  extension in extension_list end)
     |> case do
       {type, _} -> {type, url}
       _ -> {:text, nil}
