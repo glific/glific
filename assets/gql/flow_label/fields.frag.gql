@@ -7,3 +7,10 @@ fragment FlowLabelFields on FlowLabelResult {
     uuid
   }
 }
+
+fragment ErrorFields on FlowLabelResult {
+  errors {
+    key
+    message
+  }
+}

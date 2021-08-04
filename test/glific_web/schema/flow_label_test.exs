@@ -2,7 +2,11 @@ defmodule GlificWeb.Schema.FlowLabelTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.Seeds.SeedsDev
+  alias Glific.{
+    Flows.FlowLabel,
+    Repo,
+    Seeds.SeedsDev
+  }
 
   setup do
     SeedsDev.seed_flow_labels()
@@ -12,6 +16,22 @@ defmodule GlificWeb.Schema.FlowLabelTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/flow_label/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/flow_label/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/flow_label/by_id.gql")
+
+  test "flow_label id returns one flow_label or nil", %{staff: user} do
+    name = "Age Group less than 10"
+    {:ok, flow_label} = Repo.fetch_by(FlowLabel, %{name: name, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => flow_label.id})
+    assert {:ok, query_data} = result
+    flow_name = get_in(query_data, [:data, "flowLabel", "flowLabel", "name"])
+    assert flow_name == name
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "flowLabel", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
 
   test "flow_labels field returns list of flow_labels", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
