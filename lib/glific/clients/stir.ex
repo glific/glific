@@ -13,10 +13,23 @@ defmodule Glific.Clients.Stir do
   }
 
   @priorities_list [
-    {"safety", %{description: "Creating safe learning environments _(Safety)_", keyword: "1"}},
-    {"engagement", %{description: "Dedication and engagement _(Engagement)_", keyword: "2"}},
-    {"c&ct", %{description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_", keyword: "3"}},
-    {"selfesteem", %{description: "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_", keyword: "4"}},
+    {
+      "safety",
+      %{description: "Creating safe learning environments _(Safety)_", keyword: "1", tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761"}
+    },
+    {
+      "engagement",
+      %{description: "Dedication and engagement _(Engagement)_", keyword: "2", tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74"}
+    },
+    {
+      "c&ct",
+      %{description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_", keyword: "3", tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f"}
+    },
+    {
+     "selfesteem",
+    %{description: "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
+    keyword: "4", tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c"}
+    },
   ]
 
   @doc false
@@ -69,9 +82,7 @@ defmodule Glific.Clients.Stir do
 
 
   def webhook("get_priority_message", fields) do
-    exculde =
-      String.downcase(fields["exclude"] || "")
-      |> String.trim()
+    exculde = clean_string(fields["exclude"])
 
     priorities =
       if exculde in [""],
@@ -126,6 +137,27 @@ defmodule Glific.Clients.Stir do
       %{frequency: frequency}
   end
 
+  def webhook("priority_based_survery_flows", fields) do
+    {:ok, mt_contact_id} = get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
+                          |> Glific.parse_maybe_integer()
+
+    contact = Contacts.get_contact!(mt_contact_id)
+
+    first_priority =
+        contact.fields["first_priority"]["value"]
+        |> clean_string()
+
+    second_priority =
+        contact.fields["second_priority"]["value"]
+        |> clean_string()
+
+    priority_map =  Enum.into(@priorities_list, %{})
+    %{
+      first_priority: priority_map[first_priority][:tdc_survery_flow],
+      second_priority: priority_map[second_priority][:tdc_survery_flow]
+    }
+
+  end
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
@@ -138,6 +170,11 @@ defmodule Glific.Clients.Stir do
     priority_version_field = if priority_version_field in ["", nil], do: "{}", else: priority_version_field
     Jason.decode!(priority_version_field)
 
+  end
+
+  defp clean_string(str) do
+    String.downcase(str || "")
+    |> String.trim()
   end
 
   defp get_mt_list(district, organization_id) do
