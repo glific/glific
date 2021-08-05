@@ -123,9 +123,6 @@ defmodule Glific.Clients.Stir do
       if Timex.diff(Timex.today, last_updated_date, :days) <= 30, do: 2, else: 1
     end
 
-    IO.inspect("frequency")
-    IO.inspect(frequency)
-
       %{frequency: frequency}
   end
 
