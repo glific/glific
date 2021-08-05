@@ -102,6 +102,7 @@ defmodule Glific.Messages.Message do
     field :type, MessageType
     field :status, MessageStatus
 
+    field :send_by, :string, virtual: true
     # we keep the clean version of the body here for easy access by flows
     # and other actors
     field :clean_body, :string, virtual: true

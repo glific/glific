@@ -39,6 +39,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :errors, :json
     field :message_number, :integer
 
+    field :send_by, :string
     field :is_hsm, :boolean
 
     field :template_id, :integer
