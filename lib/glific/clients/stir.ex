@@ -112,9 +112,6 @@ defmodule Glific.Clients.Stir do
   def webhook("priority_selection_frequency", fields) do
     last_priority_change = get_priority_versions(fields)["last_priority_change"]
 
-    IO.inspect("last_priority_change")
-    IO.inspect(last_priority_change)
-
     frequency =
     if is_nil(last_priority_change) do
       1
@@ -123,19 +120,11 @@ defmodule Glific.Clients.Stir do
         Timex.parse!(last_priority_change, "{YYYY}-{0M}-{D}")
         |> Timex.to_date()
 
-      last_thirty_days = Timex.shift(Timex.today, days: -30)
-
-      IO.inspect("last_updated_date")
-      IO.inspect(last_updated_date)
-
-      IO.inspect("last_thirty_days")
-      IO.inspect(last_thirty_days)
-
-      days_diff = if Timex.diff(last_updated_date, last_thirty_days, :days) > 0, do: 2, else: 1
-
-      IO.inspect("days_diff")
-      IO.inspect(days_diff)
+      if Timex.diff(Timex.today, last_updated_date, :days) <= 30, do: 2, else: 1
     end
+
+    IO.inspect("frequency")
+    IO.inspect(frequency)
 
       %{frequency: frequency}
   end
