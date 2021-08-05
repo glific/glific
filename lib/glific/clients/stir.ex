@@ -12,6 +12,13 @@ defmodule Glific.Clients.Stir do
     Repo
   }
 
+  @priorities_list [
+    {"safety", %{description: "Creating safe learning environments _(Safety)_", keyword: "1"}},
+    {"engagement", %{description: "Dedication and engagement _(Engagement)_", keyword: "2"}},
+    {"c&ct", %{description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_", keyword: "3"}},
+    {"selfesteem", %{description: "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_", keyword: "4"}},
+  ]
+
   @doc false
   @spec webhook(String.t(), map()) :: map()
   def webhook("move_mt_to_district_group", fields) do
@@ -60,28 +67,92 @@ defmodule Glific.Clients.Stir do
     %{selected_mt: mt.name}
   end
 
-  # def webhook("praority_selection_frequecy", fields) do
-  #   {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-  #   {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-  #   {:ok, mt_contact_index} = Glific.parse_maybe_integer(fields["mt_contact_id"])
 
-  #   %{selected_mt: mt.name}
-  # end
+  def webhook("get_priority_message", fields) do
+    exculde =
+      String.downcase(fields["exclude"] || "")
+      |> String.trim()
 
-  # def webhook("select_first_priority", fields) do
-  #   {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    priorities =
+      if exculde in [""],
+      do: @priorities_list,
+      else: Enum.reject(@priorities_list, fn {priority, _} -> exculde == priority end)
 
-  #   ContactField.do_add_contact_field(tdc, "first_priority", "first_priority", fields["first_priority"], "string")
-  # end
+    praority_message =
+    priorities
+    |> Enum.map(fn {_priority, obj} -> "*#{obj.keyword}*. #{obj.description}" end)
+    |> Enum.join("\n")
 
-  # def webhook("select_second_priority", fields) do
-  #   ContactField.do_add_contact_field(tdc, "second_priority", "second_priority", fields["second_priority"], "string")
-  # end
+    %{message: praority_message}
+  end
+
+  def webhook("contact_updated_the_priorities", fields) do
+    first_priority = get_in(fields, ["contact", "fields", "first_priority", "value"])
+    second_priority = get_in(fields, ["contact", "fields", "second_priority", "value"])
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+    contact = Contacts.get_contact!(contact_id)
+
+    priority_versions = get_priority_versions(fields)["versions"] || []
+
+    versions =  priority_versions ++ [%{first_priority: first_priority, second_priority: second_priority, updated_at: Date.to_string(Timex.today)}]
+
+    priority_change_map =  %{
+      last_priority_change: Date.to_string(Timex.today),
+      versions: versions
+    }
+
+    priority_versions_as_string = Jason.encode!(priority_change_map)
+    ContactField.do_add_contact_field(contact, "priority_versions", "priority_versions", priority_versions_as_string, "json")
+
+    %{update: true}
+
+  end
+
+  def webhook("priority_selection_frequency", fields) do
+    last_priority_change = get_priority_versions(fields)["last_priority_change"]
+
+    IO.inspect("last_priority_change")
+    IO.inspect(last_priority_change)
+
+    frequency =
+    if is_nil(last_priority_change) do
+      1
+    else
+      last_updated_date =
+        Timex.parse!(last_priority_change, "{YYYY}-{0M}-{D}")
+        |> Timex.to_date()
+
+      last_thirty_days = Timex.shift(Timex.today, days: -30)
+
+      IO.inspect("last_updated_date")
+      IO.inspect(last_updated_date)
+
+      IO.inspect("last_thirty_days")
+      IO.inspect(last_thirty_days)
+
+      days_diff = if Timex.diff(last_updated_date, last_thirty_days, :days) > 0, do: 2, else: 1
+
+      IO.inspect("days_diff")
+      IO.inspect(days_diff)
+    end
+
+      %{frequency: frequency}
+  end
+
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
+
   def webhook(_, fields), do: fields
+
+  defp get_priority_versions(fields) do
+    priority_version_field = get_in(fields, ["contact", "fields", "priority_versions", "value"])
+    priority_version_field = if priority_version_field in ["", nil], do: "{}", else: priority_version_field
+    Jason.decode!(priority_version_field)
+
+  end
 
   defp get_mt_list(district, organization_id) do
     group_label = district_group(district, :mt)
