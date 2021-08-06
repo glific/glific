@@ -81,7 +81,7 @@ defmodule Glific.Clients.DigitalGreen do
     |> Timex.diff(time, :seconds)
     |> max(61)
 
-    62
+    180
   end
 
   defp next_slot(time, morning_slot, evening_slot) do
@@ -174,7 +174,7 @@ defmodule Glific.Clients.DigitalGreen do
       village: village_name
     ]
 
-    if village_name in @villages do
+    if village_name not in @villages do
       %{is_valid_village: false}
     else
       ApiClient.get_csv_content(url: @weather_updates["published_csv"])
