@@ -53,6 +53,18 @@ defmodule Glific.Clients.DigitalGreen do
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
   }
 
+  @villages [
+    "ganapavaram",
+    "jonnalagadda",
+    "solasa",
+    "ipur",
+    "kondapuram",
+    "paladoddi",
+    "mudumala",
+    "erladinne",
+    "pedakurapadu"
+  ]
+
   @doc """
   Returns time in second till next defined Timeslot
   """
@@ -154,16 +166,22 @@ defmodule Glific.Clients.DigitalGreen do
 
   def webhook("weather_updates", fields) do
     today = Timex.today()
+    village_name = String.downcase(fields["village_name"]) |> String.trim()
 
     opts = [
       start_date: Timex.beginning_of_week(today, :mon),
       end_date: Timex.end_of_week(today, :sun),
-      village: String.downcase(fields["village_name"])
+      village: village_name
     ]
 
-    ApiClient.get_csv_content(url: @weather_updates["published_csv"])
-    |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
-    |> generate_weather_results(opts)
+    if village_name in @villages do
+      %{is_valid_village: false}
+    else
+      ApiClient.get_csv_content(url: @weather_updates["published_csv"])
+      |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
+      |> generate_weather_results(opts)
+    end
+
   end
 
   def webhook(_, _fields),
@@ -193,7 +211,7 @@ defmodule Glific.Clients.DigitalGreen do
   ## filter record based on the contact village, and current week.
   @spec generate_weather_results(list(), Keyword.t()) :: map()
   defp generate_weather_results(rows, opts) do
-    %{message: "", image: "", is_extream_condition: false}
+    %{message: "", image: "", is_extream_condition: false, is_valid_village: true}
     |> generate_weather_info(rows, opts)
     |> check_for_extream_condition(rows)
   end
