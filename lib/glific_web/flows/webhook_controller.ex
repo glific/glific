@@ -23,29 +23,28 @@ defmodule GlificWeb.Flows.WebhookController do
     |> json(json)
   end
 
-  @dg_call_to "911234567890"
-  @dg_glific_flow_id 45
-  @dg_glific_organization_id 23
+  @dg_call_to "09513886363"
+  @dg_direction "incoming"
+  @dg_glific_flow_id 1
+  @dg_glific_organization_id 1
 
   @doc """
   First implementation of processing optin contact callback from exotel
   for digital green. Will need to make it more generic for broader use case
   across other NGOs
+
+  We use the callto and directon parameters to ensure a valid call from exotel
   """
   @spec exotel_optin(Plug.Conn.t(), map) :: Plug.Conn.t()
   def exotel_optin(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         %{
           "CallFrom" => phone,
-          "CallTo" => call_to,
-          "Direction" => direction
+          "To" => @dg_call_to,
+          "Direction" => @dg_direction,
         } = _params
-      ) do
-    # check and ensure that this is a valid callback from exotel
-    # use call_to and direction for this
-    if call_to == @dg_call_to &&
-         direction == "incoming" &&
-         organization_id == @dg_glific_organization_id do
+  ) do
+    if organization_id == @dg_glific_organization_id do
       # first create and optin the contact
       attrs = %{
         phone: phone,
@@ -71,4 +70,6 @@ defmodule GlificWeb.Flows.WebhookController do
     # always return 200 and an empty response
     conn |> json("")
   end
+
+  def exotel_optin(conn, _params), do:  conn |> json("")
 end
