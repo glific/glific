@@ -126,7 +126,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Return the count of tags, using the same filter as list_tags
+  Return the count of flows, using the same filter as list_flows
   """
   @spec count_flows(map()) :: integer
   def count_flows(args),

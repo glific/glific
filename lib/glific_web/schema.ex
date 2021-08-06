@@ -46,6 +46,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.ContactsFieldTypes)
   import_types(__MODULE__.ExtensionTypes)
   import_types(__MODULE__.InteractiveTemplateTypes)
+  import_types(__MODULE__.FlowLabelTypes)
 
   query do
     import_fields(:contact_queries)
@@ -91,6 +92,8 @@ defmodule GlificWeb.Schema do
     import_fields(:extensions_queries)
 
     import_fields(:interactive_template_queries)
+
+    import_fields(:flow_label_queries)
   end
 
   mutation do

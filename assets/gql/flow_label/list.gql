@@ -1,0 +1,9 @@
+query flowLabels($filter: FlowLabelFilter, $opts: Opts) {
+  flowLabels(filter: $filter, opts: $opts) {
+    id
+    insertedAt
+    name
+    updatedAt
+    uuid
+  }
+}
