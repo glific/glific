@@ -14,6 +14,7 @@ defmodule Glific.Fixtures do
     Extensions.Extension,
     Flows,
     Flows.ContactField,
+    Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
     Messages,
@@ -223,6 +224,18 @@ defmodule Glific.Fixtures do
       |> Tags.create_tag()
 
     tag
+  end
+
+  @doc false
+  @spec flow_label_fixture(map()) :: FlowLabel.t()
+  def flow_label_fixture(attrs) do
+    attrs = Map.merge(%{name: "Test Flow label"}, attrs)
+
+    {:ok, flow_label} =
+      attrs
+      |> FlowLabel.create_flow_label()
+
+    flow_label
   end
 
   @doc false
