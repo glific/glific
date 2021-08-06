@@ -22,14 +22,10 @@ defmodule Glific.Repo.Migrations.AddIndexes do
     create_if_not_exists index(:flow_revisions, :status)
     create_if_not_exists index(:flow_revisions, :organization_id)
 
-    create_if_not_exists index(:locations, :message_id)
-    create_if_not_exists index(:locations, :organization_id)
-    create_if_not_exists index(:locations, :contact_id)
-
     create_if_not_exists index(:messages, :flow_id)
     create_if_not_exists index(:messages, :inserted_at)
     create_if_not_exists index(:messages, :updated_at)
-    create_if_not_exists index(:messages, :context_message_id)
+
     create index(:messages, [:group_id], where: "group_id IS NOT NULL")
 
     ## Removing the indexes which are not in use.
