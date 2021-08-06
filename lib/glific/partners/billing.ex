@@ -558,8 +558,7 @@ defmodule Glific.Partners.Billing do
 
     %{
       stripe_current_period_start: period_start,
-      stripe_current_period_end: period_end,
-      stripe_last_usage_recorded: nil
+      stripe_current_period_end: period_end
     }
   end
 
@@ -593,10 +592,11 @@ defmodule Glific.Partners.Billing do
 
   # function to check if the subscription requires another authentcation i.e 3D
   @spec subscription_requires_auth?(Stripe.Subscription.t()) :: boolean()
-  defp subscription_requires_auth?(subscription),
-    do:
-      !is_nil(subscription.pending_setup_intent) &&
-        subscription.pending_setup_intent.status == "requires_action"
+  defp subscription_requires_auth?(%{pending_setup_intent: pending_setup_intent})
+       when is_map(pending_setup_intent),
+       do: Map.get(pending_setup_intent, :status, "") == "requires_action"
+
+  defp subscription_requires_auth?(_subscription), do: false
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
@@ -710,8 +710,8 @@ defmodule Glific.Partners.Billing do
   defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
-        # if we dont have last_usage, set it from the subscription period date
-        do: Timex.beginning_of_month(end_date),
+        # if we dont have last_usage, set it to start of the week as we update it on weekly basis
+        do: Timex.beginning_of_week(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period
         else: billing.stripe_last_usage_recorded

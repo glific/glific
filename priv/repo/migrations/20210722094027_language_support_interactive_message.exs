@@ -14,6 +14,7 @@ defmodule Glific.Repo.Migrations.LanguageSupportInteractiveMessage do
       # Interactive messages are in a specific language
       add :language_id, references(:languages, on_delete: :restrict, prefix: @global_schema),
         null: false,
+        default: 1,
         comment: "Language of the interactive message"
     end
 

@@ -250,13 +250,24 @@ defmodule Glific.Searches do
     query = from c in Contact, as: :c
 
     query
-    |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
+    |> add_message_clause(args)
     |> where([c: c], c.id != ^organization_contact_id)
     |> where([c: c], c.status != :blocked)
     |> order_by([c: c], desc: c.last_communication_at)
     |> group_by([c: c], c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
+
+  @spec add_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_message_clause(query, %{filter: filters} = _args)
+       when is_map(filters) do
+    if map_size(filters) > 1,
+      do: query |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id),
+      else: query
+  end
+
+  defp add_message_clause(query, _args),
+    do: query
 
   # codebeat:enable[ABC]
 
