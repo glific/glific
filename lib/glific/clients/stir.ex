@@ -309,4 +309,5 @@ defmodule Glific.Clients.Stir do
       score: to_string(score)
     }
   end
+
 end
