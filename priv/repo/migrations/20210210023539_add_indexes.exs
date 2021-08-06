@@ -23,6 +23,8 @@ defmodule Glific.Repo.Migrations.AddIndexes do
     create_if_not_exists index(:flow_revisions, :organization_id)
 
     create_if_not_exists index(:locations, :message_id)
+    create_if_not_exists index(:locations, :organization_id)
+    create_if_not_exists index(:locations, :contact_id)
 
     create_if_not_exists index(:messages, :flow_id)
     create_if_not_exists index(:messages, :inserted_at)
