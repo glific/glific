@@ -7,7 +7,7 @@ defmodule GlificWeb.Flows.WebhookController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Clients.Stir, Contacts, Flows}
+  alias Glific.{Clients.Stir, Contacts, Flows, Partners}
 
   @doc """
   Example implementation of survey computation for STiR
@@ -23,11 +23,6 @@ defmodule GlificWeb.Flows.WebhookController do
     |> json(json)
   end
 
-  @dg_call_to "09513886363"
-  @dg_direction "incoming"
-  @dg_glific_flow_id 1
-  @dg_glific_organization_id 1
-
   @doc """
   First implementation of processing optin contact callback from exotel
   for digital green. Will need to make it more generic for broader use case
@@ -39,37 +34,59 @@ defmodule GlificWeb.Flows.WebhookController do
   def exotel_optin(
         %Plug.Conn{assigns: %{organization_id: organization_id}} = conn,
         %{
-          "CallFrom" => phone,
-          "To" => @dg_call_to,
-          "Direction" => @dg_direction,
+          "CallFrom" => exotel_from,
+          "CallTo" => _exotel_call_to,
+          "To" => exotel_to
         } = _params
-  ) do
-    if organization_id == @dg_glific_organization_id do
-      # first create and optin the contact
-      attrs = %{
-        phone: phone,
-        method: "Exotel",
-        organization_id: organization_id
-      }
+      ) do
+    organization = Partners.organization(organization_id)
 
-      result = Contacts.optin_contact(attrs)
+    credentials = organization.services["exotel"]
 
-      # then start  the intro flow
-      case result do
-        {:ok, contact} ->
-          Flows.start_contact_flow(@dg_glific_flow_id, contact)
+    if is_nil(credentials) do
+      log_error("exotel credentials missing")
+    else
+      keys = credentials.keys
 
-        {:error, error} ->
-          # log this error and send to appsignal also
-          Logger.error(error)
-          {_, stacktrace} = Process.info(self(), :current_stacktrace)
-          Appsignal.send_error(:error, error, stacktrace)
+      {phone, ngo_exotel_phone} =
+        if keys["direction"] == "outbound",
+          do: {exotel_to, exotel_from},
+          else: {exotel_from, exotel_to}
+
+      if ngo_exotel_phone == keys["phone"] do
+        # first create and optin the contact
+        attrs = %{
+          phone: phone,
+          method: "Exotel",
+          organization_id: organization_id
+        }
+
+        result = Contacts.optin_contact(attrs)
+
+        # then start  the intro flow
+        case result do
+          {:ok, contact} ->
+            Flows.start_contact_flow(keys["flow_id"], contact)
+
+          {:error, error} ->
+            log_error(error)
+        end
+      else
+        log_error("exotel credentials mismatch")
       end
     end
 
     # always return 200 and an empty response
-    conn |> json("")
+    json(conn, "")
   end
 
-  def exotel_optin(conn, _params), do:  conn |> json("")
+  def exotel_optin(conn, _params), do: json(conn, "")
+
+  @spec log_error(String.t()) :: any
+  defp log_error(message) do
+    # log this error and send to appsignal also
+    Logger.error(message)
+    {_, stacktrace} = Process.info(self(), :current_stacktrace)
+    Appsignal.send_error(:error, message, stacktrace)
+  end
 end

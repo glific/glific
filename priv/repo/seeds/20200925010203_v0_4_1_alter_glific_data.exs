@@ -291,7 +291,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               default: nil,
               view_only: false
             },
-            phone_field: %{
+            direction: %{
               type: :string,
               label: "Is this an incoming or outbound-dial call",
               default: "incoming",
