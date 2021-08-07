@@ -49,11 +49,13 @@ defmodule GlificWeb.Flows.WebhookController do
       keys = credentials.keys
 
       {phone, ngo_exotel_phone} =
-        if keys["direction"] == "outbound",
-          do: {exotel_to, exotel_from},
-          else: {exotel_from, exotel_to}
+        if keys["direction"] == "incoming",
+          do: {exotel_from, exotel_to},
+          else: {exotel_to, exotel_from}
 
-      if ngo_exotel_phone == keys["phone"] do
+      IO.inspect(ngo_exotel_phone, label: credentials.secrets["phone"])
+
+      if ngo_exotel_phone == credentials.secrets["phone"] do
         # first create and optin the contact
         attrs = %{
           phone: phone,
@@ -66,7 +68,8 @@ defmodule GlificWeb.Flows.WebhookController do
         # then start  the intro flow
         case result do
           {:ok, contact} ->
-            Flows.start_contact_flow(keys["flow_id"], contact)
+            {:ok, flow_id} = Glific.parse_maybe_integer(keys["flow_id"])
+            Flows.start_contact_flow(flow_id, contact)
 
           {:error, error} ->
             log_error(error)

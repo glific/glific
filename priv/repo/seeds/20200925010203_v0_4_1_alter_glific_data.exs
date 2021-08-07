@@ -296,7 +296,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               label: "Is this an incoming or outbound-dial call",
               default: "incoming",
               view_only: false
-            },
+            }
           },
           secrets: %{
             phone: %{
@@ -304,7 +304,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               label: "Exotel Phone Number",
               default: nil,
               view_only: false
-            },
+            }
           }
         })
   end

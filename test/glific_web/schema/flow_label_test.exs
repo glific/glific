@@ -19,7 +19,9 @@ defmodule GlificWeb.Schema.FlowLabelTest do
 
   test "flow_label id returns one flow_label or nil", %{staff: user} do
     name = "Age Group less than 10"
-    {:ok, flow_label} = Repo.fetch_by(FlowLabel, %{name: name, organization_id: user.organization_id})
+
+    {:ok, flow_label} =
+      Repo.fetch_by(FlowLabel, %{name: name, organization_id: user.organization_id})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => flow_label.id})
     assert {:ok, query_data} = result
