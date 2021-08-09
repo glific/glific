@@ -15,21 +15,37 @@ defmodule Glific.Clients.Stir do
   @priorities_list [
     {
       "safety",
-      %{description: "Creating safe learning environments _(Safety)_", keyword: "1", tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761"}
+      %{
+        description: "Creating safe learning environments _(Safety)_",
+        keyword: "1",
+        tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761"
+      }
     },
     {
       "engagement",
-      %{description: "Dedication and engagement _(Engagement)_", keyword: "2", tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74"}
+      %{
+        description: "Dedication and engagement _(Engagement)_",
+        keyword: "2",
+        tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74"
+      }
     },
     {
       "c&ct",
-      %{description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_", keyword: "3", tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f"}
+      %{
+        description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_",
+        keyword: "3",
+        tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f"
+      }
     },
     {
-     "selfesteem",
-    %{description: "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
-    keyword: "4", tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c"}
-    },
+      "selfesteem",
+      %{
+        description:
+          "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
+        keyword: "4",
+        tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c"
+      }
+    }
   ]
 
   @doc false
@@ -66,7 +82,7 @@ defmodule Glific.Clients.Stir do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     {:ok, mt_contact_index} = Glific.parse_maybe_integer(fields["mt_contact_id"])
 
-    tdc =  Contacts.get_contact!(contact_id)
+    tdc = Contacts.get_contact!(contact_id)
 
     {mt, _index} =
       get_mt_list(fields["district"], organization_id)
@@ -80,21 +96,37 @@ defmodule Glific.Clients.Stir do
     %{selected_mt: mt.name}
   end
 
-
   def webhook("get_priority_message", fields) do
     exculde = clean_string(fields["exclude"])
 
     priorities =
       if exculde in [""],
-      do: @priorities_list,
-      else: Enum.reject(@priorities_list, fn {priority, _} -> exculde == priority end)
+        do: @priorities_list,
+        else: Enum.reject(@priorities_list, fn {priority, _} -> exculde == priority end)
 
     praority_message =
-    priorities
-    |> Enum.map(fn {_priority, obj} -> "*#{obj.keyword}*. #{obj.description}" end)
-    |> Enum.join("\n")
+      priorities
+      |> Enum.map(fn {_priority, obj} -> "*#{obj.keyword}*. #{obj.description}" end)
+      |> Enum.join("\n")
 
     %{message: praority_message}
+  end
+
+  def webhook("get_priority_descriptions", fields) do
+    priority_map = Enum.into(@priorities_list, %{})
+
+    first_priority =
+      get_in(fields, ["contact", "fields", "first_priority", "value"])
+      |> clean_string()
+
+    second_priority =
+      get_in(fields, ["contact", "fields", "second_priority", "value"])
+      |> clean_string()
+
+    %{
+      first_priority_description: priority_map[first_priority][:description],
+      second_priority_description: priority_map[second_priority][:description]
+    }
   end
 
   def webhook("contact_updated_the_priorities", fields) do
@@ -106,68 +138,100 @@ defmodule Glific.Clients.Stir do
 
     priority_versions = get_priority_versions(fields)["versions"] || []
 
-    versions =  priority_versions ++ [%{first_priority: first_priority, second_priority: second_priority, updated_at: Date.to_string(Timex.today)}]
+    versions =
+      priority_versions ++
+        [
+          %{
+            first_priority: first_priority,
+            second_priority: second_priority,
+            updated_at: Date.to_string(Timex.today())
+          }
+        ]
 
-    priority_change_map =  %{
-      last_priority_change: Date.to_string(Timex.today),
+    priority_change_map = %{
+      last_priority_change: Date.to_string(Timex.today()),
       versions: versions
     }
 
     priority_versions_as_string = Jason.encode!(priority_change_map)
-    ContactField.do_add_contact_field(contact, "priority_versions", "priority_versions", priority_versions_as_string, "json")
+
+    ContactField.do_add_contact_field(
+      contact,
+      "priority_versions",
+      "priority_versions",
+      priority_versions_as_string,
+      "json"
+    )
 
     %{update: true}
-
   end
 
   def webhook("priority_selection_frequency", fields) do
     last_priority_change = get_priority_versions(fields)["last_priority_change"]
 
     frequency =
-    if is_nil(last_priority_change) do
-      1
-    else
-      last_updated_date =
-        Timex.parse!(last_priority_change, "{YYYY}-{0M}-{D}")
-        |> Timex.to_date()
+      if is_nil(last_priority_change) do
+        1
+      else
+        last_updated_date =
+          Timex.parse!(last_priority_change, "{YYYY}-{0M}-{D}")
+          |> Timex.to_date()
 
-      if Timex.diff(Timex.today, last_updated_date, :days) <= 30, do: 2, else: 1
-    end
+        if Timex.diff(Timex.today(), last_updated_date, :days) <= 30, do: 2, else: 1
+      end
 
-      %{frequency: frequency}
+    %{frequency: frequency}
   end
 
   def webhook("priority_based_survery_flows", fields) do
-    {:ok, mt_contact_id} = get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
-                          |> Glific.parse_maybe_integer()
+    {:ok, mt_contact_id} =
+      get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
+      |> Glific.parse_maybe_integer()
 
     contact = Contacts.get_contact!(mt_contact_id)
 
     first_priority =
-        contact.fields["first_priority"]["value"]
-        |> clean_string()
+      contact.fields["first_priority"]["value"]
+      |> clean_string()
 
     second_priority =
-        contact.fields["second_priority"]["value"]
-        |> clean_string()
+      contact.fields["second_priority"]["value"]
+      |> clean_string()
 
-    priority_map =  Enum.into(@priorities_list, %{})
+    priority_map = Enum.into(@priorities_list, %{})
+
     %{
       first_priority: priority_map[first_priority][:tdc_survery_flow],
       second_priority: priority_map[second_priority][:tdc_survery_flow]
     }
+  end
 
+  def webhook("mt_and_diet_priority", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    mt_district = fields["district"] |> clean_string()
+    diets = get_diet_list(fields["diet_group"], organization_id)
+    {_district, diet} = Enum.find(diets, fn {district, _contact} -> district == mt_district end)
+
+    %{
+      district: mt_district,
+      diet_first_priority: diet.fields["first_priority"]["value"],
+      diet_second_priority: diet.fields["second_priority"]["value"],
+      mt_first_priority: get_in(fields, ["contact", "fields", "first_priority", "value"]),
+      mt_second_priority: get_in(fields, ["contact", "fields", "second_priority", "value"])
+    }
   end
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
-
   def webhook(_, fields), do: fields
 
   defp get_priority_versions(fields) do
     priority_version_field = get_in(fields, ["contact", "fields", "priority_versions", "value"])
-    priority_version_field = if priority_version_field in ["", nil], do: "{}", else: priority_version_field
+
+    priority_version_field =
+      if priority_version_field in ["", nil], do: "{}", else: priority_version_field
+
     Jason.decode!(priority_version_field)
   end
 
@@ -176,9 +240,27 @@ defmodule Glific.Clients.Stir do
     |> String.trim()
   end
 
+  defp get_diet_list(diet_group_label, organization_id) do
+    {:ok, diet_group} =
+      Repo.fetch_by(Group, %{label: diet_group_label, organization_id: organization_id})
+
+    Contacts.list_contacts(%{
+      filter: %{include_groups: [diet_group.id]},
+      opts: %{"order" => "ASC"}
+    })
+    |> Enum.map(fn contact ->
+      district =
+        contact.fields["district"]["value"]
+        |> clean_string()
+
+      {district, contact}
+    end)
+  end
+
   defp get_mt_list(district, organization_id) do
     group_label = district_group(district, :mt)
     {:ok, group} = Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
+
     Contacts.list_contacts(%{filter: %{include_groups: [group.id]}, opts: %{"order" => "ASC"}})
     |> Enum.with_index(1)
   end
@@ -306,5 +388,4 @@ defmodule Glific.Clients.Stir do
       score: to_string(score)
     }
   end
-
 end
