@@ -1125,6 +1125,11 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>SendBy</strong></td>
+<td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#string">MessageStatusEnum</a></td>
 <td></td>

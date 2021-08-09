@@ -5,7 +5,10 @@ defmodule GlificWeb.Schema.MessageTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
-  alias Glific.Repo
+  alias Glific.{
+    Messages.Message,
+    Repo
+  }
 
   alias GlificWeb.{
     Resolvers,
@@ -39,6 +42,17 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :status, :string
     field :errors, :json
     field :message_number, :integer
+
+    field :send_by, :string do
+      resolve(fn message, _, _ ->
+        updated_message =
+          message
+          |> Repo.preload([:flow_object, :user])
+          |> Message.append_send_by()
+
+        {:ok, updated_message.send_by}
+      end)
+    end
 
     field :is_hsm, :boolean
 

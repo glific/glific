@@ -174,6 +174,23 @@ defmodule GlificWeb.Schema.MessageTest do
     assert message == "Resource not found"
   end
 
+  test "message id returns one message or nil from last flow started", %{staff: user} = attrs do
+    SeedsDev.seed_test_flows()
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    contact = Fixtures.contact_fixture(attrs)
+    {:ok, _flow} = Glific.Flows.start_contact_flow(flow, contact)
+
+    message =
+      Message
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => message.id})
+    assert {:ok, query_data} = result
+    send_by = get_in(query_data, [:data, "message", "message", "sendBy"])
+    assert send_by == "Flow: Help Workflow"
+  end
+
   test "create a message and test possible scenarios and errors", %{staff: user} do
     message = Fixtures.message_fixture()
 
@@ -364,6 +381,7 @@ defmodule GlificWeb.Schema.MessageTest do
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "createAndSendMessage", "message"])
     assert message["body"] == "Message body"
+    assert message["sendBy"] == "some name"
   end
 
   test "create and send a message should parse the message body", %{staff: user} do
