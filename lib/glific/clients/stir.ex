@@ -55,7 +55,7 @@ defmodule Glific.Clients.Stir do
 
     mt_list =
       get_mt_list(fields["district"], organization_id)
-      |> Enum.map(fn contact -> "Type *#{contact.index}* for #{contact.name}" end)
+      |> Enum.map(fn {contact, index} -> "Type *#{index}* for #{contact.name}" end)
       |> Enum.join("\n")
 
     %{mt_list_message: mt_list}
@@ -68,9 +68,9 @@ defmodule Glific.Clients.Stir do
 
     tdc =  Contacts.get_contact!(contact_id)
 
-    mt =
+    {mt, _index} =
       get_mt_list(fields["district"], organization_id)
-      |> Enum.find(fn contact -> contact.index == mt_contact_index end)
+      |> Enum.find(fn {_contact, index} -> index == mt_contact_index end)
 
     ## this is not correct we will fix that.
     tdc
@@ -169,7 +169,6 @@ defmodule Glific.Clients.Stir do
     priority_version_field = get_in(fields, ["contact", "fields", "priority_versions", "value"])
     priority_version_field = if priority_version_field in ["", nil], do: "{}", else: priority_version_field
     Jason.decode!(priority_version_field)
-
   end
 
   defp clean_string(str) do
@@ -180,10 +179,8 @@ defmodule Glific.Clients.Stir do
   defp get_mt_list(district, organization_id) do
     group_label = district_group(district, :mt)
     {:ok, group} = Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
-    Contacts.list_contacts(%{filter: %{include_groups: [group.id]}})
+    Contacts.list_contacts(%{filter: %{include_groups: [group.id]}, opts: %{"order" => "ASC"}})
     |> Enum.with_index(1)
-    |> Enum.map(fn {contact, index} -> %{index: index, name: contact.name, id: contact.id} end)
-    |> IO.inspect()
   end
 
   defp district_group(district, :mt) when is_binary(district) do
