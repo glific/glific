@@ -876,7 +876,7 @@ defmodule Glific.Flows do
   defp do_get_sub_flows(%{"actions" => actions}, list),
     do:
       Enum.reduce(actions, list, fn action, acc ->
-        if action["type"] == "enter_flow",
+        if action["type"] == "enter_flow" and action["flow"]["name"] != "Expression",
           do: acc ++ [action["flow"]],
           else: acc
       end)
