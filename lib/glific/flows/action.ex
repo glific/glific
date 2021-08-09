@@ -63,6 +63,7 @@ defmodule Glific.Flows.Action do
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
+          enter_flow_expression: String.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
@@ -112,6 +113,7 @@ defmodule Glific.Flows.Action do
 
     field :enter_flow_uuid, Ecto.UUID
     field :enter_flow_name, :string
+    field :enter_flow_expression, :string
 
     embeds_one :enter_flow, Flow
   end
@@ -140,7 +142,8 @@ defmodule Glific.Flows.Action do
 
     process(json, uuid_map, node, %{
       enter_flow_uuid: json["flow"]["uuid"],
-      enter_flow_name: json["flow"]["name"]
+      enter_flow_name: json["flow"]["name"],
+      enter_flow_expression: json["flow"]["expression"]
     })
   end
 
@@ -414,13 +417,16 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
+
+    flow_uuid = get_flow_uuid(action, context)
+
     # check if we've seen this flow in this execution
-    if Map.has_key?(context.uuids_seen, action.enter_flow_uuid) do
+    if Map.has_key?(context.uuids_seen, flow_uuid) do
       FlowContext.log_error("Repeated loop, hence finished the flow")
     else
       # check if we are looping with the same flow, if so reset
       # and start from scratch, since we really dont want to have too deep a stack
-      maybe_reset_flows(context, action.enter_flow_uuid)
+      maybe_reset_flows(context, flow_uuid)
 
       # if the action is part of a terminal node, then lets mark this context as
       # complete, and use the parent context
@@ -437,9 +443,9 @@ defmodule Glific.Flows.Action do
       context =
         context
         |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
-        |> Map.update!(:uuids_seen, &Map.put(&1, action.enter_flow_uuid, 1))
+        |> Map.update!(:uuids_seen, &Map.put(&1, flow_uuid, 1))
 
-      Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
+      Flow.start_sub_flow(context, flow_uuid, parent_id)
 
       # We null the messages here, since we are going into a different flow
       # this clears any potential errors
@@ -627,5 +633,17 @@ defmodule Glific.Flows.Action do
     else
       false
     end
+
   end
+
+  @spec get_flow_uuid(Action.t(), FlowContext.t()) :: String.t()
+  defp get_flow_uuid(%{enter_flow_name: "Expression", enter_flow_expression: expression} = _action, context),
+  do:
+    FlowContext.parse_context_string(context, expression)
+    |> Glific.execute_eex()
+    |> String.trim()
+
+  defp get_flow_uuid(action, _),
+  do: action.enter_flow_uuid
+
 end
