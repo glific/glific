@@ -10,12 +10,13 @@ defmodule Glific.Contacts.Simulator do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Communications, Contacts, Contacts.Contact, Flows, Flows.Flow, Repo, Users.User}
+  alias Glific.{Communications, Contacts, Contacts.Contact, Flows.Flow, Repo, Users.User}
 
   # lets first define the genserver Server callbacks
 
   @impl true
   @doc false
+  @spec init(any) :: {:ok, %{}}
   def init(_opts) do
     # our state is a map of organization ids to simulator contexts
     {:ok, reset_state()}
@@ -339,6 +340,8 @@ defmodule Glific.Contacts.Simulator do
       |> where([f], f.id == ^flow_id)
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
+    available_flow = flow |> check_available(free)
+
     cond do
       Map.has_key?(busy, key) ->
         {
@@ -351,7 +354,7 @@ defmodule Glific.Contacts.Simulator do
           flow
         }
 
-      Enum.empty?(free) ->
+      is_nil(available_flow) || Enum.empty?(free) ->
         {state, nil}
 
       true ->
@@ -359,11 +362,19 @@ defmodule Glific.Contacts.Simulator do
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows: free,
+            free_flows: free -- available_flow,
             busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
           },
-          flow
+          available_flow
         }
+    end
+  end
+
+  defp check_available(flow, free) do
+    with true <- Enum.member?(free, List.first(flow)) do
+      flow
+    else
+      _ -> nil
     end
   end
 end
