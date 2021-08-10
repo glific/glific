@@ -10,7 +10,7 @@ defmodule Glific.Contacts.Simulator do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Communications, Contacts, Contacts.Contact, Repo, Users.User}
+  alias Glific.{Communications, Contacts, Contacts.Contact, Flows, Flows.Flow, Repo, Users.User}
 
   # lets first define the genserver Server callbacks
 
@@ -99,7 +99,7 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @spec get_org_simulator(map(), User.t()) :: {map, Contact.t()} | nil
-  defp get_org_simulator(%{free: free, busy: busy} = state, user) do
+  defp get_org_simulator(%{free_simulators: free, busy_simulators: busy, free_flows: free_flows, busy_flows: busy_flows} = state, user) do
     key = {user.id, user.fingerprint}
 
     cond do
@@ -110,8 +110,10 @@ defmodule Glific.Contacts.Simulator do
 
         {
           %{
-            free: free,
-            busy: Map.put(busy, key, {contact, DateTime.utc_now()})
+            free_simulators: free,
+            busy_simulators: Map.put(busy, key, {contact, DateTime.utc_now()}),
+            free_flows: free_flows,
+            busy_flows: busy_flows
           },
           contact
         }
@@ -124,8 +126,10 @@ defmodule Glific.Contacts.Simulator do
 
         {
           %{
-            free: free,
-            busy: Map.put(busy, key, {contact, DateTime.utc_now()})
+            free_simulators: free,
+            busy_simulators: Map.put(busy, key, {contact, DateTime.utc_now()}),
+            free_flows: free_flows,
+            busy_flows: busy_flows
           },
           contact
         }
@@ -170,7 +174,13 @@ defmodule Glific.Contacts.Simulator do
       |> where([c], c.organization_id == ^organization_id)
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
-    %{free: contacts, busy: %{}}
+    # fetch all the flows for this organization
+      flows =
+      Flow
+      |> where([c], c.organization_id == ^organization_id)
+      |> Repo.all(skip_organization_id: true, skip_permission: true)
+
+    %{free_simulators: contacts, busy_simulators: %{}, free_flows: flows, busy_flows: %{}}
   end
 
   @spec reset_state :: map()
@@ -188,28 +198,28 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @spec free_simulators(map(), User.t() | nil) :: map()
-  defp free_simulators(%{free: free, busy: busy} = _state, user \\ nil) do
+  defp free_simulators(%{free_simulators: free, busy_simulators: busy, free_flows: free_flows, busy_flows: busy_flows} = _state, user \\ nil) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
 
-    {f, b} =
+    {free, busy} =
       Enum.reduce(
         busy,
         {free, busy},
-        fn {{id, fingerprint}, {contact, time}}, {f, b} ->
+        fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
           if (user && user.id == id && user.fingerprint == fingerprint) ||
                DateTime.compare(time, expiry_time) == :lt do
             publish_data(contact.organization_id, id)
 
             {
-              [contact | f],
-              Map.delete(b, {id, fingerprint})
+              [contact | free],
+              Map.delete(busy, {id, fingerprint})
             }
           else
-            {f, b}
+            {free, busy}
           end
         end
       )
 
-    %{free: f, busy: b}
+    %{free_simulators: free, busy_simulators: busy, free_flows: free_flows, busy_flows: busy_flows}
   end
 end
