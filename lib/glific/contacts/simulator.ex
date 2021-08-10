@@ -280,7 +280,7 @@ defmodule Glific.Contacts.Simulator do
     {contact, Map.put(state, organization_id, org_state)}
   end
 
-  @spec free_simulators(map(), User.t() | nil) :: map()
+  @spec free_flows(map(), User.t() | nil) :: map()
   defp free_flows(
          %{
            free_simulators: free_simulators,
@@ -340,8 +340,6 @@ defmodule Glific.Contacts.Simulator do
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
     cond do
-      # if userid already has a simulator, send that contact
-      # and update time
       Map.has_key?(busy, key) ->
         {
           %{
