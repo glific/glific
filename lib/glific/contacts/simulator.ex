@@ -49,6 +49,21 @@ defmodule Glific.Contacts.Simulator do
     {:reply, :ok, reset_state(), :hibernate}
   end
 
+  @impl true
+  @doc false
+  def handle_call({:get_flow, params}, _from, state) do
+    {flow, state} = get_flow(params.user, params.flow_id, state)
+    {:reply, flow, state, :hibernate}
+  end
+
+  # @impl true
+  # @doc false
+  # def handle_call({:release_flow, user}, _from, state) do
+  #   state = release_flow(user, state)
+
+  #   {:reply, nil, state, :hibernate}
+  # end
+
   # Note that we are specifically not implementing the handle_cast callback
   # since it does not make sense for the purposes of this interface
 
@@ -66,6 +81,16 @@ defmodule Glific.Contacts.Simulator do
   @doc false
   def release_simulator(user) do
     GenServer.call(__MODULE__, {:release_simulator, user})
+  end
+
+  @doc false
+  def get_flow(user, flow_id) do
+    GenServer.call(__MODULE__, {:get_flow, %{user: user, flow_id: flow_id}})
+  end
+
+  @doc false
+  def release_flow(user) do
+    GenServer.call(__MODULE__, {:release_flow, user})
   end
 
   @doc false
@@ -99,7 +124,15 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @spec get_org_simulator(map(), User.t()) :: {map, Contact.t()} | nil
-  defp get_org_simulator(%{free_simulators: free, busy_simulators: busy, free_flows: free_flows, busy_flows: busy_flows} = state, user) do
+  defp get_org_simulator(
+         %{
+           free_simulators: free,
+           busy_simulators: busy,
+           free_flows: free_flows,
+           busy_flows: busy_flows
+         } = state,
+         user
+       ) do
     key = {user.id, user.fingerprint}
 
     cond do
@@ -175,9 +208,9 @@ defmodule Glific.Contacts.Simulator do
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
     # fetch all the flows for this organization
-      flows =
+    flows =
       Flow
-      |> where([c], c.organization_id == ^organization_id)
+      |> where([f], f.organization_id == ^organization_id)
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
     %{free_simulators: contacts, busy_simulators: %{}, free_flows: flows, busy_flows: %{}}
@@ -198,7 +231,15 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @spec free_simulators(map(), User.t() | nil) :: map()
-  defp free_simulators(%{free_simulators: free, busy_simulators: busy, free_flows: free_flows, busy_flows: busy_flows} = _state, user \\ nil) do
+  defp free_simulators(
+         %{
+           free_simulators: free,
+           busy_simulators: busy,
+           free_flows: free_flows,
+           busy_flows: busy_flows
+         } = _state,
+         user \\ nil
+       ) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
 
     {free, busy} =
@@ -220,6 +261,111 @@ defmodule Glific.Contacts.Simulator do
         end
       )
 
-    %{free_simulators: free, busy_simulators: busy, free_flows: free_flows, busy_flows: busy_flows}
+    %{
+      free_simulators: free,
+      busy_simulators: busy,
+      free_flows: free_flows,
+      busy_flows: busy_flows
+    }
+  end
+
+  defp get_flow(user, flow_id, state) do
+    organization_id = user.organization_id
+
+    {org_state, contact} =
+      get_state(state, organization_id)
+      |> free_flows()
+      |> get_org_flows(user, flow_id)
+
+    {contact, Map.put(state, organization_id, org_state)}
+  end
+
+  @spec free_simulators(map(), User.t() | nil) :: map()
+  defp free_flows(
+         %{
+           free_simulators: free_simulators,
+           busy_simulators: busy_simulators,
+           free_flows: free,
+           busy_flows: busy
+         } = _state,
+         user \\ nil
+       ) do
+    expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
+
+    {free, busy} =
+      Enum.reduce(
+        busy,
+        {free, busy},
+        fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
+          if (user && user.id == id && user.fingerprint == fingerprint) ||
+               DateTime.compare(time, expiry_time) == :lt do
+            publish_data(contact.organization_id, id)
+
+            {
+              [contact | free],
+              Map.delete(busy, {id, fingerprint})
+            }
+          else
+            {free, busy}
+          end
+        end
+      )
+
+    %{
+      free_simulators: free_simulators,
+      busy_simulators: busy_simulators,
+      free_flows: free,
+      busy_flows: busy
+    }
+  end
+
+  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Contact.t()} | nil
+  defp get_org_flows(
+         %{
+           free_simulators: free_simulators,
+           busy_simulators: busy_simulators,
+           free_flows: free,
+           busy_flows: busy
+         } = state,
+         user,
+         flow_id
+       ) do
+    key = {user.id, user.fingerprint}
+    organization_id = user.organization_id
+
+    flow =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.id == ^flow_id)
+      |> Repo.all(skip_organization_id: true, skip_permission: true)
+
+    cond do
+      # if userid already has a simulator, send that contact
+      # and update time
+      Map.has_key?(busy, key) ->
+        {
+          %{
+            free_simulators: free_simulators,
+            busy_simulators: busy_simulators,
+            free_flows: free,
+            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
+          },
+          flow
+        }
+
+      Enum.empty?(free) ->
+        {state, nil}
+
+      true ->
+        {
+          %{
+            free_simulators: free_simulators,
+            busy_simulators: busy_simulators,
+            free_flows: free,
+            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
+          },
+          flow
+        }
+    end
   end
 end
