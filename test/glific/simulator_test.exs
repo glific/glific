@@ -17,11 +17,11 @@ defmodule Glific.SimulatorTest do
   end
 
   test "Ensure cache is initialized to all contacts in free state" do
-    %{free: free, busy: busy} = Simulator.state(1)
+    %{free_simulators: free_simulators, busy_simulators: busy_simulators} = Simulator.state(1)
 
     # we have 5 simulators in our dev seeder
-    assert length(free) == 5
-    assert Enum.empty?(busy)
+    assert length(free_simulators) == 5
+    assert Enum.empty?(busy_simulators)
   end
 
   test "Ensure we can request and get 3 simulator contacts, but the 4th is denied" do
@@ -33,7 +33,7 @@ defmodule Glific.SimulatorTest do
         fingerprint: Ecto.UUID.generate()
       }
 
-      contact = Simulator.get(user)
+      contact = Simulator.get_simulator(user)
       assert contact != nil
     end)
 
@@ -43,7 +43,7 @@ defmodule Glific.SimulatorTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    contact_x = Simulator.get(user)
+    contact_x = Simulator.get_simulator(user)
     assert contact_x == nil
   end
 
@@ -54,10 +54,10 @@ defmodule Glific.SimulatorTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    contact_1 = Simulator.get(user)
+    contact_1 = Simulator.get_simulator(user)
     assert contact_1 != nil
 
-    contact_2 = Simulator.get(user)
+    contact_2 = Simulator.get_simulator(user)
     assert contact_2 != nil
 
     assert contact_2 == contact_1
@@ -70,10 +70,10 @@ defmodule Glific.SimulatorTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    contact_1 = Simulator.get(user)
+    contact_1 = Simulator.get_simulator(user)
     assert contact_1 != nil
 
-    contact_2 = Simulator.get(Map.put(user, :fingerprint, Ecto.UUID.generate()))
+    contact_2 = Simulator.get_simulator(Map.put(user, :fingerprint, Ecto.UUID.generate()))
     assert contact_2 != nil
 
     assert contact_2 != contact_1
@@ -88,10 +88,10 @@ defmodule Glific.SimulatorTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    contact_1 = Simulator.get(user)
+    contact_1 = Simulator.get_simulator(user)
     assert contact_1 != nil
 
-    Simulator.release(user)
+    Simulator.release_simulator(user)
 
     assert cache == Simulator.state(1)
   end
