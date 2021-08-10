@@ -106,7 +106,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec simulator_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def simulator_get(_, _params, %{context: %{current_user: user}}) do
-    {:ok, Simulator.get(user)}
+    {:ok, Simulator.get_simulator(user)}
   end
 
   @doc """
@@ -115,6 +115,6 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec simulator_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def simulator_release(_, _params, %{context: %{current_user: user}}) do
-    {:ok, Simulator.release(user)}
+    {:ok, Simulator.release_simulator(user)}
   end
 end

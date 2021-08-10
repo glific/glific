@@ -23,7 +23,7 @@ defmodule Glific.Contacts.Simulator do
 
   @impl true
   @doc false
-  def handle_call({:get, user}, _from, state) do
+  def handle_call({:get_simulator, user}, _from, state) do
     {contact, state} = get_simulator(user, state)
 
     {:reply, contact, state, :hibernate}
@@ -31,7 +31,7 @@ defmodule Glific.Contacts.Simulator do
 
   @impl true
   @doc false
-  def handle_call({:release, user}, _from, state) do
+  def handle_call({:release_simulator, user}, _from, state) do
     state = release_simulator(user, state)
 
     {:reply, nil, state, :hibernate}
@@ -59,13 +59,13 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @doc false
-  def get(user) do
-    GenServer.call(__MODULE__, {:get, user})
+  def get_simulator(user) do
+    GenServer.call(__MODULE__, {:get_simulator, user})
   end
 
   @doc false
-  def release(user) do
-    GenServer.call(__MODULE__, {:release, user})
+  def release_simulator(user) do
+    GenServer.call(__MODULE__, {:release_simulator, user})
   end
 
   @doc false
