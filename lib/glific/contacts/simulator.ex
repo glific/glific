@@ -320,7 +320,7 @@ defmodule Glific.Contacts.Simulator do
     }
   end
 
-  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Contact.t()} | nil
+  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t() | nil }
   defp get_org_flows(
          %{
            free_simulators: free_simulators,
@@ -370,6 +370,7 @@ defmodule Glific.Contacts.Simulator do
     end
   end
 
+  @spec check_available(list, any) :: nil | list
   defp check_available(flow, free) do
     with true <- Enum.member?(free, List.first(flow)) do
       flow
