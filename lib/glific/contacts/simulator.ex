@@ -300,7 +300,7 @@ defmodule Glific.Contacts.Simulator do
         fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
           if (user && user.id == id && user.fingerprint == fingerprint) ||
                DateTime.compare(time, expiry_time) == :lt do
-            publish_data(contact.organization_id, id)
+            # publish_data(contact.organization_id, id)
 
             {
               [contact | free],
@@ -320,7 +320,7 @@ defmodule Glific.Contacts.Simulator do
     }
   end
 
-  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t() | nil }
+  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t() | nil}
   defp get_org_flows(
          %{
            free_simulators: free_simulators,
@@ -344,14 +344,21 @@ defmodule Glific.Contacts.Simulator do
 
     cond do
       Map.has_key?(busy, key) ->
+        {assigned_flow, _time} = Map.get(busy, key)
+
+        requested_flow =
+          if assigned_flow == flow,
+            do: assigned_flow,
+            else: available_flow
+
         {
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
             free_flows: free,
-            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
+            busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
           },
-          flow
+          requested_flow
         }
 
       is_nil(available_flow) || Enum.empty?(free) ->
