@@ -35,7 +35,8 @@ defmodule Glific.Repo.Migrations.AddIndexes do
 
     sql = [
       "CREATE EXTENSION IF NOT EXISTS pg_trgm;",
-      "CREATE INDEX IF NOT EXISTS messages_body_idx_gin ON messages USING gin (body gin_trgm_ops) WHERE body IS NOT NULL"
+      "CREATE INDEX IF NOT EXISTS messages_body_idx_gin ON messages USING gin (body gin_trgm_ops) WHERE body IS NOT NULL",
+      "CREATE INDEX IF NOT EXISTS flow_label_idx_gin ON messages USING gin (flow_label gin_trgm_ops) WHERE flow_label IS NOT NULL"
     ]
 
     Enum.each(sql, &execute/1)
