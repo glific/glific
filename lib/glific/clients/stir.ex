@@ -109,23 +109,30 @@ defmodule Glific.Clients.Stir do
       |> Enum.map(fn {_priority, obj} -> "*#{obj.keyword}*. #{obj.description}" end)
       |> Enum.join("\n")
 
-    %{message: praority_message}
+    priority_map = Enum.into(@priorities_list, %{})
+
+    %{message: praority_message, exculde: priority_map[exculde]}
   end
 
   def webhook("get_priority_descriptions", fields) do
     priority_map = Enum.into(@priorities_list, %{})
 
+    contact_priorities = get_contact_priority(get_in(fields, ["contact", "fields"]))
+
     first_priority =
-      get_in(fields, ["contact", "fields", "first_priority", "value"])
+      contact_priorities.first
       |> clean_string()
 
     second_priority =
-      get_in(fields, ["contact", "fields", "second_priority", "value"])
+      contact_priorities.second
       |> clean_string()
 
+    first_priority_map = Map.get(priority_map, first_priority, %{})
+    second_priority_map = Map.get(priority_map, second_priority, %{})
+
     %{
-      first_priority_description: priority_map[first_priority][:description],
-      second_priority_description: priority_map[second_priority][:description]
+      first_priority_description: first_priority_map[:description] || "NA",
+      second_priority_description: second_priority_map[:description] || "NA"
     }
   end
 
@@ -188,37 +195,72 @@ defmodule Glific.Clients.Stir do
       get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
       |> Glific.parse_maybe_integer()
 
-    contact = Contacts.get_contact!(mt_contact_id)
+    if is_nil(mt_contact_id) do
+      %{
+        first_priority: "NA",
+        second_priority: "NA",
+        first_priority_flow: "NA",
+        second_priority_flow: "NA"
+      }
+    else
+      contact = Contacts.get_contact!(mt_contact_id)
+      mt_priorities = get_contact_priority(contact.fields)
 
-    first_priority =
-      contact.fields["first_priority"]["value"]
-      |> clean_string()
+      first_priority =
+        mt_priorities.first
+        |> clean_string()
 
-    second_priority =
-      contact.fields["second_priority"]["value"]
-      |> clean_string()
+      second_priority =
+        mt_priorities.second
+        |> clean_string()
 
-    priority_map = Enum.into(@priorities_list, %{})
+      priority_map = Enum.into(@priorities_list, %{})
 
-    %{
-      first_priority: priority_map[first_priority][:tdc_survery_flow],
-      second_priority: priority_map[second_priority][:tdc_survery_flow]
-    }
+      first_priority_map = priority_map[first_priority] || %{}
+      second_priority_map = priority_map[second_priority] || %{}
+
+      %{
+        first_priority: first_priority,
+        second_priority: second_priority,
+        first_priority_flow: first_priority_map[:tdc_survery_flow],
+        second_priority_flow: second_priority_map[:tdc_survery_flow]
+      }
+    end
   end
 
   def webhook("mt_and_diet_priority", fields) do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     mt_district = fields["district"] |> clean_string()
-    diets = get_diet_list(fields["diet_group"], organization_id)
-    {_district, diet} = Enum.find(diets, fn {district, _contact} -> district == mt_district end)
 
-    %{
+    mt_priorities =
+      get_in(fields, ["contact", "fields"])
+      |> get_contact_priority()
+
+    result = %{
       district: mt_district,
-      diet_first_priority: diet.fields["first_priority"]["value"],
-      diet_second_priority: diet.fields["second_priority"]["value"],
-      mt_first_priority: get_in(fields, ["contact", "fields", "first_priority", "value"]),
-      mt_second_priority: get_in(fields, ["contact", "fields", "second_priority", "value"])
+      mt_first_priority: mt_priorities.first,
+      mt_second_priority: mt_priorities.second,
+      diet_first_priority: "NA",
+      diet_second_priority: "NA"
     }
+
+    get_diet_list(fields["diet_group"], organization_id)
+    |> Enum.find(fn {district, _contact} -> district == mt_district end)
+    |> case do
+      {_district, diet} ->
+        diet_priorities = get_contact_priority(diet.fields)
+
+        Map.merge(
+          result,
+          %{
+            diet_first_priority: diet_priorities.first,
+            diet_second_priority: diet_priorities.second
+          }
+        )
+
+      _ ->
+        result
+    end
   end
 
   def webhook("compute_survey_score", %{results: results}),
@@ -238,6 +280,16 @@ defmodule Glific.Clients.Stir do
   defp clean_string(str) do
     String.downcase(str || "")
     |> String.trim()
+  end
+
+  defp get_contact_priority(fields) do
+    first_priority_map = Map.get(fields, "first_priority", %{})
+    second_priority_map = Map.get(fields, "second_priority", %{})
+
+    %{
+      first: first_priority_map["value"] || "NA",
+      second: second_priority_map["value"] || "NA"
+    }
   end
 
   defp get_diet_list(diet_group_label, organization_id) do
