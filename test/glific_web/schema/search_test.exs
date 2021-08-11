@@ -582,7 +582,9 @@ defmodule GlificWeb.Schema.SearchTest do
       )
 
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "body"]) == last_message.body
+
+    assert get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "body"]) ==
+             last_message.body
   end
 
   test "search with the empty group filter will return the conversation", %{staff: user} do

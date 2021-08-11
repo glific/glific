@@ -118,6 +118,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_google_cloud_storage()
 
     add_navana_tech()
+
+    add_exotel()
   end
 
   defp add_dialogflow do
@@ -242,7 +244,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
   defp add_navana_tech() do
     query = from p in Provider, where: p.shortcode == "navana_tech"
 
-    # add google cloud storage (gcs)
+    # add only if does not exist
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
@@ -263,6 +265,43 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             token: %{
               type: :string,
               label: "JWT token ",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp add_exotel() do
+    query = from p in Provider, where: p.shortcode == "exotel"
+
+    # add only if does not exist
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "Exotel",
+          shortcode: "exotel",
+          description: "Implement Exotel callback to process optin and trigger flow",
+          group: nil,
+          is_required: false,
+          keys: %{
+            flow_id: %{
+              type: :integer,
+              label: "Glific Flow to trigger when a contact opts in",
+              default: nil,
+              view_only: false
+            },
+            direction: %{
+              type: :string,
+              label: "Is this an incoming or outbound-dial call",
+              default: "incoming",
+              view_only: false
+            }
+          },
+          secrets: %{
+            phone: %{
+              type: :string,
+              label: "Exotel Phone Number",
               default: nil,
               view_only: false
             }

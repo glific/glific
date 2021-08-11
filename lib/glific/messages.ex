@@ -1202,7 +1202,8 @@ defmodule Glific.Messages do
   """
   @spec get_media_type_from_url(String.t()) :: tuple()
   def get_media_type_from_url(url) do
-    extension = url
+    extension =
+      url
       |> Path.extname()
       |> String.downcase()
       |> String.replace(".", "")
@@ -1211,10 +1212,10 @@ defmodule Glific.Messages do
       {:image, ["png", "jpg", "jpeg"]},
       {:video, ["mp4", "3gp", "3gpp"]},
       {:audio, ["mp3", "wav", "acc"]},
-      {:document, ["pdf", "docx", "xlxs"]},
+      {:document, ["pdf", "docx", "xlxs"]}
     ]
 
-    Enum.find(mime_types, fn {_type, extension_list} ->  extension in extension_list end)
+    Enum.find(mime_types, fn {_type, extension_list} -> extension in extension_list end)
     |> case do
       {type, _} -> {type, url}
       _ -> {:text, nil}

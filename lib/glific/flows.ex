@@ -540,11 +540,15 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact
   """
-  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, @status})
+  @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status})
     process_contact_flow([contact], flow, @status)
   end
+
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
+    do: start_contact_flow(flow.id, contact)
 
   @doc """
   Start flow for contacts of a group
