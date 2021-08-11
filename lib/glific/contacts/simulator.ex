@@ -57,13 +57,13 @@ defmodule Glific.Contacts.Simulator do
     {:reply, flow, state, :hibernate}
   end
 
-  # @impl true
-  # @doc false
-  # def handle_call({:release_flow, user}, _from, state) do
-  #   state = release_flow(user, state)
+  @impl true
+  @doc false
+  def handle_call({:release_flow, user}, _from, state) do
+    state = release_flow(user, state)
 
-  #   {:reply, nil, state, :hibernate}
-  # end
+    {:reply, nil, state, :hibernate}
+  end
 
   # Note that we are specifically not implementing the handle_cast callback
   # since it does not make sense for the purposes of this interface
@@ -334,13 +334,13 @@ defmodule Glific.Contacts.Simulator do
     key = {user.id, user.fingerprint}
     organization_id = user.organization_id
 
-    flow =
+    [flow] =
       Flow
       |> where([f], f.organization_id == ^organization_id)
       |> where([f], f.id == ^flow_id)
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
-    available_flow = flow |> check_available(free)
+    [available_flow] = [flow] |> check_available(free)
 
     cond do
       Map.has_key?(busy, key) ->
@@ -362,7 +362,7 @@ defmodule Glific.Contacts.Simulator do
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows: free -- available_flow,
+            free_flows: free -- [available_flow],
             busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
           },
           available_flow
@@ -370,12 +370,27 @@ defmodule Glific.Contacts.Simulator do
     end
   end
 
+  @doc """
+  Release the simulator associated with this user id. It is possible
+  that there is no simulator associated with this user
+  """
+  @spec release_flow(User.t(), map()) :: map()
+  def release_flow(user, state) do
+    organization_id = user.organization_id
+
+    org_state =
+      get_state(state, organization_id)
+      |> free_flows(user)
+
+    Map.put(state, organization_id, org_state)
+  end
+
   @spec check_available(list, any) :: nil | list
   defp check_available(flow, free) do
     with true <- Enum.member?(free, List.first(flow)) do
       flow
     else
-      _ -> nil
+      _ -> [nil]
     end
   end
 end
