@@ -118,7 +118,7 @@ defmodule Glific.Contacts.Simulator do
 
     {org_state, contact} =
       get_state(state, organization_id)
-      |> free_simulators()
+      |> free_resource(:simulators)
       |> get_org_simulator(user)
 
     {contact, Map.put(state, organization_id, org_state)}
@@ -180,7 +180,7 @@ defmodule Glific.Contacts.Simulator do
 
     org_state =
       get_state(state, organization_id)
-      |> free_simulators(user)
+      |> free_resource(:simulators, user)
 
     Map.put(state, organization_id, org_state)
   end
@@ -231,96 +231,76 @@ defmodule Glific.Contacts.Simulator do
     )
   end
 
-  @spec free_simulators(map(), User.t() | nil) :: map()
-  defp free_simulators(
-         %{
-           free_simulators: free,
-           busy_simulators: busy,
-           free_flows: free_flows,
-           busy_flows: busy_flows
-         } = _state,
-         user \\ nil
-       ) do
-    expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
-
-    {free, busy} =
-      Enum.reduce(
-        busy,
-        {free, busy},
-        fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
-          if (user && user.id == id && user.fingerprint == fingerprint) ||
-               DateTime.compare(time, expiry_time) == :lt do
-            publish_data(contact.organization_id, id)
-
-            {
-              [contact | free],
-              Map.delete(busy, {id, fingerprint})
-            }
-          else
-            {free, busy}
-          end
-        end
-      )
-
-    %{
-      free_simulators: free,
-      busy_simulators: busy,
-      free_flows: free_flows,
-      busy_flows: busy_flows
-    }
-  end
-
+  @spec get_flow(User.t(), non_neg_integer, map) :: {Flow.t(), map}
   defp get_flow(user, flow_id, state) do
     organization_id = user.organization_id
 
     {org_state, contact} =
       get_state(state, organization_id)
-      |> free_flows()
+      |> free_resource(:flows)
       |> get_org_flows(user, flow_id)
 
     {contact, Map.put(state, organization_id, org_state)}
   end
 
-  @spec free_flows(map(), User.t() | nil) :: map()
-  defp free_flows(
+  @spec free_resource(map(), atom(), User.t() | nil) :: map()
+  defp free_resource(_state, _stage, user \\ nil)
+
+  defp free_resource(
          %{
-           free_simulators: free_simulators,
-           busy_simulators: busy_simulators,
-           free_flows: free,
-           busy_flows: busy
-         } = _state,
-         user \\ nil
+           free_flows: free_flows,
+           busy_flows: busy_flows
+         } = state,
+         :flows,
+         user
        ) do
-    expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
-
-    {free, busy} =
-      Enum.reduce(
-        busy,
-        {free, busy},
-        fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
-          if (user && user.id == id && user.fingerprint == fingerprint) ||
-               DateTime.compare(time, expiry_time) == :lt do
-            # publish_data(contact.organization_id, id)
-
-            {
-              [contact | free],
-              Map.delete(busy, {id, fingerprint})
-            }
-          else
-            {free, busy}
-          end
-        end
-      )
-
-    %{
-      free_simulators: free_simulators,
-      busy_simulators: busy_simulators,
-      free_flows: free,
-      busy_flows: busy
-    }
+    {free, busy} = do_free_resource(free_flows, busy_flows, user)
+    update_state(:flows, free, busy, state)
   end
 
-  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t() | nil}
+  defp free_resource(
+         %{
+           free_simulators: free_simulators,
+           busy_simulators: busy_simulators
+         } = state,
+         :simulators,
+         user
+       ) do
+    {free, busy} = do_free_resource(free_simulators, busy_simulators, user)
+    update_state(:simulators, free, busy, state)
+  end
+
+  @spec do_free_resource(map(), map(), User.t() | nil) :: {map(), map()}
+  defp do_free_resource(free, busy, user) do
+    expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
+
+    Enum.reduce(
+      busy,
+      {free, busy},
+      fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
+        if (user && user.id == id && user.fingerprint == fingerprint) ||
+             DateTime.compare(time, expiry_time) == :lt do
+          publish_data(contact.organization_id, id)
+
+          {
+            [contact | free],
+            Map.delete(busy, {id, fingerprint})
+          }
+        else
+          {free, busy}
+        end
+      end
+    )
+  end
+
+  @spec update_state(atom(), map(), map(), map()) :: map()
+  defp update_state(:simulators, free, busy, state),
+    do: Map.merge(state, %{free_simulators: free, busy_simulators: busy})
+
+  defp update_state(:flows, free, busy, state),
+    do: Map.merge(state, %{free_flows: free, busy_flows: busy})
+
+  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t()} | nil
   defp get_org_flows(
          %{
            free_simulators: free_simulators,
@@ -387,7 +367,7 @@ defmodule Glific.Contacts.Simulator do
 
     org_state =
       get_state(state, organization_id)
-      |> free_flows(user)
+      |> free_resource(:flows, user)
 
     Map.put(state, organization_id, org_state)
   end
