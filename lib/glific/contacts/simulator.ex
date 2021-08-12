@@ -324,7 +324,6 @@ defmodule Glific.Contacts.Simulator do
 
     cond do
       Map.has_key?(busy, key) ->
-        release_flow(user, state)
         {assigned_flow, _time} = Map.get(busy, key)
 
         requested_flow =
@@ -336,7 +335,7 @@ defmodule Glific.Contacts.Simulator do
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows: free,
+            free_flows: if assigned_flow == flow, do: free, else: free ++ [assigned_flow],
             busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
           },
           requested_flow
