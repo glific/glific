@@ -287,6 +287,7 @@ defmodule Glific.Flows.Action do
   @doc """
   Validate a action and all its children
   """
+  @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
   def validate(%{type: type, groups: groups} = action, errors, _flow)
       when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
     # ensure that the contacts and/or groups exist that are involved in the above
