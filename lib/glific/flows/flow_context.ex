@@ -393,7 +393,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
-    |> where([fc], fc.wait_for_time == false)
+    # |> where([fc], fc.wait_for_time == false)
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
   end
 
