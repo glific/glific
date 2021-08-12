@@ -331,11 +331,13 @@ defmodule Glific.Contacts.Simulator do
             do: assigned_flow,
             else: available_flow
 
+        available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
+
         {
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows: if assigned_flow == flow, do: free, else: free ++ [assigned_flow],
+            free_flows: available_flows,
             busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
           },
           requested_flow
