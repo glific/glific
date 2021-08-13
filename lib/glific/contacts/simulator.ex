@@ -33,7 +33,7 @@ defmodule Glific.Contacts.Simulator do
   @impl true
   @doc false
   def handle_call({:release_simulator, user}, _from, state) do
-    state = release_simulator(user, state)
+    state = release_resource(user, state, :simulators)
 
     {:reply, nil, state, :hibernate}
   end
@@ -60,7 +60,7 @@ defmodule Glific.Contacts.Simulator do
   @impl true
   @doc false
   def handle_call({:release_flow, user}, _from, state) do
-    state = release_flow(user, state)
+    state = release_resource(user, state, :flows)
 
     {:reply, nil, state, :hibernate}
   end
@@ -170,21 +170,6 @@ defmodule Glific.Contacts.Simulator do
     end
   end
 
-  @doc """
-  Release the simulator associated with this user id. It is possible
-  that there is no simulator associated with this user
-  """
-  @spec release_simulator(User.t(), map()) :: map()
-  def release_simulator(user, state) do
-    organization_id = user.organization_id
-
-    org_state =
-      get_state(state, organization_id)
-      |> free_resource(:simulators, user)
-
-    Map.put(state, organization_id, org_state)
-  end
-
   # initializes the simulator cache for this organization
   # if not already present
   @spec get_state(map(), non_neg_integer) :: map()
@@ -194,7 +179,7 @@ defmodule Glific.Contacts.Simulator do
       else: init_state(organization_id)
   end
 
-  # we'll assign the simulator for 10 minute intervals
+  # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10
 
   @spec init_state(non_neg_integer) :: map()
@@ -242,6 +227,92 @@ defmodule Glific.Contacts.Simulator do
 
     {contact, Map.put(state, organization_id, org_state)}
   end
+
+  @spec update_state(atom(), map(), map(), map()) :: map()
+  defp update_state(:simulators, free, busy, state),
+    do: Map.merge(state, %{free_simulators: free, busy_simulators: busy})
+
+  defp update_state(:flows, free, busy, state),
+    do: Map.merge(state, %{free_flows: free, busy_flows: busy})
+
+  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t()} | nil
+  defp get_org_flows(
+         %{
+           free_simulators: free_simulators,
+           busy_simulators: busy_simulators,
+           free_flows: free,
+           busy_flows: busy
+         } = state,
+         user,
+         flow_id
+       ) do
+    key = {user.id, user.fingerprint}
+    organization_id = user.organization_id
+
+    [flow] =
+      Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> where([f], f.id == ^flow_id)
+      |> Repo.all(skip_organization_id: true, skip_permission: true)
+
+    [available_flow] = [flow] |> check_available(free)
+
+    cond do
+      Map.has_key?(busy, key) ->
+        {assigned_flow, _time} = Map.get(busy, key)
+
+        requested_flow =
+          if assigned_flow == flow,
+            do: assigned_flow,
+            else: available_flow
+
+        # Updating free flows list when a new flow is assigned to user
+        available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
+
+        {
+          %{
+            free_simulators: free_simulators,
+            busy_simulators: busy_simulators,
+            free_flows: available_flows,
+            busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
+          },
+          requested_flow
+        }
+
+      is_nil(available_flow) || Enum.empty?(free) ->
+        {state, nil}
+
+      true ->
+        {
+          %{
+            free_simulators: free_simulators,
+            busy_simulators: busy_simulators,
+            free_flows: free -- [available_flow],
+            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
+          },
+          available_flow
+        }
+    end
+  end
+
+  @doc """
+  Release the resource associated with this user id. It is possible
+  that there is no resource associated with this user
+  """
+  @spec release_resource(User.t(), map(), atom()) :: map()
+  def release_resource(user, state, type) do
+    organization_id = user.organization_id
+
+    org_state =
+      get_state(state, organization_id)
+      |> free_resource(type, user)
+
+    Map.put(state, organization_id, org_state)
+  end
+
+  @spec check_available(list, any) :: nil | list
+  defp check_available(flow, free),
+    do: if(Enum.member?(free, List.first(flow)), do: flow, else: [nil])
 
   @spec free_resource(map(), atom(), User.t() | nil) :: map()
   defp free_resource(_state, _stage, user \\ nil)
@@ -292,89 +363,4 @@ defmodule Glific.Contacts.Simulator do
       end
     )
   end
-
-  @spec update_state(atom(), map(), map(), map()) :: map()
-  defp update_state(:simulators, free, busy, state),
-    do: Map.merge(state, %{free_simulators: free, busy_simulators: busy})
-
-  defp update_state(:flows, free, busy, state),
-    do: Map.merge(state, %{free_flows: free, busy_flows: busy})
-
-  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t()} | nil
-  defp get_org_flows(
-         %{
-           free_simulators: free_simulators,
-           busy_simulators: busy_simulators,
-           free_flows: free,
-           busy_flows: busy
-         } = state,
-         user,
-         flow_id
-       ) do
-    key = {user.id, user.fingerprint}
-    organization_id = user.organization_id
-
-    [flow] =
-      Flow
-      |> where([f], f.organization_id == ^organization_id)
-      |> where([f], f.id == ^flow_id)
-      |> Repo.all(skip_organization_id: true, skip_permission: true)
-
-    [available_flow] = [flow] |> check_available(free)
-
-    cond do
-      Map.has_key?(busy, key) ->
-        {assigned_flow, _time} = Map.get(busy, key)
-
-        requested_flow =
-          if assigned_flow == flow,
-            do: assigned_flow,
-            else: available_flow
-
-        available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
-
-        {
-          %{
-            free_simulators: free_simulators,
-            busy_simulators: busy_simulators,
-            free_flows: available_flows,
-            busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
-          },
-          requested_flow
-        }
-
-      is_nil(available_flow) || Enum.empty?(free) ->
-        {state, nil}
-
-      true ->
-        {
-          %{
-            free_simulators: free_simulators,
-            busy_simulators: busy_simulators,
-            free_flows: free -- [available_flow],
-            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
-          },
-          available_flow
-        }
-    end
-  end
-
-  @doc """
-  Release the simulator associated with this user id. It is possible
-  that there is no simulator associated with this user
-  """
-  @spec release_flow(User.t(), map()) :: map()
-  def release_flow(user, state) do
-    organization_id = user.organization_id
-
-    org_state =
-      get_state(state, organization_id)
-      |> free_resource(:flows, user)
-
-    Map.put(state, organization_id, org_state)
-  end
-
-  @spec check_available(list, any) :: nil | list
-  defp check_available(flow, free),
-    do: if(Enum.member?(free, List.first(flow)), do: flow, else: [nil])
 end
