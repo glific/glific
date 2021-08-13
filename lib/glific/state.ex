@@ -1,7 +1,7 @@
-defmodule Glific.Contacts.Simulator do
+defmodule Glific.State do
   @moduledoc """
-  Manage simulator state and allocation to ensure we can have multiple simulators
-  run at the same time
+  Manage simulator and flows, managing state and allocation to ensure we can have multiple simulators
+  and flow run at the same time
   """
 
   use Publicist
