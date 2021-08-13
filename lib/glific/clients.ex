@@ -15,7 +15,8 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.DigitalGreen
+    webhook: Glific.Clients.DigitalGreen,
+    daily_tasks: Glific.Clients.DigitalGreen
   }
 
   @sol %{
@@ -49,7 +50,8 @@ defmodule Glific.Clients do
 
   @digital_green %{
     id: 31,
-    webhook: Glific.Clients.DigitalGreen
+    webhook: Glific.Clients.DigitalGreen,
+    daily_tasks: Glific.Clients.DigitalGreen
   }
 
   @plugins %{
@@ -124,4 +126,16 @@ defmodule Glific.Clients do
       do: apply(module_name, :webhook, [name, fields]),
       else: %{error: "Missing webhook function implementation"}
   end
+
+  @doc """
+  Allow an organization to ran a  glific functions at a daily basis.
+  """
+  @spec daily_tasks(non_neg_integer()) :: map()
+  def daily_tasks(org_id) do
+    module_name = get_in(plugins(), [org_id, :daily_tasks])
+    if module_name,
+      do: apply(module_name, :daily_tasks, [org_id]),
+      else: %{error: "Missing daily function implementation"}
+  end
+
 end
