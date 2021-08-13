@@ -7,11 +7,11 @@ defmodule GlificWeb.Resolvers.Flows do
 
   alias Glific.{
     Contacts.Contact,
-    Contacts.Simulator,
     Flows,
     Flows.Flow,
     Groups.Group,
     Repo,
+    State,
     Users.User
   }
 
@@ -87,7 +87,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def flow_get(_, %{id: id}, %{context: %{current_user: user}}) do
-    {:ok, Simulator.get_flow(user, id)}
+    {:ok, State.get_flow(user, id)}
   end
 
   @doc """
@@ -96,7 +96,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec flow_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def flow_release(_, _params, %{context: %{current_user: user}}) do
-    {:ok, Simulator.release_flow(user)}
+    {:ok, State.release_flow(user)}
   end
 
   @doc """
