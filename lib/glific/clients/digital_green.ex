@@ -9,6 +9,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.ContactField,
     Groups,
     Groups.Group,
@@ -192,17 +193,26 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
+  @doc """
+    A callback function to support daily tasks for the client
+    in the backend.
+  """
+  @spec daily_tasks(non_neg_integer()) :: atom()
   def daily_tasks(_org_id) do
     fetch_contacts_from_farmer_group()
     |> Enum.each(&run_daily_task/1)
+    :ok
   end
 
-  def fetch_contacts_from_farmer_group() do
+  @spec fetch_contacts_from_farmer_group() :: list()
+  defp fetch_contacts_from_farmer_group() do
+    ## We will make it dynamic soon
     farmer_collection_id = 349
     Contacts.list_contacts(%{filter: %{include_groups: [farmer_collection_id]}})
   end
 
-  def run_daily_task(contact) do
+  @spec run_daily_task(Contact.t()) :: map()
+  defp run_daily_task(contact) do
     attrs = %{
       "contact_id" => contact.id,
       "organization_id" => contact.organization_id,
