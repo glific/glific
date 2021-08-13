@@ -161,6 +161,24 @@ defmodule Glific.SimulatorTest do
     assert flow_2 == flow_1
   end
 
+  test "Ensure we can request and get different flow, for same user id, same fingerprint and previous flow is updated as available flow",
+       %{organization_id: organization_id} = _attrs do
+    user = %User{
+      organization_id: organization_id,
+      id: 6,
+      fingerprint: Ecto.UUID.generate()
+    }
+
+    flow_1 = Simulator.get_flow(user, 1)
+    assert flow_1 != nil
+
+    flow_2 = Simulator.get_flow(user, 2)
+    assert flow_2 != nil
+
+    %{free_flows: free_flows} = Simulator.state(1)
+    assert true == Enum.member?(free_flows, flow_1)
+  end
+
   test "Ensure we can request and get different flow, and on release the number of available flows always remain same",
        %{organization_id: organization_id} = _attrs do
     %{free_flows: free_flows} = Simulator.state(1)
