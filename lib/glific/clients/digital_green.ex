@@ -179,13 +179,13 @@ defmodule Glific.Clients.DigitalGreen do
       village: village_name
     ]
 
-    if village_name not in @villages do
-      %{is_valid_village: false}
-    else
+    if village_name in @villages do
       ApiClient.get_csv_content(url: @weather_updates["published_csv"])
       |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
       |> generate_weather_results(opts)
       |> Map.put(:is_valid_village, true)
+    else
+      %{is_valid_village: false}
     end
 
   end
@@ -198,14 +198,14 @@ defmodule Glific.Clients.DigitalGreen do
     in the backend.
   """
   @spec daily_tasks(non_neg_integer()) :: atom()
-  def daily_tasks(_org_id) do
-    fetch_contacts_from_farmer_group()
+  def daily_tasks(org_id) do
+    fetch_contacts_from_farmer_group(org_id)
     |> Enum.each(&run_daily_task/1)
     :ok
   end
 
-  @spec fetch_contacts_from_farmer_group() :: list()
-  defp fetch_contacts_from_farmer_group() do
+  @spec fetch_contacts_from_farmer_group(non_neg_integer()) :: list()
+  defp fetch_contacts_from_farmer_group(_org_id) do
     ## We will make it dynamic soon
     farmer_collection_id = 349
     Contacts.list_contacts(%{filter: %{include_groups: [farmer_collection_id]}})

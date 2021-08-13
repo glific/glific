@@ -127,6 +127,10 @@ defmodule Glific.Clients do
       else: %{error: "Missing webhook function implementation"}
   end
 
+  @doc """
+  Allow an organization to ran a  glific functions at a daily basis.
+  """
+  @spec daily_tasks(non_neg_integer()) :: map()
   def daily_tasks(org_id) do
     module_name = get_in(plugins(), [org_id, :daily_tasks])
     if module_name,
