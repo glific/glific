@@ -180,7 +180,7 @@ defmodule Glific.Contacts.Simulator do
   end
 
   # we'll assign the simulator and flows for 10 minute intervals
-  @cache_time 1
+  @cache_time 10
 
   @spec init_state(non_neg_integer) :: map()
   defp init_state(organization_id) do
