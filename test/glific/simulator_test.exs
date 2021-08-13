@@ -11,6 +11,7 @@ defmodule Glific.SimulatorTest do
     default_provider = SeedsDev.seed_providers()
     organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts(organization)
+    SeedsDev.seed_flows(organization)
 
     Simulator.reset()
     :ok
@@ -94,5 +95,75 @@ defmodule Glific.SimulatorTest do
     Simulator.release_simulator(user)
 
     assert cache == Simulator.state(1)
+  end
+
+  test "Ensure cache is initialized to all flows in free state" do
+    %{free_flows: free_flows, busy_flows: busy_flows} = Simulator.state(1)
+
+    # we have 13 flows in our dev seeder
+    assert length(free_flows) == 13
+    assert Enum.empty?(busy_flows)
+  end
+
+  test "Ensure that when we get and release a flow the cache returns to its original state" do
+    cache = Simulator.state(1)
+
+    user = %User{
+      organization_id: 1,
+      id: 6,
+      fingerprint: Ecto.UUID.generate()
+    }
+
+    contact_1 = Simulator.get_flow(user, 1)
+    assert contact_1 != nil
+
+    Simulator.release_flow(user)
+
+    assert cache == Simulator.state(1)
+  end
+
+  test "Ensure we can request and get different flow, for same user id, different fingerprint" do
+    user = %User{
+      organization_id: 1,
+      id: 6,
+      fingerprint: Ecto.UUID.generate()
+    }
+
+    flow_1 = Simulator.get_flow(user, 1)
+    assert flow_1 != nil
+
+    flow_2 = Simulator.get_flow(Map.put(user, :fingerprint, Ecto.UUID.generate()), 2)
+    assert flow_2 != nil
+
+    assert flow_2 != flow_1
+  end
+
+  test "Ensure we can request and get different flow, and on release the number of available flows always remain same" do
+    %{free_flows: free_flows} = Simulator.state(1)
+    count_free_flow = length(free_flows)
+
+    user_1 = %User{
+      organization_id: 1,
+      id: 6,
+      fingerprint: Ecto.UUID.generate()
+    }
+
+    flow_1 = Simulator.get_flow(user_1, 1)
+    assert flow_1 != nil
+
+    user_2 = %User{
+      organization_id: 1,
+      id: 6,
+      fingerprint: Ecto.UUID.generate()
+    }
+
+    flow_2 = Simulator.get_flow(user_2, 2)
+    assert flow_2 != nil
+
+    Simulator.release_flow(user_1)
+    Simulator.release_flow(user_2)
+    %{free_flows: free_flows} = Simulator.state(1)
+    new_count_free_flows = length(free_flows)
+    assert count_free_flow == new_count_free_flows
   end
 end

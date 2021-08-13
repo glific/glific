@@ -180,7 +180,7 @@ defmodule Glific.Contacts.Simulator do
   end
 
   # we'll assign the simulator and flows for 10 minute intervals
-  @cache_time 10
+  @cache_time 1
 
   @spec init_state(non_neg_integer) :: map()
   defp init_state(organization_id) do
@@ -273,7 +273,7 @@ defmodule Glific.Contacts.Simulator do
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows: available_flows,
+            free_flows: Enum.uniq(available_flows) -- [requested_flow],
             busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
           },
           requested_flow
