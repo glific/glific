@@ -100,6 +100,7 @@ defmodule Glific.Clients.DigitalGreen do
     ## check and update contact stage based on the total days they have.
     total_days = get_total_stage_days(fields)
     update_crop_stage(total_days, contact_id, organization_id)
+    Logger.info("Daily flow ran successfully for total_days: #{inspect total_days} and fields: #{inspect fields} ")
   end
 
   def webhook("update_crop_stage", fields) do
@@ -163,6 +164,30 @@ defmodule Glific.Clients.DigitalGreen do
 
   def webhook(_, _fields),
     do: %{}
+
+
+  def daily_tasks(_org_id) do
+    fetch_contacts_from_farmer_group()
+    |> Enum.each(&run_daily_task/1)
+  end
+
+  def fetch_contacts_from_farmer_group() do
+    farmer_collection_id = 349
+    Contacts.list_contacts(%{filter: %{include_groups: [farmer_collection_id]}})
+  end
+
+  def run_daily_task(contact) do
+    attrs = %{
+      "contact_id" => contact.id,
+      "organization_id" => contact.organization_id,
+      "contact" => %{
+        "id" => contact.id,
+        "fields" => contact.fields
+      },
+      "results" => %{}
+    }
+    webhook("daily", attrs)
+  end
 
   ## filter record based on the contact village, and current week.
   @spec filter_weather_records(map(), list(), Keyword.t()) :: list()
@@ -330,6 +355,7 @@ defmodule Glific.Clients.DigitalGreen do
     with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
+      Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
       Groups.create_contact_group(%{
         contact_id: contact_id,
         group_id: next_flow_group.id,
