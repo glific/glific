@@ -1,0 +1,6 @@
+query flowGet($id: ID!) {
+  flowGet(id: $id) {
+    id
+    name
+  }
+}

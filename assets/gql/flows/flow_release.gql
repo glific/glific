@@ -1,0 +1,5 @@
+query flowRelease {
+  flowRelease {
+    id
+  }
+}
