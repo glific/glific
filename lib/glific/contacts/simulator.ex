@@ -375,11 +375,6 @@ defmodule Glific.Contacts.Simulator do
   end
 
   @spec check_available(list, any) :: nil | list
-  defp check_available(flow, free) do
-    with true <- Enum.member?(free, List.first(flow)) do
-      flow
-    else
-      _ -> [nil]
-    end
-  end
+  defp check_available(flow, free),
+    do: if(Enum.member?(free, List.first(flow)), do: flow, else: [nil])
 end
