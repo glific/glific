@@ -53,6 +53,18 @@ defmodule Glific.Clients.DigitalGreen do
       "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
   }
 
+  @villages [
+    "ganapavaram",
+    "jonnalagadda",
+    "solasa",
+    "ipur",
+    "kondapuram",
+    "paladoddi",
+    "mudumala",
+    "erladinne",
+    "pedakurapadu"
+  ]
+
   @doc """
   Returns time in second till next defined Timeslot
   """
@@ -68,6 +80,7 @@ defmodule Glific.Clients.DigitalGreen do
     next_slot(time, morning_slot, evening_slot)
     |> Timex.diff(time, :seconds)
     |> max(61)
+
   end
 
   defp next_slot(time, morning_slot, evening_slot) do
@@ -140,31 +153,44 @@ defmodule Glific.Clients.DigitalGreen do
 
     Navanatech.decode_message(params)
     |> case do
-      {:ok, %{"keywords" => keywords} = _attrs} ->
-        %{decoded_message: hd(keywords)}
+      ## We will move these conditions to Navanatech module.
+      {:ok, %{"keywords" => []} = attrs} ->
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(attrs)}"}
+
+      {:ok, %{"keywords" => keywords} = attrs} ->
+        %{decoded_message: hd(keywords), request_data:  "Data Decode #{inspect(params)} with response #{inspect(attrs)}" }
+
+      {:ok, message} ->
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
 
       {:error, message} ->
-        %{decoded_message: "Error in decode #{inspect(params)} with message #{message}"}
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
     end
   end
 
   def webhook("weather_updates", fields) do
     today = Timex.today()
+    village_name = String.downcase(fields["village_name"]) |> String.trim()
 
     opts = [
       start_date: Timex.beginning_of_week(today, :mon),
       end_date: Timex.end_of_week(today, :sun),
-      village: String.downcase(fields["village_name"])
+      village: village_name
     ]
 
-    ApiClient.get_csv_content(url: @weather_updates["published_csv"])
-    |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
-    |> generate_weather_results(opts)
+    if village_name not in @villages do
+      %{is_valid_village: false}
+    else
+      ApiClient.get_csv_content(url: @weather_updates["published_csv"])
+      |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
+      |> generate_weather_results(opts)
+      |> Map.put(:is_valid_village, true)
+    end
+
   end
 
   def webhook(_, _fields),
     do: %{}
-
 
   def daily_tasks(_org_id) do
     fetch_contacts_from_farmer_group()
@@ -188,7 +214,6 @@ defmodule Glific.Clients.DigitalGreen do
     }
     webhook("daily", attrs)
   end
-
   ## filter record based on the contact village, and current week.
   @spec filter_weather_records(map(), list(), Keyword.t()) :: list()
   defp filter_weather_records(row, acc, opts) do
@@ -355,7 +380,7 @@ defmodule Glific.Clients.DigitalGreen do
     with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
-      Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
+          Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
       Groups.create_contact_group(%{
         contact_id: contact_id,
         group_id: next_flow_group.id,
