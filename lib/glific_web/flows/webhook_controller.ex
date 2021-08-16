@@ -5,6 +5,7 @@ defmodule GlificWeb.Flows.WebhookController do
   """
 
   use GlificWeb, :controller
+
   alias Glific.Clients.Stir
 
   @doc """

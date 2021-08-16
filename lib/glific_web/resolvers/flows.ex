@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Flow,
     Groups.Group,
     Repo,
+    State,
     Users.User
   }
 
@@ -81,6 +82,24 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc """
+  Grab a flow or nil if possible for this user
+  """
+  @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def flow_get(_, %{id: id}, %{context: %{current_user: user}}) do
+    {:ok, State.get_flow(user, id)}
+  end
+
+  @doc """
+  Release a flow or nil if possible for this user
+  """
+  @spec flow_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def flow_release(_, _params, %{context: %{current_user: user}}) do
+    {:ok, State.release_flow(user)}
+  end
+
+  @doc """
   Publish a flow
   """
   @spec publish_flow(Absinthe.Resolution.t(), %{uuid: String.t()}, %{context: map()}) ::
@@ -104,18 +123,21 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc """
   Start a flow for a contact
   """
-  @spec start_contact_flow(Absinthe.Resolution.t(), %{flow_id: integer, contact_id: integer}, %{
-          context: map()
-        }) ::
+  @spec start_contact_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer | String.t(), contact_id: integer},
+          %{
+            context: map()
+          }
+        ) ::
           {:ok, any} | {:error, any}
   def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
-         {:ok, contact} <-
+    with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {:ok, _flow} <- Flows.start_contact_flow(flow, contact) do
+         {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact) do
       {:ok, %{success: true}}
     end
   end

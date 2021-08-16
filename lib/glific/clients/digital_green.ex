@@ -9,6 +9,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.ContactField,
     Groups,
     Groups.Group,
@@ -80,8 +81,6 @@ defmodule Glific.Clients.DigitalGreen do
     next_slot(time, morning_slot, evening_slot)
     |> Timex.diff(time, :seconds)
     |> max(61)
-
-    180
   end
 
   defp next_slot(time, morning_slot, evening_slot) do
@@ -114,6 +113,7 @@ defmodule Glific.Clients.DigitalGreen do
     ## check and update contact stage based on the total days they have.
     total_days = get_total_stage_days(fields)
     update_crop_stage(total_days, contact_id, organization_id)
+    Logger.info("Daily flow ran successfully for total_days: #{inspect total_days} and fields: #{inspect fields} ")
   end
 
   def webhook("update_crop_stage", fields) do
@@ -153,14 +153,21 @@ defmodule Glific.Clients.DigitalGreen do
 
     Navanatech.decode_message(params)
     |> case do
-      {:ok, %{"keywords" => keywords} = _attrs} ->
-        %{decoded_message: hd(keywords)}
+      ## We will move these conditions to Navanatech module.
+      {:ok, %{"keywords" => []} = attrs} ->
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(attrs)}"}
+
+      {:ok, %{"keywords" => keywords} = attrs} ->
+        %{decoded_message: hd(keywords), request_data:  "Data Decode #{inspect(params)} with response #{inspect(attrs)}" }
+
+      {:ok, message} ->
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
 
       {:ok, message} ->
         %{decoded_message: message}
 
       {:error, message} ->
-        %{decoded_message: "could not decode", error_message: "Error in decode #{inspect(params)} with message #{message}"}
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
     end
   end
 
@@ -174,12 +181,14 @@ defmodule Glific.Clients.DigitalGreen do
       village: village_name
     ]
 
-    if village_name not in @villages do
-      %{is_valid_village: false}
-    else
+
+    if village_name in @villages do
       ApiClient.get_csv_content(url: @weather_updates["published_csv"])
       |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
       |> generate_weather_results(opts)
+      |> Map.put(:is_valid_village, true)
+    else
+      %{is_valid_village: false}
     end
 
   end
@@ -187,6 +196,37 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
+  @doc """
+    A callback function to support daily tasks for the client
+    in the backend.
+  """
+  @spec daily_tasks(non_neg_integer()) :: atom()
+  def daily_tasks(org_id) do
+    fetch_contacts_from_farmer_group(org_id)
+    |> Enum.each(&run_daily_task/1)
+    :ok
+  end
+
+  @spec fetch_contacts_from_farmer_group(non_neg_integer()) :: list()
+  defp fetch_contacts_from_farmer_group(_org_id) do
+    ## We will make it dynamic soon
+    farmer_collection_id = 349
+    Contacts.list_contacts(%{filter: %{include_groups: [farmer_collection_id]}})
+  end
+
+  @spec run_daily_task(Contact.t()) :: map()
+  defp run_daily_task(contact) do
+    attrs = %{
+      "contact_id" => contact.id,
+      "organization_id" => contact.organization_id,
+      "contact" => %{
+        "id" => contact.id,
+        "fields" => contact.fields
+      },
+      "results" => %{}
+    }
+    webhook("daily", attrs)
+  end
   ## filter record based on the contact village, and current week.
   @spec filter_weather_records(map(), list(), Keyword.t()) :: list()
   defp filter_weather_records(row, acc, opts) do
@@ -353,6 +393,7 @@ defmodule Glific.Clients.DigitalGreen do
     with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
+          Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
       Groups.create_contact_group(%{
         contact_id: contact_id,
         group_id: next_flow_group.id,

@@ -288,14 +288,14 @@ defmodule Glific.Flows.Action do
   Validate a action and all its children
   """
   @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(%{type: type} = action, errors, _flow)
+  def validate(%{type: type, groups: groups} = action, errors, _flow)
       when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
     # ensure that the contacts and/or groups exist that are involved in the above
     # action
     object = object(type)
 
     Enum.reduce(
-      if(object == Contact, do: action.contacts, else: action.groups),
+      check_object(object, action, groups),
       errors,
       fn entity, errors ->
         case Glific.parse_maybe_integer(entity["uuid"]) do
@@ -337,6 +337,13 @@ defmodule Glific.Flows.Action do
 
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
+
+  defp check_object(Contact, action, _groups), do: action.contacts
+
+  defp check_object(_object, _action, ["all_groups"]),
+    do: Group |> select([m], %{"uuid" => m.id, "name" => m.label}) |> Repo.all()
+
+  defp check_object(_object, action, _groups), do: action.groups
 
   @spec type_of_next_message(Flow.t(), Action.t()) :: atom()
   defp type_of_next_message(flow, action) do
@@ -417,9 +424,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
-
     flow_uuid = get_flow_uuid(action, context)
-
     # check if we've seen this flow in this execution
     if Map.has_key?(context.uuids_seen, flow_uuid) do
       FlowContext.log_error("Repeated loop, hence finished the flow")
@@ -633,17 +638,18 @@ defmodule Glific.Flows.Action do
     else
       false
     end
-
   end
 
   @spec get_flow_uuid(Action.t(), FlowContext.t()) :: String.t()
-  defp get_flow_uuid(%{enter_flow_name: "Expression", enter_flow_expression: expression} = _action, context),
-  do:
-    FlowContext.parse_context_string(context, expression)
-    |> Glific.execute_eex()
-    |> String.trim()
+  defp get_flow_uuid(
+         %{enter_flow_name: "Expression", enter_flow_expression: expression} = _action,
+         context
+       ),
+       do:
+         FlowContext.parse_context_string(context, expression)
+         |> Glific.execute_eex()
+         |> String.trim()
 
   defp get_flow_uuid(action, _),
-  do: action.enter_flow_uuid
-
+    do: action.enter_flow_uuid
 end

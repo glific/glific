@@ -81,7 +81,8 @@ defmodule Glific.Jobs.MinuteWorker do
               "hourly_tasks",
               "delete_tasks",
               "five_minute_tasks",
-              "update_hsms"
+              "update_hsms",
+              "client_daily_tasks"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
@@ -104,6 +105,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
+
+      "client_daily_tasks" ->
+        Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

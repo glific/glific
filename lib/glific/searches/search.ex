@@ -12,7 +12,8 @@ defmodule Glific.Searches.Search do
   @type t() :: %__MODULE__{
           contacts: [Contact.t()],
           messages: [Message.t()],
-          tags: [Message.t()]
+          tags: [Message.t()],
+          labels: [Message.t()]
         }
 
   # structure to hold a contact and the conversations with the contact
@@ -21,14 +22,15 @@ defmodule Glific.Searches.Search do
     embeds_many(:contacts, [Contact])
     embeds_many(:messages, [Message])
     embeds_many(:tags, [Message])
+    embeds_many(:labels, [Message])
   end
 
   @doc """
   Create a new conversation. A contact is required for the conversation. Messages can
   be added later on
   """
-  @spec new(list(), list(), list()) :: Search.t()
-  def new(contacts, messages, tags) do
-    %Search{contacts: contacts, messages: messages, tags: tags}
+  @spec new(list(), list(), list(), list()) :: Search.t()
+  def new(contacts, messages, tags, labels) do
+    %Search{contacts: contacts, messages: messages, tags: tags, labels: labels}
   end
 end

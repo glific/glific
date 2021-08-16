@@ -126,7 +126,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Return the count of tags, using the same filter as list_tags
+  Return the count of flows, using the same filter as list_flows
   """
   @spec count_flows(map()) :: integer
   def count_flows(args),
@@ -540,11 +540,15 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact
   """
-  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, @status})
+  @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status})
     process_contact_flow([contact], flow, @status)
   end
+
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
+    do: start_contact_flow(flow.id, contact)
 
   @doc """
   Start flow for contacts of a group
@@ -876,7 +880,7 @@ defmodule Glific.Flows do
   defp do_get_sub_flows(%{"actions" => actions}, list),
     do:
       Enum.reduce(actions, list, fn action, acc ->
-        if action["type"] == "enter_flow",
+        if action["type"] == "enter_flow" and action["flow"]["name"] != "Expression",
           do: acc ++ [action["flow"]],
           else: acc
       end)

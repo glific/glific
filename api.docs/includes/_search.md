@@ -352,6 +352,12 @@ Returns a count of the number of contacts returned when executing the saved sear
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>IncludeLabels</strong></td>
+<td valign="top">[<a href="#gid">Gid</a>]</td>
+<td></td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>IncludeGroups</strong></td>
 <td valign="top">[<a href="#gid">Gid</a>]</td>
 <td></td>

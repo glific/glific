@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query flowLabel($id: ID!) {
+  flowLabel(id: $id) {
+    ...FlowLabelFields
+
+    ...ErrorFields
+  }
+}

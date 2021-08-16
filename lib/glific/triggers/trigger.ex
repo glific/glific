@@ -149,6 +149,10 @@ defmodule Glific.Triggers.Trigger do
     attrs
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs))
+
+    # set the last_trigger_at value to nil whenever trigger is updated or new trigger is created
+    |> Map.put(:last_trigger_at, Map.get(attrs, :last_trigger_at, nil))
+
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
   end
