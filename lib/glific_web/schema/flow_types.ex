@@ -106,14 +106,14 @@ defmodule GlificWeb.Schema.FlowTypes do
     end
 
     @desc "Get a flow for this user"
-    field :flow_get, :flow do
+    field :flow_get, :flow_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow_get/3)
     end
 
     @desc "Release a flow for this user"
-    field :flow_release, :flow do
+    field :flow_release, :flow_result do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow_release/3)
     end
