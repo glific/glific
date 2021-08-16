@@ -154,6 +154,8 @@ defmodule Glific.Flows.CaseTest do
     c = %Case{type: "has_number_between", arguments: ["1", "10"]}
 
     assert wrap_execute(c, nil, "1") == true
+    assert wrap_execute(c, nil, "2@") == false
+    assert wrap_execute(c, nil, "2.5") == false
     assert wrap_execute(c, nil, "second") == false
     assert wrap_execute(c, nil, "4") == true
     assert wrap_execute(c, nil, "") == false
