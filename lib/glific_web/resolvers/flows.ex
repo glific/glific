@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Flow,
     Groups.Group,
     Repo,
+    State,
     Users.User
   }
 
@@ -78,6 +79,24 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, flow} <- Flows.delete_flow(flow) do
       {:ok, flow}
     end
+  end
+
+  @doc """
+  Grab a flow or nil if possible for this user
+  """
+  @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def flow_get(_, %{id: id}, %{context: %{current_user: user}}) do
+    {:ok, State.get_flow(user, id)}
+  end
+
+  @doc """
+  Release a flow or nil if possible for this user
+  """
+  @spec flow_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def flow_release(_, _params, %{context: %{current_user: user}}) do
+    {:ok, State.release_flow(user)}
   end
 
   @doc """

@@ -10,7 +10,8 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.FlowRevision,
     Groups,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    State
   }
 
   setup do
@@ -29,6 +30,8 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
   load_gql(:group_flow, GlificWeb.Schema, "assets/gql/flows/group_flow.gql")
   load_gql(:copy, GlificWeb.Schema, "assets/gql/flows/copy.gql")
+  load_gql(:flow_get, GlificWeb.Schema, "assets/gql/flows/flow_get.gql")
+  load_gql(:flow_rel, GlificWeb.Schema, "assets/gql/flows/flow_release.gql")
 
   test "flows field returns list of flows", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -300,5 +303,29 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
 
     assert name == get_in(query_data, [:data, "copyFlow", "flow", "name"])
+  end
+
+  test "flow get returns a flow contact",
+       %{staff: staff, user: user} do
+    State.reset()
+
+    result = auth_query_gql_by(:flow_get, staff, variables: %{"id" => 1})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "flowGet", "name"]), "Help Workflow")
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:flow_get, user, variables: %{"id" => 1})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "flowGet"]) == nil
+
+    # now release a flow and try again
+    result = auth_query_gql_by(:flow_rel, staff, variables: %{})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "flowRelease"]) == nil
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:flow_get, user, variables: %{"id" => 1})
+    assert {:ok, query_data} = result
+    assert String.contains?(get_in(query_data, [:data, "flowGet", "name"]), "Help Workflow")
   end
 end

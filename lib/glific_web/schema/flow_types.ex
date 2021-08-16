@@ -104,6 +104,19 @@ defmodule GlificWeb.Schema.FlowTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.export_flow/3)
     end
+
+    @desc "Get a flow for this user"
+    field :flow_get, :flow do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.flow_get/3)
+    end
+
+    @desc "Release a flow for this user"
+    field :flow_release, :flow do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.flow_release/3)
+    end
   end
 
   object :flow_mutations do
