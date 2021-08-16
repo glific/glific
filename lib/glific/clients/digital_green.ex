@@ -113,7 +113,9 @@ defmodule Glific.Clients.DigitalGreen do
 
     ## check and update contact stage based on the total days they have.
     total_days = get_total_stage_days(fields)
-    update_crop_stage(total_days, contact_id, organization_id)
+    if is_integer(total_days) do
+      update_crop_stage(total_days, contact_id, organization_id)
+    end
     Logger.info("Daily flow ran successfully for total_days: #{inspect total_days} and fields: #{inspect fields} ")
   end
 
@@ -357,7 +359,7 @@ defmodule Glific.Clients.DigitalGreen do
     current_stage
   end
 
-  @spec get_total_stage_days(map()) :: integer()
+  @spec get_total_stage_days(map()) :: integer() | nil
   defp get_total_stage_days(fields) do
     {:ok, initial_crop_day} =
       get_in(fields, ["contact", "fields", "initial_crop_day", "value"])
@@ -368,21 +370,34 @@ defmodule Glific.Clients.DigitalGreen do
       |> format_date()
 
     days_since_enrolled = Timex.diff(Timex.now(), enrolled_date, :days)
-    days_since_enrolled + initial_crop_day
+
+    cond do
+      is_integer(days_since_enrolled) && is_integer(initial_crop_day)
+        ->  days_since_enrolled + initial_crop_day
+      is_nil(initial_crop_day) && is_integer(days_since_enrolled)
+        -> days_since_enrolled
+      true
+      -> get_in(fields, ["contact", "fields", "total_days", "value"])
+    end
+
+
   end
 
   @spec check_for_next_scheduled_flow(map(), non_neg_integer(), non_neg_integer()) :: :ok
   defp check_for_next_scheduled_flow(fields, contact_id, organization_id) do
     contact_fields = get_in(fields, ["contact", "fields"])
     next_flow = get_in(contact_fields, ["next_flow", "value"])
+    next_flow_at = get_in(contact_fields, ["next_flow_at", "value"])
 
-    next_flow_at =
-      get_in(contact_fields, ["next_flow_at", "value"])
-      |> String.trim()
-      |> format_date
+    if is_binary(next_flow_at) do
+      next_flow_date =
+        String.trim(next_flow_at)
+        |> format_date
+      ## first check if we need to run the flow today for this contact.
+      add_to_next_flow_group(next_flow, next_flow_date, contact_id, organization_id)
+    end
 
-    ## first check if we need to run the flow today for this contact.
-    add_to_next_flow_group(next_flow, next_flow_at, contact_id, organization_id)
+    :ok
   end
 
   @spec add_to_next_flow_group(String.t(), Date.t(), non_neg_integer(), non_neg_integer()) :: :ok
@@ -402,6 +417,8 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   @spec format_date(String.t()) :: Date.t()
+  defp format_date(nil), do: nil
+
   defp format_date(date) do
     date
     |> Timex.parse!("{YYYY}-{0M}-{D}")
