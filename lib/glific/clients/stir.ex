@@ -71,22 +71,30 @@ defmodule Glific.Clients.Stir do
 
     mt_list =
       get_mt_list(fields["district"], organization_id)
-      |> Enum.map(fn {contact, index} -> "Type *#{index}* for #{contact.name}" end)
-      |> Enum.join("\n")
+      {index_map, message_list} = Enum.reduce(mt_list, {%{}, []},
+        fn {contact, index}, {index_map, message_list} ->
+          {
+            Map.put(index_map, index, contact.id),
+            message_list ++ ["Type *#{index}* for #{contact.name}"]
+          }
+        end)
 
-    %{mt_list_message: mt_list}
+    %{mt_list_message: Enum.join(message_list, "\n"), index_map: Jason.encode!(index_map) }
   end
 
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    {:ok, mt_contact_index} = Glific.parse_maybe_integer(fields["mt_contact_id"])
+    index_map =  Jason.decode!(fields["index_map"])
+    {:ok, mt_contact_id} =
+                  Map.get(index_map, fields["mt_contact_id"], 0)
+                  |> Glific.parse_maybe_integer()
 
     tdc = Contacts.get_contact!(contact_id)
 
     {mt, _index} =
       get_mt_list(fields["district"], organization_id)
-      |> Enum.find(fn {_contact, index} -> index == mt_contact_index end)
+      |> Enum.find(fn {contact, _index} -> mt_contact_id == contact.id end)
 
     ## this is not correct we will fix that.
     tdc

@@ -163,9 +163,6 @@ defmodule Glific.Clients.DigitalGreen do
       {:ok, message} ->
         %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
 
-      {:ok, message} ->
-        %{decoded_message: message}
-
       {:error, message} ->
         %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
     end
