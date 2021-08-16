@@ -683,6 +683,84 @@ mutation exportFlow($id: ID!) {
 | ------------------------------------------- | -------------------------------- |
 | <a href="#exportFlow">ExportFlowResults</a> | An error object or response true |
 
+## Get a flow
+
+Gets a flow for the logged in user.
+
+```graphql
+query flowGet($id: ID!) {
+  flowGet(id: $id) {
+    id
+    name
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "flowGet": {
+      "id": "2",
+      "name": "Activity"
+    }
+  }
+}
+
+OR if no flow is available
+
+{
+  "data": {
+    "flowGet": null
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+
+### Return Parameters
+
+| Type                     | Description   |
+| ------------------------ | ------------- |
+| <a href="#flow">Flow</a> | A flow object |
+
+## Release a flow contact
+
+Releases a flow for the logged in user if one exists. The system also releases the flow
+when it has been idle for more than 10 minutes and there is a request for a flow
+
+```graphql
+query flowRelease {
+  flowRelease {
+    id
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "flowRelease": null
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+
+### Return Parameters
+
+| Type | Description |
+| ---- | ----------- |
+
 ## Flow Objects
 
 ### Flow

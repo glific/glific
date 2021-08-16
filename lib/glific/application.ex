@@ -43,8 +43,8 @@ defmodule Glific.Application do
       # Add the flow metrics caching code
       Glific.Metrics,
 
-      # Add the process to manage simulator contacts
-      Glific.Contacts.Simulator,
+      # Add the process to manage simulator contacts and flows
+      Glific.State,
 
       # Add the broadcast task supervisor
       {Task.Supervisor, name: Glific.Broadcast.Supervisor}

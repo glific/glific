@@ -5,11 +5,11 @@ defmodule GlificWeb.Schema.ContactTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Contacts.Simulator,
     Fixtures,
     Messages.Message,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    State
   }
 
   setup do
@@ -504,7 +504,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
   test "simulator get returns a simulator contact",
        %{staff: staff, manager: manager, user: user} do
-    Simulator.reset()
+    State.reset()
 
     # we should get 5 simulators
     result = auth_query_gql_by(:sim_get, staff, variables: %{})
