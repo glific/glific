@@ -31,7 +31,7 @@ defmodule Glific.Providers.GupshupContacts do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         %{
           name: attrs[:name],
-          phone: attrs.phone,
+          phone: clean_phone(attrs.phone),
           organization_id: organization_id,
           optin_time: Map.get(attrs, :optin_time, DateTime.utc_now()),
           optin_status: true,
@@ -47,6 +47,13 @@ defmodule Glific.Providers.GupshupContacts do
     end
   end
 
+  @country_code "91"
+
+  @spec clean_phone(String.t()) :: String.t()
+  defp clean_phone(phone) when is_binary(phone),
+  do:  @country_code <> String.slice(phone, -10, 10)
+
+  defp clean_phone(phone), do: phone
   @doc """
   This method creates a contact if it does not exist. Otherwise, updates it.
   """
