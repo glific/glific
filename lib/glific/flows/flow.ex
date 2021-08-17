@@ -298,6 +298,7 @@ defmodule Glific.Flows.Flow do
           id: f.id,
           name: f.name,
           uuid: f.uuid,
+          is_background: f.is_background,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           respond_other: f.respond_other,

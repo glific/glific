@@ -119,7 +119,8 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-          FlowContext.mark_flows_complete(contact.id)
+          if flow.is_background == false, do: FlowContext.mark_flows_complete(contact.id)
+
           FlowContext.init_context(flow, contact, @status, opts)
         end,
         ordered: false,
