@@ -176,7 +176,7 @@ defmodule Glific.Flows.FlowContext do
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
-      do: mark_flows_complete(context.contact_id)
+      do: mark_flows_complete(context.contact_id, true)
 
     # lets reset the current context and return the resetted context
     reset_one_context(context)
@@ -384,8 +384,12 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all the flows for a specific context to be completed
   """
-  @spec mark_flows_complete(non_neg_integer, DateTime.t() | nil) :: nil
-  def mark_flows_complete(contact_id, after_insert_date \\ nil) do
+  @spec mark_flows_complete(non_neg_integer, boolean(), DateTime.t() | nil) :: nil
+  def mark_flows_complete(_contact_id, _false, after_insert_date \\ nil)
+
+  def mark_flows_complete(_contact_id, true, _after_insert_date), do: nil
+
+  def mark_flows_complete(contact_id, false, after_insert_date) do
     now = DateTime.utc_now()
 
     FlowContext
@@ -441,8 +445,8 @@ defmodule Glific.Flows.FlowContext do
   def init_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
     # set all previous context to be completed if we are not starting a sub flow
-    if is_nil(parent_id) and flow.is_background == false do
-      mark_flows_complete(contact.id, )
+    if is_nil(parent_id) do
+      mark_flows_complete(contact.id, flow.is_background)
     end
 
     {:ok, context} = seed_context(flow, contact, status, opts)
@@ -463,13 +467,14 @@ defmodule Glific.Flows.FlowContext do
     # we do for other tables
     # We should not wakeup those contexts which are waiting on time
     query =
-      from fc in FlowContext,
+      from(fc in FlowContext,
         where:
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
             is_nil(fc.completed_at),
         order_by: [desc: fc.id],
         limit: 1
+      )
 
     query =
       if parent_id,

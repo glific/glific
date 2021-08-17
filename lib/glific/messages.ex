@@ -1055,7 +1055,7 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all(timeout: 900_000)
 
-    FlowContext.mark_flows_complete(contact.id)
+    FlowContext.mark_flows_complete(contact.id, false)
 
     Message
     |> where([m], m.contact_id == ^contact.id)

@@ -40,7 +40,7 @@ defmodule Glific.Processor.ConsumerFlow do
     is_draft = is_draft_keyword?(state, body)
 
     if is_draft,
-      do: FlowContext.mark_flows_complete(message.contact_id)
+      do: FlowContext.mark_flows_complete(message.contact_id, false)
 
     context = FlowContext.active_context(message.contact_id)
 
@@ -204,7 +204,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
   defp start_optin_flow(message, state) do
     ## remove all the previous flow context
-    FlowContext.mark_flows_complete(message.contact_id)
+    FlowContext.mark_flows_complete(message.contact_id, false)
 
     Flows.get_cached_flow(
       message.organization_id,
