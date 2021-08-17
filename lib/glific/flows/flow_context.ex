@@ -396,7 +396,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
-    # |> where([fc], fc.wait_for_time == false)
+    |> where([fc], fc.wait_for_time == false)
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
   end
 
@@ -470,7 +470,8 @@ defmodule Glific.Flows.FlowContext do
         where:
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
-            is_nil(fc.completed_at),
+            is_nil(fc.completed_at) and
+            fc.wait_for_time == false,
         order_by: [desc: fc.id],
         limit: 1
       )
@@ -586,9 +587,10 @@ defmodule Glific.Flows.FlowContext do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
     {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
-
+    IO.inspect("debug000112")
+    IO.inspect(context)
     # also mark all newer contexts as completed
-    mark_flows_complete(context.contact_id, false, context.inserted_at)
+    mark_flows_complete(context.contact_id, context.flow.is_background, context.inserted_at)
 
     {:ok, flow} =
       Flows.get_cached_flow(
