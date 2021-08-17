@@ -108,7 +108,7 @@ defmodule Glific.Flows.Case do
     [low, high] = c.arguments
 
     # convert all 3 parameters to number
-    [low, high, body] = Enum.map([low, high, msg.clean_body], &Glific.parse_maybe_integer/1)
+    [low, high, body] = Enum.map([low, high, msg.body], &Glific.parse_maybe_integer/1)
 
     # ensure no errors
     if Enum.all?([low, high, body], &(&1 != :error)) do
