@@ -280,7 +280,8 @@ defmodule Glific.State do
         }
 
       is_nil(available_flow) || Enum.empty?(free) ->
-        {state, nil}
+        {state,
+         {:ok, %{errors: %{key: "error", message: "The flow is being edited by #{user.name}"}}}}
 
       true ->
         {

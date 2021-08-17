@@ -311,12 +311,18 @@ defmodule GlificWeb.Schema.FlowTest do
 
     result = auth_query_gql_by(:flow_get, staff, variables: %{"id" => 1})
     assert {:ok, query_data} = result
-    assert String.contains?(get_in(query_data, [:data, "flowGet", "name"]), "Help Workflow")
+
+    assert String.contains?(
+             get_in(query_data, [:data, "flowGet", "flow", "name"]),
+             "Help Workflow"
+           )
 
     user = Map.put(user, :fingerprint, Ecto.UUID.generate())
     result = auth_query_gql_by(:flow_get, user, variables: %{"id" => 1})
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "flowGet"]) == nil
+
+    assert get_in(query_data, [:data, "flowGet", "errors", Access.at(0), "message"]) ==
+             "The flow is being edited by some name"
 
     # now release a flow and try again
     result = auth_query_gql_by(:flow_rel, staff, variables: %{})
@@ -326,6 +332,10 @@ defmodule GlificWeb.Schema.FlowTest do
     user = Map.put(user, :fingerprint, Ecto.UUID.generate())
     result = auth_query_gql_by(:flow_get, user, variables: %{"id" => 1})
     assert {:ok, query_data} = result
-    assert String.contains?(get_in(query_data, [:data, "flowGet", "name"]), "Help Workflow")
+
+    assert String.contains?(
+             get_in(query_data, [:data, "flowGet", "flow", "name"]),
+             "Help Workflow"
+           )
   end
 end
