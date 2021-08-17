@@ -388,7 +388,7 @@ defmodule Glific.Flows.FlowContext do
   def mark_flows_complete(contact_id, after_insert_date \\ nil) do
     now = DateTime.utc_now()
 
-    with true <- check_background_flows(active_context(contact_id)) do
+    with true <- clear_context(active_context(contact_id)) do
       FlowContext
       |> where([fc], fc.contact_id == ^contact_id)
       |> where([fc], is_nil(fc.completed_at))
@@ -399,8 +399,8 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  defp check_background_flows(%{flow: %{is_background: true}}), do: true
-  defp check_background_flows(_context), do: nil
+  defp clear_context(%{flow: %{is_background: true}}), do: nil
+  defp clear_context(_context), do: true
 
   @doc """
   Seed the context and set the wakeup time as needed
