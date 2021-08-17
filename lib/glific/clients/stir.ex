@@ -203,6 +203,8 @@ defmodule Glific.Clients.Stir do
       get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
       |> Glific.parse_maybe_integer()
 
+
+
     if is_nil(mt_contact_id) do
       %{
         first_priority: "NA",
@@ -223,7 +225,6 @@ defmodule Glific.Clients.Stir do
         |> clean_string()
 
       priority_map = Enum.into(@priorities_list, %{})
-
       first_priority_map = priority_map[first_priority] || %{}
       second_priority_map = priority_map[second_priority] || %{}
 
