@@ -8,7 +8,7 @@ defmodule Glific.Repo.Migrations.BackgroundFlows do
   defp flows do
     alter table(:flows) do
       add :is_background, :boolean,
-        default: true,
+        default: false,
         comment: "Whether flows are background flows or not"
     end
   end

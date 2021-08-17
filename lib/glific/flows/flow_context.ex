@@ -388,28 +388,19 @@ defmodule Glific.Flows.FlowContext do
   def mark_flows_complete(contact_id, after_insert_date \\ nil) do
     now = DateTime.utc_now()
 
-    FlowContext
-    |> where([fc], fc.contact_id == ^contact_id)
-    |> where([fc], is_nil(fc.completed_at))
-    |> add_date_clause(after_insert_date)
-    |> check_background_flows()
-    # lets not touch the contexts which are waiting to be woken up at a specific time
-    # |> where([fc], fc.wait_for_time == false)
-    |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
+    with true <- check_background_flows(active_context(contact_id)) do
+      FlowContext
+      |> where([fc], fc.contact_id == ^contact_id)
+      |> where([fc], is_nil(fc.completed_at))
+      |> add_date_clause(after_insert_date)
+      # lets not touch the contexts which are waiting to be woken up at a specific time
+      # |> where([fc], fc.wait_for_time == false)
+      |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
+    end
   end
 
-
-  defp check_background_flows(query) do
-    query
-    |> join(:inner, [fc], f in Flow, on: fc.flow_id == f.id)
-    |> select([fc, f], %{is_background: f.is_background})
-    # the revisions table is potentially large, so we really want just a few rows fom
-    # it, hence this where clause
-    |> where([fc, f], f.is_background == true)
-    |> Repo.all(skip_organization_id: true)
-  end
-
-
+  defp check_background_flows(%{flow: %{is_background: true}}), do: true
+  defp check_background_flows(_context), do: nil
 
   @doc """
   Seed the context and set the wakeup time as needed
