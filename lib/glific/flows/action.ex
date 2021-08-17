@@ -542,7 +542,6 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "wait_for_time"} = action, context, []) do
-    IO.inspect(context)
     if action.wait_time <= 0 do
       {:ok, context, []}
     else
@@ -552,7 +551,7 @@ defmodule Glific.Flows.Action do
           %{
             wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
             # we will change column name
-            wait_for_time: context.flow.is_background
+            is_background_flow: context.flow.is_background
           }
         )
 

@@ -33,7 +33,7 @@ defmodule Glific.Flows.FlowContext do
     :parent_id,
     :results,
     :wakeup_at,
-    :wait_for_time,
+    :is_background_flow,
     :completed_at,
     :delay,
     :uuids_seen,
@@ -67,7 +67,7 @@ defmodule Glific.Flows.FlowContext do
           recent_inbound: [map()] | [],
           recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
-          wait_for_time: boolean,
+          is_background_flow: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -87,7 +87,7 @@ defmodule Glific.Flows.FlowContext do
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
 
-    field :wait_for_time, :boolean, default: false
+    field :is_background_flow, :boolean, default: false
 
     field :delay, :integer, default: 0, virtual: true
 
@@ -271,7 +271,7 @@ defmodule Glific.Flows.FlowContext do
     # since we have recd a message, we also ensure that we are not going to be woken
     # up by a timer if present.
     {:ok, context} =
-      update_flow_context(context, %{type => messages, wakeup_at: nil, wait_for_time: false})
+      update_flow_context(context, %{type => messages, wakeup_at: nil, is_background_flow: false})
 
     context
   end
@@ -373,7 +373,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   # this marks complete all the context which are newer than date
-  # this is used when a wait_for_time context wakes up, and it has no
+  # this is used when a background flow  wakes up, and it has no
   # idea what happened it was sleeping
   @spec add_date_clause(Ecto.Query.t(), DateTime.t() | nil) :: Ecto.Query.t()
   defp add_date_clause(query, nil), do: query
@@ -396,7 +396,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
-    |> where([fc], fc.wait_for_time == false)
+    |> where([fc], fc.is_background_flow == false)
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
   end
 
@@ -471,7 +471,7 @@ defmodule Glific.Flows.FlowContext do
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
             is_nil(fc.completed_at) and
-            fc.wait_for_time == false,
+            fc.is_background_flow == false,
         order_by: [desc: fc.id],
         limit: 1
       )
@@ -488,7 +488,7 @@ defmodule Glific.Flows.FlowContext do
       |> Repo.preload([:contact, :flow])
 
     # if this context is waiting on time, we skip it
-    if fc && fc.wait_for_time,
+    if fc && fc.is_background_flow,
       do: nil,
       else: fc
   end
@@ -586,9 +586,7 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
-    IO.inspect("debug000112")
-    IO.inspect(context)
+    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, is_background_flow: false})
     # also mark all newer contexts as completed
     mark_flows_complete(context.contact_id, context.flow.is_background, context.inserted_at)
 
