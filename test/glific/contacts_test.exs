@@ -83,7 +83,7 @@ defmodule Glific.ContactsTest do
       optin_time: DateTime.utc_now(),
       optin_status: true,
       optout_time: nil,
-      phone: "phone",
+      phone: "919917443992",
       status: :invalid,
       bsp_status: :session_and_hsm,
       fields: %{}
