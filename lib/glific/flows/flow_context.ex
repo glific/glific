@@ -176,7 +176,7 @@ defmodule Glific.Flows.FlowContext do
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
-      do: mark_flows_complete(context.contact_id, true)
+      do: mark_flows_complete(context.contact_id, false)
 
     # lets reset the current context and return the resetted context
     reset_one_context(context)
@@ -385,8 +385,7 @@ defmodule Glific.Flows.FlowContext do
   Set all the flows for a specific context to be completed
   """
   @spec mark_flows_complete(non_neg_integer, boolean(), DateTime.t() | nil) :: nil
-  def mark_flows_complete(_contact_id, _false, after_insert_date \\ nil)
-
+  def mark_flows_complete(_contact_id, _is_background_flow, after_insert_date \\ nil)
   def mark_flows_complete(_contact_id, true, _after_insert_date), do: nil
 
   def mark_flows_complete(contact_id, false, after_insert_date) do
@@ -589,7 +588,7 @@ defmodule Glific.Flows.FlowContext do
     {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
 
     # also mark all newer contexts as completed
-    mark_flows_complete(context.contact_id, context.inserted_at)
+    mark_flows_complete(context.contact_id, false, context.inserted_at)
 
     {:ok, flow} =
       Flows.get_cached_flow(
