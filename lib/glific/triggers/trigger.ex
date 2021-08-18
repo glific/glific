@@ -155,7 +155,17 @@ defmodule Glific.Triggers.Trigger do
 
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
+
+    # set the initial value of the next firing of the trigger
+    |> update_next_trigger_at?()
   end
+
+  defp update_next_trigger_at?(%{last_trigger_at: nil} = attrs) do
+    next_trigger_at = attrs |> Glific.Triggers.Helper.compute_next()
+    Map.merge(attrs, %{next_trigger_at: next_trigger_at})
+  end
+
+  defp update_next_trigger_at?(attrs), do: attrs
 
   @doc false
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
