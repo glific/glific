@@ -11,7 +11,8 @@ defmodule Glific.Triggers.Trigger do
     Groups.Group,
     Partners,
     Partners.Organization,
-    Repo
+    Repo,
+    Triggers.Helper
   }
 
   @type t() :: %__MODULE__{
@@ -161,7 +162,7 @@ defmodule Glific.Triggers.Trigger do
   end
 
   defp update_next_trigger_at?(%{last_trigger_at: nil} = attrs) do
-    next_trigger_at = attrs |> Glific.Triggers.Helper.compute_next()
+    next_trigger_at = attrs |> Helper.compute_next()
     Map.merge(attrs, %{next_trigger_at: next_trigger_at})
   end
 
