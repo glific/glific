@@ -322,7 +322,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "flowGet", "errors", Access.at(0), "message"]) ==
-             "The flow is being edited by some name"
+             "Sorry! You cannot edit the flow right now. It is being edited by some name"
 
     # now release a flow and try again
     result = auth_query_gql_by(:flow_rel, staff, variables: %{})
