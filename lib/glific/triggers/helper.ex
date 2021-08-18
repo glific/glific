@@ -26,6 +26,8 @@ defmodule Glific.Triggers.Helper do
     end
   end
 
+  def compute_next(%{next_trigger_at: next_trigger_at} = _trigger), do: next_trigger_at
+
   # day of week is a integer: 1 - Monday, 7 - Sunday
   @spec others(DateTime.t(), list()) :: DateTime.t()
   defp others(time, days) do
