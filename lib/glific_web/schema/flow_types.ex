@@ -45,6 +45,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :updated_at, :datetime
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
+    field :is_background, :boolean
   end
 
   input_object :flow_input do
@@ -52,6 +53,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :keywords, list_of(:string)
     field :ignore_keywords, :boolean
     field :is_active, :boolean
+    field :is_background, :boolean
   end
 
   @desc "Filtering options for flows"
@@ -73,6 +75,9 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Match the is_active flag of flow"
     field :is_active, :boolean
+
+    @desc "Match the is_background flag of flow"
+    field :is_background, :boolean
   end
 
   object :flow_queries do

@@ -113,6 +113,20 @@ defmodule Glific.FLowsTest do
       assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
     end
 
+    test "create_flow/1 with valid data creates a background flow", attrs do
+      [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+      assert {:ok, %Flow{} = flow} =
+               @valid_attrs
+               |> Map.merge(%{organization_id: predefine_flow.organization_id, is_background: true})
+               |> Flows.create_flow()
+
+      assert flow.name == @valid_attrs.name
+      assert flow.is_background == true
+      assert flow.flow_type == @valid_attrs.flow_type
+      assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
+    end
+
     test "create_flow/1 with invalid data returns error changeset" do
       assert {:error, %Ecto.Changeset{}} = Flows.create_flow(@invalid_attrs)
     end
