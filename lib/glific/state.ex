@@ -284,7 +284,14 @@ defmodule Glific.State do
         user_name = get_user_name(state, flow)
 
         {state,
-         {:ok, %{errors: %{key: "error", message: "Sorry! You cannot edit the flow right now. It is being edited by #{user_name}"}}}}
+         {:ok,
+          %{
+            errors: %{
+              key: "error",
+              message:
+                "Sorry! You cannot edit the flow right now. It is being edited by #{user_name}"
+            }
+          }}}
 
       true ->
         {
