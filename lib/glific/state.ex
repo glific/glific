@@ -280,8 +280,18 @@ defmodule Glific.State do
         }
 
       is_nil(available_flow) || Enum.empty?(free) ->
+        Repo.put_process_state(user.organization_id)
+        user_name = get_user_name(state, flow)
+
         {state,
-         {:ok, %{errors: %{key: "error", message: "The flow is being edited by #{user.name}"}}}}
+         {:ok,
+          %{
+            errors: %{
+              key: "error",
+              message:
+                "Sorry! You cannot edit the flow right now. It is being edited by \n #{user_name}"
+            }
+          }}}
 
       true ->
         {
@@ -294,6 +304,17 @@ defmodule Glific.State do
           available_flow
         }
     end
+  end
+
+  @spec get_user_name(map(), Flow.t()) :: String.t()
+  defp get_user_name(state, requested_flow) do
+    state.busy_flows
+    |> Enum.reduce("", fn busy_flow, acc ->
+      {key, value} = busy_flow
+      {flow, _time} = value
+      {user_id, _finger_print} = key
+      if flow.id == requested_flow.id, do: Glific.Users.get_user!(user_id).name, else: acc
+    end)
   end
 
   @doc """

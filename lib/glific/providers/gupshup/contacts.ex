@@ -51,9 +51,10 @@ defmodule Glific.Providers.GupshupContacts do
 
   @spec clean_phone(String.t()) :: String.t()
   defp clean_phone(phone) when is_binary(phone),
-  do:  @country_code <> String.slice(phone, -10, 10)
+    do: @country_code <> String.slice(phone, -10, 10)
 
   defp clean_phone(phone), do: phone
+
   @doc """
   This method creates a contact if it does not exist. Otherwise, updates it.
   """
