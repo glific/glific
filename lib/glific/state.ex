@@ -289,7 +289,7 @@ defmodule Glific.State do
             errors: %{
               key: "error",
               message:
-                "Sorry! You cannot edit the flow right now. It is being edited by #{user_name}"
+                "Sorry! You cannot edit the flow right now. It is being edited by \n #{user_name}"
             }
           }}}
 
