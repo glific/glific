@@ -119,8 +119,7 @@ defmodule Glific.Triggers.Trigger do
   end
 
   ## We might need to change this and convert the datetime to utc
-  defp start_at(%{start_at: start_at} = _attrs),
-    do: start_at |> Timex.shift(days: -1)
+  defp start_at(%{start_at: start_at} = _attrs), do: start_at
 
   @spec get_name(map()) :: String.t()
   defp get_name(%{name: name} = _attrs) when not is_nil(name), do: name
@@ -161,10 +160,15 @@ defmodule Glific.Triggers.Trigger do
     |> update_next_trigger_at?()
   end
 
-  defp update_next_trigger_at?(%{last_trigger_at: nil, next_trigger_at: next_trigger_at} = attrs) do
+  defp update_next_trigger_at?(
+         %{last_trigger_at: nil, next_trigger_at: next_trigger_at, frequency: frequency} = attrs
+       ) do
+    time =
+      if frequency == "none", do: next_trigger_at, else: next_trigger_at |> Timex.shift(days: -1)
+
     computed_next_trigger_at =
       attrs
-      |> Map.merge(%{next_trigger_at: next_trigger_at |> Timex.shift(days: -1)})
+      |> Map.merge(%{next_trigger_at: time})
       |> Helper.compute_next()
 
     Map.merge(attrs, %{next_trigger_at: computed_next_trigger_at})

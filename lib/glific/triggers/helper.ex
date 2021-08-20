@@ -22,6 +22,7 @@ defmodule Glific.Triggers.Helper do
       "monthly" in frequency -> Timex.shift(next_time, months: 1) |> Timex.to_datetime()
       "weekday" in frequency -> weekday(next_time)
       "weekend" in frequency -> weekend(next_time)
+      "none" in frequency -> next_time
       true -> others(next_time, days)
     end
   end
