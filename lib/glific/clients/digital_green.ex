@@ -150,7 +150,7 @@ defmodule Glific.Clients.DigitalGreen do
           organization_id: fields["organization_id"]
         },
         else: %{
-          text: fields["text"],
+          text: validate_decode_text(fields["text"]),
           case_id: fields["case_id"],
           organization_id: fields["organization_id"]
         }
@@ -196,6 +196,19 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
+  @spec validate_decode_text(String.t()) :: String.t() | nil
+  defp validate_decode_text(str) do
+    cond do
+      str in [""]
+        -> nil
+
+      String.starts_with?(str, "http")
+        -> nil
+
+      true
+        -> str
+    end
+  end
   @doc """
     A callback function to support daily tasks for the client
     in the backend.
