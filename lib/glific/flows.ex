@@ -578,6 +578,7 @@ defmodule Glific.Flows do
            %Flow{}
            |> Flow.changeset(attrs)
            |> Repo.insert() do
+      Glific.State.reset()
       copy_flow_revision(flow, flow_copy)
 
       {:ok, flow_copy}
