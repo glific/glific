@@ -4,7 +4,6 @@ defmodule GlificWeb.Router do
   """
   use GlificWeb, :router
   @dialyzer {:nowarn_function, __checks__: 0}
-  use Plug.ErrorHandler
   use Appsignal.Plug
 
   pipeline :browser do
@@ -174,10 +173,4 @@ defmodule GlificWeb.Router do
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)
   end
 
-  # defp debug_response(conn, _) do
-  #  Plug.Conn.register_before_send(conn, fn conn ->
-  #    conn.resp_body |> IO.puts()
-  #    conn
-  #  end)
-  # end
 end
