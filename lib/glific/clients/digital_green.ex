@@ -150,7 +150,7 @@ defmodule Glific.Clients.DigitalGreen do
           organization_id: fields["organization_id"]
         },
         else: %{
-          text: fields["text"],
+          text: validate_text_to_decode(fields["text"]),
           case_id: fields["case_id"],
           organization_id: fields["organization_id"]
         }
@@ -424,5 +424,19 @@ defmodule Glific.Clients.DigitalGreen do
     date
     |> Timex.parse!("{YYYY}-{0M}-{D}")
     |> Timex.to_date()
+  end
+
+  @spec validate_text_to_decode(String.t()) :: String.t() | nil
+  defp validate_text_to_decode(str) do
+    cond do
+      str in [""]
+        -> nil
+
+      String.starts_with?(str, "http")
+        -> nil
+
+      true
+        -> str
+    end
   end
 end
