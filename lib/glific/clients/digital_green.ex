@@ -425,7 +425,7 @@ defmodule Glific.Clients.DigitalGreen do
     with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
-      Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}")
+      Logger.info("Today: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}")
 
       Groups.create_contact_group(%{
         contact_id: contact_id,
@@ -441,8 +441,6 @@ defmodule Glific.Clients.DigitalGreen do
   defp format_date(nil), do: nil
 
   defp format_date(date) do
-    date
-    |> Timex.parse!("{YYYY}-{0M}-{D}")
-    |> Timex.to_date()
+    date|> Timex.parse!("{YYYY}-{0M}-{D}")|> Timex.to_date()
   end
 end

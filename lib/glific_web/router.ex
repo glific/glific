@@ -172,5 +172,4 @@ defmodule GlificWeb.Router do
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)
   end
-
 end
