@@ -112,7 +112,10 @@ defmodule Glific.Clients.DigitalGreen do
 
     ## check and update contact stage based on the total days they have.
     total_days = get_total_stage_days(fields)
-    update_crop_stage(total_days, contact_id, organization_id)
+
+    if is_integer(total_days) do
+      update_crop_stage(total_days, contact_id, organization_id)
+    end
 
     Logger.info(
       "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{
@@ -190,8 +193,8 @@ defmodule Glific.Clients.DigitalGreen do
     village_name = String.downcase(fields["village_name"]) |> String.trim()
 
     opts = [
-      start_date: Timex.beginning_of_week(today, :mon),
-      end_date: Timex.end_of_week(today, :sun),
+      start_date: Timex.beginning_of_week(today, :friday),
+      end_date: Timex.end_of_week(today, :friday),
       village: village_name
     ]
 
@@ -375,7 +378,7 @@ defmodule Glific.Clients.DigitalGreen do
     current_stage
   end
 
-  @spec get_total_stage_days(map()) :: integer()
+  @spec get_total_stage_days(map()) :: integer() | nil
   defp get_total_stage_days(fields) do
     {:ok, initial_crop_day} =
       get_in(fields, ["contact", "fields", "initial_crop_day", "value"])
@@ -386,21 +389,35 @@ defmodule Glific.Clients.DigitalGreen do
       |> format_date()
 
     days_since_enrolled = Timex.diff(Timex.now(), enrolled_date, :days)
-    days_since_enrolled + initial_crop_day
+
+    cond do
+      is_integer(days_since_enrolled) && is_integer(initial_crop_day) ->
+        days_since_enrolled + initial_crop_day
+
+      is_integer(days_since_enrolled) ->
+        days_since_enrolled
+
+      true ->
+        get_in(fields, ["contact", "fields", "total_days", "value"])
+    end
   end
 
   @spec check_for_next_scheduled_flow(map(), non_neg_integer(), non_neg_integer()) :: :ok
   defp check_for_next_scheduled_flow(fields, contact_id, organization_id) do
     contact_fields = get_in(fields, ["contact", "fields"])
     next_flow = get_in(contact_fields, ["next_flow", "value"])
+    next_flow_at = get_in(contact_fields, ["next_flow_at", "value"])
 
-    next_flow_at =
-      get_in(contact_fields, ["next_flow_at", "value"])
-      |> String.trim()
-      |> format_date
+    if is_binary(next_flow_at) do
+      next_flow_date =
+        String.trim(next_flow_at)
+        |> format_date
 
-    ## first check if we need to run the flow today for this contact.
-    add_to_next_flow_group(next_flow, next_flow_at, contact_id, organization_id)
+      ## first check if we need to run the flow today for this contact.
+      add_to_next_flow_group(next_flow, next_flow_date, contact_id, organization_id)
+    end
+
+    :ok
   end
 
   @spec add_to_next_flow_group(String.t(), Date.t(), non_neg_integer(), non_neg_integer()) :: :ok
@@ -408,7 +425,7 @@ defmodule Glific.Clients.DigitalGreen do
     with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
-      Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}")
+      Logger.info("Today: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}")
 
       Groups.create_contact_group(%{
         contact_id: contact_id,
@@ -421,9 +438,9 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   @spec format_date(String.t()) :: Date.t()
+  defp format_date(nil), do: nil
+
   defp format_date(date) do
-    date
-    |> Timex.parse!("{YYYY}-{0M}-{D}")
-    |> Timex.to_date()
+    date|> Timex.parse!("{YYYY}-{0M}-{D}")|> Timex.to_date()
   end
 end
