@@ -203,33 +203,13 @@ defmodule Glific.Clients.DigitalGreen do
     in the backend.
   """
   @spec daily_tasks(non_neg_integer()) :: atom()
-  def daily_tasks(org_id) do
+  def daily_tasks(_org_id) do
     # we have added the background flows and now don't need this.
     # fetch_contacts_from_farmer_group(org_id)
     # |> Enum.each(&run_daily_task/1)
     :ok
   end
 
-  @spec fetch_contacts_from_farmer_group(non_neg_integer()) :: list()
-  defp fetch_contacts_from_farmer_group(_org_id) do
-    ## We will make it dynamic soon
-    farmer_collection_id = 349
-    Contacts.list_contacts(%{filter: %{include_groups: [farmer_collection_id]}})
-  end
-
-  @spec run_daily_task(Contact.t()) :: map()
-  defp run_daily_task(contact) do
-    attrs = %{
-      "contact_id" => contact.id,
-      "organization_id" => contact.organization_id,
-      "contact" => %{
-        "id" => contact.id,
-        "fields" => contact.fields
-      },
-      "results" => %{}
-    }
-    webhook("daily", attrs)
-  end
   ## filter record based on the contact village, and current week.
   @spec filter_weather_records(map(), list(), Keyword.t()) :: list()
   defp filter_weather_records(row, acc, opts) do
@@ -378,13 +358,11 @@ defmodule Glific.Clients.DigitalGreen do
     cond do
       is_integer(days_since_enrolled) && is_integer(initial_crop_day)
         ->  days_since_enrolled + initial_crop_day
-      is_nil(initial_crop_day) && is_integer(days_since_enrolled)
+      is_integer(days_since_enrolled)
         -> days_since_enrolled
       true
       -> get_in(fields, ["contact", "fields", "total_days", "value"])
     end
-
-
   end
 
   @spec check_for_next_scheduled_flow(map(), non_neg_integer(), non_neg_integer()) :: :ok

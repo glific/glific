@@ -25,7 +25,7 @@ defmodule GlificWeb.ExotelController do
         } = params
       ) do
 
-    Logger.info("exotel #{inspect params}");
+    Logger.info("exotel #{inspect params}")
 
     organization = Partners.organization(organization_id)
 
@@ -72,7 +72,7 @@ defmodule GlificWeb.ExotelController do
   end
 
   def optin(conn, params) do
-    Logger.info("exotel unhandled #{inspect params}");
+    Logger.info("exotel unhandled #{inspect params}")
     json(conn, "")
   end
 
@@ -83,7 +83,6 @@ defmodule GlificWeb.ExotelController do
     do: @country_code <> String.slice(phone, -10, 10)
 
   defp clean_phone(phone), do: phone
-
 
   @spec log_error(String.t()) :: any
   defp log_error(message) do
