@@ -69,26 +69,27 @@ defmodule Glific.Clients.Stir do
     # {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
 
-    mt_list =
-      get_mt_list(fields["district"], organization_id)
-      {index_map, message_list} = Enum.reduce(mt_list, {%{}, []},
-        fn {contact, index}, {index_map, message_list} ->
-          {
-            Map.put(index_map, index, contact.id),
-            message_list ++ ["Type *#{index}* for #{contact.name}"]
-          }
-        end)
+    mt_list = get_mt_list(fields["district"], organization_id)
 
-    %{mt_list_message: Enum.join(message_list, "\n"), index_map: Jason.encode!(index_map) }
+    {index_map, message_list} =
+      Enum.reduce(mt_list, {%{}, []}, fn {contact, index}, {index_map, message_list} ->
+        {
+          Map.put(index_map, index, contact.id),
+          message_list ++ ["Type *#{index}* for #{contact.name}"]
+        }
+      end)
+
+    %{mt_list_message: Enum.join(message_list, "\n"), index_map: Jason.encode!(index_map)}
   end
 
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    index_map =  Jason.decode!(fields["index_map"])
+    index_map = Jason.decode!(fields["index_map"])
+
     {:ok, mt_contact_id} =
-                  Map.get(index_map, fields["mt_contact_id"], 0)
-                  |> Glific.parse_maybe_integer()
+      Map.get(index_map, fields["mt_contact_id"], 0)
+      |> Glific.parse_maybe_integer()
 
     tdc = Contacts.get_contact!(contact_id)
 
@@ -203,8 +204,6 @@ defmodule Glific.Clients.Stir do
       get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
       |> Glific.parse_maybe_integer()
 
-
-
     if is_nil(mt_contact_id) do
       %{
         first_priority: "NA",
@@ -270,6 +269,16 @@ defmodule Glific.Clients.Stir do
       _ ->
         result
     end
+  end
+
+  def webhook("reset_contact_fields", fields) do
+    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+    Contacts.get_contact!(contact_id)
+    |> Contacts.update_contact(%{fields: %{}})
+
+    %{status: true}
   end
 
   def webhook("compute_survey_score", %{results: results}),
