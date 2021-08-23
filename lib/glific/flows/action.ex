@@ -425,6 +425,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
     flow_uuid = get_flow_uuid(action, context)
+
     # check if we've seen this flow in this execution
     if Map.has_key?(context.uuids_seen, flow_uuid) do
       FlowContext.log_error("Repeated loop, hence finished the flow")

@@ -233,7 +233,7 @@ defmodule Glific.Clients.DigitalGreen do
   ## filter record based on the contact village, and current week.
   @spec generate_weather_results(list(), Keyword.t()) :: map()
   defp generate_weather_results(rows, opts) do
-    %{message: "", image: "", is_extream_condition: false, is_valid_village: true}
+    %{message: "", image: "", is_extream_condition: false}
     |> generate_weather_info(rows, opts)
     |> check_for_extream_condition(rows)
   end
