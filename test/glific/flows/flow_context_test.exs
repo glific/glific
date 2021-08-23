@@ -224,7 +224,7 @@ defmodule Glific.Flows.FlowContextTest do
       flow_context_fixture(%{
         node_uuid: node.uuid,
         wakeup_at: wakeup_at,
-        wait_for_time: true,
+        is_background_flow: true,
         flow_uuid: flow.uuid,
         flow_id: flow.id
       })
@@ -233,6 +233,6 @@ defmodule Glific.Flows.FlowContextTest do
 
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil
-    assert flow_context.wait_for_time == false
+    assert flow_context.is_background_flow == false
   end
 end

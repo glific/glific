@@ -33,7 +33,7 @@ defmodule Glific.Flows.FlowContext do
     :parent_id,
     :results,
     :wakeup_at,
-    :wait_for_time,
+    :is_background_flow,
     :completed_at,
     :delay,
     :uuids_seen,
@@ -67,7 +67,7 @@ defmodule Glific.Flows.FlowContext do
           recent_inbound: [map()] | [],
           recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
-          wait_for_time: boolean,
+          is_background_flow: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -87,7 +87,7 @@ defmodule Glific.Flows.FlowContext do
     field :wakeup_at, :utc_datetime, default: nil
     field :completed_at, :utc_datetime, default: nil
 
-    field :wait_for_time, :boolean, default: false
+    field :is_background_flow, :boolean, default: false
 
     field :delay, :integer, default: 0, virtual: true
 
@@ -176,7 +176,7 @@ defmodule Glific.Flows.FlowContext do
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
-      do: mark_flows_complete(context.contact_id)
+      do: mark_flows_complete(context.contact_id, false)
 
     # lets reset the current context and return the resetted context
     reset_one_context(context)
@@ -271,7 +271,7 @@ defmodule Glific.Flows.FlowContext do
     # since we have recd a message, we also ensure that we are not going to be woken
     # up by a timer if present.
     {:ok, context} =
-      update_flow_context(context, %{type => messages, wakeup_at: nil, wait_for_time: false})
+      update_flow_context(context, %{type => messages, wakeup_at: nil, is_background_flow: false})
 
     context
   end
@@ -373,7 +373,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   # this marks complete all the context which are newer than date
-  # this is used when a wait_for_time context wakes up, and it has no
+  # this is used when a background flow  wakes up, and it has no
   # idea what happened it was sleeping
   @spec add_date_clause(Ecto.Query.t(), DateTime.t() | nil) :: Ecto.Query.t()
   defp add_date_clause(query, nil), do: query
@@ -384,8 +384,11 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all the flows for a specific context to be completed
   """
-  @spec mark_flows_complete(non_neg_integer, DateTime.t() | nil) :: nil
-  def mark_flows_complete(contact_id, after_insert_date \\ nil) do
+  @spec mark_flows_complete(non_neg_integer, boolean(), DateTime.t() | nil) :: nil
+  def mark_flows_complete(_contact_id, _is_background_flow, after_insert_date \\ nil)
+  def mark_flows_complete(_contact_id, true, _after_insert_date), do: nil
+
+  def mark_flows_complete(contact_id, false, after_insert_date) do
     now = DateTime.utc_now()
 
     FlowContext
@@ -393,8 +396,8 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], is_nil(fc.completed_at))
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
-    # |> where([fc], fc.wait_for_time == false)
-    |> Repo.update_all(set: [completed_at: now, updated_at: now])
+    |> where([fc], fc.is_background_flow == false)
+    |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
   end
 
   @doc """
@@ -442,7 +445,7 @@ defmodule Glific.Flows.FlowContext do
     parent_id = Keyword.get(opts, :parent_id)
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
-      mark_flows_complete(contact.id)
+      mark_flows_complete(contact.id, flow.is_background)
     end
 
     {:ok, context} = seed_context(flow, contact, status, opts)
@@ -463,13 +466,15 @@ defmodule Glific.Flows.FlowContext do
     # we do for other tables
     # We should not wakeup those contexts which are waiting on time
     query =
-      from fc in FlowContext,
+      from(fc in FlowContext,
         where:
           fc.contact_id == ^contact_id and
             not is_nil(fc.node_uuid) and
-            is_nil(fc.completed_at),
+            is_nil(fc.completed_at) and
+            fc.is_background_flow == false,
         order_by: [desc: fc.id],
         limit: 1
+      )
 
     query =
       if parent_id,
@@ -483,7 +488,7 @@ defmodule Glific.Flows.FlowContext do
       |> Repo.preload([:contact, :flow])
 
     # if this context is waiting on time, we skip it
-    if fc && fc.wait_for_time,
+    if fc && fc.is_background_flow,
       do: nil,
       else: fc
   end
@@ -581,10 +586,9 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, wait_for_time: false})
-
+    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, is_background_flow: false})
     # also mark all newer contexts as completed
-    mark_flows_complete(context.contact_id, context.inserted_at)
+    mark_flows_complete(context.contact_id, context.flow.is_background, context.inserted_at)
 
     {:ok, flow} =
       Flows.get_cached_flow(

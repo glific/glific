@@ -549,7 +549,8 @@ defmodule Glific.Flows.Action do
           context,
           %{
             wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
-            wait_for_time: true
+            # we will change column name
+            is_background_flow: context.flow.is_background
           }
         )
 

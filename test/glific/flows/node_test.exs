@@ -261,7 +261,7 @@ defmodule Glific.Flows.NodeTest do
     context =
       context
       |> Repo.preload(:contact)
-      |> Map.put(:flow, %{version: 1})
+      |> Map.put(:flow, %{version: 1, is_background: false})
 
     message = Messages.create_temp_message(Fixtures.get_org_id(), "completed")
     message_stream = [message]

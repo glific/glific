@@ -190,7 +190,7 @@ defmodule GlificWeb.Schema.ContactTest do
     end)
 
     test_name = "test2"
-    test_phone = "test phone2"
+    test_phone = "919917443992"
     data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,2021-03-09"
 
     result =

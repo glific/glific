@@ -4,15 +4,13 @@ defmodule Glific.Triggers.Helper do
   complexity of time queries
   """
 
-  alias Glific.Triggers.Trigger
-
   @doc """
   Given a time and the frequency of occurence, compute the next
   time the event can potentially occur
   """
-  @spec compute_next(Trigger.t()) :: DateTime.t() | {:error, any()}
+  @spec compute_next(map()) :: DateTime.t() | {:error, any()}
   def compute_next(
-        %Trigger{
+        %{
           frequency: frequency,
           days: days,
           next_trigger_at: next_time
@@ -24,9 +22,12 @@ defmodule Glific.Triggers.Helper do
       "monthly" in frequency -> Timex.shift(next_time, months: 1) |> Timex.to_datetime()
       "weekday" in frequency -> weekday(next_time)
       "weekend" in frequency -> weekend(next_time)
+      "none" in frequency -> next_time
       true -> others(next_time, days)
     end
   end
+
+  def compute_next(%{next_trigger_at: next_trigger_at} = _trigger), do: next_trigger_at
 
   # day of week is a integer: 1 - Monday, 7 - Sunday
   @spec others(DateTime.t(), list()) :: DateTime.t()

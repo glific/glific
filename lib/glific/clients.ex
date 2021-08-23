@@ -133,9 +133,9 @@ defmodule Glific.Clients do
   @spec daily_tasks(non_neg_integer()) :: map()
   def daily_tasks(org_id) do
     module_name = get_in(plugins(), [org_id, :daily_tasks])
+
     if module_name,
       do: apply(module_name, :daily_tasks, [org_id]),
       else: %{error: "Missing daily function implementation"}
   end
-
 end

@@ -556,16 +556,17 @@ defmodule Glific.Flows.ActionTest do
       |> Map.put(:nodes, [node])
       |> Map.put(:start_node, node)
       |> Map.put(:uuid_map, %{})
+      |> Map.put(:is_background, false)
 
     {:ok, context} = FlowContext.seed_context(flow, contact, "published")
 
     # delay > 0
-    result = Action.execute(Map.put(action, :wait_time, 30), context, [])
+    result = Action.execute(Map.put(action, :wait_time, 30), context |> Repo.preload(:flow), [])
     assert elem(result, 0) == :wait
 
     context = Repo.get(FlowContext, context.id)
     assert !is_nil(context.wakeup_at)
-    assert context.wait_for_time == true
+    assert context.is_background_flow == false
   end
 
   test "execute an action when type is call_webhook", attrs do
