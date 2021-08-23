@@ -29,6 +29,9 @@ defmodule Glific.Navanatech do
     |> handle_response()
   end
 
+  def decode_message(%{text: nil, case_id: _case_id, organization_id: _org_id} = _attrs),
+  do: handle_response({:error, "Invalid text"})
+
   def decode_message(%{text: text, case_id: case_id, organization_id: org_id} = _attrs) do
     params = %{use_case_id: case_id, text: text}
 

@@ -9,7 +9,6 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Flows.ContactField,
     Groups,
     Groups.Group,
@@ -81,6 +80,7 @@ defmodule Glific.Clients.DigitalGreen do
     next_slot(time, morning_slot, evening_slot)
     |> Timex.diff(time, :seconds)
     |> max(61)
+
   end
 
   defp next_slot(time, morning_slot, evening_slot) do
@@ -112,16 +112,13 @@ defmodule Glific.Clients.DigitalGreen do
 
     ## check and update contact stage based on the total days they have.
     total_days = get_total_stage_days(fields)
-
     if is_integer(total_days) do
       update_crop_stage(total_days, contact_id, organization_id)
     end
 
-    Logger.info(
-      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{
-        inspect(fields)
-      } "
-    )
+    Logger.info("Daily flow ran successfully for total_days: #{inspect total_days} and fields: #{inspect fields} ")
+
+    %{status: "successfull"}
   end
 
   def webhook("update_crop_stage", fields) do
@@ -154,7 +151,7 @@ defmodule Glific.Clients.DigitalGreen do
           organization_id: fields["organization_id"]
         },
         else: %{
-          text: fields["text"],
+          text: validate_text_to_decode(fields["text"]),
           case_id: fields["case_id"],
           organization_id: fields["organization_id"]
         }
@@ -163,28 +160,16 @@ defmodule Glific.Clients.DigitalGreen do
     |> case do
       ## We will move these conditions to Navanatech module.
       {:ok, %{"keywords" => []} = attrs} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(attrs)}"
-        }
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(attrs)}"}
 
       {:ok, %{"keywords" => keywords} = attrs} ->
-        %{
-          decoded_message: hd(keywords),
-          request_data: "Data Decode #{inspect(params)} with response #{inspect(attrs)}"
-        }
+        %{decoded_message: hd(keywords), request_data:  "Data Decode #{inspect(params)} with response #{inspect(attrs)}" }
 
       {:ok, message} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"
-        }
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
 
       {:error, message} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"
-        }
+        %{decoded_message: "could not decode", request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"}
     end
   end
 
@@ -193,8 +178,8 @@ defmodule Glific.Clients.DigitalGreen do
     village_name = String.downcase(fields["village_name"]) |> String.trim()
 
     opts = [
-      start_date: Timex.beginning_of_week(today, :friday),
-      end_date: Timex.end_of_week(today, :friday),
+      start_date: Timex.beginning_of_week(today, :mon),
+      end_date: Timex.end_of_week(today, :sun),
       village: village_name
     ]
 
@@ -206,6 +191,7 @@ defmodule Glific.Clients.DigitalGreen do
     else
       %{is_valid_village: false}
     end
+
   end
 
   def webhook(_, _fields),
@@ -216,33 +202,11 @@ defmodule Glific.Clients.DigitalGreen do
     in the backend.
   """
   @spec daily_tasks(non_neg_integer()) :: atom()
-  def daily_tasks(org_id) do
-    fetch_contacts_from_farmer_group(org_id)
-    |> Enum.each(&run_daily_task/1)
-
+  def daily_tasks(_org_id) do
+    # we have added the background flows and now don't need this.
+    # fetch_contacts_from_farmer_group(org_id)
+    # |> Enum.each(&run_daily_task/1)
     :ok
-  end
-
-  @spec fetch_contacts_from_farmer_group(non_neg_integer()) :: list()
-  defp fetch_contacts_from_farmer_group(_org_id) do
-    ## We will make it dynamic soon
-    farmer_collection_id = 349
-    Contacts.list_contacts(%{filter: %{include_groups: [farmer_collection_id]}})
-  end
-
-  @spec run_daily_task(Contact.t()) :: map()
-  defp run_daily_task(contact) do
-    attrs = %{
-      "contact_id" => contact.id,
-      "organization_id" => contact.organization_id,
-      "contact" => %{
-        "id" => contact.id,
-        "fields" => contact.fields
-      },
-      "results" => %{}
-    }
-
-    webhook("daily", attrs)
   end
 
   ## filter record based on the contact village, and current week.
@@ -388,17 +352,15 @@ defmodule Glific.Clients.DigitalGreen do
       get_in(fields, ["contact", "fields", "enrolled_day", "value"])
       |> format_date()
 
-    days_since_enrolled = Timex.diff(Timex.now(), enrolled_date, :days)
+    days_since_enrolled = Timex.diff(Timex.today(), enrolled_date, :days)
 
     cond do
-      is_integer(days_since_enrolled) && is_integer(initial_crop_day) ->
-        days_since_enrolled + initial_crop_day
-
-      is_integer(days_since_enrolled) ->
-        days_since_enrolled
-
-      true ->
-        get_in(fields, ["contact", "fields", "total_days", "value"])
+      is_integer(days_since_enrolled) && is_integer(initial_crop_day)
+        ->  days_since_enrolled + initial_crop_day
+      is_integer(days_since_enrolled)
+        -> days_since_enrolled
+      true
+      -> get_in(fields, ["contact", "fields", "total_days", "value"])
     end
   end
 
@@ -412,7 +374,6 @@ defmodule Glific.Clients.DigitalGreen do
       next_flow_date =
         String.trim(next_flow_at)
         |> format_date
-
       ## first check if we need to run the flow today for this contact.
       add_to_next_flow_group(next_flow, next_flow_date, contact_id, organization_id)
     end
@@ -422,11 +383,10 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec add_to_next_flow_group(String.t(), Date.t(), non_neg_integer(), non_neg_integer()) :: :ok
   defp add_to_next_flow_group(next_flow, next_flow_at, contact_id, organization_id) do
-    with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
+    with 0 <- Timex.diff(Timex.today(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
-      Logger.info("Today: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}")
-
+          Logger.info("Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
       Groups.create_contact_group(%{
         contact_id: contact_id,
         group_id: next_flow_group.id,
@@ -441,6 +401,22 @@ defmodule Glific.Clients.DigitalGreen do
   defp format_date(nil), do: nil
 
   defp format_date(date) do
-    date|> Timex.parse!("{YYYY}-{0M}-{D}")|> Timex.to_date()
+    date
+    |> Timex.parse!("{YYYY}-{0M}-{D}")
+    |> Timex.to_date()
+  end
+
+  @spec validate_text_to_decode(String.t()) :: String.t() | nil
+  defp validate_text_to_decode(str) do
+    cond do
+      str in [""]
+        -> nil
+
+      String.starts_with?(str, "http")
+        -> nil
+
+      true
+        -> str
+    end
   end
 end
