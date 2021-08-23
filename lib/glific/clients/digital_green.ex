@@ -9,7 +9,6 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
-    Contacts.Contact,
     Flows.ContactField,
     Groups,
     Groups.Group,
