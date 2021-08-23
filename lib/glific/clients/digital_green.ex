@@ -183,7 +183,6 @@ defmodule Glific.Clients.DigitalGreen do
       village: village_name
     ]
 
-
     if village_name in @villages do
       ApiClient.get_csv_content(url: @weather_updates["published_csv"])
       |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
