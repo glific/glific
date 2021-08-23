@@ -113,6 +113,7 @@ defmodule Glific.Clients.DigitalGreen do
 
     ## check and update contact stage based on the total days they have.
     total_days = get_total_stage_days(fields)
+
     if is_integer(total_days) do
       update_crop_stage(total_days, contact_id, organization_id)
     end
@@ -386,15 +387,15 @@ defmodule Glific.Clients.DigitalGreen do
     days_since_enrolled = Timex.diff(Timex.now(), enrolled_date, :days)
 
     cond do
-      is_integer(days_since_enrolled) && is_integer(initial_crop_day)
-        ->  days_since_enrolled + initial_crop_day
-      is_nil(initial_crop_day) && is_integer(days_since_enrolled)
-        -> days_since_enrolled
-      true
-      -> get_in(fields, ["contact", "fields", "total_days", "value"])
+      is_integer(days_since_enrolled) && is_integer(initial_crop_day) ->
+        days_since_enrolled + initial_crop_day
+
+      is_integer(days_since_enrolled) ->
+        days_since_enrolled
+
+      true ->
+        get_in(fields, ["contact", "fields", "total_days", "value"])
     end
-
-
   end
 
   @spec check_for_next_scheduled_flow(map(), non_neg_integer(), non_neg_integer()) :: :ok
@@ -407,10 +408,10 @@ defmodule Glific.Clients.DigitalGreen do
       next_flow_date =
         String.trim(next_flow_at)
         |> format_date
+
       ## first check if we need to run the flow today for this contact.
       add_to_next_flow_group(next_flow, next_flow_date, contact_id, organization_id)
     end
-
     :ok
   end
 
@@ -419,7 +420,7 @@ defmodule Glific.Clients.DigitalGreen do
     with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
-          Logger.info("Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
+      Logger.info("Today: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}")
       Groups.create_contact_group(%{
         contact_id: contact_id,
         group_id: next_flow_group.id,
@@ -434,8 +435,6 @@ defmodule Glific.Clients.DigitalGreen do
   defp format_date(nil), do: nil
 
   defp format_date(date) do
-    date
-    |> Timex.parse!("{YYYY}-{0M}-{D}")
-    |> Timex.to_date()
+    date|> Timex.parse!("{YYYY}-{0M}-{D}")|> Timex.to_date()
   end
 end
