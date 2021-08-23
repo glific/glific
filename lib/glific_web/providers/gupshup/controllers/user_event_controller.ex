@@ -41,6 +41,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
     Logger.info(
       "Contact with phone: #{get_in(params, ["payload", "phone"])} opted out on #{timestamp}"
     )
+
     handler(conn, params, "Opted out handler")
   end
 end

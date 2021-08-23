@@ -24,8 +24,7 @@ defmodule GlificWeb.ExotelController do
           "To" => exotel_to
         } = params
       ) do
-
-    Logger.info("exotel #{inspect params}")
+    Logger.info("exotel #{inspect(params)}")
 
     organization = Partners.organization(organization_id)
 
@@ -72,7 +71,7 @@ defmodule GlificWeb.ExotelController do
   end
 
   def optin(conn, params) do
-    Logger.info("exotel unhandled #{inspect params}")
+    Logger.info("exotel unhandled #{inspect(params)}")
     json(conn, "")
   end
 
