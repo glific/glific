@@ -118,6 +118,8 @@ defmodule Glific.Clients.DigitalGreen do
     end
 
     Logger.info("Daily flow ran successfully for total_days: #{inspect total_days} and fields: #{inspect fields} ")
+
+    %{status: "successfull"}
   end
 
   def webhook("update_crop_stage", fields) do
@@ -202,8 +204,9 @@ defmodule Glific.Clients.DigitalGreen do
   """
   @spec daily_tasks(non_neg_integer()) :: atom()
   def daily_tasks(org_id) do
-    fetch_contacts_from_farmer_group(org_id)
-    |> Enum.each(&run_daily_task/1)
+    # we have added the background flows and now don't need this.
+    # fetch_contacts_from_farmer_group(org_id)
+    # |> Enum.each(&run_daily_task/1)
     :ok
   end
 
@@ -370,7 +373,7 @@ defmodule Glific.Clients.DigitalGreen do
       get_in(fields, ["contact", "fields", "enrolled_day", "value"])
       |> format_date()
 
-    days_since_enrolled = Timex.diff(Timex.now(), enrolled_date, :days)
+    days_since_enrolled = Timex.diff(Timex.today(), enrolled_date, :days)
 
     cond do
       is_integer(days_since_enrolled) && is_integer(initial_crop_day)
@@ -403,7 +406,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec add_to_next_flow_group(String.t(), Date.t(), non_neg_integer(), non_neg_integer()) :: :ok
   defp add_to_next_flow_group(next_flow, next_flow_at, contact_id, organization_id) do
-    with 0 <- Timex.diff(Timex.now(), next_flow_at, :days),
+    with 0 <- Timex.diff(Timex.today(), next_flow_at, :days),
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
           Logger.info("Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect next_flow_at}")
