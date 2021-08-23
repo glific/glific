@@ -6,7 +6,7 @@ defmodule GlificWeb.ExotelController do
   use GlificWeb, :controller
   require Logger
 
-  alias Glific.{Contacts, Flows, Partners}
+  alias Glific.{Contacts, Flows, Partners, Repo}
 
   @doc """
   First implementation of processing optin contact callback from exotel
@@ -22,9 +22,14 @@ defmodule GlificWeb.ExotelController do
           "CallFrom" => exotel_from,
           "CallTo" => _exotel_call_to,
           "To" => exotel_to
-        } = _params
+        } = params
       ) do
+
+    Logger.info("exotel #{inspect params}")
+
     organization = Partners.organization(organization_id)
+
+    Repo.put_process_state(organization.id)
 
     credentials = organization.services["exotel"]
 
@@ -41,7 +46,7 @@ defmodule GlificWeb.ExotelController do
       if ngo_exotel_phone == credentials.secrets["phone"] do
         # first create and optin the contact
         attrs = %{
-          phone: phone,
+          phone: clean_phone(phone),
           method: "Exotel",
           organization_id: organization_id
         }
@@ -66,7 +71,18 @@ defmodule GlificWeb.ExotelController do
     json(conn, "")
   end
 
-  def optin(conn, _params), do: json(conn, "")
+  def optin(conn, params) do
+    Logger.info("exotel unhandled #{inspect params}")
+    json(conn, "")
+  end
+
+  @country_code "91"
+
+  @spec clean_phone(String.t()) :: String.t()
+  defp clean_phone(phone) when is_binary(phone),
+    do: @country_code <> String.slice(phone, -10, 10)
+
+  defp clean_phone(phone), do: phone
 
   @spec log_error(String.t()) :: any
   defp log_error(message) do
