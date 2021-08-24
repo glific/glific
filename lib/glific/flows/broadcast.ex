@@ -61,8 +61,8 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
-  @spec contacts(Group.t(), Keyword.t()) :: list(Contact.t())
-  defp contacts(group, opts) do
+  @spec contacts_query(Group.t(), Keyword.t()) :: Ecto.Query.t()
+  defp contacts_query(group, opts) do
     Contact
     |> where([c], c.status != :blocked and is_nil(c.optout_time))
     |> join(:inner, [c], cg in ContactGroup,
@@ -71,16 +71,35 @@ defmodule Glific.Flows.Broadcast do
     )
     |> limit(^opts[:limit])
     |> offset(^opts[:offset])
+  end
+
+  @spec contacts(Group.t(), Keyword.t()) :: list(Contact.t())
+  defp contacts(group, opts) do
+    contacts_query(group, opts)
     |> order_by([c], asc: c.id)
     |> Repo.all()
   end
 
+  @spec contacts_remaining?(Group.t(), Keyword.t()) :: boolean()
+  defp contacts_remaining?(group, opts) do
+    count =
+      contacts_query(group, opts)
+      |> Repo.aggregate(:count)
+
+    if count > 0, do: true, else: false
+  end
+
   @spec do_broadcast(map(), Group.t(), Keyword.t()) :: nil
   defp do_broadcast(flow, group, opts) do
-    contacts = contacts(group, opts)
+    if contacts_remaining?(group, opts) do
+      Task.Supervisor.async_nolink(
+        Glific.Broadcast.Supervisor,
+        fn -> broadcast_task(flow, group, opts) end,
+        shutdown: 5_000
+      )
 
-    if contacts != [] do
-      broadcast_contacts(flow, contacts, opts)
+      # lets sleep for one minute to let the system recover, if we have looped
+      if opts[:offset] > 0, do: Process.sleep(1000 * 60)
 
       # slide the window of contacts to the next set
       opts =
@@ -90,6 +109,16 @@ defmodule Glific.Flows.Broadcast do
 
       do_broadcast(flow, group, opts)
     end
+
+    nil
+  end
+
+  @spec broadcast_task(map(), Group.t(), Keyword.t()) :: :ok
+  defp broadcast_task(flow, group, opts) do
+    Repo.put_process_state(group.organization_id)
+    contacts = contacts(group, opts)
+
+    broadcast_contacts(flow, contacts, opts)
   end
 
   @doc """
@@ -119,8 +148,6 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-          FlowContext.mark_flows_complete(contact.id, flow.is_background)
-
           FlowContext.init_context(flow, contact, @status, opts)
         end,
         ordered: false,
