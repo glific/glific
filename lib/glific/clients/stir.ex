@@ -286,7 +286,6 @@ defmodule Glific.Clients.Stir do
 
   def webhook(_, fields), do: fields
 
-
   @spec get_priority_versions(map()) :: map()
   defp get_priority_versions(fields) do
     priority_version_field = get_in(fields, ["contact", "fields", "priority_versions", "value"])
