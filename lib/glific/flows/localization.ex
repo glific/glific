@@ -121,8 +121,11 @@ defmodule Glific.Flows.Localization do
         action
       end
 
+    # in some cases we have a localization field, but either the text or the attachment
+    # is missing and does not have values, in which case, we switch to using the default
+    # text or attachment from action
     if type == :text,
-      do: Map.get(element, :text, nil),
-      else: Map.get(element, :attachments, nil)
+      do: Map.get(element, :text, action.text),
+      else: Map.get(element, :attachments, action.attachments)
   end
 end
