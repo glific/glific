@@ -287,6 +287,7 @@ defmodule Glific.Clients.Stir do
   def webhook(_, fields), do: fields
 
 
+  @spec get_priority_versions(map()) :: map()
   defp get_priority_versions(fields) do
     priority_version_field = get_in(fields, ["contact", "fields", "priority_versions", "value"])
 
@@ -296,11 +297,13 @@ defmodule Glific.Clients.Stir do
     Jason.decode!(priority_version_field)
   end
 
+  @spec clean_string(String.t()) :: String.t()
   defp clean_string(str) do
     String.downcase(str || "")
     |> String.trim()
   end
 
+  @spec get_contact_priority(map()) :: map()
   defp get_contact_priority(fields) do
     first_priority_map = Map.get(fields, "first_priority", %{})
     second_priority_map = Map.get(fields, "second_priority", %{})
@@ -311,6 +314,7 @@ defmodule Glific.Clients.Stir do
     }
   end
 
+  @spec get_diet_list(String.t(), non_neg_integer()) :: list()
   defp get_diet_list(diet_group_label, organization_id) do
     {:ok, diet_group} =
       Repo.fetch_by(Group, %{label: diet_group_label, organization_id: organization_id})
@@ -328,6 +332,7 @@ defmodule Glific.Clients.Stir do
     end)
   end
 
+  @spec get_mt_list(String.t(), non_neg_integer()) :: list()
   defp get_mt_list(district, organization_id) do
     group_label = district_group(district, :mt)
     {:ok, group} = Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
@@ -336,6 +341,7 @@ defmodule Glific.Clients.Stir do
     |> Enum.with_index(1)
   end
 
+  @spec district_group(String.t(), atom()) :: String.t()
   defp district_group(district, :mt) when is_binary(district) do
     district =
       String.trim(district)
