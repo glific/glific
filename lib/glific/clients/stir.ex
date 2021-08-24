@@ -204,7 +204,7 @@ defmodule Glific.Clients.Stir do
       get_in(fields, ["contact", "fields", "mt_contact_id", "value"])
       |> Glific.parse_maybe_integer()
 
-    if is_nil(mt_contact_id) do
+    if mt_contact_id <= 0 do
       %{
         first_priority: "NA",
         second_priority: "NA",
@@ -285,6 +285,7 @@ defmodule Glific.Clients.Stir do
     do: compute_survey_score(results)
 
   def webhook(_, fields), do: fields
+
 
   defp get_priority_versions(fields) do
     priority_version_field = get_in(fields, ["contact", "fields", "priority_versions", "value"])
