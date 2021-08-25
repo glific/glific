@@ -68,8 +68,6 @@ defmodule Glific.Clients.Stir do
     }
   ]
 
-
-
   @doc false
   @spec webhook(String.t(), map()) :: map()
   def webhook("move_mt_to_district_group", fields) do
