@@ -18,7 +18,12 @@ defmodule Glific.Clients.Stir do
       %{
         description: "Creating safe learning environments _(Safety)_",
         keyword: "1",
-        tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761"
+        tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761",
+        mt_feedback_videos: %{
+          rank_a: "Video 1",
+          rank_b: "Video 2",
+          rank_c: "Video 3"
+        }
       }
     },
     {
@@ -26,7 +31,12 @@ defmodule Glific.Clients.Stir do
       %{
         description: "Dedication and engagement _(Engagement)_",
         keyword: "2",
-        tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74"
+        tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74",
+        mt_feedback_videos: %{
+          rank_a: "Video 4",
+          rank_b: "Video 5",
+          rank_c: "Video 6"
+        }
       }
     },
     {
@@ -34,7 +44,12 @@ defmodule Glific.Clients.Stir do
       %{
         description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_",
         keyword: "3",
-        tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f"
+        tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f",
+        mt_feedback_videos: %{
+          rank_a: "Video 7",
+          rank_b: "Video 8",
+          rank_c: "Video 9"
+        }
       }
     },
     {
@@ -43,10 +58,17 @@ defmodule Glific.Clients.Stir do
         description:
           "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
         keyword: "4",
-        tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c"
+        tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c",
+        mt_feedback_videos: %{
+          rank_a: "Video 10",
+          rank_b: "Video 11",
+          rank_c: "Video 12"
+        }
       }
     }
   ]
+
+
 
   @doc false
   @spec webhook(String.t(), map()) :: map()
