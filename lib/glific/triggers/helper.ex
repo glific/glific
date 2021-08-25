@@ -31,6 +31,8 @@ defmodule Glific.Triggers.Helper do
 
   # day of week is a integer: 1 - Monday, 7 - Sunday
   @spec others(DateTime.t(), list()) :: DateTime.t()
+  defp others(time, []), do: time
+
   defp others(time, days) do
     # so basically this clause picks a few days of the week
     # we need to loop from current to 7 and then back to current
