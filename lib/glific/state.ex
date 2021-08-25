@@ -220,12 +220,12 @@ defmodule Glific.State do
   defp get_flow(user, flow_id, state) do
     organization_id = user.organization_id
 
-    {org_state, contact} =
+    {org_state, flow} =
       get_state(state, organization_id)
       |> free_resource(:flows)
       |> get_org_flows(user, flow_id)
 
-    {contact, Map.put(state, organization_id, org_state)}
+    {flow, Map.put(state, organization_id, org_state)}
   end
 
   @spec update_state(atom(), map(), map(), map()) :: map()
@@ -370,13 +370,13 @@ defmodule Glific.State do
     Enum.reduce(
       busy,
       {free, busy},
-      fn {{id, fingerprint}, {contact, time}}, {free, busy} ->
+      fn {{id, fingerprint}, {entity, time}}, {free, busy} ->
         if (user && user.id == id && user.fingerprint == fingerprint) ||
              DateTime.compare(time, expiry_time) == :lt do
-          publish_data(contact.organization_id, id)
+          publish_data(user.organization_id, id)
 
           {
-            [contact | free],
+            [entity | free],
             Map.delete(busy, {id, fingerprint})
           }
         else
