@@ -73,9 +73,11 @@ defmodule Glific.Clients.Stir do
 
     {index_map, message_list} =
       Enum.reduce(mt_list, {%{}, []}, fn {contact, index}, {index_map, message_list} ->
+        contact_name = get_in(contact.fields, ["name", "value"]) || contact.name
+
         {
           Map.put(index_map, index, contact.id),
-          message_list ++ ["Type *#{index}* for #{contact.name}"]
+          message_list ++ ["Type *#{index}* for #{contact_name}"]
         }
       end)
 
