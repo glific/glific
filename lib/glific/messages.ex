@@ -1081,14 +1081,14 @@ defmodule Glific.Messages do
 
     values =
       if simulator,
+        ## if simulator let's clean all the fields and update reset the session window.
         do:
-          ## if simulator let's clean all the fields and update reset the session window.
           values
           |> Map.merge(%{
-              fields: %{},
-              last_communication_at: DateTime.utc_now(),
-              last_message_at: DateTime.utc_now()
-            }),
+            fields: %{},
+            last_communication_at: DateTime.utc_now(),
+            last_message_at: DateTime.utc_now()
+          }),
         else: values
 
     Contacts.update_contact(contact, values)
