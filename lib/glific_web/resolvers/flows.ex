@@ -87,9 +87,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def flow_get(_, %{id: id}, %{context: %{current_user: user}}) do
-    with %Flow{} = flow <- State.get_flow(user, id) do
-      {:ok, %{flow: flow}}
-    end
+    {:ok, %{flow: State.get_flow(user, id)}}
   end
 
   @doc """
