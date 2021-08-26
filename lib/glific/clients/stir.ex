@@ -356,10 +356,14 @@ defmodule Glific.Clients.Stir do
   @spec get_mt_list(String.t(), non_neg_integer()) :: list()
   defp get_mt_list(district, organization_id) do
     group_label = district_group(district, :mt)
-    {:ok, group} = Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
+    Repo.fetch_by(Group, %{label: group_label, organization_id: organization_id})
+    |> case do
+      {:ok, group} ->
+        Contacts.list_contacts(%{filter: %{include_groups: [group.id]}, opts: %{"order" => "ASC"}})
+        |> Enum.with_index(1)
 
-    Contacts.list_contacts(%{filter: %{include_groups: [group.id]}, opts: %{"order" => "ASC"}})
-    |> Enum.with_index(1)
+      _ -> []
+    end
   end
 
   @spec district_group(String.t(), atom()) :: String.t()
