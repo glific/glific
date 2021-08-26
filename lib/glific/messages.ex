@@ -149,7 +149,7 @@ defmodule Glific.Messages do
     attrs =
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
-      |> update_message_attrs()
+      |> parse_message_vars()
       |> put_contact_id()
       |> put_clean_body()
 
@@ -259,6 +259,7 @@ defmodule Glific.Messages do
              interactive_content["content"]["type"],
              attrs.organization_id
            ) do
+
       Map.merge(attrs, %{
         body: body,
         interactive_content: interactive_content,
@@ -350,25 +351,22 @@ defmodule Glific.Messages do
     nil
   end
 
-  defp update_message_attrs(attrs) do
+  @spec parse_message_vars(map()) :: map()
+  defp parse_message_vars(attrs) do
     message_vars =
       if is_integer(attrs[:receiver_id]) or is_binary(attrs[:receiver_id]),
         do: %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)},
         else: %{}
 
-    ## if message media is present change the variables in caption
-    if is_integer(attrs[:media_id]) or is_binary(attrs[:media_id]) do
-      message_media = get_message_media!(attrs.media_id)
+    parse_text_message_fields(attrs, message_vars)
+    |> parse_media_message_fields(message_vars)
+    |> parse_interactive_message_fields(message_vars)
+  end
 
-      message_media
-      |> update_message_media(%{
-        caption: MessageVarParser.parse(message_media.caption, message_vars)
-      })
-    end
-
+  @spec parse_text_message_fields(map(), map()) :: map()
+  defp parse_text_message_fields(attrs, message_vars) do
     if is_binary(attrs[:body]) do
       {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
-
       attrs
       |> Map.merge(%{
         uuid: attrs[:uuid] || msg_uuid,
@@ -378,6 +376,23 @@ defmodule Glific.Messages do
       attrs
     end
   end
+
+  @spec parse_media_message_fields(map(), map()) :: map()
+  defp parse_media_message_fields(attrs, message_vars) do
+     ## if message media is present change the variables in caption
+    if is_integer(attrs[:media_id]) or is_binary(attrs[:media_id]) do
+      message_media = get_message_media!(attrs.media_id)
+      message_media
+      |> update_message_media(%{
+        caption: MessageVarParser.parse(message_media.caption, message_vars)
+      })
+    end
+    attrs
+  end
+
+  @spec parse_interactive_message_fields(map(), map()) :: map()
+  defp parse_interactive_message_fields(attrs, message_vars),
+  do: Map.merge(attrs, %{interactive_content: MessageVarParser.parse_map(attrs[:interactive_content], message_vars)})
 
   @doc false
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
@@ -621,7 +636,6 @@ defmodule Glific.Messages do
       contact_id: sender_id,
       flow: :outbound
     })
-    |> update_message_attrs()
     |> create_message()
     |> case do
       {:ok, message} ->
