@@ -373,7 +373,7 @@ defmodule Glific.State do
       fn {{id, fingerprint}, {entity, time}}, {free, busy} ->
         if (user && user.id == id && user.fingerprint == fingerprint) ||
              DateTime.compare(time, expiry_time) == :lt do
-          publish_data(user.organization_id, id)
+          publish_data(entity.organization_id, id)
 
           {
             [entity | free],
