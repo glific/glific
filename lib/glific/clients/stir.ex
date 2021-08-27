@@ -304,31 +304,26 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("save_survey_answer", fields) do
-    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    option_section = fields["option_section"] |> String.downcase()
     contact = Contacts.get_contact!(contact_id)
-    if String.contains?(option_section, "a") do
-      %{option_a_data: save_survey_results(contact, fields, :option_a)}
-    else
-      %{option_b_data: %{}}
-    end
+    save_survey_results(contact, fields, mt_type(fields))
   end
 
-  def webhook("get_survey_results", fields) do
-    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    option_section = fields["option_section"] |> String.downcase()
-    if String.contains?(option_section, "a"),
-    do: get_survey_results(fields, :option_a),
-    else: %{}
-  end
+  def webhook("get_survey_results", fields),
+  do: get_survey_results(fields, mt_type(fields))
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
   def webhook(_, fields), do: fields
 
-  defp save_survey_results(contact, fields, :option_a) do
+  #Get MT type if it's A or B and perform the action based on that.
+  @spec mt_type(map()) :: atom()
+  defp mt_type(_),
+  do: :TYPE_A
+
+  @spec save_survey_results(Contacts.Contact.t(), map(), atom()) :: map()
+  defp save_survey_results(contact, fields, :TYPE_A) do
       priority = clean_string(fields["priority"])
       answer = clean_string(fields["answer"])
       least_rank = get_least_rank(fields["answer"])
@@ -351,7 +346,11 @@ defmodule Glific.Clients.Stir do
       option_a_data
   end
 
-  defp get_survey_results(fields, :option_a) do
+  defp save_survey_results(_contact, _fields, _anything),
+  do: %{}
+
+  @spec get_survey_results(map(), atom()) :: map()
+  defp get_survey_results(fields, :TYPE_A) do
     option_a_data = get_option_a_data(fields)
     contact_priorities =
       get_in(fields, ["contact", "fields"])
@@ -374,6 +373,10 @@ defmodule Glific.Clients.Stir do
     }
   end
 
+  defp get_survey_results(_fields, _), do: %{}
+
+
+  @spec get_least_rank(String.t()) :: String.t()
   defp get_least_rank(answer) do
     clean_string(answer)
     |> String.split(",", trim: true)
