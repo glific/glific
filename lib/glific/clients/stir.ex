@@ -119,7 +119,7 @@ defmodule Glific.Clients.Stir do
       get_mt_list(fields["district"], organization_id)
       |> Enum.find(fn {contact, _index} -> mt_contact_id == contact.id end)
 
-    ## this is not correct we will fix that.
+    ## this is not the best way to update the contact variables we will fix that after this assignments.
     tdc
     |> ContactField.do_add_contact_field("mt_name", "mt_name", mt.name, "string")
     |> ContactField.do_add_contact_field("mt_contact_id", "mt_contact_id", mt.id, "string")
@@ -303,10 +303,77 @@ defmodule Glific.Clients.Stir do
     %{status: true}
   end
 
+  def webhook("save_survey_answer", fields) do
+    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    option_section = fields["option_section"] |> String.downcase()
+
+    if String.contains?(option_section, "a") do
+      priority = clean_string(fields["priority"])
+      answer = clean_string(fields["answer"])
+      least_rank = get_least_rank(fields["answer"])
+      option_a_data = get_option_a_data(fields)
+
+      ## reset the value if the survey has been field eariler
+      option_a_data =
+       if Map.keys(option_a_data) |> length > 1,
+       do: %{}, else: option_a_data
+
+      priority_item = %{
+        "priority" => priority,
+        "answer" => answer,
+        "least_rank" => least_rank
+      }
+      option_a_data = Map.put(option_a_data, priority, priority_item)
+      contact = Contacts.get_contact!(contact_id)
+      ContactField.do_add_contact_field(contact, "option_a_data", "option_a_data", Jason.encode!(option_a_data), "json")
+      %{option_a_data: option_a_data}
+    else
+      %{option_a_data: %{}}
+    end
+  end
+
+  def webhook("get_survey_results", fields) do
+    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    option_section = fields["option_section"] |> String.downcase()
+    if String.contains?(option_section, "a"),
+    do: get_survey_results(fields, :option_a),
+    else: %{}
+  end
+
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
   def webhook(_, fields), do: fields
+
+  defp get_survey_results(fields, :option_a) do
+    option_a_data = get_option_a_data(fields)
+    contact_priorities =
+      get_in(fields, ["contact", "fields"])
+      |> get_contact_priority()
+
+    first_priority =
+      contact_priorities.first
+      |> clean_string()
+
+    second_priority =
+      contact_priorities.second
+      |> clean_string()
+
+    %{
+      option_a_data: option_a_data,
+      first_priority: first_priority,
+      second_priority: second_priority,
+      first_priority_rank: option_a_data[first_priority]["least_rank"],
+      second_priority_rank: option_a_data[second_priority]["least_rank"],
+    }
+  end
+
+  defp get_least_rank(answer) do
+    clean_string(answer)
+    |> String.split(",", trim: true)
+    |> List.last()
+  end
 
   @spec get_priority_versions(map()) :: map()
   defp get_priority_versions(fields) do
@@ -316,6 +383,13 @@ defmodule Glific.Clients.Stir do
       if priority_version_field in ["", nil], do: "{}", else: priority_version_field
 
     Jason.decode!(priority_version_field)
+  end
+
+  defp get_option_a_data(fields) do
+    option_a_data = get_in(fields, ["contact", "fields", "option_a_data", "value"])
+    option_a_data =
+      if option_a_data in ["", nil], do: "{}", else: option_a_data
+    Jason.decode!(option_a_data)
   end
 
   @spec clean_string(String.t()) :: String.t()

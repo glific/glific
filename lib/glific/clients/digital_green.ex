@@ -194,8 +194,8 @@ defmodule Glific.Clients.DigitalGreen do
     village_name = String.downcase(fields["village_name"]) |> String.trim()
 
     opts = [
-      start_date: Timex.beginning_of_week(today, :mon),
-      end_date: Timex.end_of_week(today, :sun),
+      start_date: Timex.beginning_of_week(today, :friday),
+      end_date: Timex.end_of_week(today, :friday),
       village: village_name
     ]
 
