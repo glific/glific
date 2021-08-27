@@ -307,8 +307,28 @@ defmodule Glific.Clients.Stir do
     {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     option_section = fields["option_section"] |> String.downcase()
-
+    contact = Contacts.get_contact!(contact_id)
     if String.contains?(option_section, "a") do
+      %{option_a_data: save_survey_results(contact, fields, :option_a)}
+    else
+      %{option_b_data: %{}}
+    end
+  end
+
+  def webhook("get_survey_results", fields) do
+    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    option_section = fields["option_section"] |> String.downcase()
+    if String.contains?(option_section, "a"),
+    do: get_survey_results(fields, :option_a),
+    else: %{}
+  end
+
+  def webhook("compute_survey_score", %{results: results}),
+    do: compute_survey_score(results)
+
+  def webhook(_, fields), do: fields
+
+  defp save_survey_results(contact, fields, :option_a) do
       priority = clean_string(fields["priority"])
       answer = clean_string(fields["answer"])
       least_rank = get_least_rank(fields["answer"])
@@ -325,26 +345,11 @@ defmodule Glific.Clients.Stir do
         "least_rank" => least_rank
       }
       option_a_data = Map.put(option_a_data, priority, priority_item)
-      contact = Contacts.get_contact!(contact_id)
-      ContactField.do_add_contact_field(contact, "option_a_data", "option_a_data", Jason.encode!(option_a_data), "json")
-      %{option_a_data: option_a_data}
-    else
-      %{option_a_data: %{}}
-    end
+      contact
+      |> ContactField.do_add_contact_field("option_a_data", "option_a_data", Jason.encode!(option_a_data), "json")
+
+      option_a_data
   end
-
-  def webhook("get_survey_results", fields) do
-    {:ok, _organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    option_section = fields["option_section"] |> String.downcase()
-    if String.contains?(option_section, "a"),
-    do: get_survey_results(fields, :option_a),
-    else: %{}
-  end
-
-  def webhook("compute_survey_score", %{results: results}),
-    do: compute_survey_score(results)
-
-  def webhook(_, fields), do: fields
 
   defp get_survey_results(fields, :option_a) do
     option_a_data = get_option_a_data(fields)
