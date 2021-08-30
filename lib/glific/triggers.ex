@@ -110,9 +110,10 @@ defmodule Glific.Triggers do
 
     {:ok, trigger} = Trigger.update_trigger(trigger, attrs)
 
-    if Date.compare(DateTime.to_date(DateTime.utc_now()), trigger.next_trigger_at) == :lt,
-      do: trigger,
-      else: update_next(trigger)
+    if !is_nil(trigger.next_trigger_at) and
+         DateTime.compare(DateTime.utc_now(), trigger.next_trigger_at) == :gt,
+       do: update_next(trigger),
+       else: trigger
   end
 
   @spec start_flow(Trigger.t()) :: nil
