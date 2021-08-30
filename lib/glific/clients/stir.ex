@@ -346,6 +346,34 @@ defmodule Glific.Clients.Stir do
       option_a_data
   end
 
+  defp save_survey_results(contact, fields, :TYPE_B) do
+    priority = clean_string(fields["priority"])
+    answer_s1 =  clean_string(fields["answer_s1"])
+    answer_s2 =  clean_string(fields["answer_s2"])
+    answer_s3 =  clean_string(fields["answer_s3"])
+
+    option_b_data = get_option_b_data(fields)
+
+    ## reset the value if the survey has been field eariler
+    option_b_data =
+     if Map.keys(option_b_data) |> length > 1,
+     do: %{}, else: option_b_data
+
+    priority_item = %{
+      "priority" => priority,
+      "answers" => %{
+        s1: answer_s1,
+        s2: answer_s2,
+        s3: answer_s3,
+      }
+    }
+
+    option_b_data = Map.put(option_b_data, priority, priority_item)
+    contact
+    |> ContactField.do_add_contact_field("option_b_data", "option_b_data", Jason.encode!(option_a_data), "json")
+    option_b_data
+end
+
   defp save_survey_results(_contact, _fields, _anything),
   do: %{}
 
