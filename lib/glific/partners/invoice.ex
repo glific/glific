@@ -129,7 +129,7 @@ defmodule Glific.Partners.Invoice do
     {invoice, setup}
   end
 
-  @spec finalize({Invoice.t(), boolean}) :: Invoice.t()
+  @spec finalize({Invoice.t(), boolean}) :: Invoice.t() | {:error, String.t()}
   defp finalize({invoice, setup}) do
     if setup do
       # Finalizing a draft invoice
@@ -143,9 +143,9 @@ defmodule Glific.Partners.Invoice do
              error: inspect(error)
            )}
       end
+    else
+      invoice
     end
-
-    invoice
   end
 
   @spec finalize(Invoice.t()) :: Invoice.t() | nil
@@ -202,13 +202,17 @@ defmodule Glific.Partners.Invoice do
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
 
-    Enum.reduce(filter, query, fn
-      {:status, status}, query ->
-        from q in query, where: q.status == ^status
+    Enum.reduce(
+      filter,
+      query,
+      fn
+        {:status, status}, query ->
+          from q in query, where: q.status == ^status
 
-      _, query ->
-        query
-    end)
+        _, query ->
+          query
+      end
+    )
   end
 
   @doc """
@@ -234,7 +238,9 @@ defmodule Glific.Partners.Invoice do
       })
 
     is_delinquent =
-      if invoice.status == "payment_failed" or unpaid_invoice_count != 0, do: true, else: false
+      if invoice.status == "payment_failed" || unpaid_invoice_count != 0,
+        do: true,
+        else: false
 
     Billing.update_billing(billing, %{is_delinquent: is_delinquent})
   end
