@@ -76,7 +76,12 @@ defmodule Glific.Dialogflow.Sessions do
         confidence = get_in(response, ["queryResult", "intentDetectionConfidence"])
         response = get_in(response, ["queryResult", "fulfillmentText"])
 
-        data = %{intent: intent, confidence: confidence, response: response}
+        data = %{
+          intent: intent,
+          confidence: confidence,
+          response: response,
+          inserted_at: DateTime.utc_now()
+        }
 
         {
           FlowContext.update_results(context, %{result_name => data}),

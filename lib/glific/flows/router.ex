@@ -284,6 +284,7 @@ defmodule Glific.Flows.Router do
             |> Map.take([:id, :source_url, :url, :caption])
             |> Map.put(:category, "media")
             |> Map.put(:input, msg.media.url)
+            |> Map.put(:inserted_at, DateTime.utc_now())
 
           %{key => json}
 
@@ -292,6 +293,7 @@ defmodule Glific.Flows.Router do
             msg.location
             |> Map.take([:id, :longitude, :latitude])
             |> Map.put(:category, "location")
+            |> Map.put(:inserted_at, DateTime.utc_now())
 
           %{key => json}
 
@@ -300,7 +302,8 @@ defmodule Glific.Flows.Router do
             key => %{
               "input" => msg.body,
               "selected" => msg.body |> Glific.make_set() |> MapSet.to_list(),
-              "category" => category.name
+              "category" => category.name,
+              "inserted_at" => DateTime.utc_now()
             }
           }
 
@@ -309,7 +312,11 @@ defmodule Glific.Flows.Router do
           %{
             key =>
               Map.merge(
-                %{"input" => msg.body, "category" => category.name},
+                %{
+                  "input" => msg.body,
+                  "category" => category.name,
+                  "inserted_at" => DateTime.utc_now()
+                },
                 msg.extra
               )
           }
