@@ -40,7 +40,9 @@ defmodule Glific.Communications.Message do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     Logger.info(
-      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'"
+      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{
+        message.id
+      }'"
     )
 
     with {:ok, _} <-
@@ -169,7 +171,9 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info(
-      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
+      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{
+        message_params.bsp_message_id
+      }'"
     )
 
     {:ok, contact} =

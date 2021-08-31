@@ -101,7 +101,7 @@ defmodule Glific do
   @doc """
   Convert map string keys to :atom keys
   """
-  @spec atomize_keys(any) :: any
+  @spec atomize_keys(map()) :: map()
   def atomize_keys(nil), do: nil
 
   # Structs don't do enumerable and anyway the keys are already
@@ -109,14 +109,13 @@ defmodule Glific do
   def atomize_keys(map) when is_struct(map),
     do: map
 
-  def atomize_keys([head | rest] = list) when is_list(list),
-    do: [atomize_keys(head) | atomize_keys(rest)]
+  def atomize_keys([head | rest]), do: [atomize_keys(head) | atomize_keys(rest)]
 
   def atomize_keys(map) when is_map(map),
     do:
       Enum.map(map, fn {k, v} ->
         if is_atom(k) do
-          {k, atomize_keys(v)}
+          {atomize_keys(k), atomize_keys(v)}
         else
           {Glific.safe_string_to_atom(k), atomize_keys(v)}
         end

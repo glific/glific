@@ -165,7 +165,9 @@ defmodule Glific.GCS.GcsWorker do
       {:error, error} ->
         {:discard,
          """
-         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}
+         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{
+           inspect(error)
+         }
          """}
     end
   end

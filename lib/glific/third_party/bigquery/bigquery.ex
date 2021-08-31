@@ -449,7 +449,9 @@ defmodule Glific.BigQuery do
 
   def make_insert_query(data, table, organization_id, max_id) do
     Logger.info(
-      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
+      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
+        Enum.count(data)
+      }"
     )
 
     fetch_bigquery_credentials(organization_id)
@@ -470,7 +472,9 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
+      "inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
+        Enum.count(data)
+      }"
     )
 
     Tabledata.bigquery_tabledata_insert_all(
@@ -497,12 +501,16 @@ defmodule Glific.BigQuery do
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+            table
+          }, res: #{inspect(res)}"
         )
 
       true ->
         Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
+            table
+          }, res: #{inspect(res)}"
         )
     end
 
@@ -513,7 +521,9 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect(response)}"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
+        inspect(response)
+      }"
     )
 
     bigquery_error_status(response)
@@ -596,13 +606,17 @@ defmodule Glific.BigQuery do
   defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
     do:
       Logger.info(
-        "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}. #{inspect(response)}"
+        "duplicate entries have been removed from #{table} on bigquery for org_id: #{
+          organization_id
+        }. #{inspect(response)}"
       )
 
   ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
+      "Error while removing duplicate entries from the table #{table} on bigquery. #{
+        inspect(error)
+      }"
     )
   end
 end

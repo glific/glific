@@ -323,7 +323,9 @@ defmodule Glific.Messages do
         else: attrs.receiver
 
     Logger.error(
-      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{reason}"
+      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
+        reason
+      }"
     )
 
     {:ok, _} =
@@ -675,7 +677,9 @@ defmodule Glific.Messages do
             |> Map.put(:group_id, group.id)
             |> Map.put(
               :body,
-              "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"
+              "Sending HSM template #{message_params.template_id}, params: #{
+                message_params.parameters
+              }"
             )
             |> Map.put(:type, :text)
           )

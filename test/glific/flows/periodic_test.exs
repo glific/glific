@@ -99,7 +99,9 @@ defmodule Glific.Flows.PeriodicTest do
 
     {:ok, %Postgrex.Result{rows: rows}} =
       Repo.query(
-        "select id, flow_id from flow_contexts where flow_id = #{state.flows["published"]["defaultflow"]}"
+        "select id, flow_id from flow_contexts where flow_id = #{
+          state.flows["published"]["defaultflow"]
+        }"
       )
 
     # assert that we have one row which is th outofoffice flow
@@ -121,7 +123,9 @@ defmodule Glific.Flows.PeriodicTest do
 
     {:ok, %Postgrex.Result{rows: rows}} =
       Repo.query(
-        "select id, flow_id from flow_contexts where flow_id = #{state.flows["published"]["outofoffice"]}"
+        "select id, flow_id from flow_contexts where flow_id = #{
+          state.flows["published"]["outofoffice"]
+        }"
       )
 
     # assert that we have one row which is th outofoffice flow

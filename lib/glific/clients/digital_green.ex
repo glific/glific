@@ -117,7 +117,9 @@ defmodule Glific.Clients.DigitalGreen do
     end
 
     Logger.info(
-      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{inspect(fields)} "
+      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{
+        inspect(fields)
+      } "
     )
 
     %{status: "successfull"}
@@ -323,7 +325,9 @@ defmodule Glific.Clients.DigitalGreen do
   defp set_initial_crop_state(stage, contact_id, _organization_id),
     do:
       Logger.error(
-        "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{contact_id}"
+        "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{
+          contact_id
+        }"
       )
 
   @spec update_crop_stage(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
@@ -401,7 +405,9 @@ defmodule Glific.Clients.DigitalGreen do
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
       Logger.info(
-        "Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}"
+        "Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{
+          inspect(next_flow_at)
+        }"
       )
 
       Groups.create_contact_group(%{

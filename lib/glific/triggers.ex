@@ -86,7 +86,9 @@ defmodule Glific.Triggers do
     next_trigger_at = Helper.compute_next(trigger)
 
     Logger.info(
-      "updating next trigger time for trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{next_trigger_at}"
+      "updating next trigger time for trigger: #{trigger.name} of org_id: #{
+        trigger.organization_id
+      } with time #{next_trigger_at}"
     )
 
     {next_trigger_at, is_active} =
@@ -122,7 +124,9 @@ defmodule Glific.Triggers do
     flow = Flows.get_flow!(trigger.flow_id)
 
     Logger.info(
-      "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{trigger.organization_id} with time #{trigger.next_trigger_at}"
+      "Starting flow: #{flow.name} for trigger: #{trigger.name} of org_id: #{
+        trigger.organization_id
+      } with time #{trigger.next_trigger_at}"
     )
 
     if !is_nil(trigger.group_id) do

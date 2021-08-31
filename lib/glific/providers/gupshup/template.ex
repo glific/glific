@@ -44,7 +44,9 @@ defmodule Glific.Providers.Gupshup.Template do
     else
       {status, response} ->
         Logger.info(
-          "Error submitting Template for approval Status: #{inspect(status)} Response: #{inspect(response)} "
+          "Error submitting Template for approval Status: #{inspect(status)} Response: #{
+            inspect(response)
+          } "
         )
 
         # structure of response body can be different for different errors
