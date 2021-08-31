@@ -443,7 +443,6 @@ defmodule Glific.Clients.Stir do
     }
   end
 
-
   @spec get_least_rank(String.t()) :: String.t()
   defp get_least_rank(answer) do
     clean_string(answer)
