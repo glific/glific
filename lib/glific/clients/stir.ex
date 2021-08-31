@@ -310,14 +310,14 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("get_survey_results", fields),
-  do: get_survey_results(fields, mt_type(fields))
+    do: get_survey_results(fields, mt_type(fields))
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
   def webhook(_, fields), do: fields
 
-  #Get MT type if it's A or B and perform the action based on that.
+  # Get MT type if it's A or B and perform the action based on that.
   @spec mt_type(map()) :: atom()
   defp mt_type(fields) do
     contact_state =
@@ -325,66 +325,75 @@ defmodule Glific.Clients.Stir do
       |> clean_string()
 
     if contact_state in ["karnataka", "tamilnadu", "tamil nadu"],
-    do: :TYPE_B,
-    else: :TYPE_A
+      do: :TYPE_B,
+      else: :TYPE_A
   end
 
   @spec save_survey_results(Contacts.Contact.t(), map(), atom()) :: map()
   defp save_survey_results(contact, fields, :TYPE_A) do
-      priority = clean_string(fields["priority"])
-      answer = clean_string(fields["answer"])
-      least_rank = get_least_rank(fields["answer"])
-      option_a_data = get_option_a_data(fields)
+    priority = clean_string(fields["priority"])
+    answer = clean_string(fields["answer"])
+    least_rank = get_least_rank(fields["answer"])
+    option_a_data = get_option_a_data(fields)
 
-      ## reset the value if the survey has been field eariler
-      option_a_data =
-       if Map.keys(option_a_data) |> length > 1,
-       do: %{}, else: option_a_data
+    ## reset the value if the survey has been field eariler
+    option_a_data = if Map.keys(option_a_data) |> length > 1, do: %{}, else: option_a_data
 
-      priority_item = %{
-        "priority" => priority,
-        "answer" => answer,
-        "least_rank" => least_rank
-      }
-      option_a_data = Map.put(option_a_data, priority, priority_item)
-      contact
-      |> ContactField.do_add_contact_field("option_a_data", "option_a_data", Jason.encode!(option_a_data), "json")
+    priority_item = %{
+      "priority" => priority,
+      "answer" => answer,
+      "least_rank" => least_rank
+    }
 
-      option_a_data
+    option_a_data = Map.put(option_a_data, priority, priority_item)
+
+    contact
+    |> ContactField.do_add_contact_field(
+      "option_a_data",
+      "option_a_data",
+      Jason.encode!(option_a_data),
+      "json"
+    )
+
+    option_a_data
   end
 
   defp save_survey_results(contact, fields, :TYPE_B) do
     priority = clean_string(fields["priority"])
-    answer_s1 =  clean_string(fields["answers"]["s1"])
-    answer_s2 =  clean_string(fields["answers"]["s2"])
-    answer_s3 =  clean_string(fields["answers"]["s3"])
+    answer_s1 = clean_string(fields["answers"]["s1"])
+    answer_s2 = clean_string(fields["answers"]["s2"])
+    answer_s3 = clean_string(fields["answers"]["s3"])
     option_b_data = get_option_b_data(fields)
 
     ## reset the value if the survey has been field eariler
-    option_b_data =
-     if Map.keys(option_b_data) |> length > 1,
-     do: %{}, else: option_b_data
+    option_b_data = if Map.keys(option_b_data) |> length > 1, do: %{}, else: option_b_data
 
     priority_item = %{
       "priority" => priority,
       "answers" => %{
         s1: answer_s1,
         s2: answer_s2,
-        s3: answer_s3,
+        s3: answer_s3
       }
     }
+
     option_b_data = Map.put(option_b_data, priority, priority_item)
+
     contact
-    |> ContactField.do_add_contact_field("option_b_data", "option_b_data", Jason.encode!(option_b_data), "json")
+    |> ContactField.do_add_contact_field(
+      "option_b_data",
+      "option_b_data",
+      Jason.encode!(option_b_data),
+      "json"
+    )
+
     option_b_data
   end
-
-  defp save_survey_results(_contact, _fields, _anything),
-  do: %{}
 
   @spec get_survey_results(map(), atom()) :: map()
   defp get_survey_results(fields, :TYPE_A) do
     option_a_data = get_option_a_data(fields)
+
     contact_priorities =
       get_in(fields, ["contact", "fields"])
       |> get_contact_priority()
@@ -402,13 +411,14 @@ defmodule Glific.Clients.Stir do
       first_priority: first_priority,
       second_priority: second_priority,
       first_priority_rank: option_a_data[first_priority]["least_rank"],
-      second_priority_rank: option_a_data[second_priority]["least_rank"],
+      second_priority_rank: option_a_data[second_priority]["least_rank"]
     }
   end
 
   @spec get_survey_results(map(), atom()) :: map()
   defp get_survey_results(fields, :TYPE_B) do
     option_b_data = get_option_b_data(fields)
+
     contact_priorities =
       get_in(fields, ["contact", "fields"])
       |> get_contact_priority()
@@ -453,29 +463,35 @@ defmodule Glific.Clients.Stir do
     Jason.decode!(priority_version_field)
   end
 
-  defp get_option_a_data(fields) do
-    option_a_data = get_in(fields, ["contact", "fields", "option_a_data", "value"])
-    option_a_data =
-      if option_a_data in ["", nil], do: "{}", else: option_a_data
-    Jason.decode!(option_a_data)
+  @spec get_option_a_data(map()) :: map()
+  defp get_option_a_data(fields),
+    do: do_get_option(fields, "option_a_data")
+
+  ## We will merge these two functions once we know that there is no other requirnment.
+  @spec get_option_b_data(map()) :: map()
+  defp get_option_b_data(fields),
+    do: do_get_option(fields, "option_b_data")
+
+  @spec do_get_option(map(), String.t()) :: map()
+  defp do_get_option(fields, key) do
+    option_data = get_in(fields, ["contact", "fields", key, "value"])
+    option_data = if option_data in ["", nil], do: "{}", else: option_data
+    Jason.decode!(option_data)
   end
 
-  defp get_option_b_data(fields) do
-    option_b_data = get_in(fields, ["contact", "fields", "option_b_data", "value"])
-    option_b_data =
-      if option_b_data in ["", nil], do: "{}", else: option_b_data
-    Jason.decode!(option_b_data)
-  end
-
+  @spec is_all_the_answers_true?(map(), map()) :: boolean()
   defp is_all_the_answers_true?(ans1, ans2) do
-    answer_list =  Map.values(ans1) ++ Map.values(ans2)
-    cond do
-      "0-33" in answer_list
-        -> false
-      "34-66" in answer_list
-        -> false
+    answer_list = Map.values(ans1) ++ Map.values(ans2)
 
-      true -> true
+    cond do
+      "0-33" in answer_list ->
+        false
+
+      "34-66" in answer_list ->
+        false
+
+      true ->
+        true
     end
   end
 
