@@ -136,21 +136,20 @@ defmodule Glific.Partners do
     |> Repo.delete()
   end
 
-  @doc ~S"""
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking provider changes.
 
   ## Examples
 
-      iex> change_provider(provider)
-      %Ecto.Changeset{data: %Provider{}}
-
+  iex> change_provider(provider)
+  %Ecto.Changeset{data: %Provider{}}
   """
   @spec change_provider(%Provider{}, map()) :: Ecto.Changeset.t()
   def change_provider(%Provider{} = provider, attrs \\ %{}) do
     Provider.changeset(provider, attrs)
   end
 
-  @doc ~S"""
+  @doc """
   Returns the list of organizations.
 
   ## Examples
@@ -235,24 +234,23 @@ defmodule Glific.Partners do
 
   # codebeat:enable[ABC]
 
-  @doc ~S"""
+  @doc """
   Gets a single organization.
 
   Raises `Ecto.NoResultsError` if the organization does not exist.
 
   ## Examples
 
-      iex> Glific.Partners.get_organization!(1)
-      %Glific.Partners.Organization{}
+  iex> Glific.Partners.get_organization!(1)
+  %Glific.Partners.Organization{}
 
-      iex> Glific.Partners.get_organization!(-1)
-      ** (Ecto.NoResultsError)
-
+  iex> Glific.Partners.get_organization!(-1)
+  ** (Ecto.NoResultsError)
   """
   @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
 
-  @doc ~S"""
+  @doc """
   Creates a organization.
 
   ## Examples
@@ -271,7 +269,7 @@ defmodule Glific.Partners do
     |> Repo.insert(skip_organization_id: true)
   end
 
-  @doc ~S"""
+  @doc """
   Updates an organization.
 
   ## Examples
@@ -298,7 +296,7 @@ defmodule Glific.Partners do
     |> Repo.update(skip_organization_id: true)
   end
 
-  @doc ~S"""
+  @doc """
   Deletes an Orgsanization.
 
   ## Examples
@@ -318,7 +316,7 @@ defmodule Glific.Partners do
     Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
   end
 
-  @doc ~S"""
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking organization changes.
 
   ## Examples
@@ -332,7 +330,7 @@ defmodule Glific.Partners do
     Organization.changeset(organization, attrs)
   end
 
-  @doc ~S"""
+  @doc """
   Returns bsp balance for an organization
   """
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
@@ -736,9 +734,7 @@ defmodule Glific.Partners do
 
           {:error, error} ->
             Logger.info(
-              "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{
-                organization_id
-              }"
+              "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{organization_id}"
             )
 
             handle_token_error(organization_id, provider_shortcode, error)
