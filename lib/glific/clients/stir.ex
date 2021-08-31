@@ -444,7 +444,6 @@ defmodule Glific.Clients.Stir do
     }
   end
 
-  defp get_survey_results(_fields, _), do: %{}
 
   @spec get_least_rank(String.t()) :: String.t()
   defp get_least_rank(answer) do
