@@ -415,7 +415,6 @@ defmodule Glific.Clients.Stir do
     }
   end
 
-  @spec get_survey_results(map(), atom()) :: map()
   defp get_survey_results(fields, :TYPE_B) do
     option_b_data = get_option_b_data(fields)
 
