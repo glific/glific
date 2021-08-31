@@ -92,10 +92,9 @@ defmodule Glific.Triggers do
     )
 
     {next_trigger_at, is_active} =
-      if is_nil(trigger.last_trigger_at) or
-           Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :lt,
-         do: {next_trigger_at, true},
-         else: {nil, false}
+      if Date.compare(DateTime.to_date(next_trigger_at), trigger.end_date) == :lt,
+        do: {next_trigger_at, true},
+        else: {nil, false}
 
     attrs = %{
       # we keep the time component constant
@@ -110,10 +109,14 @@ defmodule Glific.Triggers do
 
     {:ok, trigger} = Trigger.update_trigger(trigger, attrs)
 
-    if !is_nil(trigger.next_trigger_at) and
-         DateTime.compare(DateTime.utc_now(), trigger.next_trigger_at) == :gt,
-       do: update_next(trigger),
-       else: trigger
+    with true <- trigger.is_active,
+         false <- is_nil(trigger.next_trigger_at),
+         :gt <- DateTime.compare(DateTime.utc_now(), trigger.next_trigger_at) do
+      update_next(trigger)
+    else
+      _ ->
+        trigger
+    end
   end
 
   @spec start_flow(Trigger.t()) :: nil
