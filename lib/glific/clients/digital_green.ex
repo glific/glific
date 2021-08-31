@@ -71,8 +71,8 @@ defmodule Glific.Clients.DigitalGreen do
   @spec time_till_next_slot(DateTime.t()) :: non_neg_integer()
   def time_till_next_slot(time \\ DateTime.utc_now()) do
     current_time = Timex.now() |> Timex.beginning_of_day()
-    # Morning slot at 7am IST
-    morning_slot = Timex.shift(current_time, hours: 2, minutes: 30)
+    # Morning slot at 6am IST
+    morning_slot = Timex.shift(current_time, hours: 0, minutes: 30)
     # Evening slot at 6:30pm IST
     evening_slot = Timex.shift(current_time, hours: 13)
 
