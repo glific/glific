@@ -154,19 +154,22 @@ defmodule Glific.GCS.GcsWorker do
     |> case do
       {:ok, _} ->
         uploading_to_gcs(local_name, media)
+        :ok
 
       {:error, :timeout} ->
         {:error,
-         "GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"}
+         """
+         GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}
+         """}
 
       {:error, error} ->
         {:discard,
-         "GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error #{
+         """
+         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{
            inspect(error)
-         }"}
+         }
+         """}
     end
-
-    :ok
   end
 
   @spec uploading_to_gcs(String.t(), map()) :: :ok

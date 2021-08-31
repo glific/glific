@@ -116,8 +116,10 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
     # validate HSM before calling the BSP's API
-    if Map.has_key?(attrs, :shortcode),
-      do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)})
+    attrs =
+      if Map.has_key?(attrs, :shortcode),
+        do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
+        else: attrs
 
     with :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)) do

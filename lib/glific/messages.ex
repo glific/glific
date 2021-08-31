@@ -259,7 +259,6 @@ defmodule Glific.Messages do
              interactive_content["content"]["type"],
              attrs.organization_id
            ) do
-
       Map.merge(attrs, %{
         body: body,
         interactive_content: interactive_content,
@@ -367,6 +366,7 @@ defmodule Glific.Messages do
   defp parse_text_message_fields(attrs, message_vars) do
     if is_binary(attrs[:body]) do
       {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+
       attrs
       |> Map.merge(%{
         uuid: attrs[:uuid] || msg_uuid,
@@ -379,20 +379,25 @@ defmodule Glific.Messages do
 
   @spec parse_media_message_fields(map(), map()) :: map()
   defp parse_media_message_fields(attrs, message_vars) do
-     ## if message media is present change the variables in caption
+    ## if message media is present change the variables in caption
     if is_integer(attrs[:media_id]) or is_binary(attrs[:media_id]) do
       message_media = get_message_media!(attrs.media_id)
+
       message_media
       |> update_message_media(%{
         caption: MessageVarParser.parse(message_media.caption, message_vars)
       })
     end
+
     attrs
   end
 
   @spec parse_interactive_message_fields(map(), map()) :: map()
   defp parse_interactive_message_fields(attrs, message_vars),
-  do: Map.merge(attrs, %{interactive_content: MessageVarParser.parse_map(attrs[:interactive_content], message_vars)})
+    do:
+      Map.merge(attrs, %{
+        interactive_content: MessageVarParser.parse_map(attrs[:interactive_content], message_vars)
+      })
 
   @doc false
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
