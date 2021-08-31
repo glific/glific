@@ -429,9 +429,7 @@ defmodule Glific.Partners.Billing do
       # Update invoice footer with message
       Stripe.Invoice.update(transaction.invoice_id, %{
         footer:
-          "TDS INR #{(credit / 100) |> trunc()} for Month of #{
-            DateTime.utc_now().month |> Timex.month_name()
-          } deducted above under Applied Balance section"
+          "TDS INR #{(credit / 100) |> trunc()} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
       })
 
       credit
@@ -614,9 +612,7 @@ defmodule Glific.Partners.Billing do
 
       _ ->
         Logger.info(
-          "Error while updating the subscription details for subscription #{subscription.id} and organization_id: #{
-            organization_id
-          }"
+          "Error while updating the subscription details for subscription #{subscription.id} and organization_id: #{organization_id}"
         )
 
         message = """

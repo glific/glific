@@ -14,7 +14,7 @@ defmodule Glific.MixProject do
     [
       app: :glific,
       version: "2.1.2",
-      elixir: "~> 1.11",
+      elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
