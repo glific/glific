@@ -502,7 +502,7 @@ defmodule Glific.Clients.Stir do
       |> Enum.reduce({%{}, []}, fn {data, index}, {index_map, message_list} ->
         {
           Map.put(index_map, index, data),
-          message_list ++ ["Type *#{index}* for #{data.title}"]
+          message_list ++ ["Video *#{index}* for #{data.title}"]
         }
       end)
 
