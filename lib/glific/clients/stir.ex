@@ -188,15 +188,9 @@ defmodule Glific.Clients.Stir do
   def webhook("get_priority_descriptions", fields) do
     priority_map = Enum.into(@priorities_list, %{})
 
-    contact_priorities = get_contact_priority(get_in(fields, ["contact", "fields"]))
-
-    first_priority =
-      contact_priorities.first
-      |> clean_string()
-
-    second_priority =
-      contact_priorities.second
-      |> clean_string()
+    {first_priority, second_priority} =
+      get_in(fields, ["contact", "fields"])
+      |> cleaned_contact_priority()
 
     first_priority_map = Map.get(priority_map, first_priority, %{})
     second_priority_map = Map.get(priority_map, second_priority, %{})
@@ -208,9 +202,11 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("contact_updated_the_priorities", fields) do
-    first_priority = get_in(fields, ["contact", "fields", "first_priority", "value"])
-    second_priority = get_in(fields, ["contact", "fields", "second_priority", "value"])
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+    {first_priority, second_priority} =
+      get_in(fields, ["contact", "fields"])
+      |> cleaned_contact_priority()
 
     contact = Contacts.get_contact!(contact_id)
 
@@ -275,15 +271,10 @@ defmodule Glific.Clients.Stir do
       }
     else
       contact = Contacts.get_contact!(mt_contact_id)
-      mt_priorities = get_contact_priority(contact.fields)
 
-      first_priority =
-        mt_priorities.first
-        |> clean_string()
-
-      second_priority =
-        mt_priorities.second
-        |> clean_string()
+      {first_priority, second_priority} =
+        contact.fields
+        |> cleaned_contact_priority()
 
       priority_map = Enum.into(@priorities_list, %{})
       first_priority_map = priority_map[first_priority] || %{}
@@ -302,14 +293,14 @@ defmodule Glific.Clients.Stir do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     mt_district = fields["district"] |> clean_string()
 
-    mt_priorities =
+    {first_priority, second_priority} =
       get_in(fields, ["contact", "fields"])
-      |> get_contact_priority()
+      |> cleaned_contact_priority()
 
     result = %{
       district: mt_district,
-      mt_first_priority: mt_priorities.first,
-      mt_second_priority: mt_priorities.second,
+      mt_first_priority: first_priority,
+      mt_second_priority: second_priority,
       diet_first_priority: "NA",
       diet_second_priority: "NA"
     }
@@ -318,13 +309,15 @@ defmodule Glific.Clients.Stir do
     |> Enum.find(fn {district, _contact} -> district == mt_district end)
     |> case do
       {_district, diet} ->
-        diet_priorities = get_contact_priority(diet.fields)
+        {first_priority, second_priority} =
+          diet.fields
+          |> cleaned_contact_priority()
 
         Map.merge(
           result,
           %{
-            diet_first_priority: diet_priorities.first,
-            diet_second_priority: diet_priorities.second
+            diet_first_priority: first_priority,
+            diet_second_priority: second_priority
           }
         )
 
@@ -446,17 +439,9 @@ defmodule Glific.Clients.Stir do
   defp get_survey_results(fields, :TYPE_A) do
     option_a_data = get_option_a_data(fields)
 
-    contact_priorities =
+    {first_priority, second_priority} =
       get_in(fields, ["contact", "fields"])
-      |> get_contact_priority()
-
-    first_priority =
-      contact_priorities.first
-      |> clean_string()
-
-    second_priority =
-      contact_priorities.second
-      |> clean_string()
+      |> cleaned_contact_priority()
 
     %{
       option_a_data: option_a_data,
@@ -470,7 +455,7 @@ defmodule Glific.Clients.Stir do
   defp get_survey_results(fields, :TYPE_B) do
     {first_priority, second_priority} =
       get_in(fields, ["contact", "fields"])
-      |> cleaned_priority()
+      |> cleaned_contact_priority()
 
     option_b_data = get_option_b_data(fields)
     p1_answers = option_b_data[first_priority]["answers"]
@@ -626,7 +611,7 @@ defmodule Glific.Clients.Stir do
 
   defp district_group(_, _), do: nil
 
-  defp cleaned_priority(fields) do
+  defp cleaned_contact_priority(fields) do
     contact_priorities = get_contact_priority(fields)
 
     first_priority =
