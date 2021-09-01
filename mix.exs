@@ -106,7 +106,7 @@ defmodule Glific.MixProject do
       {:doctor, "~> 0.18"},
       {:httpoison, "~> 1.6"},
       {:poison, "~> 4.0"},
-      {:ex_rated, "~> 1.2"},
+      {:ex_rated, "~> 2.0"},
       {:absinthe, "~> 1.5"},
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
@@ -149,7 +149,7 @@ defmodule Glific.MixProject do
       {:stripity_stripe, "~> 2.10"},
       {:stripe_mock, "~> 0.1.0", only: @test_envs},
       {:remote_ip, "~> 1.0"},
-      {:exvcr, "~> 0.12.2", only: @test_envs},
+      {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"}
     ]
   end
