@@ -144,6 +144,23 @@ defmodule Glific.Clients.Stir do
     %{mt_list_message: Enum.join(message_list, "\n"), index_map: Jason.encode!(index_map)}
   end
 
+  def webhook("fetch_remaining_priorities", fields) do
+    priority_map = Enum.into(@priorities_list, %{})
+    first_priority = fields["first_priority"] |> String.downcase()
+    second_priority = fields["second_priority"] |> String.downcase()
+
+    [remaining_priority_first, remaining_priority_second | _] =
+      priority_map
+      |> Map.delete(first_priority)
+      |> Map.delete(second_priority)
+      |> Map.keys()
+
+    %{
+      remaining_priority_first: remaining_priority_first,
+      remaining_priority_second: remaining_priority_second
+    }
+  end
+
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
