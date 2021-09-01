@@ -144,6 +144,23 @@ defmodule Glific.Clients.Stir do
     %{mt_list_message: Enum.join(message_list, "\n"), index_map: Jason.encode!(index_map)}
   end
 
+  def webhook("fetch_remaining_priorities", fields) do
+    priority_map = Enum.into(@priorities_list, %{})
+    first_priority = fields["first_priority"] |> String.downcase()
+    second_priority = fields["second_priority"] |> String.downcase()
+
+    [remaining_priority_first, remaining_priority_second | _] =
+      priority_map
+      |> Map.delete(first_priority)
+      |> Map.delete(second_priority)
+      |> Map.keys()
+
+    %{
+      remaining_priority_first: remaining_priority_first,
+      remaining_priority_second: remaining_priority_second
+    }
+  end
+
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
@@ -339,7 +356,10 @@ defmodule Glific.Clients.Stir do
   def webhook("save_survey_answer", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     contact = Contacts.get_contact!(contact_id)
-    save_survey_results(contact, fields, mt_type(fields))
+
+    if remaining_priority?(fields["priority"], contact),
+      do: %{},
+      else: save_survey_results(contact, fields, mt_type(fields))
   end
 
   def webhook("get_survey_results", fields),
@@ -373,6 +393,17 @@ defmodule Glific.Clients.Stir do
       do: :TYPE_B,
       else: :TYPE_A
   end
+
+  @spec remaining_priority?(String.t(), Contacts.Contact.t()) :: boolean()
+  defp remaining_priority?(priority, contact) when is_binary(priority) == true do
+    {first_priority, second_priority} =
+      contact.fields
+      |> cleaned_contact_priority()
+
+    if priority == first_priority or priority == second_priority, do: false, else: true
+  end
+
+  defp remaining_priority?(_priority, _contact), do: true
 
   @spec save_survey_results(Contacts.Contact.t(), map(), atom()) :: map()
   defp save_survey_results(contact, fields, :TYPE_A) do
