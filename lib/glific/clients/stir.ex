@@ -497,7 +497,8 @@ defmodule Glific.Clients.Stir do
       first_priority: first_priority,
       second_priority: second_priority,
       first_priority_answers: p1_answers,
-      second_priority_answers: p2_answers
+      second_priority_answers: p2_answers,
+      one_video_data: hd(list_p1 ++ list_p2)
     }
   end
 
@@ -506,7 +507,7 @@ defmodule Glific.Clients.Stir do
     priority_map = Enum.into(@priorities_list, %{})
 
     Enum.reduce(answers, [], fn {key, value}, acc ->
-      if answer_state == "all-true" || value not in ["67-100"] do
+      if answer_state == "all_true" || value not in ["67-100"] do
         item =
           get_in(priority_map, [priority, :option_b_videos, key])
           |> Map.put(:priority, priority)
@@ -525,9 +526,9 @@ defmodule Glific.Clients.Stir do
       |> Enum.reject(fn x -> x == "67-100" end)
 
     cond do
-      length(filtered_list) == 1 -> "one-true"
-      length(filtered_list) > 1 -> "more-then-one-true"
-      true -> "all-true"
+      length(filtered_list) == 1 -> "one_true"
+      length(filtered_list) > 1 -> "more_then_one_true"
+      true -> "all_true"
     end
   end
 
