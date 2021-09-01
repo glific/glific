@@ -356,7 +356,10 @@ defmodule Glific.Clients.Stir do
   def webhook("save_survey_answer", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     contact = Contacts.get_contact!(contact_id)
-    save_survey_results(contact, fields, mt_type(fields))
+
+    if remaining_priority?(fields["priority"], contact),
+      do: %{},
+      else: save_survey_results(contact, fields, mt_type(fields))
   end
 
   def webhook("get_survey_results", fields),
@@ -390,6 +393,17 @@ defmodule Glific.Clients.Stir do
       do: :TYPE_B,
       else: :TYPE_A
   end
+
+  @spec remaining_priority?(String.t(), Contacts.Contact.t()) :: boolean()
+  defp remaining_priority?(priority, contact) when is_binary(priority) == true do
+    {first_priority, second_priority} =
+      contact.fields
+      |> cleaned_contact_priority()
+
+    if priority == first_priority or priority == second_priority, do: false, else: true
+  end
+
+  defp remaining_priority?(_priority, _contact), do: true
 
   @spec save_survey_results(Contacts.Contact.t(), map(), atom()) :: map()
   defp save_survey_results(contact, fields, :TYPE_A) do
