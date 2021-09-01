@@ -145,18 +145,20 @@ defmodule Glific.Clients.Stir do
     %{message: praority_message, exculde: priority_map[exculde]}
   end
 
-  def webhook("fetch_other_priorities", fields) do
+  def webhook("fetch_remaining_priorities", fields) do
     priority_map = Enum.into(@priorities_list, %{})
     first_priority = fields["first_priority"] |> String.downcase()
     second_priority = fields["second_priority"] |> String.downcase()
 
-    remaining_priorities =
+    [remaining_priority_first, remaining_priority_second | _] =
       priority_map
       |> Map.delete(first_priority)
       |> Map.delete(second_priority)
+      |> Map.keys()
 
     %{
-      remaining_priorities: remaining_priorities
+      remaining_priority_first: remaining_priority_first,
+      remaining_priority_second: remaining_priority_second
     }
   end
 
