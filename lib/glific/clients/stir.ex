@@ -400,7 +400,7 @@ defmodule Glific.Clients.Stir do
       contact.fields
       |> cleaned_contact_priority()
 
-    if priority == first_priority or priority == second_priority, do: false, else: true
+    clean_string(priority) not in [first_priority, second_priority]
   end
 
   defp remaining_priority?(_priority, _contact), do: true
