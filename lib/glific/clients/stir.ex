@@ -462,8 +462,8 @@ defmodule Glific.Clients.Stir do
     p2_answers = option_b_data[second_priority]["answers"]
     answer_state = option_b_answer_state(p1_answers, p2_answers)
 
-    list_p1 = option_b_video_data(first_priority, p1_answers, answer_state)
-    list_p2 = option_b_video_data(second_priority, p2_answers, answer_state)
+    list_p1 = option_b_video_data(first_priority, p1_answers, answer_state, fields)
+    list_p2 = option_b_video_data(second_priority, p2_answers, answer_state, fields)
 
     {index_map, message_list} =
       (list_p1 ++ list_p2)
@@ -487,12 +487,17 @@ defmodule Glific.Clients.Stir do
     }
   end
 
-  @spec option_b_video_data(String.t(), map(), String.t()) :: list()
-  defp option_b_video_data(priority, answers, answer_state) do
+  @spec option_b_video_data(String.t(), map(), String.t(), map()) :: list()
+  defp option_b_video_data(priority, answers, answer_state, fields) do
     priority_map = Enum.into(@priorities_list, %{})
 
     Enum.reduce(answers, [], fn {key, value}, acc ->
       if answer_state == "all_true" || value not in ["67-100"] do
+        key =
+          if is_dam_dmpc_activity?(priority, fields) and key in ["s3", "s4"],
+            do: "s4",
+            else: key
+
         item =
           get_in(priority_map, [priority, :option_b_videos, key])
           |> Map.put(:priority, priority)
@@ -503,6 +508,16 @@ defmodule Glific.Clients.Stir do
       end
     end)
   end
+
+  defp is_dam_dmpc_activity?("safety", fields) do
+    activty =
+      get_in(fields, ["contact", "fields", "activity", "value"])
+      |> clean_string()
+
+    String.contains?(activty, ["dam", "dmpc"])
+  end
+
+  defp is_dam_dmpc_activity?(_priority, _activity), do: false
 
   @spec option_b_answer_state(map(), map()) :: String.t()
   defp option_b_answer_state(p1_answers, p2_answers) do
