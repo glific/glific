@@ -19,10 +19,23 @@ defmodule Glific.Clients.Stir do
         description: "Creating safe learning environments _(Safety)_",
         keyword: "1",
         tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761",
-        mt_feedback_videos: %{
-          rank_a: "Video 1",
-          rank_b: "Video 2",
-          rank_c: "Video 3"
+        option_b_videos: %{
+          "s1" => %{
+            code: :s1,
+            title: "More reflective discussion on the strategy"
+          },
+          "s2" => %{
+            code: :s2,
+            title: "Participants' get improvement focused feedback"
+          },
+          "s3" => %{
+            code: :s3,
+            title: "Space for practising the strategy"
+          },
+          "s4" => %{
+            code: :s4,
+            title: "Participants referring to data"
+          }
         }
       }
     },
@@ -32,10 +45,19 @@ defmodule Glific.Clients.Stir do
         description: "Dedication and engagement _(Engagement)_",
         keyword: "2",
         tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74",
-        mt_feedback_videos: %{
-          rank_a: "Video 4",
-          rank_b: "Video 5",
-          rank_c: "Video 6"
+        option_b_videos: %{
+          "s1" => %{
+            code: :e1,
+            title: "Proactive participation"
+          },
+          "s2" => %{
+            code: :e2,
+            title: "Developing action plans"
+          },
+          "s3" => %{
+            code: :e3,
+            title: "Asking questions"
+          }
         }
       }
     },
@@ -45,10 +67,19 @@ defmodule Glific.Clients.Stir do
         description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_",
         keyword: "3",
         tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f",
-        mt_feedback_videos: %{
-          rank_a: "Video 7",
-          rank_b: "Video 8",
-          rank_c: "Video 9"
+        option_b_videos: %{
+          "s1" => %{
+            code: :c1,
+            title: "Reflect on the content link to purpose"
+          },
+          "s2" => %{
+            code: :c2,
+            title: "Asking 'how' questions"
+          },
+          "s3" => %{
+            code: :c3,
+            title: "Asking 'why' questions"
+          }
         }
       }
     },
@@ -59,10 +90,19 @@ defmodule Glific.Clients.Stir do
           "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
         keyword: "4",
         tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c",
-        mt_feedback_videos: %{
-          rank_a: "Video 10",
-          rank_b: "Video 11",
-          rank_c: "Video 12"
+        option_b_videos: %{
+          "s1" => %{
+            code: :se1,
+            title: "Collaborating with peers"
+          },
+          "s2" => %{
+            code: :se2,
+            title: "Asking for support"
+          },
+          "s3" => %{
+            code: :se3,
+            title: "Achievements recognized"
+          }
         }
       }
     }
@@ -315,6 +355,18 @@ defmodule Glific.Clients.Stir do
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
+  def webhook("get_option_b_video_data", fields) do
+    index_map = Jason.decode!(fields["index_map"])
+    index = fields["index"]
+
+    if Map.has_key?(index_map, index) do
+      Map.get(index_map, index)
+      |> Map.put("is_valid", true)
+    else
+      %{"is_valid" => false}
+    end
+  end
+
   def webhook(_, fields), do: fields
 
   # Get MT type if it's A or B and perform the action based on that.
@@ -416,31 +468,67 @@ defmodule Glific.Clients.Stir do
   end
 
   defp get_survey_results(fields, :TYPE_B) do
-    option_b_data = get_option_b_data(fields)
-
-    contact_priorities =
+    {first_priority, second_priority} =
       get_in(fields, ["contact", "fields"])
-      |> get_contact_priority()
+      |> cleaned_priority()
 
-    first_priority =
-      contact_priorities.first
-      |> clean_string()
-
-    second_priority =
-      contact_priorities.second
-      |> clean_string()
-
+    option_b_data = get_option_b_data(fields)
     p1_answers = option_b_data[first_priority]["answers"]
     p2_answers = option_b_data[second_priority]["answers"]
+    answer_state = option_b_answer_state(p1_answers, p2_answers)
+
+    list_p1 = option_b_video_data(first_priority, p1_answers, answer_state)
+    list_p2 = option_b_video_data(second_priority, p2_answers, answer_state)
+
+    {index_map, message_list} =
+      (list_p1 ++ list_p2)
+      |> Enum.with_index(1)
+      |> Enum.reduce({%{}, []}, fn {data, index}, {index_map, message_list} ->
+        {
+          Map.put(index_map, index, data),
+          message_list ++ ["Type *#{index}* for #{data.title}"]
+        }
+      end)
 
     %{
-      option_b_data: option_b_data,
+      index_map: Jason.encode!(index_map),
+      video_message: Enum.join(message_list, "\n"),
+      answer_state: option_b_answer_state(p1_answers, p2_answers),
       first_priority: first_priority,
       second_priority: second_priority,
       first_priority_answers: p1_answers,
-      second_priority_answers: p2_answers,
-      should_send_all: is_all_the_answers_true?(p1_answers, p2_answers)
+      second_priority_answers: p2_answers
     }
+  end
+
+  @spec option_b_video_data(String.t(), map(), String.t()) :: list()
+  defp option_b_video_data(priority, answers, answer_state) do
+    priority_map = Enum.into(@priorities_list, %{})
+
+    Enum.reduce(answers, [], fn {key, value}, acc ->
+      if answer_state == "all-true" || value not in ["67-100"] do
+        item =
+          get_in(priority_map, [priority, :option_b_videos, key])
+          |> Map.put(:priority, priority)
+
+        [item] ++ acc
+      else
+        acc
+      end
+    end)
+  end
+
+  @spec option_b_answer_state(map(), map()) :: String.t()
+  defp option_b_answer_state(p1_answers, p2_answers) do
+    filtered_list =
+      (Map.values(p1_answers) ++ Map.values(p2_answers))
+      |> Enum.reject(fn x -> x == "67-100" end)
+
+    cond do
+      length(filtered_list) == 1 -> "one-true"
+      length(filtered_list) > 1 -> "more-then-one-true"
+      true -> "all-true"
+    end
   end
 
   @spec get_least_rank(String.t()) :: String.t()
@@ -474,22 +562,6 @@ defmodule Glific.Clients.Stir do
     option_data = get_in(fields, ["contact", "fields", key, "value"])
     option_data = if option_data in ["", nil], do: "{}", else: option_data
     Jason.decode!(option_data)
-  end
-
-  @spec is_all_the_answers_true?(map(), map()) :: boolean()
-  defp is_all_the_answers_true?(ans1, ans2) do
-    answer_list = Map.values(ans1) ++ Map.values(ans2)
-
-    cond do
-      "0-33" in answer_list ->
-        false
-
-      "34-66" in answer_list ->
-        false
-
-      true ->
-        true
-    end
   end
 
   @spec clean_string(String.t()) :: String.t()
@@ -552,6 +624,20 @@ defmodule Glific.Clients.Stir do
   end
 
   defp district_group(_, _), do: nil
+
+  defp cleaned_priority(fields) do
+    contact_priorities = get_contact_priority(fields)
+
+    first_priority =
+      contact_priorities.first
+      |> clean_string()
+
+    second_priority =
+      contact_priorities.second
+      |> clean_string()
+
+    {first_priority, second_priority}
+  end
 
   @doc false
   @spec blocked?(String.t()) :: boolean
