@@ -161,6 +161,16 @@ defmodule Glific.Clients.Stir do
     }
   end
 
+  def webhook("check_mt_response", fields) do
+    count =
+      fields["response"]
+      |> Enum.reduce(0, fn {_question, response}, acc ->
+        if response == "2" or response == "no", do: acc + 1, else: acc
+      end)
+
+    %{count: count}
+  end
+
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
