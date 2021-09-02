@@ -108,15 +108,12 @@ defmodule Glific.Clients.Stir do
     }
   ]
 
-  @mt_survey_questions %{
-    "question_1" =>
-      "Did the ELM/EL readily provide inputs to the conversation without excessive prompting?",
-    "question_2" =>
-      "Did the ELM/EL link their planned actions to a wider purpose or goal (i.e. LIC theme/objective)?",
-    "question_3" => "Did the ELM/EL list specific action points to take forward?",
-    "question_4" =>
-      "Did the ELM/EL approach the conversation through problem-solving and discussion?",
-    "question_5" => "Did the ELM/EL ask why and how questions during the coaching meeting?"
+  @coach_survey_questions %{
+    "question_1" => "provide inputs without prompting",
+    "question_2" => "link actions to wider purpose",
+    "question_3" => "list action points to take forward",
+    "question_4" => "problem solving and discussion",
+    "question_5" => "ask why and who questions"
   }
 
   @doc false
@@ -172,18 +169,18 @@ defmodule Glific.Clients.Stir do
     }
   end
 
-  def webhook("check_mt_response", fields) do
+  def webhook("check_coach_response", fields) do
     count =
       fields["response"]
       |> Enum.reduce(0, fn {_question, response}, acc ->
-        if response == "2" or response == "no", do: acc + 1, else: acc
+        if response == "No", do: acc + 1, else: acc
       end)
 
     response_state =
       cond do
         count == 1 -> "one_no"
-        count > 1 and count < 5 -> "more_than_one_no"
-        count == 0 or count == 5 -> "all_same"
+        count > 1 -> "more_than_one_no"
+        count == 0 -> "all_same"
       end
 
     response_msg = get_mt_response_message(response_state, fields["response"])
@@ -497,14 +494,17 @@ defmodule Glific.Clients.Stir do
 
   @spec get_mt_response_message(String.t(), map()) :: String.t()
   defp get_mt_response_message("all_same", _response) do
-    @mt_survey_questions
+    @coach_survey_questions
     |> Enum.reduce("", fn {_question_no, question}, acc -> acc <> question <> "\n" end)
   end
 
-  defp get_mt_response_message(response_state, response) when response_state in ["more_than_one_no", "one_no"]do
+  defp get_mt_response_message(response_state, response)
+       when response_state in ["more_than_one_no", "one_no"] do
     response
-    |> Enum.filter(fn {_question_no, answer} -> answer == "2" or answer == "no" end)
-    |> Enum.reduce("", fn {question_no, _answer}, acc -> acc <>  Map.get(@mt_survey_questions, question_no) <> "\n" end)
+    |> Enum.filter(fn {_question_no, answer} -> answer == "No" end)
+    |> Enum.reduce("", fn {question_no, _answer}, acc ->
+      acc <> Map.get(@coach_survey_questions, question_no) <> "\n"
+    end)
   end
 
   defp get_mt_response_message(_response_state, _response), do: ""
