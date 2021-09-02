@@ -578,6 +578,7 @@ defmodule Glific.Flows do
            %Flow{}
            |> Flow.changeset(attrs)
            |> Repo.insert() do
+      Glific.State.reset()
       copy_flow_revision(flow, flow_copy)
 
       {:ok, flow_copy}
@@ -670,7 +671,9 @@ defmodule Glific.Flows do
       |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
-        %{},
+        # create empty arrays always, so all map operations works
+        # and wont throw an exception of "expected map, got nil"
+        %{"published" => %{}, "draft" => %{}},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
       |> add_default_flows(organization.out_of_office)

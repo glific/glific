@@ -601,9 +601,9 @@ defmodule Glific.Partners do
         "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
         _ -> raise "Invalid BSP"
       end
-    end
 
-    :ok
+      :ok
+    end
   end
 
   @doc """
@@ -765,7 +765,7 @@ defmodule Glific.Partners do
   @doc """
   Disable a specific credential for the organization
   """
-  @spec disable_credential(non_neg_integer, String.t(), String.t()) :: :ok
+  @spec disable_credential(non_neg_integer, String.t(), String.t()) :: :ok | {:error, list()}
   def disable_credential(organization_id, shortcode, error_message) do
     case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
       {:ok, provider} ->
@@ -791,11 +791,11 @@ defmodule Glific.Partners do
           }
         })
 
+        :ok
+
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
-
-    :ok
   end
 
   @doc """

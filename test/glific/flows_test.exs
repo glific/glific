@@ -353,6 +353,9 @@ defmodule Glific.FLowsTest do
       {:ok, flow} = Flows.start_group_flow(flow, group)
       first_action = hd(hd(flow.nodes).actions)
 
+      # lets sleep for 3 seconds, to ensure that messages have been delivered
+      Process.sleep(3_000)
+
       assert {:ok, _message} =
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
 

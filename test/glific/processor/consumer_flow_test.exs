@@ -118,9 +118,11 @@ defmodule Glific.Processor.ConsumerFlowTest do
   test "check optin/optout sequence" do
     # keep track of current messages
     message_count = Repo.aggregate(Message, :count)
+
     {:ok, sender} =
       Repo.get_by(Contact, %{name: "Chrissy Cron"})
       |> Contacts.update_contact(%{phone: "919917443332"})
+
     receiver = Repo.get_by(Contact, %{name: "NGO Main Account"})
 
     send_messages(@checks_1, sender, receiver)
