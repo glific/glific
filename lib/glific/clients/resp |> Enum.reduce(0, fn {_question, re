@@ -1,1 +1,0 @@
-resp |> Enum.reduce(0, fn {_question, response}, acc -> if response == "1" or response == "yes", do: acc +1 , else: acc end)
