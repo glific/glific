@@ -505,15 +505,16 @@ defmodule Glific.Clients.Stir do
   @spec get_mt_response_message(String.t(), map()) :: String.t()
   defp get_mt_response_message("all_same", _response) do
     @coach_survey_questions
-    |> Enum.reduce("", fn {_question_no, question}, acc -> acc <> question <> "\n" end)
+    |> Enum.reduce("", fn {question_no, question}, acc -> acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n" end)
   end
 
   defp get_mt_response_message(response_state, response)
        when response_state in ["more_than_one_no", "one_no"] do
     response
     |> Enum.filter(fn {_question_no, answer} -> answer == "No" end)
-    |> Enum.reduce("", fn {question_no, _answer}, acc ->
-      acc <> Map.get(@coach_survey_questions, question_no) <> "\n"
+    |> Glific.to_indexed_map()
+    |> Enum.reduce("", fn {number, {question_no, _answer}}, acc ->
+      acc <>"#{number}. " <> Map.get(que, question_no) <> "\n"
     end)
   end
 

@@ -64,11 +64,10 @@ defmodule Glific do
   def to_indexed_map(list, offset \\ 1)
       when is_list(list) and
              is_integer(offset) do
-    Enum.reject(list, fn x -> x in ["", nil] end)
+    Enum.reject(list, fn list_item -> list_item in ["", nil] end)
     |> do_to_indexed_map(offset)
   end
 
-  @spec do_to_indexed_map(any, any) :: map
   def do_to_indexed_map(list, offset),
     do:
       for(
