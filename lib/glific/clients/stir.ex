@@ -168,7 +168,14 @@ defmodule Glific.Clients.Stir do
         if response == "2" or response == "no", do: acc + 1, else: acc
       end)
 
-    %{count: count}
+    response_state =
+      cond do
+        count == 1 -> "one_no"
+        count > 1 and count < 5 -> "more_than_one_no"
+        count == 0 or count == 5 -> "all_same"
+      end
+
+    %{response_state: response_state}
   end
 
   def webhook("set_mt_for_tdc", fields) do
