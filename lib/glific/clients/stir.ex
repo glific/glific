@@ -108,7 +108,7 @@ defmodule Glific.Clients.Stir do
     }
   ]
 
-  @coach_survey_questions %{
+  @intentional_coach_survey_titles %{
     "question_1" => "provide inputs without prompting",
     "question_2" => "link actions to wider purpose",
     "question_3" => "list action points to take forward",
@@ -176,20 +176,20 @@ defmodule Glific.Clients.Stir do
         if response == "No", do: acc + 1, else: acc
       end)
 
-    response_state =
+    coach_survey_state =
       cond do
         count == 1 -> "one_no"
         count > 1 -> "more_than_one_no"
-        count == 0 -> "all_same"
+        count == 0 -> "all_yes"
       end
 
-    response_msg = get_mt_response_message(response_state, fields["response"])
-    %{response_state: response_state, response_message: response_msg}
+    coach_survey_titles = get_coach_survey_titles(coach_survey_state, fields["response"])
+    %{coach_survey_state: coach_survey_state, coach_survey_titles: coach_survey_titles}
   end
 
-  def webhook("get_coach_video", fields) do
+  def webhook("get_coach_prefered_video", fields) do
     choices =
-      fields["coach_response_message"]
+      fields["coach_survey_titles"]
       |> String.split("\n")
       |> Glific.to_indexed_map()
 
@@ -502,23 +502,25 @@ defmodule Glific.Clients.Stir do
     option_b_data
   end
 
-  @spec get_mt_response_message(String.t(), map()) :: String.t()
-  defp get_mt_response_message("all_same", _response) do
-    @coach_survey_questions
-    |> Enum.reduce("", fn {question_no, question}, acc -> acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n" end)
+  @spec get_coach_survey_titles(String.t(), map()) :: String.t()
+  defp get_coach_survey_titles("all_yes", _response) do
+    @intentional_coach_survey_titles
+    |> Enum.reduce("", fn {question_no, question}, acc ->
+      acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n"
+    end)
   end
 
-  defp get_mt_response_message(response_state, response)
+  defp get_coach_survey_titles(response_state, response)
        when response_state in ["more_than_one_no", "one_no"] do
     response
     |> Enum.filter(fn {_question_no, answer} -> answer == "No" end)
     |> Glific.to_indexed_map()
     |> Enum.reduce("", fn {number, {question_no, _answer}}, acc ->
-      acc <>"#{number}. " <> Map.get(@coach_survey_questions, question_no) <> "\n"
+      acc <> "#{number}. " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
     end)
   end
 
-  defp get_mt_response_message(_response_state, _response), do: ""
+  defp get_coach_survey_titles(_response_state, _response), do: ""
 
   @spec get_survey_results(map(), atom()) :: map()
   defp get_survey_results(fields, :TYPE_A) do

@@ -60,7 +60,10 @@ defmodule Glific do
         )
   end
 
-  @spec to_indexed_map(maybe_improper_list, integer) :: map
+  @doc """
+  converts list to indexed map
+  """
+  @spec to_indexed_map(list(), integer()) :: map()
   def to_indexed_map(list, offset \\ 1)
       when is_list(list) and
              is_integer(offset) do
@@ -68,7 +71,8 @@ defmodule Glific do
     |> do_to_indexed_map(offset)
   end
 
-  def do_to_indexed_map(list, offset),
+  @spec do_to_indexed_map(list(), integer()) :: map()
+  defp do_to_indexed_map(list, offset),
     do:
       for(
         {v, k} <- list |> Enum.with_index(),
