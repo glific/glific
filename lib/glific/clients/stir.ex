@@ -514,7 +514,7 @@ defmodule Glific.Clients.Stir do
     |> Enum.filter(fn {_question_no, answer} -> answer == "No" end)
     |> Glific.to_indexed_map()
     |> Enum.reduce("", fn {number, {question_no, _answer}}, acc ->
-      acc <>"#{number}. " <> Map.get(que, question_no) <> "\n"
+      acc <>"#{number}. " <> Map.get(@coach_survey_questions, question_no) <> "\n"
     end)
   end
 
