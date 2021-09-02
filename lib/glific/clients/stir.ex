@@ -187,6 +187,16 @@ defmodule Glific.Clients.Stir do
     %{response_state: response_state, response_message: response_msg}
   end
 
+  def webhook("get_coach_video", fields) do
+    choices =
+      fields["coach_response_message"]
+      |> String.split("\n")
+      |> Glific.to_indexed_map()
+
+    {:ok, preference} = Glific.parse_maybe_integer(fields["preference"])
+    %{response: choices[preference]}
+  end
+
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
