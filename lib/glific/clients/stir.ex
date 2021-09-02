@@ -108,6 +108,17 @@ defmodule Glific.Clients.Stir do
     }
   ]
 
+  @mt_survey_questions %{
+    "question_1" =>
+      "Did the ELM/EL readily provide inputs to the conversation without excessive prompting?",
+    "question_2" =>
+      "Did the ELM/EL link their planned actions to a wider purpose or goal (i.e. LIC theme/objective)?",
+    "question_3" => "Did the ELM/EL list specific action points to take forward?",
+    "question_4" =>
+      "Did the ELM/EL approach the conversation through problem-solving and discussion?",
+    "question_5" => "Did the ELM/EL ask why and how questions during the coaching meeting?"
+  }
+
   @doc false
   @spec webhook(String.t(), map()) :: map()
   def webhook("move_mt_to_district_group", fields) do
@@ -175,7 +186,8 @@ defmodule Glific.Clients.Stir do
         count == 0 or count == 5 -> "all_same"
       end
 
-    %{response_state: response_state}
+    response_msg = get_mt_response_message(response_state, fields["response"])
+    %{response_state: response_state, response_message: response_msg}
   end
 
   def webhook("set_mt_for_tdc", fields) do
@@ -482,6 +494,20 @@ defmodule Glific.Clients.Stir do
 
     option_b_data
   end
+
+  @spec get_mt_response_message(String.t(), map()) :: String.t()
+  defp get_mt_response_message("all_same", _response) do
+    @mt_survey_questions
+    |> Enum.reduce("", fn {_question_no, question}, acc -> acc <> question <> "\n" end)
+  end
+
+  defp get_mt_response_message(response_state, response) when response_state in ["more_than_one_no", "one_no"]do
+    response
+    |> Enum.filter(fn {_question_no, answer} -> answer == "2" or answer == "no" end)
+    |> Enum.reduce("", fn {question_no, _answer}, acc -> acc <>  Map.get(@mt_survey_questions, question_no) <> "\n" end)
+  end
+
+  defp get_mt_response_message(_response_state, _response), do: ""
 
   @spec get_survey_results(map(), atom()) :: map()
   defp get_survey_results(fields, :TYPE_A) do
