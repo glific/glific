@@ -12,19 +12,24 @@ defmodule Glific.State.Flow do
     Users.User
   }
 
+  @doc """
+  Check if there is an available flow for this user
+  - If available, return the available flow
+  - If none available, return error message along with name of user currently using flow
+  """
   @spec get_flow(User.t(), non_neg_integer, map) :: {Flow.t(), map}
   def get_flow(user, flow_id, state) do
     organization_id = user.organization_id
 
     {org_state, flow} =
       State.get_state(state, organization_id)
-      |> State.free_resource(:flows)
+      |> State.free_resource(:flows, user)
       |> get_org_flows(user, flow_id)
 
     {flow, Map.put(state, organization_id, org_state)}
   end
 
-  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t()} | nil
+  @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t()}
   defp get_org_flows(
          %{
            free_simulators: free_simulators,

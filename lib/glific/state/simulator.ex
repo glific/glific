@@ -15,7 +15,7 @@ defmodule Glific.State.Simulator do
   Check if there is an available simulator for this user
   - If available, return the free Simulator Contact
     (there are multiple simulator contacts per organization)
-  - If none available, trurn nil
+  - If none available, return nil
   """
   @spec get_simulator(User.t(), map()) :: {Contact.t(), map()}
   def get_simulator(user, state) do
@@ -23,7 +23,7 @@ defmodule Glific.State.Simulator do
 
     {org_state, contact} =
       State.get_state(state, organization_id)
-      |> State.free_resource(:simulators)
+      |> State.free_resource(:simulators, user)
       |> get_org_simulator(user)
 
     {contact, Map.put(state, organization_id, org_state)}

@@ -111,10 +111,12 @@ defmodule Glific.State do
     GenServer.call(__MODULE__, :reset)
   end
 
-  # initializes the state for this organization
-  # if not already present
+  @doc """
+  initializes the state for this organization
+  if not already present
+  """
   @spec get_state(map(), non_neg_integer) :: map()
-  defp get_state(state, organization_id) do
+  def get_state(state, organization_id) do
     if Map.has_key?(state, organization_id),
       do: state[organization_id],
       else: init_state(organization_id)
@@ -182,29 +184,30 @@ defmodule Glific.State do
     Map.put(state, organization_id, org_state)
   end
 
-  @spec free_resource(map(), atom(), User.t() | nil) :: map()
-  defp free_resource(_state, _stage, user \\ nil)
-
-  defp free_resource(
-         %{
-           free_flows: free_flows,
-           busy_flows: busy_flows
-         } = state,
-         :flows,
-         user
-       ) do
+  @doc """
+  Free the resource after holding a resource period is over
+  """
+  @spec free_resource(map(), atom(), User.t()) :: map()
+  def free_resource(
+        %{
+          free_flows: free_flows,
+          busy_flows: busy_flows
+        } = state,
+        :flows,
+        user
+      ) do
     {free, busy} = do_free_resource(free_flows, busy_flows, user, :flows)
     update_state(:flows, free, busy, state)
   end
 
-  defp free_resource(
-         %{
-           free_simulators: free_simulators,
-           busy_simulators: busy_simulators
-         } = state,
-         :simulators,
-         user
-       ) do
+  def free_resource(
+        %{
+          free_simulators: free_simulators,
+          busy_simulators: busy_simulators
+        } = state,
+        :simulators,
+        user
+      ) do
     {free, busy} = do_free_resource(free_simulators, busy_simulators, user, :simulators)
     update_state(:simulators, free, busy, state)
   end
