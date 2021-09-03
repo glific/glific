@@ -157,7 +157,7 @@ defmodule Glific.State do
 
     org_state =
       get_state(state, organization_id)
-      |> free_resource(type, user)
+      |> free_entity(type, user)
 
     Map.put(state, organization_id, org_state)
   end
@@ -165,8 +165,8 @@ defmodule Glific.State do
   @doc """
   Free the resource after holding a resource period is over
   """
-  @spec free_resource(map(), atom(), User.t()) :: map()
-  def free_resource(
+  @spec free_entity(map(), atom(), User.t()) :: map()
+  def free_entity(
         %{
           free_flows: free_flows,
           busy_flows: busy_flows
@@ -174,11 +174,11 @@ defmodule Glific.State do
         :flows,
         user
       ) do
-    {free, busy} = do_free_resource(free_flows, busy_flows, user, :flows)
+    {free, busy} = do_free_entity(free_flows, busy_flows, user, :flows)
     update_state(:flows, free, busy, state)
   end
 
-  def free_resource(
+  def free_entity(
         %{
           free_simulators: free_simulators,
           busy_simulators: busy_simulators
@@ -186,7 +186,7 @@ defmodule Glific.State do
         :simulators,
         user
       ) do
-    {free, busy} = do_free_resource(free_simulators, busy_simulators, user, :simulators)
+    {free, busy} = do_free_entity(free_simulators, busy_simulators, user, :simulators)
     update_state(:simulators, free, busy, state)
   end
 
@@ -199,8 +199,8 @@ defmodule Glific.State do
 
   # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10
-  @spec do_free_resource(map(), map(), User.t() | nil, atom()) :: {map(), map()}
-  defp do_free_resource(free, busy, user, entity_type) do
+  @spec do_free_entity(map(), map(), User.t() | nil, atom()) :: {map(), map()}
+  defp do_free_entity(free, busy, user, entity_type) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
 
     Enum.reduce(

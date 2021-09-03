@@ -24,7 +24,7 @@ defmodule Glific.State.Flow do
 
     {org_state, flow} =
       State.get_state(state, organization_id)
-      |> State.free_resource(:flows, user)
+      |> State.free_entity(:flows, user)
       |> get_org_flows(user, flow_id)
 
     {flow, Map.put(state, organization_id, org_state)}
@@ -53,18 +53,6 @@ defmodule Glific.State.Flow do
     available_flow = if(Enum.member?(free, flow), do: flow, else: nil)
 
     cond do
-      # when the flow is available and user is assigned a flow
-      is_struct(available_flow) ->
-        {
-          %{
-            free_simulators: free_simulators,
-            busy_simulators: busy_simulators,
-            free_flows: free -- [available_flow],
-            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
-          },
-          available_flow
-        }
-
       # when user already has some flow with same fingerprint
       Map.has_key?(busy, key) ->
         {assigned_flow, _time} = Map.get(busy, key)
@@ -101,6 +89,18 @@ defmodule Glific.State.Flow do
                 "Sorry! You cannot edit the flow right now. It is being edited by \n #{user_name}"
             }
           }}}
+
+      # when the flow is available and user is assigned a flow
+      is_struct(available_flow) ->
+        {
+          %{
+            free_simulators: free_simulators,
+            busy_simulators: busy_simulators,
+            free_flows: free -- [available_flow],
+            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
+          },
+          available_flow
+        }
 
       true ->
         Logger.info(

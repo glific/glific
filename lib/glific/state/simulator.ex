@@ -23,7 +23,7 @@ defmodule Glific.State.Simulator do
 
     {org_state, contact} =
       State.get_state(state, organization_id)
-      |> State.free_resource(:simulators, user)
+      |> State.free_entity(:simulators, user)
       |> get_org_simulator(user)
 
     {contact, Map.put(state, organization_id, org_state)}
@@ -57,9 +57,11 @@ defmodule Glific.State.Simulator do
           contact
         }
 
+      # if no simulator is present
       Enum.empty?(free) ->
         {state, nil}
 
+      # if simulator is present
       true ->
         [contact | free] = free
 
