@@ -48,6 +48,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "The source from the contact got optin into Glific",
+        name: "optin_method",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Time when we recorded an opt-in from the user",
         name: "optin_time",
         type: "DATETIME",
