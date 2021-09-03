@@ -170,20 +170,18 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("check_coach_response", fields) do
-    count =
+    filtered_list =
       fields["response"]
-      |> Enum.reduce(0, fn {_question, response}, acc ->
-        if response == "No", do: acc + 1, else: acc
-      end)
+      |> Enum.reject(fn {_question_no, response} -> clean_string(response) != "no" end)
 
     coach_survey_state =
       cond do
-        count == 1 -> "one_no"
-        count > 1 -> "more_than_one_no"
-        count == 0 -> "all_yes"
+        length(filtered_list) == 1 -> "one_no"
+        length(filtered_list) > 1 -> "more_than_one_no"
+        true -> "all_yes"
       end
 
-    coach_survey_titles = get_coach_survey_titles(coach_survey_state, fields["response"])
+    coach_survey_titles = get_coach_survey_titles(coach_survey_state, filtered_list)
     %{coach_survey_state: coach_survey_state, coach_survey_titles: coach_survey_titles}
   end
 
@@ -502,25 +500,26 @@ defmodule Glific.Clients.Stir do
     option_b_data
   end
 
-  @spec get_coach_survey_titles(String.t(), map()) :: String.t()
-  defp get_coach_survey_titles("all_yes", _response) do
+  @spec get_coach_survey_titles(String.t(), list()) :: String.t()
+  def get_coach_survey_titles("all_yes", _response) do
     @intentional_coach_survey_titles
     |> Enum.reduce("", fn {question_no, question}, acc ->
       acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n"
     end)
   end
 
-  defp get_coach_survey_titles(response_state, response)
-       when response_state in ["more_than_one_no", "one_no"] do
+  def get_coach_survey_titles("more_than_one_no", response) do
     response
-    |> Enum.filter(fn {_question_no, answer} -> answer == "No" end)
-    |> Glific.to_indexed_map()
-    |> Enum.reduce("", fn {number, {question_no, _answer}}, acc ->
-      acc <> "#{number}. " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+    |> Enum.with_index(1)
+    |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
+      acc <> "#{index}. " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
     end)
   end
 
-  defp get_coach_survey_titles(_response_state, _response), do: ""
+  def get_coach_survey_titles("one_no", response) do
+    [{question_no, _answer}] = response
+    Map.get(@intentional_coach_survey_titles, question_no)
+  end
 
   @spec get_survey_results(map(), atom()) :: map()
   defp get_survey_results(fields, :TYPE_A) do
@@ -610,7 +609,7 @@ defmodule Glific.Clients.Stir do
   defp option_b_answer_state(p1_answers, p2_answers) do
     filtered_list =
       (Map.values(p1_answers) ++ Map.values(p2_answers))
-      |> Enum.reject(fn x -> x == "67-100" end)
+      |> Enum.reject(fn answer -> answer == "67-100" end)
 
     cond do
       length(filtered_list) == 1 -> "one_true"
