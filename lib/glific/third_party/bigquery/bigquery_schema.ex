@@ -49,7 +49,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "The source from the contact got optin into Glific",
-        name: "optin_method",
+        name: "contact_optin_method",
         type: "STRING",
         mode: "NULLABLE"
       },
