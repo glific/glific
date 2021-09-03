@@ -336,6 +336,10 @@ defmodule Glific.Clients.DigitalGreen do
       Map.values(@stages)
       |> Enum.find(fn stage -> total_days in stage["initial_offset"]..stage["threshold"] end)
 
+    Logger.info(
+      "update crop stage for contact id: #{contact_id} and data #{inspect(current_stage)}"
+    )
+
     {:ok, stage_group} =
       Repo.fetch_by(Group, %{label: current_stage["group"], organization_id: organization_id})
 

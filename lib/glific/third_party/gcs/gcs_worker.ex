@@ -229,7 +229,7 @@ defmodule Glific.GCS.GcsWorker do
   end
 
   @spec upload_file_on_gcs(String.t(), String.t(), non_neg_integer) ::
-          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
+          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()} | {:error, map()}
   defp upload_file_on_gcs(local, remote, organization_id) do
     Logger.info("Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
 
@@ -241,6 +241,16 @@ defmodule Glific.GCS.GcsWorker do
         "#{organization_id}"
       }
     )
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, error} when is_map(error) == true ->
+        {:error, error}
+
+      response ->
+        {:error, %{body: response}}
+    end
   end
 
   @doc """
