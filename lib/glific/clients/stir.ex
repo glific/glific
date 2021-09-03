@@ -507,14 +507,14 @@ defmodule Glific.Clients.Stir do
   end
 
   @spec get_coach_survey_titles(String.t(), list()) :: String.t()
-  def get_coach_survey_titles("all_yes", _response) do
+  defp get_coach_survey_titles("all_yes", _response) do
     @intentional_coach_survey_titles
     |> Enum.reduce("", fn {question_no, question}, acc ->
       acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n"
     end)
   end
 
-  def get_coach_survey_titles("more_than_one_no", response) do
+  defp get_coach_survey_titles("more_than_one_no", response) do
     response
     |> Enum.with_index(1)
     |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
@@ -522,7 +522,7 @@ defmodule Glific.Clients.Stir do
     end)
   end
 
-  def get_coach_survey_titles("one_no", response) do
+  defp get_coach_survey_titles("one_no", response) do
     [{question_no, _answer}] = response
     Map.get(@intentional_coach_survey_titles, question_no)
   end
