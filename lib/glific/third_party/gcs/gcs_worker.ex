@@ -189,8 +189,8 @@ defmodule Glific.GCS.GcsWorker do
     :ok
   end
 
-  @spec handle_gcs_error(non_neg_integer, any()) :: String.t()
-  defp handle_gcs_error(org_id, error) when is_map(error) do
+  @spec handle_gcs_error(non_neg_integer, map()) :: String.t()
+  defp handle_gcs_error(org_id, error) do
     Jason.decode(error.body)
     |> case do
       {:ok, data} ->
@@ -215,9 +215,6 @@ defmodule Glific.GCS.GcsWorker do
     end
   end
 
-  defp handle_gcs_error(org_id, error),
-    do: handle_gcs_error(org_id, %{body: error})
-
   @spec get_public_link(map()) :: String.t()
   defp get_public_link(response) do
     Enum.join(["https://storage.googleapis.com", response.id], "/")
@@ -232,7 +229,7 @@ defmodule Glific.GCS.GcsWorker do
   end
 
   @spec upload_file_on_gcs(String.t(), String.t(), non_neg_integer) ::
-          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
+          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()} | {:error, map()}
   defp upload_file_on_gcs(local, remote, organization_id) do
     Logger.info("Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
 
@@ -244,6 +241,16 @@ defmodule Glific.GCS.GcsWorker do
         "#{organization_id}"
       }
     )
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, error} when is_map(error) == true ->
+        {:error, error}
+
+      response ->
+        {:error, %{body: response}}
+    end
   end
 
   @doc """
