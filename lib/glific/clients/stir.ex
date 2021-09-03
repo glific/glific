@@ -185,14 +185,20 @@ defmodule Glific.Clients.Stir do
     %{coach_survey_state: coach_survey_state, coach_survey_titles: coach_survey_titles}
   end
 
-  def webhook("get_coach_prefered_video", fields) do
-    choices =
+  def webhook("get_coach_preferred_video", fields) do
+    {index_map, _message_list} =
       fields["coach_survey_titles"]
       |> String.split("\n")
-      |> Glific.to_indexed_map()
+      |> Enum.with_index(1)
+      |> Enum.reduce({%{}, []}, fn {data, index}, {index_map, message_list} ->
+        {
+          Map.put(index_map, index, data),
+          message_list ++ [data]
+        }
+      end)
 
     {:ok, preference} = Glific.parse_maybe_integer(fields["preference"])
-    %{response: choices[preference]}
+    %{response: index_map[preference]}
   end
 
   def webhook("set_mt_for_tdc", fields) do
