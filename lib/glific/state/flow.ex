@@ -1,8 +1,9 @@
 defmodule Glific.State.Flow do
   @moduledoc """
   Manage flow state and allocation to ensure we only have one user modify
-  flow at a time
+  a flow at a time
   """
+  require Logger
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -49,9 +50,22 @@ defmodule Glific.State.Flow do
       |> where([f], f.id == ^flow_id)
       |> Repo.all(skip_organization_id: true, skip_permission: true)
 
-    [available_flow] = [flow] |> check_available(free)
+    available_flow = if(Enum.member?(free, flow), do: flow, else: nil)
 
     cond do
+      # when the flow is available and user is assigned a flow
+      is_struct(available_flow) ->
+        {
+          %{
+            free_simulators: free_simulators,
+            busy_simulators: busy_simulators,
+            free_flows: free -- [available_flow],
+            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
+          },
+          available_flow
+        }
+
+      # when user already has some flow with same fingerprint
       Map.has_key?(busy, key) ->
         {assigned_flow, _time} = Map.get(busy, key)
 
@@ -60,7 +74,7 @@ defmodule Glific.State.Flow do
             do: assigned_flow,
             else: available_flow
 
-        # Updating free flows list when a new flow is assigned to user
+        # updating free flows list when a new flow is assigned to user
         available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
 
         {
@@ -73,6 +87,7 @@ defmodule Glific.State.Flow do
           requested_flow
         }
 
+      # when the requested flow is either not available in flow or if all the flows are busy
       is_nil(available_flow) || Enum.empty?(free) ->
         Repo.put_process_state(user.organization_id)
         user_name = get_user_name(state, flow)
@@ -88,21 +103,22 @@ defmodule Glific.State.Flow do
           }}}
 
       true ->
-        {
+        Logger.info(
+          "Error fetching flow #{available_flow} for organization_id #{organization_id} for user #{
+            user.name
+          }"
+        )
+
+        {state,
+         {:ok,
           %{
-            free_simulators: free_simulators,
-            busy_simulators: busy_simulators,
-            free_flows: free -- [available_flow],
-            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
-          },
-          available_flow
-        }
+            errors: %{
+              key: "error",
+              message: "Something went wrong"
+            }
+          }}}
     end
   end
-
-  @spec check_available(list, any) :: nil | list
-  defp check_available(flow, free),
-    do: if(Enum.member?(free, List.first(flow)), do: flow, else: [nil])
 
   @spec get_user_name(map(), Flow.t()) :: String.t()
   defp get_user_name(state, requested_flow) do

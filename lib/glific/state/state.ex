@@ -122,9 +122,6 @@ defmodule Glific.State do
       else: init_state(organization_id)
   end
 
-  # we'll assign the simulator and flows for 10 minute intervals
-  @cache_time 10
-
   @spec init_state(non_neg_integer) :: map()
   defp init_state(organization_id) do
     phone = Contacts.simulator_phone_prefix() <> "%"
@@ -149,25 +146,6 @@ defmodule Glific.State do
   defp reset_state do
     %{}
   end
-
-  # sending subscription when simulator is released
-  @spec publish_data(non_neg_integer, non_neg_integer, atom()) :: any() | nil
-  defp publish_data(organization_id, user_id, :simulators) do
-    Communications.publish_data(
-      %{"simulator_release" => %{user_id: user_id}},
-      :simulator_release,
-      organization_id
-    )
-  end
-
-  defp publish_data(_organization_id, _user_id, :flows), do: nil
-
-  @spec update_state(atom(), map(), map(), map()) :: map()
-  defp update_state(:simulators, free, busy, state),
-    do: Map.merge(state, %{free_simulators: free, busy_simulators: busy})
-
-  defp update_state(:flows, free, busy, state),
-    do: Map.merge(state, %{free_flows: free, busy_flows: busy})
 
   @doc """
   Release the resource associated with this user id. It is possible
@@ -212,6 +190,15 @@ defmodule Glific.State do
     update_state(:simulators, free, busy, state)
   end
 
+  @spec update_state(atom(), map(), map(), map()) :: map()
+  defp update_state(:simulators, free, busy, state),
+    do: Map.merge(state, %{free_simulators: free, busy_simulators: busy})
+
+  defp update_state(:flows, free, busy, state),
+    do: Map.merge(state, %{free_flows: free, busy_flows: busy})
+
+  # we'll assign the simulator and flows for 10 minute intervals
+  @cache_time 10
   @spec do_free_resource(map(), map(), User.t() | nil, atom()) :: {map(), map()}
   defp do_free_resource(free, busy, user, entity_type) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
@@ -234,4 +221,16 @@ defmodule Glific.State do
       end
     )
   end
+
+  # sending subscription when simulator is released
+  @spec publish_data(non_neg_integer, non_neg_integer, atom()) :: any() | nil
+  defp publish_data(organization_id, user_id, :simulators) do
+    Communications.publish_data(
+      %{"simulator_release" => %{user_id: user_id}},
+      :simulator_release,
+      organization_id
+    )
+  end
+
+  defp publish_data(_organization_id, _user_id, :flows), do: nil
 end
