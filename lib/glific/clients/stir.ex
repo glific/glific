@@ -199,7 +199,7 @@ defmodule Glific.Clients.Stir do
 
     {:ok, preference} = Glific.parse_maybe_integer(fields["preference"])
 
-    %{response: Map.get(index_map, preference, "")}
+    %{response: Map.get(index_map, preference, "invalid response")}
   end
 
   def webhook("set_mt_for_tdc", fields) do
