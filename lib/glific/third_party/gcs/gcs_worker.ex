@@ -189,8 +189,8 @@ defmodule Glific.GCS.GcsWorker do
     :ok
   end
 
-  @spec handle_gcs_error(non_neg_integer, map()) :: String.t()
-  defp handle_gcs_error(org_id, error) do
+  @spec handle_gcs_error(non_neg_integer, any()) :: String.t()
+  defp handle_gcs_error(org_id, error) when is_map(error) do
     Jason.decode(error.body)
     |> case do
       {:ok, data} ->
@@ -214,6 +214,9 @@ defmodule Glific.GCS.GcsWorker do
         error
     end
   end
+
+  defp handle_gcs_error(org_id, error),
+    do: handle_gcs_error(org_id, %{body: error})
 
   @spec get_public_link(map()) :: String.t()
   defp get_public_link(response) do
