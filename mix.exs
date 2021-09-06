@@ -99,7 +99,7 @@ defmodule Glific.MixProject do
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:pow, "~> 1.0.21"},
-      {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
+      {:dialyxir, "~> 1.0", only: [:dev | @test_envs], runtime: false},
       {:credo, "~> 1.4", only: [:dev | @test_envs], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev | @test_envs], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev | @test_envs], runtime: false},
