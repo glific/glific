@@ -822,6 +822,11 @@ query flowRelease {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>isBackground</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
