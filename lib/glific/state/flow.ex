@@ -69,7 +69,7 @@ defmodule Glific.State.Flow do
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows: Enum.uniq(available_flows) -- [requested_flow],
+            free_flows:  Map.delete(available_flows, requested_flow),
             busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
           },
           requested_flow
