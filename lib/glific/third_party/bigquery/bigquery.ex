@@ -509,6 +509,15 @@ defmodule Glific.BigQuery do
     :ok
   end
 
+  ## we can ignore this error since it's just insert the data and we are not expecting
+  ## any response back from the bigquey.
+  defp handle_insert_query_response({:error, :timeout}, organization_id, opts) do
+    table = Keyword.get(opts, :table)
+    max_id = Keyword.get(opts, :max_id)
+    Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
+    Logger.info("Timeout while inserting the data. #{inspect(opts)}")
+  end
+
   defp handle_insert_query_response({:error, response}, organization_id, opts) do
     table = Keyword.get(opts, :table)
 

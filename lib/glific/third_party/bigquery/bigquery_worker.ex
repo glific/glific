@@ -170,6 +170,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               language: row.language.label,
               optin_time: BigQuery.format_date(row.optin_time, organization_id),
               optout_time: BigQuery.format_date(row.optout_time, organization_id),
+              contact_optin_method: row.optin_method,
               last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
               inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
               updated_at: format_date_with_milisecond(row.updated_at, organization_id),

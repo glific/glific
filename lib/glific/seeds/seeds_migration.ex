@@ -406,7 +406,7 @@ defmodule Glific.Seeds.SeedsMigration do
     |> where([_c, p], p.shortcode == ^"bigquery")
     |> where([c, _p], c.is_active)
     |> select([c, _p], c.organization_id)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
   end
 
   @spec update_localized_language() :: :ok

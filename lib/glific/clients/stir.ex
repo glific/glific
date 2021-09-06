@@ -19,10 +19,23 @@ defmodule Glific.Clients.Stir do
         description: "Creating safe learning environments _(Safety)_",
         keyword: "1",
         tdc_survery_flow: "448ef122-d257-42a3-bbd4-dd2d6ff43761",
-        mt_feedback_videos: %{
-          rank_a: "Video 1",
-          rank_b: "Video 2",
-          rank_c: "Video 3"
+        option_b_videos: %{
+          "s1" => %{
+            code: :s1,
+            title: "More reflective discussion on the strategy"
+          },
+          "s2" => %{
+            code: :s2,
+            title: "Participants' get improvement focused feedback"
+          },
+          "s3" => %{
+            code: :s3,
+            title: "Space for practising the strategy"
+          },
+          "s4" => %{
+            code: :s4,
+            title: "Participants referring to data"
+          }
         }
       }
     },
@@ -32,10 +45,19 @@ defmodule Glific.Clients.Stir do
         description: "Dedication and engagement _(Engagement)_",
         keyword: "2",
         tdc_survery_flow: "06247ce0-d5b7-4a42-b1e9-166dc85e9a74",
-        mt_feedback_videos: %{
-          rank_a: "Video 4",
-          rank_b: "Video 5",
-          rank_c: "Video 6"
+        option_b_videos: %{
+          "s1" => %{
+            code: :e1,
+            title: "Proactive participation"
+          },
+          "s2" => %{
+            code: :e2,
+            title: "Developing action plans"
+          },
+          "s3" => %{
+            code: :e3,
+            title: "Asking questions"
+          }
         }
       }
     },
@@ -45,10 +67,19 @@ defmodule Glific.Clients.Stir do
         description: "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_",
         keyword: "3",
         tdc_survery_flow: "27839001-d31c-4b53-9209-fe25615a655f",
-        mt_feedback_videos: %{
-          rank_a: "Video 7",
-          rank_b: "Video 8",
-          rank_c: "Video 9"
+        option_b_videos: %{
+          "s1" => %{
+            code: :c1,
+            title: "Reflect on the content link to purpose"
+          },
+          "s2" => %{
+            code: :c2,
+            title: "Asking 'how' questions"
+          },
+          "s3" => %{
+            code: :c3,
+            title: "Asking 'why' questions"
+          }
         }
       }
     },
@@ -59,14 +90,31 @@ defmodule Glific.Clients.Stir do
           "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
         keyword: "4",
         tdc_survery_flow: "3f38afbe-cb97-427e-85c0-d1a455952d4c",
-        mt_feedback_videos: %{
-          rank_a: "Video 10",
-          rank_b: "Video 11",
-          rank_c: "Video 12"
+        option_b_videos: %{
+          "s1" => %{
+            code: :se1,
+            title: "Collaborating with peers"
+          },
+          "s2" => %{
+            code: :se2,
+            title: "Asking for support"
+          },
+          "s3" => %{
+            code: :se3,
+            title: "Achievements recognized"
+          }
         }
       }
     }
   ]
+
+  @intentional_coach_survey_titles %{
+    "question_1" => "provide inputs without prompting",
+    "question_2" => "link actions to wider purpose",
+    "question_3" => "list action points to take forward",
+    "question_4" => "problem solving and discussion",
+    "question_5" => "ask why and who questions"
+  }
 
   @doc false
   @spec webhook(String.t(), map()) :: map()
@@ -104,6 +152,56 @@ defmodule Glific.Clients.Stir do
     %{mt_list_message: Enum.join(message_list, "\n"), index_map: Jason.encode!(index_map)}
   end
 
+  def webhook("fetch_remaining_priorities", fields) do
+    priority_map = Enum.into(@priorities_list, %{})
+    first_priority = fields["first_priority"] |> String.downcase()
+    second_priority = fields["second_priority"] |> String.downcase()
+
+    [remaining_priority_first, remaining_priority_second | _] =
+      priority_map
+      |> Map.delete(first_priority)
+      |> Map.delete(second_priority)
+      |> Map.keys()
+
+    %{
+      remaining_priority_first: remaining_priority_first,
+      remaining_priority_second: remaining_priority_second
+    }
+  end
+
+  def webhook("check_coach_response", fields) do
+    filtered_list =
+      fields["response"]
+      |> Enum.reject(fn {_question_no, response} -> clean_string(response) != "no" end)
+
+    coach_survey_state =
+      cond do
+        length(filtered_list) == 1 -> "one_no"
+        length(filtered_list) > 1 -> "more_than_one_no"
+        true -> "all_yes"
+      end
+
+    coach_survey_titles = get_coach_survey_titles(coach_survey_state, filtered_list)
+    %{coach_survey_state: coach_survey_state, coach_survey_titles: coach_survey_titles}
+  end
+
+  def webhook("get_coach_preferred_video", fields) do
+    {index_map, _message_list} =
+      fields["coach_survey_titles"]
+      |> String.split("\n")
+      |> Enum.with_index(1)
+      |> Enum.reduce({%{}, []}, fn {data, index}, {index_map, message_list} ->
+        {
+          Map.put(index_map, index, data),
+          message_list ++ [data]
+        }
+      end)
+
+    {:ok, preference} = Glific.parse_maybe_integer(fields["preference"])
+
+    %{response: Map.get(index_map, preference, "invalid response")}
+  end
+
   def webhook("set_mt_for_tdc", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
@@ -119,7 +217,7 @@ defmodule Glific.Clients.Stir do
       get_mt_list(fields["district"], organization_id)
       |> Enum.find(fn {contact, _index} -> mt_contact_id == contact.id end)
 
-    ## this is not correct we will fix that.
+    ## this is not the best way to update the contact variables we will fix that after this assignments.
     tdc
     |> ContactField.do_add_contact_field("mt_name", "mt_name", mt.name, "string")
     |> ContactField.do_add_contact_field("mt_contact_id", "mt_contact_id", mt.id, "string")
@@ -148,15 +246,9 @@ defmodule Glific.Clients.Stir do
   def webhook("get_priority_descriptions", fields) do
     priority_map = Enum.into(@priorities_list, %{})
 
-    contact_priorities = get_contact_priority(get_in(fields, ["contact", "fields"]))
-
-    first_priority =
-      contact_priorities.first
-      |> clean_string()
-
-    second_priority =
-      contact_priorities.second
-      |> clean_string()
+    {first_priority, second_priority} =
+      get_in(fields, ["contact", "fields"])
+      |> cleaned_contact_priority()
 
     first_priority_map = Map.get(priority_map, first_priority, %{})
     second_priority_map = Map.get(priority_map, second_priority, %{})
@@ -168,9 +260,11 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("contact_updated_the_priorities", fields) do
-    first_priority = get_in(fields, ["contact", "fields", "first_priority", "value"])
-    second_priority = get_in(fields, ["contact", "fields", "second_priority", "value"])
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+    {first_priority, second_priority} =
+      get_in(fields, ["contact", "fields"])
+      |> cleaned_contact_priority()
 
     contact = Contacts.get_contact!(contact_id)
 
@@ -235,15 +329,10 @@ defmodule Glific.Clients.Stir do
       }
     else
       contact = Contacts.get_contact!(mt_contact_id)
-      mt_priorities = get_contact_priority(contact.fields)
 
-      first_priority =
-        mt_priorities.first
-        |> clean_string()
-
-      second_priority =
-        mt_priorities.second
-        |> clean_string()
+      {first_priority, second_priority} =
+        contact.fields
+        |> cleaned_contact_priority()
 
       priority_map = Enum.into(@priorities_list, %{})
       first_priority_map = priority_map[first_priority] || %{}
@@ -262,14 +351,14 @@ defmodule Glific.Clients.Stir do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     mt_district = fields["district"] |> clean_string()
 
-    mt_priorities =
+    {first_priority, second_priority} =
       get_in(fields, ["contact", "fields"])
-      |> get_contact_priority()
+      |> cleaned_contact_priority()
 
     result = %{
       district: mt_district,
-      mt_first_priority: mt_priorities.first,
-      mt_second_priority: mt_priorities.second,
+      mt_first_priority: first_priority,
+      mt_second_priority: second_priority,
       diet_first_priority: "NA",
       diet_second_priority: "NA"
     }
@@ -278,13 +367,15 @@ defmodule Glific.Clients.Stir do
     |> Enum.find(fn {district, _contact} -> district == mt_district end)
     |> case do
       {_district, diet} ->
-        diet_priorities = get_contact_priority(diet.fields)
+        {first_priority, second_priority} =
+          diet.fields
+          |> cleaned_contact_priority()
 
         Map.merge(
           result,
           %{
-            diet_first_priority: diet_priorities.first,
-            diet_second_priority: diet_priorities.second
+            diet_first_priority: first_priority,
+            diet_second_priority: second_priority
           }
         )
 
@@ -303,10 +394,243 @@ defmodule Glific.Clients.Stir do
     %{status: true}
   end
 
+  def webhook("save_survey_answer", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    contact = Contacts.get_contact!(contact_id)
+
+    if remaining_priority?(fields["priority"], contact),
+      do: %{},
+      else: save_survey_results(contact, fields, mt_type(fields))
+  end
+
+  def webhook("get_survey_results", fields),
+    do: get_survey_results(fields, mt_type(fields))
+
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
+  def webhook("get_option_b_video_data", fields) do
+    index_map = Jason.decode!(fields["index_map"])
+    index = fields["index"]
+
+    if Map.has_key?(index_map, index) do
+      Map.get(index_map, index)
+      |> Map.put("is_valid", true)
+    else
+      %{"is_valid" => false}
+    end
+  end
+
   def webhook(_, fields), do: fields
+
+  # Get MT type if it's A or B and perform the action based on that.
+  @spec mt_type(map()) :: atom()
+  defp mt_type(fields) do
+    contact_state =
+      get_in(fields, ["contact", "fields", "state", "value"])
+      |> clean_string()
+
+    if contact_state in ["karnataka", "tamilnadu", "tamil nadu"],
+      do: :TYPE_B,
+      else: :TYPE_A
+  end
+
+  @spec remaining_priority?(String.t(), Contacts.Contact.t()) :: boolean()
+  defp remaining_priority?(priority, contact) when is_binary(priority) == true do
+    {first_priority, second_priority} =
+      contact.fields
+      |> cleaned_contact_priority()
+
+    clean_string(priority) not in [first_priority, second_priority]
+  end
+
+  defp remaining_priority?(_priority, _contact), do: true
+
+  @spec save_survey_results(Contacts.Contact.t(), map(), atom()) :: map()
+  defp save_survey_results(contact, fields, :TYPE_A) do
+    priority = clean_string(fields["priority"])
+    answer = clean_string(fields["answer"])
+    least_rank = get_least_rank(fields["answer"])
+    option_a_data = get_option_a_data(fields)
+
+    ## reset the value if the survey has been field eariler
+    option_a_data = if Map.keys(option_a_data) |> length > 1, do: %{}, else: option_a_data
+
+    priority_item = %{
+      "priority" => priority,
+      "answer" => answer,
+      "least_rank" => least_rank
+    }
+
+    option_a_data = Map.put(option_a_data, priority, priority_item)
+
+    contact
+    |> ContactField.do_add_contact_field(
+      "option_a_data",
+      "option_a_data",
+      Jason.encode!(option_a_data),
+      "json"
+    )
+
+    option_a_data
+  end
+
+  defp save_survey_results(contact, fields, :TYPE_B) do
+    priority = clean_string(fields["priority"])
+    answer_s1 = clean_string(fields["answers"]["s1"])
+    answer_s2 = clean_string(fields["answers"]["s2"])
+    answer_s3 = clean_string(fields["answers"]["s3"])
+    option_b_data = get_option_b_data(fields)
+
+    ## reset the value if the survey has been field eariler
+    option_b_data = if Map.keys(option_b_data) |> length > 1, do: %{}, else: option_b_data
+
+    priority_item = %{
+      "priority" => priority,
+      "answers" => %{
+        s1: answer_s1,
+        s2: answer_s2,
+        s3: answer_s3
+      }
+    }
+
+    option_b_data = Map.put(option_b_data, priority, priority_item)
+
+    contact
+    |> ContactField.do_add_contact_field(
+      "option_b_data",
+      "option_b_data",
+      Jason.encode!(option_b_data),
+      "json"
+    )
+
+    option_b_data
+  end
+
+  @spec get_coach_survey_titles(String.t(), list()) :: String.t()
+  defp get_coach_survey_titles("all_yes", _response) do
+    @intentional_coach_survey_titles
+    |> Enum.reduce("", fn {question_no, question}, acc ->
+      acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n"
+    end)
+  end
+
+  defp get_coach_survey_titles("more_than_one_no", response) do
+    response
+    |> Enum.with_index(1)
+    |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
+      acc <> "#{index}. " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+    end)
+  end
+
+  defp get_coach_survey_titles("one_no", response) do
+    [{question_no, _answer}] = response
+    Map.get(@intentional_coach_survey_titles, question_no)
+  end
+
+  @spec get_survey_results(map(), atom()) :: map()
+  defp get_survey_results(fields, :TYPE_A) do
+    option_a_data = get_option_a_data(fields)
+
+    {first_priority, second_priority} =
+      get_in(fields, ["contact", "fields"])
+      |> cleaned_contact_priority()
+
+    %{
+      option_a_data: option_a_data,
+      first_priority: first_priority,
+      second_priority: second_priority,
+      first_priority_rank: option_a_data[first_priority]["least_rank"],
+      second_priority_rank: option_a_data[second_priority]["least_rank"]
+    }
+  end
+
+  defp get_survey_results(fields, :TYPE_B) do
+    {first_priority, second_priority} =
+      get_in(fields, ["contact", "fields"])
+      |> cleaned_contact_priority()
+
+    option_b_data = get_option_b_data(fields)
+    p1_answers = option_b_data[first_priority]["answers"]
+    p2_answers = option_b_data[second_priority]["answers"]
+    answer_state = option_b_answer_state(p1_answers, p2_answers)
+
+    list_p1 = option_b_video_data(first_priority, p1_answers, answer_state, fields)
+    list_p2 = option_b_video_data(second_priority, p2_answers, answer_state, fields)
+
+    {index_map, message_list} =
+      (list_p1 ++ list_p2)
+      |> Enum.with_index(1)
+      |> Enum.reduce({%{}, []}, fn {data, index}, {index_map, message_list} ->
+        {
+          Map.put(index_map, index, data),
+          message_list ++ ["Video *#{index}* for #{data.title}"]
+        }
+      end)
+
+    %{
+      index_map: Jason.encode!(index_map),
+      video_message: Enum.join(message_list, "\n"),
+      answer_state: option_b_answer_state(p1_answers, p2_answers),
+      first_priority: first_priority,
+      second_priority: second_priority,
+      first_priority_answers: p1_answers,
+      second_priority_answers: p2_answers,
+      one_video_data: hd(list_p1 ++ list_p2)
+    }
+  end
+
+  @spec option_b_video_data(String.t(), map(), String.t(), map()) :: list()
+  defp option_b_video_data(priority, answers, answer_state, fields) do
+    priority_map = Enum.into(@priorities_list, %{})
+
+    Enum.reduce(answers, [], fn {key, value}, acc ->
+      if answer_state == "all_true" || value not in ["67-100"] do
+        key =
+          if is_dam_dmpc_activity?(priority, fields) and key in ["s3", "s4"],
+            do: "s4",
+            else: key
+
+        item =
+          get_in(priority_map, [priority, :option_b_videos, key])
+          |> Map.put(:priority, priority)
+
+        [item] ++ acc
+      else
+        acc
+      end
+    end)
+  end
+
+  defp is_dam_dmpc_activity?("safety", fields) do
+    activty =
+      get_in(fields, ["contact", "fields", "activity", "value"])
+      |> clean_string()
+
+    String.contains?(activty, ["dam", "dmpc"])
+  end
+
+  defp is_dam_dmpc_activity?(_priority, _activity), do: false
+
+  @spec option_b_answer_state(map(), map()) :: String.t()
+  defp option_b_answer_state(p1_answers, p2_answers) do
+    filtered_list =
+      (Map.values(p1_answers) ++ Map.values(p2_answers))
+      |> Enum.reject(fn answer -> answer == "67-100" end)
+
+    cond do
+      length(filtered_list) == 1 -> "one_true"
+      length(filtered_list) > 1 -> "more_then_one_true"
+      true -> "all_true"
+    end
+  end
+
+  @spec get_least_rank(String.t()) :: String.t()
+  defp get_least_rank(answer) do
+    clean_string(answer)
+    |> String.split(",", trim: true)
+    |> List.last()
+  end
 
   @spec get_priority_versions(map()) :: map()
   defp get_priority_versions(fields) do
@@ -316,6 +640,22 @@ defmodule Glific.Clients.Stir do
       if priority_version_field in ["", nil], do: "{}", else: priority_version_field
 
     Jason.decode!(priority_version_field)
+  end
+
+  @spec get_option_a_data(map()) :: map()
+  defp get_option_a_data(fields),
+    do: do_get_option(fields, "option_a_data")
+
+  ## We will merge these two functions once we know that there is no other requirnment.
+  @spec get_option_b_data(map()) :: map()
+  defp get_option_b_data(fields),
+    do: do_get_option(fields, "option_b_data")
+
+  @spec do_get_option(map(), String.t()) :: map()
+  defp do_get_option(fields, key) do
+    option_data = get_in(fields, ["contact", "fields", key, "value"])
+    option_data = if option_data in ["", nil], do: "{}", else: option_data
+    Jason.decode!(option_data)
   end
 
   @spec clean_string(String.t()) :: String.t()
@@ -378,6 +718,20 @@ defmodule Glific.Clients.Stir do
   end
 
   defp district_group(_, _), do: nil
+
+  defp cleaned_contact_priority(fields) do
+    contact_priorities = get_contact_priority(fields)
+
+    first_priority =
+      contact_priorities.first
+      |> clean_string()
+
+    second_priority =
+      contact_priorities.second
+      |> clean_string()
+
+    {first_priority, second_priority}
+  end
 
   @doc false
   @spec blocked?(String.t()) :: boolean
