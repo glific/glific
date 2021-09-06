@@ -423,6 +423,9 @@ defmodule Glific.Clients.Stir do
 
   def webhook(_, fields), do: fields
 
+  def gcs_file_name(media),
+    do: media["remote_name"]
+
   # Get MT type if it's A or B and perform the action based on that.
   @spec mt_type(map()) :: atom()
   defp mt_type(fields) do
