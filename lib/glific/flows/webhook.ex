@@ -180,7 +180,7 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: nil
+  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
     headers =
       if is_nil(action.headers),
@@ -190,19 +190,18 @@ defmodule Glific.Flows.Webhook do
     headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
 
-    __MODULE__.new(%{
-      method: String.downcase(action.method),
-      url: action.url,
-      result_name: action.result_name,
-      body: body,
-      headers: headers,
-      webhook_log_id: webhook_log.id,
-      context_id: context.id,
-      organization_id: context.organization_id
-    })
-    |> Oban.insert()
-
-    nil
+    {:ok, _} =
+      __MODULE__.new(%{
+        method: String.downcase(action.method),
+        url: action.url,
+        result_name: action.result_name,
+        body: body,
+        headers: headers,
+        webhook_log_id: webhook_log.id,
+        context_id: context.id,
+        organization_id: context.organization_id
+      })
+      |> Oban.insert()
   end
 
   defp do_action("post", url, body, headers),
