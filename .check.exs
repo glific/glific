@@ -24,9 +24,9 @@
     # {:my_arbitrary_script, command: ["my_script", "argument with spaces"], cd: "scripts"}
 
     {:mix_format, "mix format"},
-    {:mix_doctor, command: "mix doctor", env: %{"MIX_ENV" => "test"}},
-    {:dialyzer, "mix dialyzer --no-check --quiet", detect: [{:package, :dialyxir}]},
+    {:dialyzer, command: "mix dialyzer --no-check --quiet", env: %{"MIX_ENV" => "dev"}, detect: [{:package, :dialyxir}]},
     # We will enable it later
+    # {:mix_doctor, command: "mix doctor", env: %{"MIX_ENV" => "test"}},
     # {:sobelow, "mix sobelow --skip --exit", umbrella: [recursive: true], detect: [{:package, :sobelow}]},
     {:mix_coveralls, "mix coveralls", [{:deps, [:ex_unit]}, {:env, %{"MIX_ENV" => "test"}}]}
   ]
