@@ -17,10 +17,11 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map(), boolean) :: list() | integer
   def list_conversations(args, count \\ false) do
-    Messages.list_conversations(
-      Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args)),
-      count
-    )
+    args
+    |> IO.inspect(label: "START of LIST CONVERSATION")
+    |> Map.put(:ids, get_message_ids(args.contact_opts, args.message_opts, args))
+    |> Messages.list_conversations(count)
+    |> IO.inspect(label: "END of LIST CONVERSATION")
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
