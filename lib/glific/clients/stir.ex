@@ -739,50 +739,79 @@ defmodule Glific.Clients.Stir do
     {first_priority, second_priority}
   end
 
-  defp set_contact_reminder(fields) do
-    with {:remnder_not_set, attrs} <- pending_registeration_reminder(%{}, fields),
-         {:remnder_not_set, attrs} <- being_inactive_after_registeration_reminder(attrs, fields),
-         {:remnder_not_set, attrs} <- submit_refecltion_reminder(attrs, fields) do
+  defp set_contact_reminder(contact, fields) do
+    with {:remnder_not_set, attrs} <- pending_registeration_reminder(%{}, contact),
+         {:remnder_not_set, attrs} <- being_inactive_after_registeration_reminder(attrs, contact),
+         {:remnder_not_set, attrs} <- submit_refecltion_reminder(attrs, contact) do
       attrs
     else
       {_, attrs} -> attrs
     end
   end
 
-  defp pending_registeration_reminder(results, fields) do
-    with registration_started_at <-
-           get_in(fields, ["contact", "fields", "registration_started_at", "value"]),
-         false <- is_nil(registration_started_at),
-         nil <- get_in(fields, ["contact", "fields", "registration_completed_at", "value"]),
-         true <- Timex.diff(Timex.today(), registration_started_at, :days) > 7 do
+  defp pending_registeration_reminder(results, contact) do
+    with {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
+    {:ok, registration_completed_at} <- has_a_date(contact.fields, "registration_completed_at"),
+    true <- Timex.diff(Timex.today(), registration_started_at, :days) > 7 do
       {:remnder_set, results}
     else
       _ -> {:remnder_not_set, results}
     end
   end
 
-  defp being_inactive_after_registeration_reminder(results, fields) do
-    ## check if registration _at date is set
-    ## if yes then check the last communication date
-    ## if it's more then 15 days then set the reminder
-    {:remnder_not_set, results}
+  defp being_inactive_after_registeration_reminder(results, contact) do
+    with
+    {:ok, registration_completed_at} <- has_a_date(contact.fields, "registration_completed_at"),
+    true <- Timex.diff(Timex.today(), contact.last_communication_at, :days) > 15
+    do
+      {:remnder_set, results}
+    else
+      _ -> {:remnder_not_set, results}
+    end
   end
 
   defp submit_refecltion_reminder(results, fields) do
-    ## check if the registration date is set
-    ## last refection submission date is null or 30 days ago
-    ## set the reminder
-    {:remnder_not_set, results}
+    case has_a_date(contact.fields, "registration_completed_at") do
+      {:ok, registration_completed_at}
+        ->
+          has_a_date(contact.fields, "last_survey_submission_at")
+          |> case do
+            {:ok, last_survey_submission_at}
+              -> if Timex.diff(Timex.today(), last_survey_submission_at, :days) > 30 do
+                {:remnder_set, results}
+              else
+                {:remnder_not_set, results}
+              end
+
+            _ -> if Timex.diff(Timex.today(), registration_completed_at, :days) > 30 do
+              {:remnder_set, results}
+            else
+              {:remnder_not_set, results}
+            end
+          end
+      _ -> {:remnder_not_set, results}
+    end
   end
 
-  @spec parse_date(String.t()) :: Date.t()
-  defp parse_date(date) when is_binary(date) == true do
+  defp has_a_date(contact_fields, key) do
+    if Map.has_key?(contact_fields, key) do
+      date
+        = get_in(contact_fields, [key, "value"])
+          |> parse_string_to_date()
+      {:ok, date}
+    else
+      {:error, :invalid_date}
+    end
+  end
+
+  @spec parse_string_to_date(String.t()) :: Date.t() | nil
+  defp parse_string_to_date(nil), do: nil
+
+  defp parse_string_to_date(date) when is_binary(date) == true do
     date
     |> Timex.parse!("{YYYY}-{0M}-{D}")
     |> Timex.to_date()
   end
-
-  defp parse_date(anything), do: anything
 
   @doc false
   @spec blocked?(String.t()) :: boolean
