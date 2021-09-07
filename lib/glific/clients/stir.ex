@@ -422,7 +422,7 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("set_reminder", fields),
-    do: set_contact_reminder(fields)
+    do: set_contact_reminder(fields["contact"], fields)
 
   def webhook(_, fields), do: fields
 
@@ -750,9 +750,11 @@ defmodule Glific.Clients.Stir do
   end
 
   defp pending_registeration_reminder(results, contact) do
-    with {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
-    {:ok, registration_completed_at} <- has_a_date(contact.fields, "registration_completed_at"),
-    true <- Timex.diff(Timex.today(), registration_started_at, :days) > 7 do
+    with
+      {:error, _} <- has_a_date(contact.fields, "registration_completed_at"),
+      {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
+      true <- Timex.diff(Timex.today(), registration_started_at, :days) > 7
+      do
       {:remnder_set, results}
     else
       _ -> {:remnder_not_set, results}
@@ -760,10 +762,9 @@ defmodule Glific.Clients.Stir do
   end
 
   defp being_inactive_after_registeration_reminder(results, contact) do
-    with
-    {:ok, registration_completed_at} <- has_a_date(contact.fields, "registration_completed_at"),
-    true <- Timex.diff(Timex.today(), contact.last_communication_at, :days) > 15
-    do
+    with {:ok, registration_completed_at} <-
+           has_a_date(contact.fields, "registration_completed_at"),
+         true <- Timex.diff(Timex.today(), contact.last_communication_at, :days) > 15 do
       {:remnder_set, results}
     else
       _ -> {:remnder_not_set, results}
@@ -772,32 +773,35 @@ defmodule Glific.Clients.Stir do
 
   defp submit_refecltion_reminder(results, fields) do
     case has_a_date(contact.fields, "registration_completed_at") do
-      {:ok, registration_completed_at}
-        ->
-          has_a_date(contact.fields, "last_survey_submission_at")
-          |> case do
-            {:ok, last_survey_submission_at}
-              -> if Timex.diff(Timex.today(), last_survey_submission_at, :days) > 30 do
-                {:remnder_set, results}
-              else
-                {:remnder_not_set, results}
-              end
-
-            _ -> if Timex.diff(Timex.today(), registration_completed_at, :days) > 30 do
+      {:ok, registration_completed_at} ->
+        has_a_date(contact.fields, "last_survey_submission_at")
+        |> case do
+          {:ok, last_survey_submission_at} ->
+            if Timex.diff(Timex.today(), last_survey_submission_at, :days) > 30 do
               {:remnder_set, results}
             else
               {:remnder_not_set, results}
             end
-          end
-      _ -> {:remnder_not_set, results}
+
+          _ ->
+            if Timex.diff(Timex.today(), registration_completed_at, :days) > 30 do
+              {:remnder_set, results}
+            else
+              {:remnder_not_set, results}
+            end
+        end
+
+      _ ->
+        {:remnder_not_set, results}
     end
   end
 
   defp has_a_date(contact_fields, key) do
     if Map.has_key?(contact_fields, key) do
-      date
-        = get_in(contact_fields, [key, "value"])
-          |> parse_string_to_date()
+      date =
+        get_in(contact_fields, [key, "value"])
+        |> parse_string_to_date()
+
       {:ok, date}
     else
       {:error, :invalid_date}
