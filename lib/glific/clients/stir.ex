@@ -421,6 +421,9 @@ defmodule Glific.Clients.Stir do
     end
   end
 
+  def webhook("set_reminder", fields),
+    do: set_contact_reminder(fields)
+
   def webhook(_, fields), do: fields
 
   def gcs_file_name(media),
@@ -735,6 +738,51 @@ defmodule Glific.Clients.Stir do
 
     {first_priority, second_priority}
   end
+
+  defp set_contact_reminder(fields) do
+    with {:remnder_not_set, attrs} <- pending_registeration_reminder(%{}, fields),
+         {:remnder_not_set, attrs} <- being_inactive_after_registeration_reminder(attrs, fields),
+         {:remnder_not_set, attrs} <- submit_refecltion_reminder(attrs, fields) do
+      attrs
+    else
+      {_, attrs} -> attrs
+    end
+  end
+
+  defp pending_registeration_reminder(results, fields) do
+    with registration_started_at <-
+           get_in(fields, ["contact", "fields", "registration_started_at", "value"]),
+         false <- is_nil(registration_started_at),
+         nil <- get_in(fields, ["contact", "fields", "registration_completed_at", "value"]),
+         true <- Timex.diff(Timex.today(), registration_started_at, :days) > 7 do
+      {:remnder_set, results}
+    else
+      _ -> {:remnder_not_set, results}
+    end
+  end
+
+  defp being_inactive_after_registeration_reminder(results, fields) do
+    ## check if registration _at date is set
+    ## if yes then check the last communication date
+    ## if it's more then 15 days then set the reminder
+    {:remnder_not_set, results}
+  end
+
+  defp submit_refecltion_reminder(results, fields) do
+    ## check if the registration date is set
+    ## last refection submission date is null or 30 days ago
+    ## set the reminder
+    {:remnder_not_set, results}
+  end
+
+  @spec parse_date(String.t()) :: Date.t()
+  defp parse_date(date) when is_binary(date) == true do
+    date
+    |> Timex.parse!("{YYYY}-{0M}-{D}")
+    |> Timex.to_date()
+  end
+
+  defp parse_date(anything), do: anything
 
   @doc false
   @spec blocked?(String.t()) :: boolean
