@@ -17,7 +17,7 @@ defmodule Glific.Searches do
     Groups.ContactGroup,
     Groups.UserGroup,
     Messages.Message,
-    Partners,
+    # Partners,
     Repo,
     Search.Full,
     Searches.SavedSearch,

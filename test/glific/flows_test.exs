@@ -118,7 +118,10 @@ defmodule Glific.FLowsTest do
 
       assert {:ok, %Flow{} = flow} =
                @valid_attrs
-               |> Map.merge(%{organization_id: predefine_flow.organization_id, is_background: true})
+               |> Map.merge(%{
+                 organization_id: predefine_flow.organization_id,
+                 is_background: true
+               })
                |> Flows.create_flow()
 
       assert flow.name == @valid_attrs.name
