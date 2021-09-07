@@ -1069,8 +1069,8 @@ if Code.ensure_loaded?(Faker) do
         "type" => "quick_reply",
         "content" => %{
           "type" => "text",
-          "text" => "How excited are you for Glific?",
-          "caption" => "Glific is a two way communication platform"
+          "header" => "How excited are you for Glific?",
+          "text" => "Glific is a two way communication platform"
         },
         "options" => [
           %{
@@ -1098,9 +1098,9 @@ if Code.ensure_loaded?(Faker) do
       interactive_content_eng = %{
         "type" => "quick_reply",
         "content" => %{
-          "text" => "Are you excited for Glific?",
+          "header" => "Are you excited for Glific?",
           "type" => "text",
-          "caption" => "Glific comes with all new features"
+          "text" => "Glific comes with all new features"
         },
         "options" => [
           %{"type" => "text", "title" => "yes"},
@@ -1111,9 +1111,9 @@ if Code.ensure_loaded?(Faker) do
       interactive_content_hin = %{
         "type" => "quick_reply",
         "content" => %{
-          "text" => "आप ग्लिफ़िक के लिए कितने उत्साहित हैं?",
+          "header" => "आप ग्लिफ़िक के लिए कितने उत्साहित हैं?",
           "type" => "text",
-          "caption" => "ग्लिफ़िक सभी नई सुविधाओं के साथ आता है"
+          "text" => "ग्लिफ़िक सभी नई सुविधाओं के साथ आता है"
         },
         "options" => [
           %{"type" => "text", "title" => "हाँ"},
