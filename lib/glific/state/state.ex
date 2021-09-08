@@ -159,7 +159,7 @@ defmodule Glific.State do
         user
       ) do
     {free, busy} = do_free_entity(free_flows, busy_flows, user, :flows)
-    update_state(:flow, free, busy, state)
+    update_state(state, :flow, free, busy)
   end
 
   def free_entity(
@@ -170,12 +170,13 @@ defmodule Glific.State do
         user
       ) do
     {free, busy} = do_free_entity(free_simulators, busy_simulators, user, :simulators)
-    update_state(:simulator, free, busy, state)
+    update_state(state, :simulator, free, busy)
   end
 
-  @spec update_state(atom(), map(), map(), map()) :: map()
-  defp update_state(key, free, busy, state),
-    do: Map.merge(state, %{key => %{free: free, busy: busy}})
+  @doc false
+  @spec update_state(map(), atom(), map(), map()) :: map()
+  def update_state(state, key, free, busy),
+    do: Map.put(state, key, %{free: free, busy: busy})
 
   # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10

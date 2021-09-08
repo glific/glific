@@ -63,10 +63,10 @@ defmodule Glific.State.Flow do
         available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
 
         {
-          Map.put(state, :flow, %{
-            free: Enum.uniq(available_flows) -- [requested_flow],
-            busy: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
-          }),
+          State.update_state(state, :flow,
+            Enum.uniq(available_flows) -- [requested_flow],
+            Map.put(busy, key, {requested_flow, DateTime.utc_now()})
+          ),
           requested_flow
         }
 
@@ -88,10 +88,10 @@ defmodule Glific.State.Flow do
       # when the flow is available and user is assigned a flow
       is_struct(available_flow) ->
         {
-          Map.put(state, :flow, %{
-            free: free -- [available_flow],
-            busy: Map.put(busy, key, {flow, DateTime.utc_now()})
-          }),
+          State.update_state(state, :flow,
+            free -- [available_flow],
+            Map.put(busy, key, {flow, DateTime.utc_now()})
+          ),
           available_flow
         }
 
