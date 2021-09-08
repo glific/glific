@@ -174,7 +174,7 @@ defmodule Glific.State do
   end
 
   @doc false
-  @spec update_state(map(), atom(), map(), map()) :: map()
+  @spec update_state(map(), atom(), any(), any()) :: map()
   def update_state(state, key, free, busy),
     do: Map.put(state, key, %{free: free, busy: busy})
 

@@ -47,7 +47,9 @@ defmodule Glific.State.Simulator do
         contact = elem(busy[key], 0)
 
         {
-          State.update_state(state, :simulator,
+          State.update_state(
+            state,
+            :simulator,
             free,
             Map.put(busy, key, {contact, DateTime.utc_now()})
           ),
@@ -63,7 +65,9 @@ defmodule Glific.State.Simulator do
         [contact | free] = free
 
         {
-          State.update_state(state, :simulator,
+          State.update_state(
+            state,
+            :simulator,
             free,
             Map.put(busy, key, {contact, DateTime.utc_now()})
           ),
