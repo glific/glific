@@ -1140,7 +1140,7 @@ if Code.ensure_loaded?(Faker) do
         "content" => %{
           "type" => "image",
           "url" => "https://picsum.photos/200/300",
-          "caption" => "body text"
+          "text" => "body text"
         },
         "options" => [
           %{"type" => "text", "title" => "First"},
@@ -1190,7 +1190,7 @@ if Code.ensure_loaded?(Faker) do
         "content" => %{
           "type" => "video",
           "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
-          "caption" => "Sample video"
+          "text" => "Sample video"
         },
         "options" => [
           %{"type" => "text", "title" => "First"},
