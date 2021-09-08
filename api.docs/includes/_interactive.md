@@ -36,7 +36,7 @@ query interactiveTemplates($filter: InteractiveTemplateFilter, $opts: Opts) {
       {
         "id": "1",
         "insertedAt": "2021-07-07T15:38:20.000000Z",
-        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"Good\"},{\"type\":\"text\",\"title\":\"Not well\"},{\"type\":\"text\",\"title\":\"Sick\"}],\"content\":{\"type\":\"text\",\"text\":\"Hi John, how are you?\"}}",
+        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"Good\"},{\"type\":\"text\",\"title\":\"Not well\"},{\"type\":\"text\",\"title\":\"Sick\"}],\"content\":{\"type\":\"text\",\"header\":\"general question 1\",\"text\":\"Hi John, how are you?\"}}",
         "label": "news",
         "type": "QUICK_REPLY",
         "updatedAt": "2021-07-07T15:38:20.000000Z"
@@ -44,7 +44,7 @@ query interactiveTemplates($filter: InteractiveTemplateFilter, $opts: Opts) {
       {
         "id": "12",
         "insertedAt": "2021-07-07T15:38:20.000000Z",
-        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"London\"},{\"type\":\"text\",\"title\":\"Berlin\"},{\"type\":\"text\",\"title\":\"Paris\"}],\"content\":{\"type\":\"text\",\"text\":\"Where have you been?\"}}",
+        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"London\"},{\"type\":\"text\",\"title\":\"Berlin\"},{\"type\":\"text\",\"title\":\"Paris\"}],\"content\":{\"type\":\"text\",\"header\":\"general question 2\",\"text\":\"Where have you been?\"}}",
         "label": "news2",
         "type": "QUICK_REPLY",
         "updatedAt": "2021-07-07T15:38:20.000000Z"
@@ -99,7 +99,7 @@ query interactiveTemplate($id: ID!) {
       "interactiveTemplate": {
         "id": "12",
         "insertedAt": "2021-07-07T15:38:20.000000Z",
-        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"London\"},{\"type\":\"text\",\"title\":\"Berlin\"},{\"type\":\"text\",\"title\":\"Paris\"}],\"content\":{\"type\":\"text\",\"text\":\"Where have you been?\"}}",
+        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"London\"},{\"type\":\"text\",\"title\":\"Berlin\"},{\"type\":\"text\",\"title\":\"Paris\"}],\"content\":{\"type\":\"text\",\"header\":\"general question 1\",\"text\":\"Where have you been?\"}}",
         "label": "news2",
         "type": "QUICK_REPLY",
         "updatedAt": "2021-07-07T15:38:20.000000Z"
@@ -178,7 +178,7 @@ mutation createInteractiveTemplate($input:interactiveTemplateInput!) {
   "input": {
     "type": "QUICK_REPLY",
     "label": "news2",
-    "interactiveContent": {"type": "quick_reply", "content": {"text": "Hi John, how are you?", "type": "text"}, "options": [{"type": "text", "title": "First"}, {"type": "text", "title": "Second"}, {"type": "text", "title": "Third"}]}
+    "interactiveContent": {"type": "quick_reply", "content": {"header": "general question 1", "text": "Hi John, how are you?", "type": "text"}, "options": [{"type": "text", "title": "First"}, {"type": "text", "title": "Second"}, {"type": "text", "title": "Third"}]}
   }
 }
 ```
@@ -193,7 +193,7 @@ mutation createInteractiveTemplate($input:interactiveTemplateInput!) {
       "interactive": {
         "id": "2",
         "insertedAt": "2021-07-07T10:19:00.887484Z",
-        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"First\"},{\"type\":\"text\",\"title\":\"Second\"},{\"type\":\"text\",\"title\":\"Third\"}],\"content\":{\"type\":\"text\",\"text\":\"Hi John, how are you?\"}}",
+        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"First\"},{\"type\":\"text\",\"title\":\"Second\"},{\"type\":\"text\",\"title\":\"Third\"}],\"content\":{\"header\":\"general question 1\",\"type\":\"text\",\"text\":\"Hi John, how are you?\"}}",
         "label": "news2",
         "type": "QUICK_REPLY",
         "updatedAt": "2021-07-07T10:19:00.887484Z"
@@ -253,7 +253,7 @@ mutation updateInteractiveTemplate($id: ID!, $input:interactiveTemplateInput!) {
       "interactive": {
         "id": "2",
         "insertedAt": "2021-07-07T10:19:01.000000Z",
-        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"First\"},{\"type\":\"text\",\"title\":\"Second\"},{\"type\":\"text\",\"title\":\"Third\"}],\"content\":{\"type\":\"text\",\"text\":\"Hi John, how are you?\"}}",
+        "interactiveContent": "{\"type\":\"quick_reply\",\"options\":[{\"type\":\"text\",\"title\":\"First\"},{\"type\":\"text\",\"title\":\"Second\"},{\"type\":\"text\",\"title\":\"Third\"}],\"content\":{\"type\":\"text\",\"header\":\"general question 1\",\"text\":\"Hi John, how are you?\"}}",
         "label": "all weather",
         "type": "QUICK_REPLY",
         "updatedAt": "2021-07-07T10:24:27.000000Z"
