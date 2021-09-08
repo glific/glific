@@ -675,7 +675,7 @@ defmodule Glific.MessagesTest do
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
-      assert message.body == "How excited are you for Glific?"
+      assert message.body == "Glific is a two way communication platform"
     end
 
     test "create and send message interactive quick reply message with document should have message body as ",
