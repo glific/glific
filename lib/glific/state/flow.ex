@@ -33,10 +33,7 @@ defmodule Glific.State.Flow do
   @spec get_org_flows(map(), User.t(), non_neg_integer()) :: {map, Flow.t()}
   defp get_org_flows(
          %{
-           free_simulators: free_simulators,
-           busy_simulators: busy_simulators,
-           free_flows: free,
-           busy_flows: busy
+           flow: %{free: free, busy: busy}
          } = state,
          user,
          flow_id
@@ -66,12 +63,15 @@ defmodule Glific.State.Flow do
         available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
 
         {
-          %{
-            free_simulators: free_simulators,
-            busy_simulators: busy_simulators,
-            free_flows: Enum.uniq(available_flows) -- [requested_flow],
-            busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
-          },
+          Map.merge(
+            state,
+            %{
+              flow: %{
+                free: Enum.uniq(available_flows) -- [requested_flow],
+                busy: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
+              }
+            }
+          ),
           requested_flow
         }
 
@@ -93,12 +93,15 @@ defmodule Glific.State.Flow do
       # when the flow is available and user is assigned a flow
       is_struct(available_flow) ->
         {
-          %{
-            free_simulators: free_simulators,
-            busy_simulators: busy_simulators,
-            free_flows: free -- [available_flow],
-            busy_flows: Map.put(busy, key, {flow, DateTime.utc_now()})
-          },
+          Map.merge(
+            state,
+            %{
+              flow: %{
+                free: free -- [available_flow],
+                busy: Map.put(busy, key, {flow, DateTime.utc_now()})
+              }
+            }
+          ),
           available_flow
         }
 
@@ -122,12 +125,25 @@ defmodule Glific.State.Flow do
 
   @spec get_user_name(map(), Flow.t()) :: String.t()
   defp get_user_name(state, requested_flow) do
-    state.busy_flows
+    %{flow: %{busy: busy}} = state
+    busy
     |> Enum.reduce("", fn busy_flow, acc ->
       {key, value} = busy_flow
       {flow, _time} = value
       {user_id, _finger_print} = key
       if flow.id == requested_flow.id, do: Glific.Users.get_user!(user_id).name, else: acc
     end)
+  end
+
+  @doc false
+  @spec init_state(non_neg_integer) :: map()
+  def init_state(organization_id) do
+    # fetch all the flows for this organization
+    flows =
+      Glific.Flows.Flow
+      |> where([f], f.organization_id == ^organization_id)
+      |> Repo.all(skip_organization_id: true, skip_permission: true)
+
+    %{flow: %{free: flows, busy: %{}}}
   end
 end

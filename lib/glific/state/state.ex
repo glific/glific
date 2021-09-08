@@ -12,8 +12,6 @@ defmodule Glific.State do
 
   alias Glific.{
     Communications,
-    Contacts,
-    Repo,
     State.Flow,
     State.Simulator,
     Users.User
@@ -124,22 +122,9 @@ defmodule Glific.State do
 
   @spec init_state(non_neg_integer) :: map()
   defp init_state(organization_id) do
-    phone = Contacts.simulator_phone_prefix() <> "%"
-
-    # fetch all the simulator contacts for this organization
-    contacts =
-      Glific.Contacts.Contact
-      |> where([c], like(c.phone, ^phone))
-      |> where([c], c.organization_id == ^organization_id)
-      |> Repo.all(skip_organization_id: true, skip_permission: true)
-
-    # fetch all the flows for this organization
-    flows =
-      Glific.Flows.Flow
-      |> where([f], f.organization_id == ^organization_id)
-      |> Repo.all(skip_organization_id: true, skip_permission: true)
-
-    %{free_simulators: contacts, busy_simulators: %{}, free_flows: flows, busy_flows: %{}}
+    %{}
+    |> Map.merge(Simulator.init_state(organization_id))
+    |> Map.merge(Flow.init_state(organization_id))
   end
 
   @spec reset_state :: map()
@@ -168,34 +153,29 @@ defmodule Glific.State do
   @spec free_entity(map(), atom(), User.t()) :: map()
   def free_entity(
         %{
-          free_flows: free_flows,
-          busy_flows: busy_flows
+          flow: %{free: free_flows, busy: busy_flows}
         } = state,
         :flows,
         user
       ) do
     {free, busy} = do_free_entity(free_flows, busy_flows, user, :flows)
-    update_state(:flows, free, busy, state)
+    update_state(:flow, free, busy, state)
   end
 
   def free_entity(
         %{
-          free_simulators: free_simulators,
-          busy_simulators: busy_simulators
+          simulator: %{free: free_simulators, busy: busy_simulators}
         } = state,
         :simulators,
         user
       ) do
     {free, busy} = do_free_entity(free_simulators, busy_simulators, user, :simulators)
-    update_state(:simulators, free, busy, state)
+    update_state(:simulator, free, busy, state)
   end
 
   @spec update_state(atom(), map(), map(), map()) :: map()
-  defp update_state(:simulators, free, busy, state),
-    do: Map.merge(state, %{free_simulators: free, busy_simulators: busy})
-
-  defp update_state(:flows, free, busy, state),
-    do: Map.merge(state, %{free_flows: free, busy_flows: busy})
+  defp update_state(key, free, busy, state),
+    do: Map.merge(state, %{key => %{free: free, busy: busy}})
 
   # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10

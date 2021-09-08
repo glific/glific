@@ -18,7 +18,7 @@ defmodule Glific.StateTest do
   end
 
   test "Ensure cache is initialized to all contacts in free state" do
-    %{free_simulators: free_simulators, busy_simulators: busy_simulators} = State.state(1)
+    %{simulator: %{free: free_simulators, busy: busy_simulators}} = State.state(1)
 
     # we have 5 simulators in our dev seeder
     assert length(free_simulators) == 5
@@ -102,7 +102,7 @@ defmodule Glific.StateTest do
   end
 
   test "Ensure cache is initialized to all flows in free state" do
-    %{free_flows: free_flows, busy_flows: busy_flows} = State.state(1)
+    %{flow: %{free: free_flows, busy: busy_flows}} = State.state(1)
 
     # we have 13 flows in our dev seeder
     assert length(free_flows) == 13
@@ -175,13 +175,13 @@ defmodule Glific.StateTest do
     flow_2 = State.get_flow(user, 2)
     assert flow_2 != nil
 
-    %{free_flows: free_flows} = State.state(1)
+    %{flow: %{free: free_flows}} = State.state(1)
     assert true == Enum.member?(free_flows, flow_1)
   end
 
   test "Ensure we can request and get different flow, and on release the number of available flows always remain same",
        %{organization_id: organization_id} = _attrs do
-    %{free_flows: free_flows} = State.state(1)
+    %{flow: %{free: free_flows}} = State.state(1)
     count_free_flow = length(free_flows)
 
     user_1 = %User{
@@ -204,7 +204,7 @@ defmodule Glific.StateTest do
 
     State.release_flow(user_1)
     State.release_flow(user_2)
-    %{free_flows: free_flows} = State.state(1)
+    %{flow: %{free: free_flows}} = State.state(1)
     new_count_free_flows = length(free_flows)
     assert count_free_flow == new_count_free_flows
   end

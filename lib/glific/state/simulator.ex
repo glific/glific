@@ -6,7 +6,9 @@ defmodule Glific.State.Simulator do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
+    Repo,
     State,
     Users.User
   }
@@ -32,10 +34,7 @@ defmodule Glific.State.Simulator do
   @spec get_org_simulator(map(), User.t()) :: {map, Contact.t()} | nil
   defp get_org_simulator(
          %{
-           free_simulators: free,
-           busy_simulators: busy,
-           free_flows: free_flows,
-           busy_flows: busy_flows
+           simulator: %{free: free, busy: busy}
          } = state,
          user
        ) do
@@ -48,12 +47,15 @@ defmodule Glific.State.Simulator do
         contact = elem(busy[key], 0)
 
         {
-          %{
-            free_simulators: free,
-            busy_simulators: Map.put(busy, key, {contact, DateTime.utc_now()}),
-            free_flows: free_flows,
-            busy_flows: busy_flows
-          },
+          Map.merge(
+            state,
+            %{
+              simulator: %{
+                free: free,
+                busy: Map.put(busy, key, {contact, DateTime.utc_now()})
+              }
+            }
+          ),
           contact
         }
 
@@ -66,14 +68,32 @@ defmodule Glific.State.Simulator do
         [contact | free] = free
 
         {
-          %{
-            free_simulators: free,
-            busy_simulators: Map.put(busy, key, {contact, DateTime.utc_now()}),
-            free_flows: free_flows,
-            busy_flows: busy_flows
-          },
+          Map.merge(
+            state,
+            %{
+              simulator: %{
+                free: free,
+                busy: Map.put(busy, key, {contact, DateTime.utc_now()})
+              }
+            }
+          ),
           contact
         }
     end
+  end
+
+  @doc false
+  @spec init_state(non_neg_integer) :: map()
+  def init_state(organization_id) do
+    phone = Contacts.simulator_phone_prefix() <> "%"
+
+    # fetch all the simulator contacts for this organization
+    contacts =
+      Glific.Contacts.Contact
+      |> where([c], like(c.phone, ^phone))
+      |> where([c], c.organization_id == ^organization_id)
+      |> Repo.all(skip_organization_id: true, skip_permission: true)
+
+    %{simulator: %{free: contacts, busy: %{}}}
   end
 end
