@@ -63,15 +63,10 @@ defmodule Glific.State.Flow do
         available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
 
         {
-          Map.merge(
-            state,
-            %{
-              flow: %{
-                free: Enum.uniq(available_flows) -- [requested_flow],
-                busy: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
-              }
-            }
-          ),
+          Map.put(state, :flow, %{
+            free: Enum.uniq(available_flows) -- [requested_flow],
+            busy: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
+          }),
           requested_flow
         }
 
@@ -93,15 +88,10 @@ defmodule Glific.State.Flow do
       # when the flow is available and user is assigned a flow
       is_struct(available_flow) ->
         {
-          Map.merge(
-            state,
-            %{
-              flow: %{
-                free: free -- [available_flow],
-                busy: Map.put(busy, key, {flow, DateTime.utc_now()})
-              }
-            }
-          ),
+          Map.put(state, :flow, %{
+            free: free -- [available_flow],
+            busy: Map.put(busy, key, {flow, DateTime.utc_now()})
+          }),
           available_flow
         }
 
@@ -126,6 +116,7 @@ defmodule Glific.State.Flow do
   @spec get_user_name(map(), Flow.t()) :: String.t()
   defp get_user_name(state, requested_flow) do
     %{flow: %{busy: busy}} = state
+
     busy
     |> Enum.reduce("", fn busy_flow, acc ->
       {key, value} = busy_flow

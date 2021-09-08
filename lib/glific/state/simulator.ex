@@ -47,15 +47,10 @@ defmodule Glific.State.Simulator do
         contact = elem(busy[key], 0)
 
         {
-          Map.merge(
-            state,
-            %{
-              simulator: %{
-                free: free,
-                busy: Map.put(busy, key, {contact, DateTime.utc_now()})
-              }
-            }
-          ),
+          Map.put(state, :simulator, %{
+            free: free,
+            busy: Map.put(busy, key, {contact, DateTime.utc_now()})
+          }),
           contact
         }
 
@@ -68,15 +63,10 @@ defmodule Glific.State.Simulator do
         [contact | free] = free
 
         {
-          Map.merge(
-            state,
-            %{
-              simulator: %{
-                free: free,
-                busy: Map.put(busy, key, {contact, DateTime.utc_now()})
-              }
-            }
-          ),
+          Map.put(state, :simulator, %{
+            free: free,
+            busy: Map.put(busy, key, {contact, DateTime.utc_now()})
+          }),
           contact
         }
     end
