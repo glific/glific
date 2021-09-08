@@ -17,7 +17,6 @@ defmodule Glific.Searches do
     Groups.ContactGroup,
     Groups.UserGroup,
     Messages.Message,
-    # Partners,
     Repo,
     Search.Full,
     Searches.SavedSearch,
@@ -245,17 +244,10 @@ defmodule Glific.Searches do
 
   @spec basic_query(map()) :: Ecto.Query.t()
   defp basic_query(args) do
-    # organization_contact_id = Partners.organization_contact_id(args.filter.organization_id)
-
     query = from c in Contact, as: :c
 
     query
     |> add_message_clause(args)
-    # Commenting these out for now since they slow the queries down a lot
-    # For active connections neither of these should appear in the list, we can
-    # filter them at a later stage
-    # |> where([c: c], c.id != ^organization_contact_id)
-    # |> where([c: c], c.status != :blocked)
     |> order_by([c: c], desc: c.last_communication_at)
     |> group_by([c: c], c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
