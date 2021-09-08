@@ -53,7 +53,7 @@ defmodule Glific.State.Flow do
     available_flow = if(Enum.member?(free, flow), do: flow, else: nil)
 
     cond do
-      # when user already has some flow with same fingerprint
+      # when user already has some flow assigned with same fingerprint
       Map.has_key?(busy, key) ->
         {assigned_flow, _time} = Map.get(busy, key)
 
@@ -69,7 +69,7 @@ defmodule Glific.State.Flow do
           %{
             free_simulators: free_simulators,
             busy_simulators: busy_simulators,
-            free_flows:  Map.delete(available_flows, requested_flow),
+            free_flows: Enum.uniq(available_flows) -- [requested_flow],
             busy_flows: Map.put(busy, key, {requested_flow, DateTime.utc_now()})
           },
           requested_flow
