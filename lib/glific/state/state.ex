@@ -40,7 +40,7 @@ defmodule Glific.State do
   @impl true
   @doc false
   def handle_call({:release_simulator, user}, _from, state) do
-    state = release_resource(user, state, :simulators)
+    state = release_entity(user, state, :simulators)
 
     {:reply, nil, state, :hibernate}
   end
@@ -67,7 +67,7 @@ defmodule Glific.State do
   @impl true
   @doc false
   def handle_call({:release_flow, user}, _from, state) do
-    state = release_resource(user, state, :flows)
+    state = release_entity(user, state, :flows)
 
     {:reply, nil, state, :hibernate}
   end
@@ -148,11 +148,11 @@ defmodule Glific.State do
   end
 
   @doc """
-  Release the resource associated with this user id. It is possible
-  that there is no resource associated with this user
+  Release the entity associated with this user id. It is possible
+  that there is no entity associated with this user
   """
-  @spec release_resource(User.t(), map(), atom()) :: map()
-  def release_resource(user, state, type) do
+  @spec release_entity(User.t(), map(), atom()) :: map()
+  def release_entity(user, state, type) do
     organization_id = user.organization_id
 
     org_state =
@@ -163,7 +163,7 @@ defmodule Glific.State do
   end
 
   @doc """
-  Free the resource after holding a resource period is over
+  Free the entity after holding an entity period is over
   """
   @spec free_entity(map(), atom(), User.t()) :: map()
   def free_entity(
