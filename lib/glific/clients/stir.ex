@@ -116,6 +116,12 @@ defmodule Glific.Clients.Stir do
     "question_5" => "ask why and who questions"
   }
 
+  @reminders %{
+    pending_registeration: %{days: 7, group: "pending_registration" },
+    inactive_after_registeration: %{days: 15, group: "inactive_after_registeration" } ,
+    submit_refecltion: %{days: 30, group: "submit_refecltion" }
+  }
+
   @doc false
   @spec webhook(String.t(), map()) :: map()
   def webhook("move_mt_to_district_group", fields) do
@@ -406,9 +412,6 @@ defmodule Glific.Clients.Stir do
   def webhook("get_survey_results", fields),
     do: get_survey_results(fields, mt_type(fields))
 
-  def webhook("compute_survey_score", %{results: results}),
-    do: compute_survey_score(results)
-
   def webhook("get_option_b_video_data", fields) do
     index_map = Jason.decode!(fields["index_map"])
     index = fields["index"]
@@ -421,8 +424,14 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  def webhook("set_reminder", fields),
-    do: set_contact_reminder(fields["contact"], fields)
+  def webhook("set_reminders", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    contact = Contacts.get_contact!(contact_id)
+    set_contact_reminder(contact, fields)
+  end
+
+  def webhook("compute_survey_score", %{results: results}),
+    do: compute_survey_score(results)
 
   def webhook(_, fields), do: fields
 
@@ -739,60 +748,61 @@ defmodule Glific.Clients.Stir do
     {first_priority, second_priority}
   end
 
-  defp set_contact_reminder(contact, fields) do
-    with {:remnder_not_set, attrs} <- pending_registeration_reminder(%{}, contact),
-         {:remnder_not_set, attrs} <- being_inactive_after_registeration_reminder(attrs, contact),
-         {:remnder_not_set, attrs} <- submit_refecltion_reminder(attrs, contact) do
+  defp set_contact_reminder(contact, _fields) do
+    with {:remnder_not_set, attrs} <- pending_registeration_reminder(%{}, contact, :pending_registeration),
+         {:remnder_not_set, attrs} <- being_inactive_after_registeration_reminder(attrs, contact, :inactive_after_registeration),
+         {:remnder_not_set, attrs} <- submit_refecltion_reminder(attrs, contact, :submit_refecltion) do
       attrs
     else
       {_, attrs} -> attrs
     end
   end
 
-  defp pending_registeration_reminder(results, contact) do
-    with
-      {:error, _} <- has_a_date(contact.fields, "registration_completed_at"),
-      {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
-      true <- Timex.diff(Timex.today(), registration_started_at, :days) > 7
-      do
-      {:remnder_set, results}
+  defp pending_registeration_reminder(results, contact, type) do
+    with {:error, _} <- has_a_date(contact.fields, "registration_completed_at"),
+         {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
+         true <- Timex.diff(Timex.today(), registration_started_at, :days) |> is_reminder_day?(type) do
+      {:remnder_set, set_reminder(contact, type)}
     else
       _ -> {:remnder_not_set, results}
     end
   end
 
-  defp being_inactive_after_registeration_reminder(results, contact) do
-    with {:ok, registration_completed_at} <-
+  defp being_inactive_after_registeration_reminder(results, contact, type) do
+    with {:ok, _registration_completed_at} <-
            has_a_date(contact.fields, "registration_completed_at"),
-         true <- Timex.diff(Timex.today(), contact.last_communication_at, :days) > 15 do
-      {:remnder_set, results}
+         true <- Timex.diff(Timex.today(), contact.last_communication_at, :days) |> is_reminder_day?(type) do
+      {:remnder_set, set_reminder(contact, type)}
     else
       _ -> {:remnder_not_set, results}
     end
   end
 
-  defp submit_refecltion_reminder(results, fields) do
+  defp submit_refecltion_reminder(results, contact, type) do
     case has_a_date(contact.fields, "registration_completed_at") do
-      {:ok, registration_completed_at} ->
+      {:ok, _registration_completed_at} ->
         has_a_date(contact.fields, "last_survey_submission_at")
-        |> case do
-          {:ok, last_survey_submission_at} ->
-            if Timex.diff(Timex.today(), last_survey_submission_at, :days) > 30 do
-              {:remnder_set, results}
-            else
-              {:remnder_not_set, results}
-            end
+        date = submission_check_date(contact.fields)
 
-          _ ->
-            if Timex.diff(Timex.today(), registration_completed_at, :days) > 30 do
-              {:remnder_set, results}
-            else
-              {:remnder_not_set, results}
-            end
+        if Timex.diff(Timex.today(), date, :days) |> is_reminder_day?(type)do
+          {:remnder_set, set_reminder(contact, type)}
+        else
+          {:remnder_not_set, results}
         end
 
       _ ->
         {:remnder_not_set, results}
+    end
+  end
+
+  defp submission_check_date(contact_fields) do
+    case has_a_date(contact_fields, "last_survey_submission_at") do
+      {:ok, last_survey_submission_at} ->
+        last_survey_submission_at
+
+      _ ->
+        {:ok, registration_completed_at} = has_a_date(contact_fields, "registration_completed_at")
+        registration_completed_at
     end
   end
 
@@ -806,6 +816,41 @@ defmodule Glific.Clients.Stir do
     else
       {:error, :invalid_date}
     end
+  end
+
+  defp is_reminder_day?(days, type),
+  do: rem(days, @reminders[type][:days]) == 0
+
+  defp set_reminder(contact, type) do
+    {:ok, group} =
+      @reminders[type][:group]
+      |> Groups.get_or_create_group_by_label(contact.organization_id)
+
+    Groups.create_contact_group(%{
+      contact_id: contact.id,
+      group_id: group.id,
+      organization_id: contact.organization_id
+    })
+
+    results = %{
+      reminder_type: type,
+      last_reminder_at: Timex.now |> Timex.to_string()
+    }
+    add_reminder_versions(contact, results)
+    results
+  end
+
+  defp add_reminder_versions(contact, results) do
+    data = get_in(contact.fields, ["reminder_data", "value"])
+    data =
+      if data in ["", nil], do: "{}", else: data
+      |> Jason.decode!()
+
+    versions = data["versions"] || []
+    versions = (versions ++ [results]) |> Jason.encode!()
+
+    contact
+    |> ContactField.do_add_contact_field("reminder_data", "reminder_data", versions, "json")
   end
 
   @spec parse_string_to_date(String.t()) :: Date.t() | nil
