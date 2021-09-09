@@ -41,21 +41,6 @@ defmodule Glific.State.Simulator do
     key = {user.id, user.fingerprint}
 
     cond do
-      # if userid already has a simulator, assign same simulator
-      # and update time
-      Map.has_key?(busy, key) ->
-        contact = elem(busy[key], 0)
-
-        {
-          State.update_state(
-            state,
-            :simulator,
-            free,
-            Map.put(busy, key, {contact, DateTime.utc_now()})
-          ),
-          contact
-        }
-
       # if no simulator is present
       Enum.empty?(free) ->
         {state, nil}

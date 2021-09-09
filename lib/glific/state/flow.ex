@@ -50,28 +50,6 @@ defmodule Glific.State.Flow do
     available_flow = if(Enum.member?(free, flow), do: flow, else: nil)
 
     cond do
-      # when user already has some flow assigned with same fingerprint
-      Map.has_key?(busy, key) ->
-        {assigned_flow, _time} = Map.get(busy, key)
-
-        requested_flow =
-          if assigned_flow == flow,
-            do: assigned_flow,
-            else: available_flow
-
-        # updating free flows list when a new flow is assigned to user
-        available_flows = if assigned_flow == flow, do: free, else: free ++ [assigned_flow]
-
-        {
-          State.update_state(
-            state,
-            :flow,
-            Enum.uniq(available_flows) -- [requested_flow],
-            Map.put(busy, key, {requested_flow, DateTime.utc_now()})
-          ),
-          requested_flow
-        }
-
       # when the requested flow is either not available in flow or if all the flows are busy
       is_nil(available_flow) || Enum.empty?(free) ->
         Repo.put_process_state(user.organization_id)

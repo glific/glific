@@ -8,6 +8,7 @@ defmodule Glific.State do
 
   use GenServer
 
+  require Logger
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -188,8 +189,13 @@ defmodule Glific.State do
       busy,
       {free, busy},
       fn {{id, fingerprint}, {entity, time}}, {free, busy} ->
+        # when user already has entity flow assigned with same fingerprint
         if (user && user.id == id && user.fingerprint == fingerprint) ||
              DateTime.compare(time, expiry_time) == :lt do
+          Logger.info(
+            "Releasing entity: #{entity} for user: #{user.name} of org_id: #{user.organization_id}."
+          )
+
           publish_data(entity.organization_id, id, entity_type)
 
           {
