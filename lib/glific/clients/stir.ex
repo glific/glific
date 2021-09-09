@@ -738,7 +738,7 @@ defmodule Glific.Clients.Stir do
 
   defp district_group(_, _), do: nil
 
-  @spec cleaned_contact_priority(atom()) :: tuple()
+  @spec cleaned_contact_priority(map()) :: tuple()
   defp cleaned_contact_priority(fields) do
     contact_priorities = get_contact_priority(fields)
 
@@ -768,6 +768,7 @@ defmodule Glific.Clients.Stir do
       attrs
     else
       {_, attrs} -> attrs
+      _ -> %{error: :no_response}
     end
   end
 
@@ -783,7 +784,8 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  @spec being_inactive_after_registeration_reminder(map(), Contacts.Contact.t(), atom()) :: tuple()
+  @spec being_inactive_after_registeration_reminder(map(), Contacts.Contact.t(), atom()) ::
+          tuple()
   defp being_inactive_after_registeration_reminder(results, contact, type) do
     with {:ok, _registration_completed_at} <-
            has_a_date(contact.fields, "registration_completed_at"),
@@ -826,7 +828,7 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  @spec has_a_date(map(), atom()) :: tuple()
+  @spec has_a_date(map(), atom()) :: {:ok, Date.t()} | {:error, atom()}
   defp has_a_date(contact_fields, key) do
     if Map.has_key?(contact_fields, key) do
       date =
@@ -839,7 +841,7 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  @spec is_reminder_day?(non_neg_integer(), atom()) :: boolean()
+  @spec is_reminder_day?(integer(), atom()) :: boolean()
   defp is_reminder_day?(days, type),
     do: rem(days, @reminders[type][:days]) == 0
 
@@ -861,6 +863,7 @@ defmodule Glific.Clients.Stir do
     }
 
     add_reminder_versions(contact, results)
+
     results
   end
 
