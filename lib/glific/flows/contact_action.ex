@@ -77,6 +77,7 @@ defmodule Glific.Flows.ContactAction do
         receiver_id: cid,
         organization_id: context.organization_id,
         flow_id: context.flow_id,
+        group_message_id: context.group_message_id,
         send_at: DateTime.add(DateTime.utc_now(), context.delay),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
         interactive_template_id: action.interactive_template_id
@@ -224,6 +225,7 @@ defmodule Glific.Flows.ContactAction do
       receiver_id: cid,
       uuid: action.uuid,
       flow_id: context.flow_id,
+      group_message_id: context.group_message_id,
       is_hsm: true,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       params: params
@@ -288,6 +290,7 @@ defmodule Glific.Flows.ContactAction do
       receiver_id: cid,
       organization_id: organization_id,
       flow_id: context.flow_id,
+      group_message_id: context.group_message_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       is_optin_flow: Flows.is_optin_flow?(context.flow)
     }

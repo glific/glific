@@ -471,6 +471,7 @@ defmodule Glific.Messages do
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       flow_id: args[:flow_id],
+      group_message_id: args[:group_message_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
       organization_id: session_template.organization_id,
