@@ -40,24 +40,22 @@ defmodule Glific.State.Simulator do
        ) do
     key = {user.id, user.fingerprint}
 
-    cond do
+    if Enum.empty?(free) do
       # if no simulator is present
-      Enum.empty?(free) ->
-        {state, nil}
-
+      {state, nil}
+    else
       # if simulator is present
-      true ->
-        [contact | free] = free
+      [contact | free] = free
 
-        {
-          State.update_state(
-            state,
-            :simulator,
-            free,
-            Map.put(busy, key, {contact, DateTime.utc_now()})
-          ),
-          contact
-        }
+      {
+        State.update_state(
+          state,
+          :simulator,
+          free,
+          Map.put(busy, key, {contact, DateTime.utc_now()})
+        ),
+        contact
+      }
     end
   end
 
