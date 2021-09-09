@@ -669,7 +669,7 @@ defmodule Glific.Messages do
   def create_and_send_message_to_group(message_params, group, type) do
     contact_ids = Groups.contact_ids(group.id)
 
-    {:ok, _group_message} =
+    {:ok, group_message} =
       if type == :session,
         do: create_group_message(Map.put(message_params, :group_id, group.id)),
         else:
@@ -685,9 +685,10 @@ defmodule Glific.Messages do
             |> Map.put(:type, :text)
           )
 
-    create_and_send_message_to_contacts(
-      # supress publishing a subscription for group messages
-      Map.merge(message_params, %{publish?: false, group_id: group.id}),
+    message_params
+    # supress publishing a subscription for group messages
+    |> Map.merge(%{publish?: false, group_id: group.id, group_message_id: group_message.id})
+    |> create_and_send_message_to_contacts(
       contact_ids,
       type
     )
