@@ -29,15 +29,15 @@ defmodule Glific.Clients.Avanti do
     fetch_bigquery_data(fields, :analytics)
   end
 
-  # returns data queried from bigquery in the form %{data: data, is_valid: true} or returns error as %{is_valid: false, message: error_message}
+  # returns data queried from bigquery in the form %{data: data, is_valid: true}
+  # or returns error as %{is_valid: false, message: error_message}
   @spec fetch_bigquery_data(map(), atom()) :: map()
   defp fetch_bigquery_data(fields, query_type) do
     Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
-        sql = get_report_sql(query_type)
-
-        with {:ok, response} <-
+        with sql <- get_report_sql(query_type),
+             {:ok, response} <-
                Jobs.bigquery_jobs_query(conn, project_id,
                  body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
                ) do
@@ -47,8 +47,7 @@ defmodule Glific.Clients.Avanti do
               row.f
               |> Enum.with_index()
               |> Enum.reduce(%{}, fn {cell, i}, acc ->
-                acc
-                |> Map.put_new("#{Enum.at(response.schema.fields, i).name}", cell.v)
+                acc |> Map.put_new("#{Enum.at(response.schema.fields, i).name}", cell.v)
               end)
             end)
 
