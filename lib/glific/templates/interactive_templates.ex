@@ -126,7 +126,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
   def get_interactive_body(interactive_content, "quick_reply", type)
       when type in ["image", "video"],
-      do: interactive_content["content"]["caption"]
+      do: interactive_content["content"]["text"]
 
   def get_interactive_body(interactive_content, "quick_reply", "file"),
     do: interactive_content["content"]["url"]
