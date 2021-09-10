@@ -15,7 +15,7 @@ defmodule Glific.Clients.Avanti do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("check_if_existing_teacher", fields) do
-    phone = fields["phone"]
+    phone = fields["phone"] |> String.trim() |> String.trim("91")
 
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
@@ -26,7 +26,9 @@ defmodule Glific.Clients.Avanti do
   end
 
   def webhook("fetch_report", fields) do
-    fetch_bigquery_data(fields, :analytics)
+    with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
+      data
+    end
   end
 
   # returns data queried from bigquery in the form %{data: data, is_valid: true}
@@ -66,11 +68,11 @@ defmodule Glific.Clients.Avanti do
   defp get_report_sql(:analytics) do
     time =
       DateTime.utc_now()
-      |> Timex.shift(days: -6)
+      |> Timex.shift(days: -3)
       |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
 
     """
-    SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where inserted_at > '#{time}' ;
+    SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time  FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where first_sent_date > '#{time}' ;
     """
   end
 
