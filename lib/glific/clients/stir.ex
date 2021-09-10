@@ -756,7 +756,7 @@ defmodule Glific.Clients.Stir do
   @spec set_contact_reminder(Contacts.Contact.t(), map()) :: map()
   defp set_contact_reminder(contact, _fields) do
     with {:remnder_not_set, attrs} <-
-           pending_registeration_reminder(%{}, contact, :pending_registeration),
+           pending_registeration_reminder(%{reminder_set: false}, contact, :pending_registeration),
          {:remnder_not_set, attrs} <-
            being_inactive_after_registeration_reminder(
              attrs,
@@ -790,7 +790,7 @@ defmodule Glific.Clients.Stir do
     with {:ok, _registration_completed_at} <-
            has_a_date(contact.fields, "registration_completed_at"),
          true <-
-           Timex.diff(Timex.today(), contact.last_communication_at, :days)
+           Timex.diff(Timex.today(), contact.last_message_at, :days)
            |> is_reminder_day?(type) do
       {:remnder_set, set_reminder(contact, type)}
     else
@@ -842,6 +842,8 @@ defmodule Glific.Clients.Stir do
   end
 
   @spec is_reminder_day?(integer(), atom()) :: boolean()
+  defp is_reminder_day?(0, _type), do: false
+
   defp is_reminder_day?(days, type),
     do: rem(days, @reminders[type][:days]) == 0
 
@@ -857,32 +859,7 @@ defmodule Glific.Clients.Stir do
       organization_id: contact.organization_id
     })
 
-    results = %{
-      reminder_type: type,
-      last_reminder_at: Timex.now()
-    }
-
-    add_reminder_versions(contact, results)
-
-    results
-  end
-
-  @spec add_reminder_versions(Contacts.Contact.t(), atom()) :: Contacts.Contact.t()
-  defp add_reminder_versions(contact, results) do
-    data = get_in(contact.fields, ["reminder_data", "value"])
-
-    data =
-      if data in ["", nil],
-        do: "{}",
-        else:
-          data
-          |> Jason.decode!()
-
-    versions = data["versions"] || []
-    versions = (versions ++ [results]) |> Jason.encode!()
-
-    contact
-    |> ContactField.do_add_contact_field("reminder_data", "reminder_data", versions, "json")
+    %{reminder_set: true, reminder_type: type, last_reminder_at: Timex.now()}
   end
 
   @spec parse_string_to_date(String.t()) :: Date.t() | nil
