@@ -5,9 +5,9 @@ defmodule Glific.Clients.Avanti do
   alias GoogleApi.BigQuery.V2.Api.Jobs
 
   @plio %{
-    "dataset" => "917302307943",
-    "analytics_table" => "flows",
-    "teachers_table" => "contacts"
+    "dataset" => "haryana_sandbox",
+    "analytics_table" => "plio_summary_stats",
+    "teachers_table" => "school_profile"
   }
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -20,7 +20,7 @@ defmodule Glific.Clients.Avanti do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
-        if teacher["phone"] == phone, do: acc |> Map.merge(%{found: true}), else: acc
+        if teacher["mobile_no"] == phone, do: acc |> Map.merge(%{found: true}), else: acc
       end)
     end
   end
@@ -76,7 +76,7 @@ defmodule Glific.Clients.Avanti do
 
   defp get_report_sql(:teachers) do
     """
-    SELECT phone FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
+    SELECT mobile_no FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
     """
   end
 end
