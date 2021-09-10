@@ -39,7 +39,8 @@ defmodule Glific.Clients do
   @stir %{
     id: 13,
     name: "STiR Education",
-    webhook: Glific.Clients.Stir
+    webhook: Glific.Clients.Stir,
+    gcs_file_name: Glific.Clients.Stir
     # blocked?: Glific.Clients.Stir
   }
 
