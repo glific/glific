@@ -112,9 +112,15 @@ defmodule Glific.Flows.MessageVarParserTest do
            ) == "hello Jatin"
 
     assert MessageVarParser.parse(
-             "hello @results.name.input",
-             %{"results" => %{"name" => %{"input" => "Jatin"}}}
-           ) == "hello Jatin"
+      "hello @results.name.input",
+      %{"results" => %{"name" => %{"input" => "Jatin"}}}
+    ) == "hello Jatin"
+
+    now = DateTime.utc_now()
+    assert MessageVarParser.parse(
+      "hello @results.name.inserted_at",
+      %{"results" => %{"name" => %{"input" => "Jatin", "inserted_at" => now}}}
+    ) == "hello " <> DateTime.to_string(now)
 
     assert MessageVarParser.parse(
              "hello @results.parent.name",

@@ -25,6 +25,11 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Sol
   }
 
+  @avanti %{
+    id: 10,
+    webhook: Glific.Clients.Avanti
+  }
+
   @tap %{
     id: 12,
     name: "The Apprentice Project",
@@ -57,6 +62,7 @@ defmodule Glific.Clients do
 
   @plugins %{
     @sol[:id] => @sol,
+    @avanti[:id] => @avanti,
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,

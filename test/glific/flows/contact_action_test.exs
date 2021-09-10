@@ -135,7 +135,7 @@ defmodule Glific.Flows.ContactActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    assert message.body == "How excited are you for Glific?"
+    assert message.body == "Glific is a two way communication platform"
     assert message.flow_id == context.flow_id
   end
 
@@ -170,7 +170,7 @@ defmodule Glific.Flows.ContactActionTest do
       |> Ecto.Query.last()
       |> Repo.one()
 
-    assert message.body == "आप ग्लिफ़िक के लिए कितने उत्साहित हैं?"
+    assert message.body == "ग्लिफ़िक सभी नई सुविधाओं के साथ आता है"
     assert message.flow_id == context.flow_id
   end
 
