@@ -28,6 +28,7 @@ defmodule Glific.Clients.Avanti do
   def webhook("fetch_report", fields) do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
       data
+      |>List.first
     end
   end
 
@@ -38,7 +39,7 @@ defmodule Glific.Clients.Avanti do
     Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
-        with sql <- get_report_sql(query_type),
+        with sql <- get_report_sql(query_type, fields),
              {:ok, response} <-
                Jobs.bigquery_jobs_query(conn, project_id,
                  body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
@@ -64,19 +65,19 @@ defmodule Glific.Clients.Avanti do
   end
 
   # returns query that need to be run in bigquery instance
-  @spec get_report_sql(atom()) :: String.t()
-  defp get_report_sql(:analytics) do
+  @spec get_report_sql(atom(), map()) :: String.t()
+  defp get_report_sql(:analytics, fields) do
     time =
       DateTime.utc_now()
       |> Timex.shift(days: -3)
       |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
 
-    """
-    SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time  FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where first_sent_date > '#{time}' ;
-    """
+      """
+      SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where faculty_mobile_no = '#{fields["phone"]}';
+      """
   end
 
-  defp get_report_sql(:teachers) do
+  defp get_report_sql(:teachers, _fields) do
     """
     SELECT mobile_no FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
     """
