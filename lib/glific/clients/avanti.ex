@@ -28,7 +28,7 @@ defmodule Glific.Clients.Avanti do
   def webhook("fetch_report", fields) do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
       data
-      |>List.first
+      |> List.first()
     end
   end
 
@@ -68,12 +68,12 @@ defmodule Glific.Clients.Avanti do
   @spec get_report_sql(atom(), map()) :: String.t()
   defp get_report_sql(:analytics, fields) do
     phone = fields["phone"] |> String.trim() |> String.trim("91")
-    time =
-      DateTime.utc_now()|> Timex.shift(days: -3)|> Timex.format!("{YYYY}-{0M}-{0D}")
 
-      """
-      SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where faculty_mobile_no = '#{phone}' and first_sent_date > '#{time}';
-      """
+    """
+    SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time FROM `#{@plio["dataset"]}.#{
+      @plio["analytics_table"]
+    }` where faculty_mobile_no = '#{phone}' ORDER BY first_sent_date DESC LIMIT 1;
+    """
   end
 
   defp get_report_sql(:teachers, _fields) do
