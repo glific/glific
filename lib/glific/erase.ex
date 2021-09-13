@@ -6,10 +6,11 @@ defmodule Glific.Erase do
 
   alias Glific.{
     Flows.WebhookLog,
-    Notifications,
+    Notifications.Notification,
     Repo
   }
-  @max_age 1
+
+  @period "month"
   @doc """
   This is called from the cron job on a regular schedule and cleans database periodically
   """
@@ -25,11 +26,11 @@ defmodule Glific.Erase do
   """
   @spec clean_notifications(non_neg_integer()) :: String.t()
   def clean_notifications(organization_id) do
-    from n in Notification,
-      where:
-        n.inserted_at <
-          ago(@max_age, "month")
-          |> Repo.delete_all()
+    Repo.delete_all(
+      from(n in "notifications",
+        where: n.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
+      ), skip_organization_id: true
+    )
   end
 
   @doc """
@@ -37,11 +38,11 @@ defmodule Glific.Erase do
   """
   @spec webhook_logs(non_neg_integer()) :: String.t()
   def webhook_logs(organization_id) do
-    from w in WebhookLog,
-      where:
-        w.inserted_at <
-          ago(@max_age, "month")
-          |> Repo.delete_all()
+    Repo.delete_all(
+      from(w in "webhook_logs",
+        where: w.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
+      ), skip_organization_id: true
+    )
   end
 
   @doc """
