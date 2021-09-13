@@ -447,18 +447,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc """
-    all the supported funcations we provide
-  """
-  @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def functions(conn, _) do
-    functions =
-      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
-      |> Jason.decode!()
-
-    json(conn, functions)
-  end
-
-  @doc """
     Validate media to send as attachment
   """
   @spec validate_media(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
