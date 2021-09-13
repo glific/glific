@@ -262,8 +262,11 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       completion =
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
         |> Jason.decode!()
+      functions =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
+        |> Jason.decode!()
 
-      assert json_response(conn, 200) == completion
+      assert json_response(conn, 200) == %{"context" => completion, "functions" =>  functions}
     end
 
     test "activity", %{conn: conn, access_token: token} do
@@ -360,18 +363,6 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       revision_id = json_response(conn, 200)["revision"]
 
       assert Glific.Repo.get!(Flows.FlowRevision, revision_id) != nil
-    end
-
-    test "functions", %{conn: conn, access_token: token} do
-      functions =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
-        |> Jason.decode!()
-
-      conn =
-        get_auth_token(conn, token)
-        |> get("/flow-editor/functions", %{})
-
-      assert json_response(conn, 200) == functions
     end
   end
 end

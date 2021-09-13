@@ -332,7 +332,16 @@ defmodule GlificWeb.Flows.FlowEditorController do
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
       |> Jason.decode!()
 
-    json(conn, completion)
+    functions =
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
+      |> Jason.decode!()
+
+      results =
+        %{
+          context: completion,
+          functions: functions
+        }
+    json(conn, results)
   end
 
   @doc """
@@ -435,18 +444,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def save_revisions(conn, params) do
     revision = Flows.create_flow_revision(params)
     json(conn, %{revision: revision.id})
-  end
-
-  @doc """
-    all the supported funcations we provide
-  """
-  @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def functions(conn, _) do
-    functions =
-      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
-      |> Jason.decode!()
-
-    json(conn, functions)
   end
 
   @doc """
