@@ -15,8 +15,7 @@ defmodule Glific.Clients.Avanti do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("check_if_existing_teacher", fields) do
-    phone = fields["phone"] |> String.trim() |> String.trim("91")
-
+    phone = clean_phone(fields)
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
@@ -67,7 +66,7 @@ defmodule Glific.Clients.Avanti do
   # returns query that need to be run in bigquery instance
   @spec get_report_sql(atom(), map()) :: String.t()
   defp get_report_sql(:analytics, fields) do
-    phone = fields["phone"] |> String.trim() |> String.trim("91")
+    phone = clean_phone(fields)
 
     """
     SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time FROM `#{@plio["dataset"]}.#{
@@ -80,5 +79,11 @@ defmodule Glific.Clients.Avanti do
     """
     SELECT mobile_no FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
     """
+  end
+
+  @spec clean_phone(map()) :: String.t()
+  defp clean_phone(fields) do
+    length = fields["phone"] |> String.trim() |> String.length()
+    fields["phone"] |> String.trim() |> String.slice(length - 10, length)
   end
 end
