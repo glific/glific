@@ -131,8 +131,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     do:  queue_table_data(table, organization_id, %{
       action: :update,
       max_id: nil,
-      min_updated_at: last_updated_at,
-      max_updated_at: table_last_updated_at,
+      last_updated_at: last_updated_at
       })
 
     :ok
@@ -414,7 +413,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       data: data,
       table: table,
       organization_id: organization_id,
-      max_id: attrs[:max_id]
+      max_id: attrs[:max_id],
+      last_updated_at: attrs[:last_updated_at]
     })
     |> Oban.insert()
 
@@ -439,10 +439,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = _attrs),
     do: query |> where([m], m.id > ^min_id and m.id <= ^max_id)
 
-  defp apply_action_clause(query, %{action: :update} = _attrs),
+  defp apply_action_clause(query, %{action: :update, last_updated_at: last_updated_at} = _attrs),
     do:
       query
-      |> where([tb], tb.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([tb], tb.updated_at >= ^last_updated_at)
       |> where(
         [tb],
         fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0

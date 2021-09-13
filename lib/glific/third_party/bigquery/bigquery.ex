@@ -491,6 +491,7 @@ defmodule Glific.BigQuery do
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
+    last_updated_at = Keyword.get(opts, :last_updated_at)
 
     cond do
       res.insertErrors != nil ->
@@ -502,16 +503,16 @@ defmodule Glific.BigQuery do
 
         Logger.info(
           "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
-            table
-          }, res: #{inspect(res)}"
+            table}, res: #{inspect(res)}"
         )
 
+      last_updated_at not in [nil, 0]
+            ->
+            Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
+            Logger.info("Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{inspect(res)}")
+
       true ->
-        Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
-            table
-          }, res: #{inspect(res)}"
-        )
+        Logger.info("Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}")
     end
 
     :ok
