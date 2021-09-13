@@ -94,10 +94,27 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_id
   end
 
+  @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
+  defp insert_last_updated(table_name, table_id, organization_id) do
+    Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
+
+    max_id =
+      BigQuery.get_table_struct(table_name)
+      |> where([m], m.id > ^table_id)
+      |> add_organization_id(table_name, organization_id)
+      |> order_by([m], asc: m.id)
+      |> limit(500)
+      |> Repo.aggregate(:max, :id, skip_organization_id: true)
+
+    if is_nil(max_id),
+      do: table_id,
+      else: max_id
+  end
+
   @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
-  defp insert_for_table(%{table: table, table_id: table_id} = _job, organization_id) do
+  defp insert_for_table(%{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
 
     if max_id > table_id,
@@ -108,7 +125,15 @@ defmodule Glific.BigQuery.BigQueryWorker do
           action: :insert
         })
 
-    queue_table_data(table, organization_id, %{action: :update, max_id: nil})
+    last_updated_at = insert_last_updated(table, last_updated_at, organization_id))
+
+    if last_updated_at > table_last_updated_at,
+    do:  queue_table_data(table, organization_id, %{
+      action: :update,
+      max_id: nil,
+      min_updated_at: last_updated_at,
+      max_updated_at: table_last_updated_at,
+      })
 
     :ok
   end
