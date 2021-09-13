@@ -10,6 +10,7 @@ defmodule Glific.Jobs.MinuteWorker do
   alias Glific.{
     BigQuery.BigQueryWorker,
     Contacts,
+    Erase,
     Flags,
     Flows.FlowContext,
     GCS.GcsWorker,
@@ -88,6 +89,7 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "daily_tasks" ->
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
+        Partners.perform_all(&Erase.clean_db/2, nil, [])
 
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
