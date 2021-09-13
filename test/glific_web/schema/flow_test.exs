@@ -70,6 +70,13 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
     flow_name = get_in(query_data, [:data, "flows", Access.at(0), "name"])
     assert flow_name == "Help Workflow"
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"is_background" => flow.is_background}})
+
+    assert {:ok, query_data} = result
+    flow_name = get_in(query_data, [:data, "flows", Access.at(0), "name"])
+    assert flow_name == "Help Workflow"
   end
 
   test "flows field returns list of flows filtered by status", %{manager: user} do
