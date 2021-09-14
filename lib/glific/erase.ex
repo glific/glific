@@ -4,28 +4,24 @@ defmodule Glific.Erase do
   """
   import Ecto.Query
 
-  alias Glific.{
-    Flows.WebhookLog,
-    Notifications.Notification,
-    Repo
-  }
+  alias Glific.Repo
 
   @period "month"
   @doc """
   This is called from the cron job on a regular schedule and cleans database periodically
   """
-  @spec clean_db(non_neg_integer) :: :ok
-  def clean_db(organization_id) do
-    clean_notifications(organization_id)
-    webhook_logs(organization_id)
-    flow_revision(organization_id)
+  @spec perform_periodic() :: :ok
+  def perform_periodic do
+    clean_notifications()
+    clean_webhook_logs()
+    clean_flow_revision()
   end
 
   @doc """
   Deleting notification older than a month
   """
-  @spec clean_notifications(non_neg_integer()) :: String.t()
-  def clean_notifications(organization_id) do
+  @spec clean_notifications() :: {integer(), nil | [term()]}
+  def clean_notifications do
     Repo.delete_all(
       from(n in "notifications",
         where: n.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
@@ -34,10 +30,10 @@ defmodule Glific.Erase do
   end
 
   @doc """
-  Deleting webhook_logs older than a month
+  Deleting webhook logs older than a month
   """
-  @spec webhook_logs(non_neg_integer()) :: String.t()
-  def webhook_logs(organization_id) do
+  @spec clean_webhook_logs() :: {integer(), nil | [term()]}
+  def clean_webhook_logs do
     Repo.delete_all(
       from(w in "webhook_logs",
         where: w.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
@@ -48,10 +44,10 @@ defmodule Glific.Erase do
   @doc """
   Deleting flow_revision older than a month
   """
-  @spec flow_revision(non_neg_integer()) :: String.t()
-  def flow_revision(organization_id) do
+  @spec clean_flow_revision() :: {integer(), nil | [term()]}
+  def clean_flow_revision do
     clean_drafted_flow_revisions()
-    clean_drafted_archived_revisions()
+    clean_archived_flow_revisions()
   end
 
   defp clean_drafted_flow_revisions do
@@ -63,7 +59,7 @@ defmodule Glific.Erase do
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
   end
 
-  defp clean_drafted_archived_revisions do
+  defp clean_archived_flow_revisions do
     """
     DELETE FROM flow_revisions fr1
     WHERE fr1.status = 'archived' AND id
