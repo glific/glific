@@ -20,7 +20,7 @@ defmodule Glific.Clients.Avanti do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
-        if teacher["mobile_no"] == phone, do: acc |> Map.merge(%{found: true}), else: acc
+        if teacher["mobile_no"] == phone, do: acc |> Map.merge(%{found: true, faculty_name: teacher["faculty_name"]}), else: acc
       end)
     end
   end
@@ -80,7 +80,7 @@ defmodule Glific.Clients.Avanti do
 
   defp get_report_sql(:teachers, _fields) do
     """
-    SELECT mobile_no FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
+    SELECT mobile_no, faculty_name FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
     """
   end
 
