@@ -408,13 +408,23 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp make_job(data, table, organization_id, %{action: :insert} = attrs)
        when data in [%{}, nil, []] do
     table = Atom.to_string(table)
-    Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
+
+    if is_integer(attrs[:max_id]) == true,
+      do: Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
+
     :ok
   end
 
-  defp make_job(data, _table, _organization_id, %{action: :update} = _attrs)
-       when data in [%{}, nil, []],
-       do: :ok
+  defp make_job(data, table, organization_id, %{action: :update} = attrs)
+       when data in [%{}, nil, []] do
+    table = Atom.to_string(table)
+
+    if is_nil(attrs[:last_updated_at]) == false,
+      do:
+        Jobs.update_bigquery_job(organization_id, table, %{
+          last_updated_at: attrs[:last_updated_at]
+        })
+  end
 
   defp make_job(data, table, organization_id, attrs) do
     Logger.info(
@@ -534,7 +544,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             "data" => data,
             "table" => table,
             "organization_id" => organization_id,
-            "max_id" => max_id
+            "max_id" => max_id,
+            "last_updated_at" => last_updated_at
           }
         } = _job
       ),
