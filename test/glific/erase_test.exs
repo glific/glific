@@ -4,10 +4,10 @@ defmodule Glific.EraseTest do
   alias Glific.{
     Erase,
     Fixtures,
-    Flows.WebhookLog,
     Flows.FlowRevision,
-    Notifications.Notification,
+    Flows.WebhookLog,
     Notifications,
+    Notifications.Notification,
     Repo
   }
 
