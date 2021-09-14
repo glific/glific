@@ -16,6 +16,7 @@ defmodule Glific.Clients.Avanti do
   @spec webhook(String.t(), map()) :: map()
   def webhook("check_if_existing_teacher", fields) do
     phone = clean_phone(fields)
+
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
@@ -28,6 +29,7 @@ defmodule Glific.Clients.Avanti do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
       data
       |> List.first()
+      |> Map.merge(%{is_valid: true})
     end
   end
 
@@ -39,10 +41,11 @@ defmodule Glific.Clients.Avanti do
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
         with sql <- get_report_sql(query_type, fields),
-             {:ok, response} <-
+             {:ok, %{totalRows: totalRows} = response} <-
                Jobs.bigquery_jobs_query(conn, project_id,
                  body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
-               ) do
+               ),
+             true <- totalRows != "0" do
           data =
             response.rows
             |> Enum.map(fn row ->
@@ -55,7 +58,7 @@ defmodule Glific.Clients.Avanti do
 
           %{is_valid: true, data: data}
         else
-          _ -> %{is_valid: false, message: "Permission issue while fetching data"}
+          _ -> %{is_valid: false, message: "No data found for phone: #{fields["phone"]}"}
         end
 
       _ ->
@@ -69,9 +72,9 @@ defmodule Glific.Clients.Avanti do
     phone = clean_phone(fields)
 
     """
-    SELECT plio_name, viewers, avg_accuracy_percent, avg_watch_time FROM `#{@plio["dataset"]}.#{
-      @plio["analytics_table"]
-    }` where faculty_mobile_no = '#{phone}' ORDER BY first_sent_date DESC LIMIT 1;
+    SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where faculty_mobile_no = '#{
+      phone
+    }' ORDER BY first_sent_date DESC LIMIT 1;
     """
   end
 
