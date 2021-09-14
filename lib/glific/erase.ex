@@ -26,7 +26,8 @@ defmodule Glific.Erase do
     Repo.delete_all(
       from(n in "notifications",
         where: n.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ), skip_organization_id: true
+      ),
+      skip_organization_id: true
     )
   end
 
@@ -38,7 +39,8 @@ defmodule Glific.Erase do
     Repo.delete_all(
       from(w in "webhook_logs",
         where: w.inserted_at < fragment("CURRENT_DATE - ('1' || ?)::interval", ^@period)
-      ), skip_organization_id: true
+      ),
+      skip_organization_id: true
     )
   end
 

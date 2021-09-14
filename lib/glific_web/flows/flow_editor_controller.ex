@@ -336,11 +336,11 @@ defmodule GlificWeb.Flows.FlowEditorController do
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
       |> Jason.decode!()
 
-      results =
-        %{
-          context: completion,
-          functions: functions
-        }
+    results = %{
+      context: completion,
+      functions: functions
+    }
+
     json(conn, results)
   end
 
