@@ -15,6 +15,7 @@ defmodule Glific.Erase do
     clean_notifications()
     clean_webhook_logs()
     clean_flow_revision()
+    :ok
   end
 
   @doc """
@@ -44,10 +45,11 @@ defmodule Glific.Erase do
   @doc """
   Deleting flow_revision older than a month
   """
-  @spec clean_flow_revision() :: {integer(), nil | [term()]}
+  @spec clean_flow_revision() :: :ok
   def clean_flow_revision do
     clean_drafted_flow_revisions()
     clean_archived_flow_revisions()
+    :ok
   end
 
   defp clean_drafted_flow_revisions do
