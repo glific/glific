@@ -20,7 +20,9 @@ defmodule Glific.Clients.Avanti do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
-        if teacher["mobile_no"] == phone, do: acc |> Map.merge(%{found: true, faculty_name: teacher["faculty_name"]}), else: acc
+        if teacher["mobile_no"] == phone,
+          do: acc |> Map.merge(%{found: true, faculty_name: teacher["faculty_name"]}),
+          else: acc
       end)
     end
   end
@@ -41,11 +43,11 @@ defmodule Glific.Clients.Avanti do
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
         with sql <- get_report_sql(query_type, fields),
-             {:ok, %{totalRows: totalRows} = response} <-
+             {:ok, %{totalRows: total_rows} = response} <-
                Jobs.bigquery_jobs_query(conn, project_id,
                  body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
                ),
-             true <- totalRows != "0" do
+             true <- total_rows != "0" do
           data =
             response.rows
             |> Enum.map(fn row ->
