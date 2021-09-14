@@ -30,8 +30,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Stats.Stat
   }
 
-  @update_minutes -1
-
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
@@ -94,27 +92,39 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_id
   end
 
-  @spec insert_max_id(String.t(), non_neg_integer, non_neg_integer) :: non_neg_integer
-  defp insert_last_updated(table_name, table_id, organization_id) do
-    Logger.info("Checking for bigquery job: #{table_name}, org_id: #{organization_id}")
+  @spec insert_last_updated(String.t(), DateTime.t(), non_neg_integer) :: DateTime.t()
+  defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
+    Logger.info(
+      "Checking for bigquery job for last update: #{table_name}, org_id: #{organization_id}"
+    )
 
-    max_id =
+    max_last_update =
       BigQuery.get_table_struct(table_name)
-      |> where([m], m.id > ^table_id)
+      |> where([m], m.updated_at > ^table_last_updated_at)
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
       |> limit(500)
-      |> Repo.aggregate(:max, :id, skip_organization_id: true)
+      |> Repo.aggregate(:max, :updated_at, skip_organization_id: true)
 
-    if is_nil(max_id),
-      do: table_id,
-      else: max_id
+    if is_nil(max_last_update),
+      do: table_last_updated_at,
+      else: max_last_update
   end
 
   @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
-  defp insert_for_table(%{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job, organization_id) do
+  defp insert_for_table(
+         %{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job,
+         organization_id
+       ) do
+    insert_new_records(table, table_id, organization_id)
+    insert_updated_records(table, table_last_updated_at, organization_id)
+    :ok
+  end
+
+  @spec insert_new_records(binary, non_neg_integer, non_neg_integer) :: :ok
+  defp insert_new_records(table, table_id, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
 
     if max_id > table_id,
@@ -125,16 +135,20 @@ defmodule Glific.BigQuery.BigQueryWorker do
           action: :insert
         })
 
-    last_updated_at = insert_last_updated(table, last_updated_at, organization_id))
+    :ok
+  end
+
+  @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
+  defp insert_updated_records(table, table_last_updated_at, organization_id) do
+    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
     if last_updated_at > table_last_updated_at,
-    do:  queue_table_data(table, organization_id, %{
-      action: :update,
-      max_id: nil,
-      last_updated_at: last_updated_at
-      })
-
-    :ok
+      do:
+        queue_table_data(table, organization_id, %{
+          action: :update,
+          max_id: nil,
+          last_updated_at: last_updated_at
+        })
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
@@ -146,7 +160,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   ## ignore the tables for updates.
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
-  defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
+  defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil} = _attrs)
        when table in ["flows", "stats", "stats_all"],
        do: :ok
 
