@@ -609,9 +609,9 @@ defmodule Glific.BigQuery do
 
     """
     DELETE FROM `#{credentials.dataset_id}.#{table}`
-    WHERE struct(id, updated_at) IN (
-      SELECT STRUCT(id, updated_at)  FROM (
-        SELECT id, updated_at, ROW_NUMBER() OVER (
+    WHERE struct(id, bq_uuid) IN (
+      SELECT STRUCT(id, bq_uuid)  FROM (
+        SELECT id, bq_uuid, ROW_NUMBER() OVER (
           PARTITION BY delta.id ORDER BY delta.updated_at DESC
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta

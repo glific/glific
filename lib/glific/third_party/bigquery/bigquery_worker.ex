@@ -205,6 +205,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             # We are sending nil, as setting is a record type and need to structure the data first(like field)
             %{
               id: row.id,
+              bq_uuid: Ecto.UUID.generate(),
               name: row.name,
               phone: row.phone,
               provider_status: row.bsp_status,
@@ -296,6 +297,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
           else: [
             %{
               id: row.id,
+              bq_uuid: Ecto.UUID.generate(),
               name: row.flow.name,
               uuid: row.flow.uuid,
               inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
@@ -380,6 +382,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp get_message_row(row, organization_id),
     do: %{
       id: row.id,
+      bq_uuid: Ecto.UUID.generate(),
       body: row.body,
       type: row.type,
       flow: row.flow,
@@ -545,7 +548,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             "table" => table,
             "organization_id" => organization_id,
             "max_id" => max_id,
-            "last_updated_at" => last_updated_at
+            "last_updated_at" => _last_updated_at
           }
         } = _job
       ),
