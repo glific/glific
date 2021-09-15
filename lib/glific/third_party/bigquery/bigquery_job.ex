@@ -24,12 +24,14 @@ defmodule Glific.BigQuery.BigQueryJob do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          last_updated_at: :utc_datetime_usec | nil
         }
 
   schema "bigquery_jobs" do
     field :table_id, :integer, default: 0
     field :table, :string
+    field :last_updated_at, :utc_datetime_usec
     belongs_to :organization, Organization
     timestamps(type: :utc_datetime)
   end
