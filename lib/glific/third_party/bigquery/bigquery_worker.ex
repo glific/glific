@@ -141,9 +141,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
     table_last_updated_at = table_last_updated_at || DateTime.utc_now()
-    IO.inspect("table_last_updated_at")
-    IO.inspect(table_last_updated_at)
-
     last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
     if last_updated_at > table_last_updated_at,

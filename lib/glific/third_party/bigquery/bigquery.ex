@@ -526,8 +526,6 @@ defmodule Glific.BigQuery do
       last_updated_at not in [nil, 0] ->
         Logger.info("Last updated at very")
 
-        IO.inspect(last_updated_at)
-
         Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: DateTime.utc_now()})
 
         Logger.info(
