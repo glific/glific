@@ -548,9 +548,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
             "table" => table,
             "organization_id" => organization_id,
             "max_id" => max_id,
-            "last_updated_at" => _last_updated_at
+            "last_updated_at" => last_updated_at
           }
         } = _job
       ),
-      do: BigQuery.make_insert_query(data, table, organization_id, max_id)
+      do:
+        BigQuery.make_insert_query(data, table, organization_id,
+          max_id: max_id,
+          last_updated_at: last_updated_at
+        )
 end

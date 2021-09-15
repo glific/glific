@@ -442,12 +442,15 @@ defmodule Glific.BigQuery do
   @doc """
     Insert rows in the biqquery
   """
-  @spec make_insert_query(map() | list, String.t(), non_neg_integer, non_neg_integer) :: :ok
+  @spec make_insert_query(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
   def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
       when data in [[], nil, %{}],
       do: :ok
 
-  def make_insert_query(data, table, organization_id, max_id) do
+  def make_insert_query(data, table, organization_id, attrs) do
+    max_id = Keyword.get(attrs, :max_id)
+    last_updated_at = Keyword.get(attrs, :last_updated_at)
+
     Logger.info(
       "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
         Enum.count(data)
@@ -455,8 +458,16 @@ defmodule Glific.BigQuery do
     )
 
     fetch_bigquery_credentials(organization_id)
-    |> do_make_insert_query(organization_id, data, table: table, max_id: max_id)
-    |> handle_insert_query_response(organization_id, table: table, max_id: max_id)
+    |> do_make_insert_query(organization_id, data,
+      table: table,
+      max_id: max_id,
+      last_updated_at: last_updated_at
+    )
+    |> handle_insert_query_response(organization_id,
+      table: table,
+      max_id: max_id,
+      last_updated_at: last_updated_at
+    )
 
     :ok
   end
@@ -609,9 +620,9 @@ defmodule Glific.BigQuery do
 
     """
     DELETE FROM `#{credentials.dataset_id}.#{table}`
-    WHERE struct(id, bq_uuid) IN (
-      SELECT STRUCT(id, bq_uuid)  FROM (
-        SELECT id, bq_uuid, ROW_NUMBER() OVER (
+    WHERE struct(id, updated_at, bq_uuid) IN (
+      SELECT STRUCT(id, updated_at, bq_uuid)  FROM (
+        SELECT id, updated_at, bq_uuid, ROW_NUMBER() OVER (
           PARTITION BY delta.id ORDER BY delta.updated_at DESC
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta
