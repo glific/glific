@@ -30,6 +30,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Stats.Stat
   }
 
+  @per_min_limit 500
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
   and queue them up for delivery to bigquery
@@ -84,7 +86,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.id > ^table_id)
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
-      |> limit(500)
+      |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :id, skip_organization_id: true)
 
     if is_nil(max_id),
@@ -103,7 +105,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.updated_at > ^table_last_updated_at)
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
-      |> limit(500)
+      |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :updated_at, skip_organization_id: true)
 
     if is_nil(max_last_update),
