@@ -524,7 +524,7 @@ defmodule Glific.BigQuery do
         )
 
       last_updated_at not in [nil, 0] ->
-        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: DateTime.utc_now()})
+        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
 
         Logger.info(
           "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{
