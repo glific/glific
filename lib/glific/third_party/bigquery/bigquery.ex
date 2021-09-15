@@ -524,8 +524,6 @@ defmodule Glific.BigQuery do
         )
 
       last_updated_at not in [nil, 0] ->
-        Logger.info("Last updated at very")
-
         Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: DateTime.utc_now()})
 
         Logger.info(
@@ -535,7 +533,7 @@ defmodule Glific.BigQuery do
         )
 
       true ->
-        Logger.info("Event success")
+        Logger.info("Count not found the operation for bigquery insert and update")
     end
 
     :ok
