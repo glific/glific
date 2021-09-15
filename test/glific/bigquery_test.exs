@@ -179,9 +179,9 @@ defmodule Glific.BigQueryTest do
 
   @delete_query """
   DELETE FROM `test_dataset.messages`
-  WHERE struct(id, bq_uuid) IN (
-    SELECT STRUCT(id, bq_uuid)  FROM (
-      SELECT id, bq_uuid, ROW_NUMBER() OVER (
+  WHERE struct(id, updated_at, bq_uuid) IN (
+    SELECT STRUCT(id, updated_at, bq_uuid)  FROM (
+      SELECT id, updated_at, bq_uuid, ROW_NUMBER() OVER (
         PARTITION BY delta.id ORDER BY delta.updated_at DESC
       ) AS rn
       FROM `test_dataset.messages` delta
