@@ -145,7 +145,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     table_last_updated_at = table_last_updated_at || DateTime.utc_now()
     last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-    if last_updated_at > table_last_updated_at,
+    if Timex.compare(last_updated_at, table_last_updated_at) > 0,
       do:
         queue_table_data(table, organization_id, %{
           action: :update,
