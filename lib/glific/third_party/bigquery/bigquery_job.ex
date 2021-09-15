@@ -14,7 +14,7 @@ defmodule Glific.BigQuery.BigQueryJob do
   }
 
   @required_fields [:organization_id]
-  @optional_fields [:table_id, :table]
+  @optional_fields [:table_id, :table, :last_updated_at]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
