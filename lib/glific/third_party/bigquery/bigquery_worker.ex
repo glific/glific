@@ -30,7 +30,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Stats.Stat
   }
 
-  @update_minutes -1
+  @per_min_limit 1000
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -86,7 +86,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.id > ^table_id)
       |> add_organization_id(table_name, organization_id)
       |> order_by([m], asc: m.id)
-      |> limit(500)
+      |> limit(@per_min_limit)
       |> Repo.aggregate(:max, :id, skip_organization_id: true)
 
     if is_nil(max_id),
@@ -94,10 +94,39 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_id
   end
 
+  @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
+  defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
+    Logger.info(
+      "Checking for bigquery job for last update: #{table_name}, org_id: #{organization_id}"
+    )
+
+    max_last_update =
+      BigQuery.get_table_struct(table_name)
+      |> where([m], m.updated_at > ^table_last_updated_at)
+      |> add_organization_id(table_name, organization_id)
+      |> order_by([m], asc: m.id)
+      |> limit(@per_min_limit)
+      |> Repo.aggregate(:max, :updated_at, skip_organization_id: true)
+
+    if is_nil(max_last_update),
+      do: table_last_updated_at,
+      else: max_last_update
+  end
+
   @spec insert_for_table(BigQuery.BigQueryJob.t() | nil, non_neg_integer) :: :ok | nil
   defp insert_for_table(nil, _), do: nil
 
-  defp insert_for_table(%{table: table, table_id: table_id} = _job, organization_id) do
+  defp insert_for_table(
+         %{table: table, table_id: table_id, last_updated_at: table_last_updated_at} = _job,
+         organization_id
+       ) do
+    insert_new_records(table, table_id, organization_id)
+    insert_updated_records(table, table_last_updated_at, organization_id)
+    :ok
+  end
+
+  @spec insert_new_records(binary, non_neg_integer, non_neg_integer) :: :ok
+  defp insert_new_records(table, table_id, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
 
     if max_id > table_id,
@@ -108,9 +137,21 @@ defmodule Glific.BigQuery.BigQueryWorker do
           action: :insert
         })
 
-    queue_table_data(table, organization_id, %{action: :update, max_id: nil})
-
     :ok
+  end
+
+  @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
+  defp insert_updated_records(table, table_last_updated_at, organization_id) do
+    table_last_updated_at = table_last_updated_at || DateTime.utc_now()
+    last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
+
+    if Timex.compare(last_updated_at, table_last_updated_at) > 0,
+      do:
+        queue_table_data(table, organization_id, %{
+          action: :update,
+          max_id: nil,
+          last_updated_at: last_updated_at
+        })
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
@@ -122,7 +163,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   ## ignore the tables for updates.
   @spec queue_table_data(String.t(), non_neg_integer(), map()) :: :ok
-  defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil})
+  defp queue_table_data(table, _organization_id, %{action: :update, max_id: nil} = _attrs)
        when table in ["flows", "stats", "stats_all"],
        do: :ok
 
@@ -167,6 +208,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             # We are sending nil, as setting is a record type and need to structure the data first(like field)
             %{
               id: row.id,
+              bq_uuid: Ecto.UUID.generate(),
               name: row.name,
               phone: row.phone,
               provider_status: row.bsp_status,
@@ -258,6 +300,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
           else: [
             %{
               id: row.id,
+              bq_uuid: Ecto.UUID.generate(),
               name: row.flow.name,
               uuid: row.flow.uuid,
               inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
@@ -342,6 +385,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp get_message_row(row, organization_id),
     do: %{
       id: row.id,
+      bq_uuid: Ecto.UUID.generate(),
       body: row.body,
       type: row.type,
       flow: row.flow,
@@ -370,13 +414,23 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp make_job(data, table, organization_id, %{action: :insert} = attrs)
        when data in [%{}, nil, []] do
     table = Atom.to_string(table)
-    Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
+
+    if is_integer(attrs[:max_id]) == true,
+      do: Jobs.update_bigquery_job(organization_id, table, %{table_id: attrs[:max_id]})
+
     :ok
   end
 
-  defp make_job(data, _table, _organization_id, %{action: :update} = _attrs)
-       when data in [%{}, nil, []],
-       do: :ok
+  defp make_job(data, table, organization_id, %{action: :update} = attrs)
+       when data in [%{}, nil, []] do
+    table = Atom.to_string(table)
+
+    if is_nil(attrs[:last_updated_at]) == false,
+      do:
+        Jobs.update_bigquery_job(organization_id, table, %{
+          last_updated_at: attrs[:last_updated_at]
+        })
+  end
 
   defp make_job(data, table, organization_id, attrs) do
     Logger.info(
@@ -389,7 +443,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       data: data,
       table: table,
       organization_id: organization_id,
-      max_id: attrs[:max_id]
+      max_id: attrs[:max_id],
+      last_updated_at: attrs[:last_updated_at]
     })
     |> Oban.insert()
 
@@ -414,10 +469,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = _attrs),
     do: query |> where([m], m.id > ^min_id and m.id <= ^max_id)
 
-  defp apply_action_clause(query, %{action: :update} = _attrs),
+  defp apply_action_clause(query, %{action: :update, last_updated_at: last_updated_at} = _attrs),
     do:
       query
-      |> where([tb], tb.updated_at >= ^Timex.shift(Timex.now(), minutes: @update_minutes))
+      |> where([tb], tb.updated_at >= ^last_updated_at)
       |> where(
         [tb],
         fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
@@ -495,9 +550,16 @@ defmodule Glific.BigQuery.BigQueryWorker do
             "data" => data,
             "table" => table,
             "organization_id" => organization_id,
-            "max_id" => max_id
+            "max_id" => max_id,
+            "last_updated_at" => last_updated_at
           }
         } = _job
       ),
-      do: BigQuery.make_insert_query(data, table, organization_id, max_id)
+      do:
+        BigQuery.make_insert_query(data, table, organization_id,
+          max_id: max_id,
+          last_updated_at:
+            if(!is_nil(last_updated_at), do: Timex.parse!(last_updated_at, "{RFC3339z}")),
+          else: nil
+        )
 end
