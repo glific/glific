@@ -154,7 +154,12 @@ defmodule Glific.BigQuery do
         bigquery_job
 
       _ ->
-        %BigQueryJob{table: table_name, table_id: 0, organization_id: organization_id}
+        %BigQueryJob{
+          table: table_name,
+          table_id: 0,
+          organization_id: organization_id,
+          last_updated_at: DateTime.utc_now()
+        }
         |> Repo.insert!()
     end
 
@@ -519,7 +524,11 @@ defmodule Glific.BigQuery do
         )
 
       last_updated_at not in [nil, 0] ->
-        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
+        Logger.info("Last updated at very")
+
+        IO.inspect(last_updated_at)
+
+        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: DateTime.utc_now()})
 
         Logger.info(
           "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{
@@ -528,11 +537,7 @@ defmodule Glific.BigQuery do
         )
 
       true ->
-        Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
-            table
-          }, res: #{inspect(res)}"
-        )
+        Logger.info("Event success")
     end
 
     :ok

@@ -92,7 +92,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       else: max_id
   end
 
-  @spec insert_last_updated(String.t(), DateTime.t(), non_neg_integer) :: DateTime.t()
+  @spec insert_last_updated(String.t(), DateTime.t() | nil, non_neg_integer) :: DateTime.t()
   defp insert_last_updated(table_name, table_last_updated_at, organization_id) do
     Logger.info(
       "Checking for bigquery job for last update: #{table_name}, org_id: #{organization_id}"
@@ -140,6 +140,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec insert_updated_records(binary, DateTime.t(), non_neg_integer) :: :ok
   defp insert_updated_records(table, table_last_updated_at, organization_id) do
+    table_last_updated_at = table_last_updated_at || DateTime.utc_now()
+    IO.inspect("table_last_updated_at")
+    IO.inspect(table_last_updated_at)
+
     last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
     if last_updated_at > table_last_updated_at,
@@ -555,6 +559,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
       do:
         BigQuery.make_insert_query(data, table, organization_id,
           max_id: max_id,
-          last_updated_at: last_updated_at
+          last_updated_at: Timex.parse!(last_updated_at, "{RFC3339z}")
         )
 end
