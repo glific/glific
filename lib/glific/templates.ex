@@ -401,7 +401,7 @@ defmodule Glific.Templates do
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm_translation(template, approved_db_template, organization, languages) do
-    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+    number_of_parameter = length(Regex.split(~r/{{([1-9]|[1-9][0-9])}}/, template["data"])) - 1
 
     type =
       template["templateType"]

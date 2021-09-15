@@ -30,7 +30,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
       attrs
       |> Map.merge(%{
-        number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
+        number_parameters: length(Regex.split(~r/{{([1-9]|[1-9][0-9])}}/, attrs.body)) - 1,
         uuid: response_data["template"]["id"],
         status: response_data["template"]["status"],
         is_active:
