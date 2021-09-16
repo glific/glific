@@ -31,7 +31,7 @@ defmodule Glific.Clients.Avanti do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
       data
       |> List.first()
-      |> Map.merge(%{is_valid: true})
+      |> Map.put(:is_valid, true)
     end
   end
 
@@ -74,21 +74,24 @@ defmodule Glific.Clients.Avanti do
     phone = clean_phone(fields)
 
     """
-    SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where faculty_mobile_no = '#{
-      phone
-    }' ORDER BY first_sent_date DESC LIMIT 1;
+    SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}`
+    WHERE faculty_mobile_no = '#{phone}'
+    ORDER BY first_sent_date DESC
+    LIMIT 1;
     """
   end
 
   defp get_report_sql(:teachers, _fields) do
     """
-    SELECT mobile_no, faculty_name FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
+    SELECT mobile_no, faculty_name
+    FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
     """
   end
 
   @spec clean_phone(map()) :: String.t()
   defp clean_phone(fields) do
-    length = fields["phone"] |> String.trim() |> String.length()
-    fields["phone"] |> String.trim() |> String.slice(length - 10, length)
+    phone =  String.trim(fields["phone"])
+    length = String.length(phone)
+    String.slice(phone, length - 10, length)
   end
 end
