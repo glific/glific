@@ -105,7 +105,6 @@ defmodule Glific.Templates.SessionTemplate do
       join_through: "templates_tags",
       on_replace: :delete,
       join_keys: [template_id: :id, tag_id: :id]
-    )
 
     timestamps(type: :utc_datetime)
   end
