@@ -115,6 +115,9 @@ defmodule Glific.Flows do
       {:is_active, is_active}, query ->
         from q in query, where: q.is_active == ^is_active
 
+      {:is_background, is_background}, query ->
+        from q in query, where: q.is_background == ^is_background
+
       {:name_or_keyword, name_or_keyword}, query ->
         query
         |> where([fr], ilike(fr.name, ^"%#{name_or_keyword}%"))
