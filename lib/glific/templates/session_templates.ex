@@ -187,23 +187,4 @@ defmodule Glific.Templates.SessionTemplate do
       "TICKET_UPDATE"
     ]
   end
-
-  @doc """
-  Returns the count of variables in template
-  """
-  @spec template_parameters_count(String.t()) :: non_neg_integer()
-  def template_parameters_count(template_body) do
-    template_body
-    |> String.split()
-    |> Enum.reduce([], fn word, acc ->
-      with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
-           clean_word <- Glific.string_clean(word) do
-        acc ++ [clean_word]
-      else
-        _ -> acc
-      end
-    end)
-    |> Enum.uniq()
-    |> Enum.count()
-  end
 end

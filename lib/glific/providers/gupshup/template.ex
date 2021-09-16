@@ -30,7 +30,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
       attrs
       |> Map.merge(%{
-        number_parameters: SessionTemplate.template_parameters_count(attrs.body),
+        number_parameters: Templates.template_parameters_count(attrs.body),
         uuid: response_data["template"]["id"],
         status: response_data["template"]["status"],
         is_active:

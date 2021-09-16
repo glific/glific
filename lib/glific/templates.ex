@@ -401,7 +401,7 @@ defmodule Glific.Templates do
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm_translation(template, approved_db_template, organization, languages) do
-    number_of_parameter = SessionTemplate.template_parameters_count(template["data"])
+    number_of_parameter = template_parameters_count(template["data"])
 
     type =
       template["templateType"]
@@ -443,5 +443,24 @@ defmodule Glific.Templates do
     approved_db_template
     |> SessionTemplate.changeset(update_attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Returns the count of variables in template
+  """
+  @spec template_parameters_count(String.t()) :: non_neg_integer()
+  def template_parameters_count(template_body) do
+    template_body
+    |> String.split()
+    |> Enum.reduce([], fn word, acc ->
+      with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
+           clean_word <- Glific.string_clean(word) do
+        acc ++ [clean_word]
+      else
+        _ -> acc
+      end
+    end)
+    |> Enum.uniq()
+    |> Enum.count()
   end
 end
