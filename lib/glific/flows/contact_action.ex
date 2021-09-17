@@ -69,7 +69,7 @@ defmodule Glific.Flows.ContactAction do
         interactive_content["content"]["type"]
       )
 
-    with false <- has_loops?(context, body, messages) do
+    with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{
         body: body,
         uuid: action.uuid,
@@ -88,10 +88,14 @@ defmodule Glific.Flows.ContactAction do
     end
   end
 
-  @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) :: {:ok, map(), any()} | false
+  @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
+          {:ok, map(), any()} | {false, FlowContext.t()}
   defp has_loops?(context, body, messages) do
     {context, count} = update_recent(context, body)
-    if count <= @max_loop_limit, do: false, else: process_loops(context, count, messages, body)
+
+    if count <= @max_loop_limit,
+      do: {false, context},
+      else: process_loops(context, count, messages, body)
   end
 
   # handle the case if we are sending a notification to another contact who is
@@ -130,7 +134,6 @@ defmodule Glific.Flows.ContactAction do
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
     count = FlowContext.match_outbound(context, body)
-
     {context, count}
   end
 
@@ -163,7 +166,7 @@ defmodule Glific.Flows.ContactAction do
       text
       |> MessageVarParser.parse(message_vars)
 
-    with false <- has_loops?(context, body, messages) do
+    with {false, context} <- has_loops?(context, body, messages) do
       do_send_message(context, action, messages, %{
         cid: cid,
         body: body,
@@ -186,7 +189,7 @@ defmodule Glific.Flows.ContactAction do
 
     body = get_body(session_template)
 
-    with false <- has_loops?(context, body, messages) do
+    with {false, context} <- has_loops?(context, body, messages) do
       do_send_template_message(context, action, messages, %{
         cid: cid,
         session_template: session_template,
