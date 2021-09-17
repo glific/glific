@@ -178,7 +178,7 @@ defmodule Glific.Flows.Router do
     {msg, rest} =
       if messages == [] do
         ## split by group is also calling the same function.
-        ## currently we are diffrenciating based on operand
+        ## currently we are differentiating based on operand
         split_by_expression(router, context)
       else
         [msg | rest] = messages
