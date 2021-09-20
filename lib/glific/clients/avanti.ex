@@ -14,6 +14,17 @@ defmodule Glific.Clients.Avanti do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
+  def webhook("process_reports", fields) do
+    count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
+
+    reports = Jason.decode!(fields["reports"])
+    report = reports[fields["count"]]
+
+    report
+    |> Map.put(:is_valid, true)
+    |> Map.put(:count, count - 1)
+  end
+
   def webhook("check_if_existing_teacher", fields) do
     phone = clean_phone(fields)
 
@@ -27,11 +38,17 @@ defmodule Glific.Clients.Avanti do
     end
   end
 
-  def webhook("fetch_report", fields) do
+  def webhook("fetch_reports", fields) do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
-      data
-      |> List.first()
-      |> Map.put(:is_valid, true)
+      indexed_report =
+        data
+        |> Enum.with_index(1)
+        |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
+
+      count = data |> length()
+      reports = Jason.encode!(indexed_report)
+
+      %{is_valid: true, count: count, reports: reports}
     end
   end
 
@@ -76,8 +93,7 @@ defmodule Glific.Clients.Avanti do
     """
     SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}`
     WHERE faculty_mobile_no = '#{phone}'
-    ORDER BY first_sent_date DESC
-    LIMIT 1;
+    ORDER BY first_sent_date DESC;
     """
   end
 
@@ -90,7 +106,7 @@ defmodule Glific.Clients.Avanti do
 
   @spec clean_phone(map()) :: String.t()
   defp clean_phone(fields) do
-    phone =  String.trim(fields["phone"])
+    phone = String.trim(fields["phone"])
     length = String.length(phone)
     String.slice(phone, length - 10, length)
   end
