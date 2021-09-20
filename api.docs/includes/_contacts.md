@@ -9,6 +9,8 @@ query contacts($filter: ContactFilter, $opts: Opts) {
     name
     optinTime
     optoutTime
+    optinMethod
+    optoutMethod
     phone
     maskedPhone
     bspStatus
@@ -48,6 +50,8 @@ query contacts($filter: ContactFilter, $opts: Opts) {
         "name": "Default Receiver",
         "optinTime": null,
         "optoutTime": null,
+        "optinMethod": null,
+        "optoutMethod": null,
         "phone": "917834811231",
         "maskedPhone": "9178******31",
         "bspStatus": "SESSION_AND_HSM",
@@ -783,6 +787,16 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>optoutTime</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>optinMethod</strong></td>
+<td valign="top"><a href="#datetime">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>optoutMethod</strong></td>
+<td valign="top"><a href="#datetime">String</a></td>
 <td></td>
 </tr>
 <tr>
