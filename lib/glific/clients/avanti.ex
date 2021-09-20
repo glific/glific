@@ -10,11 +10,11 @@ defmodule Glific.Clients.Avanti do
     "teachers_table" => "school_profile"
   }
   @gcs_url "https://storage.googleapis.com/reports-af/haryana/sandbox/teacher_reports/"
-
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
+
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_gcs_reports", fields) do
     phone = clean_phone(fields)
@@ -30,6 +30,7 @@ defmodule Glific.Clients.Avanti do
     %{url: url}
   end
 
+  @spec webhook(String.t(), map()) :: map()
   def webhook("process_reports", fields) do
     count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
 
@@ -54,53 +55,18 @@ defmodule Glific.Clients.Avanti do
     end
   end
 
-  def webhook("fetch_reports", _fields) do
-    data = [
-      %{
-        "avg_accuracy_percent" => "49 %",
-        "avg_watch_time" => "2.1 minutes",
-        "chapter" => "10P11 मानव नेत्र तथा रंगबिरंगा संसार ",
-        "faculty_mobile_no" => "9996886307",
-        "faculty_name" => "Mr.Mahesh",
-        "first_sent_date" => "2021-09-16",
-        "grade" => "10",
-        "plio_id" => "484",
-        "plio_name" => "10P11 INTRODUCTION",
-        "plio_uuid" => "vpvxybazsa",
-        "school_code" => "1195",
-        "school_name" => "GSSS Burak",
-        "subject" => "Science",
-        "topic" => "11.1",
-        "viewers" => "9"
-      },
-      %{
-        "avg_accuracy_percent" => "72 %",
-        "avg_watch_time" => "1.7 minutes",
-        "chapter" => "10P11 मानव नेत्र तथा रंगबिरंगा संसार ",
-        "faculty_mobile_no" => "9996886307",
-        "faculty_name" => "Mr.Mahesh",
-        "first_sent_date" => "2021-09-16",
-        "grade" => "10",
-        "plio_id" => "485",
-        "plio_name" => "10P11.1 CV2 Haryana",
-        "plio_uuid" => "ylkfkwzbex",
-        "school_code" => "1195",
-        "school_name" => "GSSS Burak",
-        "subject" => "Science",
-        "topic" => "11.1",
-        "viewers" => "10"
-      }
-    ]
+  def webhook("fetch_reports", fields) do
+    with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
+      indexed_report =
+        data
+        |> Enum.with_index(1)
+        |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
 
-    indexed_report =
-      data
-      |> Enum.with_index(1)
-      |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
+      count = data |> length()
+      reports = Jason.encode!(indexed_report)
 
-    count = data |> length()
-    reports = Jason.encode!(indexed_report)
-
-    %{is_valid: true, count: count, reports: reports}
+      %{is_valid: true, count: count, reports: reports}
+    end
   end
 
   # returns data queried from bigquery in the form %{data: data, is_valid: true}
