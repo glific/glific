@@ -90,7 +90,7 @@ defmodule Glific.Clients.Avanti do
 
   @spec clean_phone(map()) :: String.t()
   defp clean_phone(fields) do
-    phone =  String.trim(fields["phone"])
+    phone = String.trim(fields["phone"])
     length = String.length(phone)
     String.slice(phone, length - 10, length)
   end

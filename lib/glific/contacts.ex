@@ -425,11 +425,12 @@ defmodule Glific.Contacts do
 
   defp optin_on_bsp(res, _), do: res
 
-  @spec opted_out_attrs(String.t(), non_neg_integer, DateTime.t()) :: map()
-  defp opted_out_attrs(phone, organization_id, utc_time),
+  @spec opted_out_attrs(String.t(), non_neg_integer, DateTime.t(), String.t()) :: map()
+  defp opted_out_attrs(phone, organization_id, utc_time, method),
     do: %{
       phone: phone,
       optout_time: utc_time,
+      optout_method: method,
       optin_time: nil,
       optin_status: false,
       optin_method: nil,
@@ -443,8 +444,8 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted out
   """
-  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: :ok | :error
-  def contact_opted_out(phone, organization_id, utc_time) do
+  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t(), String.t()) :: :ok | :error
+  def contact_opted_out(phone, organization_id, utc_time, method \\ "Glific Flows") do
     if is_simulator_contact?(phone) do
       :ok
     else
@@ -456,7 +457,7 @@ defmodule Glific.Contacts do
         contact ->
           update_contact(
             contact,
-            opted_out_attrs(phone, organization_id, utc_time)
+            opted_out_attrs(phone, organization_id, utc_time, method)
           )
 
           :ok

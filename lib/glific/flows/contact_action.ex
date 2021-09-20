@@ -383,7 +383,9 @@ defmodule Glific.Flows.ContactAction do
     Contacts.contact_opted_out(
       context.contact.phone,
       context.contact.organization_id,
-      DateTime.utc_now()
+      DateTime.utc_now(),
+      # at some point we might want to add flow name
+      "Glific Flows"
     )
 
     context
