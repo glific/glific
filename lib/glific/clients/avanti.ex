@@ -30,7 +30,6 @@ defmodule Glific.Clients.Avanti do
     %{url: url}
   end
 
-  @spec webhook(String.t(), map()) :: map()
   def webhook("process_reports", fields) do
     count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
 
