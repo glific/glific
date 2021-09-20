@@ -530,7 +530,7 @@ defmodule Glific.Clients.Stir do
   defp get_coach_survey_titles("all_yes", _response) do
     @intentional_coach_survey_titles
     |> Enum.reduce("", fn {question_no, question}, acc ->
-      acc <> "* Video" <> String.replace(question_no, "question_", "") <> "* - #{question}" <> "\n"
+      acc <> "*Video" <> String.replace(question_no, "question_", "") <> "* - #{question}" <> "\n"
     end)
   end
 
@@ -538,7 +538,7 @@ defmodule Glific.Clients.Stir do
     response
     |> Enum.with_index(1)
     |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
-      acc <> "* Video #{index} * -" <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+      acc <> "*Video #{index}* - " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
     end)
   end
 
