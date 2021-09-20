@@ -109,11 +109,11 @@ defmodule Glific.Clients.Stir do
   ]
 
   @intentional_coach_survey_titles %{
-    "question_1" => "provide inputs without prompting",
-    "question_2" => "link actions to wider purpose",
-    "question_3" => "list action points to take forward",
-    "question_4" => "problem solving and discussion",
-    "question_5" => "ask why and who questions"
+    "question_1" => "Providing inputs without excessive prompting",
+    "question_2" => "Linking actions to wider purposee",
+    "question_3" => "List action points to take forward",
+    "question_4" => "Problem solving and discussion",
+    "question_5" => "Asking 'why' and 'how' questions"
   }
 
   @reminders %{
@@ -530,7 +530,7 @@ defmodule Glific.Clients.Stir do
   defp get_coach_survey_titles("all_yes", _response) do
     @intentional_coach_survey_titles
     |> Enum.reduce("", fn {question_no, question}, acc ->
-      acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n"
+      acc <> "*Video" <> String.replace(question_no, "question_", "") <> "* - #{question}" <> "\n"
     end)
   end
 
@@ -538,7 +538,7 @@ defmodule Glific.Clients.Stir do
     response
     |> Enum.with_index(1)
     |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
-      acc <> "#{index}. " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+      acc <> "*Video #{index}* - " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
     end)
   end
 
