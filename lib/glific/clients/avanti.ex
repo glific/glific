@@ -21,13 +21,11 @@ defmodule Glific.Clients.Avanti do
     {:ok, now} = "Asia/Kolkata" |> DateTime.now()
     date = now |> DateTime.to_date()
 
-    numeric_sequence =
-      if fields["reports_count"] == "1",
-        do: "",
-        else: fields["reports_count"]
-
-    url = @gcs_url <> "#{phone}_#{date}_#{numeric_sequence}.pdf"
-    %{url: url}
+    with url <- @gcs_url <> "#{phone}_#{fields["plio_uuid"]}_#{date}.pdf",
+         response <- Glific.Messages.validate_media(url, "file") do
+      response
+      |> Map.put(:url, url)
+    end
   end
 
   def webhook("process_reports", fields) do
