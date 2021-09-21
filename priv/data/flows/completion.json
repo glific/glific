@@ -331,7 +331,7 @@
           "type": "text"
         },
         {
-          "key": "created_on",
+          "key": "inserted_at",
           "help": "the creation date of the result",
           "type": "datetime"
         }
