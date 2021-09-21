@@ -22,7 +22,7 @@ defmodule Glific.Clients.Avanti do
     date = now |> DateTime.to_date()
 
     with url <- @gcs_url <> "#{phone}_#{fields["plio_uuid"]}_#{date}.pdf",
-         response <- Glific.Messages.validate_media(url, "file") do
+         response <- Glific.Messages.validate_media(url, "document") do
       response
       |> Map.put(:url, url)
     end
