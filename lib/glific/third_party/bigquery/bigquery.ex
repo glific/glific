@@ -154,7 +154,12 @@ defmodule Glific.BigQuery do
         bigquery_job
 
       _ ->
-        %BigQueryJob{table: table_name, table_id: 0, organization_id: organization_id}
+        %BigQueryJob{
+          table: table_name,
+          table_id: 0,
+          organization_id: organization_id,
+          last_updated_at: DateTime.utc_now()
+        }
         |> Repo.insert!()
     end
 
@@ -442,19 +447,30 @@ defmodule Glific.BigQuery do
   @doc """
     Insert rows in the biqquery
   """
-  @spec make_insert_query(map() | list, String.t(), non_neg_integer, non_neg_integer) :: :ok
+  @spec make_insert_query(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
   def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
       when data in [[], nil, %{}],
       do: :ok
 
-  def make_insert_query(data, table, organization_id, max_id) do
+  def make_insert_query(data, table, organization_id, attrs) do
+    max_id = Keyword.get(attrs, :max_id)
+    last_updated_at = Keyword.get(attrs, :last_updated_at)
+
     Logger.info(
       "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     fetch_bigquery_credentials(organization_id)
-    |> do_make_insert_query(organization_id, data, table: table, max_id: max_id)
-    |> handle_insert_query_response(organization_id, table: table, max_id: max_id)
+    |> do_make_insert_query(organization_id, data,
+      table: table,
+      max_id: max_id,
+      last_updated_at: last_updated_at
+    )
+    |> handle_insert_query_response(organization_id,
+      table: table,
+      max_id: max_id,
+      last_updated_at: last_updated_at
+    )
 
     :ok
   end
@@ -487,6 +503,7 @@ defmodule Glific.BigQuery do
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
+    last_updated_at = Keyword.get(opts, :last_updated_at)
 
     cond do
       res.insertErrors != nil ->
@@ -500,25 +517,21 @@ defmodule Glific.BigQuery do
           "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
         )
 
-      true ->
+      last_updated_at not in [nil, 0] ->
+        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
+
         Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{
+            last_updated_at
+          } table: #{table}, res: #{inspect(res)}"
         )
+
+      true ->
+        Logger.info("Count not found the operation for bigquery insert and update")
     end
 
     :ok
   end
-
-  ## we can ignore this error since it's just insert the data and we are not expecting
-  ## any response back from the bigquery.
-  # Commenting for now, we should delete this soon. Tesla throws an exception for timeout
-  # and not a tuple, so this code is never called
-  # defp handle_insert_query_response({:error, :timeout}, organization_id, opts) do
-  #   table = Keyword.get(opts, :table)
-  #   max_id = Keyword.get(opts, :max_id)
-  #   Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
-  #   Logger.info("Timeout while inserting the data. #{inspect(opts)}")
-  # end
 
   defp handle_insert_query_response({:error, response}, organization_id, opts) do
     table = Keyword.get(opts, :table)
@@ -555,8 +568,12 @@ defmodule Glific.BigQuery do
       error["error"]["status"]
     else
       _ ->
-        Logger.info("Bigquery status error #{inspect(response)}")
-        :unknown
+        if is_atom(response) do
+          "TIMEOUT"
+        else
+          Logger.info("Bigquery status error #{inspect(response)}")
+          :unknown
+        end
     end
   end
 
@@ -591,9 +608,9 @@ defmodule Glific.BigQuery do
 
     """
     DELETE FROM `#{credentials.dataset_id}.#{table}`
-    WHERE struct(id, updated_at) IN (
-      SELECT STRUCT(id, updated_at)  FROM (
-        SELECT id, updated_at, ROW_NUMBER() OVER (
+    WHERE struct(id, updated_at, bq_uuid) IN (
+      SELECT STRUCT(id, updated_at, bq_uuid)  FROM (
+        SELECT id, updated_at, bq_uuid, ROW_NUMBER() OVER (
           PARTITION BY delta.id ORDER BY delta.updated_at DESC
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta

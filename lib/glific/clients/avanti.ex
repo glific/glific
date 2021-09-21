@@ -5,9 +5,9 @@ defmodule Glific.Clients.Avanti do
   alias GoogleApi.BigQuery.V2.Api.Jobs
 
   @plio %{
-    "dataset" => "917302307943",
-    "analytics_table" => "flows",
-    "teachers_table" => "contacts"
+    "dataset" => "haryana_sandbox",
+    "analytics_table" => "plio_summary_stats",
+    "teachers_table" => "school_profile"
   }
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -15,18 +15,24 @@ defmodule Glific.Clients.Avanti do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("check_if_existing_teacher", fields) do
-    phone = fields["phone"]
+    phone = clean_phone(fields)
 
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :teachers) do
       data
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
-        if teacher["phone"] == phone, do: acc |> Map.merge(%{found: true}), else: acc
+        if teacher["mobile_no"] == phone,
+          do: acc |> Map.merge(%{found: true, faculty_name: teacher["faculty_name"]}),
+          else: acc
       end)
     end
   end
 
   def webhook("fetch_report", fields) do
-    fetch_bigquery_data(fields, :analytics)
+    with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
+      data
+      |> List.first()
+      |> Map.put(:is_valid, true)
+    end
   end
 
   # returns data queried from bigquery in the form %{data: data, is_valid: true}
@@ -36,11 +42,12 @@ defmodule Glific.Clients.Avanti do
     Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
-        with sql <- get_report_sql(query_type),
-             {:ok, response} <-
+        with sql <- get_report_sql(query_type, fields),
+             {:ok, %{totalRows: total_rows} = response} <-
                Jobs.bigquery_jobs_query(conn, project_id,
                  body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
-               ) do
+               ),
+             true <- total_rows != "0" do
           data =
             response.rows
             |> Enum.map(fn row ->
@@ -53,7 +60,7 @@ defmodule Glific.Clients.Avanti do
 
           %{is_valid: true, data: data}
         else
-          _ -> %{is_valid: false, message: "Permission issue while fetching data"}
+          _ -> %{is_valid: false, message: "No data found for phone: #{fields["phone"]}"}
         end
 
       _ ->
@@ -62,21 +69,29 @@ defmodule Glific.Clients.Avanti do
   end
 
   # returns query that need to be run in bigquery instance
-  @spec get_report_sql(atom()) :: String.t()
-  defp get_report_sql(:analytics) do
-    time =
-      DateTime.utc_now()
-      |> Timex.shift(days: -6)
-      |> Timex.format!("{YYYY}-{0M}-{0D} {h24}:{m}:{s}")
+  @spec get_report_sql(atom(), map()) :: String.t()
+  defp get_report_sql(:analytics, fields) do
+    phone = clean_phone(fields)
 
     """
-    SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}` where inserted_at > '#{time}' ;
+    SELECT * FROM `#{@plio["dataset"]}.#{@plio["analytics_table"]}`
+    WHERE faculty_mobile_no = '#{phone}'
+    ORDER BY first_sent_date DESC
+    LIMIT 1;
     """
   end
 
-  defp get_report_sql(:teachers) do
+  defp get_report_sql(:teachers, _fields) do
     """
-    SELECT phone FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
+    SELECT mobile_no, faculty_name
+    FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
     """
+  end
+
+  @spec clean_phone(map()) :: String.t()
+  defp clean_phone(fields) do
+    phone = String.trim(fields["phone"])
+    length = String.length(phone)
+    String.slice(phone, length - 10, length)
   end
 end
