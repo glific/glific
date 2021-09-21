@@ -521,9 +521,7 @@ defmodule Glific.BigQuery do
         Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
 
         Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{
-            last_updated_at
-          } table: #{table}, res: #{inspect(res)}"
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{inspect(res)}"
         )
 
       true ->
