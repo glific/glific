@@ -54,6 +54,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :optin_time, :datetime
     field :optout_time, :datetime
 
+    field :optin_method, :string
+    field :optout_method, :string
+
     field :fields, :json
     field :settings, :json
 
