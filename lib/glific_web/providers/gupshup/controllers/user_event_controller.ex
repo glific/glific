@@ -36,7 +36,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
 
     get_in(params, ["payload", "phone"])
-    |> Glific.Contacts.contact_opted_out(conn.assigns[:organization_id], timestamp)
+    |> Glific.Contacts.contact_opted_out(
+      conn.assigns[:organization_id],
+      timestamp,
+      "BSP"
+    )
 
     Logger.info(
       "Contact with phone: #{get_in(params, ["payload", "phone"])} opted out on #{timestamp}"

@@ -17,6 +17,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "User name",
         name: "name",
         type: "STRING",
@@ -210,6 +216,12 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         description: "Uniquely generated message UUID, primarily needed for the flow editor",
@@ -429,6 +441,12 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         description: "Name of the workflow",

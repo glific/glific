@@ -109,11 +109,17 @@ defmodule Glific.Clients.Stir do
   ]
 
   @intentional_coach_survey_titles %{
-    "question_1" => "provide inputs without prompting",
-    "question_2" => "link actions to wider purpose",
-    "question_3" => "list action points to take forward",
-    "question_4" => "problem solving and discussion",
-    "question_5" => "ask why and who questions"
+    "question_1" => "Providing inputs without excessive prompting",
+    "question_2" => "Linking actions to wider purposee",
+    "question_3" => "List action points to take forward",
+    "question_4" => "Problem solving and discussion",
+    "question_5" => "Asking 'why' and 'how' questions"
+  }
+
+  @reminders %{
+    pending_registeration: %{days: 7, group: "pending_registration"},
+    inactive_after_registeration: %{days: 15, group: "inactive_after_registeration"},
+    submit_refecltion: %{days: 30, group: "submit_refecltion"}
   }
 
   @doc false
@@ -406,9 +412,6 @@ defmodule Glific.Clients.Stir do
   def webhook("get_survey_results", fields),
     do: get_survey_results(fields, mt_type(fields))
 
-  def webhook("compute_survey_score", %{results: results}),
-    do: compute_survey_score(results)
-
   def webhook("get_option_b_video_data", fields) do
     index_map = Jason.decode!(fields["index_map"])
     index = fields["index"]
@@ -421,7 +424,23 @@ defmodule Glific.Clients.Stir do
     end
   end
 
+  def webhook("set_reminders", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    contact = Contacts.get_contact!(contact_id)
+    set_contact_reminder(contact, fields)
+  end
+
+  def webhook("compute_survey_score", %{results: results}),
+    do: compute_survey_score(results)
+
   def webhook(_, fields), do: fields
+
+  @doc """
+    Get a GCS file name for specific user
+  """
+  @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(media),
+    do: media["remote_name"]
 
   # Get MT type if it's A or B and perform the action based on that.
   @spec mt_type(map()) :: atom()
@@ -511,7 +530,7 @@ defmodule Glific.Clients.Stir do
   defp get_coach_survey_titles("all_yes", _response) do
     @intentional_coach_survey_titles
     |> Enum.reduce("", fn {question_no, question}, acc ->
-      acc <> String.replace(question_no, "question_", "") <> ". #{question}" <> "\n"
+      acc <> "*Video" <> String.replace(question_no, "question_", "") <> "* - #{question}" <> "\n"
     end)
   end
 
@@ -519,7 +538,7 @@ defmodule Glific.Clients.Stir do
     response
     |> Enum.with_index(1)
     |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
-      acc <> "#{index}. " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+      acc <> "*Video #{index}* - " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
     end)
   end
 
@@ -719,6 +738,7 @@ defmodule Glific.Clients.Stir do
 
   defp district_group(_, _), do: nil
 
+  @spec cleaned_contact_priority(map()) :: tuple()
   defp cleaned_contact_priority(fields) do
     contact_priorities = get_contact_priority(fields)
 
@@ -731,6 +751,124 @@ defmodule Glific.Clients.Stir do
       |> clean_string()
 
     {first_priority, second_priority}
+  end
+
+  @spec set_contact_reminder(Contacts.Contact.t(), map()) :: map()
+  defp set_contact_reminder(contact, _fields) do
+    with {:remnder_not_set, attrs} <-
+           pending_registeration_reminder(%{reminder_set: false}, contact, :pending_registeration),
+         {:remnder_not_set, attrs} <-
+           being_inactive_after_registeration_reminder(
+             attrs,
+             contact,
+             :inactive_after_registeration
+           ),
+         {:remnder_not_set, attrs} <-
+           submit_refecltion_reminder(attrs, contact, :submit_refecltion) do
+      attrs
+    else
+      {_, attrs} -> attrs
+      _ -> %{error: :no_response}
+    end
+  end
+
+  @spec pending_registeration_reminder(map(), Contacts.Contact.t(), atom()) :: tuple()
+  defp pending_registeration_reminder(results, contact, type) do
+    with {:error, _} <- has_a_date(contact.fields, "registration_completed_at"),
+         {:ok, registration_started_at} <- has_a_date(contact.fields, "registration_started_at"),
+         true <-
+           Timex.diff(Timex.today(), registration_started_at, :days) |> is_reminder_day?(type) do
+      {:remnder_set, set_reminder(contact, type)}
+    else
+      _ -> {:remnder_not_set, results}
+    end
+  end
+
+  @spec being_inactive_after_registeration_reminder(map(), Contacts.Contact.t(), atom()) ::
+          tuple()
+  defp being_inactive_after_registeration_reminder(results, contact, type) do
+    with {:ok, _registration_completed_at} <-
+           has_a_date(contact.fields, "registration_completed_at"),
+         true <-
+           Timex.diff(Timex.today(), contact.last_message_at, :days)
+           |> is_reminder_day?(type) do
+      {:remnder_set, set_reminder(contact, type)}
+    else
+      _ -> {:remnder_not_set, results}
+    end
+  end
+
+  @spec submit_refecltion_reminder(map(), Contacts.Contact.t(), atom()) :: tuple()
+  defp submit_refecltion_reminder(results, contact, type) do
+    case has_a_date(contact.fields, "registration_completed_at") do
+      {:ok, _registration_completed_at} ->
+        has_a_date(contact.fields, "last_survey_submission_at")
+        date = submission_check_date(contact.fields)
+
+        if Timex.diff(Timex.today(), date, :days) |> is_reminder_day?(type) do
+          {:remnder_set, set_reminder(contact, type)}
+        else
+          {:remnder_not_set, results}
+        end
+
+      _ ->
+        {:remnder_not_set, results}
+    end
+  end
+
+  @spec submission_check_date(map()) :: Date.t()
+  defp submission_check_date(contact_fields) do
+    case has_a_date(contact_fields, "last_survey_submission_at") do
+      {:ok, last_survey_submission_at} ->
+        last_survey_submission_at
+
+      _ ->
+        {:ok, registration_completed_at} = has_a_date(contact_fields, "registration_completed_at")
+        registration_completed_at
+    end
+  end
+
+  @spec has_a_date(map(), atom()) :: {:ok, Date.t()} | {:error, atom()}
+  defp has_a_date(contact_fields, key) do
+    if Map.has_key?(contact_fields, key) do
+      date =
+        get_in(contact_fields, [key, "value"])
+        |> parse_string_to_date()
+
+      {:ok, date}
+    else
+      {:error, :invalid_date}
+    end
+  end
+
+  @spec is_reminder_day?(integer(), atom()) :: boolean()
+  defp is_reminder_day?(0, _type), do: false
+
+  defp is_reminder_day?(days, type),
+    do: rem(days, @reminders[type][:days]) == 0
+
+  @spec set_reminder(Contacts.Contact.t(), atom()) :: map()
+  defp set_reminder(contact, type) do
+    {:ok, group} =
+      @reminders[type][:group]
+      |> Groups.get_or_create_group_by_label(contact.organization_id)
+
+    Groups.create_contact_group(%{
+      contact_id: contact.id,
+      group_id: group.id,
+      organization_id: contact.organization_id
+    })
+
+    %{reminder_set: true, reminder_type: type, last_reminder_at: Timex.now()}
+  end
+
+  @spec parse_string_to_date(String.t()) :: Date.t() | nil
+  defp parse_string_to_date(nil), do: nil
+
+  defp parse_string_to_date(date) when is_binary(date) == true do
+    date
+    |> Timex.parse!("{YYYY}-{0M}-{D}")
+    |> Timex.to_date()
   end
 
   @doc false

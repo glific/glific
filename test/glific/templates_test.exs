@@ -955,5 +955,21 @@ defmodule Glific.TemplatesTest do
       assert translation["status"] == "APPROVED"
       assert translation["uuid"] == hsm2.uuid
     end
+
+    test "template_parameters_count/1 should return number of parameters in a template" do
+      template_body = "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{3}}"
+      assert Templates.template_parameters_count(template_body) == 3
+      template_body = "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{1}}"
+      assert Templates.template_parameters_count(template_body) == 2
+      template_body = "Thankyou for joining {{1}}"
+      assert Templates.template_parameters_count(template_body) == 1
+      template_body = "Welcome to our program"
+      assert Templates.template_parameters_count(template_body) == 0
+
+      template_body =
+        "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{3}}, School {{4}} on date {{5}}: Chapter: {{6}} Topic: {{7}} No. of students who attempted - {{8}}, Accuracy - {{9}}, Watch Time - {{10}}"
+
+      assert Templates.template_parameters_count(template_body) == 10
+    end
   end
 end
