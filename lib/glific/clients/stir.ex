@@ -538,7 +538,8 @@ defmodule Glific.Clients.Stir do
     response
     |> Enum.with_index(1)
     |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
-      acc <> "*Video #{index}* - " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+      acc <>
+        "*Video #{index}* - " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
     end)
   end
 
