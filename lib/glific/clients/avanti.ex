@@ -10,11 +10,11 @@ defmodule Glific.Clients.Avanti do
     "teachers_table" => "school_profile"
   }
   @gcs_url "https://storage.googleapis.com/reports-af/haryana/sandbox/teacher_reports/"
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
-
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_gcs_reports", fields) do
     phone = clean_phone(fields)
