@@ -17,22 +17,26 @@ defmodule Glific.Clients.Avanti do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_gcs_reports", fields) do
-    phone = clean_phone(fields)
-    {:ok, now} = DateTime.now("Asia/Kolkata")
-    date = DateTime.to_date(now)
-    url = @gcs_url <> "#{phone}_#{fields["plio_uuid"]}_#{date}.pdf"
+    url =
+      @gcs_url <>
+        clean_phone(fields) <>
+        "_" <>
+        fields["plio_uuid"] <>
+        "_" <>
+        "#{Timex.today("Asia/Kolkata")}" <>
+        ".pdf"
 
-    Glific.Messages.validate_media(url, "document")
+    url
+    |> Glific.Messages.validate_media("document")
     |> Map.put(:url, url)
   end
 
   def webhook("process_reports", fields) do
     count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
 
-    reports = Jason.decode!(fields["reports"])
-    report = reports[fields["count"]]
-
-    report
+    fields["reports"]
+    |> Jason.decode!()
+    |> Map.get(fields["count"])
     |> Map.put(:is_valid, true)
     |> Map.put(:count, count - 1)
   end
@@ -57,10 +61,11 @@ defmodule Glific.Clients.Avanti do
         |> Enum.with_index(1)
         |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
 
-      count = data |> length()
-      reports = Jason.encode!(indexed_report)
-
-      %{is_valid: true, count: count, reports: reports}
+      %{
+        is_valid: true,
+        count: length(data),
+        reports: Jason.encode!(indexed_report)
+      }
     end
   end
 
