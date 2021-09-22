@@ -29,14 +29,18 @@ defmodule Glific.Flows.Broadcast do
     # of contacts
     {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
 
-    {:ok, _group_message} =
+    {:ok, group_message} =
       Messages.create_group_message(%{
         body: "Starting flow: #{flow.name} for group: #{group.label}",
         type: :text,
         group_id: group.id
       })
 
-    do_broadcast(flow, group, opts(group.organization_id))
+    do_broadcast(
+      flow,
+      group,
+      [group_message_id: group_message.id] ++ opts(group.organization_id)
+    )
 
     flow
   end
@@ -135,13 +139,16 @@ defmodule Glific.Flows.Broadcast do
     |> Enum.chunk_every(opts[:bsp_limit])
     |> Enum.with_index()
     |> Enum.each(fn {chunk_list, delay_offset} ->
-      flow_tasks(flow, chunk_list, opts[:delay] + delay_offset)
+      flow_tasks(
+        flow,
+        chunk_list,
+        delay: opts[:delay] + delay_offset,
+        group_message_id: opts[:group_message_id]
+      )
     end)
   end
 
-  defp flow_tasks(flow, contacts, delay) do
-    opts = [delay: delay]
-
+  defp flow_tasks(flow, contacts, opts) do
     stream =
       Task.Supervisor.async_stream_nolink(
         Glific.Broadcast.Supervisor,
