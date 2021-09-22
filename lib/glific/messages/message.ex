@@ -56,6 +56,8 @@ defmodule Glific.Messages.Message do
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
           context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          group_message_id: non_neg_integer | nil,
+          group_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
@@ -83,6 +85,7 @@ defmodule Glific.Messages.Message do
     :bsp_message_id,
     :context_id,
     :context_message_id,
+    :group_message_id,
     :errors,
     :media_id,
     :group_id,
@@ -123,6 +126,9 @@ defmodule Glific.Messages.Message do
 
     field :context_id, :string
     belongs_to :context_message, Message, foreign_key: :context_message_id
+
+    # the originating group message which kicked off this flow if any
+    belongs_to :group_message, Message, foreign_key: :group_message_id
 
     field :errors, :map, default: %{}
     field :send_at, :utc_datetime
