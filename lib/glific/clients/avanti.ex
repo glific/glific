@@ -23,7 +23,7 @@ defmodule Glific.Clients.Avanti do
         "_" <>
         fields["plio_uuid"] <>
         "_" <>
-        Timex.today("Asia/Kolkata") <>
+        "#{Timex.today("Asia/Kolkata")}" <>
         ".pdf"
 
     url
