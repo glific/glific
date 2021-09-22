@@ -18,14 +18,12 @@ defmodule Glific.Clients.Avanti do
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_gcs_reports", fields) do
     phone = clean_phone(fields)
-    {:ok, now} = "Asia/Kolkata" |> DateTime.now()
-    date = now |> DateTime.to_date()
+    {:ok, now} = DateTime.now("Asia/Kolkata")
+    date = DateTime.to_date(now)
+    url = @gcs_url <> "#{phone}_#{fields["plio_uuid"]}_#{date}.pdf"
 
-    with url <- @gcs_url <> "#{phone}_#{fields["plio_uuid"]}_#{date}.pdf",
-         response <- Glific.Messages.validate_media(url, "document") do
-      response
-      |> Map.put(:url, url)
-    end
+    Glific.Messages.validate_media(url, "document")
+    |> Map.put(:url, url)
   end
 
   def webhook("process_reports", fields) do
