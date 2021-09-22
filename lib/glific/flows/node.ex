@@ -198,14 +198,12 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
-  Execute a node, given a message stream.
-  Consume the message stream as processing occurs
+  Wrapper function to bump the count of the node using our
+  metrics subsystem
   """
-  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
-  def execute(node, context, messages) do
+  @spec bump_count(Node.t(), FlowContext.t()) :: any
+  def bump_count(node, context) do
     # update the flow count
-
     Metrics.bump(%{
       uuid: node.uuid,
       flow_id: node.flow_id,
@@ -213,7 +211,15 @@ defmodule Glific.Flows.Node do
       organization_id: context.organization_id,
       type: "node"
     })
+  end
 
+  @doc """
+  Execute a node, given a message stream.
+  Consume the message stream as processing occurs
+  """
+  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(node, context, messages) do
     # if node has an action, execute the first action
     cond do
       # we special case wait for time, since it has a router, which basically
@@ -224,7 +230,6 @@ defmodule Glific.Flows.Node do
       # if both are non-empty, it means that we have either a
       #   * sub-flow option
       #   * calling a web hook
-
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
         execute_node_router(node, context, messages)
 
@@ -257,6 +262,8 @@ defmodule Glific.Flows.Node do
   @spec execute_node_actions(Node.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_node_actions(node, context, messages) do
+    bump_count(node, context)
+
     # we need to execute all the actions (nodes can have multiple actions)
     result =
       Enum.reduce(
