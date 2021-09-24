@@ -172,7 +172,7 @@ defmodule Glific.Flows.Case do
     |> String.match?(pattern)
   end
 
-  def execute(%{type: "starts_with"} = c, _context, %{type: :text} = msg),
+  def execute(%{type: "has_beginning"} = c, _context, %{type: :text} = msg),
     do:
       msg
       |> strip()
