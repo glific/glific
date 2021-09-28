@@ -469,8 +469,7 @@ defmodule Glific.Clients.Stir do
   defp save_survey_results(contact, fields, :TYPE_A) do
     priority = clean_string(fields["priority"])
     answer = clean_string(fields["answer"])
-    [most_ranked, mid_ranked | least_ranked] = get_ranked_response(fields["answer"])
-    least_rank = least_ranked |> List.last()
+    [most_ranked, mid_ranked, least_rank] = get_ranked_response(fields["answer"])
     option_a_data = get_option_a_data(fields)
 
     ## reset the value if the survey has been field eariler
