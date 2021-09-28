@@ -211,6 +211,7 @@ defmodule Glific.Flows.FlowContext do
   Resets the context and sends control back to the parent context
   if one exists
   """
+  @min_delay 2
 
   @spec reset_context(FlowContext.t()) :: FlowContext.t() | nil
   def reset_context(context) do
@@ -234,7 +235,7 @@ defmodule Glific.Flows.FlowContext do
 
         ## add delay so that it does not execute the message before sub flows
         ## adding this line saprately so that we can easily identify this in different cases.
-        parent = Map.put(parent, :delay, context.delay)
+        parent = Map.put(parent, :delay, max(context.delay + @min_delay, @min_delay))
 
         parent
         |> load_context(Flow.get_flow(context.organization_id, parent.flow_uuid, context.status))
