@@ -469,7 +469,8 @@ defmodule Glific.Clients.Stir do
   defp save_survey_results(contact, fields, :TYPE_A) do
     priority = clean_string(fields["priority"])
     answer = clean_string(fields["answer"])
-    least_rank = get_least_rank(fields["answer"])
+    [most_ranked, mid_ranked | least_ranked] = get_ranked_response(fields["answer"])
+    least_rank = least_ranked |> List.last()
     option_a_data = get_option_a_data(fields)
 
     ## reset the value if the survey has been field eariler
@@ -478,7 +479,9 @@ defmodule Glific.Clients.Stir do
     priority_item = %{
       "priority" => priority,
       "answer" => answer,
-      "least_rank" => least_rank
+      "least_rank" => least_rank,
+      "mid_rank" => mid_ranked,
+      "most_rank" => most_ranked
     }
 
     option_a_data = Map.put(option_a_data, priority, priority_item)
@@ -645,11 +648,10 @@ defmodule Glific.Clients.Stir do
     end
   end
 
-  @spec get_least_rank(String.t()) :: String.t()
-  defp get_least_rank(answer) do
+  @spec get_ranked_response(String.t()) :: list()
+  defp get_ranked_response(answer) do
     clean_string(answer)
     |> String.split(",", trim: true)
-    |> List.last()
   end
 
   @spec get_priority_versions(map()) :: map()
