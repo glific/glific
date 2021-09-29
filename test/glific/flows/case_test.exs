@@ -121,8 +121,8 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "one") == false
   end
 
-  test "test the execute function for starts_with" do
-    c = %Case{type: "starts_with", arguments: ["this is a sentence"]}
+  test "test the execute function for has_beginning" do
+    c = %Case{type: "has_beginning", arguments: ["this is a sentence"]}
 
     assert wrap_execute(c, nil, "thi") == true
     assert wrap_execute(c, nil, "this is") == true
@@ -132,7 +132,20 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "his is") == false
     assert wrap_execute(c, nil, "whateever") == false
 
-    assert_raise UndefinedFunctionError, fn -> wrap_execute(c, nil, "whateever", :audio) end
+    assert_raise UndefinedFunctionError, fn -> wrap_execute(c, nil, "whateever", type: :audio) end
+  end
+
+  test "test the execute function for has_pattern" do
+    c = %Case{type: "has_pattern", arguments: "^[[:alnum:]]+$"}
+
+    assert wrap_execute(c, nil, "thi") == true
+    assert wrap_execute(c, nil, "this") == true
+    assert wrap_execute(c, nil, "sentence123") == true
+    assert wrap_execute(c, nil, "senTence 123  !@#") == false
+
+    assert_raise UndefinedFunctionError, fn ->
+      wrap_execute(c, nil, "Wwhateever", type: :audio)
+    end
   end
 
   test "test the execute function for has_location" do

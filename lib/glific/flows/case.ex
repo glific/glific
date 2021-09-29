@@ -164,25 +164,18 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_pattern"} = c, _context, %{type: :text} = msg) do
-    pattern = c.arguments |> strip() |> Regex.compile!()
-
-    msg
-    |> strip()
-    |> String.match?(pattern)
-  end
+  def execute(%{type: "has_pattern"} = c, _context, %{type: :text} = msg),
+    do:
+      c.arguments
+      |> strip()
+      |> Regex.compile!()
+      |> Regex.match?(strip(msg))
 
   def execute(%{type: "has_beginning"} = c, _context, %{type: :text} = msg),
     do:
-      msg
+      c.arguments
       |> strip()
-      |> String.starts_with?(strip(c.arguments))
-
-  def execute(%{type: "ends_with"} = c, _context, %{type: :text} = msg),
-    do:
-      msg
-      |> strip()
-      |> String.ends_with?(strip(c.arguments))
+      |> String.starts_with?(strip(msg))
 
   def execute(%{type: type} = c, _context, %{type: :text} = msg)
       when type in ["has_intent", "has_top_intent"] do
