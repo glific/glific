@@ -1108,7 +1108,8 @@ defmodule Glific.Messages do
           |> Map.merge(%{
             fields: %{},
             last_communication_at: DateTime.utc_now(),
-            last_message_at: DateTime.utc_now()
+            last_message_at: DateTime.utc_now(),
+            bsp_status: :session
           }),
         else: values
 
