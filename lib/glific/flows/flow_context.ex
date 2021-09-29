@@ -372,9 +372,6 @@ defmodule Glific.Flows.FlowContext do
       {:ok, context, new_messages} ->
         # if we've consumed some messages, lets continue calling the function,
         # till we consume all messages that we potentially can
-        IO.inspect("new messages")
-        IO.inspect("start again")
-
         if messages != new_messages do
           execute(context, new_messages)
         else

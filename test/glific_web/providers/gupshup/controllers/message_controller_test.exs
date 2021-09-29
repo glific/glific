@@ -61,8 +61,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     end
 
     test "Incoming text message without phone should raise exception",
-      %{conn: conn, message_params: message_params} do
-
+         %{conn: conn, message_params: message_params} do
       message_params = put_in(message_params, ["payload", "sender", "phone"], "")
       assert_raise RuntimeError, fn -> post(conn, "/gupshup", message_params) end
 
@@ -71,7 +70,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     end
 
     test "Incoming text message should be stored in the database",
-      %{conn: conn, message_params: message_params} do
+         %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
