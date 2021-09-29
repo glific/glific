@@ -101,10 +101,11 @@ defmodule Glific.Flows.Case do
   It also returns a boolean, rather than a tuple
   """
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
-  def execute(%{type: "has_number_eq"} = c, _context, msg),
+  def execute(%{type: "has_number_eq"} = c, _context, %{type: :text} = msg),
     do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: type} = c, _context, msg) when type == "has_number_between" do
+  def execute(%{type: type} = c, _context, %{type: :text} = msg)
+      when type == "has_number_between" do
     [low, high] = c.arguments
 
     # convert all 3 parameters to number
@@ -119,7 +120,7 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_number"}, _context, msg),
+  def execute(%{type: "has_number"}, _context, %{type: :text} = msg),
     do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
   def execute(%{type: "has_any_word"} = c, _context, msg) do
@@ -127,23 +128,74 @@ defmodule Glific.Flows.Case do
     !MapSet.disjoint?(str, c.parsed_arguments)
   end
 
-  def execute(%{type: "has_phrase"} = c, _context, msg),
+  def execute(%{type: "has_phrase"} = c, _context, %{type: :text} = msg),
     do: String.contains?(strip(c.arguments), strip(msg))
 
   def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
     do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: "has_all_words"} = c, _context, msg) do
+  def execute(%{type: "has_all_words"} = c, _context, %{type: :text} = msg) do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
 
     c.parsed_arguments |> MapSet.subset?(str)
   end
 
-  def execute(%{type: "has_multiple"} = c, _context, msg),
+  def execute(%{type: "has_multiple"} = c, _context, %{type: :text} = msg),
     do:
       msg.body
       |> Glific.make_set()
       |> MapSet.subset?(c.parsed_arguments)
+
+  def execute(%{type: "has_phone"} = _c, _context, %{type: :text} = msg) do
+    phone = strip(msg)
+
+    case ExPhoneNumber.parse(phone, "IN") do
+      {:ok, phone_number} -> ExPhoneNumber.is_valid_number?(phone_number)
+      _ -> false
+    end
+  end
+
+  def execute(%{type: "has_email"} = _c, _context, %{type: :text} = msg) do
+    email = strip(msg)
+
+    case Changeset.validate_email(email) do
+      :ok -> true
+      _ -> false
+    end
+  end
+
+  def execute(%{type: "has_pattern"} = c, _context, %{type: :text} = msg),
+    do:
+      c.arguments
+      |> strip()
+      |> Regex.compile!()
+      |> Regex.match?(strip(msg))
+
+  def execute(%{type: "has_beginning"} = c, _context, %{type: :text} = msg),
+    do:
+      c.arguments
+      |> strip()
+      |> String.starts_with?(strip(msg))
+
+  def execute(%{type: type} = c, _context, %{type: :text} = msg)
+      when type in ["has_intent", "has_top_intent"] do
+    [intent, confidence] = c.arguments
+    # always prepend a 0 to the string, in case it is something like ".9",
+    # this also works with "0.9"
+    confidence = String.to_float("0" <> confidence)
+
+    if intent == "all",
+      # any intent is fine, we are only interested in the confidence level
+      do: msg.extra.confidence >= confidence,
+      else: msg.extra.intent == intent && msg.extra.confidence >= confidence
+  end
+
+  def execute(%{type: "has_group"} = c, _context, msg) do
+    [_group_id, group_label] = c.arguments
+    group_label in msg.extra.contact_groups
+  end
+
+  def execute(%{type: "has_category"}, _context, _msg), do: true
 
   def execute(%{type: "has_location"}, _context, msg),
     do: msg.type == :location
@@ -163,46 +215,10 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_file"}, _context, msg),
     do: msg.type == :document
 
-  def execute(%{type: "has_phone"} = _c, _context, msg) do
-    phone = strip(msg)
-
-    case ExPhoneNumber.parse(phone, "IN") do
-      {:ok, phone_number} -> ExPhoneNumber.is_valid_number?(phone_number)
-      _ -> false
-    end
-  end
-
-  def execute(%{type: "has_email"} = _c, _context, msg) do
-    email = strip(msg)
-
-    case Changeset.validate_email(email) do
-      :ok -> true
-      _ -> false
-    end
-  end
-
-  def execute(%{type: type} = c, _context, msg) when type in ["has_intent", "has_top_intent"] do
-    [intent, confidence] = c.arguments
-    # always prepend a 0 to the string, in case it is something like ".9",
-    # this also works with "0.9"
-    confidence = String.to_float("0" <> confidence)
-
-    if intent == "all",
-      # any intent is fine, we are only interested in the confidence level
-      do: msg.extra.confidence >= confidence,
-      else: msg.extra.intent == intent && msg.extra.confidence >= confidence
-  end
-
-  def execute(%{type: "has_group"} = c, _context, msg) do
-    [_group_id, group_label] = c.arguments
-    group_label in msg.extra.contact_groups
-  end
-
-  def execute(%{type: "has_category"}, _context, _msg), do: true
-
-  def execute(c, _context, _msg),
+  def execute(c, _context, msg),
     do:
       raise(UndefinedFunctionError,
-        message: "Function not implemented for cases of type #{c.type}"
+        message:
+          "Function not implemented for cases of case type: #{c.type}, message type: #{msg.type}"
       )
 end
