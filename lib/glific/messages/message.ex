@@ -13,6 +13,7 @@ defmodule Glific.Messages.Message do
     Messages.MessageMedia,
     Partners.Organization,
     Tags.Tag,
+    Templates.InteractiveTemplate,
     Templates.SessionTemplate,
     Users.User
   }
@@ -54,6 +55,7 @@ defmodule Glific.Messages.Message do
           publish?: boolean,
           extra: map(),
           interactive_content: map(),
+          interactive_template: InteractiveTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           bsp_message_id: String.t() | nil,
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
@@ -97,7 +99,8 @@ defmodule Glific.Messages.Message do
     :flow_id,
     :session_uuid,
     :interactive_content,
-    :template_id
+    :template_id,
+    :interactive_template_id
   ]
 
   schema "messages" do
@@ -152,6 +155,7 @@ defmodule Glific.Messages.Message do
     has_one :location, Location
 
     belongs_to :template, SessionTemplate
+    belongs_to :interactive_template, InteractiveTemplate
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
