@@ -13,6 +13,7 @@ defmodule Glific.Messages.Message do
     Messages.MessageMedia,
     Partners.Organization,
     Tags.Tag,
+    Templates.SessionTemplate,
     Users.User
   }
 
@@ -24,6 +25,7 @@ defmodule Glific.Messages.Message do
           uuid: Ecto.UUID.t() | nil,
           type: String.t() | atom() | nil,
           is_hsm: boolean | nil,
+          template: SessionTemplate.t() | Ecto.Association.NotLoaded.t() | nil,
           flow: String.t() | nil,
           flow_label: String.t() | nil,
           status: String.t() | nil,
@@ -94,7 +96,8 @@ defmodule Glific.Messages.Message do
     :user_id,
     :flow_id,
     :session_uuid,
-    :interactive_content
+    :interactive_content,
+    :template_id
   ]
 
   schema "messages" do
@@ -147,6 +150,8 @@ defmodule Glific.Messages.Message do
 
     belongs_to :group, Group
     has_one :location, Location
+
+    belongs_to :template, SessionTemplate
 
     many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
 
