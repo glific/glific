@@ -105,9 +105,8 @@ defmodule Glific.Flows.Case do
       when type in [:text, :quick_reply, :list],
       do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: type} = c, _context, %{type: type} = msg)
-      when type in [:text, :quick_reply, :list]
-      when type == "has_number_between" do
+  def execute(%{type: "has_number_between"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list] do
     [low, high] = c.arguments
 
     # convert all 3 parameters to number
