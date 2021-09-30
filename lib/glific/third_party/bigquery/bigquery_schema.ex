@@ -369,6 +369,30 @@ defmodule Glific.BigQuery.Schema do
         name: "gcs_url",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Status if the message was an HSM",
+        name: "is_hsm",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "refrence ID for an HSM",
+        name: "template_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "refrence ID for an interactive template",
+        name: "interactive_template_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "context message id for an template response",
+        name: "context_message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
       }
     ]
   end
