@@ -480,7 +480,8 @@ defmodule Glific.Clients.Stir do
       "answer" => answer,
       "least_rank" => least_rank,
       "mid_rank" => mid_ranked,
-      "most_rank" => most_ranked
+      "most_rank" => most_ranked,
+      "diet_activity" => fields["contact"]["fields"]["activity"]["value"]
     }
 
     option_a_data = Map.put(option_a_data, priority, priority_item)
