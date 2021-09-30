@@ -407,7 +407,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
       flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
       longitude: if(!is_nil(row.location), do: row.location.longitude),
       latitude: if(!is_nil(row.location), do: row.location.latitude),
-      gcs_url: if(!is_nil(row.media), do: row.media.gcs_url)
+      gcs_url: if(!is_nil(row.media), do: row.media.gcs_url),
+      is_hsm: row.is_hsm,
+      template_uuid: if(!is_nil(row.template), do: row.template.uuid),
+      interactive_template_id: row.interactive_template_id,
+      context_message_id: row.context_message_id
     }
 
   @spec make_job(list(), atom(), non_neg_integer, map()) :: :ok
@@ -487,7 +491,17 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
+      |> preload([
+        :tags,
+        :receiver,
+        :sender,
+        :contact,
+        :user,
+        :media,
+        :flow_object,
+        :location,
+        :template
+      ])
 
   defp get_query("contacts", organization_id, attrs),
     do:
