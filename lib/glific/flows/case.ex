@@ -23,7 +23,7 @@ defmodule Glific.Flows.Case do
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
-          type: FlowCase | nil,
+          type: String.t() | nil,
           arguments: [String.t()],
           category_uuid: Ecto.UUID.t() | nil,
           category: Category.t() | nil
