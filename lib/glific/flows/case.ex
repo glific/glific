@@ -101,11 +101,12 @@ defmodule Glific.Flows.Case do
   It also returns a boolean, rather than a tuple
   """
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
-  def execute(%{type: "has_number_eq"} = c, _context, %{type: :text} = msg),
-    do: strip(c.arguments) == strip(msg)
+  def execute(%{type: "has_number_eq"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list],
+      do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: type} = c, _context, %{type: :text} = msg)
-      when type == "has_number_between" do
+  def execute(%{type: "has_number_between"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list] do
     [low, high] = c.arguments
 
     # convert all 3 parameters to number
@@ -120,33 +121,38 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_number"}, _context, %{type: :text} = msg),
-    do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
+  def execute(%{type: "has_number"}, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list],
+      do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
   def execute(%{type: "has_any_word"} = c, _context, msg) do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
     !MapSet.disjoint?(str, c.parsed_arguments)
   end
 
-  def execute(%{type: "has_phrase"} = c, _context, %{type: :text} = msg),
-    do: String.contains?(strip(c.arguments), strip(msg))
+  def execute(%{type: "has_phrase"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list],
+      do: String.contains?(strip(c.arguments), strip(msg))
 
   def execute(%{type: type} = c, _context, msg) when type in ["has_only_phrase", "has_only_text"],
     do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: "has_all_words"} = c, _context, %{type: :text} = msg) do
+  def execute(%{type: "has_all_words"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list] do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
 
     c.parsed_arguments |> MapSet.subset?(str)
   end
 
-  def execute(%{type: "has_multiple"} = c, _context, %{type: :text} = msg),
-    do:
-      msg.body
-      |> Glific.make_set()
-      |> MapSet.subset?(c.parsed_arguments)
+  def execute(%{type: "has_multiple"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list],
+      do:
+        msg.body
+        |> Glific.make_set()
+        |> MapSet.subset?(c.parsed_arguments)
 
-  def execute(%{type: "has_phone"} = _c, _context, %{type: :text} = msg) do
+  def execute(%{type: "has_phone"} = _c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list] do
     phone = strip(msg)
 
     case ExPhoneNumber.parse(phone, "IN") do
@@ -155,7 +161,8 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_email"} = _c, _context, %{type: :text} = msg) do
+  def execute(%{type: "has_email"} = _c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list] do
     email = strip(msg)
 
     case Changeset.validate_email(email) do
@@ -164,20 +171,23 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_pattern"} = c, _context, %{type: :text} = msg),
-    do:
-      c.arguments
-      |> strip()
-      |> Regex.compile!()
-      |> Regex.match?(strip(msg))
+  def execute(%{type: "has_pattern"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list],
+      do:
+        c.arguments
+        |> strip()
+        |> Regex.compile!()
+        |> Regex.match?(strip(msg))
 
-  def execute(%{type: "has_beginning"} = c, _context, %{type: :text} = msg),
-    do:
-      c.arguments
-      |> strip()
-      |> String.starts_with?(strip(msg))
+  def execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list],
+      do:
+        c.arguments
+        |> strip()
+        |> String.starts_with?(strip(msg))
 
-  def execute(%{type: type} = c, _context, %{type: :text} = msg)
+  def execute(%{type: type} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list]
       when type in ["has_intent", "has_top_intent"] do
     [intent, confidence] = c.arguments
     # always prepend a 0 to the string, in case it is something like ".9",
