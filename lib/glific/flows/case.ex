@@ -186,9 +186,8 @@ defmodule Glific.Flows.Case do
         |> strip()
         |> String.starts_with?(strip(msg))
 
-  def execute(%{type: type} = c, _context, %{type: type} = msg)
-      when type in [:text, :quick_reply, :list]
-      when type in ["has_intent", "has_top_intent"] do
+  def execute(%{type: case_type} = c, _context, %{type: type} = msg)
+      when type in [:text, :quick_reply, :list] and case_type in ["has_intent", "has_top_intent"] do
     [intent, confidence] = c.arguments
     # always prepend a 0 to the string, in case it is something like ".9",
     # this also works with "0.9"
