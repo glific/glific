@@ -533,7 +533,7 @@ defmodule Glific.BigQuery.Schema do
   @doc """
   Schema for flow count table
   """
-  @spec flow_result_schema :: list()
+  @spec flow_count_schema :: list()
   def flow_count_schema do
     [
       %{
