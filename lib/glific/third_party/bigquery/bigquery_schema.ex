@@ -531,6 +531,82 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for flow count table
+  """
+  @spec flow_result_schema :: list()
+  def flow_count_schema do
+    [
+      %{
+        description: "Flow Count ID",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "UUID of the source node",
+        name: "source_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "UUID of the destination node",
+        name: "destination_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the workflow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description:
+          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+        name: "flow_uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Type of the node",
+        name: "type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Travel count for a node",
+        name: "count",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "JSON object for storing the recenet messages",
+        name: "recent_messages",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow results entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the flow results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the stats_global_schema table
   """
   @spec stats_all_schema :: list()
