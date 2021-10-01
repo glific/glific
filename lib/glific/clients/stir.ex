@@ -400,6 +400,12 @@ defmodule Glific.Clients.Stir do
     %{status: true}
   end
 
+  def webhook("save_survey_answer_as_participant", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    mt_contact = Contacts.get_contact!(contact_id)
+    save_survey_results(mt_contact, fields, mt_type(fields))
+  end
+
   def webhook("save_survey_answer", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     contact = Contacts.get_contact!(contact_id)
