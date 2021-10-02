@@ -394,7 +394,6 @@ defmodule Glific.BigQuery.Schema do
         type: "INTEGER",
         mode: "NULLABLE"
       },
-
       %{
         description: "group message id when a flow started for a group",
         name: "group_message_id",
