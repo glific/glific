@@ -12,6 +12,8 @@ defmodule Glific.Providers.Gupshup.Message do
     Partners
   }
 
+  require Logger
+
   @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec send_text(Message.t(), map()) ::
@@ -121,6 +123,22 @@ defmodule Glific.Providers.Gupshup.Message do
   def receive_text(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
+
+    # lets ensure that we have a phone number
+    # sometime the gupshup payload has a blank payload
+    if is_nil(payload["sender"]["phone"]) ||
+         String.trim(payload["sender"]["phone"]) == "" do
+      error = "Phone number is blank, #{inspect(payload)}"
+      Logger.error(error)
+
+      stacktrace =
+        self()
+        |> Process.info(:current_stacktrace)
+        |> elem(1)
+
+      Appsignal.send_error(:error, error, stacktrace)
+      raise(RuntimeError, message: error)
+    end
 
     %{
       bsp_message_id: payload["id"],

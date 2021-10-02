@@ -10,33 +10,33 @@ defmodule Glific.Clients.Avanti do
     "teachers_table" => "school_profile"
   }
   @gcs_url "https://storage.googleapis.com/reports-af/haryana/sandbox/teacher_reports/"
+
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
-
   @spec webhook(String.t(), map()) :: map()
   def webhook("get_gcs_reports", fields) do
-    phone = clean_phone(fields)
-    {:ok, now} = "Asia/Kolkata" |> DateTime.now()
-    date = now |> DateTime.to_date()
+    url =
+      @gcs_url <>
+        clean_phone(fields) <>
+        "_" <>
+        fields["plio_uuid"] <>
+        "_" <>
+        "#{Timex.today("Asia/Kolkata")}" <>
+        ".pdf"
 
-    numeric_sequence =
-      if fields["reports_count"] == "1",
-        do: "",
-        else: fields["reports_count"]
-
-    url = @gcs_url <> "#{phone}_#{date}_#{numeric_sequence}.pdf"
-    %{url: url}
+    url
+    |> Glific.Messages.validate_media("document")
+    |> Map.put(:url, url)
   end
 
   def webhook("process_reports", fields) do
     count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
 
-    reports = Jason.decode!(fields["reports"])
-    report = reports[fields["count"]]
-
-    report
+    fields["reports"]
+    |> Jason.decode!()
+    |> Map.get(fields["count"])
     |> Map.put(:is_valid, true)
     |> Map.put(:count, count - 1)
   end
@@ -61,10 +61,11 @@ defmodule Glific.Clients.Avanti do
         |> Enum.with_index(1)
         |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
 
-      count = data |> length()
-      reports = Jason.encode!(indexed_report)
-
-      %{is_valid: true, count: count, reports: reports}
+      %{
+        is_valid: true,
+        count: length(data),
+        reports: Jason.encode!(indexed_report)
+      }
     end
   end
 

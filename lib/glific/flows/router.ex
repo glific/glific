@@ -70,6 +70,7 @@ defmodule Glific.Flows.Router do
     Flows.check_required_fields(json, @required_fields)
 
     router = %Router{
+      node: node,
       node_uuid: node.uuid,
       type: json["type"],
       operand: json["operand"],
@@ -175,6 +176,8 @@ defmodule Glific.Flows.Router do
     do: Wait.execute(wait, context, [])
 
   def execute(%{type: type} = router, context, messages) when type == "switch" do
+    Node.bump_count(router.node, context)
+
     {msg, rest} =
       if messages == [] do
         ## split by group is also calling the same function.
@@ -275,6 +278,11 @@ defmodule Glific.Flows.Router do
 
   @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
+  defp update_context_results(context, key, _msg, _) when key in ["", nil] do
+    Logger.info("invalid results key for context: #{inspect(context)}")
+    context
+  end
+
   defp update_context_results(context, key, msg, {category, is_checkbox}) do
     results =
       cond do

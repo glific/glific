@@ -122,7 +122,7 @@ defmodule Glific.Flows.RouterTest do
   end
 
   test "router with switch and one case, category" do
-    flow = %Flow{uuid: "Flow UUID 1"}
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
@@ -180,7 +180,7 @@ defmodule Glific.Flows.RouterTest do
   end
 
   test "router with switch and two cases, category" do
-    flow = %Flow{uuid: "Flow UUID 1"}
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
@@ -245,7 +245,7 @@ defmodule Glific.Flows.RouterTest do
   end
 
   test "router with split by expression with EEx code" do
-    flow = %Flow{uuid: "Flow UUID 1"}
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
@@ -314,7 +314,7 @@ defmodule Glific.Flows.RouterTest do
   end
 
   test "router with split by groups" do
-    flow = %Flow{uuid: "Flow UUID 1"}
+    flow = %Flow{uuid: "Flow UUID 1", id: 1}
     exit_uuid = Ecto.UUID.generate()
     uuid_map = %{}
 
