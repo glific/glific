@@ -21,6 +21,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     BigQuery,
     Contacts,
     Contacts.Contact,
+    Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
     Jobs,
@@ -30,7 +31,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Stats.Stat
   }
 
-  @per_min_limit 2000
+  @per_min_limit 1000
 
   @doc """
   This is called from the cron job on a regular schedule. we sweep the messages table
@@ -63,6 +64,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("contacts", organization_id)
       make_job_to_remove_duplicate("messages", organization_id)
       make_job_to_remove_duplicate("flow_results", organization_id)
+      make_job_to_remove_duplicate("flow_counts", organization_id)
     end
 
     :ok
@@ -322,6 +324,43 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("flow_counts", organization_id, attrs) do
+    Logger.info(
+      "fetching data for flow_counts to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
+        organization_id
+      }"
+    )
+
+    get_query("flow_counts", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            bq_uuid: Ecto.UUID.generate(),
+            source_uuid: row.uuid,
+            destination_uuid: row.destination_uuid,
+            flow_name: row.flow.name,
+            flow_uuid: row.flow.uuid,
+            type: row.type,
+            count: row.count,
+            recent_messages: BigQuery.format_json(row.recent_messages),
+            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_milisecond(row.updated_at, organization_id)
+          }
+          |> BigQuery.format_data_for_bigquery("flow_counts")
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_counts, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching data for #{stat} to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
@@ -382,32 +421,47 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data(_, _, _), do: :ok
 
+  @spec get_message_row(atom | map(), non_neg_integer) :: map()
   defp get_message_row(row, organization_id),
+    do:
+      %{
+        id: row.id,
+        bq_uuid: Ecto.UUID.generate(),
+        body: row.body,
+        type: row.type,
+        flow: row.flow,
+        inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+        updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+        sent_at: BigQuery.format_date(row.sent_at, organization_id),
+        uuid: row.uuid,
+        status: row.status,
+        sender_phone: row.sender.phone,
+        receiver_phone: row.receiver.phone,
+        contact_phone: row.contact.phone,
+        contact_name: row.contact.name,
+        user_phone: if(!is_nil(row.user), do: row.user.phone),
+        user_name: if(!is_nil(row.user), do: row.user.name),
+        tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+        flow_label: row.flow_label,
+        media_url: if(!is_nil(row.media), do: row.media.url),
+        flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
+        flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
+        longitude: if(!is_nil(row.location), do: row.location.longitude),
+        latitude: if(!is_nil(row.location), do: row.location.latitude),
+        gcs_url: if(!is_nil(row.media), do: row.media.gcs_url),
+        group_message_id: row.group_message_id
+      }
+      |> Map.merge(message_template_info(row))
+
+  ## have to right this function since the above one is too long and credo is giving a warning
+
+  @spec message_template_info(atom | map()) :: map()
+  defp message_template_info(row),
     do: %{
-      id: row.id,
-      bq_uuid: Ecto.UUID.generate(),
-      body: row.body,
-      type: row.type,
-      flow: row.flow,
-      inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-      updated_at: format_date_with_milisecond(row.updated_at, organization_id),
-      sent_at: BigQuery.format_date(row.sent_at, organization_id),
-      uuid: row.uuid,
-      status: row.status,
-      sender_phone: row.sender.phone,
-      receiver_phone: row.receiver.phone,
-      contact_phone: row.contact.phone,
-      contact_name: row.contact.name,
-      user_phone: if(!is_nil(row.user), do: row.user.phone),
-      user_name: if(!is_nil(row.user), do: row.user.name),
-      tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
-      flow_label: row.flow_label,
-      media_url: if(!is_nil(row.media), do: row.media.url),
-      flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
-      flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
-      longitude: if(!is_nil(row.location), do: row.location.longitude),
-      latitude: if(!is_nil(row.location), do: row.location.latitude),
-      gcs_url: if(!is_nil(row.media), do: row.media.gcs_url)
+      is_hsm: row.is_hsm,
+      template_uuid: if(!is_nil(row.template), do: row.template.uuid),
+      interactive_template_id: row.interactive_template_id,
+      context_message_id: row.context_message_id
     }
 
   @spec make_job(list(), atom(), non_neg_integer, map()) :: :ok
@@ -487,7 +541,17 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
-      |> preload([:tags, :receiver, :sender, :contact, :user, :media, :flow_object, :location])
+      |> preload([
+        :tags,
+        :receiver,
+        :sender,
+        :contact,
+        :user,
+        :media,
+        :flow_object,
+        :location,
+        :template
+      ])
 
   defp get_query("contacts", organization_id, attrs),
     do:
@@ -513,6 +577,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow, :contact])
+
+  defp get_query("flow_counts", organization_id, attrs),
+    do:
+      FlowCount
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:flow])
 
   defp get_query("stats", organization_id, attrs),
     do:
