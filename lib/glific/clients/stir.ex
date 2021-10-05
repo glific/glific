@@ -515,6 +515,9 @@ defmodule Glific.Clients.Stir do
 
   def webhook("get_priority_message", fields) do
     exculde = clean_string(fields["exclude"])
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+    language = get_language(contact_id)
 
     priorities =
       if exculde in [""],
@@ -523,7 +526,10 @@ defmodule Glific.Clients.Stir do
 
     praority_message =
       priorities
-      |> Enum.map(fn {_priority, obj} -> "*#{obj.keyword}*. #{obj.description}" end)
+      |> Enum.map(fn {_priority, obj} ->
+        description = get_in(obj, [:translations, language.locale, :description])
+        "*#{obj.keyword}*. #{description}"
+      end)
       |> Enum.join("\n")
 
     priority_map = Enum.into(@priorities_list, %{})
@@ -533,6 +539,9 @@ defmodule Glific.Clients.Stir do
 
   def webhook("get_priority_descriptions", fields) do
     priority_map = Enum.into(@priorities_list, %{})
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+
+    language = get_language(contact_id)
 
     {first_priority, second_priority} =
       get_in(fields, ["contact", "fields"])
@@ -542,8 +551,10 @@ defmodule Glific.Clients.Stir do
     second_priority_map = Map.get(priority_map, second_priority, %{})
 
     %{
-      first_priority_description: first_priority_map[:description] || "NA",
-      second_priority_description: second_priority_map[:description] || "NA"
+      first_priority_description:
+        get_in(first_priority_map, [:translations, language.locale, :description]) || "NA",
+      second_priority_description:
+        get_in(second_priority_map, [:translations, language.locale, :description]) || "NA"
     }
   end
 
@@ -1160,6 +1171,15 @@ defmodule Glific.Clients.Stir do
     date
     |> Timex.parse!("{YYYY}-{0M}-{D}")
     |> Timex.to_date()
+  end
+
+  defp get_language(contact_id) do
+    contact =
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language])
+
+    contact.language
   end
 
   @doc false

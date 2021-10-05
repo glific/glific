@@ -123,6 +123,7 @@ defmodule Glific.Flows.Webhook do
   defp do_create_body(context, action_body_map) do
     default_payload = %{
       contact: %{
+        id: context.contact.id,
         name: context.contact.name,
         phone: context.contact.phone,
         fields: context.contact.fields
