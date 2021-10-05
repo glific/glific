@@ -36,6 +36,76 @@ defmodule Glific.Clients.Stir do
             code: :s4,
             title: "Participants referring to data"
           }
+        },
+        translations: %{
+          "hi" => %{
+            description: "सीखने के लिए सुरक्षित माहौल बनाना(सुरक्षित वातावरण)",
+            option_b_videos: %{
+              "s1" => %{
+                title: "रणनीति पर अधिक चिंतनशील चर्चा"
+              },
+              "s2" => %{
+                title: "प्रतिभागियों की सुधार केंद्रित प्रतिक्रिया प्राप्त करें"
+              },
+              "s3" => %{
+                title: "रणनीति का अभ्यास करने के लिए स्थान"
+              },
+              "s4" => %{
+                title: "डेटा का जिक्र करते प्रतिभागी"
+              }
+            }
+          },
+          "en" => %{
+            description: "Creating safe learning environments _(Safety)_",
+            option_b_videos: %{
+              "s1" => %{
+                title: "More reflective discussion on the strategy"
+              },
+              "s2" => %{
+                title: "Participants' get improvement focused feedback"
+              },
+              "s3" => %{
+                title: "Space for practising the strategy"
+              },
+              "s4" => %{
+                title: "Participants referring to data"
+              }
+            }
+          },
+          "ta" => %{
+            description: "பாதுகாப்பான கற்றல் சூழல்களை உருவாக்குவது_(பாதுகாப்பு)_",
+            option_b_videos: %{
+              "s1" => %{
+                title: "மூலோபாயத்தில் அதிக பிரதிபலிப்பு விவாதம்"
+              },
+              "s2" => %{
+                title: "பங்கேற்பாளர்களின் முன்னேற்றத்தை மையமாகக் கொண்ட கருத்து கிடைக்கும்"
+              },
+              "s3" => %{
+                title: "மூலோபாயத்தை பயிற்சி செய்வதற்கான இடம்"
+              },
+              "s4" => %{
+                title: "பங்கேற்பாளர்கள் தரவைக் குறிப்பிடுகின்றனர்"
+              }
+            }
+          },
+          "kn" => %{
+            description: "ಸುರಕ್ಷಿತ ಕಲಿಕೆಯ ವಾತಾವರಣವನ್ನು ಸೃಷ್ಟಿಸುವುದು _(ಸುರಕ್ಷತೆ)_",
+            option_b_videos: %{
+              "s1" => %{
+                title: "ತಂತ್ರದ ಬಗ್ಗೆ ಹೆಚ್ಚು ಪ್ರತಿಫಲಿತ ಚರ್ಚೆ"
+              },
+              "s2" => %{
+                title: "ಭಾಗವಹಿಸುವವರು ಸುಧಾರಿತ ಕೇಂದ್ರಿತ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಪಡೆಯುತ್ತಾರೆ"
+              },
+              "s3" => %{
+                title: "ತಂತ್ರವನ್ನು ಅಭ್ಯಾಸ ಮಾಡಲು ಸ್ಥಳಾವಕಾಶ"
+              },
+              "s4" => %{
+                title: "ಭಾಗವಹಿಸುವವರು ಡೇಟಾವನ್ನು ಉಲ್ಲೇಖಿಸುತ್ತಾರೆ"
+              }
+            }
+          }
         }
       }
     },
@@ -57,6 +127,76 @@ defmodule Glific.Clients.Stir do
           "s3" => %{
             code: :e3,
             title: "Asking questions"
+          }
+        },
+        translations: %{
+          "hi" => %{
+            description: "समर्पण और इंगेजमेन्ट (इंगेजमेन्ट)",
+            option_b_videos: %{
+              "s1" => %{
+                code: :e1,
+                title: "सक्रिय भागीदारी"
+              },
+              "s2" => %{
+                code: :e2,
+                title: "कार्य योजनाओं का विकास"
+              },
+              "s3" => %{
+                code: :e3,
+                title: "सवाल पूछे जा रहे है"
+              }
+            }
+          },
+          "en" => %{
+            description: "Dedication and engagement _(Engagement)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :e1,
+                title: "Proactive participation"
+              },
+              "s2" => %{
+                code: :e2,
+                title: "Developing action plans"
+              },
+              "s3" => %{
+                code: :e3,
+                title: "Asking questions"
+              }
+            }
+          },
+          "ta" => %{
+            description: "அர்ப்பணிப்பு மற்றும் ஈடுபாடு_ (ஈடுபாடு)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :e1,
+                title: "செயலில் பங்கேற்பு"
+              },
+              "s2" => %{
+                code: :e2,
+                title: "செயல் திட்டங்களை உருவாக்குதல்"
+              },
+              "s3" => %{
+                code: :e3,
+                title: "கேள்விகளை வினாவுதல்"
+              }
+            }
+          },
+          "kn" => %{
+            description: "ಸಮರ್ಪಣೆ ಮತ್ತು ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ_(ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :e1,
+                title: "ಪೂರ್ವಭಾವಿಯಾಗಿ ಭಾಗವಹಿಸುವಿಕೆ"
+              },
+              "s2" => %{
+                code: :e2,
+                title: "ಕ್ರಿಯಾ ಯೋಜನೆಗಳನ್ನು ಅಭಿವೃದ್ಧಿಪಡಿಸುವುದು"
+              },
+              "s3" => %{
+                code: :e3,
+                title: "ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುತ್ತಿದ್ದಾರೆ"
+              }
+            }
           }
         }
       }
@@ -80,6 +220,77 @@ defmodule Glific.Clients.Stir do
             code: :c3,
             title: "Asking 'why' questions"
           }
+        },
+        translations: %{
+          "hi" => %{
+            description: "सुधार पर केंद्रित संस्कृति को बढ़ावा देना(जिज्ञासा और आलोचनात्मक सोच)",
+            option_b_videos: %{
+              "s1" => %{
+                code: :c1,
+                title: "उद्देश्य के लिए सामग्री लिंक पर चिंतन करें"
+              },
+              "s2" => %{
+                code: :c2,
+                title: "'कैसे' सवाल पूछना"
+              },
+              "s3" => %{
+                code: :c3,
+                title: "'क्यों' सवाल पूछना"
+              }
+            }
+          },
+          "en" => %{
+            description:
+              "Promoting an improvement-focused culture _(Curiosity & Critical Thinking)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :c1,
+                title: "Reflect on the content link to purpose"
+              },
+              "s2" => %{
+                code: :c2,
+                title: "Asking 'how' questions"
+              },
+              "s3" => %{
+                code: :c3,
+                title: "Asking 'why' questions"
+              }
+            }
+          },
+          "ta" => %{
+            description: "மேம்படுத்துதலை மையமாக கொண்ட கலாச்சாரத்தை வளர்ப்பது_(ஆர்வம் மற்றும் திறனாய்வு சிந்தனை)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :c1,
+                title: "நோக்கத்திற்கான உள்ளடக்க இணைப்பைப் பிரதிபலிக்கவும்"
+              },
+              "s2" => %{
+                code: :c2,
+                title: "'எப்படி' கேள்விகள் கேட்பது"
+              },
+              "s3" => %{
+                code: :c3,
+                title: "'ஏன்' கேள்விகள் கேட்பது"
+              }
+            }
+          },
+          "kn" => %{
+            description: "ಸುಧಾರಣೆ-ಕೇಂದ್ರಿತ ಸಂಸ್ಕೃತಿಯನ್ನು ಉತ್ತೇಜಿಸುವುದು _(ಕುತೂಹಲ ಮತ್ತು ವಿಮರ್ಶಾತ್ಮಕ ಚಿಂತನೆ)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :c1,
+                title: "ಉದ್ದೇಶಕ್ಕಾಗಿ ವಿಷಯ ಲಿಂಕ್ ಅನ್ನು ಪ್ರತಿಬಿಂಬಿಸಿ"
+              },
+              "s2" => %{
+                code: :c2,
+                title: "'ಹೇಗೆ' ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುವುದು"
+              },
+              "s3" => %{
+                code: :c3,
+                title: "'ಏಕೆ' ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುವುದು"
+              }
+            }
+          }
         }
       }
     },
@@ -102,6 +313,77 @@ defmodule Glific.Clients.Stir do
           "s3" => %{
             code: :se3,
             title: "Achievements recognized"
+          }
+        },
+        translations: %{
+          "hi" => %{
+            description: "सीखने की आत्म-प्रतिष्ठा में सुधार करना (आत्मसम्मान)",
+            option_b_videos: %{
+              "s1" => %{
+                code: :se1,
+                title: "साथियों के साथ सहयोग"
+              },
+              "s2" => %{
+                code: :se2,
+                title: "समर्थन मांगना"
+              },
+              "s3" => %{
+                code: :se3,
+                title: "उपलब्धियां पहचानी गईं"
+              }
+            }
+          },
+          "en" => %{
+            description:
+              "Improving learning self-esteem (collaborate, recognise achievements/celebrate, and ask for support) _(Self-Esteem)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :se1,
+                title: "Collaborating with peers"
+              },
+              "s2" => %{
+                code: :se2,
+                title: "Asking for support"
+              },
+              "s3" => %{
+                code: :se3,
+                title: "Achievements recognized"
+              }
+            }
+          },
+          "ta" => %{
+            description: "சுயமரியாதையை கற்றுக்கொள்வதை மேம்படுத்துவது_(சுயமரியாதை)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :se1,
+                title: "சகாக்களுடன் ஒத்துழைத்தல்"
+              },
+              "s2" => %{
+                code: :se2,
+                title: "ஆதரவு கேட்கிறது"
+              },
+              "s3" => %{
+                code: :se3,
+                title: "சாதனைகள் அங்கீகரிக்கப்பட்டன"
+              }
+            }
+          },
+          "kn" => %{
+            description: "ಸ್ವಾಭಿಮಾನ ಕಲಿಕೆಯನ್ನು ಸುಧಾರಿಸುವುದು _(ಸ್ವಾಭಿಮಾನ)_",
+            option_b_videos: %{
+              "s1" => %{
+                code: :se1,
+                title: "ಗೆಳೆಯರೊಂದಿಗೆ ಸಹಕರಿಸುವುದು"
+              },
+              "s2" => %{
+                code: :se2,
+                title: "ಬೆಂಬಲಕ್ಕಾಗಿ ಕೇಳುವುದು"
+              },
+              "s3" => %{
+                code: :se3,
+                title: "ಸಾಧನೆಗಳನ್ನು ಗುರುತಿಸಲಾಗಿದೆ"
+              }
+            }
           }
         }
       }
