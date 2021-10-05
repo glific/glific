@@ -391,11 +391,91 @@ defmodule Glific.Clients.Stir do
   ]
 
   @intentional_coach_survey_titles %{
-    "question_1" => "Providing inputs without excessive prompting",
-    "question_2" => "Linking actions to wider purposee",
-    "question_3" => "List action points to take forward",
-    "question_4" => "Problem solving and discussion",
-    "question_5" => "Asking 'why' and 'how' questions"
+    "question_1" => %{
+      "question" => "Providing inputs without excessive prompting",
+      translations: %{
+        "hi" => %{
+          "question" => "अत्यधिक प्रोत्साहन के बिना इनपुट प्रदान करना"
+        },
+        "en" => %{
+          "question" => "Providing inputs without excessive prompting"
+        },
+        "ta" => %{
+          "question" => "அதிக தூண்டுதல் இல்லாமல் உள்ளீடுகளை வழங்குதல்"
+        },
+        "ka" => %{
+          "question" => "ಅತಿಯಾದ ಪ್ರಚೋದನೆಯಿಲ್ಲದೆ ಒಳಹರಿವು ಒದಗಿಸುವುದು"
+        }
+      }
+    },
+    "question_2" => %{
+      "question" => "Linking actions to wider purposee",
+      translations: %{
+        "hi" => %{
+          "question" => "कार्यों को व्यापक उद्देश्य से जोड़ना"
+        },
+        "en" => %{
+          "question" => "Linking actions to wider purposee"
+        },
+        "ta" => %{
+          "question" => "செயல்களை பரந்த நோக்கத்துடன் இணைத்தல்"
+        },
+        "ka" => %{
+          "question" => "ಕ್ರಿಯೆಗಳನ್ನು ವಿಶಾಲ ಉದ್ದೇಶಕ್ಕೆ ಲಿಂಕ್ ಮಾಡುವುದು"
+        }
+      }
+    },
+    "question_3" => %{
+      "question" => "List action points to take forward",
+      translations: %{
+        "hi" => %{
+          "question" => "आगे बढ़ने के लिए कार्रवाई बिंदुओं की सूची बनाएं"
+        },
+        "en" => %{
+          "question" => "List action points to take forward"
+        },
+        "ta" => %{
+          "question" => "முன்னெடுத்துச் செல்ல நடவடிக்கை புள்ளிகளை பட்டியலிடுங்கள்"
+        },
+        "ka" => %{
+          "question" => "ಮುಂದೆ ತೆಗೆದುಕೊಳ್ಳಲು ಕ್ರಿಯಾ ಅಂಶಗಳನ್ನು ಪಟ್ಟಿ ಮಾಡಿ"
+        }
+      }
+    },
+    "question_4" => %{
+      "question" => "Problem solving and discussion",
+      translations: %{
+        "hi" => %{
+          "question" => "समस्या समाधान और चर्चा"
+        },
+        "en" => %{
+          "question" => "Problem solving and discussion"
+        },
+        "ta" => %{
+          "question" => "சிக்கல் தீர்வு மற்றும் விவாதம்"
+        },
+        "ka" => %{
+          "question" => "ಸಮಸ್ಯೆ ಪರಿಹಾರ ಮತ್ತು ಚರ್ಚೆ"
+        }
+      }
+    },
+    "question_5" => %{
+      "question" => "Asking 'why' and 'how' questions",
+      translations: %{
+        "hi" => %{
+          "question" => "'क्यों' और 'कैसे' प्रश्न पूछना"
+        },
+        "en" => %{
+          "question" => "Asking 'why' and 'how' questions"
+        },
+        "ta" => %{
+          "question" => "'ஏன்' மற்றும் 'எப்படி' கேள்விகள் கேட்பது"
+        },
+        "ka" => %{
+          "question" => "'ಏಕೆ' ಮತ್ತು 'ಹೇಗೆ' ಪ್ರಶ್ನೆಗಳನ್ನು ಕೇಳುವುದು"
+        }
+      }
+    }
   }
 
   @reminders %{
@@ -458,6 +538,9 @@ defmodule Glific.Clients.Stir do
   end
 
   def webhook("check_coach_response", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    language = get_language(contact_id)
+
     filtered_list =
       fields["response"]
       |> Enum.reject(fn {_question_no, response} -> clean_string(response) != "no" end)
@@ -469,7 +552,7 @@ defmodule Glific.Clients.Stir do
         true -> "all_yes"
       end
 
-    coach_survey_titles = get_coach_survey_titles(coach_survey_state, filtered_list)
+    coach_survey_titles = get_coach_survey_titles(coach_survey_state, filtered_list, language)
     %{coach_survey_state: coach_survey_state, coach_survey_titles: coach_survey_titles}
   end
 
@@ -828,26 +911,40 @@ defmodule Glific.Clients.Stir do
     option_b_data
   end
 
-  @spec get_coach_survey_titles(String.t(), list()) :: String.t()
-  defp get_coach_survey_titles("all_yes", _response) do
+  @spec get_coach_survey_titles(String.t(), list(), map()) :: String.t()
+  defp get_coach_survey_titles("all_yes", _response, language) do
     @intentional_coach_survey_titles
-    |> Enum.reduce("", fn {question_no, question}, acc ->
-      acc <> "*Video" <> String.replace(question_no, "question_", "") <> "* - #{question}" <> "\n"
+    |> Enum.reduce("", fn {question_no, question_data}, acc ->
+      question = get_in(question_data, [:translations, language.locale, "question"])
+      "#{acc} *Video #{String.replace(question_no, "question_", "")}* - #{question} \n"
     end)
   end
 
-  defp get_coach_survey_titles("more_than_one_no", response) do
+  defp get_coach_survey_titles("more_than_one_no", response, language) do
     response
     |> Enum.with_index(1)
     |> Enum.reduce("", fn {{question_no, _answer}, index}, acc ->
-      acc <>
-        "*Video #{index}* - " <> Map.get(@intentional_coach_survey_titles, question_no) <> "\n"
+      question =
+        get_in(@intentional_coach_survey_titles, [
+          question_no,
+          :translations,
+          language.locale,
+          "question"
+        ])
+
+      "#{acc} *Video #{index}* #{question} \n"
     end)
   end
 
-  defp get_coach_survey_titles("one_no", response) do
+  defp get_coach_survey_titles("one_no", response, language) do
     [{question_no, _answer}] = response
-    Map.get(@intentional_coach_survey_titles, question_no)
+
+    get_in(@intentional_coach_survey_titles, [
+      question_no,
+      :translations,
+      language.locale,
+      "question"
+    ])
   end
 
   @spec get_survey_results(map(), atom()) :: map()
@@ -905,6 +1002,8 @@ defmodule Glific.Clients.Stir do
   @spec option_b_video_data(String.t(), map(), String.t(), map()) :: list()
   defp option_b_video_data(priority, answers, answer_state, fields) do
     priority_map = Enum.into(@priorities_list, %{})
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    language = get_language(contact_id)
 
     Enum.reduce(answers, [], fn {key, value}, acc ->
       if answer_state == "all_true" || value not in ["67-100"] do
@@ -914,7 +1013,7 @@ defmodule Glific.Clients.Stir do
             else: key
 
         item =
-          get_in(priority_map, [priority, :option_b_videos, key])
+          get_in(priority_map, [priority, :translations, language.locale, :option_b_videos, key])
           |> Map.put(:priority, priority)
 
         [item] ++ acc
