@@ -42,15 +42,19 @@ defmodule Glific.Clients.Stir do
             description: "सीखने के लिए सुरक्षित माहौल बनाना(सुरक्षित वातावरण)",
             option_b_videos: %{
               "s1" => %{
+                code: :s1,
                 title: "रणनीति पर अधिक चिंतनशील चर्चा"
               },
               "s2" => %{
+                code: :s2,
                 title: "प्रतिभागियों की सुधार केंद्रित प्रतिक्रिया प्राप्त करें"
               },
               "s3" => %{
+                code: :s3,
                 title: "रणनीति का अभ्यास करने के लिए स्थान"
               },
               "s4" => %{
+                code: :s4,
                 title: "डेटा का जिक्र करते प्रतिभागी"
               }
             }
@@ -59,15 +63,19 @@ defmodule Glific.Clients.Stir do
             description: "Creating safe learning environments _(Safety)_",
             option_b_videos: %{
               "s1" => %{
+                code: :s1,
                 title: "More reflective discussion on the strategy"
               },
               "s2" => %{
+                code: :s2,
                 title: "Participants' get improvement focused feedback"
               },
               "s3" => %{
+                code: :s3,
                 title: "Space for practising the strategy"
               },
               "s4" => %{
+                code: :s4,
                 title: "Participants referring to data"
               }
             }
@@ -76,15 +84,19 @@ defmodule Glific.Clients.Stir do
             description: "பாதுகாப்பான கற்றல் சூழல்களை உருவாக்குவது_(பாதுகாப்பு)_",
             option_b_videos: %{
               "s1" => %{
+                code: :s1,
                 title: "மூலோபாயத்தில் அதிக பிரதிபலிப்பு விவாதம்"
               },
               "s2" => %{
+                code: :s2,
                 title: "பங்கேற்பாளர்களின் முன்னேற்றத்தை மையமாகக் கொண்ட கருத்து கிடைக்கும்"
               },
               "s3" => %{
+                code: :s3,
                 title: "மூலோபாயத்தை பயிற்சி செய்வதற்கான இடம்"
               },
               "s4" => %{
+                code: :s4,
                 title: "பங்கேற்பாளர்கள் தரவைக் குறிப்பிடுகின்றனர்"
               }
             }
@@ -93,15 +105,19 @@ defmodule Glific.Clients.Stir do
             description: "ಸುರಕ್ಷಿತ ಕಲಿಕೆಯ ವಾತಾವರಣವನ್ನು ಸೃಷ್ಟಿಸುವುದು _(ಸುರಕ್ಷತೆ)_",
             option_b_videos: %{
               "s1" => %{
+                code: :s1,
                 title: "ತಂತ್ರದ ಬಗ್ಗೆ ಹೆಚ್ಚು ಪ್ರತಿಫಲಿತ ಚರ್ಚೆ"
               },
               "s2" => %{
+                code: :s2,
                 title: "ಭಾಗವಹಿಸುವವರು ಸುಧಾರಿತ ಕೇಂದ್ರಿತ ಪ್ರತಿಕ್ರಿಯೆಯನ್ನು ಪಡೆಯುತ್ತಾರೆ"
               },
               "s3" => %{
+                code: :s3,
                 title: "ತಂತ್ರವನ್ನು ಅಭ್ಯಾಸ ಮಾಡಲು ಸ್ಥಳಾವಕಾಶ"
               },
               "s4" => %{
+                code: :s4,
                 title: "ಭಾಗವಹಿಸುವವರು ಡೇಟಾವನ್ನು ಉಲ್ಲೇಖಿಸುತ್ತಾರೆ"
               }
             }
@@ -617,7 +633,10 @@ defmodule Glific.Clients.Stir do
 
     priority_map = Enum.into(@priorities_list, %{})
 
-    %{message: praority_message, exculde: priority_map[exculde]}
+    %{
+      message: praority_message,
+      exculde: get_in(priority_map, [exculde, :translations, language.locale])
+    }
   end
 
   def webhook("get_priority_descriptions", fields) do
@@ -1013,8 +1032,10 @@ defmodule Glific.Clients.Stir do
             else: key
 
         item =
-          get_in(priority_map, [priority, :translations, language.locale, :option_b_videos, key])
+          get_in(priority_map, [priority, :option_b_videos, key])
           |> Map.put(:priority, priority)
+
+        get_in(priority_map, [priority, :translations, language.locale, :option_b_videos, key])
 
         [item] ++ acc
       else
