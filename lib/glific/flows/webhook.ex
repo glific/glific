@@ -207,13 +207,18 @@ defmodule Glific.Flows.Webhook do
   end
 
   defp do_action("post", url, body, headers),
-    do: Tesla.post(url, body, headers: headers)
+    do: Tesla.post(url, body, headers: headers, opts: [adapter: [recv_timeout: 10_000]])
 
   ## We need to figure out a way to send the data with urls.
   ## Currently we can not send the json map as a query string
   ## We will come back on this one in the future.
   defp do_action("get", url, body, headers),
-    do: Tesla.get(url, headers: headers, query: [data: body])
+    do:
+      Tesla.get(url,
+        headers: headers,
+        query: [data: body],
+        opts: [adapter: [recv_timeout: 10_000]]
+      )
 
   defp do_action("function", function, body, _headers),
     do: {
