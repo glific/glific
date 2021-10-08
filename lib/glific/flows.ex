@@ -802,8 +802,8 @@ defmodule Glific.Flows do
     if Enum.any?(results["flows"], fn flow -> Map.get(flow.definition, "uuid") == flow_uuid end) do
       results
     else
-      definition = get_latest_definition(flow_uuid)
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
+      definition = get_latest_definition(flow_uuid) |> Map.put("name", flow.name)
 
       results =
         Map.put(
