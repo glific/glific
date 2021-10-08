@@ -162,12 +162,12 @@ defmodule Glific.Providers.Gupshup.Worker do
           :ok | {:error, String.t()}
   defp handle_response({:ok, response}, message) do
     case response do
-      %Tesla.Env{status: 200} ->
+      %Tesla.Env{status: status} when status in 200..299 ->
         Communications.Message.handle_success_response(response, message)
         :ok
 
       # Not authorized, Job succeeded, we should return an ok, so we dont retry
-      %Tesla.Env{status: 401} ->
+      %Tesla.Env{status: status} when status in 400..499 ->
         Communications.Message.handle_error_response(response, message)
         :ok
 
