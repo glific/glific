@@ -876,13 +876,24 @@ defmodule Glific.Clients.Stir do
     ## reset the value if the survey has been field eariler
     option_a_data = if Map.keys(option_a_data) |> length > 1, do: %{}, else: option_a_data
 
+    contact_priorities = get_contact_priority(fields)
+
+    fields =
+      fields
+      |> Map.put("first_priority", contact_priorities.first)
+      |> Map.put("second_priority", contact_priorities.second)
+
+    remaining_priorities = webhook("fetch_remaining_priorities", fields)
+
     priority_item = %{
       "priority" => priority,
       "answer" => answer,
       "least_rank" => least_rank,
       "mid_rank" => mid_ranked,
       "most_rank" => most_ranked,
-      "diet_activity" => fields["contact"]["fields"]["activity"]["value"]
+      "diet_activity" => fields["contact"]["fields"]["activity"]["value"],
+      "remaining_priority_first" => remaining_priorities.remaining_priority_first,
+      "remaining_priority_second" => remaining_priorities.remaining_priority_second
     }
 
     option_a_data = Map.put(option_a_data, priority, priority_item)
