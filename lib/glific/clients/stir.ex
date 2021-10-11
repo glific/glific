@@ -798,7 +798,7 @@ defmodule Glific.Clients.Stir do
   def webhook("save_survey_answer_as_participant", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     mt_contact = Contacts.get_contact!(contact_id)
-    save_survey_results(mt_contact, fields, mt_type(fields))
+    save_survey_results(mt_contact, fields, mt_type(fields), false)
   end
 
   def webhook("save_survey_answer", fields) do
@@ -806,8 +806,8 @@ defmodule Glific.Clients.Stir do
     contact = Contacts.get_contact!(contact_id)
 
     if remaining_priority?(fields["priority"], contact),
-      do: %{},
-      else: save_survey_results(contact, fields, mt_type(fields))
+      do: save_survey_results(contact, fields, mt_type(fields), false),
+      else: save_survey_results(contact, fields, mt_type(fields), true)
   end
 
   def webhook("get_survey_results", fields),
@@ -866,8 +866,8 @@ defmodule Glific.Clients.Stir do
 
   defp remaining_priority?(_priority, _contact), do: true
 
-  @spec save_survey_results(Contacts.Contact.t(), map(), atom()) :: map()
-  defp save_survey_results(contact, fields, :TYPE_A) do
+  @spec save_survey_results(Contacts.Contact.t(), map(), atom(), boolean()) :: map()
+  defp save_survey_results(contact, fields, :TYPE_A, update_contact?) do
     priority = clean_string(fields["priority"])
     answer = clean_string(fields["answer"])
     [most_ranked, mid_ranked, least_rank] = get_ranked_response(fields["answer"])
@@ -886,19 +886,10 @@ defmodule Glific.Clients.Stir do
     }
 
     option_a_data = Map.put(option_a_data, priority, priority_item)
-
-    contact
-    |> ContactField.do_add_contact_field(
-      "option_a_data",
-      "option_a_data",
-      Jason.encode!(option_a_data),
-      "json"
-    )
-
-    option_a_data
+    update_option_data(contact, "option_a_data", option_a_data, update_contact?)
   end
 
-  defp save_survey_results(contact, fields, :TYPE_B) do
+  defp save_survey_results(contact, fields, :TYPE_B, update_contact?) do
     priority = clean_string(fields["priority"])
     answer_s1 = clean_string(fields["answers"]["s1"])
     answer_s2 = clean_string(fields["answers"]["s2"])
@@ -919,16 +910,23 @@ defmodule Glific.Clients.Stir do
 
     option_b_data = Map.put(option_b_data, priority, priority_item)
 
+    update_option_data(contact, "option_b_data", option_b_data, update_contact?)
+  end
+
+  @spec update_option_data(Contacts.Contact.t(), String.t(), map(), boolean()) :: map()
+  defp update_option_data(contact, option_name, option_data, true) do
     contact
     |> ContactField.do_add_contact_field(
-      "option_b_data",
-      "option_b_data",
-      Jason.encode!(option_b_data),
+      option_name,
+      option_name,
+      Jason.encode!(option_data),
       "json"
     )
 
-    option_b_data
+    option_data
   end
+
+  defp update_option_data(_contact, _option_name, option_data, false), do: option_data
 
   @spec get_coach_survey_titles(String.t(), list(), map()) :: String.t()
   defp get_coach_survey_titles("all_yes", _response, language) do
