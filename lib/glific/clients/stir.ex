@@ -867,7 +867,7 @@ defmodule Glific.Clients.Stir do
   defp remaining_priority?(_priority, _contact), do: true
 
   @spec save_survey_results(Contacts.Contact.t(), map(), atom(), boolean()) :: map()
-  defp save_survey_results(contact, fields, :TYPE_A, update_contact?) do
+  defp save_survey_results(contact, fields, :TYPE_A, update_option_data?) do
     priority = clean_string(fields["priority"])
     answer = clean_string(fields["answer"])
     [most_ranked, mid_ranked, least_rank] = get_ranked_response(fields["answer"])
@@ -876,6 +876,7 @@ defmodule Glific.Clients.Stir do
     ## reset the value if the survey has been field eariler
     option_a_data = if Map.keys(option_a_data) |> length > 1, do: %{}, else: option_a_data
 
+    # fetching contact priorities to fetch remaining_priorities for reports
     contact_priorities = get_contact_priority(fields)
 
     fields =
@@ -892,15 +893,16 @@ defmodule Glific.Clients.Stir do
       "mid_rank" => mid_ranked,
       "most_rank" => most_ranked,
       "diet_activity" => fields["contact"]["fields"]["activity"]["value"],
+      # passing remaining_priorities in the result for reports will improve it as we move forward
       "remaining_priority_first" => remaining_priorities.remaining_priority_first,
       "remaining_priority_second" => remaining_priorities.remaining_priority_second
     }
 
     option_a_data = Map.put(option_a_data, priority, priority_item)
-    update_option_data(contact, "option_a_data", option_a_data, update_contact?)
+    update_option_data(contact, "option_a_data", option_a_data, update_option_data?)
   end
 
-  defp save_survey_results(contact, fields, :TYPE_B, update_contact?) do
+  defp save_survey_results(contact, fields, :TYPE_B, update_option_data?) do
     priority = clean_string(fields["priority"])
     answer_s1 = clean_string(fields["answers"]["s1"])
     answer_s2 = clean_string(fields["answers"]["s2"])
@@ -921,7 +923,7 @@ defmodule Glific.Clients.Stir do
 
     option_b_data = Map.put(option_b_data, priority, priority_item)
 
-    update_option_data(contact, "option_b_data", option_b_data, update_contact?)
+    update_option_data(contact, "option_b_data", option_b_data, update_option_data?)
   end
 
   @spec update_option_data(Contacts.Contact.t(), String.t(), map(), boolean()) :: map()
