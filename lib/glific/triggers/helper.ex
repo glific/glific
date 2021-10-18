@@ -19,7 +19,6 @@ defmodule Glific.Triggers.Helper do
     cond do
       "daily" in frequency -> Timex.shift(next_time, days: 1) |> Timex.to_datetime()
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      "monthly_2" in frequency -> Timex.shift(next_time, months: 1) |> Timex.to_datetime()
       "monthly" in frequency -> monthly(next_time, days)
       "weekday" in frequency -> weekday(next_time)
       "weekend" in frequency -> weekend(next_time)
@@ -71,37 +70,68 @@ defmodule Glific.Triggers.Helper do
     end
   end
 
-  @spec monthly(DateTime.t(), list()) :: DateTime.t()
-  defp monthly(time, days) do
-    day_of_month = Timex.format!(time, "{D}") |> String.to_integer()
+  @spec monthly_days_in_order(list()) :: list()
+  defp monthly_days_in_order(days) do
+    Enum.map(days, fn x ->
+      {:ok, number} = Glific.parse_maybe_integer(x)
+      number
+    end)
+    |> Enum.sort(&(&1 <= &2))
+  end
 
-    days_in_order =
-      Enum.map(days, fn x ->
-        {:ok, number} = Glific.parse_maybe_integer(x)
-        number
-      end)
-      |> Enum.sort(&(&1 <= &2))
-
-    least_day = days_in_order |> hd()
-    max_day = days_in_order |> List.last()
-
+  @spec monthly_days_to_shift(map()) :: integer()
+  defp monthly_days_to_shift(%{
+         days_in_order: days_in_order,
+         day_of_month: day_of_month,
+         total_days_in_month: total_days_in_month,
+         least_day: least_day,
+         max_day: max_day
+       }) do
     cond do
       day_of_month < least_day ->
-        shift_days = least_day - day_of_month
-        Timex.shift(time, days: shift_days) |> Timex.to_datetime()
+        least_day - day_of_month
 
       day_of_month >= max_day ->
         ## we can probably do that in a elixir way. Doing that for now to make it more readable
-        total_days = Date.days_in_month(Timex.today())
-        remaining_days = total_days - day_of_month
-        shift_days = remaining_days + least_day
-        Timex.shift(time, days: shift_days) |> Timex.to_datetime()
+        remaining_days = total_days_in_month - day_of_month
+        total_days_next_month = Timex.today() |> Timex.shift(months: 1) |> Date.days_in_month()
+
+        least_day =
+          if total_days_next_month < least_day, do: total_days_next_month, else: least_day
+
+        remaining_days + least_day
 
       true ->
-        next_day = Enum.find(days_in_order, &(&1 > day_of_month))
-        shift_days = next_day + day_of_month
-        Timex.shift(time, days: shift_days) |> Timex.to_datetime()
-        ## set date for the current month
+        Enum.find(days_in_order, &(&1 > day_of_month)) - day_of_month
     end
+  end
+
+  @spec monthly_day_range(list(), integer()) :: tuple()
+  defp monthly_day_range(days_in_order, total_days_in_month) do
+    least_day = days_in_order |> hd()
+    max_day = days_in_order |> List.last()
+    least_day = if total_days_in_month < least_day, do: total_days_in_month, else: least_day
+    max_day = if total_days_in_month < max_day, do: total_days_in_month, else: max_day
+
+    {least_day, max_day}
+  end
+
+  @spec monthly(DateTime.t(), list()) :: DateTime.t()
+  defp monthly(time, days) do
+    day_of_month = Timex.format!(time, "{D}") |> String.to_integer()
+    total_days_in_month = Date.days_in_month(Timex.today())
+    days_in_order = monthly_days_in_order(days)
+    {least_day, max_day} = monthly_day_range(days_in_order, total_days_in_month)
+
+    days_to_shift =
+      monthly_days_to_shift(%{
+        days_in_order: days_in_order,
+        day_of_month: day_of_month,
+        total_days_in_month: total_days_in_month,
+        least_day: least_day,
+        max_day: max_day
+      })
+
+    Timex.shift(time, days: days_to_shift) |> Timex.to_datetime()
   end
 end
