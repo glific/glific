@@ -19,7 +19,8 @@ defmodule Glific.Triggers.Helper do
     cond do
       "daily" in frequency -> Timex.shift(next_time, days: 1) |> Timex.to_datetime()
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      "monthly" in frequency -> Timex.shift(next_time, months: 1) |> Timex.to_datetime()
+      "monthly_2" in frequency -> Timex.shift(next_time, months: 1) |> Timex.to_datetime()
+      "monthly" in frequency -> monthly(next_time, days)
       "weekday" in frequency -> weekday(next_time)
       "weekend" in frequency -> weekend(next_time)
       "none" in frequency -> next_time
@@ -67,6 +68,40 @@ defmodule Glific.Triggers.Helper do
       day_of_week in [5, 6] -> Timex.shift(time, days: 1) |> Timex.to_datetime()
       day_of_week == 7 -> Timex.shift(time, days: 6) |> Timex.to_datetime()
       true -> Timex.shift(time, days: 6 - day_of_week) |> Timex.to_datetime()
+    end
+  end
+
+  @spec monthly(DateTime.t(), list()) :: DateTime.t()
+  defp monthly(time, days) do
+    day_of_month = Timex.format!(time, "{D}") |> String.to_integer()
+
+    days_in_order =
+      Enum.map(days, fn x ->
+        {:ok, number} = Glific.parse_maybe_integer(x)
+        number
+      end)
+      |> Enum.sort(&(&1 <= &2))
+
+    least_day = days_in_order |> hd()
+    max_day = days_in_order |> List.last()
+
+    cond do
+      day_of_month < least_day ->
+        shift_days = least_day - day_of_month
+        Timex.shift(time, days: shift_days) |> Timex.to_datetime()
+
+      day_of_month >= max_day ->
+        ## we can probably do that in a elixir way. Doing that for now to make it more readable
+        total_days = Date.days_in_month(Timex.today())
+        remaining_days = total_days - day_of_month
+        shift_days = remaining_days + least_day
+        Timex.shift(time, days: shift_days) |> Timex.to_datetime()
+
+      true ->
+        next_day = Enum.find(days_in_order, &(&1 > day_of_month))
+        shift_days = next_day + day_of_month
+        Timex.shift(time, days: shift_days) |> Timex.to_datetime()
+        ## set date for the current month
     end
   end
 end
