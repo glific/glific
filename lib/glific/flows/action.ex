@@ -253,6 +253,7 @@ defmodule Glific.Flows.Action do
     attrs = %{
       name: json["name"],
       text: json["text"],
+      labels: json["labels"],
       quick_replies: json["quick_replies"],
       attachments: process_attachments(json["attachments"])
     }
@@ -369,6 +370,12 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
+    flow_label =
+      action.labels
+      |> Enum.map(fn label -> label["name"] end)
+      |> Enum.join(", ")
+
+    action = Map.put(action, :labels, flow_label)
     ContactAction.send_message(context, action, messages)
   end
 

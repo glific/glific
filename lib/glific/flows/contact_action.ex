@@ -171,7 +171,8 @@ defmodule Glific.Flows.ContactAction do
       do_send_message(context, action, messages, %{
         cid: cid,
         body: body,
-        text: text
+        text: text,
+        flow_label: action.labels
       })
     end
   end
@@ -194,7 +195,8 @@ defmodule Glific.Flows.ContactAction do
       do_send_template_message(context, action, messages, %{
         cid: cid,
         session_template: session_template,
-        params: vars
+        params: vars,
+        labels: action.labels
       })
     end
   end
@@ -276,7 +278,8 @@ defmodule Glific.Flows.ContactAction do
          %{
            body: body,
            text: text,
-           cid: cid
+           cid: cid,
+           flow_label: flow_label
          }
        ) do
     organization_id = context.organization_id
@@ -292,6 +295,7 @@ defmodule Glific.Flows.ContactAction do
       media_id: media_id,
       receiver_id: cid,
       organization_id: organization_id,
+      flow_label: flow_label,
       flow_id: context.flow_id,
       group_message_id: context.group_message_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
