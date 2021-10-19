@@ -340,7 +340,16 @@ defmodule Glific.Flows.ActionTest do
     {:ok, context} = FlowContext.create_flow_context(attrs)
     context = Repo.preload(context, [:flow, :contact])
 
-    action = %Action{type: "send_msg", text: "This is a test send_msg"}
+    action = %Action{
+      type: "send_msg",
+      text: "This is a test send_msg",
+      labels: [
+        %{
+          "name" => "Age Group 11 to 14",
+          "uuid" => "aed0e1a1-29ad-413e-9aaa-3ece3ec4011e"
+        }
+      ]
+    }
 
     message_stream = []
 
@@ -355,6 +364,7 @@ defmodule Glific.Flows.ActionTest do
       |> Repo.one()
 
     assert message.body == "This is a test send_msg"
+    assert message.flow_label == "Age Group 11 to 14"
   end
 
   test "execute an action when type is send_broadcast", attrs do
