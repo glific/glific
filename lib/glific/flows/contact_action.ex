@@ -83,7 +83,7 @@ defmodule Glific.Flows.ContactAction do
         is_optin_flow: Flows.is_optin_flow?(context.flow),
         interactive_template_id: action.interactive_template_id
       }
-IO.inspect(attrs)
+
       attrs
       |> Messages.create_and_send_message()
       |> handle_message_result(context, messages, attrs)
