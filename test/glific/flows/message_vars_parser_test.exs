@@ -17,6 +17,25 @@ defmodule Glific.Flows.MessageVarParserTest do
                "organization" => %{"name" => "Glific"}
              })
 
+    results = %{
+      "points" => %{
+        "input" => "100",
+        "intent" => nil,
+        "category" => "Has Number",
+        "inserted_at" => "2021-10-19T10:37:36.231523Z"
+      }
+    }
+
+    assert "You have 100 points" ==
+             MessageVarParser.parse("You have @results.points points", %{
+               "results" => results
+             })
+
+    assert "You have 100 points" ==
+             MessageVarParser.parse("You have @results.points.input points", %{
+               "results" => results
+             })
+
     assert "hello Help Workflow" ==
              MessageVarParser.parse("hello @flow.name", %{
                "flow" => %{"name" => "Help Workflow"}
