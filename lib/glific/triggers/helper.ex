@@ -72,8 +72,8 @@ defmodule Glific.Triggers.Helper do
 
   @spec monthly_days_in_order(list()) :: list()
   defp monthly_days_in_order(days) do
-    Enum.map(days, fn x ->
-      {:ok, number} = Glific.parse_maybe_integer(x)
+    Enum.map(days, fn day ->
+      {:ok, number} = Glific.parse_maybe_integer(day)
       number
     end)
     |> Enum.sort(&(&1 <= &2))
@@ -107,7 +107,7 @@ defmodule Glific.Triggers.Helper do
   end
 
   @spec monthly_day_range(list(), integer()) :: tuple()
-  def monthly_day_range(days_in_order, total_days_in_month) do
+  defp monthly_day_range(days_in_order, total_days_in_month) do
     least_day = days_in_order |> hd()
     max_day = days_in_order |> List.last()
 
