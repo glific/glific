@@ -85,7 +85,8 @@ defmodule Glific.Triggers.Helper do
          day_of_month: day_of_month,
          total_days_in_month: total_days_in_month,
          least_day: least_day,
-         max_day: max_day
+         max_day: max_day,
+         time: time
        }) do
     cond do
       day_of_month < least_day ->
@@ -94,10 +95,9 @@ defmodule Glific.Triggers.Helper do
       day_of_month >= max_day ->
         ## we can probably do that in a elixir way. Doing that for now to make it more readable
         remaining_days = total_days_in_month - day_of_month
-        total_days_next_month = Timex.today() |> Timex.shift(months: 1) |> Date.days_in_month()
+        total_days_next_month = time |> Timex.shift(months: 1) |> Date.days_in_month()
 
-        least_day =
-          if total_days_next_month < least_day, do: total_days_next_month, else: least_day
+        {least_day, _max_day} = monthly_day_range(days_in_order, total_days_next_month)
 
         remaining_days + least_day
 
@@ -107,19 +107,19 @@ defmodule Glific.Triggers.Helper do
   end
 
   @spec monthly_day_range(list(), integer()) :: tuple()
-  defp monthly_day_range(days_in_order, total_days_in_month) do
+  def monthly_day_range(days_in_order, total_days_in_month) do
     least_day = days_in_order |> hd()
     max_day = days_in_order |> List.last()
-    least_day = if total_days_in_month < least_day, do: total_days_in_month, else: least_day
-    max_day = if total_days_in_month < max_day, do: total_days_in_month, else: max_day
 
+    least_day = if total_days_in_month <= least_day, do: total_days_in_month, else: least_day
+    max_day = if total_days_in_month <= max_day, do: total_days_in_month, else: max_day
     {least_day, max_day}
   end
 
   @spec monthly(DateTime.t(), list()) :: DateTime.t()
   defp monthly(time, days) do
     day_of_month = Timex.format!(time, "{D}") |> String.to_integer()
-    total_days_in_month = Date.days_in_month(Timex.today())
+    total_days_in_month = Date.days_in_month(time)
     days_in_order = monthly_days_in_order(days)
     {least_day, max_day} = monthly_day_range(days_in_order, total_days_in_month)
 
@@ -129,7 +129,8 @@ defmodule Glific.Triggers.Helper do
         day_of_month: day_of_month,
         total_days_in_month: total_days_in_month,
         least_day: least_day,
-        max_day: max_day
+        max_day: max_day,
+        time: time
       })
 
     Timex.shift(time, days: days_to_shift) |> Timex.to_datetime()
