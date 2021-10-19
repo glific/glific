@@ -196,7 +196,7 @@ defmodule Glific.Flows.ContactAction do
         cid: cid,
         session_template: session_template,
         params: vars,
-        labels: action.labels
+        flow_label: action.labels
       })
     end
   end
@@ -206,7 +206,8 @@ defmodule Glific.Flows.ContactAction do
   defp do_send_template_message(context, action, messages, %{
          cid: cid,
          session_template: session_template,
-         params: params
+         params: params,
+         flow_label: flow_label
        }) do
     attachments = Localization.get_translation(context, action, :attachments)
 
@@ -232,6 +233,7 @@ defmodule Glific.Flows.ContactAction do
       flow_id: context.flow_id,
       group_message_id: context.group_message_id,
       is_hsm: true,
+      flow_label: flow_label,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       params: params
     }
