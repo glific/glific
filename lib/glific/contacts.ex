@@ -6,7 +6,7 @@ defmodule Glific.Contacts do
   import GlificWeb.Gettext
 
   use Tesla
-  plug Tesla.Middleware.FormUrlencoded
+  plug(Tesla.Middleware.FormUrlencoded)
 
   alias __MODULE__
 
@@ -96,10 +96,10 @@ defmodule Glific.Contacts do
 
     Enum.reduce(filter, query, fn
       {:status, status}, query ->
-        from q in query, where: q.status == ^status
+        from(q in query, where: q.status == ^status)
 
       {:bsp_status, bsp_status}, query ->
-        from q in query, where: q.bsp_status == ^bsp_status
+        from(q in query, where: q.bsp_status == ^bsp_status)
 
       {:include_groups, []}, query ->
         query
@@ -381,10 +381,8 @@ defmodule Glific.Contacts do
       optin_status: true,
       optin_method: Keyword.get(opts, :method, "BSP"),
       optin_message_id: Keyword.get(opts, :message_id),
-      last_message_at: DateTime.utc_now(),
       optout_time: nil,
       status: :valid,
-      bsp_status: Keyword.get(opts, :bsp_status, :session_and_hsm),
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     }
@@ -400,6 +398,8 @@ defmodule Glific.Contacts do
           else: update_contact(contact, attrs)
     end
     |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
+    |> elem(1)
+    |> set_session_status(:hsm)
   end
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
@@ -616,6 +616,14 @@ defmodule Glific.Contacts do
     if is_nil(contact.optin_time),
       do: update_contact(contact, %{bsp_status: :session}),
       else: update_contact(contact, %{bsp_status: :session_and_hsm})
+  end
+
+  def set_session_status(contact, :hsm = _status) do
+    t = Glific.go_back_time(24)
+
+    if contact.last_message_at > t,
+      do: update_contact(contact, %{bsp_status: :session_and_hsm}),
+      else: update_contact(contact, %{bsp_status: :hsm})
   end
 
   @doc """
