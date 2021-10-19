@@ -7,6 +7,7 @@ defmodule Glific.Flows.ContactAction do
   alias Glific.{
     Contacts,
     Flows,
+    Flows.Node,
     Messages,
     Messages.Message,
     Repo,
@@ -19,7 +20,8 @@ defmodule Glific.Flows.ContactAction do
 
   require Logger
   @min_delay 2
-  @max_loop_limit 4
+  @max_loop_limit 3
+  @abort_loop_limit 4
 
   @doc """
   This is just a think wrapper for send_message, since its basically the same,
@@ -241,23 +243,13 @@ defmodule Glific.Flows.ContactAction do
   @spec process_loops(FlowContext.t(), non_neg_integer, [Message.t()], String.t()) ::
           {:ok, map(), any()}
   defp process_loops(context, count, messages, body) do
-    if count > 5 do
+    if count > @abort_loop_limit do
       # this might happen when there is no Exit pathway out of the loop
-      infinite_loop(context, body)
+      Node.infinite_loop(context, body)
     else
       # :loop_detected
       exit_loop(context, messages)
     end
-  end
-
-  @spec infinite_loop(FlowContext.t(), String.t()) ::
-          {:ok, map(), any()}
-  defp infinite_loop(context, body) do
-    message = "Infinite loop detected, body: #{body}. Resetting flows"
-    context = FlowContext.reset_all_contexts(context, message)
-
-    # at some point soon, we should change action signatures to allow error
-    {:ok, context, []}
   end
 
   @spec exit_loop(FlowContext.t(), [Message.t()]) ::

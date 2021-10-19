@@ -214,6 +214,37 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
+  Wrapper function to abort and clean things up when we detect an infinite loop
+  """
+  @spec infinite_loop(FlowContext.t(), String.t()) ::
+          {:ok, map(), any()}
+  def infinite_loop(context, body) do
+    message = "Infinite loop detected, body: #{body}. Resetting flows"
+    context = FlowContext.reset_all_contexts(context, message)
+
+    # at some point soon, we should change action signatures to allow error
+    {:ok, context, []}
+  end
+
+  @node_map_key {__MODULE__, :node_map}
+  @node_max_count 5
+
+  # stores a global map of how many times we process each node
+  # based on its uuid
+  @spec check_infinite_loop(Node.t()) :: boolean()
+  defp check_infinite_loop(node) do
+    node_map = Process.get(@node_map_key, %{})
+    count = Map.get(node_map, node.uuid, 0)
+
+    if count > @node_max_count do
+      true
+    else
+      Process.put(@node_map_key, Map.put(node_map, node.uuid, count + 1))
+      false
+    end
+  end
+
+  @doc """
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
   """
@@ -222,6 +253,10 @@ defmodule Glific.Flows.Node do
   def execute(node, context, messages) do
     # if node has an action, execute the first action
     cond do
+      # check if we are looping forever, if so abort early
+      check_infinite_loop(node) ->
+        infinite_loop(context, node.uuid)
+
       # we special case wait for time, since it has a router, which basically
       # is an empty shell and just exits along the normal path
       !Enum.empty?(node.actions) && hd(node.actions).type == "wait_for_time" ->
