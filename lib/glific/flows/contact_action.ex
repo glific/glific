@@ -75,6 +75,7 @@ defmodule Glific.Flows.ContactAction do
         uuid: action.uuid,
         type: interactive_content["type"],
         receiver_id: cid,
+        flow_label: action.labels,
         organization_id: context.organization_id,
         flow_id: context.flow_id,
         group_message_id: context.group_message_id,
@@ -82,7 +83,7 @@ defmodule Glific.Flows.ContactAction do
         is_optin_flow: Flows.is_optin_flow?(context.flow),
         interactive_template_id: action.interactive_template_id
       }
-
+IO.inspect(attrs)
       attrs
       |> Messages.create_and_send_message()
       |> handle_message_result(context, messages, attrs)
