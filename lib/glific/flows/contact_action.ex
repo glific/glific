@@ -49,6 +49,7 @@ defmodule Glific.Flows.ContactAction do
           {:ok, map(), any()}
   def send_interactive_message(context, action, messages) do
     ## We might need to think how to send the interactive message to a group
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, nil)
 
     {:ok, interactive_template} =
@@ -159,6 +160,7 @@ defmodule Glific.Flows.ContactAction do
   def send_message(context, action, messages, cid \\ nil)
 
   def send_message(context, %Action{templating: nil} = action, messages, cid) do
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
     # get the text translation if needed
@@ -184,6 +186,7 @@ defmodule Glific.Flows.ContactAction do
         messages,
         cid
       ) do
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
@@ -241,6 +244,18 @@ defmodule Glific.Flows.ContactAction do
 
     Messages.create_and_send_session_template(session_template, attrs)
     |> handle_message_result(context, messages, attrs)
+  end
+
+  @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
+  defp process_labels(context, %{labels: nil} = action), do: {context, action}
+
+  defp process_labels(context, %{labels: labels} = action) do
+    flow_label =
+      labels
+      |> Enum.map(fn label -> label["name"] end)
+      |> Enum.join(", ")
+
+    {context, Map.put(action, :labels, flow_label)}
   end
 
   @spec process_loops(FlowContext.t(), non_neg_integer, [Message.t()], String.t()) ::

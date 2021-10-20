@@ -370,12 +370,10 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
-    {context, action} = process_labels(context, action)
     ContactAction.send_message(context, action, messages)
   end
 
   def execute(%{type: "send_interactive_msg"} = action, context, messages) do
-    {context, action} = process_labels(context, action)
     ContactAction.send_interactive_message(context, action, messages)
   end
 
@@ -564,18 +562,6 @@ defmodule Glific.Flows.Action do
 
   def execute(action, _context, _messages),
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
-
-  @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
-  defp process_labels(context, %{labels: nil} = action), do: {context, action}
-
-  defp process_labels(context, %{labels: labels} = action) do
-    flow_label =
-      labels
-      |> Enum.map(fn label -> label["name"] end)
-      |> Enum.join(", ")
-
-    {context, Map.put(action, :labels, flow_label)}
-  end
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
   defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
