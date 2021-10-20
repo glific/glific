@@ -7,7 +7,8 @@ defmodule Glific.Flows.ActionTest do
     Groups.ContactGroup,
     Partners,
     Seeds.SeedsDev,
-    Settings
+    Settings,
+    Templates.InteractiveTemplate
   }
 
   alias Glific.Flows.{
@@ -20,8 +21,9 @@ defmodule Glific.Flows.ActionTest do
 
   setup do
     default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -340,7 +342,16 @@ defmodule Glific.Flows.ActionTest do
     {:ok, context} = FlowContext.create_flow_context(attrs)
     context = Repo.preload(context, [:flow, :contact])
 
-    action = %Action{type: "send_msg", text: "This is a test send_msg"}
+    action = %Action{
+      type: "send_msg",
+      text: "This is a test send_msg",
+      labels: [
+        %{
+          "name" => "Age Group 11 to 14",
+          "uuid" => "aed0e1a1-29ad-413e-9aaa-3ece3ec4011e"
+        }
+      ]
+    }
 
     message_stream = []
 
@@ -355,6 +366,51 @@ defmodule Glific.Flows.ActionTest do
       |> Repo.one()
 
     assert message.body == "This is a test send_msg"
+    assert message.flow_label == "Age Group 11 to 14"
+  end
+
+  test "execute an action when type is send_interactive_msg", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    # preload contact
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+    interactive = Repo.get_by(InteractiveTemplate, %{label: "Quick Reply Text"})
+    action = %Action{
+      type: "send_interactive_msg",
+      text: "This is a test send_msg",
+      interactive_template_id: interactive.id,
+      labels: [
+        %{
+          "name" => "Age Group 11 to 14",
+          "uuid" => "aed0e1a1-29ad-413e-9aaa-3ece3ec4011e"
+        }
+      ]
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, _updated_context, _updated_message_stream} = result
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == "Glific is a two way communication platform"
+    assert message.flow_label == "Age Group 11 to 14"
   end
 
   test "execute an action when type is send_broadcast", attrs do
