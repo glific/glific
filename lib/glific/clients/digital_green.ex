@@ -62,7 +62,12 @@ defmodule Glific.Clients.DigitalGreen do
     "paladoddi",
     "mudumala",
     "erladinne",
-    "pedakurapadu"
+    "pedakurapadu",
+    "adireddipalli",
+    "vonipenta",
+    "mittamanupalli",
+    "pothavaram",
+    "venkatadri_palem"
   ]
 
   @doc """

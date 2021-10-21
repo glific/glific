@@ -44,7 +44,7 @@ defmodule Glific.Flows.FlowContext do
   ]
 
   # we store one more than the number of messages specified here
-  @max_message_len 9
+  @max_message_len 11
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),

@@ -7,6 +7,7 @@ defmodule Glific.Flows.ContactAction do
   alias Glific.{
     Contacts,
     Flows,
+    Flows.Node,
     Messages,
     Messages.Message,
     Repo,
@@ -19,7 +20,8 @@ defmodule Glific.Flows.ContactAction do
 
   require Logger
   @min_delay 2
-  @max_loop_limit 4
+  @max_loop_limit 3
+  @abort_loop_limit 4
 
   @doc """
   This is just a think wrapper for send_message, since its basically the same,
@@ -49,6 +51,7 @@ defmodule Glific.Flows.ContactAction do
           {:ok, map(), any()}
   def send_interactive_message(context, action, messages) do
     ## We might need to think how to send the interactive message to a group
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, nil)
 
     {:ok, interactive_template} =
@@ -75,6 +78,7 @@ defmodule Glific.Flows.ContactAction do
         uuid: action.uuid,
         type: interactive_content["type"],
         receiver_id: cid,
+        flow_label: action.labels,
         organization_id: context.organization_id,
         flow_id: context.flow_id,
         group_message_id: context.group_message_id,
@@ -158,6 +162,7 @@ defmodule Glific.Flows.ContactAction do
   def send_message(context, action, messages, cid \\ nil)
 
   def send_message(context, %Action{templating: nil} = action, messages, cid) do
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
     # get the text translation if needed
@@ -171,7 +176,8 @@ defmodule Glific.Flows.ContactAction do
       do_send_message(context, action, messages, %{
         cid: cid,
         body: body,
-        text: text
+        text: text,
+        flow_label: action.labels
       })
     end
   end
@@ -182,6 +188,7 @@ defmodule Glific.Flows.ContactAction do
         messages,
         cid
       ) do
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
     vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
@@ -194,7 +201,8 @@ defmodule Glific.Flows.ContactAction do
       do_send_template_message(context, action, messages, %{
         cid: cid,
         session_template: session_template,
-        params: vars
+        params: vars,
+        flow_label: action.labels
       })
     end
   end
@@ -204,7 +212,8 @@ defmodule Glific.Flows.ContactAction do
   defp do_send_template_message(context, action, messages, %{
          cid: cid,
          session_template: session_template,
-         params: params
+         params: params,
+         flow_label: flow_label
        }) do
     attachments = Localization.get_translation(context, action, :attachments)
 
@@ -230,6 +239,7 @@ defmodule Glific.Flows.ContactAction do
       flow_id: context.flow_id,
       group_message_id: context.group_message_id,
       is_hsm: true,
+      flow_label: flow_label,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       params: params
     }
@@ -238,26 +248,28 @@ defmodule Glific.Flows.ContactAction do
     |> handle_message_result(context, messages, attrs)
   end
 
+  @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
+  defp process_labels(context, %{labels: nil} = action), do: {context, action}
+
+  defp process_labels(context, %{labels: labels} = action) do
+    flow_label =
+      labels
+      |> Enum.map(fn label -> label["name"] end)
+      |> Enum.join(", ")
+
+    {context, Map.put(action, :labels, flow_label)}
+  end
+
   @spec process_loops(FlowContext.t(), non_neg_integer, [Message.t()], String.t()) ::
           {:ok, map(), any()}
   defp process_loops(context, count, messages, body) do
-    if count > 5 do
+    if count > @abort_loop_limit do
       # this might happen when there is no Exit pathway out of the loop
-      infinite_loop(context, body)
+      Node.infinite_loop(context, body)
     else
       # :loop_detected
       exit_loop(context, messages)
     end
-  end
-
-  @spec infinite_loop(FlowContext.t(), String.t()) ::
-          {:ok, map(), any()}
-  defp infinite_loop(context, body) do
-    message = "Infinite loop detected, body: #{body}. Resetting flows"
-    context = FlowContext.reset_all_contexts(context, message)
-
-    # at some point soon, we should change action signatures to allow error
-    {:ok, context, []}
   end
 
   @spec exit_loop(FlowContext.t(), [Message.t()]) ::
@@ -276,7 +288,8 @@ defmodule Glific.Flows.ContactAction do
          %{
            body: body,
            text: text,
-           cid: cid
+           cid: cid,
+           flow_label: flow_label
          }
        ) do
     organization_id = context.organization_id
@@ -292,6 +305,7 @@ defmodule Glific.Flows.ContactAction do
       media_id: media_id,
       receiver_id: cid,
       organization_id: organization_id,
+      flow_label: flow_label,
       flow_id: context.flow_id,
       group_message_id: context.group_message_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
