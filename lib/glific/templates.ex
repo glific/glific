@@ -391,8 +391,6 @@ defmodule Glific.Templates do
       is_active: is_active
     }
 
-    IO.inspect(template)
-
     {:ok, _} =
       db_templates[template["id"]]
       |> SessionTemplate.changeset(update_attrs)
