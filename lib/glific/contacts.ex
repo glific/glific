@@ -621,7 +621,7 @@ defmodule Glific.Contacts do
   def set_session_status(contact, :hsm = _status) do
     t = Glific.go_back_time(24)
 
-    if contact[:last_message_at] > t,
+    if contact.last_message_at > t,
       do: update_contact(contact, %{bsp_status: :session_and_hsm}),
       else: update_contact(contact, %{bsp_status: :hsm})
   end
