@@ -267,8 +267,6 @@ defmodule Glific.Templates do
   @doc false
   @spec do_update_hsms(map(), Organization.t()) :: :ok
   def do_update_hsms(templates, organization) do
-    IO.inspect(templates)
-
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
@@ -329,10 +327,6 @@ defmodule Glific.Templates do
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
-
-    IO.inspect("insert_hsm")
-    IO.inspect(template)
-
     type =
       template["templateType"]
       |> String.downcase()
