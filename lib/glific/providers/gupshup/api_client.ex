@@ -56,8 +56,8 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec get_templates(non_neg_integer()) :: Tesla.Env.result() | {:error, String.t()}
   def get_templates(org_id) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      template_url = @gupshup_url <> "/template/list/" <> "ColoredCow"
-      gupshup_get(template_url, "c6d46a2fef194d57cdd3403a9abc7bab")
+      template_url = @gupshup_url <> "/template/list/" <> credentials.app_name
+      gupshup_get(template_url, credentials.api_key)
     end
   end
 
