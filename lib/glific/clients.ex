@@ -15,7 +15,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.Stir,
+    webhook: Glific.Clients.Lahi,
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
@@ -60,6 +60,13 @@ defmodule Glific.Clients do
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
+  # This organization id will be updated once we create organization in db
+  # @lahi %{
+  #   id: 2,
+  #   webhook: Glific.Clients.Lahi,
+  #   daily_tasks: Glific.Clients.Lahi
+  # }
+
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
@@ -68,6 +75,7 @@ defmodule Glific.Clients do
     @tap[:id] => @tap,
     @weunlearn[:id] => @weunlearn,
     @digital_green[:id] => @digital_green
+    # @lahi[:id] => @lahi
   }
 
   @spec env(atom() | nil) :: atom()
