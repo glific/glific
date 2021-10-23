@@ -80,7 +80,7 @@ defmodule Glific.Processor.ConsumerWorker do
   end
 
   defp handle_process_state({organization_id, user} = _process_state) do
-    ## resetting the node map which we store for the infinite loop in flows
+    ## resetting the node map which we store to detect the infinite loop in flows
     Process.delete({Glific.Flows.Node, :node_map})
     Repo.put_organization_id(organization_id)
     Repo.put_current_user(user)
