@@ -89,7 +89,7 @@ defmodule Glific.Processor.ConsumerWorker do
     Repo.put_current_user(user)
   end
 
-  @spec handle_common(any, any, any) :: none
+  @spec handle_common(any, any, any) :: any
   defp handle_common(message, process_state, state) do
     handle_process_state(process_state)
 

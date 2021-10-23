@@ -229,9 +229,9 @@ defmodule Glific.Flows.Node do
   @node_map_key {__MODULE__, :node_map}
   @node_max_count 5
 
-  # reset the node map
+  @doc false
   @spec reset_node_map() :: any()
-  def reset_node_map(),
+  def reset_node_map,
     do: Process.put(@node_map_key, %{})
 
   # stores a global map of how many times we process each node
