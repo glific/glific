@@ -21,8 +21,6 @@ defmodule Glific.Flows.Node do
     Router
   }
 
-  require Logger
-
   @required_fields [:uuid, :actions, :exits]
 
   @type t() :: %__MODULE__{
@@ -231,22 +229,20 @@ defmodule Glific.Flows.Node do
   @node_map_key {__MODULE__, :node_map}
   @node_max_count 5
 
+  # reset the node map
+  @spec reset_node_map() :: any()
+  def reset_node_map(),
+    do: Process.put(@node_map_key, %{})
+
   # stores a global map of how many times we process each node
   # based on its uuid
   @spec check_infinite_loop(Node.t(), FlowContext.t()) :: boolean()
   defp check_infinite_loop(node, context) do
     node_map = Process.get(@node_map_key, %{})
     count = Map.get(node_map, {context.id, node.uuid}, 0)
+    Process.put(@node_map_key, Map.put(node_map, {context.id, node.uuid}, count + 1))
 
-    ## We will remove this in the future  or may be in the next release.
-    Logger.info("node map #{inspect(node_map)}")
-
-    if count > @node_max_count do
-      true
-    else
-      Process.put(@node_map_key, Map.put(node_map, {context.id, node.uuid}, count + 1))
-      false
-    end
+    count > @node_max_count
   end
 
   @doc """

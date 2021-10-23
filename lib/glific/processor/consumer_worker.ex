@@ -10,6 +10,7 @@ defmodule Glific.Processor.ConsumerWorker do
 
   alias Glific.{
     Caches,
+    Flows.Node,
     Messages.Message,
     Processor.ConsumerFlow,
     Processor.ConsumerTagger,
@@ -80,8 +81,10 @@ defmodule Glific.Processor.ConsumerWorker do
   end
 
   defp handle_process_state({organization_id, user} = _process_state) do
-    ## resetting the node map which we store to detect the infinite loop in flows
-    Process.delete({Glific.Flows.Node, :node_map})
+    # resetting the node map which we use to track flow state
+    Node.reset_node_map()
+
+    # set the org and user context for downstream processing
     Repo.put_organization_id(organization_id)
     Repo.put_current_user(user)
   end
