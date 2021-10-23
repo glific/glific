@@ -236,6 +236,8 @@ defmodule Glific.Flows.Node do
     node_map = Process.get(@node_map_key, %{})
     count = Map.get(node_map, node.uuid, 0)
 
+    IO.inspect(node_map)
+
     if count > @node_max_count do
       true
     else
