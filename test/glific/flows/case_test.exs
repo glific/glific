@@ -144,7 +144,6 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "senTence 123  !@#") == false
 
     assert wrap_execute(c, nil, "Wwhateever", type: :audio) == false
-    end
   end
 
   test "test the execute function for has_location" do
