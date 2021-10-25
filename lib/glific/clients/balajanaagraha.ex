@@ -7,10 +7,7 @@ defmodule Glific.Clients.Balajanaagraha do
 
   alias Glific.{
     Contacts,
-    Flows.ContactField,
-    Groups,
-    Groups.Group,
-    Repo
+    Flows.ContactField
   }
 
   @doc """
