@@ -12,7 +12,7 @@ defmodule Glific.Clients do
   @dev %{
     id: 1,
     name: "Glific",
-    gcs_file_name: Glific.Clients.Tap,
+    gcs_file_name: Glific.Clients.Lahi,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
     webhook: Glific.Clients.Lahi,
@@ -64,6 +64,7 @@ defmodule Glific.Clients do
   # @lahi %{
   #   id: 2,
   #   webhook: Glific.Clients.Lahi,
+  #   gcs_file_name: Glific.Clients.Lahi
   #   daily_tasks: Glific.Clients.Lahi
   # }
 
