@@ -16,7 +16,7 @@ defmodule Glific.Clients.Lahi do
     phone_number = contact.phone
     datetime = Timex.now("Asia/Calcutta")
     strftime_str = Timex.format!(datetime, "%FT%T%:z", :strftime)
-    phone_number <> "/" <> strftime_str
+    phone_number <> "/" <> strftime_str <>  Path.extname(media["remote_name"])
   end
 
 
