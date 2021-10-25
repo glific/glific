@@ -54,6 +54,11 @@ defmodule Glific.Clients do
     # broadcast: Glific.Clients.Weunlearn
   }
 
+  @balajanaagraha %{
+    id: 27,
+    webhook: Glific.Clients.Balajanaagraha
+  }
+
   @digital_green %{
     id: 31,
     webhook: Glific.Clients.DigitalGreen,
@@ -67,6 +72,7 @@ defmodule Glific.Clients do
     @stir[:id] => @stir,
     @tap[:id] => @tap,
     @weunlearn[:id] => @weunlearn,
+    @balajanaagraha[:id] => @balajanaagraha,
     @digital_green[:id] => @digital_green
   }
 
