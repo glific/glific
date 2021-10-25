@@ -229,19 +229,20 @@ defmodule Glific.Flows.Node do
   @node_map_key {__MODULE__, :node_map}
   @node_max_count 5
 
+  @doc false
+  @spec reset_node_map() :: any()
+  def reset_node_map,
+    do: Process.put(@node_map_key, %{})
+
   # stores a global map of how many times we process each node
   # based on its uuid
-  @spec check_infinite_loop(Node.t()) :: boolean()
-  defp check_infinite_loop(node) do
+  @spec check_infinite_loop(Node.t(), FlowContext.t()) :: boolean()
+  defp check_infinite_loop(node, context) do
     node_map = Process.get(@node_map_key, %{})
-    count = Map.get(node_map, node.uuid, 0)
+    count = Map.get(node_map, {context.id, node.uuid}, 0)
+    Process.put(@node_map_key, Map.put(node_map, {context.id, node.uuid}, count + 1))
 
-    if count > @node_max_count do
-      true
-    else
-      Process.put(@node_map_key, Map.put(node_map, node.uuid, count + 1))
-      false
-    end
+    count > @node_max_count
   end
 
   @doc """
@@ -254,7 +255,7 @@ defmodule Glific.Flows.Node do
     # if node has an action, execute the first action
     cond do
       # check if we are looping forever, if so abort early
-      check_infinite_loop(node) ->
+      check_infinite_loop(node, context) ->
         infinite_loop(context, node.uuid)
 
       # we special case wait for time, since it has a router, which basically

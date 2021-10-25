@@ -385,6 +385,7 @@ defmodule Glific.Flows.ActionTest do
     {:ok, context} = FlowContext.create_flow_context(attrs)
     context = Repo.preload(context, [:flow, :contact])
     interactive = Repo.get_by(InteractiveTemplate, %{label: "Quick Reply Text"})
+
     action = %Action{
       type: "send_interactive_msg",
       text: "This is a test send_msg",
