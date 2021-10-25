@@ -223,7 +223,7 @@ defmodule Glific.Flows.Case do
   end
 
   # for all the above functions, if we encounter in a non-text context, return false
-  def execute(%{type: ctype}, _context, %{type: type} = msg)
+  def execute(%{type: ctype}, _context, %{type: type})
       when ctype in @text_fns and type not in @text_types,
       do: false
 
