@@ -3,17 +3,26 @@ defmodule Glific.Clients.Lahi do
     Implementation for the Lahi
   """
   import Ecto.Query, warn: false
+
   alias Glific.{Contacts.Contact, Groups.ContactGroup, Groups.Group, Repo}
+
   @doc """
     In the case of LAHI we retrive image and will fromat the name of the image
   """
   @spec gcs_file_name(map()) :: String.t()
-  # IO.inspect(media)
   def gcs_file_name(media) do
-    contact = Glific.Contacts.get_contact!(media["contact_id"])
+    contact = Contact|> where([c], c.id == ^media["contact_id"])|> Repo.one()
+
     phone_number = contact.phone
     datetime = Timex.now("Asia/Calcutta")
-    formated_time = Timex.format(datetime, "%FT%T%:z", :strftime)
-    formated = "#{phone_number}_#{datetime}"
+    strftime_str = Timex.format!(datetime, "%FT%T%:z", :strftime)
+    phone_number <> "/" <> strftime_str
+  end
+
+
+  @doc "webhook call to store the file in the gcs"
+  @spec webhook(String.t(), map()) :: map()
+  def webhook(_save_file_into_gcs, fields) do
+    %{"status": true}
   end
 end
