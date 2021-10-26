@@ -390,17 +390,17 @@ defmodule Glific.Templates do
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
     current_template = db_templates[template["id"]]
-
-    is_active =
-      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
-        do: true,
-        else: false
-
     update_attrs = %{status: template["status"]}
 
-    if current_template.status != template["status"],
-      do: Map.put(update_attrs, :is_active, is_active),
-      else: update_attrs
+    update_attrs =
+      if current_template.status != template["status"],
+        do:
+          Map.put(
+            update_attrs,
+            :is_active,
+            template["status"] in ["APPROVED", "SANDBOX_REQUESTED"]
+          ),
+        else: update_attrs
 
     {:ok, _} =
       db_templates[template["id"]]
