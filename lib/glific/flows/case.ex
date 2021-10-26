@@ -19,6 +19,8 @@ defmodule Glific.Flows.Case do
 
   alias Pow.Ecto.Schema.Changeset
 
+  require Logger
+
   @required_fields [:uuid, :type, :arguments, :category_uuid]
 
   @type t() :: %__MODULE__{
@@ -228,10 +230,11 @@ defmodule Glific.Flows.Case do
   def execute(%{type: "has_file"}, _context, msg),
     do: msg.type == :document
 
-  def execute(c, _context, msg),
-    do:
-      raise(UndefinedFunctionError,
-        message:
-          "Function not implemented for cases of case type: #{c.type}, message type: #{msg.type}"
-      )
+  def execute(c, _context, msg) do
+    Logger.info(
+      "Function not implemented for cases of case type: #{c.type}, message type: #{msg.type}"
+    )
+
+    false
+  end
 end
