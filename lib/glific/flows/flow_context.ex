@@ -300,16 +300,22 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, context} = update_flow_context(context, %{results: results})
 
-    {:ok, _flow_result} =
-      FlowResult.upsert_flow_result(%{
-        results: results,
-        contact_id: context.contact_id,
-        flow_id: context.flow_id,
-        flow_version: context.flow.version,
-        flow_context_id: context.id,
-        flow_uuid: context.flow_uuid,
-        organization_id: context.organization_id
-      })
+    args = %{
+      results: results,
+      contact_id: context.contact_id,
+      flow_id: context.flow_id,
+      flow_version: context.flow.version,
+      flow_context_id: context.id,
+      flow_uuid: context.flow_uuid,
+      organization_id: context.organization_id
+    }
+
+    # we try the upsert twice in case the first one conflicts with another
+    # simultaneous insert. Happens rarely but a couple of times.
+    case FlowResult.upsert_flow_result(args) do
+      {:ok, flow_result} -> flow_result
+      {:error, _} -> FlowResult.upsert_flow_result(args)
+    end
 
     context
   end

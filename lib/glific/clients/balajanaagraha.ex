@@ -19,8 +19,15 @@ defmodule Glific.Clients.Balajanaagraha do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact"]["id"])
     contact = Contacts.get_contact!(contact_id)
     {:ok, team_size} = Glific.parse_maybe_integer(fields["team_size"])
+
     contact
-    |> ContactField.do_add_contact_field("team_member_#{team_size}", "team_member_#{team_size}", fields["details"], "string")
+    |> ContactField.do_add_contact_field(
+      "team_member_#{team_size}",
+      "team_member_#{team_size}",
+      fields["details"],
+      "string"
+    )
+
     %{updated_details: "team_member_#{team_size}"}
   end
 

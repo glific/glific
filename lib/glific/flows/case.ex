@@ -95,6 +95,25 @@ defmodule Glific.Flows.Case do
   defp strip(_msg), do: ""
 
   @text_types [:text, :quick_reply, :list]
+
+  @text_fns [
+    "has_number_eq",
+    "has_number_between",
+    "has_number",
+    "has_any_word",
+    "has_phrase",
+    "has_only_phrase",
+    "has_only_text",
+    "has_all_words",
+    "has_multiple",
+    "has_phone",
+    "has_email",
+    "has_pattern",
+    "has_beginning",
+    "has_intent",
+    "has_top_intent"
+  ]
+
   @doc """
   Execute a case, given a message.
   This is the only execute function which has a different signature, since
@@ -202,6 +221,11 @@ defmodule Glific.Flows.Case do
       do: msg.extra.confidence >= confidence,
       else: msg.extra.intent == intent && msg.extra.confidence >= confidence
   end
+
+  # for all the above functions, if we encounter in a non-text context, return false
+  def execute(%{type: ctype}, _context, %{type: type})
+      when ctype in @text_fns and type not in @text_types,
+      do: false
 
   def execute(%{type: "has_group"} = c, _context, msg) do
     [_group_id, group_label] = c.arguments
