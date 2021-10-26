@@ -398,7 +398,7 @@ defmodule Glific.Templates do
           Map.put(
             update_attrs,
             :is_active,
-            template["status"] in ["APPROVED", "SANDBOX_REQUESTED"]
+            template["status"] in ["APPROVED"]
           ),
         else: update_attrs
 
