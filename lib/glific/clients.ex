@@ -27,6 +27,7 @@ defmodule Glific.Clients do
 
   @avanti %{
     id: 10,
+    name: "Avanti Fellows",
     webhook: Glific.Clients.Avanti
   }
 
@@ -44,18 +45,35 @@ defmodule Glific.Clients do
     # blocked?: Glific.Clients.Stir
   }
 
+  @lahilms %{
+    id: 14,
+    name: "Lend A Hand India",
+    webhook: Glific.Clients.Lahi,
+    gcs_file_name: Glific.Clients.Lahi
+    # gcs_file_name: Glific.Clients.ReapBenefit
+  }
+
   @reap_benefit %{
-    id: 15
+    id: 15,
+    name: "Reap Benefit"
     # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
   @weunlearn %{
-    id: 25
+    id: 25,
+    name: "WeUnlearn"
     # broadcast: Glific.Clients.Weunlearn
+  }
+
+  @balajanaagraha %{
+    id: 27,
+    name: "BalaJanaagraha",
+    webhook: Glific.Clients.Balajanaagraha
   }
 
   @digital_green %{
     id: 31,
+    name: "DigitalGreen",
     webhook: Glific.Clients.DigitalGreen,
     daily_tasks: Glific.Clients.DigitalGreen
   }
@@ -63,10 +81,12 @@ defmodule Glific.Clients do
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
+    @lahilms[:id] => @lahilms,
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,
     @weunlearn[:id] => @weunlearn,
+    @balajanaagraha[:id] => @balajanaagraha,
     @digital_green[:id] => @digital_green
   }
 
