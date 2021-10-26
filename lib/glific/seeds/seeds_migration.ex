@@ -63,13 +63,12 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   defp do_migrate_data(:sync_hsm_templates, organizations),
-  do: Enum.map(organizations, fn o -> o.id end)
-    |> sync_hsm_templates()
-
+    do:
+      Enum.map(organizations, fn o -> o.id end)
+      |> sync_hsm_templates()
 
   defp do_migrate_data(:localized_language, _organizations), do: update_localized_language()
   defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
-
 
   @doc false
   @spec add_simulators(list()) :: :ok
@@ -300,15 +299,18 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
+  @doc """
+    sync all the hsm from BSP to Glific DB
+  """
   @spec sync_hsm_templates(list) :: :ok
   def sync_hsm_templates(org_id_list) do
     Enum.each(org_id_list, fn org_id ->
       Repo.put_process_state(org_id)
       Glific.Templates.update_hsms(org_id)
     end)
+
     :ok
   end
-
 
   @doc """
   Sync bigquery schema with local db changes.

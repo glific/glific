@@ -474,8 +474,9 @@ defmodule Glific.Templates do
     |> Enum.count()
   end
 
+  # A map where keys are hsm uuid and value will be template struct
   @spec hsm_template_uuid_map() :: map()
-  defp hsm_template_uuid_map() do
+  defp hsm_template_uuid_map do
     list_session_templates(%{filter: %{is_hsm: true}})
     |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
   end
