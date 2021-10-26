@@ -7,7 +7,7 @@ defmodule Glific.Clients.Lahi do
   alias Glific.{Contacts.Contact, Groups.ContactGroup, Groups.Group, Repo}
 
   @doc """
-    In the case of LAHI we retrive image and will fromat the name of the image
+    In the case of LAHI we retrieve image and will format the name of the image
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
