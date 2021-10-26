@@ -1300,6 +1300,7 @@ defmodule Glific.Clients.Stir do
 
   defp parse_string_to_date(date) when is_binary(date) == true do
     date
+    |> String.trim()
     |> Timex.parse!("{YYYY}-{0M}-{D}")
     |> Timex.to_date()
   end
