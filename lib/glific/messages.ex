@@ -523,7 +523,7 @@ defmodule Glific.Messages do
       params: parameters,
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
-      flow_label: attrs.flow_label
+      flow_label: Map.get(attrs, :flow_label, "")
     }
   end
 
