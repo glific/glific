@@ -72,7 +72,16 @@ defmodule Glific.Flows.Templating do
       when is_binary(expression) == true do
     FlowContext.parse_context_string(context, expression)
     |> Glific.execute_eex()
+    |> ensure_template_struct()
   end
 
   def execute(templating, _context, _messages), do: templating
+
+  defp ensure_template_struct(json_string) do
+    opts =
+      Jason.decode!(json_string)
+      |> Glific.atomize_keys()
+
+    struct!(Templating, opts)
+  end
 end

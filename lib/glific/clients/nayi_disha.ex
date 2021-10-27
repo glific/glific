@@ -106,4 +106,14 @@ defmodule Glific.Clients.NayiDisha do
   @spec webhook(String.t(), map()) :: map()
   def webhook(_, _fields),
     do: %{}
+
+  def templating() do
+    %{
+      uuid: "szdzsdsad",
+      name: "asdsadsa",
+      template: nil,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
 end
