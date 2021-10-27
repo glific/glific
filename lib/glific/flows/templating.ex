@@ -37,6 +37,16 @@ defmodule Glific.Flows.Templating do
   @spec process(map(), map()) :: {Templating.t(), map()}
   def process(json, uuid_map) when is_nil(json), do: {json, uuid_map}
 
+  def process(%{"expression" => expression} = json, uuid_map)
+      when is_binary(expression) == true do
+    templating = %Templating{
+      expression: expression,
+      uuid: json["uuid"]
+    }
+
+    {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
+  end
+
   def process(json, uuid_map) do
     Flows.check_required_fields(json, @required_fields)
 
@@ -44,17 +54,18 @@ defmodule Glific.Flows.Templating do
     {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
 
     templating = %Templating{
-      uuid: uuid,
+      uuid: json["uuid"],
       name: json["template"]["name"],
       template: template,
-      variables: json["variables"]
+      variables: json["variables"],
+      expression: nil
     }
 
     {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
   end
 
   @doc """
-
+    We need to perform the execute in case template is an expression
   """
   @spec execute(Templating.t(), FlowContext.t(), [Message.t()]) :: Templating.t() | nil
   def execute(%{expression: expression} = _templating, context)
