@@ -6,7 +6,7 @@ defmodule Glific.Templates do
   import GlificWeb.Gettext
 
   use Tesla
-  plug Tesla.Middleware.FormUrlencoded
+  plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
     Partners,
@@ -48,13 +48,13 @@ defmodule Glific.Templates do
 
     Enum.reduce(filter, query, fn
       {:is_hsm, is_hsm}, query ->
-        from q in query, where: q.is_hsm == ^is_hsm
+        from(q in query, where: q.is_hsm == ^is_hsm)
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:status, status}, query ->
-        from q in query, where: q.status == ^status
+        from(q in query, where: q.status == ^status)
 
       {:term, term}, query ->
         query
@@ -272,9 +272,7 @@ defmodule Glific.Templates do
       |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
 
-    db_templates =
-      list_session_templates(%{filter: %{is_hsm: true}})
-      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+    db_templates = hsm_template_uuid_map()
 
     Enum.each(templates, fn template ->
       cond do
@@ -297,9 +295,7 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm(template, organization, languages) do
     # get updated db templates to handle multiple approved translations
-    db_templates =
-      list_session_templates(%{filter: %{is_hsm: true}})
-      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+    db_templates = hsm_template_uuid_map()
 
     db_template_translations =
       db_templates
@@ -326,6 +322,21 @@ defmodule Glific.Templates do
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
+    example =
+      case Jason.decode(template["meta"] || "{}") do
+        {:ok, meta} ->
+          meta["example"]
+
+        _ ->
+          nil
+      end
+
+    if example,
+      do: do_insert_hsm(template, organization, languages, example),
+      else: :ok
+  end
+
+  defp do_insert_hsm(template, organization, languages, example) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
     type =
@@ -343,15 +354,6 @@ defmodule Glific.Templates do
       if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
         do: true,
         else: false
-
-    example =
-      case Jason.decode(template["meta"]) do
-        {:ok, meta} ->
-          meta["example"]
-
-        _ ->
-          nil
-      end
 
     attrs = %{
       uuid: template["id"],
@@ -373,8 +375,13 @@ defmodule Glific.Templates do
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
     |> case do
-      {:ok, template} -> Logger.info("New Session Template Added with label: #{template.label}")
-      {:error, error} -> Logger.info("Error adding new Session Template: #{inspect(error)}")
+      {:ok, template} ->
+        Logger.info("New Session Template Added with label: #{template.label}")
+
+      {:error, error} ->
+        Logger.error(
+          "Error adding new Session Template: #{inspect(error)} and attrs #{inspect(attrs)}"
+        )
     end
 
     :ok
@@ -382,15 +389,18 @@ defmodule Glific.Templates do
 
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
-    is_active =
-      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
-        do: true,
-        else: false
+    current_template = db_templates[template["id"]]
+    update_attrs = %{status: template["status"]}
 
-    update_attrs = %{
-      status: template["status"],
-      is_active: is_active
-    }
+    update_attrs =
+      if current_template.status != template["status"],
+        do:
+          Map.put(
+            update_attrs,
+            :is_active,
+            template["status"] in ["APPROVED"]
+          ),
+        else: update_attrs
 
     {:ok, _} =
       db_templates[template["id"]]
@@ -462,5 +472,12 @@ defmodule Glific.Templates do
     end)
     |> Enum.uniq()
     |> Enum.count()
+  end
+
+  # A map where keys are hsm uuid and value will be template struct
+  @spec hsm_template_uuid_map() :: map()
+  defp hsm_template_uuid_map do
+    list_session_templates(%{filter: %{is_hsm: true}})
+    |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
   end
 end
