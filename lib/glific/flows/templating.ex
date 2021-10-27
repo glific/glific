@@ -8,6 +8,8 @@ defmodule Glific.Flows.Templating do
 
   alias Glific.{
     Flows,
+    Flows.FlowContext,
+    Messages.Message,
     Templates.SessionTemplate
   }
 
@@ -17,14 +19,16 @@ defmodule Glific.Flows.Templating do
           uuid: Ecto.UUID.t() | nil,
           name: String.t() | nil,
           template: SessionTemplate.t() | nil,
-          variables: list()
+          variables: list(),
+          expression: String.t() | nil
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-    field :name, :string
-    field :variables, {:array, :string}, default: []
-    embeds_one :template, SessionTemplate
+    field(:uuid, Ecto.UUID)
+    field(:name, :string)
+    field(:expression, :string)
+    field(:variables, {:array, :string}, default: [])
+    embeds_one(:template, SessionTemplate)
   end
 
   @doc """
@@ -48,4 +52,16 @@ defmodule Glific.Flows.Templating do
 
     {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
   end
+
+  @doc """
+
+  """
+  @spec execute(Templating.t(), FlowContext.t(), [Message.t()]) :: Templating.t() | nil
+  def execute(%{expression: expression} = _templating, context)
+      when is_binary(expression) == true do
+    FlowContext.parse_context_string(context, expression)
+    |> Glific.execute_eex()
+  end
+
+  def execute(templating, _context, _messages), do: templating
 end

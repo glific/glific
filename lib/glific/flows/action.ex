@@ -370,6 +370,8 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
+    templating = Templating.execute(action.templating, context, messages)
+    action = Map.put(action, :templating, templating)
     ContactAction.send_message(context, action, messages)
   end
 
