@@ -9,7 +9,7 @@ defmodule Glific.Clients.NayiDisha do
   @hsm %{
     1 => %{
       hsm_uuid: "5be94a85-8d90-4257-9d69-1c3d9c5017cc",
-      variables: ["Hello"],
+      variables: ["@contact.phone"],
       translations: %{
         "hi" => %{
           variables: []
@@ -18,7 +18,7 @@ defmodule Glific.Clients.NayiDisha do
     },
     2 => %{
       hsm_uuid: "12ffe891-debd-4ed8-8595-c0099e277ac3",
-      variables: ["Pankaj"],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           variables: []
