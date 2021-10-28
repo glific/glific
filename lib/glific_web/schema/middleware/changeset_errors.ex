@@ -32,7 +32,8 @@ defmodule GlificWeb.Schema.Middleware.ChangesetErrors do
     |> Ecto.Changeset.traverse_errors(&format_error/1)
     |> Enum.map(fn
       {key, value} ->
-        %{key: key, message: value}
+        key_msg = key |> Atom.to_string() |> String.capitalize()
+        %{key: key, message: "#{key_msg}: #{value}"}
     end)
   end
 
