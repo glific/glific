@@ -216,8 +216,8 @@ defmodule Glific.Clients.DigitalGreen do
     do: %{}
 
   @doc """
-    A callback function to support daily tasks for the client
-    in the backend.
+  A callback function to support daily tasks for the client
+  in the backend.
   """
   @spec daily_tasks(non_neg_integer()) :: atom()
   def daily_tasks(_org_id) do
@@ -335,7 +335,11 @@ defmodule Glific.Clients.DigitalGreen do
   defp update_crop_stage(total_days, contact_id, organization_id) do
     current_stage =
       Map.values(@stages)
-      |> Enum.find(fn stage -> total_days in stage["initial_offset"]..stage["threshold"] end)
+      |> Enum.find(
+        # return stage 1 as default if we dont find any
+        @stages["stage 1"],
+        fn stage -> total_days in stage["initial_offset"]..stage["threshold"] end
+      )
 
     Logger.info(
       "update crop stage for contact id: #{contact_id} and data #{inspect(current_stage)}"

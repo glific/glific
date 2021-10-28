@@ -153,6 +153,7 @@ defmodule Glific.BillingTest do
       end
     end
 
+    @tag :pending
     test "update_monthly_usage/1 should update usage of metered subscription item", %{
       organization_id: organization_id
     } do
