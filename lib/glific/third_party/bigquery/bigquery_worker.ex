@@ -318,9 +318,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data("flow_counts", organization_id, attrs) do
     Logger.info(
-      "fetching data for flow_counts to send on bigquery attrs: #{inspect(attrs)}, org_id: #{
-        organization_id
-      }"
+      "fetching data for flow_counts to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
     )
 
     get_query("flow_counts", organization_id, attrs)
