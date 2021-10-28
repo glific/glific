@@ -68,7 +68,7 @@ defmodule Glific.Flows.Templating do
     We need to perform the execute in case template is an expression
   """
   @spec execute(Templating.t(), FlowContext.t(), [Message.t()]) :: Templating.t() | nil
-  def execute(%{expression: expression} = _templating, context)
+  def execute(%{expression: expression} = _templating, context, _messages)
       when is_binary(expression) == true do
     FlowContext.parse_context_string(context, expression)
     |> Glific.execute_eex()
@@ -81,7 +81,13 @@ defmodule Glific.Flows.Templating do
     opts =
       Jason.decode!(json_string)
       |> Glific.atomize_keys()
+      |> update_session_template()
 
     struct!(Templating, opts)
+  end
+
+  defp update_session_template(attrs) do
+    {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: attrs[:uuid]})
+    Map.put(attrs, :template, template)
   end
 end

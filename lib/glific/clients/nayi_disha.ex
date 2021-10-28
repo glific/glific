@@ -3,99 +3,27 @@ defmodule Glific.Clients.NayiDisha do
   Custom webhook implementation specific to NayiDisha usecase
   """
 
+  alias Glific.Contacts
+  alias Glific.Repo
+
   @hsm %{
-    day_1: %{
-      shortcode: "Will need to add"
+    1 => %{
+      hsm_uuid: "5be94a85-8d90-4257-9d69-1c3d9c5017cc",
+      variables: ["Hello"],
+      translations: %{
+        "hi" => %{
+          variables: []
+        }
+      }
     },
-    day_2: %{
-      shortcode: "Will need to add"
-    },
-    day_3: %{
-      shortcode: "Will need to add"
-    },
-    day_4: %{
-      shortcode: "Will need to add"
-    },
-    day_5: %{
-      shortcode: "Will need to add"
-    },
-    day_6: %{
-      shortcode: "Will need to add"
-    },
-    day_7: %{
-      shortcode: "Will need to add"
-    },
-    day_8: %{
-      shortcode: "Will need to add"
-    },
-    day_9: %{
-      shortcode: "Will need to add"
-    },
-    day_10: %{
-      shortcode: "Will need to add"
-    },
-    day_11: %{
-      shortcode: "Will need to add"
-    },
-    day_12: %{
-      shortcode: "Will need to add"
-    },
-    day_13: %{
-      shortcode: "Will need to add"
-    },
-    day_14: %{
-      shortcode: "Will need to add"
-    },
-    day_15: %{
-      shortcode: "Will need to add"
-    },
-    day_16: %{
-      shortcode: "Will need to add"
-    },
-    day_17: %{
-      shortcode: "Will need to add"
-    },
-    day_18: %{
-      shortcode: "Will need to add"
-    },
-    day_19: %{
-      shortcode: "Will need to add"
-    },
-    day_20: %{
-      shortcode: "Will need to add"
-    },
-    day_21: %{
-      shortcode: "Will need to add"
-    },
-    day_22: %{
-      shortcode: "Will need to add"
-    },
-    day_23: %{
-      shortcode: "Will need to add"
-    },
-    day_24: %{
-      shortcode: "Will need to add"
-    },
-    day_25: %{
-      shortcode: "Will need to add"
-    },
-    day_26: %{
-      shortcode: "Will need to add"
-    },
-    day_26: %{
-      shortcode: "Will need to add"
-    },
-    day_27: %{
-      shortcode: "Will need to add"
-    },
-    day_28: %{
-      shortcode: "Will need to add"
-    },
-    day_29: %{
-      shortcode: "Will need to add"
-    },
-    day_30: %{
-      shortcode: "Will need to add"
+    2 => %{
+      hsm_uuid: "12ffe891-debd-4ed8-8595-c0099e277ac3",
+      variables: ["Pankaj"],
+      translations: %{
+        "hi" => %{
+          variables: []
+        }
+      }
     }
   }
 
@@ -104,16 +32,53 @@ defmodule Glific.Clients.NayiDisha do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
+  def webhook("daily", fields) do
+    contact_id = get_in(fields, ["contact", "id"])
+    _contact_language = get_language(contact_id)
+    training_day = get_training_day(fields)
+
+    %{
+      training_day: training_day,
+      is_valid: Map.has_key?(@hsm, training_day)
+    }
+  end
+
   def webhook(_, _fields),
     do: %{}
 
-  def templating() do
+  def template(training_day) do
     %{
-      uuid: "szdzsdsad",
-      name: "asdsadsa",
-      template: nil,
+      uuid: get_in(@hsm, [training_day, :hsm_uuid]),
+      name: "Day #{training_day}",
+      variables: get_in(@hsm, [training_day, :variables]),
       expression: nil
     }
     |> Jason.encode!()
+  end
+
+  defp get_language(contact_id) do
+    contact =
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language])
+
+    contact.language
+  end
+
+  defp get_training_day(fields) do
+    get_in(fields, ["contact", "fields", "training_day", "value"])
+    |> Glific.parse_maybe_integer()
+    |> case do
+      {:ok, training_day} when training_day in [0, nil] ->
+        1
+
+      {:ok, training_day} ->
+        IO.inspect("got a training day")
+        IO.inspect(training_day)
+        training_day
+
+      _ ->
+        1
+    end
   end
 end
