@@ -504,11 +504,6 @@ defmodule Glific.Clients.Stir do
 
   @doc false
   @spec webhook(String.t(), map()) :: map()
-  def webhook("monthly_reports", _fields) do
-    today = Timex.today("Asia/Kolkata")
-    if today.day in @active_report_days, do: "available", else: "not available"
-  end
-
   def webhook("move_mt_to_district_group", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
@@ -840,6 +835,12 @@ defmodule Glific.Clients.Stir do
 
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
+
+  def webhook("monthly_reports", _fields) do
+    today = Timex.today("Asia/Kolkata")
+    response = if today.day in @active_report_days, do: "available", else: "not available"
+    %{response: response}
+  end
 
   def webhook(_, fields), do: fields
 
