@@ -162,7 +162,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createContact", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "import contacts and test possible scenarios and errors", %{manager: user} do
@@ -271,7 +271,7 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateContact", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a contact", %{manager: user} do

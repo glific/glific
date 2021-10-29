@@ -174,7 +174,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createOrganization", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update an organization status", %{user: user} do
@@ -263,7 +263,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
-    assert message == "is invalid"
+    assert message =~ "is invalid"
 
     # create a temp organization with a new name
     auth_query_gql_by(:create, user,
@@ -295,7 +295,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
 
     # update organization fields with valid param
     fields = %{"organization_name" => "Glific", "url" => "/registration"} |> Jason.encode!()
@@ -354,7 +354,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
-    assert message == "has an invalid entry"
+    assert message =~ "has an invalid entry"
 
     # default language should be included in active language list
     result =
@@ -371,7 +371,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateOrganization", "errors", Access.at(0), "message"])
-    assert message == "default language must be updated according to active languages"
+    assert message =~ "default language must be updated according to active languages"
   end
 
   @default_goth_json """

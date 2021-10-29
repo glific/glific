@@ -136,7 +136,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
     message = get_in(query_data, [:data, "createGroup", "errors", Access.at(0), "message"])
     assert query_data[:data]["createGroup"]["errors"] != nil
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a group and test possible scenarios and errors", %{manager: user} do
@@ -164,7 +164,7 @@ defmodule GlificWeb.Schema.GroupTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateGroup", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a group", %{manager: user} do

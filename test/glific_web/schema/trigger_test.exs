@@ -216,7 +216,7 @@ defmodule GlificWeb.Schema.TriggerTest do
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
-    assert message == "Trigger start_at should always be greater than current time"
+    assert message =~ "Trigger start_at should always be greater than current time"
   end
 
   test "update a trigger and test possible scenarios and errors", %{manager: user} = attrs do
