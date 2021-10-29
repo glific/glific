@@ -164,6 +164,6 @@ defmodule GlificWeb.Schema.UserGroupTest do
     assert {:ok, query_data} = result
 
     user = get_in(query_data, [:data, "createUserGroup", "errors", Access.at(0), "message"])
-    assert user == "has already been taken"
+    assert user =~ "has already been taken"
   end
 end

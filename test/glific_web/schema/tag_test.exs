@@ -189,7 +189,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createTag", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a tag and test possible scenarios and errors", %{manager: user} do
@@ -220,7 +220,7 @@ defmodule GlificWeb.Schema.TagTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateTag", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "create a tag with keywords", %{manager: user} do
