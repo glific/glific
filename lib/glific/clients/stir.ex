@@ -500,8 +500,15 @@ defmodule Glific.Clients.Stir do
     submit_reflection: %{days: 30, group: "submit_reflection"}
   }
 
+  @active_report_days [1, 2, 3, 4, 5, 6]
+
   @doc false
   @spec webhook(String.t(), map()) :: map()
+  def webhook("monthly_reports", _fields) do
+    today = Timex.today("Asia/Kolkata")
+    if today.day in @active_report_days, do: "available", else: "not available"
+  end
+
   def webhook("move_mt_to_district_group", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
