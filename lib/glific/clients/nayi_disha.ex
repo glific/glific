@@ -6,10 +6,18 @@ defmodule Glific.Clients.NayiDisha do
   alias Glific.Contacts
   alias Glific.Repo
 
+  @parent_hsm_uuid "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
+
   @hsm %{
     1 => %{
-      hsm_uuid: "5be94a85-8d90-4257-9d69-1c3d9c5017cc",
-      variables: ["@contact.phone"],
+      hsm_uuid: @parent_hsm_uuid,
+      variables: [
+        "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In this question series Neuro-Developmental Pediatrician Dr. Ajay Sharma talks about some common concerns about Covid-19 and and vaccinations to manage the illness in children who need special care.
+
+      Dr.Ajay Sharma is a consultant Neurodevelopmental Paediatrician and the ex-Clinical Director at Evelina London, Guy’s and St Thomas’ Hospital, UK.
+      Click on this link to listen to the question series👉 https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-english
+      "
+      ],
       translations: %{
         "hi" => %{
           variables: []

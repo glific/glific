@@ -682,12 +682,6 @@ defmodule Glific.Flows.FlowContext do
       "flow" => %{name: context.flow.name, id: context.flow.id}
     }
 
-    str =
-      str
-      |> MessageVarParser.parse(vars)
-
-    IO.inspect(str)
-
-    str
+    MessageVarParser.parse(str, vars)
   end
 end
