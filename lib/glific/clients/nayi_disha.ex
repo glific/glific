@@ -3,36 +3,10 @@ defmodule Glific.Clients.NayiDisha do
   Custom webhook implementation specific to NayiDisha usecase
   """
 
-  alias Glific.Contacts
-  alias Glific.Repo
-
-  @parent_hsm_uuid "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
-
-  @hsm %{
-    1 => %{
-      hsm_uuid: @parent_hsm_uuid,
-      variables: [
-        "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In this question series Neuro-Developmental Pediatrician Dr. Ajay Sharma talks about some common concerns about Covid-19 and and vaccinations to manage the illness in children who need special care.
-
-      Dr.Ajay Sharma is a consultant Neurodevelopmental Paediatrician and the ex-Clinical Director at Evelina London, Guy’s and St Thomas’ Hospital, UK.
-      Click on this link to listen to the question series👉 https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-english
-      "
-      ],
-      translations: %{
-        "hi" => %{
-          variables: []
-        }
-      }
-    },
-    2 => %{
-      hsm_uuid: "12ffe891-debd-4ed8-8595-c0099e277ac3",
-      variables: ["@contact.name"],
-      translations: %{
-        "hi" => %{
-          variables: []
-        }
-      }
-    }
+  alias Glific.{
+    Clients.NayiDisha.Data,
+    Contacts,
+    Repo
   }
 
   @doc """
@@ -47,18 +21,22 @@ defmodule Glific.Clients.NayiDisha do
 
     %{
       training_day: training_day,
-      is_valid: Map.has_key?(@hsm, training_day)
+      is_valid: Map.has_key?(Data.load(), training_day)
     }
   end
 
   def webhook(_, _fields),
     do: %{}
 
+  @doc """
+    get template for IEX
+  """
+  @spec template(integer()) :: binary
   def template(training_day) do
     %{
-      uuid: get_in(@hsm, [training_day, :hsm_uuid]),
+      uuid: get_in(Data.load(), [training_day, :hsm_uuid]),
       name: "Day #{training_day}",
-      variables: get_in(@hsm, [training_day, :variables]),
+      variables: get_in(Data.load(), [training_day, :variables]),
       expression: nil
     }
     |> Jason.encode!()
@@ -81,8 +59,6 @@ defmodule Glific.Clients.NayiDisha do
         1
 
       {:ok, training_day} ->
-        IO.inspect("got a training day")
-        IO.inspect(training_day)
         training_day
 
       _ ->

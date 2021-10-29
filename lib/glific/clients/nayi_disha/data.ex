@@ -311,4 +311,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       ]
     }
   }
+
+  @doc """
+  Create a webhook with different signatures, so we can easily implement
+  additional functionality as needed
+  """
+  @spec load() :: map()
+  def load, do: @hsm
 end
