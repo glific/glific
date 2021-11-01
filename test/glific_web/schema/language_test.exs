@@ -72,7 +72,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createLanguage", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a language and test possible scenarios and errors", %{manager: user} do
@@ -115,7 +115,7 @@ defmodule GlificWeb.Schema.LanguageTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateLanguage", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a language", %{manager: user} do
