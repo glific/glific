@@ -211,7 +211,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     message =
       get_in(query_data, [:data, "createSessionTemplate", "errors", Access.at(0), "message"])
 
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a session template and test possible scenarios and errors", %{staff: user} do
@@ -244,7 +244,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     message =
       get_in(query_data, [:data, "updateSessionTemplate", "errors", Access.at(0), "message"])
 
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete an session_template", %{staff: user} do
@@ -310,6 +310,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     message =
       get_in(query_data, [:data, "createTemplateFormMessage", "errors", Access.at(0), "message"])
 
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 end
