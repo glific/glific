@@ -124,7 +124,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           ]
         },
         "en" => %{
-          [
+          variables: [
             "Enlisted below are things to be kept in mind if a member of the family is Covid-19 positive
 
             1) Identify two or more caregivers in the event that the immediate caregiver
@@ -396,7 +396,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "en" => %{
           variables: [
             "*Legal Guardianship*- The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ],
+          ]
         }
       }
     },
@@ -528,7 +528,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           ]
         },
         "en" => %{
-          variables:  ["@contact.name"]
+          variables: ["@contact.name"]
         }
       }
     },
