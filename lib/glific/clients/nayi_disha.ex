@@ -21,6 +21,7 @@ defmodule Glific.Clients.NayiDisha do
 
     %{
       training_day: training_day,
+      is_cycle_ended: training_day not in Map.keys(Data.load()),
       is_valid: Map.has_key?(Data.load(), training_day)
     }
   end

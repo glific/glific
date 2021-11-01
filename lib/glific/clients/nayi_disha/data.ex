@@ -3,7 +3,7 @@ defmodule Glific.Clients.NayiDisha.Data do
   Custom webhook implementation specific to NayiDisha usecase
   """
 
-  @parent_hsm_uuid_advise_eng "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
+  @parent_hsm_uuid_advise_eng "5be94a85-8d90-4257-9d69-1c3d9c5017cc"
 
   @hsm %{
     1 => %{
