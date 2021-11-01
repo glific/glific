@@ -4,6 +4,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
   def change do
     flow_broadcasts()
     flow_broadcast_contacts()
+    messages()
   end
 
   defp flow_broadcasts() do
@@ -44,5 +45,31 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
 
       timestamps(type: :utc_datetime)
     end
+  end
+
+  defp messages do
+    alter table(:messages) do
+      remove_if_exists(:group_message_id)
+
+      add :flow_broadcast_id, references(:flow_broadcasts, on_delete: :nilify_all),
+        null: true,
+        comment: "If this message was sent to a group, link to the flow broadcast entry"
+    end
+
+    create_if_not_exists index(:messages, :flow_broadcast_id,
+      where: "flow_broadcast_id IS NOT NULL")
+  end
+
+  defp flow_contexts do
+    alter table(:flow_contexts) do
+      remove_if_exists(:group_message_id)
+
+      add :flow_broadcast_id, references(:flow_broadcasts, on_delete: :nilify_all),
+        null: true,
+        comment: "If this message was sent to a group, link to the flow broadcast entry"
+    end
+
+    create_if_not_exists index(:flow_contexts, :flow_broadcast_id,
+      where: "flow_broadcast_id IS NOT NULL")
   end
 end

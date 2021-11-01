@@ -17,6 +17,7 @@ defmodule Glific.Flows.FlowContext do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Flows.FlowBroadcast,
     Flows.FlowResult,
     Flows.MessageVarParser,
     Flows.Node,
@@ -40,7 +41,7 @@ defmodule Glific.Flows.FlowContext do
     :uuid_map,
     :recent_inbound,
     :recent_outbound,
-    :group_message_id
+    :flow_broadcast_id
   ]
 
   # we store one more than the number of messages specified here
@@ -61,8 +62,8 @@ defmodule Glific.Flows.FlowContext do
           status: String.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
-          group_message_id: non_neg_integer | nil,
-          group_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_broadcast_id: non_neg_integer | nil,
+          flow_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
@@ -109,7 +110,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to :parent, FlowContext, foreign_key: :parent_id
 
     # the originating group message which kicked off this flow if any
-    belongs_to :group_message, Message, foreign_key: :group_message_id
+    belongs_to :flow_broadcast, FlowBroadcast
 
     timestamps(type: :utc_datetime)
   end
@@ -425,7 +426,7 @@ defmodule Glific.Flows.FlowContext do
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
   def seed_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
-    group_message_id = Keyword.get(opts, :group_message_id)
+    flow_broadcast_id = Keyword.get(opts, :flow_broadcast_id)
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
@@ -440,7 +441,7 @@ defmodule Glific.Flows.FlowContext do
     create_flow_context(%{
       contact_id: contact.id,
       parent_id: parent_id,
-      group_message_id: group_message_id,
+      flow_broadcast_id: flow_broadcast_id,
       node_uuid: node.uuid,
       flow_uuid: flow.uuid,
       status: status,

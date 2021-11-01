@@ -1,4 +1,4 @@
-defmodule Glific.Flows.FlowBroadcast do
+,defmodule Glific.Flows.FlowBroadcast do
   @moduledoc """
   When we are running a flow, we are running it in the context of a
   contact and/or a conversation (or other Glific data types). Let encapsulate
