@@ -3,6 +3,8 @@ defmodule Glific.Users.User do
   use Ecto.Schema
   use Pow.Ecto.Schema, user_id_field: :phone
 
+  alias __MODULE__
+
   alias Glific.{
     Contacts.Contact,
     Enums.UserRoles,
@@ -16,16 +18,22 @@ defmodule Glific.Users.User do
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          name: String.t() | nil,
           phone: String.t() | nil,
           password_hash: String.t() | nil,
           fingerprint: String.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          password: String.t() | nil,
+          current_password: String.t() | nil,
+          password_hash: String.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          roles: [String.t()] | nil,
+          roles: [String.t() | atom()] | nil,
+          groups: list() | Ecto.Association.NotLoaded.t() | nil,
           is_restricted: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
@@ -64,6 +72,7 @@ defmodule Glific.Users.User do
   @doc """
   A constant function to get list of roles
   """
+  @spec get_roles_list :: list()
   def get_roles_list do
     # keeping the order alphabetical ASC for frontend dropdown display
     ["Admin", "Glific admin", "Manager", "No access", "Staff"]
@@ -73,6 +82,7 @@ defmodule Glific.Users.User do
   Overriding the changeset for PoW and switch phone and email. At some later point, we will
   send an SMS message to the user with a new code to change their password
   """
+  @spec changeset(User.t(), map()) :: Ecto.Changeset.t()
   def changeset(user_or_changeset, attrs) do
     user_or_changeset
     |> Changeset.cast(attrs, @required_fields ++ @optional_fields)
