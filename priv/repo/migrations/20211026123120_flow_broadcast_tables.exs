@@ -5,6 +5,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
     flow_broadcasts()
     flow_broadcast_contacts()
     messages()
+    flow_contexts()
   end
 
   defp flow_broadcasts() do
@@ -49,7 +50,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
 
   defp messages do
     alter table(:messages) do
-      remove_if_exists(:group_message_id)
+      remove_if_exists(:flow_broadcast_id, :id)
 
       add :flow_broadcast_id, references(:flow_broadcasts, on_delete: :nilify_all),
         null: true,
@@ -62,7 +63,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
 
   defp flow_contexts do
     alter table(:flow_contexts) do
-      remove_if_exists(:group_message_id)
+      remove_if_exists(:flow_broadcast_id, :id)
 
       add :flow_broadcast_id, references(:flow_broadcasts, on_delete: :nilify_all),
         null: true,
