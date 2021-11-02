@@ -88,7 +88,7 @@ defmodule Glific.Dialogflow.SessionsTest do
 
     assert_enqueued(worker: SessionWorker, prefix: "global")
 
-    assert %{success: 1, failure: 0} == Oban.drain_queue(queue: :dialogflow)
+    assert %{success: 1, failure: 0, snoozed: 0} == Oban.drain_queue(queue: :dialogflow)
 
     ## Still need to find out where we are applying the tags.
     ## could not understand this test case.

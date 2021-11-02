@@ -79,9 +79,7 @@ defmodule Glific.State.Flow do
 
       true ->
         Logger.info(
-          "Error fetching flow #{available_flow} for organization_id #{organization_id} for user #{
-            user.name
-          }"
+          "Error fetching flow #{available_flow} for organization_id #{organization_id} for user #{user.name}"
         )
 
         {state,

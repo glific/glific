@@ -661,9 +661,7 @@ defmodule Glific.Flows.FlowContext do
 
     """
     DELETE FROM flow_contexts
-    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{
-      deletion_date
-    }' LIMIT 500));
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{deletion_date}' LIMIT 500));
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 

@@ -21,14 +21,15 @@ Install the following packages using your favorite package manager. Links are pr
 
 ## Package Versions
 
-Glific is currently developed and hosted on the following platforms. Our goal is to always try and use the latest
-versions of each platform as soon as feasible (i.e. once the ecosystem of packages we used have upgraded). We do not
-have the bandwidth to support earlier versions of the packages.
+Glific is currently developed and hosted on the following platforms. Our goal is to always try
+and use the latest versions of each platform as soon as feasible (i.e. once the ecosystem
+of packages we used have upgraded). We do not have the bandwidth to support earlier versions
+of the packages.
 
-- erlang : 23.2.5
-- elixir : 1.11.3-otp-23
+- erlang : 24.0.5
+- elixir : 1.12.4-otp-24
 - nodejs : 14.16.0
-- postgres : v12.x or v13.x
+- postgres : v13.x
 
 ## Download code
 
