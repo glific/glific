@@ -58,7 +58,8 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
     end
 
     create_if_not_exists index(:messages, :flow_broadcast_id,
-      where: "flow_broadcast_id IS NOT NULL")
+                           where: "flow_broadcast_id IS NOT NULL"
+                         )
   end
 
   defp flow_contexts do
@@ -71,6 +72,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
     end
 
     create_if_not_exists index(:flow_contexts, :flow_broadcast_id,
-      where: "flow_broadcast_id IS NOT NULL")
+                           where: "flow_broadcast_id IS NOT NULL"
+                         )
   end
 end
