@@ -15,6 +15,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Partners,
     Partners.Organization,
     Partners.Saas,
+    Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
@@ -450,7 +451,7 @@ defmodule Glific.Seeds.SeedsMigration do
   """
   @spec get_deleted_hsms(non_neg_integer()) :: tuple()
   def get_deleted_hsms(org_id) do
-    Glific.Providers.Gupshup.ApiClient.get_templates(org_id)
+    ApiClient.get_templates(org_id)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, response_data} = Jason.decode(body)
