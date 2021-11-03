@@ -36,6 +36,13 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
+    # TODO
+    # Need to rewrite logic here
+    # 1. Create an entry in the flow broadcast table
+    # 2. Create entries in the flow broadcast contacts table for each contact in group
+    # 3. Return.
+    # The below code runs under the minute worker which processes bsp_limit * 45
+    # number of messages per minute from entries in the broadcast contacts table
     do_broadcast(
       flow,
       group,

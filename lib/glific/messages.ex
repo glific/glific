@@ -469,7 +469,7 @@ defmodule Glific.Messages do
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       flow_id: args[:flow_id],
-      group_message_id: args[:group_message_id],
+      flow_broadcast_id: args[:flow_broadcast_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
       flow_label: args[:flow_label],
@@ -668,7 +668,9 @@ defmodule Glific.Messages do
   @spec create_and_send_message_to_group(map(), Group.t(), atom()) :: {:ok, list()}
   def create_and_send_message_to_group(message_params, group, type) do
     contact_ids = Groups.contact_ids(group.id)
+    if length(contact_ids) > 32 do
 
+    end
     {:ok, group_message} =
       if type == :session,
         do: create_group_message(Map.put(message_params, :group_id, group.id)),
@@ -683,9 +685,18 @@ defmodule Glific.Messages do
             |> Map.put(:type, :text)
           )
 
+
+    # create a flow broadcast object and populate the contact ids to blast to
+          # we'll need to figure out how to save the message parameters
+          # TODO - maybe this is a followon project, or we prevent from UI to
+          # send to more than 32 contacts
+
     message_params
     # supress publishing a subscription for group messages
-    |> Map.merge(%{publish?: false, group_id: group.id, group_message_id: group_message.id})
+    |> Map.merge(%{
+          publish?: false,
+          flow_broadcast_id: group_message.flow_broadcast_id,
+          group_id: group.id})
     |> create_and_send_message_to_contacts(
       contact_ids,
       type
