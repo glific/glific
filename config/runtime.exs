@@ -7,12 +7,12 @@ import Dotenvy
 
 source(["config/.env", "config/.env.#{config_env()}"])
 
-ssl_port = env("SSL_PORT", :integer, 443)
-http_port = env("HTTP_PORT", :integer, 4000)
+ssl_port = env!("SSL_PORT", :integer, 443)
+http_port = env!("HTTP_PORT", :integer, 4000)
 
 config :glific, Glific.Repo,
   url: env!("DATABASE_URL", :string!),
-  pool_size: env("POOL_SIZE", :integer, 20),
+  pool_size: env!("POOL_SIZE", :integer, 20),
   show_sensitive_data_on_connection_error: true,
   prepare: :named,
   parameters: [plan_cache_mode: "force_custom_plan"]
@@ -34,14 +34,14 @@ config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),
   auth_password: env!("AUTH_PASSWORD", :string!)
 
-config :glific, :max_rate_limit_request, env("MAX_RATE_LIMIT_REQUEST", :integer, 180)
+config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
 # AppSignal configs
 config :appsignal, :config,
   otp_app: :glific,
   name: "Glific",
   hostname: env!("APPSIGNAL_HOSTNAME", :string),
-  active: env("APPSIGNAL_ACTIVE", :boolean, false),
+  active: env!("APPSIGNAL_ACTIVE", :boolean, false),
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!)
 

@@ -193,9 +193,7 @@ defmodule Glific.State do
         if (user && user.id == id && user.fingerprint == fingerprint) ||
              DateTime.compare(time, expiry_time) == :lt do
           Logger.info(
-            "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{
-              user.organization_id
-            }."
+            "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id}."
           )
 
           publish_data(entity.organization_id, id, entity_type)

@@ -15,12 +15,14 @@ defmodule Glific.Seeds.SeedsMigration do
     Partners,
     Partners.Organization,
     Partners.Saas,
+    Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
     Seeds.SeedsStats,
     Settings,
     Settings.Language,
+    Templates.SessionTemplate,
     Users,
     Users.User
   }
@@ -442,5 +444,33 @@ defmodule Glific.Seeds.SeedsMigration do
     Glific.Users.User
     |> update([u], set: [language_id: ^en.id])
     |> Repo.update_all([], skip_organization_id: true)
+  end
+
+  @doc """
+    We need this functionality to cleanups all the Approved templates which are not active on Gupshup
+  """
+  @spec get_deleted_hsms(non_neg_integer()) :: tuple()
+  def get_deleted_hsms(org_id) do
+    ApiClient.get_templates(org_id)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, response_data} = Jason.decode(body)
+        hsms = response_data["templates"]
+        uuid_list = Enum.map(hsms, fn hsm -> hsm["id"] end)
+
+        corrupted_list =
+          from(template in SessionTemplate)
+          |> where([c], c.organization_id == ^org_id)
+          |> where([c], c.uuid not in ^uuid_list)
+          |> where([c], c.is_hsm == true)
+          |> where([c], c.status in ["APPROVED", "SANDBOX_REQUESTED"])
+          |> select([c], c.id)
+          |> Repo.delete_all(skip_organization_id: true)
+
+        {:ok, Enum.count(corrupted_list), corrupted_list}
+
+      _ ->
+        {:error, 0, "Could not fecth the data for org: #{org_id}"}
+    end
   end
 end

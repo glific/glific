@@ -259,6 +259,7 @@ defmodule Glific.Flows.Action do
     }
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+
     attrs = Map.put(attrs, :templating, templating)
 
     process(json, uuid_map, node, attrs)
@@ -370,6 +371,8 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
+    templating = Templating.execute(action.templating, context, messages)
+    action = Map.put(action, :templating, templating)
     ContactAction.send_message(context, action, messages)
   end
 
