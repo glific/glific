@@ -151,7 +151,7 @@ defmodule Glific.Partners.Invoice do
   end
 
   @spec update_prorations(Invoice.t()) :: Invoice.t() | nil
-  def update_prorations(invoice) do
+  defp update_prorations(invoice) do
     with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
          false <- is_nil(billing),
          false <- is_nil(billing.stripe_subscription_id) do
