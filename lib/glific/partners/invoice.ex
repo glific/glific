@@ -10,6 +10,8 @@ defmodule Glific.Partners.Invoice do
   alias Glific.{Partners.Billing, Partners.Organization, Repo}
   alias __MODULE__
 
+  require Logger
+
   @required_fields [
     :customer_id,
     :invoice_id,
@@ -149,19 +151,26 @@ defmodule Glific.Partners.Invoice do
   end
 
   @spec finalize(Invoice.t()) :: Invoice.t() | nil
-  defp update_prorations(invoice) do
-    billing = Billing.get_billing(%{organization_id: invoice.organization_id})
-    # our test record does not have a billing, need to clean that up
-    if billing != nil && billing.stripe_subscription_id != nil do
-      {:ok, _} = Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
+  def update_prorations(invoice) do
+    with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
+         false <- is_nil(billing),
+         false <- is_nil(billing.stripe_subscription_id),
+         {:ok, _} <- Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true}) do
       invoice
     else
-      nil
+      {:error, subscription_error} ->
+        Logger.info(
+          "Error updating subscription: for org #{invoice.organization_id} with message: #{subscription_error.message}"
+        )
+
+        nil
     end
   end
 
   @doc """
   Create an invoice record
+
+  Glific.Partners.Invoice.update_prorations(%{organization_id: 1})
   """
   @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, String.t()}
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
