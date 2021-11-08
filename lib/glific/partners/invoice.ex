@@ -155,12 +155,12 @@ defmodule Glific.Partners.Invoice do
     with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
          false <- is_nil(billing),
          false <- is_nil(billing.stripe_subscription_id) do
-      update_billing_subscription(billing)
+      update_billing_subscription(invoice, billing)
     end
   end
 
-  @spec update_prorations(Billing.t()) :: Invoice.t() | nil
-  def update_billing_subscription(billing) do
+  @spec update_billing_subscription(Invoice.t(), Billing.t()) :: Invoice.t() | nil
+  def update_billing_subscription(invoice, billing) do
     Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
     |> case do
       {:ok, _} ->
