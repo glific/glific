@@ -208,8 +208,21 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-          ## update the flow broadcast contact status to processing
+
           FlowContext.init_context(flow, contact, @status, opts)
+          |> case do
+            {:ok, _, _} ->
+              :ok
+
+            {:wait, _, _} ->
+              :ok
+
+            _ ->
+              :ok
+          end
+
+          :ok
+          ## update the flow broadcast contact status to processing
         end,
         ordered: false,
         timeout: 5_000,
