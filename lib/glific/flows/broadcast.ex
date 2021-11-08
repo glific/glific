@@ -55,10 +55,10 @@ defmodule Glific.Flows.Broadcast do
     flow
   end
 
-  def process_brodcast_group(flow_broadcast) do
+  def process_broadcast_group(flow_broadcast) do
     Repo.put_process_state(flow_broadcast.organization_id)
     opts = [flow_broadcast_id: flow_broadcast.id] ++ opts(flow_broadcast.organization_id)
-    contacts = unprocessed_broadcast_contacts(flow_broadcast)
+    contacts = unprocessed_contacts(flow_broadcast)
     broadcast_contacts(flow_broadcast.flow, contacts, opts)
   end
 
@@ -100,13 +100,14 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
-  defp unprocessed_broadcast_contacts(flow_broadcast) do
+  @unprocessed_contact_limit 150
+
+  defp unprocessed_contacts(flow_broadcast) do
     boradcast_contacts_query(flow_broadcast)
+    |> limit(@unprocessed_contact_limit)
     |> order_by([c, _fbc], asc: c.id)
     |> Repo.all()
   end
-
-  @unprocessed_contact_limit 150
 
   defp boradcast_contacts_query(flow_broadcast) do
     Contact
@@ -116,7 +117,6 @@ defmodule Glific.Flows.Broadcast do
     )
     |> where([c, _fbc], c.status != :blocked and is_nil(c.optout_time))
     |> where([_c, fbc], is_nil(fbc.processed_at))
-    |> limit(@unprocessed_contact_limit)
   end
 
   # @spec contacts_query(Group.t(), Keyword.t()) :: Ecto.Query.t()
@@ -171,12 +171,12 @@ defmodule Glific.Flows.Broadcast do
   #   nil
   # end
 
-  @spec broadcast_task(map(), Group.t(), Keyword.t()) :: :ok
-  defp broadcast_task(flow, group, opts) do
-    Repo.put_process_state(group.organization_id)
-    contacts = contacts(group, opts)
-    broadcast_contacts(flow, contacts, opts)
-  end
+  # @spec broadcast_task(map(), Group.t(), Keyword.t()) :: :ok
+  # defp broadcast_task(flow, group, opts) do
+  #   Repo.put_process_state(group.organization_id)
+  #   contacts = contacts(group, opts)
+  #   broadcast_contacts(flow, contacts, opts)
+  # end
 
   @doc """
   Lets start a bunch of contacts on a flow in parallel
