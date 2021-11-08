@@ -159,7 +159,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     message =
       get_in(query_data, [:data, "createInteractiveTemplate", "errors", Access.at(0), "message"])
 
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update interactive and test possible scenarios and errors", %{staff: user} do
@@ -194,7 +194,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     message =
       get_in(query_data, [:data, "updateInteractiveTemplate", "errors", Access.at(0), "message"])
 
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete an interactive", %{staff: user} do

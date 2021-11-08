@@ -66,7 +66,7 @@ defmodule GlificWeb.Schema.CredentialTest do
 
     message = get_in(query_data, [:data, "createCredential", "errors", Access.at(0), "message"])
     assert query_data[:data]["createCredential"]["errors"] != nil
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a credential and test possible scenarios and errors", %{user: user} do

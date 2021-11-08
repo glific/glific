@@ -323,9 +323,7 @@ defmodule Glific.Messages do
         else: attrs.receiver
 
     Logger.error(
-      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
-        reason
-      }"
+      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{reason}"
     )
 
     {:ok, _} =
@@ -474,6 +472,7 @@ defmodule Glific.Messages do
       group_message_id: args[:group_message_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
+      flow_label: args[:flow_label],
       organization_id: session_template.organization_id,
       params: args[:params]
     }
@@ -521,7 +520,8 @@ defmodule Glific.Messages do
       template_type: session_template.type,
       params: parameters,
       media_id: media_id,
-      is_optin_flow: Map.get(attrs, :is_optin_flow, false)
+      is_optin_flow: Map.get(attrs, :is_optin_flow, false),
+      flow_label: Map.get(attrs, :flow_label, "")
     }
   end
 
@@ -678,9 +678,7 @@ defmodule Glific.Messages do
             |> Map.put(:group_id, group.id)
             |> Map.put(
               :body,
-              "Sending HSM template #{message_params.template_id}, params: #{
-                message_params.parameters
-              }"
+              "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"
             )
             |> Map.put(:type, :text)
           )

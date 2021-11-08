@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createSavedSearch", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a saved search and test possible scenarios and errors", %{manager: user} do
@@ -145,7 +145,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateSavedSearch", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a saved search", %{manager: user} do

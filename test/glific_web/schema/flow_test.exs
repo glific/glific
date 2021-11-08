@@ -184,8 +184,8 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
 
-    assert "can't be blank" =
-             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
+    assert get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"]) =~
+             "can't be blank"
 
     # create flow with existing keyword
     result =
@@ -202,8 +202,8 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "The keyword `testkeyword` was already used in the `Flow Test Name` Flow." =
-             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
+    assert get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"]) =~
+             "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
   test "update a flow and test possible scenarios and errors", %{manager: user} do

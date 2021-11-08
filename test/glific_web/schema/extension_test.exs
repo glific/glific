@@ -57,7 +57,7 @@ defmodule GlificWeb.Schema.ExtensionTest do
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "createExtension", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update an extension", %{user: user} = attrs do

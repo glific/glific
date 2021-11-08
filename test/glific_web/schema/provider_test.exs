@@ -113,7 +113,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createProvider", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a provider and test possible scenarios and errors", %{glific_admin: user} do
@@ -166,7 +166,7 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "updateProvider", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a provider", %{glific_admin: user} do

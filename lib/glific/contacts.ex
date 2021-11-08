@@ -594,6 +594,15 @@ defmodule Glific.Contacts do
       else: update_contact(contact, %{bsp_status: :hsm})
   end
 
+  def set_session_status(contact, :hsm = _status) when is_struct(contact) do
+    last_message_at = contact.last_message_at
+    t = Glific.go_back_time(24)
+
+    if !is_nil(last_message_at) && Timex.compare(last_message_at, t) > 0,
+      do: update_contact(contact, %{bsp_status: :session_and_hsm}),
+      else: update_contact(contact, %{bsp_status: :hsm})
+  end
+
   def set_session_status([], _) do
     :ok
   end
@@ -616,14 +625,6 @@ defmodule Glific.Contacts do
     if is_nil(contact.optin_time),
       do: update_contact(contact, %{bsp_status: :session}),
       else: update_contact(contact, %{bsp_status: :session_and_hsm})
-  end
-
-  def set_session_status(contact, :hsm = _status) do
-    t = Glific.go_back_time(24)
-
-    if contact.last_message_at > t,
-      do: update_contact(contact, %{bsp_status: :session_and_hsm}),
-      else: update_contact(contact, %{bsp_status: :hsm})
   end
 
   @doc """

@@ -122,9 +122,7 @@ defmodule Glific.Clients.DigitalGreen do
     end
 
     Logger.info(
-      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{
-        inspect(fields)
-      } "
+      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{inspect(fields)} "
     )
 
     %{status: "successfull"}
@@ -218,8 +216,8 @@ defmodule Glific.Clients.DigitalGreen do
     do: %{}
 
   @doc """
-    A callback function to support daily tasks for the client
-    in the backend.
+  A callback function to support daily tasks for the client
+  in the backend.
   """
   @spec daily_tasks(non_neg_integer()) :: atom()
   def daily_tasks(_org_id) do
@@ -330,16 +328,18 @@ defmodule Glific.Clients.DigitalGreen do
   defp set_initial_crop_state(stage, contact_id, _organization_id),
     do:
       Logger.error(
-        "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{
-          contact_id
-        }"
+        "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{contact_id}"
       )
 
   @spec update_crop_stage(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
   defp update_crop_stage(total_days, contact_id, organization_id) do
     current_stage =
       Map.values(@stages)
-      |> Enum.find(fn stage -> total_days in stage["initial_offset"]..stage["threshold"] end)
+      |> Enum.find(
+        # return stage 1 as default if we dont find any
+        @stages["stage 1"],
+        fn stage -> total_days in stage["initial_offset"]..stage["threshold"] end
+      )
 
     Logger.info(
       "update crop stage for contact id: #{contact_id} and data #{inspect(current_stage)}"
@@ -414,9 +414,7 @@ defmodule Glific.Clients.DigitalGreen do
          {:ok, next_flow_group} <-
            Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
       Logger.info(
-        "Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{
-          inspect(next_flow_at)
-        }"
+        "Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}"
       )
 
       Groups.create_contact_group(%{

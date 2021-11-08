@@ -15,7 +15,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Lahi,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.Lahi,
+    webhook: Glific.Clients.NayiDisha,
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
@@ -27,6 +27,7 @@ defmodule Glific.Clients do
 
   @avanti %{
     id: 10,
+    name: "Avanti Fellows",
     webhook: Glific.Clients.Avanti
   }
 
@@ -44,39 +45,55 @@ defmodule Glific.Clients do
     # blocked?: Glific.Clients.Stir
   }
 
+  @lahilms %{
+    id: 14,
+    name: "Lend A Hand India",
+    webhook: Glific.Clients.Lahi,
+    gcs_file_name: Glific.Clients.Lahi
+  }
+
   @reap_benefit %{
-    id: 15
+    id: 15,
+    name: "Reap Benefit"
     # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
   @weunlearn %{
-    id: 25
+    id: 25,
+    name: "WeUnlearn"
     # broadcast: Glific.Clients.Weunlearn
+  }
+
+  @balajanaagraha %{
+    id: 27,
+    name: "BalaJanaagraha",
+    webhook: Glific.Clients.Balajanaagraha
   }
 
   @digital_green %{
     id: 31,
+    name: "DigitalGreen",
     webhook: Glific.Clients.DigitalGreen,
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
-  # This organization id will be updated once we create organization in db
-  # @lahi %{
-  #   id: 2,
-  #   webhook: Glific.Clients.Lahi,
-  #   gcs_file_name: Glific.Clients.Lahi
-  #   daily_tasks: Glific.Clients.Lahi
-  # }
+  @nayi_disha %{
+    id: 22,
+    name: "Nayi Disha",
+    webhook: Glific.Clients.NayiDisha
+  }
 
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
+    @lahilms[:id] => @lahilms,
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,
     @weunlearn[:id] => @weunlearn,
-    @digital_green[:id] => @digital_green
-    # @lahi[:id] => @lahi
+    @balajanaagraha[:id] => @balajanaagraha,
+    @digital_green[:id] => @digital_green,
+    @nayi_disha[:id] => @nayi_disha
   }
 
   @spec env(atom() | nil) :: atom()

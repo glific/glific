@@ -300,16 +300,22 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, context} = update_flow_context(context, %{results: results})
 
-    {:ok, _flow_result} =
-      FlowResult.upsert_flow_result(%{
-        results: results,
-        contact_id: context.contact_id,
-        flow_id: context.flow_id,
-        flow_version: context.flow.version,
-        flow_context_id: context.id,
-        flow_uuid: context.flow_uuid,
-        organization_id: context.organization_id
-      })
+    args = %{
+      results: results,
+      contact_id: context.contact_id,
+      flow_id: context.flow_id,
+      flow_version: context.flow.version,
+      flow_context_id: context.id,
+      flow_uuid: context.flow_uuid,
+      organization_id: context.organization_id
+    }
+
+    # we try the upsert twice in case the first one conflicts with another
+    # simultaneous insert. Happens rarely but a couple of times.
+    case FlowResult.upsert_flow_result(args) do
+      {:ok, flow_result} -> flow_result
+      {:error, _} -> FlowResult.upsert_flow_result(args)
+    end
 
     context
   end
@@ -654,9 +660,7 @@ defmodule Glific.Flows.FlowContext do
 
     """
     DELETE FROM flow_contexts
-    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{
-      deletion_date
-    }' LIMIT 500));
+    WHERE id = any (array(SELECT id FROM flow_contexts AS f0 WHERE f0.inserted_at < '#{deletion_date}' LIMIT 500));
     """
     |> Repo.query!([], timeout: 60_000, skip_organization_id: true)
 
@@ -676,7 +680,6 @@ defmodule Glific.Flows.FlowContext do
       "flow" => %{name: context.flow.name, id: context.flow.id}
     }
 
-    str
-    |> MessageVarParser.parse(vars)
+    MessageVarParser.parse(str, vars)
   end
 end
