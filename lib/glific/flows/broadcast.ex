@@ -46,13 +46,19 @@ defmodule Glific.Flows.Broadcast do
     # 3. Return.
     # The below code runs under the minute worker which processes bsp_limit * 45
     # number of messages per minute from entries in the broadcast contacts table
-    do_broadcast(
-      flow,
-      group,
-      [group_message_id: group_message.id] ++ opts(group.organization_id)
-    )
+    # do_broadcast(
+    #   flow,
+    #   group,
+    #   [group_message_id: group_message.id] ++ opts(group.organization_id)
+    # )
 
     flow
+  end
+
+  def process_brodcast_group(flow_broadcast) do
+    Repo.put_process_state(flow_broadcast.organization_id)
+    contacts = unprocessed_contacts(flow_broadcast)
+    broadcast_contacts(flow, contacts, opts)
   end
 
   # function to build the opts values to process a list of contacts
