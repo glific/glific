@@ -10,6 +10,8 @@ defmodule Glific.Flows.Broadcast do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Flows.FlowBroadcast,
+    Flows.FlowBroadcastContact,
     Flows.FlowContext,
     Groups.ContactGroup,
     Groups.Group,
@@ -36,6 +38,7 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
+    init_broadcast_group(flow, group, group_message)
     # TODO
     # Need to rewrite logic here
     # 1. Create an entry in the flow broadcast table
@@ -170,5 +173,56 @@ defmodule Glific.Flows.Broadcast do
       )
 
     Stream.run(stream)
+  end
+
+  @spec init_broadcast_group(map(), Group.t(), Message.t()) :: :ok
+  defp init_broadcast_group(flow, group, group_message) do
+    # lets create a broadcast entry for this flow
+    {:ok, flow_broadcast} =
+      create_flow_broadcast(%{
+        flow_id: flow.id,
+        group_id: group.id,
+        message_id: group_message.id,
+        started_at: DateTime.utc_now(),
+        user_id: Repo.get_current_user().id,
+        organization_id: group.organization_id
+      })
+
+    populate_flow_broadcast_contacts(flow_broadcast)
+    :ok
+  end
+
+  @spec create_flow_broadcast(map()) :: {:ok, FlowBroadcast.t()} | {:error, Ecto.Changeset.t()}
+  def create_flow_broadcast(attrs) do
+    %FlowBroadcast{}
+    |> FlowBroadcast.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec populate_flow_broadcast_contacts(FlowBroadcast.t()) :: :ok
+  def populate_flow_broadcast_contacts(flow_broadcast) do
+    current_datetime =
+      DateTime.utc_now()
+      |> DateTime.truncate(:second)
+
+    attrs = %{
+      flow_broadcast_id: flow_broadcast.id,
+      inserted_at: current_datetime,
+      updated_at: current_datetime
+    }
+
+    ContactGroup
+    |> where([cg], cg.group_id == ^flow_broadcast.group_id)
+    |> select([cg], %{
+      contact_id: cg.contact_id,
+      organization_id: cg.organization_id,
+      status: "pending"
+    })
+    |> Repo.all()
+    |> Enum.map(&Map.merge(&1, attrs))
+    |> Enum.chunk_every(300)
+    |> Enum.map(&Repo.insert_all(FlowBroadcastContact, &1))
+
+    :ok
   end
 end

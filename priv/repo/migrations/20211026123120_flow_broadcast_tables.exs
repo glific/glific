@@ -24,7 +24,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
         null: true,
         comment: "User who started the flow"
 
-      add :organization_id, references(:organizations, on_delete: :delete_all)
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
       add :started_at, :utc_datetime, null: true, default: nil
       add :completed_at, :utc_datetime, null: true, default: nil
@@ -41,7 +41,7 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
       add :flow_broadcast_id, references(:flow_broadcasts, on_delete: :delete_all), null: false
       add :contact_id, references(:contacts, on_delete: :delete_all), null: false
       add :status, :string, null: true
-      add :organization_id, references(:organizations, on_delete: :delete_all)
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
       add :processed_at, :utc_datetime, null: true, default: nil
 
       timestamps(type: :utc_datetime)
