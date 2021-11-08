@@ -150,7 +150,7 @@ defmodule Glific.Partners.Invoice do
     end
   end
 
-  @spec finalize(Invoice.t()) :: Invoice.t() | nil
+  @spec update_prorations(Invoice.t()) :: Invoice.t() | nil
   def update_prorations(invoice) do
     with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
          false <- is_nil(billing),
@@ -160,7 +160,7 @@ defmodule Glific.Partners.Invoice do
     else
       {:error, subscription_error} ->
         Logger.info(
-          "Error updating subscription: for org #{invoice.organization_id} with message: #{subscription_error.message}"
+          "Error updating subscription: for org_id #{invoice.organization_id} with message: #{subscription_error.message}"
         )
 
         nil
@@ -169,8 +169,6 @@ defmodule Glific.Partners.Invoice do
 
   @doc """
   Create an invoice record
-
-  Glific.Partners.Invoice.update_prorations(%{organization_id: 1})
   """
   @spec create_invoice(map()) :: {:ok, Invoice.t()} | {:error, String.t()}
   def create_invoice(%{stripe_invoice: invoice, organization_id: organization_id} = _attrs) do
