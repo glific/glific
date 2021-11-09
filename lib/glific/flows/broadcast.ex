@@ -39,6 +39,8 @@ defmodule Glific.Flows.Broadcast do
 
     init_broadcast_group(flow, group, group_message)
 
+    ## TODO: should we start the flow broadcast here ? It can bring some inconsistency with the cron.
+
     flow
   end
 
