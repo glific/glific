@@ -13,7 +13,6 @@ defmodule Glific.Flows.Broadcast do
     Flows.FlowBroadcast,
     Flows.FlowBroadcastContact,
     Flows.FlowContext,
-    Groups.ContactGroup,
     Groups.Group,
     Messages,
     Partners,
@@ -56,7 +55,16 @@ defmodule Glific.Flows.Broadcast do
     Repo.put_process_state(flow_broadcast.organization_id)
     opts = [flow_broadcast_id: flow_broadcast.id] ++ opts(flow_broadcast.organization_id)
     contacts = unprocessed_contacts(flow_broadcast)
-    broadcast_contacts(flow_broadcast.flow, contacts, opts)
+
+    {:ok, flow} =
+      Flows.get_cached_flow(
+        flow_broadcast.organization_id,
+        {:flow_id, flow_broadcast.flow_id, @status}
+      )
+
+    broadcast_contacts(flow, contacts, opts)
+
+    :ok
   end
 
   def mark_flow_broadcast_completed(org_id) do
@@ -97,7 +105,7 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
-  defp unprocessed_group_broadcast(non_neg_integer) do
+  defp unprocessed_group_broadcast(organization_id) do
     from(fb in FlowBroadcast,
       as: :flow_broadcast,
       where: fb.organization_id == ^organization_id,
@@ -156,7 +164,6 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-
           response = FlowContext.init_context(flow, contact, @status, opts)
 
           cond do
@@ -201,8 +208,8 @@ defmodule Glific.Flows.Broadcast do
 
   defp mark_flow_broadcast_contact_proceesed(flow_boradcast_id, contact_id) do
     FlowBroadcastContact
-    |> where(flow_boradcast_id: ^flow_boradcast_id, contact_id: ^contact_id)
-    |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: :processed])
+    |> where(flow_broadcast_id: ^flow_boradcast_id, contact_id: ^contact_id)
+    |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: "processed"])
   end
 
   @spec create_flow_broadcast(map()) :: {:ok, FlowBroadcast.t()} | {:error, Ecto.Changeset.t()}
@@ -214,27 +221,13 @@ defmodule Glific.Flows.Broadcast do
 
   @spec populate_flow_broadcast_contacts(FlowBroadcast.t()) :: :ok
   defp populate_flow_broadcast_contacts(flow_broadcast) do
-    current_datetime =
-      DateTime.utc_now()
-      |> DateTime.truncate(:second)
-
-    attrs = %{
-      flow_broadcast_id: flow_broadcast.id,
-      inserted_at: current_datetime,
-      updated_at: current_datetime
-    }
-
-    ContactGroup
-    |> where([cg], cg.group_id == ^flow_broadcast.group_id)
-    |> select([cg], %{
-      contact_id: cg.contact_id,
-      organization_id: cg.organization_id,
-      status: "pending"
-    })
-    |> Repo.all()
-    |> Enum.map(&Map.merge(&1, attrs))
-    |> Enum.chunk_every(300)
-    |> Enum.map(&Repo.insert_all(FlowBroadcastContact, &1))
+    """
+    INSERT INTO flow_broadcast_contacts
+    (flow_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+    (SELECT #{flow_broadcast.id}, 'pending', #{flow_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
+    FROM contacts_groups WHERE group_id = #{flow_broadcast.group_id})
+    """
+    |> Repo.query!()
 
     :ok
   end

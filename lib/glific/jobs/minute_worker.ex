@@ -12,6 +12,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Contacts,
     Erase,
     Flags,
+    Flows.Broadcast,
     Flows.FlowContext,
     GCS.GcsWorker,
     Jobs.BSPBalanceWorker,
@@ -60,7 +61,7 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
 
       "execute_group_broadcasts" ->
-        Partners.perform_all(&Triggers.execute_group_broadcasts/1, nil, [])
+        Partners.perform_all(&Broadcast.execute_group_broadcasts/1, nil, [])
 
       "bigquery" ->
         Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
