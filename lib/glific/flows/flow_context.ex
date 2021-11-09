@@ -461,7 +461,7 @@ defmodule Glific.Flows.FlowContext do
   Start a new context, if there is an existing context, blow it away
   """
   @spec init_context(Flow.t(), Contact.t(), String.t(), Keyword.t() | []) ::
-          {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}
+          {:ok | :wait, FlowContext.t(), [String.t()]} | {:error, String.t()}
   def init_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
     # set all previous context to be completed if we are not starting a sub flow

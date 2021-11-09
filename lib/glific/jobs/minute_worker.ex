@@ -45,6 +45,7 @@ defmodule Glific.Jobs.MinuteWorker do
               "bigquery",
               "gcs",
               "execute_triggers",
+              "execute_flow_broadcasts",
               "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
@@ -57,6 +58,9 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "execute_triggers" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
+
+      "execute_group_broadcasts" ->
+        Partners.perform_all(&Triggers.execute_group_broadcasts/1, nil, [])
 
       "bigquery" ->
         Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
@@ -82,8 +86,7 @@ defmodule Glific.Jobs.MinuteWorker do
               "hourly_tasks",
               "delete_tasks",
               "five_minute_tasks",
-              "update_hsms",
-              "client_daily_tasks"
+              "update_hsms"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
@@ -107,9 +110,6 @@ defmodule Glific.Jobs.MinuteWorker do
 
       "update_hsms" ->
         Partners.perform_all(&Templates.update_hsms/1, nil, [])
-
-      "client_daily_tasks" ->
-        Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"
