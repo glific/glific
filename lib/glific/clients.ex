@@ -50,6 +50,7 @@ defmodule Glific.Clients do
     name: "Lend A Hand India",
     webhook: Glific.Clients.Lahi,
     gcs_file_name: Glific.Clients.Lahi
+    # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
   @reap_benefit %{
