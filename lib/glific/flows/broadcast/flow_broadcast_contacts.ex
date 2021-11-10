@@ -55,6 +55,7 @@ defmodule Glific.Flows.FlowBroadcastContact do
     flow_broadcast_contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:contact_id, :flow_broadcast_id])
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
   end

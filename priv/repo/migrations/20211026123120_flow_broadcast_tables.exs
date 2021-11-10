@@ -45,6 +45,8 @@ defmodule Glific.Repo.Migrations.FlowBroadcastTables do
       add :processed_at, :utc_datetime, null: true, default: nil
 
       timestamps(type: :utc_datetime)
+
+      create unique_index(:flow_broadcast_contacts, [:contact_id, :flow_broadcast_id])
     end
   end
 
