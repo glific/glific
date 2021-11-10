@@ -500,6 +500,8 @@ defmodule Glific.Clients.Stir do
     submit_reflection: %{days: 30, group: "submit_reflection"}
   }
 
+  @active_report_days [1, 2, 3, 4, 5, 6]
+
   @doc false
   @spec webhook(String.t(), map()) :: map()
   def webhook("move_mt_to_district_group", fields) do
@@ -834,6 +836,12 @@ defmodule Glific.Clients.Stir do
   def webhook("compute_survey_score", %{results: results}),
     do: compute_survey_score(results)
 
+  def webhook("monthly_reports", _fields) do
+    today = Timex.today("Asia/Kolkata")
+    response = if today.day in @active_report_days, do: "available", else: "not available"
+    %{response: response}
+  end
+
   def webhook(_, fields), do: fields
 
   @doc """
@@ -914,6 +922,7 @@ defmodule Glific.Clients.Stir do
 
     priority_item = %{
       "priority" => priority,
+      "diet_activity" => fields["contact"]["fields"]["activity"]["value"],
       "answers" => %{
         s1: answer_s1,
         s2: answer_s2,
