@@ -44,6 +44,10 @@ defmodule Glific.Flows.Broadcast do
     flow
   end
 
+  @doc """
+  The one simple public interface to exceute a group broadcast for an organization
+  """
+  @spec execute_group_broadcasts(any) :: :ok
   def execute_group_broadcasts(org_id) do
     mark_flow_broadcast_completed(org_id)
 
@@ -51,6 +55,10 @@ defmodule Glific.Flows.Broadcast do
     |> process_broadcast_group()
   end
 
+  @doc """
+  Start a  group broadcast for a giving broadcast stuct
+  """
+  @spec process_broadcast_group(FlowBroadcast.t() | nil) :: :ok
   def process_broadcast_group(nil), do: :ok
 
   def process_broadcast_group(flow_broadcast) do
@@ -69,6 +77,10 @@ defmodule Glific.Flows.Broadcast do
     :ok
   end
 
+  @doc """
+    mark all the proceesed  flow broadcast as completed
+  """
+  @spec mark_flow_broadcast_completed(non_neg_integer()) :: :ok
   def mark_flow_broadcast_completed(org_id) do
     from(fb in FlowBroadcast,
       as: :flow_broadcast,
@@ -85,6 +97,8 @@ defmodule Glific.Flows.Broadcast do
         )
     )
     |> Repo.update_all(set: [completed_at: DateTime.utc_now()])
+
+    :ok
   end
 
   # function to build the opts values to process a list of contacts
@@ -183,7 +197,7 @@ defmodule Glific.Flows.Broadcast do
     Stream.run(stream)
   end
 
-  @spec init_broadcast_group(map(), Group.t(), Message.t()) :: :ok
+  @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) :: :ok
   defp init_broadcast_group(flow, group, group_message) do
     # lets create a broadcast entry for this flow
     {:ok, flow_broadcast} =
