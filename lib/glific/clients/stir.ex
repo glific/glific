@@ -922,6 +922,7 @@ defmodule Glific.Clients.Stir do
 
     priority_item = %{
       "priority" => priority,
+      "diet_activity" => fields["contact"]["fields"]["activity"]["value"],
       "answers" => %{
         s1: answer_s1,
         s2: answer_s2,
