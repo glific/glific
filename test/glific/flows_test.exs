@@ -4,6 +4,7 @@ defmodule Glific.FLowsTest do
   alias Glific.{
     Fixtures,
     Flows,
+    Flows.Broadcast,
     Flows.Flow,
     Flows.FlowContext,
     Flows.FlowRevision,
@@ -357,6 +358,7 @@ defmodule Glific.FLowsTest do
       first_action = hd(hd(flow.nodes).actions)
 
       # lets sleep for 3 seconds, to ensure that messages have been delivered
+      Broadcast.execute_group_broadcasts(attrs.organization_id)
       Process.sleep(3_000)
 
       assert {:ok, _message} =
