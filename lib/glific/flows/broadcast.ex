@@ -49,6 +49,7 @@ defmodule Glific.Flows.Broadcast do
   """
   @spec execute_group_broadcasts(any) :: :ok
   def execute_group_broadcasts(org_id) do
+    # mark all the broadcast as completed if there is no unprocessed contact.
     mark_flow_broadcast_completed(org_id)
 
     unprocessed_group_broadcast(org_id)
