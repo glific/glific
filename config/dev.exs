@@ -21,13 +21,7 @@ config :glific, GlificWeb.Endpoint,
   debug_errors: true,
   code_reloader: true,
   watchers: [
-    node: [
-      "node_modules/webpack/bin/webpack.js",
-      "--mode",
-      "development",
-      "--watch-stdin",
-      cd: Path.expand("../assets", __DIR__)
-    ]
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
   ]
 
 # config :absinthe, Absinthe.Logger,
