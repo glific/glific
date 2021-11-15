@@ -138,9 +138,6 @@ defmodule Glific.Flows.Webhook do
       "flow" => %{name: context.flow.name, id: context.flow.id}
     }
 
-    IO.inspect(action_body_map)
-    IO.inspect(fields)
-
     action_body_map =
       MessageVarParser.parse_map(action_body_map, fields)
       |> Enum.map(fn
