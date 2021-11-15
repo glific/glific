@@ -216,6 +216,6 @@ defmodule Glific.Flows.MessageVarParserTest do
 
     output = MessageVarParser.parse_map(action_body_map, fields)
 
-    assert head(output["searchCriteria"])["criteria"] == "Margadarshi"
+    assert hd(output["searchCriteria"])["criteria"] == "Margadarshi"
   end
 end
