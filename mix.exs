@@ -92,6 +92,7 @@ defmodule Glific.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:ecto_sql, "~> 3.6"},
       {:ecto_psql_extras, "~> 0.2"},
+      {:esbuild, "~> 0.2", runtime: Mix.env() == :dev},
       {:postgrex, ">= 0.0.0"},
       {:floki, ">= 0.27.0", only: @test_envs},
       {:gettext, "~> 0.18"},
@@ -164,7 +165,7 @@ defmodule Glific.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "common"],
-      common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      common: ["clean", "compile", "ecto.reset", "assets.deploy"],
       "ecto.setup": [
         "ecto.create --quiet",
         "ecto.migrate",
@@ -188,7 +189,8 @@ defmodule Glific.MixProject do
         "phil_columns.seed --tenant glific",
         "test"
       ],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      "assets.deploy": ["esbuild default --minify", "phx.digest"]
     ]
   end
 end
