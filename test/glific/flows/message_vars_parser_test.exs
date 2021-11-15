@@ -161,5 +161,61 @@ defmodule Glific.Flows.MessageVarParserTest do
              "hello @results.child.name.input",
              %{"results" => %{"child" => %{"name" => %{"input" => "Jatin"}}, "parent" => %{}}}
            ) == "hello Jatin"
+
+    ## check we re able to replace a list also
+    action_body_map = %{
+      "param" => "@results.event_category_response.category",
+      "searchCriteria" => [
+        %{
+          "compareOperator" => "=",
+          "criteria" => "@results.event_category_response.category",
+          "field" => "event_category"
+        }
+      ],
+      "type" => "glific_Query_Test"
+    }
+
+    fields = %{
+      "contact" => %{
+        bsp_status: :session_and_hsm,
+        fields: %{language: %{label: "English"}},
+        in_groups: ["Restricted Group", "Default Group"],
+        inserted_at: ~U[2021-11-08 11:38:39.219209Z],
+        language: %Glific.Settings.Language{
+          description: nil,
+          id: 1,
+          inserted_at: ~U[2021-11-08 11:38:38Z],
+          is_active: true,
+          label: "English",
+          label_locale: "English",
+          locale: "en",
+          localized: true,
+          updated_at: ~U[2021-11-08 11:38:38Z]
+        },
+        name: "Glific Simulator One",
+        optin_time: ~U[2021-11-08 11:38:39Z],
+        phone: "9876543210_1",
+        status: :valid
+      },
+      "flow" => %{id: 14, name: "New Query Test "},
+      "results" => %{
+        "event_category_response" => %{
+          :intent => nil,
+          "category" => "Margadarshi",
+          "input" => "1",
+          "inserted_at" => ~U[2021-11-15 06:31:19.387352Z]
+        },
+        "event_optin_response" => %{
+          "category" => "1",
+          "input" => "1",
+          "inserted_at" => "2021-11-15T06:31:18.169743Z",
+          "intent" => nil
+        }
+      }
+    }
+
+    output = MessageVarParser.parse_map(action_body_map, fields)
+
+    assert hd(output["searchCriteria"])["criteria"] == "Margadarshi"
   end
 end
