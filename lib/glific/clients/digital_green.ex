@@ -79,7 +79,7 @@ defmodule Glific.Clients.DigitalGreen do
     # Morning slot at 6am IST
     morning_slot = Timex.shift(current_time, hours: 0, minutes: 30)
     # Evening slot at 6:30pm IST
-    evening_slot = Timex.shift(current_time, hours: 13)
+    evening_slot = Timex.shift(current_time, hours: 12, minutes: 30)
 
     # the minimum wait unit in Glific is 1 minute
     next_slot(time, morning_slot, evening_slot)
