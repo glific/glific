@@ -10,8 +10,9 @@ defmodule Glific.Flows.Broadcast do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Flows.FlowBroadcast,
+    Flows.FlowBroadcastContact,
     Flows.FlowContext,
-    Groups.ContactGroup,
     Groups.Group,
     Messages,
     Partners,
@@ -36,13 +37,69 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
-    do_broadcast(
-      flow,
-      group,
-      [group_message_id: group_message.id] ++ opts(group.organization_id)
-    )
+    init_broadcast_group(flow, group, group_message)
+
+    ## should we start the flow broadcast here ? It can bring some inconsistency with the cron.
 
     flow
+  end
+
+  @doc """
+  The one simple public interface to exceute a group broadcast for an organization
+  """
+  @spec execute_group_broadcasts(any) :: :ok
+  def execute_group_broadcasts(org_id) do
+    # mark all the broadcast as completed if there is no unprocessed contact.
+    mark_flow_broadcast_completed(org_id)
+
+    unprocessed_group_broadcast(org_id)
+    |> process_broadcast_group()
+  end
+
+  @doc """
+  Start a  group broadcast for a giving broadcast stuct
+  """
+  @spec process_broadcast_group(FlowBroadcast.t() | nil) :: :ok
+  def process_broadcast_group(nil), do: :ok
+
+  def process_broadcast_group(flow_broadcast) do
+    Repo.put_process_state(flow_broadcast.organization_id)
+    opts = [flow_broadcast_id: flow_broadcast.id] ++ opts(flow_broadcast.organization_id)
+    contacts = unprocessed_contacts(flow_broadcast)
+
+    {:ok, flow} =
+      Flows.get_cached_flow(
+        flow_broadcast.organization_id,
+        {:flow_id, flow_broadcast.flow_id, @status}
+      )
+
+    broadcast_contacts(flow, contacts, opts)
+
+    :ok
+  end
+
+  @doc """
+    mark all the proceesed  flow broadcast as completed
+  """
+  @spec mark_flow_broadcast_completed(non_neg_integer()) :: :ok
+  def mark_flow_broadcast_completed(org_id) do
+    from(fb in FlowBroadcast,
+      as: :flow_broadcast,
+      where: fb.organization_id == ^org_id,
+      where: is_nil(fb.completed_at),
+      where:
+        not exists(
+          from(
+            fbc in FlowBroadcastContact,
+            where:
+              parent_as(:flow_broadcast).id == fbc.flow_broadcast_id and is_nil(fbc.processed_at),
+            select: 1
+          )
+        )
+    )
+    |> Repo.update_all(set: [completed_at: DateTime.utc_now()])
+
+    :ok
   end
 
   # function to build the opts values to process a list of contacts
@@ -65,64 +122,33 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
-  @spec contacts_query(Group.t(), Keyword.t()) :: Ecto.Query.t()
-  defp contacts_query(group, opts) do
-    Contact
-    |> where([c], c.status != :blocked and is_nil(c.optout_time))
-    |> join(:inner, [c], cg in ContactGroup,
-      as: :cg,
-      on: cg.contact_id == c.id and cg.group_id == ^group.id
+  defp unprocessed_group_broadcast(organization_id) do
+    from(fb in FlowBroadcast,
+      as: :flow_broadcast,
+      where: fb.organization_id == ^organization_id,
+      where: is_nil(fb.completed_at)
     )
-    |> limit(^opts[:limit])
-    |> offset(^opts[:offset])
+    |> Repo.one()
+    |> Repo.preload([:flow])
   end
 
-  @spec contacts(Group.t(), Keyword.t()) :: list(Contact.t())
-  defp contacts(group, opts) do
-    contacts_query(group, opts)
-    |> order_by([c], asc: c.id)
+  @unprocessed_contact_limit 150
+
+  defp unprocessed_contacts(flow_broadcast) do
+    boradcast_contacts_query(flow_broadcast)
+    |> limit(@unprocessed_contact_limit)
+    |> order_by([c, _fbc], asc: c.id)
     |> Repo.all()
   end
 
-  @spec contacts_remaining?(Group.t(), Keyword.t()) :: boolean()
-  defp contacts_remaining?(group, opts) do
-    count =
-      contacts_query(group, opts)
-      |> Repo.aggregate(:count)
-
-    if count > 0, do: true, else: false
-  end
-
-  @spec do_broadcast(map(), Group.t(), Keyword.t()) :: nil
-  defp do_broadcast(flow, group, opts) do
-    if contacts_remaining?(group, opts) do
-      Task.Supervisor.async_nolink(
-        Glific.Broadcast.Supervisor,
-        fn -> broadcast_task(flow, group, opts) end,
-        shutdown: 5_000
-      )
-
-      # lets sleep for one minute to let the system recover, if we have looped
-      if opts[:offset] > 0, do: Process.sleep(1000 * 60)
-
-      # slide the window of contacts to the next set
-      opts =
-        opts
-        |> Keyword.replace!(:offset, opts[:offset] + opts[:limit])
-        |> Keyword.replace!(:delay, opts[:delay] + ceil(opts[:limit] / opts[:bsp_limit]))
-
-      do_broadcast(flow, group, opts)
-    end
-
-    nil
-  end
-
-  @spec broadcast_task(map(), Group.t(), Keyword.t()) :: :ok
-  defp broadcast_task(flow, group, opts) do
-    Repo.put_process_state(group.organization_id)
-    contacts = contacts(group, opts)
-
-    broadcast_contacts(flow, contacts, opts)
+  defp boradcast_contacts_query(flow_broadcast) do
+    Contact
+    |> join(:inner, [c], fbc in FlowBroadcastContact,
+      as: :fbc,
+      on: fbc.contact_id == c.id and fbc.flow_broadcast_id == ^flow_broadcast.id
+    )
+    |> where([c, _fbc], c.status != :blocked and is_nil(c.optout_time))
+    |> where([_c, fbc], is_nil(fbc.processed_at))
   end
 
   @doc """
@@ -143,7 +169,7 @@ defmodule Glific.Flows.Broadcast do
         flow,
         chunk_list,
         delay: opts[:delay] + delay_offset,
-        group_message_id: opts[:group_message_id]
+        flow_broadcast_id: opts[:flow_broadcast_id]
       )
     end)
   end
@@ -155,7 +181,14 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-          FlowContext.init_context(flow, contact, @status, opts)
+          response = FlowContext.init_context(flow, contact, @status, opts)
+
+          if elem(response, 0) in [:ok, :wait],
+            do:
+              Keyword.get(opts, :flow_broadcast_id, nil)
+              |> mark_flow_broadcast_contact_proceesed(contact.id)
+
+          :ok
         end,
         ordered: false,
         timeout: 5_000,
@@ -163,5 +196,51 @@ defmodule Glific.Flows.Broadcast do
       )
 
     Stream.run(stream)
+  end
+
+  @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) :: :ok
+  defp init_broadcast_group(flow, group, group_message) do
+    # lets create a broadcast entry for this flow
+    {:ok, flow_broadcast} =
+      create_flow_broadcast(%{
+        flow_id: flow.id,
+        group_id: group.id,
+        message_id: group_message.id,
+        started_at: DateTime.utc_now(),
+        user_id: Repo.get_current_user().id,
+        organization_id: group.organization_id
+      })
+
+    populate_flow_broadcast_contacts(flow_broadcast)
+    :ok
+  end
+
+  @spec mark_flow_broadcast_contact_proceesed(integer() | nil, integer()) :: :ok
+  defp mark_flow_broadcast_contact_proceesed(nil, _), do: :ok
+
+  defp mark_flow_broadcast_contact_proceesed(flow_boradcast_id, contact_id) do
+    FlowBroadcastContact
+    |> where(flow_broadcast_id: ^flow_boradcast_id, contact_id: ^contact_id)
+    |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: "processed"])
+  end
+
+  @spec create_flow_broadcast(map()) :: {:ok, FlowBroadcast.t()} | {:error, Ecto.Changeset.t()}
+  defp create_flow_broadcast(attrs) do
+    %FlowBroadcast{}
+    |> FlowBroadcast.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @spec populate_flow_broadcast_contacts(FlowBroadcast.t()) :: :ok
+  defp populate_flow_broadcast_contacts(flow_broadcast) do
+    """
+    INSERT INTO flow_broadcast_contacts
+    (flow_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+    (SELECT #{flow_broadcast.id}, 'pending', #{flow_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
+    FROM contacts_groups WHERE group_id = #{flow_broadcast.group_id})
+    """
+    |> Repo.query!()
+
+    :ok
   end
 end

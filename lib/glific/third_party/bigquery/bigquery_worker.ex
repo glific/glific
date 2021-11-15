@@ -437,7 +437,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
         gcs_url: if(!is_nil(row.media), do: row.media.gcs_url),
-        group_message_id: row.group_message_id
+        flow_broadcast_id: row.flow_broadcast_id
       }
       |> Map.merge(message_template_info(row))
 
