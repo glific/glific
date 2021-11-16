@@ -150,6 +150,9 @@ defmodule Glific.Flows.MessageVarParser do
     |> Enum.into(%{})
   end
 
+  def parse_map(value, bindings) when is_list(value),
+    do: Enum.map(value, &parse_map(&1, bindings))
+
   def parse_map(value, bindings) when is_binary(value),
     do: parse(value, bindings) |> parse_results(bindings["results"])
 
