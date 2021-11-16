@@ -34,7 +34,8 @@ oban_queues = [
   dialogflow: 5,
   gcs: 5,
   gupshup: 10,
-  webhook: 10
+  webhook: 10,
+  broadcast: 5
 ]
 
 oban_crontab = [
