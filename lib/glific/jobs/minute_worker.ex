@@ -33,7 +33,6 @@ defmodule Glific.Jobs.MinuteWorker do
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => _job}} = args) do
     services = Partners.get_organization_services()
-
     perform(args, services)
   end
 

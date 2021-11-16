@@ -126,7 +126,8 @@ defmodule Glific.Flows.Broadcast do
     from(fb in FlowBroadcast,
       as: :flow_broadcast,
       where: fb.organization_id == ^organization_id,
-      where: is_nil(fb.completed_at)
+      where: is_nil(fb.completed_at),
+      limit: 1
     )
     |> Repo.one()
     |> Repo.preload([:flow])
