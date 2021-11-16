@@ -12,7 +12,7 @@ defmodule Glific.Jobs.MinuteWorker do
     Contacts,
     Erase,
     Flags,
-    Flows.Broadcast,
+    Flows.BroadcastWorker,
     Flows.FlowContext,
     GCS.GcsWorker,
     Jobs.BSPBalanceWorker,
@@ -45,7 +45,7 @@ defmodule Glific.Jobs.MinuteWorker do
               "bigquery",
               "gcs",
               "execute_triggers",
-              "execute_group_broadcasts",
+              "broadcast",
               "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
@@ -59,8 +59,8 @@ defmodule Glific.Jobs.MinuteWorker do
       "execute_triggers" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
 
-      "execute_group_broadcasts" ->
-        Partners.perform_all(&Broadcast.execute_group_broadcasts/1, nil, [])
+      "broadcast" ->
+        Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
 
       "bigquery" ->
         Partners.perform_all(&BigQueryWorker.perform_periodic/1, nil, services["bigquery"], true)
