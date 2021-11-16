@@ -253,6 +253,18 @@ defmodule Glific.Flows.Node do
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(node, context, messages) do
     # if node has an action, execute the first action
+    :telemetry.execute(
+      [:glific, :flow, :node],
+      %{},
+      %{
+        id: node.id,
+        context_id: context.id,
+        flow_id: context.flow_id,
+        contact_id: context.contact_id,
+
+      }
+    )
+
     cond do
       # check if we are looping forever, if so abort early
       check_infinite_loop(node, context) ->
