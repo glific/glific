@@ -80,19 +80,21 @@ defmodule Glific.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.5.12"},
+      {:phoenix, "~> 1.6"},
       {:phoenix_ecto, "~> 4.1"},
-      {:ecto_sql, "~> 3.6"},
-      {:ecto_psql_extras, "~> 0.2"},
-      {:postgrex, ">= 0.0.0"},
-      {:floki, ">= 0.27.0", only: @test_envs},
       {:phoenix_html, "~> 3.0.0"},
       {:phoenix_live_reload, "~> 1.2", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_live_view, "~> 0.16.1"},
+      {:phoenix_live_view, "~> 0.17"},
       {:phoenix_live_dashboard, "~> 0.5"},
-      {:telemetry_metrics, "~> 0.4"},
-      {:telemetry_poller, "~> 0.4"},
+      {:telemetry, "~> 1.0"},
+      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_poller, "~> 1.0"},
+      {:ecto_sql, "~> 3.6"},
+      {:ecto_psql_extras, "~> 0.2"},
+      {:esbuild, "~> 0.2", runtime: Mix.env() == :dev},
+      {:postgrex, ">= 0.0.0"},
+      {:floki, ">= 0.27.0", only: @test_envs},
       {:gettext, "~> 0.18"},
       {:decimal, "~> 2.0"},
       {:jason, "~> 1.2"},
@@ -163,7 +165,7 @@ defmodule Glific.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "common"],
-      common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      common: ["clean", "compile", "ecto.reset", "assets.deploy"],
       "ecto.setup": [
         "ecto.create --quiet",
         "ecto.migrate",
@@ -187,7 +189,8 @@ defmodule Glific.MixProject do
         "phil_columns.seed --tenant glific",
         "test"
       ],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      "assets.deploy": ["esbuild default --minify", "phx.digest"]
     ]
   end
 end

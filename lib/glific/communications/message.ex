@@ -48,8 +48,20 @@ defmodule Glific.Communications.Message do
              Communications.provider_handler(message.organization_id),
              @type_to_token[message.type],
              [message, attrs]
-           ),
-         do: publish_message(message)
+           ) do
+      :telemetry.execute(
+        [:glific, :message, :sent],
+        # currently we are not measuring latency
+        %{},
+        %{
+          type: message.type,
+          sender_id: message.sender_id,
+          receiver_id: message.receiver_id,
+          organization_id: message.organization_id
+        }
+      )
+      publish_message(message)
+    end
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
@@ -186,17 +198,29 @@ defmodule Glific.Communications.Message do
   defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
+    metadata = %{
+      type: type,
+      sender_id: contact.id,
+      receiver_id: Partners.organization_contact_id(organization_id),
+      organization_id: contact.organization_id
+    }
+
     message_params =
       message_params
+      |> Map.merge(metadata)
       |> Map.merge(%{
-        type: type,
-        sender_id: contact.id,
-        receiver_id: Partners.organization_contact_id(organization_id),
         flow: :inbound,
         bsp_status: :delivered,
-        status: :received,
-        organization_id: contact.organization_id
+        status: :received
       })
+
+    # publish a telemetry event about the message being received
+    :telemetry.execute(
+      [:glific, :message, :received],
+      # currently we are not measuring latency
+      %{},
+      metadata
+    )
 
     cond do
       type in [:quick_reply, :list, :text] -> receive_text(message_params)
