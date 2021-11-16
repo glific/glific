@@ -205,6 +205,17 @@ defmodule Glific.Flows.FlowContext do
         }
       )
 
+    :telemetry.execute(
+      [:glific, :flow, :stop],
+      %{},
+      %{
+        id: context.flow_id,
+        context_id: context.id,
+        contact_id: context.contact_id,
+        organization_id: context.organization_id
+      }
+    )
+
     context
   end
 
@@ -417,6 +428,15 @@ defmodule Glific.Flows.FlowContext do
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.is_background_flow == false)
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
+
+    :telemetry.execute(
+      [:glific, :flow, :stop_all],
+      %{},
+      %{
+        contact_id: contact_id,
+        organization_id: Repo.get_organization_id()
+      }
+    )
   end
 
   @doc """
@@ -470,6 +490,17 @@ defmodule Glific.Flows.FlowContext do
     end
 
     {:ok, context} = seed_context(flow, contact, status, opts)
+
+    :telemetry.execute(
+      [:glific, :flow, :start],
+      %{},
+      %{
+        id: flow.id,
+        context_id: context.id,
+        contact_id: contact.id,
+        organization_id: context.organization_id
+      }
+    )
 
     context
     |> load_context(flow)

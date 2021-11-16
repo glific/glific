@@ -60,6 +60,7 @@ defmodule Glific.Communications.Message do
           organization_id: message.organization_id
         }
       )
+
       publish_message(message)
     end
   rescue
