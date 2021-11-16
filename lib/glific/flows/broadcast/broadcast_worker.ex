@@ -10,9 +10,12 @@ defmodule Glific.Flows.BroadcastWorker do
 
   alias Glific.{Flows.Broadcast, Repo}
 
+  @spec execute(non_neg_integer()) :: :ok
   def execute(org_id) do
     __MODULE__.new(%{organization_id: org_id})
     |> Oban.insert()
+
+    :ok
   end
 
   @doc """

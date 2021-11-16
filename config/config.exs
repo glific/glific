@@ -28,7 +28,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
-  bigquery: 5,
+  bigquery: 10,
   crontab: 10,
   default: 10,
   dialogflow: 5,
@@ -50,7 +50,7 @@ oban_crontab = [
   {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
   {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
-  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_group_broadcasts}}
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :broadcast}}
 ]
 
 oban_engine = Oban.Pro.Queue.SmartEngine
