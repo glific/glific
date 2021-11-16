@@ -33,7 +33,6 @@ defmodule Glific.Jobs.MinuteWorker do
           :discard | :ok | {:error, any} | {:ok, any} | {:snooze, pos_integer()}
   def perform(%Oban.Job{args: %{"job" => _job}} = args) do
     services = Partners.get_organization_services()
-
     perform(args, services)
   end
 
@@ -46,7 +45,7 @@ defmodule Glific.Jobs.MinuteWorker do
               "bigquery",
               "gcs",
               "execute_triggers",
-              "execute_flow_broadcasts",
+              "execute_group_broadcasts",
               "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
