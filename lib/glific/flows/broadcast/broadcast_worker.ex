@@ -8,9 +8,9 @@ defmodule Glific.Flows.BroadcastWorker do
     max_attempts: 2,
     priority: 0
 
-  alias Glific.{Flows.Broadcast, Flows.BroadcastWorker, Repo}
+  alias Glific.{Flows.Broadcast, Repo}
 
-  def execute(org_id)
+  def execute(org_id) do
     __MODULE__.new(%{organization_id: org_id})
     |> Oban.insert()
   end
