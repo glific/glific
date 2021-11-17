@@ -1,0 +1,6 @@
+{
+  "description": "This is required for the gigalixir build. Check this. https://github.com/phoenixframework/phoenix/issues/4474",
+  "scripts": {
+    "deploy": "cd .. && mix assets.deploy && rm -f _build/esbuild"
+  }
+}
