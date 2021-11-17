@@ -28,7 +28,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
-  bigquery: 10,
+  bigquery: 5,
   crontab: 10,
   default: 10,
   dialogflow: 5,
