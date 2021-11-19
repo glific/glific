@@ -6,6 +6,8 @@ defmodule Glific.Flows.Broadcast do
 
   import Ecto.Query, warn: false
 
+  require Logger
+
   alias Glific.{
     Contacts.Contact,
     Flows,
@@ -184,10 +186,17 @@ defmodule Glific.Flows.Broadcast do
           Repo.put_process_state(contact.organization_id)
           response = FlowContext.init_context(flow, contact, @status, opts)
 
-          if elem(response, 0) in [:ok, :wait],
-            do:
-              Keyword.get(opts, :flow_broadcast_id, nil)
-              |> mark_flow_broadcast_contact_proceesed(contact.id)
+          if elem(response, 0) in [:ok, :wait] do
+            Keyword.get(opts, :flow_broadcast_id, nil)
+            |> mark_flow_broadcast_contact_proceesed(contact.id, "processed")
+          else
+            Logger.info("Could not start the flow for the contact.
+               Contact id : #{contact.id} opts: #{inspect(opts)}
+               response #{inspect(response)}")
+
+            Keyword.get(opts, :flow_broadcast_id, nil)
+            |> mark_flow_broadcast_contact_proceesed(contact.id, "pending")
+          end
 
           :ok
         end,
@@ -216,13 +225,13 @@ defmodule Glific.Flows.Broadcast do
     :ok
   end
 
-  @spec mark_flow_broadcast_contact_proceesed(integer() | nil, integer()) :: :ok
-  defp mark_flow_broadcast_contact_proceesed(nil, _), do: :ok
+  @spec mark_flow_broadcast_contact_proceesed(integer() | nil, integer(), String.t()) :: :ok
+  defp mark_flow_broadcast_contact_proceesed(nil, _, _status), do: :ok
 
-  defp mark_flow_broadcast_contact_proceesed(flow_boradcast_id, contact_id) do
+  defp mark_flow_broadcast_contact_proceesed(flow_boradcast_id, contact_id, status) do
     FlowBroadcastContact
     |> where(flow_broadcast_id: ^flow_boradcast_id, contact_id: ^contact_id)
-    |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: "processed"])
+    |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
   @spec create_flow_broadcast(map()) :: {:ok, FlowBroadcast.t()} | {:error, Ecto.Changeset.t()}
