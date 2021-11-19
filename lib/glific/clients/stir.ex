@@ -600,18 +600,22 @@ defmodule Glific.Clients.Stir do
       Map.get(index_map, fields["mt_contact_id"], 0)
       |> Glific.parse_maybe_integer()
 
-    tdc = Contacts.get_contact!(contact_id)
+    if mt_contact_id == 0 do
+      %{is_valid: false, mt_contact_id: mt_contact_id}
+    else
+      tdc = Contacts.get_contact!(contact_id)
 
-    {mt, _index} =
-      get_mt_list(fields["district"], organization_id)
-      |> Enum.find(fn {contact, _index} -> mt_contact_id == contact.id end)
+      {mt, _index} =
+        get_mt_list(fields["district"], organization_id)
+        |> Enum.find(fn {contact, _index} -> mt_contact_id == contact.id end)
 
-    ## this is not the best way to update the contact variables we will fix that after this assignments.
-    tdc
-    |> ContactField.do_add_contact_field("mt_name", "mt_name", mt.name, "string")
-    |> ContactField.do_add_contact_field("mt_contact_id", "mt_contact_id", mt.id, "string")
+      ## this is not the best way to update the contact variables we will fix that after this assignments.
+      tdc
+      |> ContactField.do_add_contact_field("mt_name", "mt_name", mt.name, "string")
+      |> ContactField.do_add_contact_field("mt_contact_id", "mt_contact_id", mt.id, "string")
 
-    %{selected_mt: mt.name}
+      %{is_valid: true, selected_mt: mt.name}
+    end
   end
 
   def webhook("get_priority_message", fields) do
@@ -625,7 +629,7 @@ defmodule Glific.Clients.Stir do
         do: @priorities_list,
         else: Enum.reject(@priorities_list, fn {priority, _} -> exculde == priority end)
 
-    praority_message =
+    priority_message =
       priorities
       |> Enum.map(fn {_priority, obj} ->
         description = get_in(obj, [:translations, language.locale, :description])
@@ -636,7 +640,7 @@ defmodule Glific.Clients.Stir do
     priority_map = Enum.into(@priorities_list, %{})
 
     %{
-      message: praority_message,
+      message: priority_message,
       exculde: get_in(priority_map, [exculde, :translations, language.locale])
     }
   end
