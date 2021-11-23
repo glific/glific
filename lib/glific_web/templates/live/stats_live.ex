@@ -7,7 +7,7 @@ defmodule GlificWeb.StatsLive do
   @doc """
   Receives the socket.assigns and is responsible for returning rendered content
   """
-  @spec render(Plug.Conn.t()) :: any()
+  @spec render(Plug.Conn.t()) :: Phoenix.LiveView.Rendered.t()
   def render(assigns) do
     ~H"""
     <h1> Current temperature: <%= @temperature %> </h1>
@@ -17,7 +17,7 @@ defmodule GlificWeb.StatsLive do
   @doc """
   Wires up socket assigns necessary for rendering the view
   """
-  @spec mount(map(), map(), Plug.Conn.t()) :: {:ok, Plug.Conn.t()}
+  @spec mount(map(), map(), Phoenix.LiveView.Socket.t()) :: {:ok, Phoenix.LiveView.Socket.t()}
   def mount(_params, _session, socket) do
     # temperature = Thermostat.get_user_reading(user_id)
     {:ok, assign(socket, :temperature, 10)}
