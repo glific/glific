@@ -22,7 +22,8 @@ defmodule Glific.Templates.InteractiveTemplate do
   ]
 
   @optional_fields [
-    :translations
+    :translations,
+    :send_interactive_title
   ]
 
   @type t() :: %__MODULE__{
@@ -36,6 +37,7 @@ defmodule Glific.Templates.InteractiveTemplate do
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           translations: map() | nil,
+          send_interactive_title: boolean(),
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -45,6 +47,7 @@ defmodule Glific.Templates.InteractiveTemplate do
     field :type, InteractiveMessageType
     field :interactive_content, :map, default: %{}
     field :translations, :map, default: %{}
+    field :send_interactive_title, :boolean, default: true
 
     belongs_to :language, Language
     belongs_to :organization, Organization
