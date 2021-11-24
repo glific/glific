@@ -247,7 +247,10 @@ defmodule Glific.Messages do
            ),
          interactive_content <-
            InteractiveTemplates.get_translations(interactive_template, language_id)
-           |> InteractiveTemplates.get_clean_interactive_content(interactive_template.send_interactive_title),
+           |> InteractiveTemplates.get_clean_interactive_content(
+             interactive_template.send_interactive_title,
+             interactive_template.type
+           ),
          body <-
            InteractiveTemplates.get_interactive_body(
              interactive_content,

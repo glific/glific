@@ -64,7 +64,10 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.get_translations(context.contact.language_id)
       |> MessageVarParser.parse_map(message_vars)
-      |> InteractiveTemplates.get_clean_interactive_content(interactive_template.send_interactive_title)
+      |> InteractiveTemplates.get_clean_interactive_content(
+        interactive_template.send_interactive_title,
+        interactive_template.type
+      )
 
     body =
       InteractiveTemplates.get_interactive_body(
