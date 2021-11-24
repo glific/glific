@@ -7,7 +7,7 @@ defmodule Glific.Navanatech do
   alias Tesla.Multipart
 
   ## params =  %{media_url: "https://storage.googleapis.com/cc-tides/uploads/20210721140700_C717_F0_M539582.mp3", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
-  ## params_text =  %{text: "వుంది", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
+  ## params_text =  %{text: "ఎందుక", case_id: "501e75a0-3b12-46de-b785-5c1e897ab0f2", organization_id: 1}
   # Glific.Navanatech.decode_message(params)
   # Glific.Navanatech.decode_message(params_text)
 
@@ -42,6 +42,7 @@ defmodule Glific.Navanatech do
       Multipart.new()
       |> Multipart.add_field("id", case_id)
       |> Multipart.add_field("text", text)
+      |> Multipart.add_field("filter", "{\"type\": \"LongestKeyword\"}")
 
     client(org_id)
     |> Tesla.post("/usecase/decode/text", mp)
