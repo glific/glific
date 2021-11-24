@@ -155,10 +155,8 @@ defmodule Glific.Templates.InteractiveTemplates do
   Returns interactive content based on send_interactive_title field
   """
   @spec get_clean_interactive_content(map(), boolean(), atom()) :: map()
-  def get_clean_interactive_content(interactive_content, true, _type), do: interactive_content
-
-  def get_clean_interactive_content(interactive_content, _send_interactive_title, :list),
-    do: interactive_content
+  def get_clean_interactive_content(interactive_content, false, :list),
+    do: interactive_content|> Map.delete("title")
 
   def get_clean_interactive_content(
         %{"content" => %{"type" => type}} = interactive_content,
