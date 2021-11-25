@@ -20,7 +20,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :label, :string
     field :type, :interactive_message_type_enum
     field :interactive_content, :json
-    field :send_interactive_title, :boolean
+    field :send_with_title, :boolean
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -46,7 +46,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :language_id, :integer
 
     @desc "Match a send interactive title field"
-    field :send_interactive_title, :boolean
+    field :send_with_title, :boolean
   end
 
   input_object :interactive_template_input do
@@ -55,7 +55,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
     field :interactive_content, :json
     field :language_id, :id
     field :translations, :json
-    field :send_interactive_title, :boolean
+    field :send_with_title, :boolean
   end
 
   object :interactive_template_queries do

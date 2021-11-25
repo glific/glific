@@ -678,9 +678,9 @@ defmodule Glific.MessagesTest do
       message = Messages.get_message!(message.id)
       assert message.body == "Glific is a two way communication platform"
 
-      #send interactive quick reply message with send_interactive_title as false
+      #send interactive quick reply message with send_with_title as false
       InteractiveTemplates.update_interactive_template(interactive_template, %{
-        send_interactive_title: false
+        send_with_title: false
       })
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
@@ -730,14 +730,14 @@ defmodule Glific.MessagesTest do
         type: :quick_reply
       }
 
-      # send interactive list message with send_interactive_title as false
+      # send interactive list message with send_with_title as false
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "Glific"
 
       InteractiveTemplates.update_interactive_template(interactive_template, %{
-        send_interactive_title: false
+        send_with_title: false
       })
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
       {:ok, message} = Messages.create_and_send_message(message_attrs)
