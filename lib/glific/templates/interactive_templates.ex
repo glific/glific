@@ -152,6 +152,26 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @doc """
+  Returns interactive content based on send_interactive_title field
+  """
+  @spec get_clean_interactive_content(map(), boolean(), atom()) :: map()
+  def get_clean_interactive_content(interactive_content, false, :list),
+    do: interactive_content|> Map.delete("title")
+
+  def get_clean_interactive_content(
+        %{"content" => %{"type" => type}} = interactive_content,
+        false,
+        :quick_reply
+      )
+      when type in ["text"] do
+    updated_content = interactive_content["content"] |> Map.delete("header")
+    Map.put(interactive_content, "content", updated_content)
+  end
+
+  def get_clean_interactive_content(interactive_content, _send_interactive_title, _type),
+    do: interactive_content
+
+  @doc """
   Create a message media from interactive content and return id
   """
   @spec get_media(map(), String.t(), non_neg_integer()) :: non_neg_integer() | nil
