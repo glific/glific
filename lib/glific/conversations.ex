@@ -7,6 +7,7 @@ defmodule Glific.Conversations do
   """
 
   use Ecto.Schema
+  require Logger
 
   import Ecto.Query, warn: false
 
@@ -17,9 +18,15 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map(), boolean) :: list() | integer
   def list_conversations(args, count \\ false) do
-    args
-    |> Map.put(:ids, get_message_ids(args.contact_opts, args.message_opts, args))
-    |> Messages.list_conversations(count)
+    try do
+      args
+      |> Map.put(:ids, get_message_ids(args.contact_opts, args.message_opts, args))
+      |> Messages.list_conversations(count)
+    rescue
+      ex ->
+        Logger.error("Serach threw a Error: #{inspect(ex)}")
+        []
+    end
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
