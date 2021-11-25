@@ -45,7 +45,7 @@ defmodule Glific.Conversations do
     |> where([m: m], m.contact_id in ^ids and m.receiver_id != m.sender_id)
     |> add_special_offset(length(ids), message_limit, message_offset)
     |> select([m: m], m.id)
-    |> Repo.all(timeout: 20_000)
+    |> Repo.all(timeout: 10_000)
   end
 
   @doc """
