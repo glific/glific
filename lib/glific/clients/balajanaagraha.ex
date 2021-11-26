@@ -51,7 +51,7 @@ defmodule Glific.Clients.Balajanaagraha do
       "string"
     )
 
-    %{evidence_number: updated_counter, evidence: fields["evidence"]}
+    %{updated_evidence: updated_counter}
   end
 
   def webhook(_, _fields),

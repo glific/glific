@@ -17,6 +17,7 @@ defmodule Glific.MessagesTest do
     Seeds.SeedsDev,
     Tags.Tag,
     Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate,
     Users
   }
@@ -676,6 +677,16 @@ defmodule Glific.MessagesTest do
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "Glific is a two way communication platform"
+
+      #send interactive quick reply message with send_with_title as false
+      InteractiveTemplates.update_interactive_template(interactive_template, %{
+        send_with_title: false
+      })
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "Glific is a two way communication platform"
     end
 
     test "create and send message interactive quick reply message with document should have message body as ",
@@ -719,6 +730,15 @@ defmodule Glific.MessagesTest do
         type: :quick_reply
       }
 
+      # send interactive list message with send_with_title as false
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "Glific"
+
+      InteractiveTemplates.update_interactive_template(interactive_template, %{
+        send_with_title: false
+      })
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)

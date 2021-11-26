@@ -403,7 +403,7 @@ defmodule Glific.Flows.Action do
   # Fake the valid key so we can have the same function signature and simplify the code base
   def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
     name = action.field.name
-    key = String.downcase(name) |> String.replace(" ", "_")
+    key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
     value = ContactField.parse_contact_field_value(context, action.value)
 
     context =

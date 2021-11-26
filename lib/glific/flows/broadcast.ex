@@ -246,8 +246,10 @@ defmodule Glific.Flows.Broadcast do
     """
     INSERT INTO flow_broadcast_contacts
     (flow_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+
     (SELECT #{flow_broadcast.id}, 'pending', #{flow_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
-    FROM contacts_groups WHERE group_id = #{flow_broadcast.group_id})
+      FROM contacts_groups left join contacts on contacts.id = contacts_groups.contact_id
+      WHERE group_id = #{flow_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null))
     """
     |> Repo.query!()
 
