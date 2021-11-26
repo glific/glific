@@ -59,10 +59,14 @@ defmodule GlificWeb.Resolvers.Contacts do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def import_contacts(_, %{group_label: group_label, data: data}, %{
-        context: %{current_user: user}
-      }) do
-    Import.import_contacts(user.organization_id, group_label, data: data)
+  def import_contacts(_, %{id: id, type: type, group_label: group_label, data: data}, _) do
+    {:ok, org_id} = Glific.parse_maybe_integer(id)
+
+    case type do
+      "file_path" -> Import.import_contacts(org_id, group_label, file_path: data)
+      "url" -> Import.import_contacts(org_id, group_label, url: data)
+      "data" -> Import.import_contacts(org_id, group_label, data: data)
+    end
   end
 
   @doc false

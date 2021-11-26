@@ -97,8 +97,8 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(integer, String.t(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, group_label, opts \\ []) do
+  @spec import_contacts(integer, String.t(), map()) :: tuple()
+  def import_contacts(organization_id, group_label, opts \\ %{}) do
     {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}")
 
     if length(opts) > 1 do
@@ -108,7 +108,7 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     # this ensures the  org_id exists and is valid
-    with %{} <- Partners.organization(organization_id),
+    with %{} <- Partners.get_organization!(organization_id),
          {:ok, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
       result =
         contact_data_as_stream
@@ -123,14 +123,12 @@ defmodule Glific.Contacts.Import do
         _ -> {:error, %{status: "All contacts could not be added", errors: errors}}
       end
     else
-      {:error, error} ->
+      {:error, _error} ->
         {:error,
-         %{
-           status: "All contacts could not be added",
-           errors: [
-             "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
-           ]
-         }}
+         [
+           "All contacts could not be added",
+           "Error creating group with label: #{group_label}"
+         ]}
     end
   end
 
