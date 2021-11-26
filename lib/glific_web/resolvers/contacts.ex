@@ -62,7 +62,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   def import_contacts(_, %{id: id, group_label: group_label, data: data} = args, %{
         context: %{current_user: user}
       }) do
-    Import.import_contacts(id, group_label, data: data)
+    Import.import_contacts(id, group_label, url: data)
   end
 
   @doc false

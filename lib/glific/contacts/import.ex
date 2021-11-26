@@ -108,7 +108,7 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     # this ensures the  org_id exists and is valid
-    with %{} <- Partners.organization(organization_id),
+    with %{} <- Partners.get_organization!(organization_id),
          {:ok, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
       result =
         contact_data_as_stream
