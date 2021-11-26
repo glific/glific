@@ -176,7 +176,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:import_contacts, user,
         variables: %{
           "id" => user.organization_id,
-          "type" => "data",
+          "type" => "DATA",
           "group_label" => group_label,
           "data" => data
         }
@@ -202,7 +202,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:import_contacts, user,
         variables: %{
           "id" => user.organization_id,
-          "type" => "data",
+          "type" => "DATA",
           "group_label" => group_label,
           "data" => data
         }
@@ -228,7 +228,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:import_contacts, user,
         variables: %{
           "id" => user.organization_id,
-          "type" => "data",
+          "type" => "DATA",
           "group_label" => group_label,
           "data" => data
         }
@@ -245,7 +245,7 @@ defmodule GlificWeb.Schema.ContactTest do
       auth_query_gql_by(:import_contacts, user,
         variables: %{
           "id" => user.organization_id,
-          "type" => "data",
+          "type" => "DATA",
           "group_label" => group_label,
           "data" => data
         }
