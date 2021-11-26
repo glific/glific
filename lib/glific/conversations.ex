@@ -18,15 +18,13 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map(), boolean) :: list() | integer
   def list_conversations(args, count \\ false) do
-    try do
-      args
-      |> Map.put(:ids, get_message_ids(args.contact_opts, args.message_opts, args))
-      |> Messages.list_conversations(count)
-    rescue
-      ex ->
-        Logger.error("Serach threw a Error: #{inspect(ex)}")
-        []
-    end
+    args
+    |> Map.put(:ids, get_message_ids(args.contact_opts, args.message_opts, args))
+    |> Messages.list_conversations(count)
+  rescue
+    ex ->
+      Logger.error("Search threw a Error: #{inspect(ex)}")
+      []
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
