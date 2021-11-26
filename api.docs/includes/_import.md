@@ -3,8 +3,8 @@
 ## Import Contacts API
 
 ```graphql
-mutation importContacts($group_label : String, $data : String) {
-  importContacts(group_label: $group_label, data: $data) {
+mutation importContacts($importContactsId : Int,$group_label : String, $data : String) {
+  importContacts(id: $importContactsId, group_label: $group_label, data: $data) {
       status
 
       errors {
@@ -29,8 +29,9 @@ mutation importContacts($group_label : String, $data : String) {
 
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
+id | <a href="#int">Int</a>  | required | The organization id for which contacts will be uploaded
 group_label | <a href="#string">String</a>  | required | The contacts are added to the group with this label
-group_label | <a href="#string">String</a>  | required | The <a href="#csvformat">csv data</a> as string.
+data | <a href="#string">String</a>  | required | The <a href="#csvformat">csv data</a> as string.
 
 ## function import_contacts(organization_id, group_label, opts \\ [])
 
