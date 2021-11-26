@@ -202,7 +202,7 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field :import_contacts, :import_result do
       arg(:id, non_null(:id))
-      arg(:type, :string)
+      arg(:type, :upload_contacts_type_enum)
       arg(:group_label, non_null(:string))
       arg(:data, non_null(:string))
       middleware(Authorize, :staff)

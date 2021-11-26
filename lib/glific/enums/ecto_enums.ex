@@ -116,3 +116,9 @@ defenum(
   :interactive_message_type_enum,
   Glific.Enums.interactive_message_type_const()
 )
+
+defenum(
+  Glific.Enums.UploadContactsType,
+  :upload_contacts_type_enum,
+  Glific.Enums.upload_contacts_type_const()
+)

@@ -57,6 +57,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Interactive Message Types enum"
   enum(:interactive_message_type_enum, values: Glific.Enums.interactive_message_type_const())
 
+  @desc "The Upload Contact Types enum"
+  enum(:upload_contacts_type_enum, values: Glific.Enums.upload_contacts_type_const())
+
   # doing this in a special way, since values: does not work
   # if we are using default values
   @desc "Enum for ordering results"

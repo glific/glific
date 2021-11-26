@@ -63,6 +63,9 @@ defmodule Glific.Enums.Constants do
       # the different possible types of interactive message
       @interactive_message_type_const [:list, :quick_reply]
 
+      # the different possible types of upload contact types
+      @upload_contacts_type_const [:file_path, :url, :data]
+
       # the possible question type constants
       @question_type_const [:text, :numeric, :date]
 
