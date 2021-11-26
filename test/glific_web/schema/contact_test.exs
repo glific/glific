@@ -174,7 +174,12 @@ defmodule GlificWeb.Schema.ContactTest do
     # Test success for creating a contact without opt-in
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "data",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
@@ -195,7 +200,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "data",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
@@ -216,7 +226,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "data",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
@@ -228,7 +243,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "data",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
