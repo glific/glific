@@ -59,10 +59,10 @@ defmodule GlificWeb.Resolvers.Contacts do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def import_contacts(_, %{group_label: group_label, data: data}, %{
+  def import_contacts(_, %{id: id, group_label: group_label, data: data} = args, %{
         context: %{current_user: user}
       }) do
-    Import.import_contacts(user.organization_id, group_label, data: data)
+    Import.import_contacts(id, group_label, data: data)
   end
 
   @doc false

@@ -201,6 +201,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     field :import_contacts, :import_result do
+      arg(:id, non_null(:integer))
       arg(:group_label, non_null(:string))
       arg(:data, non_null(:string))
       middleware(Authorize, :staff)
