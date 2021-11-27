@@ -156,7 +156,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
   @spec get_clean_interactive_content(map(), boolean(), atom()) :: map()
   def get_clean_interactive_content(interactive_content, false, :list),
-    do: interactive_content|> Map.delete("title")
+    do: interactive_content |> Map.delete("title")
 
   def get_clean_interactive_content(
         %{"content" => %{"type" => type}} = interactive_content,

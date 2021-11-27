@@ -97,8 +97,8 @@ defmodule Glific.Contacts.Import do
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(integer, String.t(), map()) :: tuple()
-  def import_contacts(organization_id, group_label, opts \\ %{}) do
+  @spec import_contacts(integer, String.t(), [{atom(), String.t()}]) :: tuple()
+  def import_contacts(organization_id, group_label, opts \\ []) do
     {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}")
 
     if length(opts) > 1 do
