@@ -254,6 +254,39 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, _} = result
     count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
     assert count == 0
+
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          url: "https://api.gupshup.io/sm/api/v1/app/opt/in/Glific42"
+        }
+
+      %{method: :get} ->
+        %Tesla.Env{
+          body: "name,phone,Language,opt_in,delete\r\nuploaded_contact,9876543311,english,2021-03-09,",
+          status: 200,
+          url:
+            "https://storage.cloud.google.com/cc-tides/uploads/outbound/2021-47/NGO%20Main%20Account/8cf91eb3-96dc-478f-9927-311cce4a34d6.csv"
+        }
+    end)
+
+    data =
+      "https://storage.cloud.google.com/cc-tides/uploads/outbound/2021-47/NGO%20Main%20Account/8cf91eb3-96dc-478f-9927-311cce4a34d6.csv"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "URL",
+          "group_label" => group_label,
+          "data" => data
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
+    assert count == 1
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do
