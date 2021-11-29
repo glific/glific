@@ -116,7 +116,9 @@ defmodule Glific.Groups do
   """
   @spec get_or_create_group_by_label(String.t(), non_neg_integer) :: {:ok, Group.t()} | nil
   def get_or_create_group_by_label(label, organization_id) do
-    case Repo.get_by(Group, %{label: label, organization_id: organization_id}, skip_organization_id: true) do
+    case Repo.get_by(Group, %{label: label, organization_id: organization_id},
+           skip_organization_id: true
+         ) do
       nil -> create_group(%{label: label, organization_id: organization_id})
       group -> {:ok, group}
     end

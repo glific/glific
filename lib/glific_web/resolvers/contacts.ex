@@ -55,9 +55,13 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc """
   Import contacts to the database
   """
-  @spec import_contacts(Absinthe.Resolution.t(), %{group_label: String.t(), data: String.t(), id: integer, type: String.t()}, %{
-          context: map()
-        }) ::
+  @spec import_contacts(
+          Absinthe.Resolution.t(),
+          %{group_label: String.t(), data: String.t(), id: integer, type: String.t()},
+          %{
+            context: map()
+          }
+        ) ::
           {:ok, any} | {:error, any}
   def import_contacts(_, %{id: id, type: type, group_label: group_label, data: data}, _) do
     {:ok, org_id} = Glific.parse_maybe_integer(id)

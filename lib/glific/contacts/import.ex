@@ -108,7 +108,7 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     # this ensures the  org_id exists and is valid
-    with %{} <- Partners.get_organization!(organization_id),
+    with %{} <- Partners.organization(organization_id),
          {:ok, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
       result =
         contact_data_as_stream
@@ -122,10 +122,16 @@ defmodule Glific.Contacts.Import do
         [] -> {:ok, %{status: "All contacts added"}}
         _ -> {:error, %{status: "All contacts could not be added", errors: errors}}
       end
+    else
+      {:error, error} ->
+        {:error,
+         %{
+           status: "All contacts could not be added",
+           errors: [
+             "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
+           ]
+         }}
     end
-  rescue
-    Ecto.NoResultsError ->
-      {:error, %{status: "All contacts could not be added", errors: "Invalid organization ID"}}
   end
 
   @doc """
