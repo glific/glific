@@ -6,6 +6,8 @@ defmodule Glific.Partners.Provider do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias __MODULE__
+
   # define all the required fields for provider
   @required_fields [
     :name,
