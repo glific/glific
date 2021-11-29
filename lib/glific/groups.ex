@@ -58,6 +58,25 @@ defmodule Glific.Groups do
   end
 
   @doc """
+  Returns the list of groups.
+
+  ## Examples
+
+      iex> list_organizations_groups()
+      [%Group{}, ...]
+
+  """
+  @spec list_organizations_groups(map()) :: [Group.t()]
+  def list_organizations_groups(args) do
+    {:ok, org_id} = Glific.parse_maybe_integer(args.id)
+
+    %{organization_id: org_id}
+    |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    |> Repo.add_permission(&Groups.add_permission/2, true)
+    |> Repo.all(organization_id: org_id)
+  end
+
+  @doc """
   Return the count of groups, using the same filter as list_groups
   """
   @spec count_groups(map()) :: integer

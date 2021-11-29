@@ -58,6 +58,66 @@ Parameter | Type | Default | Description
 filter | <a href="#groupfilter">GroupFilter</a> | nil | filter the list
 opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
 
+## Get All Organization Groups
+
+```graphql
+query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {
+  organization_groups(filter: $filter, opts: $opts, id:$id) {
+    id
+    label
+    isRestricted
+    contactsCount
+    usersCount
+  }
+}
+
+{
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
+  },
+  "filter": {
+    "label": "Group"
+  },
+  "id": "1"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "groups": [
+      {
+        "contactsCount": 2,
+        "id": "1",
+        "isRestricted": false,
+        "label": "Default Group",
+        "usersCount": 2
+      },
+      {
+        "contactsCount": 1,
+        "id": "2",
+        "isRestricted": true,
+        "label": "Restricted Group",
+        "usersCount": 1
+      }
+    ]
+  }
+}
+```
+This returns all the groups for the organization
+
+### Query Parameters
+
+Parameter | Type | Default | Description
+--------- | ---- | ------- | -----------
+filter | <a href="#groupfilter">GroupFilter</a> | nil | filter the list
+opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+id | <a href="#id">ID</a> | nil | organization id
+
 ## Get a Group by ID
 
 ```graphql
