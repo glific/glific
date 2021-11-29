@@ -52,7 +52,7 @@ defmodule Glific.Communications.Message do
       :telemetry.execute(
         [:glific, :message, :sent],
         # currently we are not measuring latency
-        %{},
+        %{duration: 1},
         %{
           type: message.type,
           sender_id: message.sender_id,
@@ -219,7 +219,7 @@ defmodule Glific.Communications.Message do
     :telemetry.execute(
       [:glific, :message, :received],
       # currently we are not measuring latency
-      %{},
+      %{duration: 1},
       metadata
     )
 

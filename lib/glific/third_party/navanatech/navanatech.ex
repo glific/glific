@@ -4,9 +4,10 @@ defmodule Glific.Navanatech do
   """
 
   alias Glific.Partners
+  alias Tesla.Multipart
 
   ## params =  %{media_url: "https://storage.googleapis.com/cc-tides/uploads/20210721140700_C717_F0_M539582.mp3", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
-  ## params_text =  %{text: "వుంది", case_id: "b9296e58-ebf5-462f-a83b-6753f604ad69", organization_id: 1}
+  ## params_text =  %{text: "ఎందుక", case_id: "501e75a0-3b12-46de-b785-5c1e897ab0f2", organization_id: 1}
   # Glific.Navanatech.decode_message(params)
   # Glific.Navanatech.decode_message(params_text)
 
@@ -22,10 +23,14 @@ defmodule Glific.Navanatech do
 
     extension = if extension in [""], do: "mp3", else: extension
 
-    params = %{use_case_id: case_id, url: media_url, extension: extension}
+    mp =
+      Multipart.new()
+      |> Multipart.add_field("id", case_id)
+      |> Multipart.add_field("file_extension", extension)
+      |> Multipart.add_field("url", media_url)
 
     client(org_id)
-    |> Tesla.post("/usecase/decode/audio", params)
+    |> Tesla.post("/usecase/decode/url", mp)
     |> handle_response()
   end
 
@@ -33,10 +38,14 @@ defmodule Glific.Navanatech do
     do: handle_response({:error, "Invalid text"})
 
   def decode_message(%{text: text, case_id: case_id, organization_id: org_id} = _attrs) do
-    params = %{use_case_id: case_id, text: text}
+    mp =
+      Multipart.new()
+      |> Multipart.add_field("id", case_id)
+      |> Multipart.add_field("text", text)
+      |> Multipart.add_field("filter", "{\"type\": \"LongestKeyword\"}")
 
     client(org_id)
-    |> Tesla.post("/usecase/decode/text", params)
+    |> Tesla.post("/usecase/decode/text", mp)
     |> handle_response()
   end
 
@@ -47,7 +56,7 @@ defmodule Glific.Navanatech do
     response
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, body}
+        {:ok, Jason.decode!(body)}
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
@@ -63,7 +72,6 @@ defmodule Glific.Navanatech do
 
     middleware = [
       {Tesla.Middleware.BaseUrl, base_url},
-      Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers, [{"authorization", "Bearer " <> token}]}
     ]
 

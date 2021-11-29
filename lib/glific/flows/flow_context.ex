@@ -493,7 +493,7 @@ defmodule Glific.Flows.FlowContext do
 
     :telemetry.execute(
       [:glific, :flow, :start],
-      %{},
+      %{duration: 1},
       %{
         id: flow.id,
         context_id: context.id,
