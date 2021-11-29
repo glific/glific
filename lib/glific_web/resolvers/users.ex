@@ -94,9 +94,8 @@ defmodule GlificWeb.Resolvers.Users do
   @spec delete_user(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_user(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}),
-         {:ok, user} <- Users.delete_user(user) do
-      {:ok, user}
+    with {:ok, user} <- Repo.fetch_by(User, %{id: id, organization_id: user.organization_id}) do
+      Users.delete_user(user)
     end
   end
 end

@@ -429,7 +429,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         contact_name: row.contact.name,
         user_phone: if(!is_nil(row.user), do: row.user.phone),
         user_name: if(!is_nil(row.user), do: row.user.name),
-        tags_label: Enum.map(row.tags, fn tag -> tag.label end) |> Enum.join(", "),
+        tags_label: Enum.map_join(row.tags, ", ", fn tag -> tag.label end),
         flow_label: row.flow_label,
         media_url: if(!is_nil(row.media), do: row.media.url),
         flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),

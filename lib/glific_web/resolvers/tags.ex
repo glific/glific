@@ -55,9 +55,8 @@ defmodule GlificWeb.Resolvers.Tags do
   @spec delete_tag(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_tag(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, tag} <- Repo.fetch_by(Tag, %{id: id, organization_id: user.organization_id}),
-         {:ok, tag} <- Tags.delete_tag(tag) do
-      {:ok, tag}
+    with {:ok, tag} <- Repo.fetch_by(Tag, %{id: id, organization_id: user.organization_id}) do
+      Tags.delete_tag(tag)
     end
   end
 

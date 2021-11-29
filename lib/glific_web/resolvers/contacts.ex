@@ -79,9 +79,8 @@ defmodule GlificWeb.Resolvers.Contacts do
           {:ok, any} | {:error, any}
   def delete_contact(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         {:ok, contact} <- Contacts.delete_contact(contact) do
-      {:ok, contact}
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}) do
+      Contacts.delete_contact(contact)
     end
   end
 
@@ -92,9 +91,8 @@ defmodule GlificWeb.Resolvers.Contacts do
           {:ok, any} | {:error, any}
   def contact_location(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         {:ok, location} <- Contacts.contact_location(contact) do
-      {:ok, location}
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}) do
+      Contacts.contact_location(contact)
     end
   end
 

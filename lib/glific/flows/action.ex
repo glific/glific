@@ -483,8 +483,7 @@ defmodule Glific.Flows.Action do
     ## We will soon figure out how we will manage the UUID with tags
     flow_label =
       action.labels
-      |> Enum.map(fn label -> label["name"] end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn label -> label["name"] end)
 
     add_flow_label(context, flow_label)
 

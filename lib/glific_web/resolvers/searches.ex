@@ -77,9 +77,8 @@ defmodule GlificWeb.Resolvers.Searches do
           {:ok, any} | {:error, any}
   def delete_saved_search(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, saved_search} <-
-           Repo.fetch_by(SavedSearch, %{id: id, organization_id: user.organization_id}),
-         {:ok, saved_search} <- Searches.delete_saved_search(saved_search) do
-      {:ok, saved_search}
+           Repo.fetch_by(SavedSearch, %{id: id, organization_id: user.organization_id}) do
+      Searches.delete_saved_search(saved_search)
     end
   end
 

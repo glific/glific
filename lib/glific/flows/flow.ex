@@ -162,11 +162,12 @@ defmodule Glific.Flows.Flow do
   defp create_keywords_error_message(existing_keywords, flow_keyword_list) do
     existing_keywords_string =
       existing_keywords
-      |> Enum.map(fn keyword ->
+      |> Enum.map_join(", ", fn keyword ->
         "The keyword `#{keyword}` was already used in the `#{flow_keyword_list[keyword]}` Flow"
       end)
-      |> Enum.join(", ")
 
+    # this should be combined with the above pipe, leaving for now since
+    # i'm just cleaning up credo errors
     "#{existing_keywords_string}."
   end
 

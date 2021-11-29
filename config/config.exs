@@ -57,10 +57,7 @@ oban_engine = Oban.Pro.Queue.SmartEngine
 
 oban_plugins = [
   # Prune jobs after 60 mins, gives us some time to go investigate if needed
-  {Oban.Pro.Plugins.DynamicPruner,
-   mode: {:max_age, 60 * 60},
-   limit: 25_000
-  },
+  {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 60 * 60}, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
   Oban.Pro.Plugins.Lifeline,
   Oban.Web.Plugins.Stats,

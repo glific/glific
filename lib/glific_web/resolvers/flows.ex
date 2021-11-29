@@ -75,9 +75,8 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec delete_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_flow(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
-         {:ok, flow} <- Flows.delete_flow(flow) do
-      {:ok, flow}
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}) do
+      Flows.delete_flow(flow)
     end
   end
 

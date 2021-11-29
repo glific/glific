@@ -269,7 +269,7 @@ defmodule Glific.Providers.Gupshup.Message do
     worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
 
-    apply(worker_module, :new, [worker_args, [scheduled_at: message.send_at]])
+    worker_module.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
   end
 end

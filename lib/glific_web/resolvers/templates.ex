@@ -62,9 +62,8 @@ defmodule GlificWeb.Resolvers.Templates do
           {:ok, any} | {:error, any}
   def delete_session_template(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, session_template} <-
-           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}),
-         {:ok, session_template} <- Templates.delete_session_template(session_template) do
-      {:ok, session_template}
+           Repo.fetch_by(SessionTemplate, %{id: id, organization_id: user.organization_id}) do
+      Templates.delete_session_template(session_template)
     end
   end
 
