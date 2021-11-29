@@ -122,14 +122,10 @@ defmodule Glific.Contacts.Import do
         [] -> {:ok, %{status: "All contacts added"}}
         _ -> {:error, %{status: "All contacts could not be added", errors: errors}}
       end
-    else
-      {:error, _error} ->
-        {:error,
-         [
-           "All contacts could not be added",
-           "Error creating group with label: #{group_label}"
-         ]}
     end
+  rescue
+    Ecto.NoResultsError ->
+      {:error, %{status: "All contacts could not be added", errors: "Invalid organization ID"}}
   end
 
   @doc """

@@ -447,7 +447,6 @@ defmodule Glific.ContactsTest do
       end
     end
 
-    @tag :pending
     test "import_contact/3 with invalid organization id returns an error" do
       Tesla.Mock.mock(fn
         %{method: :post} ->
