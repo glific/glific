@@ -132,7 +132,7 @@ defmodule Glific.Contacts.Contact do
   @doc """
   Populate virtual field of masked phone number
   """
-  @spec populate_masked_phone(%Contact{}) :: %Contact{}
+  @spec populate_masked_phone(Contact.t()) :: Contact.t()
   def populate_masked_phone(%Contact{phone: phone} = contact) do
     masked_phone =
       "#{elem(String.split_at(phone, 4), 0)}******#{elem(String.split_at(phone, -2), 1)}"

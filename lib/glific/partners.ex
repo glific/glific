@@ -39,7 +39,7 @@ defmodule Glific.Partners do
       [%Provider{}, ...]
 
   """
-  @spec list_providers(map()) :: [%Provider{}, ...]
+  @spec list_providers(map()) :: [Provider.t(), ...]
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
@@ -74,7 +74,7 @@ defmodule Glific.Partners do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_provider!(id :: integer) :: %Provider{}
+  @spec get_provider!(id :: integer) :: Provider.t()
   def get_provider!(id), do: Repo.get!(Provider, id)
 
   @doc """
@@ -89,7 +89,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_provider(map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  @spec create_provider(map()) :: {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
   def create_provider(attrs \\ %{}) do
     %Provider{}
     |> Provider.changeset(attrs)
@@ -108,7 +108,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_provider(%Provider{}, map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  @spec update_provider(Provider.t(), map()) :: {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
   def update_provider(%Provider{} = provider, attrs) do
     provider
     |> Provider.changeset(attrs)
@@ -127,7 +127,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_provider(%Provider{}) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  @spec delete_provider(Provider.t()) :: {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
   def delete_provider(%Provider{} = provider) do
     provider
     |> Ecto.Changeset.change()
@@ -144,7 +144,7 @@ defmodule Glific.Partners do
   iex> change_provider(provider)
   %Ecto.Changeset{data: %Provider{}}
   """
-  @spec change_provider(%Provider{}, map()) :: Ecto.Changeset.t()
+  @spec change_provider(Provider.t(), map()) :: Ecto.Changeset.t()
   def change_provider(%Provider{} = provider, attrs \\ %{}) do
     Provider.changeset(provider, attrs)
   end

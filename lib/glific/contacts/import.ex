@@ -70,7 +70,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  @spec fetch_contact_data_as_string(Keyword.t()) :: %File.Stream{} | %IO.Stream{}
+  @spec fetch_contact_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
   defp fetch_contact_data_as_string(opts) do
     file_path = Keyword.get(opts, :file_path, nil)
     url = Keyword.get(opts, :url, nil)
