@@ -55,7 +55,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc """
   Import contacts to the database
   """
-  @spec import_contacts(Absinthe.Resolution.t(), map(), %{
+  @spec import_contacts(Absinthe.Resolution.t(), %{group_label: String.t(), data: String.t(), id: integer, type: String.t()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}

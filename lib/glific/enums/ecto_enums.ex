@@ -118,7 +118,7 @@ defenum(
 )
 
 defenum(
-  Glific.Enums.UploadContactsType,
-  :upload_contacts_type_enum,
-  Glific.Enums.upload_contacts_type_const()
+  Glific.Enums.ImportContactsType,
+  :import_contacts_type_enum,
+  Glific.Enums.import_contacts_type_const()
 )

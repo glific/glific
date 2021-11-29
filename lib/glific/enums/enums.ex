@@ -106,8 +106,8 @@ defmodule Glific.Enums do
   iex> Glific.Enums.InteractiveMessageType.__enum_map__()
   Glific.Enums.interactive_message_type_const()
 
-  iex> Glific.Enums.UploadContactsType.__enum_map__()
-  Glific.Enums.upload_contacts_type_const()
+  iex> Glific.Enums.ImportContactsType.__enum_map__()
+  Glific.Enums.import_contacts_type_const()
 
   """
 
@@ -165,6 +165,6 @@ defmodule Glific.Enums do
   defmacro interactive_message_type_const,
     do: Macro.expand(@interactive_message_type_const, __CALLER__)
 
-  defmacro upload_contacts_type_const,
-    do: Macro.expand(@upload_contacts_type_const, __CALLER__)
+  defmacro import_contacts_type_const,
+    do: Macro.expand(@import_contacts_type_const, __CALLER__)
 end
