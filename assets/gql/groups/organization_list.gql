@@ -1,0 +1,9 @@
+query organization_groups($filter: GroupFilter, $opts: Opts, $id: ID!) {
+  organization_groups(filter: $filter, opts: $opts, id: $id) {
+    id
+    label
+    is_restricted
+    contacts_count
+    users_count
+  }
+}

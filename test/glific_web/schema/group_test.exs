@@ -15,6 +15,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/groups/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/groups/list.gql")
+  load_gql(:organization_list, GlificWeb.Schema, "assets/gql/groups/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/groups/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/groups/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/groups/update.gql")
@@ -35,6 +36,21 @@ defmodule GlificWeb.Schema.GroupTest do
 
   test "groups field returns list of groups in desc order", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
+    assert {:ok, query_data} = result
+
+    groups = get_in(query_data, [:data, "groups"])
+    assert length(groups) > 0
+
+    [group | _] = groups
+    assert get_in(group, ["label"]) == "Restricted Group"
+  end
+
+  test "organizations groups field returns list of groups in desc order", %{staff: user} do
+    result =
+      auth_query_gql_by(:organization_list, user,
+        variables: %{"opts" => %{"order" => "DESC"}, "id" => user.organization_id}
+      )
+
     assert {:ok, query_data} = result
 
     groups = get_in(query_data, [:data, "groups"])
