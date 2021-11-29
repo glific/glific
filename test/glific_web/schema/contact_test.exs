@@ -174,7 +174,12 @@ defmodule GlificWeb.Schema.ContactTest do
     # Test success for creating a contact without opt-in
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "DATA",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
@@ -195,7 +200,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "DATA",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
@@ -216,7 +226,12 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "DATA",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
@@ -228,12 +243,79 @@ defmodule GlificWeb.Schema.ContactTest do
 
     result =
       auth_query_gql_by(:import_contacts, user,
-        variables: %{"group_label" => group_label, "data" => data}
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "DATA",
+          "group_label" => group_label,
+          "data" => data
+        }
       )
 
     assert {:ok, _} = result
     count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
     assert count == 0
+
+    # Test success for uploading contact through url
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+
+      %{method: :get} ->
+        %Tesla.Env{
+          body:
+            "name,phone,Language,opt_in,delete\r\nuploaded_contact,9876543311,english,2021-03-09,",
+          status: 200
+        }
+    end)
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "URL",
+          "group_label" => group_label,
+          "data" => "https://storage.cloud.google.com/test.csv"
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
+    assert count == 1
+
+    # Test success for uploading contact through filepath
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    file =
+      System.tmp_dir!()
+      |> Path.join("fixture.csv")
+      |> File.open!([:write, :utf8])
+
+    [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
+    |> CSV.encode()
+    |> Enum.each(&IO.write(file, &1))
+
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "FILE_PATH",
+          "group_label" => group_label,
+          "data" => file_name
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 3
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do

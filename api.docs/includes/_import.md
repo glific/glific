@@ -30,7 +30,9 @@ mutation importContacts($group_label : String, $data : String) {
 Parameter | Type | Default | Description
 --------- | ---- | ------- | -----------
 group_label | <a href="#string">String</a>  | required | The contacts are added to the group with this label
-group_label | <a href="#string">String</a>  | required | The <a href="#csvformat">csv data</a> as string.
+data | <a href="#string">String</a>  | required | The <a href="#csvformat">csv data</a> as string.
+id | <a href="#id">Id</a>  | required | organization to which contacts needed to be uploaded.
+type | <a href="#import_contact_enum">ImportContactEnum</a>  | required | Type of data for importing contacts.
 
 ## function import_contacts(organization_id, group_label, opts \\ [])
 
