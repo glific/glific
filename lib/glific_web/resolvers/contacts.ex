@@ -57,7 +57,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   """
   @spec import_contacts(
           Absinthe.Resolution.t(),
-          %{group_label: String.t(), data: String.t(), id: integer, type: String.t()},
+          %{group_label: String.t(), data: String.t(), id: integer, type: :data | :file_path | :url},
           %{
             context: map()
           }
