@@ -90,7 +90,7 @@ defmodule GlificWeb.Schema.GroupTypes do
       arg(:id, non_null(:id))
       arg(:filter, :group_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :glific_admin)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Groups.organization_groups/3)
     end
 

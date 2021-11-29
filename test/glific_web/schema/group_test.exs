@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.GroupTest do
 
   load_gql(:count, GlificWeb.Schema, "assets/gql/groups/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/groups/list.gql")
-  load_gql(:organization_list, GlificWeb.Schema, "assets/gql/groups/list.gql")
+  load_gql(:organization_list, GlificWeb.Schema, "assets/gql/groups/organization_list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/groups/by_id.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/groups/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/groups/update.gql")
@@ -52,12 +52,8 @@ defmodule GlificWeb.Schema.GroupTest do
       )
 
     assert {:ok, query_data} = result
-
-    groups = get_in(query_data, [:data, "groups"])
+    groups = get_in(query_data, [:data, "organization_groups"])
     assert length(groups) > 0
-
-    [group | _] = groups
-    assert get_in(group, ["label"]) == "Restricted Group"
   end
 
   test "groups field doesn't return not mapped groups", %{staff: user} do
