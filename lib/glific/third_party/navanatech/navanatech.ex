@@ -56,7 +56,7 @@ defmodule Glific.Navanatech do
     response
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, body}
+        {:ok, Jason.decode!(body)}
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
