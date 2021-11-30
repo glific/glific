@@ -16,6 +16,8 @@ defmodule Glific.Repo.Migrations.ContactHistoryTable do
 
       add(:event_datetime, :utc_datetime, comment: "The date and time of the event that happened.")
 
+      add(:organization_id, references(:organizations, on_delete: :delete_all), null: false)
+
       timestamps(type: :utc_datetime)
     end
   end
