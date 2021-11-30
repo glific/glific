@@ -13,7 +13,7 @@ defmodule Glific.Repo.Migrations.MessageMediaTrigger do
       BEGIN
       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
         IF (TG_OP = 'UPDATE') THEN
-          UPDATE messages set updated_at = (CURRENT_TIMESTAMP at time zone 'utc') where media_id = NEW.id;
+        UPDATE messages set updated_at = ((CURRENT_TIMESTAMP at time zone 'utc') + (1 ||' minutes')::interval) where media_id = NEW.id;
         END IF;
         RETURN NULL;
       END;
