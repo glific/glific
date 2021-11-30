@@ -90,9 +90,8 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec delete_organization(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_organization(_, %{id: id}, _) do
-    with {:ok, organization} <- Repo.fetch(Organization, id),
-         {:ok, organization} <- Partners.delete_organization(organization) do
-      {:ok, organization}
+    with {:ok, organization} <- Repo.fetch(Organization, id) do
+      Partners.delete_organization(organization)
     end
   end
 
@@ -180,11 +179,8 @@ defmodule GlificWeb.Resolvers.Partners do
   """
   @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def bspbalance(_, _, %{context: %{current_user: user}}) do
-    with {:ok, balance} <- get_balance(user.organization_id) do
-      {:ok, balance}
-    end
-  end
+  def bspbalance(_, _, %{context: %{current_user: user}}),
+    do: get_balance(user.organization_id)
 
   @spec get_balance(non_neg_integer) :: {:ok, map()} | {:error, String.t()}
   defp get_balance(organization_id) do
@@ -224,9 +220,8 @@ defmodule GlificWeb.Resolvers.Partners do
   @spec delete_provider(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_provider(_, %{id: id}, _) do
-    with {:ok, provider} <- Repo.fetch(Provider, id),
-         {:ok, provider} <- Partners.delete_provider(provider) do
-      {:ok, provider}
+    with {:ok, provider} <- Repo.fetch(Provider, id) do
+      Partners.delete_provider(provider)
     end
   end
 

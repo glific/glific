@@ -28,7 +28,7 @@ config :elixir, :time_zone_database, Tzdata.TimeZoneDatabase
 # Configure Oban, its queues and crontab entries
 
 oban_queues = [
-  bigquery: 10,
+  bigquery: 5,
   crontab: 10,
   default: 10,
   dialogflow: 5,
@@ -56,8 +56,8 @@ oban_crontab = [
 oban_engine = Oban.Pro.Queue.SmartEngine
 
 oban_plugins = [
-  # Prune jobs after 5 mins, gives us some time to go investigate if needed
-  {Oban.Plugins.Pruner, max_age: 300},
+  # Prune jobs after 60 mins, gives us some time to go investigate if needed
+  {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 60 * 60}, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
   Oban.Pro.Plugins.Lifeline,
   Oban.Web.Plugins.Stats,
@@ -119,7 +119,7 @@ config :waffle,
   token_fetcher: Glific.GCS
 
 config :esbuild,
-  version: "0.12.18",
+  version: "0.14.0",
   default: [
     args: ~w(js/app.js --bundle --target=es2016 --outdir=../priv/static/assets),
     cd: Path.expand("../assets", __DIR__),

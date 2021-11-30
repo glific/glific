@@ -631,11 +631,10 @@ defmodule Glific.Clients.Stir do
 
     priority_message =
       priorities
-      |> Enum.map(fn {_priority, obj} ->
+      |> Enum.map_join("\n", fn {_priority, obj} ->
         description = get_in(obj, [:translations, language.locale, :description])
         "*#{obj.keyword}*. #{description}"
       end)
-      |> Enum.join("\n")
 
     priority_map = Enum.into(@priorities_list, %{})
 

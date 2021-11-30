@@ -6,6 +6,8 @@ defmodule Glific.Partners.Provider do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias __MODULE__
+
   # define all the required fields for provider
   @required_fields [
     :name,
@@ -48,7 +50,7 @@ defmodule Glific.Partners.Provider do
   @doc """
   Standard changeset pattern we use for all datat types
   """
-  @spec changeset(%Glific.Partners.Provider{}, map()) :: Ecto.Changeset.t()
+  @spec changeset(Provider.t(), map()) :: Ecto.Changeset.t()
   def changeset(provider, attrs) do
     provider
     |> cast(attrs, @required_fields ++ @optional_fields)

@@ -47,7 +47,7 @@ defmodule Glific.Partners.Saas do
   @doc """
   Standard changeset pattern we use for all datat types
   """
-  @spec changeset(%Glific.Partners.Saas{}, map()) :: Ecto.Changeset.t()
+  @spec changeset(Saas.t(), map()) :: Ecto.Changeset.t()
   def changeset(saas, attrs) do
     saas
     |> cast(attrs, @required_fields ++ @optional_fields)

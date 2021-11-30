@@ -258,8 +258,7 @@ defmodule Glific.Flows.ContactAction do
   defp process_labels(context, %{labels: labels} = action) do
     flow_label =
       labels
-      |> Enum.map(fn label -> label["name"] end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn label -> label["name"] end)
 
     {context, Map.put(action, :labels, flow_label)}
   end

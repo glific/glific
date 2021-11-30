@@ -118,7 +118,7 @@ defmodule Glific.Clients do
     module_name = get_in(plugins(), [media["organization_id"], :gcs_file_name])
 
     if module_name,
-      do: apply(module_name, :gcs_file_name, [media]),
+      do: module_name.gcs_file_name(media),
       else: media["remote_name"]
   end
 
@@ -131,7 +131,7 @@ defmodule Glific.Clients do
     module_name = get_in(plugins(), [organization_id, :blocked?])
 
     if module_name,
-      do: apply(module_name, :blocked?, [phone]),
+      do: module_name.blocked?(phone),
       else: false
   end
 
@@ -144,7 +144,7 @@ defmodule Glific.Clients do
     module_name = get_in(plugins(), [contact.organization_id, :broadcast])
 
     if module_name,
-      do: apply(module_name, :broadcast, [action, contact, staff_id]),
+      do: module_name.broadcast(action, contact, staff_id),
       else: staff_id
   end
 
@@ -157,7 +157,7 @@ defmodule Glific.Clients do
     module_name = get_in(plugins(), [fields["organization_id"], :webhook])
 
     if module_name,
-      do: apply(module_name, :webhook, [name, fields]),
+      do: module_name.webhook(name, fields),
       else: %{error: "Missing webhook function implementation"}
   end
 
@@ -169,7 +169,7 @@ defmodule Glific.Clients do
     module_name = get_in(plugins(), [org_id, :daily_tasks])
 
     if module_name,
-      do: apply(module_name, :daily_tasks, [org_id]),
+      do: module_name.daily_tasks(org_id),
       else: %{error: "Missing daily function implementation"}
   end
 end

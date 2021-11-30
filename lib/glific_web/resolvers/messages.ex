@@ -67,9 +67,8 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def delete_message(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, message} <-
-           Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}),
-         {:ok, message} <- Messages.delete_message(message) do
-      {:ok, message}
+           Repo.fetch_by(Message, %{id: id, organization_id: user.organization_id}) do
+      Messages.delete_message(message)
     end
   end
 
@@ -219,9 +218,8 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def delete_message_media(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, message_media} <-
-           Repo.fetch_by(MessageMedia, %{id: id, organization_id: user.organization_id}),
-         {:ok, message_media} <- Messages.delete_message_media(message_media) do
-      {:ok, message_media}
+           Repo.fetch_by(MessageMedia, %{id: id, organization_id: user.organization_id}) do
+      Messages.delete_message_media(message_media)
     end
   end
 

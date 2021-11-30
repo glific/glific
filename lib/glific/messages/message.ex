@@ -206,7 +206,7 @@ defmodule Glific.Messages.Message do
   @doc """
   Populate virtual field of send_by
   """
-  @spec append_send_by(%Message{}) :: %Message{}
+  @spec append_send_by(Message.t()) :: Message.t()
   def append_send_by(%Message{flow_id: flow_id, flow: :outbound} = message)
       when is_nil(flow_id) == false,
       do: %{message | send_by: "Flow: #{message.flow_object.name}"}

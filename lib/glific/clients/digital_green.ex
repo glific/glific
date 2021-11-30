@@ -260,8 +260,7 @@ defmodule Glific.Clients.DigitalGreen do
     village = Keyword.get(opts, :village, "")
 
     message =
-      Enum.map(rows, fn row -> "Date: #{row["Date"]} Summery: #{row["Summary"]}" end)
-      |> Enum.join("\n")
+      Enum.map_join(rows, "\n", fn row -> "Date: #{row["Date"]} Summery: #{row["Summary"]}" end)
 
     image = "https://storage.googleapis.com/dg-weather/#{village}.png"
 

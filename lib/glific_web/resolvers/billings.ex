@@ -34,11 +34,8 @@ defmodule GlificWeb.Resolvers.Billings do
   @doc false
   @spec get_promo_code(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def get_promo_code(_, %{code: code}, _) do
-    with {:ok, coupon_code} <-
-           Billing.get_promo_codes(code),
-         do: {:ok, coupon_code}
-  end
+  def get_promo_code(_, %{code: code}, _),
+    do: Billing.get_promo_codes(code)
 
   @doc false
   @spec customer_portal(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -109,9 +106,8 @@ defmodule GlificWeb.Resolvers.Billings do
           {:ok, any} | {:error, any}
   def delete_billing(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, billing} <-
-           Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}),
-         {:ok, billing} <- Billing.delete_billing(billing) do
-      {:ok, billing}
+           Repo.fetch_by(Billing, %{id: id, organization_id: user.organization_id}) do
+      Billing.delete_billing(billing)
     end
   end
 end

@@ -60,9 +60,8 @@ defmodule GlificWeb.Resolvers.Settings do
   @spec delete_language(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_language(_, %{id: id}, _) do
-    with {:ok, language} <- Repo.fetch(Language, id),
-         {:ok, language} <- Settings.delete_language(language) do
-      {:ok, language}
+    with {:ok, language} <- Repo.fetch(Language, id) do
+      Settings.delete_language(language)
     end
   end
 end

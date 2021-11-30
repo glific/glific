@@ -563,14 +563,16 @@ defmodule Glific.Partners.Billing do
   # return a map which maps glific product ids to subscription item ids
   @spec subscription_items(Stripe.Subscription.t()) :: map()
   defp subscription_items(%{items: items} = _subscription) do
-    items.data
-    |> Enum.reduce(
-      %{},
-      fn item, acc ->
-        Map.put(acc, item.price.id, item.id)
-      end
-    )
-    |> (fn v -> %{stripe_subscription_items: v} end).()
+    v =
+      items.data
+      |> Enum.reduce(
+        %{},
+        fn item, acc ->
+          Map.put(acc, item.price.id, item.id)
+        end
+      )
+
+    %{stripe_subscription_items: v}
   end
 
   # return a map which maps glific product ids to subscription item ids
