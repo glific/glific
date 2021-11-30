@@ -15,6 +15,7 @@ defmodule Glific.Contacts do
   alias Glific.{
     Clients,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
     Groups.UserGroup,
@@ -693,15 +694,12 @@ defmodule Glific.Contacts do
   def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  capture conatcts histroy
+  create new contact histroy record.
+  events  = [:contact_created, :contact_opted_in, :contact_opted_out, :contact_blocked ]
+
   """
-  def capture_history(contact, attrs) do
-    attrs =
-      attrs
-      |> Map.put(
-        :contact_id,
-        contact.id
-      )
+  def capture_history(contact, event_type, attrs) do
+    attrs = Map.merge(%{event_type: event_type, contact_id: contact.id}, attrs)
 
     %ContactHistory{}
     |> ContactHistory.changeset(attrs)
