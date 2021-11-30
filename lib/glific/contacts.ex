@@ -691,4 +691,20 @@ defmodule Glific.Contacts do
   """
   @spec is_simulator_contact?(String.t()) :: boolean
   def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+
+  @doc """
+  capture conatcts histroy
+  """
+  def capture_history(contact, attrs) do
+    attrs =
+      attrs
+      |> Map.put(
+        :contact_id,
+        contact.id
+      )
+
+    %ContactHistory{}
+    |> ContactHistory.changeset(attrs)
+    |> Repo.insert()
+  end
 end
