@@ -7,6 +7,7 @@ defmodule Glific.Contacts.ContactHistory do
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactHistory,
     Partners.Organization
   }
 

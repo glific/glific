@@ -217,9 +217,6 @@ defmodule Glific.Contacts do
     |> Repo.insert()
     |> case do
       {:ok, contact} ->
-        contact
-        |> capture_history(:contact_created, %{event_name: "contact created"})
-
         {:ok, contact}
 
       {:error, changeset} ->
@@ -250,6 +247,18 @@ defmodule Glific.Contacts do
         contact
         |> Contact.changeset(attrs)
         |> Repo.update()
+        |> case do
+          {:ok, contact} ->
+            capture_history(contact, :contact_updated, %{
+              event_name: "contact updated",
+              event_meta: attrs
+            })
+
+            {:ok, contact}
+
+          {:error, changeset} ->
+            {:error, changeset}
+        end
       end
     else
       raise "Permission denied"
@@ -728,7 +737,10 @@ defmodule Glific.Contacts do
     %ContactHistory{}
     |> ContactHistory.changeset(attrs)
     |> Repo.insert()
+  rescue
+    _ ->
+      :ok
 
-    :ok
+      :ok
   end
 end
