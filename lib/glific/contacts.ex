@@ -717,6 +717,7 @@ defmodule Glific.Contacts do
       |> capture_history(event_type, attrs)
 
   def capture_history(contact, event_type, attrs) do
+    ## I will add the telemetery evenets here.
     attrs =
       Map.merge(
         %{
