@@ -122,7 +122,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Punjabi", "ਪੰਜਾਬੀ", "pa"},
       {"Marathi", "मराठी", "mr"},
       {"Urdu", "اردو", "ur"},
-      {"Spanish", "Español", "es"}
+      {"Spanish", "Español", "es"},
+      {"Sign Language", "ISL", "isl"}
     ]
 
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
