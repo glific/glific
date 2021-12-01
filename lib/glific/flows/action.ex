@@ -9,6 +9,7 @@ defmodule Glific.Flows.Action do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Dialogflow,
     Flows,
@@ -505,6 +506,15 @@ defmodule Glific.Flows.Action do
                 organization_id: context.organization_id
               })
 
+              Contacts.capture_history(context.contact_id, :contact_added_to_group, %{
+                event_name: "Contact added to group",
+                event_meta: %{
+                  group_id: group_id,
+                  group_name: group["name"],
+                  flow_id: context.flow_id
+                }
+              })
+
             _ ->
               Logger.error("Could not parse action groups: #{inspect(action)}")
           end
@@ -526,6 +536,16 @@ defmodule Glific.Flows.Action do
           action.groups,
           fn group ->
             {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+
+            Contacts.capture_history(context.contact_id, :contact_removed_from_group, %{
+              event_name: "Contact remvoed to group",
+              event_meta: %{
+                group_id: group_id,
+                group_name: group["name"],
+                flow_id: context.flow_id
+              }
+            })
+
             group_id
           end
         )

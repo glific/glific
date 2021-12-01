@@ -215,6 +215,16 @@ defmodule Glific.Contacts do
     %Contact{}
     |> Contact.changeset(attrs)
     |> Repo.insert()
+    |> case do
+      {:ok, contact} ->
+        contact
+        |> capture_history(:contact_created, %{event_name: "contact created"})
+
+        {:ok, contact}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -695,11 +705,30 @@ defmodule Glific.Contacts do
 
   @doc """
   create new contact histroy record.
-  events  = [:contact_created, :contact_opted_in, :contact_opted_out, :contact_blocked ]
+  events  = [
+    :contact_created,
+    :contact_opted_in,
+    :contact_opted_out,
+    :contact_blocked,
+    :contact_field_updated,
+    :contact_flow_started,
+    :contact_flow_ended,
+    :contact_flow_ended_all
+  ]
 
   """
   def capture_history(contact, event_type, attrs) do
-    attrs = Map.merge(%{event_type: event_type, contact_id: contact.id}, attrs)
+    attrs =
+      Map.merge(
+        %{
+          event_type: event_type,
+          contact_id: contact.id,
+          event_datetime: DateTime.utc_now(),
+          organization_id: contact.organization_id,
+          event_meta: %{}
+        },
+        attrs
+      )
 
     %ContactHistory{}
     |> ContactHistory.changeset(attrs)
