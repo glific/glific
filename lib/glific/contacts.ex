@@ -705,18 +705,13 @@ defmodule Glific.Contacts do
 
   @doc """
   create new contact histroy record.
-  events  = [
-    :contact_created,
-    :contact_opted_in,
-    :contact_opted_out,
-    :contact_blocked,
-    :contact_field_updated,
-    :contact_flow_started,
-    :contact_flow_ended,
-    :contact_flow_ended_all
-  ]
-
   """
+  @spec capture_history(Contact.t() | non_neg_integer(), String.t(), map()) :: :ok
+  def capture_history(contact_id, event_type, attrs) when is_integer(contact_id) == true,
+    do:
+      get_contact!(contact_id)
+      |> capture_history(event_type, attrs)
+
   def capture_history(contact, event_type, attrs) do
     attrs =
       Map.merge(
@@ -733,5 +728,7 @@ defmodule Glific.Contacts do
     %ContactHistory{}
     |> ContactHistory.changeset(attrs)
     |> Repo.insert()
+
+    :ok
   end
 end
