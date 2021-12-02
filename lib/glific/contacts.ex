@@ -215,13 +215,6 @@ defmodule Glific.Contacts do
     %Contact{}
     |> Contact.changeset(attrs)
     |> Repo.insert()
-    |> case do
-      {:ok, contact} ->
-        {:ok, contact}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
   end
 
   @doc """
@@ -247,13 +240,6 @@ defmodule Glific.Contacts do
         contact
         |> Contact.changeset(attrs)
         |> Repo.update()
-        |> case do
-          {:ok, contact} ->
-            {:ok, contact}
-
-          {:error, changeset} ->
-            {:error, changeset}
-        end
       end
     else
       raise "Permission denied"
@@ -298,9 +284,8 @@ defmodule Glific.Contacts do
 
   """
   @spec change_contact(Contact.t(), map()) :: Ecto.Changeset.t()
-  def change_contact(%Contact{} = contact, attrs \\ %{}) do
-    Contact.changeset(contact, attrs)
-  end
+  def change_contact(%Contact{} = contact, attrs \\ %{}),
+    do: Contact.changeset(contact, attrs)
 
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
@@ -710,8 +695,9 @@ defmodule Glific.Contacts do
   @doc """
   create new contact histroy record.
   """
-  @spec capture_history(Contact.t() | non_neg_integer(), atom(), map()) :: :ok
-  def capture_history(contact_id, event_type, attrs) when is_integer(contact_id) == true,
+  @spec capture_history(Contact.t() | non_neg_integer(), atom(), map()) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
+  def capture_history(contact_id, event_type, attrs) when is_integer(contact_id),
     do:
       get_contact!(contact_id)
       |> capture_history(event_type, attrs)
@@ -733,9 +719,8 @@ defmodule Glific.Contacts do
     %ContactHistory{}
     |> ContactHistory.changeset(attrs)
     |> Repo.insert()
-
-    :ok
   end
 
-  def capture_history(_, _event_type, _attrs), do: :ok
+  def capture_history(_, _event_type, _attrs),
+    do: {:error, dgettext("errors", "Invalid event type")}
 end
