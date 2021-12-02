@@ -217,7 +217,7 @@ defmodule Glific.Flows.FlowContext do
     )
 
     Contacts.capture_history(context.contact, :contact_flow_ended, %{
-      event_label: "Flow stopped for the contact",
+      event_label: "Contact flow ended. Flow: #{context.flow.name}",
       event_meta: %{
         flow_id: context.flow_id,
         context_id: context.id
@@ -438,7 +438,7 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
 
     Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
-      event_label: "all flow stopped for the contact"
+      event_label: "All contact flow ended."
     })
 
     :telemetry.execute(
@@ -515,9 +515,10 @@ defmodule Glific.Flows.FlowContext do
     )
 
     Contacts.capture_history(contact, :contact_flow_started, %{
-      event_label: "New flow started for the contact",
+      event_label: "Flow (#{flow.name}) started for the contact",
       event_meta: %{
         flow_id: flow.id,
+        flow_name: flow.name,
         context_id: context.id
       }
     })

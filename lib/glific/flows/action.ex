@@ -507,7 +507,7 @@ defmodule Glific.Flows.Action do
               })
 
               Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
-                event_label: "Contact added to group",
+                event_label: "Contact added to the Collection #{group["name"]}",
                 event_meta: %{
                   group_id: group_id,
                   group_name: group["name"],
@@ -537,8 +537,8 @@ defmodule Glific.Flows.Action do
           fn group ->
             {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
 
-            Contacts.capture_history(context.contact_id, :contact_removed_from_group, %{
-              event_label: "Contact remvoed to group",
+            Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+              event_label: "Contact removed from the Collection #{group["name"]}",
               event_meta: %{
                 group_id: group_id,
                 group_name: group["name"],
