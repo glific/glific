@@ -506,14 +506,15 @@ defmodule Glific.Flows.Action do
                 organization_id: context.organization_id
               })
 
-              Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
-                event_label: "Contact added to the Collection #{group["name"]}",
-                event_meta: %{
-                  group_id: group_id,
-                  group_name: group["name"],
-                  flow_id: context.flow_id
-                }
-              })
+              {:ok, _} =
+                Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+                  event_label: "Contact added to the Collection #{group["name"]}",
+                  event_meta: %{
+                    group_id: group_id,
+                    group_name: group["name"],
+                    flow_id: context.flow_id
+                  }
+                })
 
             _ ->
               Logger.error("Could not parse action groups: #{inspect(action)}")
@@ -537,14 +538,15 @@ defmodule Glific.Flows.Action do
           fn group ->
             {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
 
-            Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
-              event_label: "Contact removed from the Collection #{group["name"]}",
-              event_meta: %{
-                group_id: group_id,
-                group_name: group["name"],
-                flow_id: context.flow_id
-              }
-            })
+            {:ok, _} =
+              Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+                event_label: "Contact removed from the Collection #{group["name"]}",
+                event_meta: %{
+                  group_id: group_id,
+                  group_name: group["name"],
+                  flow_id: context.flow_id
+                }
+              })
 
             group_id
           end

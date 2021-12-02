@@ -46,16 +46,17 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
-    Contacts.capture_history(contact, :contact_fields_updated, %{
-      event_meta: %{
-        field: field,
-        label: label,
-        value: value,
-        old_value: get_in(contact_fields, [field, "value"]),
-        new_value: value
-      },
-      event_label: "Value for #{label} is updated to #{value}"
-    })
+    {:ok, _} =
+      Contacts.capture_history(contact, :contact_fields_updated, %{
+        event_meta: %{
+          field: field,
+          label: label,
+          value: value,
+          old_value: get_in(contact_fields, [field, "value"]),
+          new_value: value
+        },
+        event_label: "Value for #{label} is updated to #{value}"
+      })
 
     contact
   end
@@ -71,9 +72,10 @@ defmodule Glific.Flows.ContactField do
         %{fields: %{}}
       )
 
-    Contacts.capture_history(contact, :contact_fields_reset, %{
-      event_label: "All contact fields are reset"
-    })
+    {:ok, _} =
+      Contacts.capture_history(contact, :contact_fields_reset, %{
+        event_label: "All contact fields are reset"
+      })
 
     Map.put(context, :contact, contact)
   end
