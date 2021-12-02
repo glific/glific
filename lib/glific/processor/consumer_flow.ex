@@ -25,16 +25,6 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if skip_message?(message, state),
-      do: {message, state},
-      else: do_process_message({message, state}, body)
-  end
-
-  # Setting this to 0 since we are pushing out our own optin flow
-  @delay_time 0
-
-  @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
-  defp do_process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
     is_draft = is_draft_keyword?(state, body)
@@ -52,6 +42,9 @@ defmodule Glific.Processor.ConsumerFlow do
       do: start_optin_flow(message, state),
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
+
+  # Setting this to 0 since we are pushing out our own optin flow
+  @delay_time 0
 
   @doc """
   In case contact is not in optin flow let's move ahead with the regualr processing.
@@ -175,16 +168,6 @@ defmodule Glific.Processor.ConsumerFlow do
     )
 
     {message, state}
-  end
-
-  # if this is a new contact then we will allow to
-  # process the message other wise system will check if
-  # they opted in again and skip the flow
-  @spec skip_message?(Message.t(), map()) :: boolean()
-  defp skip_message?(message, state) do
-    if Map.get(state, :newcontact, false) || is_nil(message.body),
-      do: false,
-      else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end
 
   @optin_flow_keyword "optin"
