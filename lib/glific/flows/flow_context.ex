@@ -216,11 +216,14 @@ defmodule Glific.Flows.FlowContext do
       }
     )
 
+    context = Repo.preload(context, [:flow, :contact])
+
     {:ok, _} =
-      Contacts.capture_history(context.contact_id, :contact_flow_ended, %{
+      Contacts.capture_history(context.contact, :contact_flow_ended, %{
         event_label: "Flow (#{context.flow.name}) started for the contact.",
         event_meta: %{
           flow_id: context.flow_id,
+          flow_name: context.flow.name,
           context_id: context.id
         }
       })
