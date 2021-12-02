@@ -52,7 +52,7 @@ defmodule Glific.Flows.ContactField do
           field: field,
           label: label,
           value: value,
-          old_value: get_in(contact_fields, [field, "value"]),
+          old_value: get_in(contact_fields, [field]),
           new_value: value
         },
         event_label: "Value for #{label} is updated to #{value}"

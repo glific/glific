@@ -218,7 +218,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
-        event_label: "Contact flow ended. Flow: #{context.flow.name}",
+        event_label: "Flow (#{context.flow.name}) started for the contact.",
         event_meta: %{
           flow_id: context.flow_id,
           context_id: context.id

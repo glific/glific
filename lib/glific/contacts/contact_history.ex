@@ -26,7 +26,7 @@ defmodule Glific.Contacts.ContactHistory do
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           event_type: String.t() | nil,
-          event_name: String.t() | nil,
+          event_label: String.t() | nil,
           event_datetime: :utc_datetime | nil,
           event_meta: map() | nil,
           organization_id: non_neg_integer | nil,
@@ -37,7 +37,7 @@ defmodule Glific.Contacts.ContactHistory do
 
   schema "contact_histories" do
     field(:event_type, :string)
-    field(:event_name, :string)
+    field(:event_label, :string)
     field(:event_datetime, :utc_datetime)
     field(:event_meta, :map, default: %{})
     belongs_to(:contact, Contact)
