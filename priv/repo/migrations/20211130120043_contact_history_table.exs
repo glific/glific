@@ -11,7 +11,7 @@ defmodule Glific.Repo.Migrations.ContactHistoryTable do
            ) do
       add(:contact_id, references(:contacts, on_delete: :delete_all), null: false)
       add(:event_type, :string, comment: "The type of event that happened.")
-      add(:event_name, :string, comment: "The name of the event.")
+      add(:event_label, :string, comment: "The name of the event.")
       add(:event_meta, :map, default: %{}, comment: "The meta data for the event that happened.")
 
       add(:event_datetime, :utc_datetime, comment: "The date and time of the event that happened.")
