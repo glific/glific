@@ -5,9 +5,11 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactHistory,
     Repo
   }
 
@@ -77,11 +79,33 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :groups, list_of(:group) do
       resolve(dataloader(Repo, use_parent: true))
     end
+
+    field :history, :contact_history do
+      resolve(fn contact, _, _ ->
+        contact_histories =
+          ContactHistory
+          |> where([ch], ch.contact_id == ^contact.id)
+          |> order_by([ch], ch.event_datetime)
+          |> Repo.all()
+
+        {:ok, contact_histories}
+      end)
+    end
   end
 
   object :location do
     field :longitude, :float
     field :latitude, :float
+  end
+
+  object :contact_history do
+    field(:id, :id)
+    field(:event_type, :string)
+    field(:event_label, :string)
+    field(:event_meta, :json)
+    field(:event_datetime, :datetime)
+    field(:inserted_at, :datetime)
+    field(:updated_at, :datetime)
   end
 
   @desc "Filtering options for contacts"
