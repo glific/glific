@@ -14,7 +14,7 @@ defmodule Glific.Contacts.ContactHistory do
   @required_fields [
     :contact_id,
     :event_type,
-    :event_name,
+    :event_label,
     :event_datetime,
     :organization_id
   ]
