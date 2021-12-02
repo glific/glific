@@ -80,7 +80,7 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(dataloader(Repo, use_parent: true))
     end
 
-    field :history, :contact_history do
+    field :history, list_of(:contact_history) do
       resolve(fn contact, _, _ ->
         contact_histories =
           ContactHistory
