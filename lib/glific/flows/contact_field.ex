@@ -46,7 +46,7 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
-    Contacts.capture_history(contact, :contact_field_updated, %{
+    Contacts.capture_history(contact, :contact_fields_updated, %{
       event_meta: %{
         field: field,
         label: label,
@@ -71,7 +71,7 @@ defmodule Glific.Flows.ContactField do
         %{fields: %{}}
       )
 
-    Contacts.capture_history(contact, :contact_field_reset, %{
+    Contacts.capture_history(contact, :contact_fields_reset, %{
       event_label: "reset all contacts fields"
     })
 

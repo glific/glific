@@ -78,39 +78,39 @@ defmodule Glific.Flows.FlowContext do
         }
 
   schema "flow_contexts" do
-    field :uuid_map, :map, virtual: true
-    field :node, :map, virtual: true
+    field(:uuid_map, :map, virtual: true)
+    field(:node, :map, virtual: true)
 
-    field :results, :map, default: %{}
+    field(:results, :map, default: %{})
 
-    field :node_uuid, Ecto.UUID
-    field :flow_uuid, Ecto.UUID
+    field(:node_uuid, Ecto.UUID)
+    field(:flow_uuid, Ecto.UUID)
 
-    field :status, :string, default: "published"
+    field(:status, :string, default: "published")
 
-    field :wakeup_at, :utc_datetime, default: nil
-    field :completed_at, :utc_datetime, default: nil
+    field(:wakeup_at, :utc_datetime, default: nil)
+    field(:completed_at, :utc_datetime, default: nil)
 
-    field :is_background_flow, :boolean, default: false
+    field(:is_background_flow, :boolean, default: false)
 
-    field :delay, :integer, default: 0, virtual: true
+    field(:delay, :integer, default: 0, virtual: true)
 
     # keep a counter of all uuids we encounter (start with flows)
     # this allows to to detect infinite loops and abort
-    field :uuids_seen, :map, default: %{}, virtual: true
+    field(:uuids_seen, :map, default: %{}, virtual: true)
 
-    field :recent_inbound, {:array, :map}, default: []
-    field :recent_outbound, {:array, :map}, default: []
+    field(:recent_inbound, {:array, :map}, default: [])
+    field(:recent_outbound, {:array, :map}, default: [])
 
-    field :last_message, :map, virtual: true
+    field(:last_message, :map, virtual: true)
 
-    belongs_to :contact, Contact
-    belongs_to :flow, Flow
-    belongs_to :organization, Organization
-    belongs_to :parent, FlowContext, foreign_key: :parent_id
+    belongs_to(:contact, Contact)
+    belongs_to(:flow, Flow)
+    belongs_to(:organization, Organization)
+    belongs_to(:parent, FlowContext, foreign_key: :parent_id)
 
     # the originating group message which kicked off this flow if any
-    belongs_to :flow_broadcast, FlowBroadcast
+    belongs_to(:flow_broadcast, FlowBroadcast)
 
     timestamps(type: :utc_datetime)
   end
@@ -216,7 +216,7 @@ defmodule Glific.Flows.FlowContext do
       }
     )
 
-    Contacts.capture_history(context.contact, :contact_flow_stopped, %{
+    Contacts.capture_history(context.contact, :contact_flow_ended, %{
       event_label: "Flow stopped for the contact",
       event_meta: %{
         flow_id: context.flow_id,
@@ -437,7 +437,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], fc.is_background_flow == false)
     |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
 
-    Contacts.capture_history(contact_id, :contact_flow_stopped_all, %{
+    Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
       event_label: "all flow stopped for the contact"
     })
 

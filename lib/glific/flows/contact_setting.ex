@@ -24,7 +24,7 @@ defmodule Glific.Flows.ContactSetting do
       [language | _] ->
         {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
 
-        Contacts.capture_history(contact, :conatct_language_set, %{
+        Contacts.capture_history(contact, :contact_language_updated, %{
           event_label: "Updated contact language to #{language.label}",
           event_meta: %{
             language: language.label,

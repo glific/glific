@@ -506,7 +506,7 @@ defmodule Glific.Flows.Action do
                 organization_id: context.organization_id
               })
 
-              Contacts.capture_history(context.contact_id, :contact_added_to_group, %{
+              Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                 event_label: "Contact added to group",
                 event_meta: %{
                   group_id: group_id,
