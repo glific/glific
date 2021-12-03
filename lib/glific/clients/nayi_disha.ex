@@ -16,10 +16,11 @@ defmodule Glific.Clients.NayiDisha do
   @spec webhook(String.t(), map()) :: map()
   def webhook("daily", fields) do
     contact_id = get_in(fields, ["contact", "id"])
-    _contact_language = get_language(contact_id)
+    contact_language = get_language(contact_id)
     training_day = get_training_day(fields)
 
     %{
+      contact_language: contact_language.locale,
       training_day: training_day,
       is_cycle_ended: training_day not in Map.keys(Data.load()),
       is_valid: Map.has_key?(Data.load(), training_day)
@@ -32,12 +33,12 @@ defmodule Glific.Clients.NayiDisha do
   @doc """
     get template for IEX
   """
-  @spec template(integer()) :: binary
-  def template(training_day) do
+  @spec template(integer(), String.t()) :: binary
+  def template(training_day, language) do
     %{
-      uuid: get_in(Data.load(), [training_day, :hsm_uuid]),
+      uuid: get_in(Data.load(), [training_day, :translations, language, :hsm_uuid]),
       name: "Day #{training_day}",
-      variables: get_in(Data.load(), [training_day, :variables]),
+      variables: get_in(Data.load(), [training_day, :translations, language, :variables]),
       expression: nil
     }
     |> Jason.encode!()
