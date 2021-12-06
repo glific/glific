@@ -125,14 +125,20 @@ defmodule Glific.Flows.Case do
   it just consumes one message at a time and executes it against a predefined function
   It also returns a boolean, rather than a tuple
   """
-  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
-  def execute(%{type: "has_number_eq"} = c, context, %{type: type} = msg)
-      when type in @text_types,
-      do: strip(translated_arguments(context, c)) == strip(msg)
 
-  def execute(%{type: "has_number_between"} = c, context, %{type: type} = msg)
-      when type in @text_types do
-    [low, high] = translated_arguments(context, c)
+  def execute(flow_case, context, msg) do
+    flow_case = Map.put(flow_case, :arguments, translated_arguments(context, flow_case))
+    do_execute(flow_case, context, msg)
+  end
+
+  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
+  defp do_execute(%{type: "has_number_eq"} = c, _context, %{type: type} = msg)
+       when type in @text_types,
+       do: strip(c.arguments) == strip(msg)
+
+  defp do_execute(%{type: "has_number_between"} = c, _context, %{type: type} = msg)
+       when type in @text_types do
+    [low, high] = c.arguments
 
     # convert all 3 parameters to number
     [low, high, body] = Enum.map([low, high, msg.body], &Glific.parse_maybe_integer/1)
@@ -146,40 +152,40 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_number"}, _context, %{type: type} = msg)
-      when type in @text_types,
-      do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
+  defp do_execute(%{type: "has_number"}, _context, %{type: type} = msg)
+       when type in @text_types,
+       do: String.contains?(msg.clean_body, Enum.to_list(0..9) |> Enum.map(&Integer.to_string/1))
 
-  def execute(%{type: "has_any_word"} = c, _context, %{type: type} = msg)
-      when type in @text_types do
+  defp do_execute(%{type: "has_any_word"} = c, _context, %{type: type} = msg)
+       when type in @text_types do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
     !MapSet.disjoint?(str, c.parsed_arguments)
   end
 
-  def execute(%{type: "has_phrase"} = c, context, %{type: type} = msg)
-      when type in @text_types,
-      do: String.contains?(strip(translated_arguments(context, c)), strip(msg))
+  defp do_execute(%{type: "has_phrase"} = c, _context, %{type: type} = msg)
+       when type in @text_types,
+       do: String.contains?(strip(c.arguments), strip(msg))
 
-  def execute(%{type: ctype} = c, context, %{type: type} = msg)
-      when ctype in ["has_only_phrase", "has_only_text"] and type in @text_types,
-      do: strip(translated_arguments(context, c)) == strip(msg)
+  defp do_execute(%{type: ctype} = c, _context, %{type: type} = msg)
+       when ctype in ["has_only_phrase", "has_only_text"] and type in @text_types,
+       do: strip(c.arguments) == strip(msg)
 
-  def execute(%{type: "has_all_words"} = c, _context, %{type: type} = msg)
-      when type in @text_types do
+  defp do_execute(%{type: "has_all_words"} = c, _context, %{type: type} = msg)
+       when type in @text_types do
     str = msg |> strip() |> Glific.make_set([",", ";", " "])
 
     c.parsed_arguments |> MapSet.subset?(str)
   end
 
-  def execute(%{type: "has_multiple"} = c, _context, %{type: type} = msg)
-      when type in @text_types,
-      do:
-        msg.body
-        |> Glific.make_set()
-        |> MapSet.subset?(c.parsed_arguments)
+  defp do_execute(%{type: "has_multiple"} = c, _context, %{type: type} = msg)
+       when type in @text_types,
+       do:
+         msg.body
+         |> Glific.make_set()
+         |> MapSet.subset?(c.parsed_arguments)
 
-  def execute(%{type: "has_phone"} = _c, _context, %{type: type} = msg)
-      when type in @text_types do
+  defp do_execute(%{type: "has_phone"} = _c, _context, %{type: type} = msg)
+       when type in @text_types do
     phone = strip(msg)
 
     case ExPhoneNumber.parse(phone, "IN") do
@@ -188,8 +194,8 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_email"} = _c, _context, %{type: type} = msg)
-      when type in @text_types do
+  defp do_execute(%{type: "has_email"} = _c, _context, %{type: type} = msg)
+       when type in @text_types do
     email = strip(msg)
 
     case Changeset.validate_email(email) do
@@ -198,25 +204,25 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_pattern"} = c, context, %{type: type} = msg)
-      when type in @text_types,
-      do:
-        translated_arguments(context, c)
-        |> strip()
-        |> Regex.compile!()
-        |> Regex.match?(strip(msg))
+  defp do_execute(%{type: "has_pattern"} = c, _context, %{type: type} = msg)
+       when type in @text_types,
+       do:
+         c.arguments
+         |> strip()
+         |> Regex.compile!()
+         |> Regex.match?(strip(msg))
 
-  def execute(%{type: "has_beginning"} = c, context, %{type: type} = msg)
-      when type in @text_types,
-      do:
-        translated_arguments(context, c)
-        |> strip()
-        |> String.starts_with?(strip(msg))
+  defp do_execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
+       when type in @text_types,
+       do:
+         c.arguments
+         |> strip()
+         |> String.starts_with?(strip(msg))
 
-  def execute(%{type: ctype} = c, context, %{type: type} = msg)
-      when type in @text_types and
-             ctype in ["has_intent", "has_top_intent"] do
-    [intent, confidence] = translated_arguments(context, c)
+  defp do_execute(%{type: ctype} = c, _context, %{type: type} = msg)
+       when type in @text_types and
+              ctype in ["has_intent", "has_top_intent"] do
+    [intent, confidence] = c.arguments
     # always prepend a 0 to the string, in case it is something like ".9",
     # this also works with "0.9"
     confidence = String.to_float("0" <> confidence)
@@ -228,36 +234,36 @@ defmodule Glific.Flows.Case do
   end
 
   # for all the above functions, if we encounter in a non-text context, return false
-  def execute(%{type: ctype}, _context, %{type: type})
-      when ctype in @text_fns and type not in @text_types,
-      do: false
+  defp do_execute(%{type: ctype}, _context, %{type: type})
+       when ctype in @text_fns and type not in @text_types,
+       do: false
 
-  def execute(%{type: "has_group"} = c, context, msg) do
-    [_group_id, group_label] = translated_arguments(context, c)
+  defp do_execute(%{type: "has_group"} = c, _context, msg) do
+    [_group_id, group_label] = c.arguments
     group_label in msg.extra.contact_groups
   end
 
-  def execute(%{type: "has_category"}, _context, _msg), do: true
+  defp do_execute(%{type: "has_category"}, _context, _msg), do: true
 
-  def execute(%{type: "has_location"}, _context, msg),
+  defp do_execute(%{type: "has_location"}, _context, msg),
     do: msg.type == :location
 
-  def execute(%{type: "has_media"}, _context, msg),
+  defp do_execute(%{type: "has_media"}, _context, msg),
     do: Flows.is_media_type?(msg.type)
 
-  def execute(%{type: "has_audio"}, _context, msg),
+  defp do_execute(%{type: "has_audio"}, _context, msg),
     do: msg.type == :audio
 
-  def execute(%{type: "has_video"}, _context, msg),
+  defp do_execute(%{type: "has_video"}, _context, msg),
     do: msg.type == :video
 
-  def execute(%{type: "has_image"}, _context, msg),
+  defp do_execute(%{type: "has_image"}, _context, msg),
     do: msg.type == :image
 
-  def execute(%{type: "has_file"}, _context, msg),
+  defp do_execute(%{type: "has_file"}, _context, msg),
     do: msg.type == :document
 
-  def execute(c, _context, msg),
+  defp do_execute(c, _context, msg),
     do:
       raise(UndefinedFunctionError,
         message:
