@@ -206,7 +206,7 @@ defmodule Glific.Stats do
   @spec make_result(map(), Ecto.Query.t(), tuple(), atom()) :: map()
   defp make_result(result, query, period_date, key) do
     query
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all(skip_organization_id: true, timeout: 60_000)
     |> Enum.reduce(
       result,
       fn [cnt, org_id], result -> add(result, {period_date, org_id}, key, cnt) end
@@ -279,6 +279,33 @@ defmodule Glific.Stats do
     else
       stats
     end
+  end
+
+  @doc false
+  @spec get_one_month(String.t()) :: nil
+  def get_one_month(month) do
+    org_id_list = Partners.org_id_list([], false)
+    {:ok, time, _} = DateTime.from_iso8601("2021-#{month}-01 00:00:05Z")
+    time = Timex.shift(time, hours: -1)
+
+    opts =
+      [month: true]
+      |> Keyword.put(:time, time)
+      |> Keyword.put(:date, DateTime.to_date(time))
+
+    rows =
+      %{}
+      |> get_monthly_stats(org_id_list, opts)
+      |> reject_empty()
+      |> IO.inspect()
+
+    Repo.insert_all(Stat, rows)
+
+    # Lets force push this to the BQ SaaS monitoring storage everytime we generate
+    # stats so, we get it soon
+    BigQueryWorker.perform_periodic(Saas.organization_id())
+
+    nil
   end
 
   @doc false
