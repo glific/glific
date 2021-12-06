@@ -61,20 +61,26 @@ defmodule Glific.Flows.Case do
       arguments: json["arguments"]
     }
 
-    c =
-      if c.type in ["has_multiple", "has_any_word", "has_all_words"] do
-        pargs =
-          json["arguments"]
-          |> hd()
-          |> Glific.make_set()
-
-        Map.put(c, :parsed_arguments, pargs)
-      else
-        c
-      end
+    c = update_parsed_arguments(c, json["arguments"])
 
     {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
+
+  @doc """
+  Update the parsed_arguments field of the case
+  """
+  @spec update_parsed_arguments(Case.t(), [String.t()]) :: Case.t()
+  defp update_parsed_arguments(%{type: type} = flow_case, arguments)
+       when type in ["has_multiple", "has_any_word", "has_all_words"] do
+    parsed_arguments =
+      arguments
+      |> hd()
+      |> Glific.make_set()
+
+    Map.put(flow_case, :parsed_arguments, parsed_arguments)
+  end
+
+  defp update_parsed_arguments(flow_case, _arguments), do: flow_case
 
   @doc """
   Validate a case
@@ -125,13 +131,14 @@ defmodule Glific.Flows.Case do
   it just consumes one message at a time and executes it against a predefined function
   It also returns a boolean, rather than a tuple
   """
-
+  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
   def execute(flow_case, context, msg) do
-    flow_case = Map.put(flow_case, :arguments, translated_arguments(context, flow_case))
-    do_execute(flow_case, context, msg)
+    Map.put(flow_case, :arguments, translated_arguments(context, flow_case))
+    |> update_parsed_arguments(flow_case[:arguments])
+    |> do_execute(context, msg)
   end
 
-  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
+  @spec do_execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
   defp do_execute(%{type: "has_number_eq"} = c, _context, %{type: type} = msg)
        when type in @text_types,
        do: strip(c.arguments) == strip(msg)
