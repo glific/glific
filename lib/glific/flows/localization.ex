@@ -9,6 +9,7 @@ defmodule Glific.Flows.Localization do
 
   alias Glific.{
     Flows.Action,
+    Flows.Case,
     Flows.FlowContext,
     Settings
   }
@@ -51,6 +52,14 @@ defmodule Glific.Flows.Localization do
     end
   end
 
+  defp add_case_arguments(map, values) do
+    if is_nil(values["name"]) do
+      map
+    else
+      Map.put(map, :case_arguments, values["name"])
+    end
+  end
+
   # given a json snippet containing all the translation for a specific language
   # store them in a uuid map
   @spec process_translation(map()) :: map()
@@ -61,10 +70,18 @@ defmodule Glific.Flows.Localization do
       json,
       %{},
       fn {uuid, values}, acc ->
-        if is_nil(values["text"]) and is_nil(values["attachments"]) do
+        # We need to think about a better way to do this checking.
+        # For now, we are just going to check based on the keys in the translations
+
+        map =
+          %{}
+          |> add_text(values)
+          |> add_attachments(values)
+          |> add_case_arguments(values)
+
+        if map == %{} do
           acc
         else
-          map = %{} |> add_text(values) |> add_attachments(values)
           Map.put(acc, uuid, map)
         end
       end
@@ -127,5 +144,30 @@ defmodule Glific.Flows.Localization do
     if type == :text,
       do: Map.get(element, :text, action.text),
       else: Map.get(element, :attachments, action.attachments)
+  end
+
+  @doc """
+  Given a language id and an action uuid, return the translation if
+  one exists, else return the original text
+  """
+  @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: list() | nil
+  def get_translated_case_arguments(context, flow_case) do
+    language_id = context.contact.language_id
+
+    localization =
+      if Ecto.assoc_loaded?(context.flow) and
+           context.flow.localization != nil,
+         do: context.flow.localization.localizations,
+         else: %{}
+
+    element =
+      if Map.has_key?(localization, language_id) and
+           Map.has_key?(Map.get(localization, language_id), flow_case.category_uuid) do
+        Map.get(Map.get(localization, language_id), flow_case.category_uuid)
+      else
+        %{}
+      end
+
+    Map.get(element, :case_arguments, flow_case.arguments)
   end
 end

@@ -14,12 +14,13 @@ defmodule Glific.Flows.Case do
 
   alias Glific.Flows.{
     Category,
-    FlowContext
+    FlowContext,
+    Localization
   }
 
   alias Pow.Ecto.Schema.Changeset
 
-  @required_fields [:uuid, :type, :arguments, :category_uuid]
+  @required_fields [:uuid, :type, :arguments, :category_uuid, :localization]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -94,6 +95,10 @@ defmodule Glific.Flows.Case do
 
   defp strip(_msg), do: ""
 
+  defp translated_arguments(context, flow_case) do
+    Localization.get_translated_case_arguments(context, flow_case)
+  end
+
   @text_types [:text, :quick_reply, :list]
 
   @text_fns [
@@ -121,13 +126,13 @@ defmodule Glific.Flows.Case do
   It also returns a boolean, rather than a tuple
   """
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
-  def execute(%{type: "has_number_eq"} = c, _context, %{type: type} = msg)
+  def execute(%{type: "has_number_eq"} = c, context, %{type: type} = msg)
       when type in @text_types,
-      do: strip(c.arguments) == strip(msg)
+      do: strip(translated_arguments(context, c)) == strip(msg)
 
-  def execute(%{type: "has_number_between"} = c, _context, %{type: type} = msg)
+  def execute(%{type: "has_number_between"} = c, context, %{type: type} = msg)
       when type in @text_types do
-    [low, high] = c.arguments
+    [low, high] = translated_arguments(context, c)
 
     # convert all 3 parameters to number
     [low, high, body] = Enum.map([low, high, msg.body], &Glific.parse_maybe_integer/1)
@@ -151,13 +156,13 @@ defmodule Glific.Flows.Case do
     !MapSet.disjoint?(str, c.parsed_arguments)
   end
 
-  def execute(%{type: "has_phrase"} = c, _context, %{type: type} = msg)
+  def execute(%{type: "has_phrase"} = c, context, %{type: type} = msg)
       when type in @text_types,
-      do: String.contains?(strip(c.arguments), strip(msg))
+      do: String.contains?(strip(translated_arguments(context, c)), strip(msg))
 
-  def execute(%{type: ctype} = c, _context, %{type: type} = msg)
+  def execute(%{type: ctype} = c, context, %{type: type} = msg)
       when ctype in ["has_only_phrase", "has_only_text"] and type in @text_types,
-      do: strip(c.arguments) == strip(msg)
+      do: strip(translated_arguments(context, c)) == strip(msg)
 
   def execute(%{type: "has_all_words"} = c, _context, %{type: type} = msg)
       when type in @text_types do
@@ -193,25 +198,25 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def execute(%{type: "has_pattern"} = c, _context, %{type: type} = msg)
+  def execute(%{type: "has_pattern"} = c, context, %{type: type} = msg)
       when type in @text_types,
       do:
-        c.arguments
+        translated_arguments(context, c)
         |> strip()
         |> Regex.compile!()
         |> Regex.match?(strip(msg))
 
-  def execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
+  def execute(%{type: "has_beginning"} = c, context, %{type: type} = msg)
       when type in @text_types,
       do:
-        c.arguments
+        translated_arguments(context, c)
         |> strip()
         |> String.starts_with?(strip(msg))
 
-  def execute(%{type: ctype} = c, _context, %{type: type} = msg)
+  def execute(%{type: ctype} = c, context, %{type: type} = msg)
       when type in @text_types and
              ctype in ["has_intent", "has_top_intent"] do
-    [intent, confidence] = c.arguments
+    [intent, confidence] = translated_arguments(context, c)
     # always prepend a 0 to the string, in case it is something like ".9",
     # this also works with "0.9"
     confidence = String.to_float("0" <> confidence)
@@ -227,8 +232,8 @@ defmodule Glific.Flows.Case do
       when ctype in @text_fns and type not in @text_types,
       do: false
 
-  def execute(%{type: "has_group"} = c, _context, msg) do
-    [_group_id, group_label] = c.arguments
+  def execute(%{type: "has_group"} = c, context, msg) do
+    [_group_id, group_label] = translated_arguments(context, c)
     group_label in msg.extra.contact_groups
   end
 
