@@ -83,21 +83,15 @@ defmodule Glific.Clients.NayiDisha.Data do
           variables: [
             "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें l ऐसे समय में इस बीमारी से सम्बंधित संभव कठिनाइयों के लिए तैयार रहना उचित रहेगा। यदि भविष्य में मुख्य देखभाल कर्ता कोविड-19 से संक्रमित होता है, तो वह अगले देखभाल कर्ता के सहायता लिए निम्नलिखित जानकारी प्रदान कर सकता है|
 
-
             1) विकलांग व्यक्ति की रोज़मर्रा की दवाईयां (डॉक्टर प्रिस्क्रिप्शन समेत)💊📝
-
 
             2) काउंसलर, डॉक्टर एवं थेरेपी केंद्रों के नाम तथा टेलीफोन नंबर 🩺☎️
 
-
             3) कानूनी दस्तावेज़- जैसे विकलांगता प्रमाण पत्र, गार्डियन शिप फॉर्म, पहचान पत्र 📄📃
-
 
             4) विशिष्ट उपकरण/ खिलौने जो विकलांग व्यक्ति को दुखी या उदास से सामान्य स्तिथि में लाने में मदद करे 🧸🏎️
 
-
             5) विशिष्ट खाद्य प्राथमिकताएं (एलर्जी या असहिष्णुता) 🥕🥗
-
 
             6) समय अनुसार दैनिक कार्यक्रम 🛌🚿🍽️🏃  Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters)"
           ]
@@ -222,13 +216,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     6 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Disability Certificate*
-
-      1) Disability certificate is issued to all individuals with disabilities that are recognized under the Persons with Disabilities Act, 2016. The minimum degree of disability for each category of disability must be met
-
-      2) The individual applying for the certificate must be an Indian Citizen.
-
-      3)The certificate is given for 3 years only for PwD below 18 years of age. The certificate is valid for life for PwD who are above 18 years of age.
+        "*Disability Certificate* 1) Disability certificate is issued to all individuals with disabilities that are recognized under the Persons with Disabilities Act, 2016. The minimum degree of disability for each category of disability must be met 2) The individual applying for the certificate must be an Indian Citizen3)The certificate is given for 3 years only for PwD below 18 years of age. The certificate is valid for life for PwD who are above 18 years of age.
 
       Click on this link for more information- https://www.nayi-disha.org/article/how-apply-disability-certificate-india"
       ],
@@ -279,15 +267,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           variables: [
             "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- ज़रूरी दस्तावेज़
 
-
             ~2 पासपोर्ट आकार की फोटो
-
 
             ~सरकारी पहचान पत्र की प्रति (आवेदन करने वाले व्यक्ति का आधार कार्ड/पासपोर्ट/ड्राइविंग लाइसेंस)
 
-
             ~आवेदन करने वाले व्यक्ति के अभिभावकों के सरकारी पहचान पत्र प्रति
-
 
             ~आवेदक की सभी प्रकार की चिकित्सकीय व मानसिक रिपोर्ट की प्रतियाँ"
           ]
@@ -953,10 +937,6 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: ["@contact.name"]
-          # variables: [
-          #   "A trust is legal agreement for management, preservation and upkeep of the child who is the benefactor of the Trust. The Trust deed defines the objective, power of trustees (people managing the trust), management, preservation and distribution of income to the child. It gives the child ongoing financial support for his/her medical and lifestyle requirements. A Trust being an independent separate legal entity is not impacted by any eventualities in the personal life of the child’s parents/caregivers. Any parent with a child with special needs can set up a private trust and secure the future of the child. This Trust can fund all expenses related to child care. The Settler of the Trust (person creating the trust) can specify how the funds should be utilized.
-          # For more information click on this link- https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
-          # ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
