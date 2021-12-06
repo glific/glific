@@ -78,7 +78,7 @@ defmodule Glific.Flows.Localization do
           |> add_attachments(values)
           |> add_case_arguments(values)
 
-        if values not in [nil, %{}], do: Map.put(acc, uuid, map), else: acc
+        if values in [nil, %{}], do: acc, else: Map.put(acc, uuid, map)
       end
     )
   end
