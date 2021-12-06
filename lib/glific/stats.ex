@@ -297,7 +297,6 @@ defmodule Glific.Stats do
       %{}
       |> get_monthly_stats(org_id_list, opts)
       |> reject_empty()
-      |> IO.inspect()
 
     Repo.insert_all(Stat, rows)
 
