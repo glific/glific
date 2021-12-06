@@ -285,7 +285,7 @@ defmodule Glific.Stats do
   @spec get_one_month(String.t()) :: nil
   def get_one_month(month) do
     org_id_list = Partners.org_id_list([], false)
-    {:ok, time, _} = DateTime.from_iso8601("2021-#{month}-01 00:00:05Z")
+    {:ok, time, _} = DateTime.from_iso8601("2021-#{month}-01 00:05:00Z")
     time = Timex.shift(time, hours: -1)
 
     opts =
