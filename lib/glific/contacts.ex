@@ -723,4 +723,35 @@ defmodule Glific.Contacts do
 
   def capture_history(_, _event_type, _attrs),
     do: {:error, dgettext("errors", "Invalid event type")}
+
+  @spec list_contacts(map()) :: [Contact.t()]
+  def list_contact_history(args) do
+    args
+    |> Repo.list_filter_query(
+      ContactHistory,
+      &Repo.opts_with_inserted_at/2,
+      &filter_history_with/2
+    )
+    |> Repo.all()
+  end
+
+  @spec filter_history_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_history_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
+    Enum.reduce(filter, query, fn
+      {:contact_id, contact_id}, query ->
+        from q in query, where: q.contact_id == ^contact_id
+
+      {:event_type, event_type}, query ->
+        from q in query, where: ilike(q.event_type, ^"%#{event_type}%")
+
+      {:event_label, event_label}, query ->
+        from q in query, where: ilike(q.event_label, ^"%#{event_label}%")
+
+      _, query ->
+        query
+    end)
+  end
 end

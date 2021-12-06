@@ -154,6 +154,18 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :settings, :json
   end
 
+  @desc "Filtering options for contacts history"
+  input_object :contacts_history_filter do
+    @desc "contact id"
+    field :contact_id, :id
+
+    @desc "Match the event type"
+    field :event_type, :string
+
+    @desc "Match the event label"
+    field :event_label, :string
+  end
+
   object :contact_queries do
     @desc "get the details of one contact"
     field :contact, :contact_result do
@@ -194,6 +206,14 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :simulator_release, :contact do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.simulator_release/3)
+    end
+
+    @desc "Get a list of all contacts fields filtered by various criteria"
+    field :contact_history, list_of(:contact_history) do
+      arg(:filter, :contacts_history_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.contact_history/3)
     end
   end
 
