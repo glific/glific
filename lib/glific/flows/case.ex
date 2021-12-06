@@ -66,9 +66,7 @@ defmodule Glific.Flows.Case do
     {c, Map.put(uuid_map, c.uuid, {:case, c})}
   end
 
-  @doc """
-  Update the parsed_arguments field of the case
-  """
+  # Update the parsed_arguments field of the case
   @spec update_parsed_arguments(Case.t(), [String.t()]) :: Case.t()
   defp update_parsed_arguments(%{type: type} = flow_case, arguments)
        when type in ["has_multiple", "has_any_word", "has_all_words"] do
