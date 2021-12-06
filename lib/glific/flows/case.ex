@@ -20,7 +20,7 @@ defmodule Glific.Flows.Case do
 
   alias Pow.Ecto.Schema.Changeset
 
-  @required_fields [:uuid, :type, :arguments, :category_uuid, :localization]
+  @required_fields [:uuid, :type, :arguments, :category_uuid]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
