@@ -31,6 +31,8 @@ defmodule Glific.Flows.Localization do
   end
 
   defp add_attachments(map, values) do
+    # IO.inspect(values)
+
     cond do
       is_nil(values["attachments"]) ->
         map
@@ -45,6 +47,9 @@ defmodule Glific.Flows.Localization do
         map
 
       true ->
+        # IO.inspect(values["attachments"])
+        # IO.inspect("here")
+
         case String.split(hd(values["attachments"]), ":", parts: 2) do
           [type, url] -> Map.put(map, :attachments, %{type => url})
           _ -> map
@@ -72,18 +77,13 @@ defmodule Glific.Flows.Localization do
       fn {uuid, values}, acc ->
         # We need to think about a better way to do this checking.
         # For now, we are just going to check based on the keys in the translations
-
         map =
           %{}
           |> add_text(values)
           |> add_attachments(values)
           |> add_case_arguments(values)
 
-        if map == %{} do
-          acc
-        else
-          Map.put(acc, uuid, map)
-        end
+        if values not in [nil, %{}], do: Map.put(acc, uuid, map), else: acc
       end
     )
   end
