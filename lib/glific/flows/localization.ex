@@ -31,8 +31,6 @@ defmodule Glific.Flows.Localization do
   end
 
   defp add_attachments(map, values) do
-    # IO.inspect(values)
-
     cond do
       is_nil(values["attachments"]) ->
         map
@@ -47,9 +45,6 @@ defmodule Glific.Flows.Localization do
         map
 
       true ->
-        # IO.inspect(values["attachments"])
-        # IO.inspect("here")
-
         case String.split(hd(values["attachments"]), ":", parts: 2) do
           [type, url] -> Map.put(map, :attachments, %{type => url})
           _ -> map
