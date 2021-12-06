@@ -166,11 +166,21 @@ defmodule Glific.Flows.CaseTest do
   end
 
   defp wrap_execute(c, context, body) do
+    context =
+      if is_nil(context),
+        do: Fixtures.flow_context_fixture(),
+        else: context
+
     message = Messages.create_temp_message(Fixtures.get_org_id(), body)
     Case.execute(c, context, message)
   end
 
   defp wrap_execute(c, context, body, opts) do
+    context =
+      if is_nil(context),
+        do: Fixtures.flow_context_fixture(),
+        else: context
+
     message = Messages.create_temp_message(Fixtures.get_org_id(), body, opts)
     Case.execute(c, context, message)
   end
