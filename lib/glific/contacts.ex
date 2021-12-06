@@ -724,7 +724,10 @@ defmodule Glific.Contacts do
   def capture_history(_, _event_type, _attrs),
     do: {:error, dgettext("errors", "Invalid event type")}
 
-  @spec list_contacts(map()) :: [Contact.t()]
+  @doc """
+  Get contact history
+  """
+  @spec list_contact_history(map()) :: [ContactHistory.t()]
   def list_contact_history(args) do
     args
     |> Repo.list_filter_query(
