@@ -787,6 +787,112 @@ query simulatorRelease {
 | Type | Description |
 | ---- | ----------- |
 
+## Get All Contact History
+
+```graphql
+query ContactHistory($filter: ContactsHistoryFilter, $opts: Opts) {
+    contactHistory(filter: $filter, opts: $opts) {
+      eventDatetime
+      eventLabel
+      eventMeta
+      eventType
+      id
+      insertedAt
+      updatedAt
+    }
+  }
+
+
+{
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
+  },
+  "filter": {
+    "contactId": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contactHistory": [
+      {
+        "eventDatetime": "2021-12-07T12:12:50Z",
+        "eventLabel": "All contact flows are ended.",
+        "eventMeta": "{}",
+        "eventType": "contact_flow_ended_all",
+        "id": "106",
+        "insertedAt": "2021-12-07T12:12:51.000000Z",
+        "updatedAt": "2021-12-07T12:12:51.000000Z"
+      },
+      {
+        "eventDatetime": "2021-12-07T12:12:50Z",
+        "eventLabel": "Flow Started",
+        "eventMeta": "{\"flow\":{\"uuid\":\"3fa22108-f464-41e5-81d9-d8a298854429\",\"name\":\"Help Workflow\",\"id\":1},\"context_id\":70}",
+        "eventType": "contact_flow_started",
+        "id": "107",
+        "insertedAt": "2021-12-07T12:12:51.000000Z",
+        "updatedAt": "2021-12-07T12:12:51.000000Z"
+      },
+      {
+        "eventDatetime": "2021-12-07T12:12:50Z",
+        "eventLabel": "Flow Ended:",
+        "eventMeta": "{\"flow\":{\"uuid\":\"3fa22108-f464-41e5-81d9-d8a298854429\",\"name\":\"Help Workflow\",\"id\":1},\"context_id\":70}",
+        "eventType": "contact_flow_ended",
+        "id": "108",
+        "insertedAt": "2021-12-07T12:12:51.000000Z",
+        "updatedAt": "2021-12-07T12:12:51.000000Z"
+      }
+    ]
+  }
+}
+```
+
+This returns all the contact history for the contact filtered by the input <a href="#contactHistoryFilter">contactHistoryFilter</a>
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description                         |
+| --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
+
+## Count all ContactHistory
+
+```graphql
+query countContactHistory($filter: ContactsHistoryFilter) {
+  countContactHistory(filter: $filter)
+}
+
+
+{
+  "filter": {
+    "contact_id": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "countContactHistory": 3
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description     |
+| --------- | -------------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list |
+
 ## Contact Objects
 
 ### Contact
@@ -964,6 +1070,40 @@ query simulatorRelease {
 <tr>
 <td colspan="2" valign="top"><strong>event_datetime</strong></td>
 <td valign="top"><a href="#datetime">Event DateTime</a></td>
+<td></td>
+</tr>
+
+</tbody>
+</table>
+
+### contactHistoryFilter
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td colspan="2" valign="top"><strong>contact_id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_type</strong></td>
+<td valign="top"><a href="#string">Event Type</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_label</strong></td>
+<td valign="top"><a href="#string">Event Label</a></td>
 <td></td>
 </tr>
 
