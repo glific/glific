@@ -738,6 +738,13 @@ defmodule Glific.Contacts do
     |> Repo.all()
   end
 
+  @doc """
+  count contact history
+  """
+  @spec count_contact_history(map) :: integer
+  def count_contact_history(args),
+    do: Repo.count_filter(args, ContactHistory, &filter_history_with/2)
+
   @spec filter_history_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_history_with(query, filter) do
     query = Repo.filter_with(query, filter)
@@ -745,13 +752,13 @@ defmodule Glific.Contacts do
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->
-        from q in query, where: q.contact_id == ^contact_id
+        from(q in query, where: q.contact_id == ^contact_id)
 
       {:event_type, event_type}, query ->
-        from q in query, where: ilike(q.event_type, ^"%#{event_type}%")
+        from(q in query, where: ilike(q.event_type, ^"%#{event_type}%"))
 
       {:event_label, event_label}, query ->
-        from q in query, where: ilike(q.event_label, ^"%#{event_label}%")
+        from(q in query, where: ilike(q.event_label, ^"%#{event_label}%"))
 
       _, query ->
         query

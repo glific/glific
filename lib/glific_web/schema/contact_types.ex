@@ -208,12 +208,19 @@ defmodule GlificWeb.Schema.ContactTypes do
       resolve(&Resolvers.Contacts.simulator_release/3)
     end
 
-    @desc "Get a list of all contacts fields filtered by various criteria"
+    @desc "Get a list of all contacts histroy filtered by various criteria"
     field :contact_history, list_of(:contact_history) do
       arg(:filter, :contacts_history_filter)
       arg(:opts, :opts)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.contact_history/3)
+    end
+
+    @desc "Get a count of all contacts histroy filtered by various criteria"
+    field :count_contact_history, :integer do
+      arg(:filter, :contacts_history_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.count_contact_history/3)
     end
   end
 
