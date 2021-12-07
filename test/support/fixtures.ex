@@ -793,6 +793,7 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec flow_context_fixture(map()) :: FlowContext.t()
   def flow_context_fixture(attrs \\ %{}) do
     contact = contact_fixture()
 
