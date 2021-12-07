@@ -508,7 +508,7 @@ defmodule Glific.Flows.Action do
 
               {:ok, _} =
                 Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
-                  event_label: "Contact added to the Collection #{group["name"]}",
+                  event_label: "Added to collection: \"#{group["name"]}\"",
                   event_meta: %{
                     group_id: group_id,
                     group_name: group["name"],
@@ -531,6 +531,15 @@ defmodule Glific.Flows.Action do
     if action.groups == ["all_groups"] do
       groups_ids = Groups.get_group_ids()
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
+
+      {:ok, _} =
+        Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+          event_label: "Removed from All the collections",
+          event_meta: %{
+            group_ids: groups_ids,
+            flow_id: context.flow_id
+          }
+        })
     else
       groups_ids =
         Enum.map(
@@ -540,7 +549,7 @@ defmodule Glific.Flows.Action do
 
             {:ok, _} =
               Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
-                event_label: "Contact removed from the Collection #{group["name"]}",
+                event_label: "Removed from collection: \"#{group["name"]}\"",
                 event_meta: %{
                   group_id: group_id,
                   group_name: group["name"],
