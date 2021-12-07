@@ -310,7 +310,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   defp clean_weather_record(str), do: str
 
-  @spec set_initial_crop_state(map(), non_neg_integer(), non_neg_integer()) :: map()
+  @spec set_initial_crop_state(map() | nil, non_neg_integer(), non_neg_integer()) :: map()
   defp set_initial_crop_state(stage, contact_id, organization_id) when is_map(stage) do
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field(
@@ -324,13 +324,15 @@ defmodule Glific.Clients.DigitalGreen do
     update_crop_stage(stage["initial_offset"], contact_id, organization_id)
   end
 
-  defp set_initial_crop_state(stage, contact_id, _organization_id),
-    do:
-      Logger.error(
-        "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{contact_id}"
-      )
+  defp set_initial_crop_state(stage, contact_id, _organization_id) do
+    Logger.error(
+      "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{contact_id}"
+    )
 
-  @spec update_crop_stage(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: map()
+    %{}
+  end
+
+  @spec update_crop_stage(non_neg_integer() | nil, non_neg_integer(), non_neg_integer()) :: map()
   defp update_crop_stage(total_days, contact_id, organization_id) do
     current_stage =
       Map.values(@stages)

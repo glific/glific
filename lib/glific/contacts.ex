@@ -15,6 +15,7 @@ defmodule Glific.Contacts do
   alias Glific.{
     Clients,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
     Groups.UserGroup,
@@ -283,9 +284,8 @@ defmodule Glific.Contacts do
 
   """
   @spec change_contact(Contact.t(), map()) :: Ecto.Changeset.t()
-  def change_contact(%Contact{} = contact, attrs \\ %{}) do
-    Contact.changeset(contact, attrs)
-  end
+  def change_contact(%Contact{} = contact, attrs \\ %{}),
+    do: Contact.changeset(contact, attrs)
 
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
@@ -691,4 +691,77 @@ defmodule Glific.Contacts do
   """
   @spec is_simulator_contact?(String.t()) :: boolean
   def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+
+  @doc """
+  create new contact histroy record.
+  """
+  @spec capture_history(Contact.t() | non_neg_integer(), atom(), map()) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
+  def capture_history(contact_id, event_type, attrs) when is_integer(contact_id),
+    do:
+      get_contact!(contact_id)
+      |> capture_history(event_type, attrs)
+
+  def capture_history(%Contact{} = contact, event_type, attrs) do
+    ## I will add the telemetery evenets here.
+    attrs =
+      Map.merge(
+        %{
+          event_type: event_type |> Atom.to_string(),
+          contact_id: contact.id,
+          event_datetime: DateTime.utc_now(),
+          organization_id: contact.organization_id,
+          event_meta: %{}
+        },
+        attrs
+      )
+
+    %ContactHistory{}
+    |> ContactHistory.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def capture_history(_, _event_type, _attrs),
+    do: {:error, dgettext("errors", "Invalid event type")}
+
+  @doc """
+  Get contact history
+  """
+  @spec list_contact_history(map()) :: [ContactHistory.t()]
+  def list_contact_history(args) do
+    args
+    |> Repo.list_filter_query(
+      ContactHistory,
+      &Repo.opts_with_inserted_at/2,
+      &filter_history_with/2
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  count contact history
+  """
+  @spec count_contact_history(map) :: integer
+  def count_contact_history(args),
+    do: Repo.count_filter(args, ContactHistory, &filter_history_with/2)
+
+  @spec filter_history_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_history_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
+    Enum.reduce(filter, query, fn
+      {:contact_id, contact_id}, query ->
+        from(q in query, where: q.contact_id == ^contact_id)
+
+      {:event_type, event_type}, query ->
+        from(q in query, where: ilike(q.event_type, ^"%#{event_type}%"))
+
+      {:event_label, event_label}, query ->
+        from(q in query, where: ilike(q.event_label, ^"%#{event_label}%"))
+
+      _, query ->
+        query
+    end)
+  end
 end

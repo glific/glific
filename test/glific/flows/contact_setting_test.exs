@@ -25,7 +25,8 @@ defmodule Glific.Flows.ContactSettingTest do
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
-    flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    flow_context =
+      %FlowContext{contact_id: contact.id, flow_id: 1} |> Repo.preload([:contact, :flow])
 
     ContactSetting.set_contact_language(flow_context, language_label)
 
@@ -45,7 +46,8 @@ defmodule Glific.Flows.ContactSettingTest do
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
 
     # preload contact
-    flow_context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    flow_context =
+      %FlowContext{contact_id: contact.id, flow_id: 1} |> Repo.preload([:contact, :flow])
 
     updated_name = "Default updated name"
     ContactSetting.set_contact_name(flow_context, updated_name)

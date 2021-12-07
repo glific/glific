@@ -9,6 +9,7 @@ defmodule Glific.Flows.Action do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Dialogflow,
     Flows,
@@ -505,6 +506,24 @@ defmodule Glific.Flows.Action do
                 organization_id: context.organization_id
               })
 
+              {:ok, _} =
+                Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+                  event_label: "Added to collection: \"#{group["name"]}\"",
+                  event_meta: %{
+                    context_id: context.id,
+                    group: %{
+                      id: group_id,
+                      name: group["name"],
+                      uuid: group["uuid"]
+                    },
+                    flow: %{
+                      id: context.flow.id,
+                      name: context.flow.name,
+                      uuid: context.flow.uuid
+                    }
+                  }
+                })
+
             _ ->
               Logger.error("Could not parse action groups: #{inspect(action)}")
           end
@@ -520,12 +539,47 @@ defmodule Glific.Flows.Action do
     if action.groups == ["all_groups"] do
       groups_ids = Groups.get_group_ids()
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
+
+      {:ok, _} =
+        Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+          event_label: "Removed from All the collections",
+          event_meta: %{
+            context_id: context.id,
+            group: %{
+              ids: groups_ids
+            },
+            flow: %{
+              id: context.flow.id,
+              name: context.flow.name,
+              uuid: context.flow.uuid
+            }
+          }
+        })
     else
       groups_ids =
         Enum.map(
           action.groups,
           fn group ->
             {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+
+            {:ok, _} =
+              Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+                event_label: "Removed from collection: \"#{group["name"]}\"",
+                event_meta: %{
+                  context_id: context.id,
+                  group: %{
+                    id: group_id,
+                    name: group["name"],
+                    uuid: group["uuid"]
+                  },
+                  flow: %{
+                    id: context.flow.id,
+                    name: context.flow.name,
+                    uuid: context.flow.uuid
+                  }
+                }
+              })
+
             group_id
           end
         )
