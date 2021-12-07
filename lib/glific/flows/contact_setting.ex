@@ -28,10 +28,16 @@ defmodule Glific.Flows.ContactSetting do
           Contacts.capture_history(contact, :contact_language_updated, %{
             event_label: "Changed contact language to #{language.label}",
             event_meta: %{
-              language: language.label,
-              language_id: language.id,
-              flow_id: context.flow_id,
-              old_language: context.contact.language_id
+              language: %{
+                id: language.id,
+                label: language.label,
+                old_language: context.contact.language_id
+              },
+              flow: %{
+                id: context.flow.id,
+                name: context.flow.name,
+                uuid: context.flow.uuid
+              }
             }
           })
 
@@ -57,8 +63,15 @@ defmodule Glific.Flows.ContactSetting do
       Contacts.capture_history(contact, :contact_name_updated, %{
         event_label: "contact name changed to #{name}",
         event_meta: %{
-          flow_id: context.flow_id,
-          old_name: context.contact.name
+          flow: %{
+            id: context.flow.id,
+            name: context.flow.name,
+            uuid: context.flow.uuid
+          },
+          name: %{
+            old_name: context.contact.name,
+            new_name: name
+          }
         }
       })
 

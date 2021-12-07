@@ -510,9 +510,17 @@ defmodule Glific.Flows.Action do
                 Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                   event_label: "Added to collection: \"#{group["name"]}\"",
                   event_meta: %{
-                    group_id: group_id,
-                    group_name: group["name"],
-                    flow_id: context.flow_id
+                    context_id: context.id,
+                    group: %{
+                      id: group_id,
+                      name: group["name"],
+                      uuid: group["uuid"]
+                    },
+                    flow: %{
+                      id: context.flow.id,
+                      name: context.flow.name,
+                      uuid: context.flow.uuid
+                    }
                   }
                 })
 
@@ -536,8 +544,15 @@ defmodule Glific.Flows.Action do
         Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
           event_label: "Removed from All the collections",
           event_meta: %{
-            group_ids: groups_ids,
-            flow_id: context.flow_id
+            context_id: context.id,
+            group: %{
+              ids: groups_ids
+            },
+            flow: %{
+              id: context.flow.id,
+              name: context.flow.name,
+              uuid: context.flow.uuid
+            }
           }
         })
     else
@@ -551,9 +566,17 @@ defmodule Glific.Flows.Action do
               Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
                 event_label: "Removed from collection: \"#{group["name"]}\"",
                 event_meta: %{
-                  group_id: group_id,
-                  group_name: group["name"],
-                  flow_id: context.flow_id
+                  context_id: context.id,
+                  group: %{
+                    id: group_id,
+                    name: group["name"],
+                    uuid: group["uuid"]
+                  },
+                  flow: %{
+                    id: context.flow.id,
+                    name: context.flow.name,
+                    uuid: context.flow.uuid
+                  }
                 }
               })
 
