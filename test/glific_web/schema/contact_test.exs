@@ -6,6 +6,7 @@ defmodule GlificWeb.Schema.ContactTest do
     Contacts,
     Contacts.Contact,
     Fixtures,
+    Flows,
     Messages.Message,
     Repo,
     Seeds.SeedsDev,
@@ -31,6 +32,18 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:import_contacts, GlificWeb.Schema, "assets/gql/contacts/import.gql")
   load_gql(:sim_get, GlificWeb.Schema, "assets/gql/contacts/simulator_get.gql")
   load_gql(:sim_rel, GlificWeb.Schema, "assets/gql/contacts/simulator_release.gql")
+
+  load_gql(
+    :contact_history_list,
+    GlificWeb.Schema,
+    "assets/gql/contacts/contact_history_list.gql"
+  )
+
+  load_gql(
+    :count_contact_history,
+    GlificWeb.Schema,
+    "assets/gql/contacts/count_contact_history.gql"
+  )
 
   test "contacts field returns list of contacts", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -625,5 +638,53 @@ defmodule GlificWeb.Schema.ContactTest do
     result = auth_query_gql_by(:sim_get, user, variables: %{})
     assert {:ok, query_data} = result
     assert String.contains?(get_in(query_data, [:data, "simulatorGet", "name"]), "Simulator")
+  end
+
+  test "contacts history returns list of contacts history in asc order", %{staff: user} = attrs do
+    [contact | _tail] = Contacts.list_contacts(attrs)
+    [flow | _tail] = Flows.list_flows(attrs)
+    {:ok, _flow} = Flows.start_contact_flow(flow, contact)
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "opts" => %{"order" => "ASC"},
+          "filter" => %{"contact_id" => contact.id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_history = get_in(query_data, [:data, "contactHistory"])
+    assert length(contact_history) > 0
+  end
+
+  test "count contacts history returns count of contacts history", %{staff: user} = attrs do
+    [contact | _tail] = Contacts.list_contacts(attrs)
+    [flow | _tail] = Flows.list_flows(attrs)
+    {:ok, _flow} = Flows.start_contact_flow(flow, contact)
+
+    result =
+      auth_query_gql_by(:count_contact_history, user,
+        variables: %{
+          "filter" => %{"contact_id" => contact.id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    count = get_in(query_data, [:data, "countContactHistory"])
+    assert count > 0
+
+    count_from_db =
+      Contacts.count_contact_history(
+        attrs
+        |> Map.merge(%{
+          "filter" => %{"contact_id" => contact.id}
+        })
+      )
+
+    assert count_from_db == count
+
+    # contact_history = get_in(query_data, [:data, "contactHistory"])
+    # assert length(contact_history) > 0
   end
 end
