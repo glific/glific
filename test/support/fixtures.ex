@@ -14,6 +14,7 @@ defmodule Glific.Fixtures do
     Extensions.Extension,
     Flows,
     Flows.ContactField,
+    Flows.FlowContext,
     Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
@@ -789,6 +790,30 @@ defmodule Glific.Fixtures do
       next_flow_at,
       "string"
     )
+  end
+
+  @doc false
+  @spec flow_context_fixture(map()) :: FlowContext.t()
+  def flow_context_fixture(attrs \\ %{}) do
+    contact = contact_fixture()
+
+    valid_attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      uuid_map: %{},
+      node_uuid: Ecto.UUID.generate()
+    }
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
+      |> Enum.into(valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:contact)
+    |> Repo.preload(:flow)
   end
 
   @doc false
