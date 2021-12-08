@@ -108,6 +108,24 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc """
+  Release a simulator contact or nil if possible for this user
+  """
+  @spec contact_history(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_history(_, args, _) do
+    {:ok, Contacts.list_contact_history(args)}
+  end
+
+  @doc """
+  Release a simulator contact or nil if possible for this user
+  """
+  @spec count_contact_history(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def count_contact_history(_, args, _) do
+    {:ok, Contacts.count_contact_history(args)}
+  end
+
+  @doc """
   Grab a simulator contact or nil if possible for this user
   """
   @spec simulator_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
