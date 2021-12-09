@@ -825,7 +825,7 @@ defmodule Glific.Flows do
       definition
       |> Map.get("nodes", [])
       |> get_sub_flows()
-      |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+      |> Enum.reduce(results, &export_flow_details(&1["uuid"], &2))
     end
   end
 
@@ -833,19 +833,17 @@ defmodule Glific.Flows do
   defp export_collections(definition) do
     definition
     |> Map.get("nodes", [])
-    |> Enum.reduce([], fn node, acc ->
-      acc ++ do_export_collections(node)
-    end)
+    |> Enum.reduce([], &(&2 ++ do_export_collections(&1)))
   end
 
-  @spec export_collections(map()) :: list()
+  @spec do_export_collections(map()) :: list()
   defp do_export_collections(%{"actions" => actions}) when actions == [], do: []
 
   defp do_export_collections(%{"actions" => actions}) do
     action = actions |> hd
 
     if action["type"] == "add_contact_groups",
-      do: action["groups"] |> Enum.reduce([], fn group, acc -> acc ++ [group["name"]] end),
+      do: action["groups"] |> Enum.reduce([], &(&2 ++ [&1["name"]])),
       else: []
   end
 
@@ -853,7 +851,7 @@ defmodule Glific.Flows do
   defp export_contact_fields(definition) do
     definition
     |> Map.get("nodes", [])
-    |> Enum.reduce([], fn node, acc -> acc ++ do_export_contact_fields(node) end)
+    |> Enum.reduce([], &(&2 ++ do_export_contact_fields(&1)))
   end
 
   @spec do_export_contact_fields(map()) :: list()
