@@ -9,8 +9,12 @@ defmodule Glific.Clients.Stir do
     Flows.ContactField,
     Groups,
     Groups.Group,
+    Messages.Message,
+    Messages.MessageMedia,
     Repo
   }
+
+  import Ecto.Query, warn: false
 
   @priorities_list [
     {
@@ -501,6 +505,31 @@ defmodule Glific.Clients.Stir do
   }
 
   @active_report_days [1, 2, 3, 4, 5, 6]
+
+  @doc false
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("previous_videos", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+
+    start_date = DateTime.utc_now() |> Timex.shift(months: -1) |> Timex.beginning_of_month()
+    end_date = DateTime.utc_now() |> Timex.shift(months: -1) |> Timex.end_of_month()
+
+    urls =
+      Message
+      |> where([m], m.type == ^"video")
+      |> where([m], m.contact_id == ^contact_id)
+      |> where([m], m.flow_id in [1541, 1557, 1700])
+      |> where([m], m.organization_id == ^organization_id)
+      |> where([m], m.inserted_at >= ^start_date and m.inserted_at <= ^end_date)
+      |> join(:inner, [m], mm in MessageMedia, on: m.media_id == mm.id)
+      |> select([m, mm], %{url: mm.url})
+      |> Repo.all()
+      |> Enum.with_index(1)
+      |> Enum.reduce("", fn {video, index}, acc -> "#{acc} \n *Video #{index}:* #{video.url}" end)
+
+    Map.put(%{}, :urls, urls)
+  end
 
   @doc false
   @spec webhook(String.t(), map()) :: map()
