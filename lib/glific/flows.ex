@@ -855,9 +855,9 @@ defmodule Glific.Flows do
   end
 
   @spec do_export_contact_fields(map()) :: list()
-  def do_export_contact_fields(%{"actions" => actions}) when actions == [], do: []
+  defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: []
 
-  def do_export_contact_fields(%{"actions" => actions}) do
+  defp do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
     if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
   end
