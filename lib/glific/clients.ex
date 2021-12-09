@@ -12,7 +12,7 @@ defmodule Glific.Clients do
   @dev %{
     id: 1,
     name: "Glific",
-    gcs_file_name: Glific.Clients.Sol,
+    gcs_file_name: Glific.Clients.TAP,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
     webhook: Glific.Clients.DigitalGreen,
