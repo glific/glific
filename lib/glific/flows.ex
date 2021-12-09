@@ -856,7 +856,7 @@ defmodule Glific.Flows do
     |> Enum.reduce([], fn node, acc -> acc ++ do_export_contact_fields(node) end)
   end
 
-  @spec export_contact_fields(map()) :: list()
+  @spec do_export_contact_fields(map()) :: list()
   def do_export_contact_fields(%{"actions" => actions}) when actions == [], do: []
 
   def do_export_contact_fields(%{"actions" => actions}) do
