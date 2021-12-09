@@ -857,9 +857,9 @@ defmodule Glific.Flows do
   end
 
   @spec export_collections(map()) :: list()
-  def do_export_collections(%{"actions" => actions}) when actions == [], do: []
+  defp do_export_collections(%{"actions" => actions}) when actions == [], do: []
 
-  def do_export_collections(%{"actions" => actions}) do
+  defp do_export_collections(%{"actions" => actions}) do
     action = actions |> hd
 
     if action["type"] == "add_contact_groups" do
