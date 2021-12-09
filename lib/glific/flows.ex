@@ -847,29 +847,36 @@ defmodule Glific.Flows do
         exported_flow[item] |> Enum.reject(fn field -> field in [nil, ""] end) |> Enum.uniq()
       )
 
+  @spec export_collections(map()) :: list()
   defp export_collections(definition) do
     definition
     |> Map.get("nodes", [])
-    |> Enum.map(fn node -> do_export_collections(node) end)
+    |> Enum.reduce([], fn node, acc ->
+      acc ++ do_export_collections(node)
+    end)
   end
 
-  defp do_export_collections(%{"actions" => actions}) when actions == [], do: ""
+  @spec export_collections(map()) :: list()
+  def do_export_collections(%{"actions" => actions}) when actions == [], do: []
 
-  defp do_export_collections(%{"actions" => actions}) do
+  def do_export_collections(%{"actions" => actions}) do
     action = actions |> hd
 
     if action["type"] == "add_contact_groups" do
-      [group] = action["groups"]
-      group["name"]
+      action["groups"] |> Enum.reduce([], fn group, acc -> acc ++ [group["name"]] end)
+    else
+      []
     end
   end
 
+  @spec export_contact_fields(map()) :: list()
   defp export_contact_fields(definition) do
     definition
     |> Map.get("nodes", [])
     |> Enum.map(fn node -> do_export_contact_fields(node) end)
   end
 
+  @spec export_contact_fields(map()) :: String.t()
   defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: ""
 
   defp do_export_contact_fields(%{"actions" => actions}) do
