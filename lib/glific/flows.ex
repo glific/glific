@@ -826,26 +826,8 @@ defmodule Glific.Flows do
       |> Map.get("nodes", [])
       |> get_sub_flows()
       |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
-      |> clean_export()
     end
   end
-
-  @spec clean_export(map()) :: map()
-  defp clean_export(exported_flow) do
-    ["collections", "contact_field"]
-    |> Enum.reduce(exported_flow, fn export_item, acc ->
-      Map.merge(acc, do_clean_export(acc, export_item))
-    end)
-  end
-
-  @spec do_clean_export(map(), String.t()) :: map()
-  defp do_clean_export(exported_flow, item),
-    do:
-      Map.put(
-        exported_flow,
-        item,
-        exported_flow[item] |> Enum.reject(fn field -> field in [nil, ""] end) |> Enum.uniq()
-      )
 
   @spec export_collections(map()) :: list()
   defp export_collections(definition) do
@@ -862,26 +844,24 @@ defmodule Glific.Flows do
   defp do_export_collections(%{"actions" => actions}) do
     action = actions |> hd
 
-    if action["type"] == "add_contact_groups" do
-      action["groups"] |> Enum.reduce([], fn group, acc -> acc ++ [group["name"]] end)
-    else
-      []
-    end
+    if action["type"] == "add_contact_groups",
+      do: action["groups"] |> Enum.reduce([], fn group, acc -> acc ++ [group["name"]] end),
+      else: []
   end
 
   @spec export_contact_fields(map()) :: list()
   defp export_contact_fields(definition) do
     definition
     |> Map.get("nodes", [])
-    |> Enum.map(fn node -> do_export_contact_fields(node) end)
+    |> Enum.reduce([], fn node, acc -> acc ++ do_export_contact_fields(node) end)
   end
 
-  @spec export_contact_fields(map()) :: String.t()
-  defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: ""
+  @spec export_contact_fields(map()) :: list()
+  def do_export_contact_fields(%{"actions" => actions}) when actions == [], do: []
 
-  defp do_export_contact_fields(%{"actions" => actions}) do
+  def do_export_contact_fields(%{"actions" => actions}) do
     action = actions |> hd
-    if action["type"] == "set_contact_field", do: action["field"]["key"]
+    if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
   end
 
   @doc """
