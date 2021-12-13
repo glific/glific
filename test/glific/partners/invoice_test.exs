@@ -177,7 +177,12 @@ defmodule Glific.InvoiceTest do
        %{
          organization_id: organization_id
        } do
-    billing = Fixtures.billing_fixture(%{organization_id: organization_id})
+    billing =
+      Fixtures.billing_fixture(%{
+        organization_id: organization_id,
+        stripe_subscription_id: "test_sub_ID",
+        stripe_payment_method_id: "test_pm_ID"
+      })
 
     with_mocks([
       {

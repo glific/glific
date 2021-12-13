@@ -206,7 +206,7 @@ defmodule Glific.Stats do
   @spec make_result(map(), Ecto.Query.t(), tuple(), atom()) :: map()
   defp make_result(result, query, period_date, key) do
     query
-    |> Repo.all(skip_organization_id: true, timeout: 60_000)
+    |> Repo.all(skip_organization_id: true, timeout: 120_000)
     |> Enum.reduce(
       result,
       fn [cnt, org_id], result -> add(result, {period_date, org_id}, key, cnt) end

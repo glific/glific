@@ -5,7 +5,7 @@ defmodule Glific.Clients.Sol do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Repo}
+  alias Glific.Contacts
 
   @doc """
   In the case of SOL we retrive the name of the contact is in and store
@@ -14,16 +14,17 @@ defmodule Glific.Clients.Sol do
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
-    contact_name =
-      Contact
-      |> where([c], c.id == ^media["contact_id"])
-      |> select([c], c.name)
-      |> Repo.one()
+    contact = Contacts.get_contact!(media["contact_id"])
+    city = get_in(contact.fields, ["city", "value"]) || "unknown_city"
+    school_name = get_in(contact.fields, ["school_name", "value"]) || "unknown_school_name"
+    student_name = get_in(contact.fields, ["contact_name", "value"]) || "unknown_student_name"
 
-    suffix = ", #{media["contact_id"]}/#{media["remote_name"]}"
+    organization_name =
+      get_in(contact.fields, ["organization_name", "value"]) || "unknown_organization_name"
 
-    if is_nil(contact_name) || contact_name == "",
-      do: "NO NAME" <> suffix,
-      else: contact_name <> suffix
+    folder = "#{city}/#{school_name}/#{student_name}"
+    file_name = "#{contact.phone}_#{city}_#{organization_name}.png"
+
+    "#{folder}/#{file_name}"
   end
 end
