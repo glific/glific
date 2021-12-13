@@ -7,7 +7,8 @@ defmodule Glific.Clients.Avanti do
   @plio %{
     "dataset" => "haryana_sandbox",
     "analytics_table" => "plio_summary_stats",
-    "teachers_table" => "school_profile"
+    "teachers_table" => "school_profile",
+    "student_table" => "student_data"
   }
   @gcs_url "https://storage.googleapis.com/reports-af/haryana/sandbox/teacher_reports/"
 
@@ -49,6 +50,19 @@ defmodule Glific.Clients.Avanti do
       |> Enum.reduce(%{found: false}, fn teacher, acc ->
         if teacher["mobile_no"] == phone,
           do: acc |> Map.merge(%{found: true, faculty_name: teacher["faculty_name"]}),
+          else: acc
+      end)
+    end
+  end
+
+  def webhook("check_if_existing_student", fields) do
+    phone = clean_phone(fields)
+
+    with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :students) do
+      data
+      |> Enum.reduce(%{found: false}, fn student, acc ->
+        if student["students_mobile_no"] == phone,
+          do: acc |> Map.merge(%{found: true, student_name: student["student_name"]}),
           else: acc
       end)
     end
@@ -118,6 +132,13 @@ defmodule Glific.Clients.Avanti do
     """
     SELECT mobile_no, faculty_name
     FROM `#{@plio["dataset"]}.#{@plio["teachers_table"]}` ;
+    """
+  end
+
+  defp get_report_sql(:students, _fields) do
+    """
+    SELECT students_mobile_no, student_name
+    FROM `#{@plio["dataset"]}.#{@plio["student_table"]}` ;
     """
   end
 
