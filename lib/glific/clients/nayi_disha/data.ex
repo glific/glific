@@ -4,7 +4,7 @@ defmodule Glific.Clients.NayiDisha.Data do
   """
 
   @parent_hsm_uuid_advise_eng "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
-  @parent_hsm_uuid_advise_hn "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
+  @parent_hsm_uuid_advise_hn "1ae7a7b2-a89d-409b-b5c4-750ee232c98c"
 
   @hsm %{
     1 => %{
@@ -18,7 +18,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडियाट्रिशियन, डॉ. अजय शर्मा कोविड -19 के बारे में कुछ सामान्य चिंताओं, बीमारी के प्रबंधन के लिए टीकाकरण के बारे में बात करते हैं, ख़ास तौर से उन बच्चों में जिन्हें विशेष देखभाल की आवश्यकता होती है।
+            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडियाट्रिशियन, डॉ. अजय शर्मा कोविड -19 के बारे में कुछ सामान्य चिंताओं, बीमारी के प्रबंधन के लिए टीकाकरण के बारे में बात करते हैं, ख़ास तौर से उन बच्चों में जिन्हें विशेष देखभाल की आवश्यकता होती है।
             डॉ. अजय शर्मा एवेलीना हॉस्पिटल, इंग्लैंड के न्यूरो-डेवलपमेंटल पेडिअट्रिशन (परामर्शदाता) और सत. थॉमस हॉस्पिटल, इंग्लैंड के पूर्व क्लीनिकल डायरेक्टर है।
             प्रश्न श्रृंखला को सुनने के लिए यह लिंक दबाएं  https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-hindi"
           ]
@@ -42,7 +42,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।
+            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।
             इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडिएट्रिशन डॉ. अजय शर्मा  कोविद -19 महामारी के दौरान विशेष आवश्यकताओं से प्रभावित बच्चों की देखभाल के बारे में बच्चों की घर पर मदद करने के तरीके समझाते हैं।
             प्रश्न श्रृंखला को सुनने के लिए यह लिंक दबाएं 👉  https://www.nayi-disha.org/article/covid-19-care-coping-needs-special-children-home-hindi"
           ]
@@ -81,7 +81,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें l ऐसे समय में इस बीमारी से सम्बंधित संभव कठिनाइयों के लिए तैयार रहना उचित रहेगा। यदि भविष्य में मुख्य देखभाल कर्ता कोविड-19 से संक्रमित होता है, तो वह अगले देखभाल कर्ता के सहायता लिए निम्नलिखित जानकारी प्रदान कर सकता है|
+            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें l ऐसे समय में इस बीमारी से सम्बंधित संभव कठिनाइयों के लिए तैयार रहना उचित रहेगा। यदि भविष्य में मुख्य देखभाल कर्ता कोविड-19 से संक्रमित होता है, तो वह अगले देखभाल कर्ता के सहायता लिए निम्नलिखित जानकारी प्रदान कर सकता है|
 
             1) विकलांग व्यक्ति की रोज़मर्रा की दवाईयां (डॉक्टर प्रिस्क्रिप्शन समेत)💊📝
 
@@ -136,7 +136,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 अगर आप या परिवार का कोई सदस्य कोविद-१९ से संक्रमित होता है तो इन चीजों को ध्यान में रखें :-
+            "अगर आप या परिवार का कोई सदस्य कोविद-१९ से संक्रमित होता है तो इन चीजों को ध्यान में रखें :-
             ~ऐसे आपात परिस्थितियों के लिए २ या अधिक व्यक्तियों को विकलांग व्यक्ति की देखभाल के लिए पहले से नियुक्त करके रखे ।
             ~ यदि आपको देखभाल कर्ता के तौर पर अकेले (सेल्फ क्वॉरेंटाइन) रहने की आवश्यकता हो तो उसकी योजना भी पहले से ही बना ले।
             ~यह सुनिश्चित करें कि घर में एक या दो व्यक्तियों का विकलांग व्यक्ति के साथ मेलजोल बना रहे।यदि यह संभव नहीं है तो बच्चे को अच्छी तरह से जानने वाले उसके टीचर या थेरेपिस्ट से संपर्क बनाए रखें।
@@ -178,7 +178,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 कोरोना महामारी को न भूले और उसके परिणाम से सीखे। अपने बच्चे के भविष्य की योजनाओं में निवेश करे ताकि कल के आपात स्तिथि में आप तैयार हो । अपने बच्चे के कानूनी और वित्तीय भविष्य को सुरक्षित रखने के लिए इन ६ दस्तावेज़ो का प्रबन्द ज़रूर करे।
+            "कोरोना महामारी को न भूले और उसके परिणाम से सीखे। अपने बच्चे के भविष्य की योजनाओं में निवेश करे ताकि कल के आपात स्तिथि में आप तैयार हो । अपने बच्चे के कानूनी और वित्तीय भविष्य को सुरक्षित रखने के लिए इन ६ दस्तावेज़ो का प्रबन्द ज़रूर करे।
 
             ⚪ डिसेबिलिटी सर्टिफिकेट (विकलांगता प्रमाण पत्र)
 
@@ -265,7 +265,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- ज़रूरी दस्तावेज़
+            "विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- ज़रूरी दस्तावेज़
 
             ~2 पासपोर्ट आकार की फोटो
 
@@ -310,7 +310,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉  विकलांगता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- मूल्यांकन
+            "विकलांगता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- मूल्यांकन
 
             विकलांगता से प्रभावित व्यक्ति को तीन प्रकार की जांच से गुजरना होता है –
 
@@ -351,7 +351,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 विकलांगता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- भारत में, सामान्य रूप से यह प्रमाणपत्र चिकित्सा कार्यालयों (अथवा बोर्ड) के द्वारा जारी किया जाता है।
+            "विकलांगता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- भारत में, सामान्य रूप से यह प्रमाणपत्र चिकित्सा कार्यालयों (अथवा बोर्ड) के द्वारा जारी किया जाता है।
 
             दिव्याङ्ग जन और उनके माता-पिता को विकलांगता प्रमाणपत्र प्राप्त करने के लिए विशिष्ट अस्पताल और अधिकृत चिकित्सा केंद्र/अस्पताल में आवेदन करना चाहिए। जांच रिपोर्ट को विकलांग व्यक्ति को सौंप दी जाती है।
             इस प्रमाणपत्र का निर्माण सरकार के द्वारा किया जाता है। सरकारी सुविधाओं का उपयोग करने के लिए विकलांगता प्रमाणपत्र का प्रयोग करें |
@@ -387,29 +387,132 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     11 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      variables: [
+        "*UDID Process*
+
+        1) Visit Swavlamban website at www.swavlambancard.gov.in.(This Is A Government Website and all data provided here is completely secure.)
+
+        2) Click on the link www.swavlambancard.gov.in to apply for Disability Certificate and UDID Card. (You can see the link on the right side of the homepage screen)
+
+        3) Fill in all the details on the form:Personal,Disability, Employment and IdentityDetails.
+
+        4) Upload All Necessary Documents Required (OriginalDisability Certificate, Original Aadhaar Card, Passport Size Picture and Signature or Thumb Impressions)
+
+        5) Click on ‘submit details’ to complete the registration.
+
+        6) Once The Registration Completed, you will receive enrollment number on the email ID and contact number provided by in the form above.(Please Download and save the receipt.The receipt will contain the child’s UDID enrollment number and the names of the government hospitals available in nearby areas to which you can take your child for assessment).
+
+        7) You can visit www.swavlambancard.gov.in and access the video available on the home page to understand the step by step procedure for the registration of the UDID.
+
+        8) Once the assessment and Verification is done, your UDID card will be sent for printing.
+
+        9) Once the UDID card is generated you can download your e-Disability Card and e-UDID Card."
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          variables: ["
+          *यू.डी.आई.डी की प्रक्रिया*
+
+          1) स्वावलंबन वेबसाइट पर जाएं। यह एक सरकारी वेबसाइट है और यहां प्रदान किया गया सभी डेटा पूरी तरह से सुरक्षित है।इस लिंक पर क्लिक करें-  www.swavlambancard.gov.in.
+
+          2) विकलांगता प्रमाण पत्र और यूडीआईडी ​​कार्ड के लिए आवेदन करने के लिए लिंक www.swavlambancard.gov.in पर क्लिक करें।
+
+          3) फॉर्म में सभी विवरण भरें: व्यक्तिगत, विकलांगता, रोजगार और पहचान विवरण।
+
+          4) आवश्यक सभी दस्तावेज अपलोड करें (मूल विकलांगता प्रमाण पत्र, मूल आधार कार्ड, पासपोर्ट साइज का फोटो और हस्ताक्षर या अंगूठे के निशान)।
+
+          5) पंजीकरण पूरा करने के लिए 'सबमिट डिटेल्स' पर क्लिक करें।
+
+          6) एक बार पंजीकरण पूरा हो जाने के बाद, आपको अपने ईमेल आई.डी. और फ़ोन नंबर पर एक नामांकन संख्या प्राप्त होगी। (कृपया रसीद को डाउनलोड करके सेव करे। रसीद में बच्चे की यू.डी.आई.डी. ​​नामांकन संख्या होगी और आस-पास के क्षेत्र में उपलब्ध सरकारी अस्पताल जहाँ आप अपने बच्चे को मूल्यांकन के लिए ले जा सकते है के नाम भी वर्णित होंगे।)
+
+          7) आप www.swavlambancard.gov.in पर उपलब्ध वीडियो से यू.डी.आई.डी ​​​​के पंजीकरण के लिए चरण दर चरण प्रक्रिया को समझ  सकते हैं।
+
+          8) एक बार आकलन और सत्यापन हो जाने के बाद, आपका यूडीआईडी ​​कार्ड छपाई के लिए भेजा जाएगा।आप अपने यू.डी.आई.डी. कार्ड का स्टेटस को स्वावलंबन कार्ड वेबसाइट पर ट्रैक कर सकते हैं।
+
+          9) आप अपने यू.डी.आई.डी. कार्ड की स्थिति को स्वावलंबन कार्ड वेबसाइट पर ट्रैक कर सकते हैं।आप अपना ई-विकलांगता कार्ड और ई-यूडीआईडी ​​कार्ड डाउनलोड कर सकते हैं।
+
+          "]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          variables: [
+            "*UDID Process*
+
+          1) Visit Swavlamban website at www.swavlambancard.gov.in.(This Is A Government Website and all data provided here is completely secure.)
+
+          2) Click on the link www.swavlambancard.gov.in to apply for Disability Certificate and UDID Card. (You can see the link on the right side of the homepage screen)
+
+          3) Fill in all the details on the form:Personal,Disability, Employment and IdentityDetails.
+
+          4) Upload All Necessary Documents Required (OriginalDisability Certificate, Original Aadhaar Card, Passport Size Picture and Signature or Thumb Impressions)
+
+          5) Click on ‘submit details’ to complete the registration.
+
+          6) Once The Registration Completed, you will receive enrollment number on the email ID and contact number provided by in the form above.(Please Download and save the receipt.The receipt will contain the child’s UDID enrollment number and the names of the government hospitals available in nearby areas to which you can take your child for assessment).
+
+          7) You can visit www.swavlambancard.gov.in and access the video available on the home page to understand the step by step procedure for the registration of the UDID.
+
+          8) Once the assessment and Verification is done, your UDID card will be sent for printing.
+
+          9) Once the UDID card is generated you can download your e-Disability Card and e-UDID Card."
+          ]
         }
       }
     },
     12 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      variables: ["
+        *Concessions under UDID*
+
+        1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges
+
+        2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000
+
+        3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability
+
+        4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class
+
+        5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000)
+
+        6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)
+      "],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          variables: ["
+            *यूडीआईडी ​​के तहत रियायतें*
+
+            1.शिक्षा-किसी भी पड़ोस के स्कूल में 6 से 18 वर्ष की आयु के बच्चों को निःशुल्क और अनिवार्य शिक्षा और सार्वजनिक वित्त पोषित कॉलेजों में 5% आरक्षित सीटें
+
+            2. यात्रा-सभी विकलांग लोग कोच वर्ग के आधार पर बस/ट्रेन के किराए में 50-75% की छूट के हकदार हैं
+
+            3. आयकर- 40-80% विकलांगता- Rs. 75000 तक की कटौती
+
+            4. ऐ.डी.आई.पी स्कीम-विकलांग व्यक्ति को वित्तीय सहायता (जिनकी आय 20000 से अधिक नहीं)
+
+            5. लीगल गार्डियनशिप-विकलांग व्यक्ति को अभिभावक नियुक्त करने की कानूनी प्रक्रिया(जो 18 वर्ष से अधिक आयु का है)
+
+            6. निर्माया- स्वास्थ्य बीमा योजना जो सीपी, आईडी, एएसडी और बहु ​​विकलांगता के लिए 1 लाख रुपये तक कवर करती है
+          "]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          variables: ["
+            *Concessions under UDID*
+
+            1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges
+
+            2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000
+
+            3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability
+
+            4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class
+
+            5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000)
+
+            6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)
+          "]
         }
       }
     },
@@ -430,21 +533,28 @@ defmodule Glific.Clients.NayiDisha.Data do
     14 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Legal Guardianship*- The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+        "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link-
+
+        https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 लीगल गार्डियन या वैध/कानूनी पालक
-            माता पिता के अनुपस्थिति में, एक रक्त सम्बन्धी ही बच्चे का कानूनी पालक हो सकता है।आमतौर पर, निश्चित उम्मीदवार से लिखित सहमति लेना उचित रहता है📝 ।
-            अगर बच्चे का कोई भी रक्त सम्बन्धी जीवित नहीं है, आपके परिवार के दूसरे सदस्य (जैसे भाभी, चाची, मामी), बच्चे के वैध पालक बन सकते है 👩"
+            "लीगल गार्डियन या वैध/कानूनी पालक
+
+            माता पिता के अनुपस्थिति में, एक रक्त सम्बन्धी ही बच्चे का कानूनी पालक हो सकता है।आमतौर पर, निश्चित उम्मीदवार से लिखित सहमति लेना उचित रहता है📝 । अगर बच्चे का कोई भी रक्त सम्बन्धी जीवित नहीं है, आपके परिवार के दूसरे सदस्य (जैसे भाभी, चाची, मामी), बच्चे के वैध पालक बन सकते है 👩‍👧। बेहतर है की ट्रस्टी और पालक अलग अलग व्यक्ति ही हो क्योकि पालक व्यक्तिगत मामले ही संभालता है। वसीयत में पालक का कोई हस्तक्षेप नहीं होता 📜। अगर पालक बच्चे का उचित ख्याल नहीं रखता, न्यायालय माता पिता का निर्णय उलट सकता है 👨‍⚖️ । अधिक् जानकारी के लिए यह लिंक दबाएं -
+
+            https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child
+          "
           ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Legal Guardianship*- The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link-
+
+            https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
           ]
         }
       }
@@ -452,22 +562,28 @@ defmodule Glific.Clients.NayiDisha.Data do
     15 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Legal Guardianship- Application Process*- There are two processes – National Trust recognizes four levels of disabilities. Check if your child qualifies to come under these four sections. If yes, then you can apply it through their LLC (Local level committee) process in your State. If the child doesn’t fall under the four specified categories, or if LLC isn’t available in your resident city then you have to apply for guardianship at the sub-divisional magistrate office in your State. It may take 3-4months to get the guardian certificate. For more information, please click on this link- https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+        "*Legal Guardianship- Application Process*- There are two processes – National Trust recognizes four levels of disabilities. Check if your child qualifies to come under these four sections. If yes, then you can apply it through their LLC (Local level committee) process in your State. If the child doesn’t fall under the four specified categories, or if LLC isn’t available in your resident city then you have to apply for guardianship at the sub-divisional magistrate office in your State. It may take 3-4months to get the guardian certificate. For more information, please click on this link-
+
+        https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 *लीगल गार्डियन*
+            "*लीगल गार्डियन*
             अगर आपका बच्चा राष्ट्र न्यास द्वारा कथित किसी भी विकलांग श्रेणी में आता है, तो आप स्थानीय स्तर की समिति (लोकल लेवल कमिटी) से पालक का आवेदन कर सकते है।
             स्थानीय स्तर की समिति के अनुपस्थिति में आप सब-डिविशनल मजिस्ट्रेट ऑफिस से पालक का आवेदन कर सकते है।राष्ट्रीय न्यास द्वारा नियुक्त पालक की उपस्थिति में, आपको कोर्ट द्वारा नियुक्त पालक की आवश्यकता नहीं है।
-            अधिक् जानकारी के लिए यह लिंक दबाएं - https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            अधिक् जानकारी के लिए यह लिंक दबाएं -
+
+            https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
           ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Legal Guardianship- Application Process*- There are two processes – National Trust recognizes four levels of disabilities. Check if your child qualifies to come under these four sections. If yes, then you can apply it through their LLC (Local level committee) process in your State. If the child doesn’t fall under the four specified categories, or if LLC isn’t available in your resident city then you have to apply for guardianship at the sub-divisional magistrate office in your State. It may take 3-4months to get the guardian certificate. For more information, please click on this link- https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            "*Legal Guardianship- Application Process*- There are two processes – National Trust recognizes four levels of disabilities. Check if your child qualifies to come under these four sections. If yes, then you can apply it through their LLC (Local level committee) process in your State. If the child doesn’t fall under the four specified categories, or if LLC isn’t available in your resident city then you have to apply for guardianship at the sub-divisional magistrate office in your State. It may take 3-4months to get the guardian certificate. For more information, please click on this link-
+
+            https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
           ]
         }
       }
@@ -476,28 +592,37 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*Legal Guardianship*
-      Who is a Legal Guardian?
-      Legal Guardianship is the legal process of appointing a legal guardian
-      to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests.
+        Who is a Legal Guardian?
+        Legal Guardianship is the legal process of appointing a legal guardian
+        to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests.
 
-      Who are the key players in a legal guardianship process?
-      ~ 👨‍👩‍👧 Biological Parents of the PwD
-      ~👱👶Person with Disability (PwD)
-      ~ 👨‍👩‍👧‍👦Family Members- Blood-related family members may be designated guardians in lieu of the inability or absence of biological parents to become Guardians themselves.
-      ~Registered Organisation-In absence of relatives, LLC may direct a
-      Registered Organization(RO) to become the guardian instead.
-      ~Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district
+        Who are the key players in a legal guardianship process?
+        ~ 👨‍👩‍👧 Biological Parents of the PwD
+        ~👱👶Person with Disability (PwD)
+        ~ 👨‍👩‍👧‍👦Family Members- Blood-related family members may be designated guardians in lieu of the inability or absence of biological parents to become Guardians themselves.
+        ~Registered Organisation-In absence of relatives, LLC may direct a
+        Registered Organization(RO) to become the guardian instead.
+        ~Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district
 
-      For more information please click on this link- https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child"
+        For more information please click on this link-
+
+        https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "१) लीगल गार्डियन कौन होता है?
+            " *लीगल गार्डियन*
+
+            १) लीगल गार्डियन कौन होता है?
             १) गार्डियनशिप एक कानूनी प्रक्रिया होती है जिससे आप अपने बच्चे के देख रेख के लिए एक व्यक्ति (लीगल गार्डियन) को नियुक्त कर सकते है। बच्चे के व्यक्तिगत मामलो के साथ साथ गार्डियन को बच्चे के हित के लिए उनके तरफ से कानूनी कर्त्तव्य भी निभाने पढ़ते है।
             २) लीगल गार्डियनशिप की प्रक्रिया में कौन कौन शामिल होता है?
-            २)~ 👨"
+            २)~ 👨‍👩‍👧 बच्चे के जैविक माता पिता
+            ~👱👶विकलांग बच्चा
+            ~ 👨‍👩‍👧‍👦परिवार जन- रक्त सम्बन्धी परिवार जन जो जैविक माता पिता के अनुपस्थिति में नामित गार्डियन बन सके
+            ~पंजीकृत संगठन- रक्त सम्बन्धियों के अनुपस्थिति में एल.एल.सी एक पंजीकृत संगठन को गार्डियन की भूमिका निभाने को कह सकता है।
+            ~लोकल लेवल कमीटी (एल.एल.सी)- यह जिला के स्तर की समिति होती है जो लीगल गार्डियन को मंज़ूरी, नियुक्ति और निगरानी रखती है। समिति में एक डिस्ट्रिक्ट मजिस्ट्रेट (डी.एम्.), डिप्टी कमिश्नर या उस पद का कोई और अधिकारी ज़रूर होना चाहिए। अधिक् जानकारी के लिए यह लिंक दबाएं - https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child
+            "
           ]
         },
         "en" => %{
@@ -516,7 +641,9 @@ defmodule Glific.Clients.NayiDisha.Data do
           Registered Organization(RO) to become the guardian instead.
           ~Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district
 
-          For more information please click on this link- https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child"
+          For more information please click on this link-
+
+          https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child"
           ]
         }
       }
@@ -545,8 +672,19 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 विकलांग व्यक्ति का लीगल गार्डियन कौन बन सकता है?
-            १) जैविक माता मिटा 👨"
+            "आपके बच्चे का कानूनी अभिभावक कौन हो सकता है??
+
+            १) जैविक माता मिटा 👨‍👩‍👧
+            २) भाई बहन 👫
+            ३) रक्त समबंधी परिवार जन 👨‍👩‍👧‍👦
+            ४) पंजीकृत संस्थान (रजिस्टर्ड आर्गेनाईजेशन- आर.ओ.)
+            माता पिता अपने बच्चे के लीगल गार्डियन उसके १८ वर्ष होने तक ही रह सकते है। राष्ट्रीय न्यास (नेशनल ट्रस्ट) के नियमों के अनुसार, विक्लांग बच्चे के १८ वर्ष होने के बाद, माता पिता को उसका लीगल गार्डियन बनने के लिए आवेदन करना पढ़ता है। एक लीगल गार्डियन में यह विशिष्टताऐं होना ज़रूरी है👇
+
+
+            ॰भारतीय नागरिक 🇮🇳
+            ॰जिसका कोई आपराधिक रिकॉर्ड या लंबित कोर्ट केस न हो ⚖
+            ॰ जो आर्थिक रूप से आत्मनिर्भर हो 💵
+            ॰अगर एक आर.ओ. को गार्डियन की भूमिका निभानी पढ़े तो उसको राज्य के सामाजिक कल्याण विभाग (सोशल वेलफेयर डिपार्टमेंट) के साथ पंजीकृत होना चाहिए| अधिक् जानकारी के लिए यह लिंक दबाएं - https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child"
           ]
         },
         "en" => %{
@@ -617,7 +755,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 *विशिष्ट उद्देश्य पत्र (लेटर ऑफ़ इंटेंट)*
+            "*विशिष्ट उद्देश्य पत्र (लेटर ऑफ़ इंटेंट)*
             विशिष्ट उद्देश्य पत्र (लेटर ऑफ़ इंटेंट), हालांकि कोई कानूनी दस्तावेज़ नहीं होता है, लेकिन इसमें आपके बच्चे की जिंदगी और उससे जुड़े विभिन्न पहलुओं के बारे में स्पष्ट लिखा जाता है। इस एक दस्तावेज़ के माध्यम से बच्चे के भावी संरक्षक/संरक्षकों को उससे जुड़ी हर प्रकार की महत्वपूर्ण जानकारी सरलता से प्राप्त हो जाती है। एक सामान्य विशिष्ट उद्देश्य पत्र को निम्न अनुभागों में बांटते हुए तैयार किया जा सकता है:-
             १) पारिवारिक इतिहास- जन्म स्थान, स्कूल, निवास स्थान, परिवार सदस्य का विस्तार से वर्णन करे
             २) जीवनयापन-प्रतिदिन किए जाने वाले काम जैसे उसके उठने का समय, वह क्या करता/करती है और उसका रोज़ का क्या दिनचर्या है आदि महत्वपूर्ण जानकारी देनी चाहिए
@@ -656,7 +794,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 *विशिष्ट उद्देश्य पत्र (लेटर ऑफ़ इंटेंट)*
+            "*विशिष्ट उद्देश्य पत्र (लेटर ऑफ़ इंटेंट)*
             एक सामान्य विशिष्ट उद्देश्य पत्र को इन निम्न अनुभागों में भी बांट सकते है:-
             १) बच्चे का व्यवहार- बच्चे की परिवार और मित्रो संबंधी पसंद, नापसंद और प्राथमिकताओं को स्पष्ट रूप से बताया जाना चाहिए
             २) धार्मिक वातावरण- विशिष्ट धार्मिक/आध्यात्मिक माहौल और रुचियों का विवरण
@@ -694,7 +832,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 *आपके बच्चे के भविष्य के लिए वित्तीय योजना एक आवश्यकता है।*
+            "*आपके बच्चे के भविष्य के लिए वित्तीय योजना एक आवश्यकता है।*
             वित्तीय योजना बनाते समय, निम्नलिखित चार पॉइंट्स ध्यान में रखे:-
             १) आपकी भागीदारी, बच्चे के व्यक्तिगत और वित्तीय मामलों में, उसके पूरे जीवन काल में होगी।आपकी भूमिका आपके बच्चे के जीवन में कुछ ही साल के लिए प्रतिबंधित नहीं है।
             २) आपके बच्चे पर रोज़ाना खर्च मेहेंगा हो सकता है पर इसका अर्थ यह नहीं है की एक उत्तम वित्तीय योजना बनाना असंभव है।
@@ -775,7 +913,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 अपने बच्चे के वित्त सुरक्षित रखने के लिए आठ सीढ़ी योजना
+            "अपने बच्चे के वित्त सुरक्षित रखने के लिए आठ सीढ़ी योजना
             १) अपनी सारी सम्पत्तियों की समीक्षा करे
             २) विशिष्ट उद्देश्य पत्र ( लेटर ऑफ़ इंटेंट) बनाये
             ३) एक वित्तीय सलाहकार ढूंढे जो वित्तीय और जायदाद के मामलों के साथ साथ चार्टर्ड अकाउंटेंट (सी.ऐ.) की भी भूमिका निभा सके
@@ -822,7 +960,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 वसीयत बनाने के कुछ सुझाव- पार्ट १
+            "वसीयत बनाने के कुछ सुझाव- पार्ट १
             १) अपनी वसीयत में बच्चे की विशेष जरूरत (डिसेबिलिटी प्रमाणपत्र के आधार पर )और असमर्थता खासकर वित्ययी मामलों को लेकर इसका स्पष्ट उल्लेख करें
             २)यदि आप अपने विशेष जरूरतों वाले बच्चे के नाम पर संपत्ति का बड़ा हिस्सा छोड़ना चाहते हैं तो कृपया इस विषय को स्पष्ट रूप से बताएं। यह भी बताएं, कि क्या आप चाहते हैं कि ट्रस्ट के बनने पर यह संपत्ति उसमें चली जाये? एक लिस्ट में उन सभी चल और अचल संपत्ति के बारे में लिखे जो वसीयत के माध्यम से ट्रस्ट के अधिकार में दी जाएंगी।
             ३)यदि आप परिवार के किसी सदस्य को संपत्ति का उत्तराधिकारी नहीं बनाना चाहते, तो इस बात का वर्णन करें और स्पष्ठ रूप से इसका कारण बताएं।
@@ -859,7 +997,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 वसीयत बनाने के कुछ सुझाव- पार्ट २
+            "वसीयत बनाने के कुछ सुझाव- पार्ट २
             १) जब तक आपका बच्चा/बच्ची 18 वर्ष की आयु तक नहीं पहुँचते हैं, तब तक आप उनकी संपत्ति की देखभाल का अधिकार किसे देना चाहेंगे? इसका स्पष्ट उल्लेख करें ।
 
             २) विशिष्ट ज़रुरत वाले बच्चे को 18 साल की उम्र के बाद भी अभिभावक की ज़रुरत होगी I माता पिता पहले अभिभावक होते हैं मगर आपकी मृत्य के पश्चात कौन इस बच्चे का अभिभावक बनेगा इसका निर्णय ले कर इसका उल्लेख वसीहत में स्पष्ट करें।
@@ -898,7 +1036,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 वसीयत बनाने के कुछ सुझाव- पार्ट ३
+            "वसीयत बनाने के कुछ सुझाव- पार्ट ३
 
             १) वसीयत को बनाते समय अपनी सभी इच्छाएँ और मर्ज़ी स्पष्ट रूप से लिखें और कहीं भी किसी प्रकार का कोई असपष्ट या अनेक अर्थ वाला वाक्य नहीं लिखें नहीं तो आखिरी स्पष्ट लिखी वसीयत ही जारी मानी जाएगी।
 
@@ -929,10 +1067,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     30 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: [
-        "A trust is legal agreement for management, preservation and upkeep of the child who is the benefactor of the Trust. The Trust deed defines the objective, power of trustees (people managing the trust), management, preservation and distribution of income to the child. It gives the child ongoing financial support for his/her medical and lifestyle requirements. A Trust being an independent separate legal entity is not impacted by any eventualities in the personal life of the child’s parents/caregivers. Any parent with a child with special needs can set up a private trust and secure the future of the child. This Trust can fund all expenses related to child care. The Settler of the Trust (person creating the trust) can specify how the funds should be utilized.
-      For more information click on this link- https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
-      ],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
@@ -940,9 +1075,82 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
+          variables: ["@contact.name"]
+        }
+      }
+    },
+    31 => %{
+      hsm_uuid: @parent_hsm_uuid_advise_eng,
+      variables: [
+        "How to find a suitable trustee for your Special Needs Trust?
+
+        Factors to consider while identifying a suitable trustee:
+
+        The trustee should be competent enough to manage accounts, taxation, investments and other financial affairs.
+        The trustee should be a person who can put the beneficiary interest on the top.
+        The trustees are going to work for the beneficiary and so it’s important that they understand his/her requirement well.
+        Individual Or Corporate Trustees- If all trustees are identified as individuals then it has to be seen how they will bring changes in their life. Contrary to this professional trustee may be well experienced to manage the affairs of the beneficiary.
+        Though most families prefer friends and other family members as successor trustees, globally professional trustees have seen outperforming family members since they have adequate knowledge and experience. Even if the professional trustee is involved the family members have to be there in a guiding role.
+        For more information, click on this link- https://www.nayi-disha.org/article/how-find-suitable-trustee-your-special-needs-trust"
+      ],
+      translations: %{
+        "hi" => %{
+          hsm_uuid: @parent_hsm_uuid_advise_hn,
+          variables: ["
+            *विश्वसनीय ट्रस्टी कैसे ढूंढे?* 🤔
+
+            १) जो हिसाब किताब, पूँजी निवेश और कर (टैक्स) सम्बंधित मामलों में विशेषज्ञ हो 💵
+            २) जो विकलांग बच्चे की ज़रूरतों को समझे और औरो से भी बना के रखे 🚸
+            ३) जो लाभार्थी के ज़रूरतों को प्राथमिकता दे और ट्रस्ट का फायदा न उठाय 👶
+            ४) एक व्यक्ति और कॉर्पोरेट (जिसको ट्रस्ट सँभालने का ज़्यादा अनुभव हो सकता है) ट्रस्टी में चुने 👥
+            ५) मित्र और रिश्तेदार भी ट्रस्टी हो सकते है। यह जांचे की उनको ट्रस्टी के पद की कितनी जानकारी है। 📚 अधिक जानकारी के लिए यह लिंक दबाए-
+
+            https://www.nayi-disha.org/article/how-find-suitable-trustee-your-special-needs-trust
+          "]
+        },
+        "en" => %{
+          hsm_uuid: @parent_hsm_uuid_advise_eng,
+          variables: [
+            "How to find a suitable trustee for your Special Needs Trust?
+
+            Factors to consider while identifying a suitable trustee:
+
+            The trustee should be competent enough to manage accounts, taxation, investments and other financial affairs.
+            The trustee should be a person who can put the beneficiary interest on the top.
+            The trustees are going to work for the beneficiary and so it’s important that they understand his/her requirement well.
+            Individual Or Corporate Trustees- If all trustees are identified as individuals then it has to be seen how they will bring changes in their life. Contrary to this professional trustee may be well experienced to manage the affairs of the beneficiary.
+            Though most families prefer friends and other family members as successor trustees, globally professional trustees have seen outperforming family members since they have adequate knowledge and experience. Even if the professional trustee is involved the family members have to be there in a guiding role.
+            For more information, click on this link- https://www.nayi-disha.org/article/how-find-suitable-trustee-your-special-needs-trust"
+          ]
+        }
+      }
+    },
+    32 => %{
+      hsm_uuid: @parent_hsm_uuid_advise_eng,
+      variables: [
+        "A trust is legal agreement for management, preservation and upkeep of the child who is the benefactor of the Trust. The Trust deed defines the objective, power of trustees (people managing the trust), management, preservation and distribution of income to the child. It gives the child ongoing financial support for his/her medical and lifestyle requirements. A Trust being an independent separate legal entity is not impacted by any eventualities in the personal life of the child’s parents/caregivers. Any parent with a child with special needs can set up a private trust and secure the future of the child. This Trust can fund all expenses related to child care. The Settler of the Trust (person creating the trust) can specify how the funds should be utilized.
+        For more information click on this link-
+
+        https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
+      ],
+      translations: %{
+        "hi" => %{
+          hsm_uuid: @parent_hsm_uuid_advise_hn,
+          variables: [
+            " *बच्चे के लिए ट्रस्ट का महत्व*
+
+            ट्रस्ट बच्चे के मेडिकल और जीवन शैली ज़रूरतों के लिए अविरत वित्तीय सहारा प्रदान करता है । ट्रस्ट की कानूनी अस्तित्व अलग और स्वाधीन होती है । माता पिता प्राइवेट ट्रस्ट द्वारा अपने विकलांग बच्चे का भविष्य सुरक्षित कर सकते है। सेट्लर/ व्यवस्थापक उल्लेखित कर सकता है की वित्त का प्रयोग कैसे होगा। ट्रस्ट बच्चे के देख रेख के लिए कानूनी/वैध समझौता होता है (जिसका दानकर्ता भी बच्चा ही होता है)।ट्रस्ट दीड, ट्रस्टी के उद्देश्य, अधिकार, और बच्चे की आय की देख रेख की शर्ते स्पष्ट करता है ।*एक विकलांग बच्चे के लिए स्थिर (इररेवोकेबल) प्राइवेट ट्रस्ट सबसे उपयुक्त होता है |* अधिक जानकारी के लिए यह लिंक दबाए-
+
+            https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
+          ]
+        },
+        "en" => %{
+          hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "A trust is legal agreement for management, preservation and upkeep of the child who is the benefactor of the Trust. The Trust deed defines the objective, power of trustees (people managing the trust), management, preservation and distribution of income to the child. It gives the child ongoing financial support for his/her medical and lifestyle requirements. A Trust being an independent separate legal entity is not impacted by any eventualities in the personal life of the child’s parents/caregivers. Any parent with a child with special needs can set up a private trust and secure the future of the child. This Trust can fund all expenses related to child care. The Settler of the Trust (person creating the trust) can specify how the funds should be utilized.
-          For more information click on this link- https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
+            For more information click on this link-
+
+            https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
           ]
         }
       }
