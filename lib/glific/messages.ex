@@ -484,7 +484,7 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
-  @spec fetch_language_specific_template(map(), String.t()) :: map()
+  @spec fetch_language_specific_template(map(), integer()) :: map()
   defp fetch_language_specific_template(session_template, id) do
     contact = Contacts.get_contact!(id)
 
