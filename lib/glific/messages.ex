@@ -674,9 +674,6 @@ defmodule Glific.Messages do
   def create_and_send_message_to_group(message_params, group, type) do
     contact_ids = Groups.contact_ids(group.id)
 
-    if length(contact_ids) > 32 do
-    end
-
     {:ok, group_message} =
       if type == :session,
         do: create_group_message(Map.put(message_params, :group_id, group.id)),

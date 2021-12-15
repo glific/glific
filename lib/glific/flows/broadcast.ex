@@ -255,4 +255,56 @@ defmodule Glific.Flows.Broadcast do
 
     :ok
   end
+
+  @spec broadcast_stats(non_neg_integer()) :: map()
+  def broadcast_stats(flow_broadcast_id) do
+    %{
+      success: 10,
+      failed: 20,
+      pending: 30,
+      failed_catogries: %{
+        not_opted_in: 10,
+        opted_out: 20,
+        out_of_session_window: 20,
+        delivery_failure: 20
+      }
+    }
+    |> count_successfull_deliveries(flow_broadcast_id)
+    |> count_failed_deliveries(flow_broadcast_id)
+    |> count_pending_deliveries(flow_broadcast_id)
+    |> count_failed_deliveries_by_category(flow_broadcast_id)
+  end
+
+  defp count_successfull_deliveries(map, flow_broadcast_id) do
+    count =
+      FlowBroadcastContact
+      |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
+      |> where([fbc], is_nil(fbc.processed_at))
+      |> Repo.aggregate(:count)
+
+    Map.put_new(map, :success, count)
+  end
+
+  defp count_failed_deliveries(map, flow_broadcast_id) do
+    count =
+      FlowBroadcastContact
+      |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
+      |> where([fbc], is_nil(fbc.processed_at))
+      |> Repo.aggregate(:count)
+
+    Map.put_new(map, :failed, count)
+  end
+
+  defp count_pending_deliveries(map, flow_broadcast_id) do
+    count =
+      FlowBroadcastContact
+      |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
+      |> where([fbc], is_nil(fbc.processed_at))
+      |> Repo.aggregate(:count)
+
+    Map.put_new(map, :pending, count)
+  end
+
+  defp count_failed_deliveries_by_category(map, flow_broadcast_id),
+    do: Map.put(map, :flow_broadcast_id, flow_broadcast_id)
 end
