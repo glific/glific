@@ -484,6 +484,7 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
+  @spec fetch_language_specific_template(SessionTemplate.t(), String.t()) :: SessionTemplate.t()
   defp fetch_language_specific_template(session_template, id) do
     contact = Contacts.get_contact!(id)
 
@@ -500,6 +501,7 @@ defmodule Glific.Messages do
     end
   end
 
+  @spec hsm_message_params(SessionTemplate.t(), map()) :: map()
   defp hsm_message_params(
          session_template,
          %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
@@ -531,14 +533,18 @@ defmodule Glific.Messages do
   end
 
   @spec parse_buttons(SessionTemplate.t(), boolean()) :: SessionTemplate.t()
-  defp parse_buttons(session_template, true) do
+  defp parse_buttons(%{translations: translations} = session_template, true)
+       when translations == %{} do
+    # parsing buttons only when translation is not present, else buttons are part of body
     updated_body =
       session_template.buttons
-      |> Enum.reduce("", fn arc, acc -> "#{acc}| [" <> arc["text"] <> "] " end)
+      |> Enum.reduce(session_template.body, &("#{&2}| [" <> &1["text"] <> "] "))
 
     session_template
-    |> Map.merge(%{body: session_template.body <> updated_body})
+    |> Map.merge(%{body: updated_body})
   end
+
+  defp parse_buttons(session_template, true), do: session_template
 
   defp parse_buttons(session_template, false), do: session_template
 
