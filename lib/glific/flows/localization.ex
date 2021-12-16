@@ -53,11 +53,15 @@ defmodule Glific.Flows.Localization do
   end
 
   defp add_case_arguments(map, values) do
-    if is_nil(values["arguments"]) do
-      map
-    else
-      Map.put(map, :arguments, values["arguments"])
-    end
+    if is_nil(values["arguments"]),
+      do: map,
+      else: Map.put(map, :arguments, values["arguments"])
+  end
+
+  defp add_category_name(map, values) do
+    if is_nil(values["name"]),
+      do: map,
+      else: Map.put(map, :name, values["name"])
   end
 
   # given a json snippet containing all the translation for a specific language
@@ -77,6 +81,7 @@ defmodule Glific.Flows.Localization do
           |> add_text(values)
           |> add_attachments(values)
           |> add_case_arguments(values)
+          |> add_category_name(values)
 
         if values in [nil, %{}], do: acc, else: Map.put(acc, uuid, map)
       end
@@ -119,19 +124,9 @@ defmodule Glific.Flows.Localization do
   def get_translation(context, action, type \\ :text) do
     language_id = context.contact.language_id
 
-    localization =
-      if Ecto.assoc_loaded?(context.flow) and
-           context.flow.localization != nil,
-         do: context.flow.localization.localizations,
-         else: %{}
-
-    element =
-      if Map.has_key?(localization, language_id) and
-           Map.has_key?(Map.get(localization, language_id), action.uuid) do
-        Map.get(Map.get(localization, language_id), action.uuid)
-      else
-        action
-      end
+    element
+    |> loaded_localization()
+    |> get_translated_element(language_id, action.uuid, action)
 
     # in some cases we have a localization field, but either the text or the attachment
     # is missing and does not have values, in which case, we switch to using the default
@@ -142,27 +137,46 @@ defmodule Glific.Flows.Localization do
   end
 
   @doc """
-  Given a language id and an action uuid, return the translation if
+  Given a language id and an case uuid, return the translation if
   one exists, else return the original text
   """
   @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: list() | nil
   def get_translated_case_arguments(context, flow_case) do
     language_id = context.contact.language_id
 
-    localization =
-      if Ecto.assoc_loaded?(context.flow) and
-           context.flow.localization != nil,
-         do: context.flow.localization.localizations,
-         else: %{}
+    context
+    |> loaded_localization()
+    |> get_translated_element(language_id, flow_case.uuid)
+    |> Map.get(:arguments, flow_case.arguments)
+  end
 
-    element =
-      if Map.has_key?(localization, language_id) and
-           Map.has_key?(Map.get(localization, language_id), flow_case.uuid) do
-        Map.get(Map.get(localization, language_id), flow_case.uuid)
-      else
-        %{}
-      end
+  @doc """
+  Given a language id and an category uuid, return the translation if
+  one exists, else return the original text
+  """
+  @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: list() | nil
+  def get_translated_category_name(context, category) do
+    language_id = context.contact.language_id
 
-    Map.get(element, :arguments, flow_case.arguments)
+    context
+    |> loaded_localization()
+    |> get_translated_element(language_id, category.uuid)
+    |> Map.get(:name, category.name)
+  end
+
+  defp loaded_localization(context) do
+    if Ecto.assoc_loaded?(context.flow) and
+         context.flow.localization != nil,
+       do: context.flow.localization.localizations,
+       else: %{}
+  end
+
+  defp get_translated_element(localization, language_id, uuid, default \\ %{}) do
+    if Map.has_key?(localization, language_id) and
+         Map.has_key?(Map.get(localization, language_id), uuid) do
+      Map.get(Map.get(localization, language_id), uuid)
+    else
+      default
+    end
   end
 end
