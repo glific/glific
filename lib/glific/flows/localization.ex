@@ -125,8 +125,8 @@ defmodule Glific.Flows.Localization do
     language_id = context.contact.language_id
 
     element
-    |> loaded_localization()
-    |> get_translated_element(language_id, action.uuid, action)
+    |> load_localizations()
+    |> translated_element(language_id, action.uuid, action)
 
     # in some cases we have a localization field, but either the text or the attachment
     # is missing and does not have values, in which case, we switch to using the default
@@ -145,8 +145,8 @@ defmodule Glific.Flows.Localization do
     language_id = context.contact.language_id
 
     context
-    |> loaded_localization()
-    |> get_translated_element(language_id, flow_case.uuid)
+    |> load_localizations()
+    |> translated_element(language_id, flow_case.uuid)
     |> Map.get(:arguments, flow_case.arguments)
   end
 
@@ -159,19 +159,19 @@ defmodule Glific.Flows.Localization do
     language_id = context.contact.language_id
 
     context
-    |> loaded_localization()
-    |> get_translated_element(language_id, category.uuid)
+    |> load_localizations()
+    |> translated_element(language_id, category.uuid)
     |> Map.get(:name, category.name)
   end
 
-  defp loaded_localization(context) do
+  defp load_localizations(context) do
     if Ecto.assoc_loaded?(context.flow) and
          context.flow.localization != nil,
        do: context.flow.localization.localizations,
        else: %{}
   end
 
-  defp get_translated_element(localization, language_id, uuid, default \\ %{}) do
+  defp translated_element(localization, language_id, uuid, default \\ %{}) do
     if Map.has_key?(localization, language_id) and
          Map.has_key?(Map.get(localization, language_id), uuid) do
       Map.get(Map.get(localization, language_id), uuid)
