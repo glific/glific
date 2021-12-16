@@ -256,6 +256,22 @@ defmodule Glific.Flows.Broadcast do
     :ok
   end
 
+  defp broadcast_stats_base_query(flow_broadcast_id) do
+    """
+    SELECT distinct on (flow_broadcast_contacts.contact_id)
+    messages.id as message_id,
+    messages.status,
+    flow_broadcast_contacts.processed_at,
+    flow_broadcast_contacts.status as flow_broadcast_status,
+    messages.bsp_status,
+    messages.errors
+    FROM flow_broadcast_contacts
+    left JOIN messages ON messages.flow_broadcast_id = flow_broadcast_contacts.flow_broadcast_id
+    AND messages.contact_id = flow_broadcast_contacts.contact_id
+    WHERE flow_broadcast_contacts.flow_broadcast_id = #{flow_broadcast_id};
+    """
+  end
+
   @spec broadcast_stats(non_neg_integer()) :: map()
   def broadcast_stats(flow_broadcast_id) do
     %{
