@@ -848,6 +848,69 @@ defmodule Glific.MessagesTest do
       assert message.sent_at != nil
     end
 
+    test "send button template message",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      SeedsDev.seed_session_templates()
+      contact = Fixtures.contact_fixture(attrs)
+      shortcode = "account_balance"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
+
+      parameters = ["param1"]
+
+      # send hsm with buttons should send button template
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.is_hsm == true
+
+      assert message.body ==
+               "You can now view your Account Balance or Mini statement for Account ending with param1 simply by selecting one of the options below.| [View Account Balance] | [View Mini Statement] "
+
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+
+      # send hsm with buttons should send translated button template
+      Contacts.update_contact(contact, %{language_id: 2})
+
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.is_hsm == true
+
+      assert message.body ==
+               " अब आप नीचे दिए विकल्पों में से एक का चयन करके param1 के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]"
+
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+    end
+
     test "send media hsm message",
          %{organization_id: organization_id, global_schema: global_schema} = attrs do
       SeedsDev.seed_session_templates()
