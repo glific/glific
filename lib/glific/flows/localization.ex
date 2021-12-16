@@ -19,7 +19,7 @@ defmodule Glific.Flows.Localization do
         }
 
   embedded_schema do
-    field :localizations, :map
+    field(:localizations, :map)
   end
 
   defp add_text(map, values) do
@@ -53,10 +53,10 @@ defmodule Glific.Flows.Localization do
   end
 
   defp add_case_arguments(map, values) do
-    if is_nil(values["name"]) do
+    if is_nil(values["arguments"]) do
       map
     else
-      Map.put(map, :case_arguments, values["name"])
+      Map.put(map, :arguments, values["arguments"])
     end
   end
 
@@ -157,12 +157,12 @@ defmodule Glific.Flows.Localization do
 
     element =
       if Map.has_key?(localization, language_id) and
-           Map.has_key?(Map.get(localization, language_id), flow_case.category_uuid) do
-        Map.get(Map.get(localization, language_id), flow_case.category_uuid)
+           Map.has_key?(Map.get(localization, language_id), flow_case.uuid) do
+        Map.get(Map.get(localization, language_id), flow_case.uuid)
       else
         %{}
       end
 
-    Map.get(element, :case_arguments, flow_case.arguments)
+    Map.get(element, :arguments, flow_case.arguments)
   end
 end
