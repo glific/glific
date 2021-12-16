@@ -19,6 +19,7 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
+    Localization,
     Node,
     Wait
   }

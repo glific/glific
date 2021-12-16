@@ -10,6 +10,7 @@ defmodule Glific.Flows.Localization do
   alias Glific.{
     Flows.Action,
     Flows.Case,
+    Flows.Category,
     Flows.FlowContext,
     Settings
   }
@@ -124,9 +125,10 @@ defmodule Glific.Flows.Localization do
   def get_translation(context, action, type \\ :text) do
     language_id = context.contact.language_id
 
-    element
-    |> load_localizations()
-    |> translated_element(language_id, action.uuid, action)
+    element =
+      context
+      |> load_localizations()
+      |> translated_element(language_id, action.uuid, action)
 
     # in some cases we have a localization field, but either the text or the attachment
     # is missing and does not have values, in which case, we switch to using the default
@@ -154,7 +156,7 @@ defmodule Glific.Flows.Localization do
   Given a language id and an category uuid, return the translation if
   one exists, else return the original text
   """
-  @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: list() | nil
+  @spec get_translated_category_name(FlowContext.t(), Category.t()) :: String.t() | nil
   def get_translated_category_name(context, category) do
     language_id = context.contact.language_id
 
