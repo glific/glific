@@ -132,8 +132,6 @@ defmodule Glific.Flows.Case do
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
   def execute(flow_case, context, msg) do
     translated_arguments = translated_arguments(context, flow_case)
-    IO.inspect("translated_arguments")
-    IO.inspect(translated_arguments)
 
     Map.put(flow_case, :arguments, translated_arguments)
     |> update_parsed_arguments(translated_arguments)

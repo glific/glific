@@ -217,6 +217,8 @@ defmodule Glific.Flows.Router do
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
 
+    ## We need to change the category name for other translations.
+
     context =
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
