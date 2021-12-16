@@ -536,7 +536,7 @@ defmodule Glific.Messages do
     }
   end
 
-  # @spec parse_buttons(SessionTemplate.t(), boolean(), boolean()) :: SessionTemplate.t()
+  @spec parse_buttons(SessionTemplate.t(), boolean(), boolean()) :: SessionTemplate.t()
   defp parse_buttons(session_template, false, true) do
     # parsing buttons only when template is not already translated, else buttons are part of body
     updated_body =
