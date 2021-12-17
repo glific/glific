@@ -23,7 +23,7 @@ defmodule Glific.Clients.Sol do
       get_in(contact.fields, ["organization_name", "value"]) || "unknown_organization_name"
 
     folder = "#{city}/#{school_name}/#{student_name}"
-    file_name = "#{contact.phone}_#{city}_#{organization_name}.png"
+    file_name = "#{contact.phone}_#{city}_#{organization_name}_#{student_name}.png"
 
     "#{folder}/#{file_name}"
   end
