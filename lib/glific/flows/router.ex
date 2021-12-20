@@ -41,26 +41,26 @@ defmodule Glific.Flows.Router do
         }
 
   schema "routers" do
-    field(:type, :string)
-    field(:operand, :string)
-    field(:result_name, :string)
-    field(:wait_type, :string)
+    field :type, :string
+    field :operand, :string
+    field :result_name, :string
+    field :wait_type, :string
 
-    field(:default_category_uuid, Ecto.UUID)
-    embeds_one(:default_category, Category)
+    field :default_category_uuid, Ecto.UUID
+    embeds_one :default_category, Category
 
-    embeds_one(:wait, Wait)
+    embeds_one :wait, Wait
 
-    field(:node_uuid, Ecto.UUID)
-    embeds_one(:node, Node)
+    field :node_uuid, Ecto.UUID
+    embeds_one :node, Node
 
-    embeds_many(:cases, Case)
-    embeds_many(:categories, Category)
+    embeds_many :cases, Case
+    embeds_many :categories, Category
 
     # in case we need to figure out the node for other/no response
     # lets cache the exit uuids
-    field(:other_exit_uuid, Ecto.UUID)
-    field(:no_response_exit_uuid, Ecto.UUID)
+    field :other_exit_uuid, Ecto.UUID
+    field :no_response_exit_uuid, Ecto.UUID
   end
 
   @doc """

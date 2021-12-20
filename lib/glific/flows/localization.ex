@@ -20,7 +20,7 @@ defmodule Glific.Flows.Localization do
         }
 
   embedded_schema do
-    field(:localizations, :map)
+    field :localizations, :map
   end
 
   defp add_text(map, values) do
