@@ -178,6 +178,7 @@ defmodule Glific.Flows.Localization do
        else: %{}
   end
 
+  @spec translated_element(map(), integer(), String.t(), Action.t() | map()) :: Action.t() | map()
   defp translated_element(localization, language_id, uuid, default \\ %{}) do
     if Map.has_key?(localization, language_id) and
          Map.has_key?(Map.get(localization, language_id), uuid) do
