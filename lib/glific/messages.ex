@@ -26,6 +26,7 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -516,7 +517,7 @@ defmodule Glific.Messages do
     updated_template =
       session_template
       |> parse_template_vars(parameters)
-      |> parse_buttons(is_translated, session_template.has_buttons)
+      |> Templates.parse_buttons(is_translated, session_template.has_buttons)
 
     %{
       body: updated_template.body,
@@ -535,19 +536,6 @@ defmodule Glific.Messages do
       flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil)
     }
   end
-
-  @spec parse_buttons(SessionTemplate.t(), boolean(), boolean()) :: SessionTemplate.t()
-  defp parse_buttons(session_template, false, true) do
-    # parsing buttons only when template is not already translated, else buttons are part of body
-    updated_body =
-      session_template.buttons
-      |> Enum.reduce(session_template.body, &("#{&2}| [" <> &1["text"] <> "] "))
-
-    session_template
-    |> Map.merge(%{body: updated_body})
-  end
-
-  defp parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
 
   @doc """
   Send a hsm template message to the specific contact.

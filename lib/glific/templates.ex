@@ -411,7 +411,7 @@ defmodule Glific.Templates do
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm_translation(template, approved_db_template, organization, languages) do
-    number_of_parameter = template_parameters_count(template["data"])
+    number_of_parameter = template_parameters_count(approved_db_template)
 
     type =
       template["templateType"]
@@ -458,9 +458,11 @@ defmodule Glific.Templates do
   @doc """
   Returns the count of variables in template
   """
-  @spec template_parameters_count(String.t()) :: non_neg_integer()
-  def template_parameters_count(template_body) do
-    template_body
+  @spec template_parameters_count(SessionTemplate.t()) :: non_neg_integer()
+  def template_parameters_count(template) do
+    template = parse_buttons(template, false, Map.get(template, :has_buttons, false))
+
+    template.body
     |> String.split()
     |> Enum.reduce([], fn word, acc ->
       with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
@@ -480,4 +482,17 @@ defmodule Glific.Templates do
     list_session_templates(%{filter: %{is_hsm: true}})
     |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
   end
+
+  @spec parse_buttons(SessionTemplate.t(), boolean(), boolean()) :: SessionTemplate.t()
+  def parse_buttons(session_template, false, true) do
+    # parsing buttons only when template is not already translated, else buttons are part of body
+    updated_body =
+      session_template.buttons
+      |> Enum.reduce(session_template.body, &("#{&2}| [" <> &1["text"] <> "] "))
+
+    session_template
+    |> Map.merge(%{body: updated_body})
+  end
+
+  def parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
 end
