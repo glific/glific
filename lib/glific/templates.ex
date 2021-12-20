@@ -355,21 +355,23 @@ defmodule Glific.Templates do
         do: true,
         else: false
 
-    attrs = %{
-      uuid: template["id"],
-      body: template["data"],
-      shortcode: template["elementName"],
-      label: template["elementName"],
-      category: template["category"],
-      example: example,
-      type: type,
-      language_id: language_id,
-      organization_id: organization.id,
-      is_hsm: true,
-      status: template["status"],
-      is_active: is_active,
-      number_parameters: number_of_parameter
-    }
+    attrs =
+      %{
+        uuid: template["id"],
+        body: template["data"],
+        shortcode: template["elementName"],
+        label: template["elementName"],
+        category: template["category"],
+        example: example,
+        type: type,
+        language_id: language_id,
+        organization_id: organization.id,
+        is_hsm: true,
+        status: template["status"],
+        is_active: is_active,
+        number_parameters: number_of_parameter
+      }
+      |> check_for_button_template()
 
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
@@ -386,6 +388,46 @@ defmodule Glific.Templates do
 
     :ok
   end
+
+  defp check_for_button_template(%{body: template_body} = template) do
+    [body | buttons] = template_body |> String.split(["| ["])
+
+    if body == template_body do
+      template
+    else
+      template
+      |> Map.put(:number_parameters, length(buttons))
+      |> Map.put(:body, body)
+      |> Map.put(:has_buttons, true)
+      |> update_template_buttons(buttons)
+    end
+  end
+
+  defp update_template_buttons(template, buttons) do
+    parsed_buttons =
+      buttons
+      |> Enum.map(fn button ->
+        button_list = String.replace(button, "]", "") |> String.split(",")
+        parse_template_button(button_list, length(button_list))
+      end)
+
+    button_type =
+      if parsed_buttons |> Enum.any?(fn %{type: button_type} -> button_type == "QUICK_REPLY" end),
+        do: :quick_reply,
+        else: :call_to_action
+
+    template
+    |> Map.put(:buttons, parsed_buttons)
+    |> Map.put(:button_type, button_type)
+  end
+
+  defp parse_template_button([text, content], 2) do
+    if String.contains?(content, "http"),
+      do: %{url: content, text: text, type: "URL"},
+      else: %{phone_number: content, text: text, type: "PHONE_NUMBER"}
+  end
+
+  defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
