@@ -6,7 +6,7 @@ defmodule Glific.Clients.NayiDisha.Data do
   @parent_hsm_uuid_advise_eng "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
   @parent_hsm_uuid_advise_hn "1ae7a7b2-a89d-409b-b5c4-750ee232c98c"
   @parent_hsm_uuid_poster_eng "136087be-7f68-4699-b9d4-13a1510684d6"
-  @parent_hsm_uuid_poster_hn "136087be-7f68-4699-b9d4-13a1510684d6"
+  @parent_hsm_uuid_poster_hn "b493cb48-1322-4291-9037-4b979d3f9222"
 
   @hsm %{
     1 => %{
