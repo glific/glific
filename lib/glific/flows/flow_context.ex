@@ -220,7 +220,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
-        event_label: "Flow Ended:",
+        event_label: "Flow Ended",
         event_meta: %{
           context_id: context.id,
           flow: %{
@@ -446,7 +446,7 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
-        event_label: "All contact flows are ended."
+        event_label: "All contact flows are ended"
       })
 
     :telemetry.execute(
