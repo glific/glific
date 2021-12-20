@@ -23,6 +23,7 @@ defmodule Glific.Flows.Localization do
     field :localizations, :map
   end
 
+  @spec add_text(map(), map()) :: map()
   defp add_text(map, values) do
     if is_nil(values["text"]) do
       map
@@ -31,6 +32,7 @@ defmodule Glific.Flows.Localization do
     end
   end
 
+  @spec add_attachments(map(), map()) :: map()
   defp add_attachments(map, values) do
     cond do
       is_nil(values["attachments"]) ->
@@ -53,12 +55,14 @@ defmodule Glific.Flows.Localization do
     end
   end
 
+  @spec add_case_arguments(map(), map()) :: map()
   defp add_case_arguments(map, values) do
     if is_nil(values["arguments"]),
       do: map,
       else: Map.put(map, :arguments, values["arguments"])
   end
 
+  @spec add_category_name(map(), map()) :: map()
   defp add_category_name(map, values) do
     if is_nil(values["name"]),
       do: map,
@@ -166,6 +170,7 @@ defmodule Glific.Flows.Localization do
     |> Map.get(:name, category.name)
   end
 
+  @spec load_localizations(FlowContext.t()) :: map()
   defp load_localizations(context) do
     if Ecto.assoc_loaded?(context.flow) and
          context.flow.localization != nil,
@@ -173,6 +178,7 @@ defmodule Glific.Flows.Localization do
        else: %{}
   end
 
+  @spec translated_element(map(), integer(), Action.t() || map()) :: map()
   defp translated_element(localization, language_id, uuid, default \\ %{}) do
     if Map.has_key?(localization, language_id) and
          Map.has_key?(Map.get(localization, language_id), uuid) do
