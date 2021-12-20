@@ -88,7 +88,7 @@ defmodule Glific.Flows.Localization do
           |> add_case_arguments(values)
           |> add_category_name(values)
 
-        if values in [nil, %{}], do: acc, else: Map.put(acc, uuid, map)
+        if values == %{}, do: acc, else: Map.put(acc, uuid, map)
       end
     )
   end
@@ -178,7 +178,6 @@ defmodule Glific.Flows.Localization do
        else: %{}
   end
 
-  @spec translated_element(map(), integer(), Action.t() | map()) :: Action.t() | map()
   defp translated_element(localization, language_id, uuid, default \\ %{}) do
     if Map.has_key?(localization, language_id) and
          Map.has_key?(Map.get(localization, language_id), uuid) do
