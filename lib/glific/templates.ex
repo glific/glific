@@ -396,7 +396,6 @@ defmodule Glific.Templates do
       template
     else
       template
-      |> Map.put(:number_parameters, length(buttons))
       |> Map.put(:body, body)
       |> Map.put(:has_buttons, true)
       |> update_template_buttons(buttons)
