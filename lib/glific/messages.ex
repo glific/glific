@@ -484,6 +484,7 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
+  @spec fetch_language_specific_template(map(), integer()) :: tuple()
   defp fetch_language_specific_template(session_template, id) do
     contact = Contacts.get_contact!(id)
 
@@ -491,18 +492,23 @@ defmodule Glific.Messages do
          translation <- session_template.translations[Integer.to_string(contact.language_id)],
          false <- is_nil(translation),
          "APPROVED" <- translation["status"] do
-      session_template
-      |> Map.from_struct()
-      |> Map.put(:body, translation["body"])
-      |> Map.put(:uuid, translation["uuid"])
+      template =
+        session_template
+        |> Map.from_struct()
+        |> Map.put(:body, translation["body"])
+        |> Map.put(:uuid, translation["uuid"])
+
+      {true, template}
     else
-      _ -> session_template
+      _ -> {false, session_template}
     end
   end
 
+  @spec hsm_message_params(SessionTemplate.t(), map(), boolean()) :: map()
   defp hsm_message_params(
          session_template,
-         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
+         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs,
+         is_translated
        ) do
     # sending default media when media type is not defined
     media_id = Map.get(attrs, :media_id, session_template.message_media_id)
@@ -510,7 +516,7 @@ defmodule Glific.Messages do
     updated_template =
       session_template
       |> parse_template_vars(parameters)
-      |> parse_buttons(session_template.has_buttons)
+      |> parse_buttons(is_translated, session_template.has_buttons)
 
     %{
       body: updated_template.body,
@@ -530,17 +536,18 @@ defmodule Glific.Messages do
     }
   end
 
-  @spec parse_buttons(SessionTemplate.t(), boolean()) :: SessionTemplate.t()
-  defp parse_buttons(session_template, true) do
+  @spec parse_buttons(SessionTemplate.t(), boolean(), boolean()) :: SessionTemplate.t()
+  defp parse_buttons(session_template, false, true) do
+    # parsing buttons only when template is not already translated, else buttons are part of body
     updated_body =
       session_template.buttons
-      |> Enum.reduce("", fn arc, acc -> "#{acc}| [" <> arc["text"] <> "] " end)
+      |> Enum.reduce(session_template.body, &("#{&2}| [" <> &1["text"] <> "] "))
 
     session_template
-    |> Map.merge(%{body: session_template.body <> updated_body})
+    |> Map.merge(%{body: updated_body})
   end
 
-  defp parse_buttons(session_template, false), do: session_template
+  defp parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
 
   @doc """
   Send a hsm template message to the specific contact.
@@ -553,14 +560,14 @@ defmodule Glific.Messages do
     media_id = Map.get(attrs, :media_id, nil)
     {:ok, template} = Repo.fetch(SessionTemplate, template_id)
 
-    session_template = fetch_language_specific_template(template, receiver_id)
+    {is_translated, session_template} = fetch_language_specific_template(template, receiver_id)
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       # Passing uuid to save db call when sending template via provider
       message_params =
         session_template
-        |> hsm_message_params(attrs)
+        |> hsm_message_params(attrs, is_translated)
         |> check_flow_id(attrs)
 
       receiver_id

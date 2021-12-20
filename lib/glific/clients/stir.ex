@@ -1122,7 +1122,7 @@ defmodule Glific.Clients.Stir do
   @spec get_ranked_response(String.t()) :: list()
   defp get_ranked_response(answer) do
     clean_string(answer)
-    |> String.split(",", trim: true)
+    |> String.split([",", " "], trim: true)
   end
 
   @spec get_priority_versions(map()) :: map()
