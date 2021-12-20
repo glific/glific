@@ -19,6 +19,7 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
+    Localization,
     Node,
     Wait
   }
@@ -216,6 +217,12 @@ defmodule Glific.Flows.Router do
   defp execute_category(router, context, {msg, rest}, {category_uuid, is_checkbox}) do
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
+
+    translated_category_name = Localization.get_translated_category_name(context, category)
+
+    category = Map.put(category, :name, translated_category_name)
+
+    ## We need to change the category name for other translations.
 
     context =
       if is_nil(router.result_name),
