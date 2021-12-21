@@ -30,7 +30,7 @@ defmodule Glific.Providers.Gupshup.Template do
 
       attrs
       |> Map.merge(%{
-        number_parameters: Templates.template_parameters_count(attrs.body),
+        number_parameters: Templates.template_parameters_count(attrs),
         uuid: response_data["template"]["id"],
         status: response_data["template"]["status"],
         is_active:
@@ -118,7 +118,5 @@ defmodule Glific.Providers.Gupshup.Template do
     template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
   end
 
-  defp update_as_button_template(template_payload, _attrs) do
-    template_payload
-  end
+  defp update_as_button_template(template_payload, _attrs), do: template_payload
 end
