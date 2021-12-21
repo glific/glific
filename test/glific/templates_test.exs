@@ -1068,8 +1068,8 @@ defmodule Glific.TemplatesTest do
     end
 
     test "parse_buttons/2 should return updated body with buttons" do
-
       template_body = "Hi {{1}}, What is your status"
+
       buttons = [
         %{
           "phone_number" => "+917302307943 ",
@@ -1082,7 +1082,23 @@ defmodule Glific.TemplatesTest do
           "url" => "https://github.com/glific"
         }
       ]
-      assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{body: "Hi {{1}}, What is your status| [call here, +917302307943 ] | [visit here, https://github.com/glific] ", buttons: buttons}
+
+      assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{
+               body:
+                 "Hi {{1}}, What is your status| [call here, +917302307943 ] | [visit here, https://github.com/glific] ",
+               buttons: buttons
+             }
+
+      buttons = [
+        %{"text" => "cold ", "type" => "QUICK_REPLY"},
+        %{"text" => "warm", "type" => "QUICK_REPLY"}
+      ]
+
+      assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{
+               body:
+               "Hi {{1}}, What is your status| [cold ] | [warm] ",
+               buttons: buttons
+             }
     end
   end
 end
