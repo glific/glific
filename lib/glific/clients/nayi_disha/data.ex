@@ -5,6 +5,8 @@ defmodule Glific.Clients.NayiDisha.Data do
 
   @parent_hsm_uuid_advise_eng "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
   @parent_hsm_uuid_advise_hn "1ae7a7b2-a89d-409b-b5c4-750ee232c98c"
+  @parent_hsm_uuid_poster_eng "136087be-7f68-4699-b9d4-13a1510684d6"
+  @parent_hsm_uuid_poster_hn "b493cb48-1322-4291-9037-4b979d3f9222"
 
   @hsm %{
     1 => %{
@@ -370,18 +372,30 @@ defmodule Glific.Clients.NayiDisha.Data do
       }
     },
     10 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
           variables: [
-            ["@contact.name"]
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
           ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
@@ -517,16 +531,30 @@ defmodule Glific.Clients.NayiDisha.Data do
       }
     },
     13 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
@@ -710,30 +738,58 @@ defmodule Glific.Clients.NayiDisha.Data do
       }
     },
     18 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
     19 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
@@ -852,44 +908,86 @@ defmodule Glific.Clients.NayiDisha.Data do
       }
     },
     23 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
     24 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
     25 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
@@ -1065,16 +1163,30 @@ defmodule Glific.Clients.NayiDisha.Data do
       }
     },
     30 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["@contact.name"],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: [
+        "@contact.name",
+        "program",
+        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+      ],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: [
+            [
+              "@contact.name",
+              "program",
+              "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            ]
+          ]
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["@contact.name"]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: [
+            "@contact.name",
+            "program",
+            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+          ]
         }
       }
     },
