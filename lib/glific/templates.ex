@@ -544,6 +544,9 @@ defmodule Glific.Templates do
 
   @spec do_parse_buttons(String.t(), map()) :: String.t()
   defp do_parse_buttons("URL", button), do: button["text"] <> ", " <> button["url"]
-  defp do_parse_buttons("PHONE_NUMBER", button), do: button["text"] <> ", " <> button["phone_number"]
+
+  defp do_parse_buttons("PHONE_NUMBER", button),
+    do: button["text"] <> ", " <> button["phone_number"]
+
   defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
 end

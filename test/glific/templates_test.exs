@@ -1095,8 +1095,7 @@ defmodule Glific.TemplatesTest do
       ]
 
       assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{
-               body:
-               "Hi {{1}}, What is your status| [cold ] | [warm] ",
+               body: "Hi {{1}}, What is your status| [cold ] | [warm] ",
                buttons: buttons
              }
     end
