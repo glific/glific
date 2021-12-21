@@ -118,7 +118,5 @@ defmodule Glific.Providers.Gupshup.Template do
     template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
   end
 
-  defp update_as_button_template(template_payload, _attrs) do
-    template_payload
-  end
+  defp update_as_button_template(template_payload, _attrs), do: template_payload
 end

@@ -389,6 +389,7 @@ defmodule Glific.Templates do
     :ok
   end
 
+  @spec check_for_button_template(map()) :: map()
   defp check_for_button_template(%{body: template_body} = template) do
     [body | buttons] = template_body |> String.split(["| ["])
 
@@ -402,6 +403,7 @@ defmodule Glific.Templates do
     end
   end
 
+  @spec update_template_buttons(map(), list()) :: map()
   defp update_template_buttons(template, buttons) do
     parsed_buttons =
       buttons
@@ -420,6 +422,7 @@ defmodule Glific.Templates do
     |> Map.put(:button_type, button_type)
   end
 
+  @spec parse_template_button(list(), non_neg_integer()) :: map()
   defp parse_template_button([text, content], 2) do
     if String.contains?(content, "http"),
       do: %{url: content, text: text, type: "URL"},
@@ -539,6 +542,7 @@ defmodule Glific.Templates do
 
   def parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
 
+  @spec do_parse_buttons(String.t(), map()) :: String.t()
   defp do_parse_buttons("URL", button), do: button["text"] <> ", " <> button["url"]
   defp do_parse_buttons("PHONE", button), do: button["text"] <> ", " <> button["phone_number"]
   defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
