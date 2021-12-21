@@ -530,7 +530,7 @@ defmodule Glific.Templates do
     updated_body =
       session_template.buttons
       |> Enum.reduce(session_template.body, fn button, acc ->
-        "#{acc} | [" <> do_parse_buttons(button["type"], button) <> "] "
+        "#{acc}| [" <> do_parse_buttons(button["type"], button) <> "] "
       end)
 
     session_template
