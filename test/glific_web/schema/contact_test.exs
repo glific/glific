@@ -209,7 +209,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     test_name = "test2"
     test_phone = "919917443992"
-    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,2021-03-09"
+    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,2021-03-09_12:34:25"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -235,7 +235,7 @@ defmodule GlificWeb.Schema.ContactTest do
 
     test_name = "test2"
     test_phone = "test phone2"
-    data = "name,phone,language,opt_in\n#{test_name} updated,#{test_phone},english,2021-03-09"
+    data = "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -278,7 +278,7 @@ defmodule GlificWeb.Schema.ContactTest do
       %{method: :get} ->
         %Tesla.Env{
           body:
-            "name,phone,Language,opt_in,delete\r\nuploaded_contact,9876543311,english,2021-03-09,",
+            "name,phone,Language,opt_in,delete\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,",
           status: 200
         }
     end)
@@ -310,7 +310,7 @@ defmodule GlificWeb.Schema.ContactTest do
       |> Path.join("fixture.csv")
       |> File.open!([:write, :utf8])
 
-    [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
+    [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
 
