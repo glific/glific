@@ -73,6 +73,9 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:localized_language, _organizations), do: update_localized_language()
   defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
 
+  defp do_migrate_data(:submit_common_otp_template, organizations),
+    do: Enum.map(organizations, fn org -> submit_opt_template_for_org(org.id) end)
+
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
