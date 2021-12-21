@@ -88,6 +88,8 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
+  @spec submit_opt_template_for_org(any) ::
+          {:error, Ecto.Changeset.t()} | {:ok, Templates.SessionTemplate.t()}
   def submit_opt_template_for_org(org_id) do
     %{
       is_hsm: true,
