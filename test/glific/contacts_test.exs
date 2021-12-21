@@ -259,7 +259,7 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      data = "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09\n"
+      data = "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
@@ -280,7 +280,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09\n"
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09 12:34:25\n"
           }
       end)
 
