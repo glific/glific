@@ -516,8 +516,8 @@ defmodule Glific.Messages do
 
     updated_template =
       session_template
-      |> parse_template_vars(parameters)
       |> Templates.parse_buttons(is_translated, session_template.has_buttons)
+      |> parse_template_vars(parameters)
 
     %{
       body: updated_template.body,

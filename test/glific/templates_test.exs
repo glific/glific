@@ -605,7 +605,7 @@ defmodule Glific.TemplatesTest do
                   %{
                     "category" => "TICKET_UPDATE",
                     "createdOn" => 1_595_904_220_466,
-                    "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                    "data" => "Your train ticket no. {{1}}",
                     "elementName" => "ticket_update_status",
                     "id" => "16e84186-97fa-454e-ac3b-8c9b94e53b4b",
                     "languageCode" => "en",

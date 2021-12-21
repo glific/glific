@@ -529,11 +529,17 @@ defmodule Glific.Templates do
     # parsing buttons only when template is not already translated, else buttons are part of body
     updated_body =
       session_template.buttons
-      |> Enum.reduce(session_template.body, &("#{&2}| [" <> &1["text"] <> "] "))
+      |> Enum.reduce(session_template.body, fn button, acc ->
+        "#{acc} | [" <> do_parse_buttons(button["type"], button) <> "] "
+      end)
 
     session_template
     |> Map.merge(%{body: updated_body})
   end
 
   def parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
+
+  defp do_parse_buttons("URL", button), do: button["text"] <> ", " <> button["url"]
+  defp do_parse_buttons("PHONE", button), do: button["text"] <> ", " <> button["phone_number"]
+  defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
 end
