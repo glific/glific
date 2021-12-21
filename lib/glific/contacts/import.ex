@@ -99,7 +99,7 @@ defmodule Glific.Contacts.Import do
   """
   @spec import_contacts(integer, String.t(), [{atom(), String.t()}]) :: tuple()
   def import_contacts(organization_id, group_label, opts \\ []) do
-    {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D} {h24}:{m}:{s}")
+    {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
 
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
