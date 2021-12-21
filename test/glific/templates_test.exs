@@ -630,6 +630,101 @@ defmodule Glific.TemplatesTest do
       assert hsm.example != nil
     end
 
+    test "update_hsms/1 should insert newly received button HSM with type as call_to_action",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ALERT_UPDATE",
+                    "createdOn" => 1_595_904_220_466,
+                    "data" =>
+                      "Hey {{1}}, Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]",
+                    "elementName" => "tech_concern",
+                    "id" => "2f826c4a-cacd-42b6-9536-ece4c459ffea",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => false,
+                    "meta" =>
+                      "{\"example\":\"Hey [Akhilesh], Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]\"}",
+                    "modifiedOn" => 1_595_904_220_466,
+                    "status" => "APPROVED",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: "2f826c4a-cacd-42b6-9536-ece4c459ffea"})
+
+      assert hsm.example != nil
+      assert hsm.button_type == :call_to_action
+
+      assert hsm.buttons == [
+               %{
+                 "phone_number" => "+917302307943 ",
+                 "text" => "call here",
+                 "type" => "PHONE_NUMBER"
+               },
+               %{"text" => "visit here", "type" => "URL", "url" => "https://github.com/glific"}
+             ]
+    end
+
+    test "update_hsms/1 should insert newly received button HSM with type as quick_reply",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ALERT_UPDATE",
+                    "createdOn" => 1_595_904_220_466,
+                    "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                    "elementName" => "status_response",
+                    "id" => "eb939119-097d-414d-844d-1fce3adec486",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => false,
+                    "meta" =>
+                      "{\"example\":\"Hi [M'gann], What is your status | [cold] | [warm]\"}",
+                    "modifiedOn" => 1_595_904_220_466,
+                    "status" => "APPROVED",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.update_hsms(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: "eb939119-097d-414d-844d-1fce3adec486"})
+
+      assert hsm.example != nil
+      assert hsm.button_type == :quick_reply
+
+      assert hsm.buttons == [
+               %{"text" => "cold ", "type" => "QUICK_REPLY"},
+               %{"text" => "warm", "type" => "QUICK_REPLY"}
+             ]
+    end
+
     test "update_hsms/1 should return error in case of error response", attrs do
       # in case of error from BSP API
       Tesla.Mock.mock(fn
@@ -970,6 +1065,24 @@ defmodule Glific.TemplatesTest do
         "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{3}}, School {{4}} on date {{5}}: Chapter: {{6}} Topic: {{7}} No. of students who attempted - {{8}}, Accuracy - {{9}}, Watch Time - {{10}}"
 
       assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 10
+    end
+
+    test "parse_buttons/2 should return updated body with buttons" do
+
+      template_body = "Hi {{1}}, What is your status"
+      buttons = [
+        %{
+          "phone_number" => "+917302307943 ",
+          "text" => "call here",
+          "type" => "PHONE_NUMBER"
+        },
+        %{
+          "text" => "visit here",
+          "type" => "URL",
+          "url" => "https://github.com/glific"
+        }
+      ]
+      assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{body: "Hi {{1}}, What is your status| [call here, +917302307943 ] | [visit here, https://github.com/glific] ", buttons: buttons}
     end
   end
 end
