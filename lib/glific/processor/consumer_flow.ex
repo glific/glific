@@ -137,6 +137,10 @@ defmodule Glific.Processor.ConsumerFlow do
     {message, state}
   end
 
+  # fetches cached flow based on flow_id when contact is new contact
+  # or fetches based on flow keyword when newcontact flow is not set
+  @spec get_cached_flow(boolean(), non_neg_integer(), tuple(), non_neg_integer()) ::
+          {atom, any} | {atom(), String.t()}
   defp get_cached_flow(false, organization_id, params, _flow_id),
     do: Flows.get_cached_flow(organization_id, params)
 
