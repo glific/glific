@@ -500,7 +500,7 @@ defmodule Glific.Clients.Stir do
 
   @reminders %{
     pending_registration: %{days: 7, group: "pending_registration"},
-    inactive_after_registration: %{days: 15, group: "inactive_after_registration"},
+    inactive_after_registration: %{days: 7, group: "inactive_after_registration"},
     submit_reflection: %{days: 30, group: "submit_reflection"}
   }
 
