@@ -66,11 +66,16 @@ defmodule Glific.Processor.ConsumerFlow do
           Map.get(state, :newcontact, false) &&
               !is_nil(state.flow_keywords["new_contact"]) ->
             # delay new contact flows by 2 minutes to allow user to deal with signon link
-            body = state.flow_keywords["new_contact"] |> Map.keys() |> List.first()
-            check_flows(message, body, state, is_draft: false, delay: @delay_time)
+            flow_id = state.flow_keywords["new_contact"]
+
+            check_flows(message, body, state,
+              is_newcontact: true,
+              flow_id: flow_id,
+              delay: @delay_time
+            )
 
           Map.has_key?(state.flow_keywords["published"], body) ->
-            check_flows(message, body, state, is_draft: false)
+            check_flows(message, body, state)
 
           Keyword.get(opts, :is_draft, false) ->
             check_flows(message, message.body, state, is_draft: true)
@@ -104,6 +109,8 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec check_flows(atom() | Message.t(), String.t(), map(), Keyword.t()) :: {Message.t(), map()}
   def check_flows(message, body, state, opts \\ []) do
     is_draft = Keyword.get(opts, :is_draft, false)
+    is_newcontact = Keyword.get(opts, :is_newcontact, false)
+    flow_id = Keyword.get(opts, :flow_id, nil)
 
     {status, body} =
       if is_draft do
@@ -113,9 +120,11 @@ defmodule Glific.Processor.ConsumerFlow do
         {@final_phrase, body}
       end
 
-    Flows.get_cached_flow(
+    get_cached_flow(
+      is_newcontact,
       message.organization_id,
-      {:flow_keyword, body, status}
+      {:flow_keyword, body, status},
+      flow_id
     )
     |> case do
       {:ok, flow} ->
@@ -127,6 +136,12 @@ defmodule Glific.Processor.ConsumerFlow do
 
     {message, state}
   end
+
+  defp get_cached_flow(false, organization_id, params, _flow_id),
+    do: Flows.get_cached_flow(organization_id, params)
+
+  defp get_cached_flow(true, organization_id, _params, flow_id),
+    do: Flows.get_cached_flow(organization_id, {:flow_id, flow_id, @final_phrase})
 
   @doc false
   @spec check_contexts(FlowContext.t() | nil, atom() | Message.t(), String.t(), map()) ::
