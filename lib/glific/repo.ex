@@ -169,7 +169,7 @@ defmodule Glific.Repo do
   @spec opts_with_field(
           Ecto.Queryable.t(),
           map(),
-          :name | :body | :label | :inserted_at
+          :name | :body | :label | :inserted_at | :id
         ) :: Ecto.Queryable.t()
   def opts_with_field(query, opts, field) do
     sort =
@@ -198,6 +198,9 @@ defmodule Glific.Repo do
         field == :inserted_at ->
           order_by(query, [o], {^order, field(o, ^real_field)})
 
+        field == :id ->
+          order_by(query, [o], {^order, field(o, ^real_field)})
+
         field == real_field ->
           order_by(query, [o], {^order, fragment("lower(?)", field(o, ^real_field))})
 
@@ -224,6 +227,10 @@ defmodule Glific.Repo do
   @doc false
   @spec opts_with_inserted_at(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_inserted_at(query, opts), do: opts_with_field(query, opts, :inserted_at)
+
+  @doc false
+  @spec opts_with_id(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_id(query, opts), do: opts_with_field(query, opts, :id)
 
   @spec make_like(Ecto.Queryable.t(), atom(), String.t() | nil) :: Ecto.Queryable.t()
   defp make_like(query, _name, str) when is_nil(str) or str == "",
