@@ -198,6 +198,9 @@ defmodule Glific.Repo do
         field == :inserted_at ->
           order_by(query, [o], {^order, field(o, ^real_field)})
 
+        field == :id ->
+          order_by(query, [o], {^order, field(o, ^real_field)})
+
         field == real_field ->
           order_by(query, [o], {^order, fragment("lower(?)", field(o, ^real_field))})
 
