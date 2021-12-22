@@ -738,6 +738,11 @@ subscription organization_subscriptions {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>newcontactFlowId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>

@@ -11,4 +11,5 @@ defmodule Glific.Repo.Migrations.OrganizationNewcontactFlowId do
         null: true,
         comment: "Flow which will trigger when newcontact joins the bot"
     end
+  end
 end
