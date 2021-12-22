@@ -95,11 +95,12 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from f in query,
+        from(f in query,
           where: ^keyword in f.keywords
+        )
 
       {:uuid, uuid}, query ->
-        from q in query, where: q.uuid == ^uuid
+        from(q in query, where: q.uuid == ^uuid)
 
       {:status, status}, query ->
         query
@@ -113,10 +114,10 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:is_background, is_background}, query ->
-        from q in query, where: q.is_background == ^is_background
+        from(q in query, where: q.is_background == ^is_background)
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
@@ -680,8 +681,24 @@ defmodule Glific.Flows do
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
       |> add_default_flows(organization.out_of_office)
+      |> update_newcontact_flow_keywords(organization.newcontact_flow_id)
 
     {:commit, keyword_map}
+  end
+
+  @spec update_newcontact_flow_keywords(map(), non_neg_integer() | nil) :: map()
+  defp update_newcontact_flow_keywords(keyword_map, nil),
+    do: Map.put(keyword_map, "new_contact", nil)
+
+  defp update_newcontact_flow_keywords(keyword_map, newcontact_flow_id) do
+    newcontact_keyword_map =
+      keyword_map["published"]
+      |> Map.to_list()
+      |> Enum.reduce(%{}, fn {key, value}, acc ->
+        if value == newcontact_flow_id, do: Map.put(acc, key, newcontact_flow_id), else: acc
+      end)
+
+    Map.put(keyword_map, "new_contact", newcontact_keyword_map)
   end
 
   @spec add_default_flows(map(), map()) :: map()
