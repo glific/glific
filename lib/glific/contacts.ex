@@ -732,7 +732,7 @@ defmodule Glific.Contacts do
     args
     |> Repo.list_filter_query(
       ContactHistory,
-      &Repo.opts_with_inserted_at/2,
+      &Repo.opts_with_id/2,
       &filter_history_with/2
     )
     |> Repo.all()
