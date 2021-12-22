@@ -169,7 +169,7 @@ defmodule Glific.Repo do
   @spec opts_with_field(
           Ecto.Queryable.t(),
           map(),
-          :name | :body | :label | :inserted_at
+          :name | :body | :label | :inserted_at | :id
         ) :: Ecto.Queryable.t()
   def opts_with_field(query, opts, field) do
     sort =
