@@ -225,6 +225,10 @@ defmodule Glific.Repo do
   @spec opts_with_inserted_at(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   def opts_with_inserted_at(query, opts), do: opts_with_field(query, opts, :inserted_at)
 
+  @doc false
+  @spec opts_with_id(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  def opts_with_id(query, opts), do: opts_with_field(query, opts, :id)
+
   @spec make_like(Ecto.Queryable.t(), atom(), String.t() | nil) :: Ecto.Queryable.t()
   defp make_like(query, _name, str) when is_nil(str) or str == "",
     do: query
