@@ -57,7 +57,7 @@ defmodule Glific.Flows.Localization do
 
   @spec add_case_arguments(map(), map()) :: map()
   defp add_case_arguments(map, values) do
-    if values["arguments"] in ["", nil, []],
+    if values["arguments"] in [[""], nil, []],
       do: map,
       else: Map.put(map, :arguments, values["arguments"])
   end
