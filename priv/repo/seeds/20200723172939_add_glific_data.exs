@@ -7,7 +7,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactsField,
-    Flows,
+    Flows.Flow,
     Flows.FlowLabel,
     BigQuery.BigQueryJob,
     Partners,
@@ -631,7 +631,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   @spec set_newcontact_flow_id(Organization.t()) :: Organization.t()
   defp set_newcontact_flow_id(organization) do
     {:ok, flow} =
-      Repo.fetch_by(Glific.Flows.Flow, %{
+      Repo.fetch_by(Flow, %{
         name: "New Contact Workflow",
         organization_id: organization.id
       })
