@@ -215,7 +215,7 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
-    template = json["templating"] |> Map.put("localization", node.localization)
+    template = add_localization(json["templating"], node.localization)
     {templating, uuid_map} = Templating.process(template, uuid_map)
     attrs = Map.put(attrs, :templating, templating)
     process(json, uuid_map, node, attrs)
@@ -260,13 +260,23 @@ defmodule Glific.Flows.Action do
       attachments: process_attachments(json["attachments"])
     }
 
-    template = json["templating"] |> Map.put("localization", node.localization)
+    template = add_localization(json["templating"], node.localization)
+
     {templating, uuid_map} = Templating.process(template, uuid_map)
 
     attrs = Map.put(attrs, :templating, templating)
 
     process(json, uuid_map, node, attrs)
   end
+
+  @spec process(map() | nil, map() | nil) :: map() | nil
+  defp add_localization(nil, _localization),
+    do: nil
+
+  defp add_localization(templating, nil), do: templating
+
+  defp add_localization(templating, localization),
+    do: Map.put(templating, "localization", localization)
 
   @spec get_name(atom()) :: String.t()
   defp get_name(module) do

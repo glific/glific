@@ -36,8 +36,8 @@ defmodule Glific.Flows.Templating do
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
-  @spec process(map(), map()) :: {Templating.t(), map()}
-  def process(json, uuid_map) when is_nil(json), do: {json, uuid_map}
+  @spec process(map() | nil, map()) :: {Templating.t(), map()}
+  def process(nil, uuid_map), do: {nil, uuid_map}
 
   def process(%{"expression" => expression} = json, uuid_map)
       when is_binary(expression) == true do
