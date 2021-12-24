@@ -56,13 +56,21 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_phrase" do
-    args = ["This is a green apple"]
+    args = ["This is a green"]
 
     c = %Case{type: "has_phrase", arguments: args}
 
-    assert wrap_execute(c, nil, "This is a green") == true
+    assert wrap_execute(c, nil, "This is a green apple") == true
     assert wrap_execute(c, nil, "This is a red apple ") == false
-    assert wrap_execute(c, nil, "apple") == true
+    assert wrap_execute(c, nil, "Yes. This is a green apple") == true
+
+    args = ["I am 😀"]
+
+    c = %Case{type: "has_phrase", arguments: args}
+
+    assert wrap_execute(c, nil, "I am happy") == false
+    assert wrap_execute(c, nil, "I am 😀") == true
+    assert wrap_execute(c, nil, "Yehh. I am 😀 today.") == true
   end
 
   test "test the execute function for has_multiple" do
@@ -122,17 +130,25 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_beginning" do
-    c = %Case{type: "has_beginning", arguments: ["this is a sentence"]}
+    c = %Case{type: "has_beginning", arguments: ["one"]}
 
-    assert wrap_execute(c, nil, "thi") == true
-    assert wrap_execute(c, nil, "this is") == true
-    assert wrap_execute(c, nil, "this is a sentence") == true
+    assert wrap_execute(c, nil, "one thi") == true
+    assert wrap_execute(c, nil, "this one is") == false
+    assert wrap_execute(c, nil, "one is a sentence") == true
 
     assert wrap_execute(c, nil, "this is not a sentence") == false
     assert wrap_execute(c, nil, "his is") == false
     assert wrap_execute(c, nil, "whateever") == false
 
     assert wrap_execute(c, nil, "whateever", type: :audio) == false
+
+    args = ["😀"]
+
+    c = %Case{type: "has_beginning", arguments: args}
+
+    assert wrap_execute(c, nil, "😀") == true
+    assert wrap_execute(c, nil, "😀 I am") == true
+    assert wrap_execute(c, nil, "Yehh. I am 😀 today.") == false
   end
 
   test "test the execute function for has_pattern" do
