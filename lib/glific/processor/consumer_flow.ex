@@ -64,9 +64,9 @@ defmodule Glific.Processor.ConsumerFlow do
       _ ->
         cond do
           Map.get(state, :newcontact, false) &&
-              !is_nil(state.flow_keywords["new_contact"]) ->
+              !is_nil(state.flow_keywords["org_default_new_contact"]) ->
             # delay new contact flows by 2 minutes to allow user to deal with signon link
-            flow_id = state.flow_keywords["new_contact"]
+            flow_id = state.flow_keywords["org_default_new_contact"]
 
             check_flows(message, body, state,
               is_newcontact: true,
