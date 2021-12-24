@@ -269,7 +269,7 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
-  @spec process(map() | nil, map() | nil) :: map() | nil
+  @spec add_localization(map() | nil, map() | nil) :: map() | nil
   defp add_localization(nil, _localization),
     do: nil
 
