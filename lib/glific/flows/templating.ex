@@ -20,15 +20,17 @@ defmodule Glific.Flows.Templating do
           name: String.t() | nil,
           template: SessionTemplate.t() | nil,
           variables: list(),
-          expression: String.t() | nil
+          expression: String.t() | nil,
+          localization: map()
         }
 
   embedded_schema do
-    field(:uuid, Ecto.UUID)
-    field(:name, :string)
-    field(:expression, :string)
-    field(:variables, {:array, :string}, default: [])
-    embeds_one(:template, SessionTemplate)
+    field :uuid, Ecto.UUID
+    field :name, :string
+    field :expression, :string
+    field :localization, :map
+    field :variables, {:array, :string}, default: []
+    embeds_one :template, SessionTemplate
   end
 
   @doc """
@@ -49,7 +51,6 @@ defmodule Glific.Flows.Templating do
 
   def process(json, uuid_map) do
     Flows.check_required_fields(json, @required_fields)
-
     uuid = json["template"]["uuid"]
     {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
 
@@ -58,7 +59,8 @@ defmodule Glific.Flows.Templating do
       name: json["template"]["name"],
       template: template,
       variables: json["variables"],
-      expression: nil
+      expression: nil,
+      localization: json["localization"]
     }
 
     {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
