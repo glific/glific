@@ -355,21 +355,23 @@ defmodule Glific.Templates do
         do: true,
         else: false
 
-    attrs = %{
-      uuid: template["id"],
-      body: template["data"],
-      shortcode: template["elementName"],
-      label: template["elementName"],
-      category: template["category"],
-      example: example,
-      type: type,
-      language_id: language_id,
-      organization_id: organization.id,
-      is_hsm: true,
-      status: template["status"],
-      is_active: is_active,
-      number_parameters: number_of_parameter
-    }
+    attrs =
+      %{
+        uuid: template["id"],
+        body: template["data"],
+        shortcode: template["elementName"],
+        label: template["elementName"],
+        category: template["category"],
+        example: example,
+        type: type,
+        language_id: language_id,
+        organization_id: organization.id,
+        is_hsm: true,
+        status: template["status"],
+        is_active: is_active,
+        number_parameters: number_of_parameter
+      }
+      |> check_for_button_template()
 
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
@@ -386,6 +388,48 @@ defmodule Glific.Templates do
 
     :ok
   end
+
+  @spec check_for_button_template(map()) :: map()
+  defp check_for_button_template(%{body: template_body} = template) do
+    [body | buttons] = template_body |> String.split(["| ["])
+
+    if body == template_body do
+      template
+    else
+      template
+      |> Map.put(:body, body)
+      |> Map.put(:has_buttons, true)
+      |> update_template_buttons(buttons)
+    end
+  end
+
+  @spec update_template_buttons(map(), list()) :: map()
+  defp update_template_buttons(template, buttons) do
+    parsed_buttons =
+      buttons
+      |> Enum.map(fn button ->
+        button_list = String.replace(button, "]", "") |> String.split(",")
+        parse_template_button(button_list, length(button_list))
+      end)
+
+    button_type =
+      if parsed_buttons |> Enum.any?(fn %{type: button_type} -> button_type == "QUICK_REPLY" end),
+        do: :quick_reply,
+        else: :call_to_action
+
+    template
+    |> Map.put(:buttons, parsed_buttons)
+    |> Map.put(:button_type, button_type)
+  end
+
+  @spec parse_template_button(list(), non_neg_integer()) :: map()
+  defp parse_template_button([text, content], 2) do
+    if String.contains?(content, "http"),
+      do: %{url: content, text: text, type: "URL"},
+      else: %{phone_number: content, text: text, type: "PHONE_NUMBER"}
+  end
+
+  defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
@@ -411,7 +455,7 @@ defmodule Glific.Templates do
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm_translation(template, approved_db_template, organization, languages) do
-    number_of_parameter = template_parameters_count(template["data"])
+    number_of_parameter = template_parameters_count(%{body: template["data"]})
 
     type =
       template["templateType"]
@@ -458,9 +502,11 @@ defmodule Glific.Templates do
   @doc """
   Returns the count of variables in template
   """
-  @spec template_parameters_count(String.t()) :: non_neg_integer()
-  def template_parameters_count(template_body) do
-    template_body
+  @spec template_parameters_count(map()) :: non_neg_integer()
+  def template_parameters_count(template) do
+    template = parse_buttons(template, false, Map.get(template, :has_buttons, false))
+
+    template.body
     |> String.split()
     |> Enum.reduce([], fn word, acc ->
       with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
@@ -480,4 +526,27 @@ defmodule Glific.Templates do
     list_session_templates(%{filter: %{is_hsm: true}})
     |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
   end
+
+  @spec parse_buttons(map(), boolean(), boolean()) :: map()
+  def parse_buttons(session_template, false, true) do
+    # parsing buttons only when template is not already translated, else buttons are part of body
+    updated_body =
+      session_template.buttons
+      |> Enum.reduce(session_template.body, fn button, acc ->
+        "#{acc}| [" <> do_parse_buttons(button["type"], button) <> "] "
+      end)
+
+    session_template
+    |> Map.merge(%{body: updated_body})
+  end
+
+  def parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
+
+  @spec do_parse_buttons(String.t(), map()) :: String.t()
+  defp do_parse_buttons("URL", button), do: button["text"] <> ", " <> button["url"]
+
+  defp do_parse_buttons("PHONE_NUMBER", button),
+    do: button["text"] <> ", " <> button["phone_number"]
+
+  defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
 end
