@@ -222,10 +222,10 @@ defmodule Glific.Flows.ContactAction do
   defp fetch_language_specific_variables(template, language_id) do
     language = Repo.get!(Language, language_id)
 
-    translated_variable =
+    translated_variables =
       get_in(template.localization, [language.locale, template.uuid, "variables"])
 
-    if is_nil(translated_variable), do: template.variables, else: translated_variable
+    if is_nil(translated_variables), do: template.variables, else: translated_variables
   end
 
   @spec do_send_template_message(FlowContext.t(), Action.t(), [Message.t()], map()) ::
