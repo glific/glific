@@ -168,7 +168,8 @@ defmodule Glific.Seeds.SeedsFlows do
       newcontact: generate_uuid(organization, "6fe8fda9-2df6-4694-9fd6-45b9e724f545"),
       registration: generate_uuid(organization, "f4f38e00-3a50-4892-99ce-a281fe24d040"),
       activity: generate_uuid(organization, "b050c652-65b5-4ccf-b62b-1e8b3f328676"),
-      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5")
+      feedback: generate_uuid(organization, "6c21af89-d7de-49ac-9848-c9febbf737a5"),
+      template: generate_uuid(organization, "cceb79e3-106c-4c29-98e5-a7f7a9a01dcd")
     }
 
     data = [
@@ -178,7 +179,8 @@ defmodule Glific.Seeds.SeedsFlows do
       {"Language Workflow", ["language", "भाषा"], uuid_map.language, true, "language.json"},
       {"New Contact Workflow", ["newcontact"], uuid_map.newcontact, false, "new_contact.json"},
       {"Registration Workflow", ["registration"], uuid_map.registration, false,
-       "registration.json"}
+       "registration.json"},
+      {"Template Workflow", ["template"], uuid_map.template, false, "template.json"}
     ]
 
     {uuid_map, data}
