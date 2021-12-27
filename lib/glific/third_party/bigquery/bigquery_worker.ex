@@ -371,7 +371,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
           if stat == "stats_all",
             do: %{
               organization_id: row.organization_id,
-              organization_name: row.organization.name
+              organization_name: row.organization.name,
+              organization_status: row.organization.status
             },
             else: %{}
 

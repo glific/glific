@@ -680,6 +680,7 @@ defmodule Glific.Flows do
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
       |> add_default_flows(organization.out_of_office)
+      |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
 
     {:commit, keyword_map}
   end

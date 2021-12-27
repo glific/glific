@@ -58,6 +58,8 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field :out_of_office, :out_of_office
 
+    field :newcontact_flow_id, :id
+
     field :is_active, :boolean
 
     field :is_approved, :boolean
@@ -142,6 +144,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :default_language_id, :id
 
     field :out_of_office, :out_of_office_input
+    field :newcontact_flow_id, :id
 
     field :is_active, :boolean
 

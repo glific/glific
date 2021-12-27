@@ -171,7 +171,7 @@ defmodule Glific.Flows.Case do
 
   defp do_execute(%{type: "has_phrase"} = c, _context, %{type: type} = msg)
        when type in @text_types,
-       do: String.contains?(strip(c.arguments), strip(msg))
+       do: String.contains?(strip(msg), strip(c.arguments))
 
   defp do_execute(%{type: ctype} = c, _context, %{type: type} = msg)
        when ctype in ["has_only_phrase", "has_only_text"] and type in @text_types,
@@ -220,11 +220,11 @@ defmodule Glific.Flows.Case do
          |> Regex.match?(strip(msg))
 
   defp do_execute(%{type: "has_beginning"} = c, _context, %{type: type} = msg)
-       when type in @text_types,
-       do:
-         c.arguments
-         |> strip()
-         |> String.starts_with?(strip(msg))
+       when type in @text_types do
+    msg
+    |> strip()
+    |> String.starts_with?(strip(c.arguments))
+  end
 
   defp do_execute(%{type: ctype} = c, _context, %{type: type} = msg)
        when type in @text_types and

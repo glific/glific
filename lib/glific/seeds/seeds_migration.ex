@@ -11,6 +11,7 @@ defmodule Glific.Seeds.SeedsMigration do
     BigQuery,
     Contacts,
     Contacts.Contact,
+    Flows,
     Groups.Group,
     Partners,
     Partners.Organization,
@@ -76,6 +77,9 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:submit_common_otp_template, organizations),
     do: Enum.map(organizations, fn org -> submit_opt_template_for_org(org.id) end)
 
+  defp do_migrate_data(:set_newcontact_flow_id, organizations),
+    do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
+
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
@@ -105,6 +109,19 @@ defmodule Glific.Seeds.SeedsMigration do
       organization_id: org_id
     }
     |> Templates.create_session_template()
+  end
+
+  @spec set_newcontact_flow_id(non_neg_integer()) :: {:error, Ecto.Changeset.t()} | {:ok, Organization.t()}
+  def set_newcontact_flow_id(org_id) do
+    flow_id =
+      org_id
+      |> Flows.flow_keywords_map()
+      |> Map.get("published")
+      |> Map.get("newcontact", nil)
+
+    org_id
+    |> Partners.get_organization!()
+    |> Partners.update_organization(%{newcontact_flow_id: flow_id})
   end
 
   @spec has_contact?(Organization.t(), String.t()) :: boolean
