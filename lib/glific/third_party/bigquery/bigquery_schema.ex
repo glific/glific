@@ -636,6 +636,12 @@ defmodule Glific.BigQuery.Schema do
           name: "organization_name",
           type: "STRING",
           mode: "NULLABLE"
+        },
+        %{
+          description: "Organization Status",
+          name: "organization_status",
+          type: "STRING",
+          mode: "NULLABLE"
         }
       ]
   end

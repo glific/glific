@@ -249,6 +249,7 @@ defmodule Glific.Searches do
     query
     |> add_message_clause(args)
     |> order_by([c: c], desc: c.last_communication_at)
+    |> where([c: c], c.status != :blocked)
     |> group_by([c: c], c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
