@@ -1,0 +1,54 @@
+{
+  "_ui": {
+    "nodes": {
+      "b7e40e74-9679-4b21-af23-9a0e60e1ba9b": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 0 }
+      }
+    }
+  },
+  "name": "Template Workflow",
+  "type": "messaging",
+  "uuid": "d749fdb0-45ec-4d39-829e-8b6d0095d62a",
+  "vars": ["d749fdb0-45ec-4d39-829e-8b6d0095d62a"],
+  "nodes": [
+    {
+      "uuid": "b7e40e74-9679-4b21-af23-9a0e60e1ba9b",
+      "exits": [
+        {
+          "uuid": "ba40817e-2042-40fa-ba4c-d0754ce1eb6d",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "",
+          "type": "send_msg",
+          "uuid": "7965de79-0729-432b-9a2c-b7d7037f5ab4",
+          "labels": [],
+          "templating": {
+            "uuid": "2d57e21b-7220-40e9-abdd-80db2eeb044e",
+            "template": {
+              "name": "Movie Ticket",
+              "uuid": "32905118-9e03-4bf1-9edd-98323b4d3d38"
+            },
+            "variables": ["issue regarding education", "issues"]
+          },
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {
+    "hi": {
+      "2d57e21b-7220-40e9-abdd-80db2eeb044e": {
+        "variables": ["शिक्षा के संबंध में मुद्दा", "issues-hin"]
+      },
+      "7965de79-0729-432b-9a2c-b7d7037f5ab4": { "attachments": [] }
+    }
+  },
+  "spec_version": "13.1.0",
+  "expire_after_minutes": 10080
+}

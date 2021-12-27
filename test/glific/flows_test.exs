@@ -337,6 +337,24 @@ defmodule Glific.FLowsTest do
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
     end
 
+    test "start_contact_flow/2 will setup the template flow for a contact", attrs do
+      SeedsDev.seed_session_templates()
+      [flow | _tail] = Flows.list_flows(%{filter: %{name: "Template Workflow"}})
+      contact = Fixtures.contact_fixture(attrs)
+      Flows.start_contact_flow(flow, contact)
+      assert {:ok, message} = Repo.fetch_by(Message, %{is_hsm: true, contact_id: contact.id})
+
+      assert message.body ==
+               "Download your issue regarding education ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/issues]"
+
+      contact = Fixtures.contact_fixture(%{language_id: 2})
+      Flows.start_contact_flow(flow, contact)
+      assert {:ok, message} = Repo.fetch_by(Message, %{is_hsm: true, contact_id: contact.id})
+
+      assert message.body ==
+               "नीचे दिए गए लिंक से अपना शिक्षा के संबंध में मुद्दा टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/issues-hin"
+    end
+
     test "start_group_flow/2 will setup the flow for a group of contacts", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
       group = Fixtures.group_fixture()
