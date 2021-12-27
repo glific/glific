@@ -114,6 +114,11 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert length(consulting_hours) == 1
   end
 
+  @valid_org_attrs %{
+    name: "Organization Name 1",
+    shortcode: "organization_shortcode 1",
+    email: "Contact person email 1"
+  }
   test "update a consulting hours", %{user: user} = attrs do
     consulting_hour = Fixtures.consulting_hour_fixture(%{organization_id: attrs.organization_id})
 
@@ -129,6 +134,22 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
 
     duration = get_in(query_data, [:data, "updateConsultingHour", "consultingHour", "duration"])
     assert duration == 20
+
+    # updating consulting hours and changing organization
+    new_organization = Fixtures.organization_fixture(@valid_org_attrs)
+
+    result =
+      auth_query_gql_by(:update, user,
+        variables: %{
+          "id" => consulting_hour.id,
+          "input" => %{"duration" => 120, "clientId" => new_organization.organization_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    duration = get_in(query_data, [:data, "updateConsultingHour", "consultingHour", "duration"])
+    assert duration == 120
   end
 
   test "delete a consulting hours", %{user: user} = attrs do
