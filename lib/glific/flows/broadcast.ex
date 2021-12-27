@@ -275,14 +275,12 @@ defmodule Glific.Flows.Broadcast do
   @spec broadcast_stats(non_neg_integer()) :: map()
   def broadcast_stats(flow_broadcast_id) do
     %{
-      success: 10,
-      failed: 20,
-      pending: 30,
+      success: 0,
+      failed: 0,
+      pending: 0,
       failed_catogries: %{
-        not_opted_in: 10,
-        opted_out: 20,
-        out_of_session_window: 20,
-        delivery_failure: 20
+        sent: 0,
+        opted_out: 0
       }
     }
     |> count_successfull_deliveries(flow_broadcast_id)
@@ -295,7 +293,8 @@ defmodule Glific.Flows.Broadcast do
     count =
       FlowBroadcastContact
       |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
-      |> where([fbc], is_nil(fbc.processed_at))
+      |> where([fbc], not is_nil(fbc.processed_at))
+      |> where([fbc], fbc.status == "processed")
       |> Repo.aggregate(:count)
 
     Map.put_new(map, :success, count)
@@ -305,7 +304,8 @@ defmodule Glific.Flows.Broadcast do
     count =
       FlowBroadcastContact
       |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
-      |> where([fbc], is_nil(fbc.processed_at))
+      |> where([fbc], not is_nil(fbc.processed_at))
+      |> where([fbc], fbc.status == "pending")
       |> Repo.aggregate(:count)
 
     Map.put_new(map, :failed, count)
@@ -318,9 +318,21 @@ defmodule Glific.Flows.Broadcast do
       |> where([fbc], is_nil(fbc.processed_at))
       |> Repo.aggregate(:count)
 
-    Map.put_new(map, :pending, count)
+    Map.put_new(map, :failed, count)
   end
 
-  defp count_failed_deliveries_by_category(map, flow_broadcast_id),
-    do: Map.put(map, :flow_broadcast_id, flow_broadcast_id)
+  defp count_failed_deliveries_by_category(map, flow_broadcast_id) do
+    Map.put(map, :failed_catogries, failed_deliveries_by_category(flow_broadcast_id))
+  end
+
+  defp failed_deliveries_by_category(flow_broadcast_id) do
+    data =
+      broadcast_stats_base_query(flow_broadcast_id)
+      |> Repo.query!()
+
+    %{
+      sent: Enum.count(data, fn d -> d.status == "sent" end),
+      opted_out: Enum.count(data, fn d -> d.status == "contact_opt_out" end)
+    }
+  end
 end
