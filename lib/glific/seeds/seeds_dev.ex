@@ -571,11 +571,21 @@ if Code.ensure_loaded?(Faker) do
         ]
       })
 
+      @template_id "32905118-9e03-4bf1-9edd-98323b4d3d38"
+      @translated_template_id "a1d810f4-b102-446c-968c-10ff2f5c129f"
+
       translations = %{
         hi.id => %{
           body:
-            "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [वेबसाइट पर जाएं, https: //www.gupshup.io/developer/ {{2}}",
-          language_id: hi.id,
+            "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/{{2}}",
+          type: "text",
+          uuid: @translated_template_id,
+          label: "movie_ticket",
+          status: "APPROVED",
+          example:
+            "नीचे दिए गए लिंक से अपना [मुददा] टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/[issues-hin]",
+          category: "ALERT_UPDATE",
+          language_id: 2,
           number_parameters: 2
         }
       }
@@ -596,7 +606,25 @@ if Code.ensure_loaded?(Faker) do
           "Download your [message] ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/[message]]",
         body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
-        uuid: Ecto.UUID.generate()
+        uuid: @template_id
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: "Translated Movie Ticket",
+        type: :text,
+        shortcode: "movie_ticket",
+        is_hsm: true,
+        is_active: true,
+        number_parameters: 2,
+        language_id: hi.id,
+        organization_id: organization.id,
+        status: "APPROVED",
+        category: "TICKET_UPDATE",
+        body:
+          "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/{{2}}",
+        example:
+          "नीचे दिए गए लिंक से अपना [मुददा] टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/[issues-hin]",
+        uuid: @translated_template_id
       })
 
       translations = %{
