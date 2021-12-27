@@ -17,13 +17,6 @@ defmodule Glific.FLowsTest do
     Seeds.SeedsDev
   }
 
-  setup do
-    organization = SeedsDev.seed_organizations()
-    SeedsDev.seed_session_templates()
-    SeedsDev.hsm_templates(organization)
-    :ok
-  end
-
   describe "flows" do
     @valid_attrs %{
       name: "Test Flow",
@@ -345,6 +338,7 @@ defmodule Glific.FLowsTest do
     end
 
     test "start_contact_flow/2 will setup the template flow for a contact", attrs do
+      SeedsDev.seed_session_templates()
       [flow | _tail] = Flows.list_flows(%{filter: %{name: "Template Workflow"}})
       contact = Fixtures.contact_fixture(attrs)
       Flows.start_contact_flow(flow, contact)
