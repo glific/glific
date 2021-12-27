@@ -303,6 +303,18 @@ defmodule Glific.PartnersTest do
                })
     end
 
+    test "update_organization/2 should update new contact flow" do
+      organization = Fixtures.organization_fixture()
+      flow = Fixtures.flow_fixture()
+
+      assert {:ok, updated_organization} =
+               Partners.update_organization(organization, %{
+                 newcontact_flow_id: flow.id
+               })
+
+      assert updated_organization.newcontact_flow_id == flow.id
+    end
+
     test "update_organization/2 with oraganization settings" do
       organization = Fixtures.organization_fixture()
       flow_id = 3

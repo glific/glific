@@ -38,7 +38,8 @@ defmodule Glific.Partners.Organization do
     :organization_id,
     :signature_phrase,
     :last_communication_at,
-    :fields
+    :fields,
+    :newcontact_flow_id
   ]
 
   @type t() :: %__MODULE__{
@@ -56,6 +57,7 @@ defmodule Glific.Partners.Organization do
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           out_of_office: OutOfOffice.t() | nil,
+          newcontact_flow_id: non_neg_integer | nil,
           hours: list() | nil,
           days: list() | nil,
           is_active: boolean() | true,
@@ -98,6 +100,8 @@ defmodule Glific.Partners.Organization do
 
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
 
+    # id of flow which gets triggered when new contact joins bot
+    field :newcontact_flow_id, :integer
     field :is_active, :boolean, default: true
     field :is_approved, :boolean, default: false
 
