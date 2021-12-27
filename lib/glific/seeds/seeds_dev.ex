@@ -524,6 +524,9 @@ if Code.ensure_loaded?(Faker) do
       }
     end
 
+    @template_id "32905118-9e03-4bf1-9edd-98323b4d3d38"
+    @translated_template_id "a1d810f4-b102-446c-968c-10ff2f5c129f"
+
     @doc false
     @spec seed_session_templates(Organization.t() | nil) :: nil
     def seed_session_templates(organization \\ nil) do
@@ -570,9 +573,6 @@ if Code.ensure_loaded?(Faker) do
           %{"text" => "View Mini Statement", "type" => "QUICK_REPLY"}
         ]
       })
-
-      @template_id "32905118-9e03-4bf1-9edd-98323b4d3d38"
-      @translated_template_id "a1d810f4-b102-446c-968c-10ff2f5c129f"
 
       translations = %{
         hi.id => %{
