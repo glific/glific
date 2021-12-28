@@ -38,7 +38,6 @@ defmodule Glific.Flows.Node do
     field :uuid, Ecto.UUID
     field :flow_id, :integer
     field :flow_uuid, Ecto.UUID
-    field :localization, :map
 
     field :is_terminal, :boolean, default: false
 
