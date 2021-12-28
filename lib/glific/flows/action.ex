@@ -215,8 +215,7 @@ defmodule Glific.Flows.Action do
       contacts: json["contacts"]
     }
 
-    template = add_localization(json["templating"], node.localization)
-    {templating, uuid_map} = Templating.process(template, uuid_map)
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
     attrs = Map.put(attrs, :templating, templating)
     process(json, uuid_map, node, attrs)
   end
@@ -260,9 +259,7 @@ defmodule Glific.Flows.Action do
       attachments: process_attachments(json["attachments"])
     }
 
-    template = add_localization(json["templating"], node.localization)
-
-    {templating, uuid_map} = Templating.process(template, uuid_map)
+    {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
 
     attrs = Map.put(attrs, :templating, templating)
 
