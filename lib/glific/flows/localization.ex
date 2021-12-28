@@ -178,6 +178,14 @@ defmodule Glific.Flows.Localization do
     |> Map.get(:name, category.name)
   end
 
+  @doc """
+  Given a language id and an template uuid, return the variable translation if
+  one exists, else return the original variable
+  """
+  @spec get_translated_template_vars(
+          FlowContext.t(),
+          atom | %{:uuid => binary, :variables => any, optional(any) => any}
+        ) :: list() | nil
   def get_translated_template_vars(context, template) do
     language_id = context.contact.language_id
 
