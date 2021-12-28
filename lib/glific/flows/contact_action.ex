@@ -11,7 +11,6 @@ defmodule Glific.Flows.ContactAction do
     Messages,
     Messages.Message,
     Repo,
-    Settings.Language,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
@@ -196,12 +195,7 @@ defmodule Glific.Flows.ContactAction do
     {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
-    variables =
-      fetch_language_specific_variables(
-        templating,
-        context.contact.language_id
-      )
-
+    variables = Localization.get_translated_template_vars(context, templating)
     vars = Enum.map(variables, &MessageVarParser.parse(&1, message_vars))
 
     session_template = Messages.parse_template_vars(templating.template, vars)
@@ -216,16 +210,6 @@ defmodule Glific.Flows.ContactAction do
         flow_label: action.labels
       })
     end
-  end
-
-  @spec fetch_language_specific_variables(map(), non_neg_integer()) :: list()
-  defp fetch_language_specific_variables(template, language_id) do
-    language = Repo.get!(Language, language_id)
-
-    translated_variables =
-      get_in(template.localization, [language.locale, template.uuid, "variables"])
-
-    if is_nil(translated_variables), do: template.variables, else: translated_variables
   end
 
   @spec do_send_template_message(FlowContext.t(), Action.t(), [Message.t()], map()) ::

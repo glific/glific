@@ -368,7 +368,7 @@ defmodule Glific.Flows do
   which is an array of objects in the json file. Used for Node/Actions, Node/Exits,
   Router/Cases, and Router/Categories
   """
-  @spec build_flow_objects(map(), map(), (map(), map(), any -> {any, map()}), any) ::
+  @spec build_flow_objects(list(), map(), (map(), map(), any -> {any, map()}), any) ::
           {any, map()}
   def build_flow_objects(json, uuid_map, process_fn, object \\ nil) do
     {objects, uuid_map} =

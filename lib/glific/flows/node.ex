@@ -31,15 +31,13 @@ defmodule Glific.Flows.Node do
           is_terminal: boolean() | false,
           actions: [Action.t()] | [],
           exits: [Exit.t()] | [],
-          router: Router.t() | nil,
-          localization: map()
+          router: Router.t() | nil
         }
 
   embedded_schema do
     field :uuid, Ecto.UUID
     field :flow_id, :integer
     field :flow_uuid, Ecto.UUID
-    field :localization, :map
 
     field :is_terminal, :boolean, default: false
 
@@ -60,8 +58,7 @@ defmodule Glific.Flows.Node do
     node = %Node{
       uuid: json["uuid"],
       flow_uuid: flow.uuid,
-      flow_id: flow.id,
-      localization: flow.definition["localization"]
+      flow_id: flow.id
     }
 
     {actions, uuid_map} =

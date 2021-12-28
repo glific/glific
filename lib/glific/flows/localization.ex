@@ -69,6 +69,13 @@ defmodule Glific.Flows.Localization do
       else: Map.put(map, :name, values["name"])
   end
 
+  @spec add_template_variables(map(), map()) :: map()
+  defp add_template_variables(map, values) do
+    if values["variables"] in ["", nil, []],
+      do: map,
+      else: Map.put(map, :variables, values["variables"])
+  end
+
   # given a json snippet containing all the translation for a specific language
   # store them in a uuid map
   @spec process_translation(map()) :: map()
@@ -87,6 +94,7 @@ defmodule Glific.Flows.Localization do
           |> add_attachments(values)
           |> add_case_arguments(values)
           |> add_category_name(values)
+          |> add_template_variables(values)
 
         if values == %{}, do: acc, else: Map.put(acc, uuid, map)
       end
@@ -168,6 +176,23 @@ defmodule Glific.Flows.Localization do
     |> load_localizations()
     |> translated_element(language_id, category.uuid)
     |> Map.get(:name, category.name)
+  end
+
+  @doc """
+  Given a language id and an template uuid, return the variable translation if
+  one exists, else return the original variable
+  """
+  @spec get_translated_template_vars(
+          FlowContext.t(),
+          atom | %{:uuid => binary, :variables => any, optional(any) => any}
+        ) :: list() | nil
+  def get_translated_template_vars(context, template) do
+    language_id = context.contact.language_id
+
+    context
+    |> load_localizations()
+    |> translated_element(language_id, template.uuid)
+    |> Map.get(:variables, template.variables)
   end
 
   @spec load_localizations(FlowContext.t()) :: map()
