@@ -235,7 +235,9 @@ defmodule GlificWeb.Schema.ContactTest do
 
     test_name = "test2"
     test_phone = "test phone2"
-    data = "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
+
+    data =
+      "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
 
     result =
       auth_query_gql_by(:import_contacts, user,
