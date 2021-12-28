@@ -266,15 +266,6 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
-  @spec add_localization(map() | nil, map() | nil) :: map() | nil
-  defp add_localization(nil, _localization),
-    do: nil
-
-  defp add_localization(templating, nil), do: templating
-
-  defp add_localization(templating, localization),
-    do: Map.put(templating, "localization", localization)
-
   @spec get_name(atom()) :: String.t()
   defp get_name(module) do
     module

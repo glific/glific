@@ -51,7 +51,7 @@ defmodule Glific.Flows.Node do
   @spec append_localization(list(), map()) :: list()
   defp append_localization([], _flow_localization), do: []
 
-  defp append_localization([%{"templating" => templating}] = actions, flow_localization) do
+  defp append_localization([%{"templating" => templating}] = [actions], flow_localization) do
     localization =
       Enum.reduce(flow_localization, %{}, fn {locale, variables}, acc ->
         Map.merge(acc, %{
@@ -61,7 +61,6 @@ defmodule Glific.Flows.Node do
 
     updated_action =
       actions
-      |> List.first()
       |> Map.merge(%{"templating" => Map.put(templating, "localization", localization)})
 
     [updated_action]
