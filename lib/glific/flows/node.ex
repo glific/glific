@@ -52,7 +52,7 @@ defmodule Glific.Flows.Node do
 
   defp get_node_localization(localization, [%{"templating" => %{"uuid" => uuid}}]) do
     Enum.reduce(localization, %{}, fn {locale, variables}, acc ->
-      Map.merge(acc, %{locale => Map.get(variables, uuid)})
+      Map.merge(acc, %{locale => %{uuid => Map.get(variables, uuid)}})
     end)
   end
 
