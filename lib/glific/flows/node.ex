@@ -50,6 +50,14 @@ defmodule Glific.Flows.Node do
     embeds_one :router, Router
   end
 
+  defp get_node_localization(localization, [%{"templating" => %{"uuid" => uuid}}]) do
+    Enum.reduce(localization, %{}, fn {locale, variables}, acc ->
+      Map.merge(acc, %{locale => Map.get(variables, uuid)})
+    end)
+  end
+
+  defp get_node_localization(_localization, _actions), do: %{}
+
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
@@ -61,7 +69,7 @@ defmodule Glific.Flows.Node do
       uuid: json["uuid"],
       flow_uuid: flow.uuid,
       flow_id: flow.id,
-      localization: flow.definition["localization"]
+      localization: get_node_localization(flow.definition["localization"], json["actions"])
     }
 
     {actions, uuid_map} =
