@@ -42,7 +42,6 @@ defmodule Glific.Flows.Broadcast do
     init_broadcast_group(flow, group, group_message)
 
     ## should we start the flow broadcast here ? It can bring some inconsistency with the cron.
-
     flow
   end
 
@@ -208,7 +207,8 @@ defmodule Glific.Flows.Broadcast do
     Stream.run(stream)
   end
 
-  @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) :: :ok
+  @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) ::
+          {:ok, FlowContext.t()} | {:error, String.t()}
   defp init_broadcast_group(flow, group, group_message) do
     # lets create a broadcast entry for this flow
     {:ok, flow_broadcast} =
@@ -222,7 +222,10 @@ defmodule Glific.Flows.Broadcast do
       })
 
     populate_flow_broadcast_contacts(flow_broadcast)
-    :ok
+    |> case do
+      {:ok, _} -> {:ok, flow_broadcast}
+      _ -> {:error, "could not initiate broadcast"}
+    end
   end
 
   @spec mark_flow_broadcast_contact_proceesed(integer() | nil, integer(), String.t()) :: :ok
@@ -241,7 +244,7 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.insert()
   end
 
-  @spec populate_flow_broadcast_contacts(FlowBroadcast.t()) :: :ok
+  @spec populate_flow_broadcast_contacts(FlowBroadcast.t()) :: {:ok, any()} | {:error, any()}
   defp populate_flow_broadcast_contacts(flow_broadcast) do
     """
     INSERT INTO flow_broadcast_contacts
@@ -251,8 +254,6 @@ defmodule Glific.Flows.Broadcast do
       FROM contacts_groups left join contacts on contacts.id = contacts_groups.contact_id
       WHERE group_id = #{flow_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null))
     """
-    |> Repo.query!()
-
-    :ok
+    |> Repo.query()
   end
 end

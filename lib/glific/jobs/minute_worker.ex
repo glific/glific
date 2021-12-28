@@ -44,8 +44,7 @@ defmodule Glific.Jobs.MinuteWorker do
               "wakeup_flows",
               "bigquery",
               "gcs",
-              "execute_triggers",
-              "broadcast",
+              "triggers_and_broadcast",
               "stats"
             ] do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
@@ -56,10 +55,8 @@ defmodule Glific.Jobs.MinuteWorker do
       "wakeup_flows" ->
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])
 
-      "execute_triggers" ->
+      "triggers_and_broadcast" ->
         Partners.perform_all(&Triggers.execute_triggers/1, nil, [])
-
-      "broadcast" ->
         Partners.perform_all(&BroadcastWorker.execute/1, nil, [])
 
       "bigquery" ->
