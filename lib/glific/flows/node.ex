@@ -53,7 +53,7 @@ defmodule Glific.Flows.Node do
   defp append_localization([], _flow_localization), do: []
 
   defp append_localization([%{"templating" => templating}] = actions, flow_localization) do
-    locale =
+    localization =
       Enum.reduce(flow_localization, %{}, fn {locale, variables}, acc ->
         Map.merge(acc, %{
           locale => %{templating["uuid"] => Map.get(variables, templating["uuid"])}
@@ -63,7 +63,7 @@ defmodule Glific.Flows.Node do
     updated_action =
       actions
       |> List.first()
-      |> Map.merge(%{"templating" => Map.put(templating, "localization", locale)})
+      |> Map.merge(%{"templating" => Map.put(templating, "localization", localization)})
 
     [updated_action]
   end
