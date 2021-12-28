@@ -11,7 +11,6 @@ defmodule Glific.Flows.ContactAction do
     Messages,
     Messages.Message,
     Repo,
-    Settings.Language,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate
