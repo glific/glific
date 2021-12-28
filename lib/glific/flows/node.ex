@@ -48,26 +48,6 @@ defmodule Glific.Flows.Node do
     embeds_one :router, Router
   end
 
-  @spec append_localization(list(), map()) :: list()
-  defp append_localization([], _flow_localization), do: []
-
-  defp append_localization([%{"templating" => templating}] = [actions], flow_localization) do
-    localization =
-      Enum.reduce(flow_localization, %{}, fn {locale, variables}, acc ->
-        Map.merge(acc, %{
-          locale => %{templating["uuid"] => Map.get(variables, templating["uuid"])}
-        })
-      end)
-
-    updated_action =
-      actions
-      |> Map.merge(%{"templating" => Map.put(templating, "localization", localization)})
-
-    [updated_action]
-  end
-
-  defp append_localization(actions, _flow_localization), do: actions
-
   @doc """
   Process a json structure from floweditor to the Glific data types
   """
@@ -81,11 +61,9 @@ defmodule Glific.Flows.Node do
       flow_id: flow.id
     }
 
-    action = append_localization(json["actions"], flow.definition["localization"])
-
     {actions, uuid_map} =
       Flows.build_flow_objects(
-        action,
+        json["actions"],
         uuid_map,
         &Action.process/3,
         node
