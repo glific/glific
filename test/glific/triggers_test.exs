@@ -52,6 +52,44 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
 
+    test "execute_triggers/2 should execute a trigger with frequency as none after 10 mins",
+         attrs do
+      start_at = Timex.shift(DateTime.utc_now(), minutes: 10)
+      end_date = Timex.shift(DateTime.utc_now(), days: 1)
+
+      _trigger =
+        Fixtures.trigger_fixture(%{
+          start_at: start_at,
+          organization_id: attrs.organization_id,
+          end_date: end_date,
+          frequency: ["none"]
+        })
+
+      # Trigger should not execute after 2 mins
+      trigger_time = Timex.shift(DateTime.utc_now(), minutes: 2)
+
+      msg_count_before_trigger = Messages.count_messages(%{filter: attrs})
+      Triggers.execute_triggers(attrs.organization_id, trigger_time)
+      msg_count_after_trigger = Messages.count_messages(%{filter: attrs})
+      assert msg_count_after_trigger == msg_count_before_trigger
+
+      # Trigger should not execute after 6 mins
+      trigger_time = Timex.shift(DateTime.utc_now(), minutes: 6)
+
+      msg_count_before_trigger = Messages.count_messages(%{filter: attrs})
+      Triggers.execute_triggers(attrs.organization_id, trigger_time)
+      msg_count_after_trigger = Messages.count_messages(%{filter: attrs})
+      assert msg_count_after_trigger == msg_count_before_trigger
+
+      # Trigger should execute after 10 mins
+      trigger_time = Timex.shift(DateTime.utc_now(), minutes: 10)
+
+      msg_count_before_trigger = Messages.count_messages(%{filter: attrs})
+      Triggers.execute_triggers(attrs.organization_id, trigger_time)
+      msg_count_after_trigger = Messages.count_messages(%{filter: attrs})
+      assert msg_count_after_trigger > msg_count_before_trigger
+    end
+
     test "triggers field returns list of triggers", attrs do
       tr = Fixtures.trigger_fixture(attrs)
       assert Trigger.get_trigger!(tr.id) == tr
