@@ -164,7 +164,9 @@ defmodule Glific.Triggers.Trigger do
          %{last_trigger_at: nil, next_trigger_at: next_trigger_at, frequency: frequency} = attrs
        ) do
     time =
-      if frequency == "none", do: next_trigger_at, else: next_trigger_at |> Timex.shift(days: -1)
+      if frequency == ["none"],
+        do: next_trigger_at,
+        else: next_trigger_at |> Timex.shift(days: -1)
 
     computed_next_trigger_at =
       attrs
