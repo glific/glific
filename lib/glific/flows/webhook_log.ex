@@ -121,6 +121,15 @@ defmodule Glific.Flows.WebhookLog do
       {:status_code, status_code}, query ->
         from q in query, where: q.status_code == ^status_code
 
+      {:contact_phone, contact_phone}, query ->
+        sub_query =
+          Contact
+          |> where([c], ilike(c.phone, ^"%#{contact_phone}%"))
+          |> select([c], c.id)
+
+        query
+        |> where([q], q.contact_id in subquery(sub_query))
+
       _, query ->
         query
     end)
