@@ -235,12 +235,14 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def process(%{"type" => "wait_for_time"} = json, uuid_map, node) do
+  def process(%{"type" => type} = json, uuid_map, node)
+      when type in ["wait_for_time", "wait_for_result"] do
     Flows.check_required_fields(json, @required_fields_waittime)
 
+    # use a default wait time of 5 minutes
     wait_time =
       if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
-        0
+        5 * 60
       else
         String.to_integer(json["delay"])
       end
@@ -321,7 +323,8 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def validate(%{type: "wait_for_time"} = action, errors, flow) do
+  def validate(%{type: type} = action, errors, flow)
+      when type in ["wait_for_time", "wait_for_result"] do
     # ensure that any downstream messages from this action are of type HSM
     # if wait time > 24 hours!
     if action.wait_time >= 24 * 60 * 60 &&
@@ -590,12 +593,11 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
-    if msg.body != "No Response" do
-      FlowContext.log_error("Unexpected message #{msg.body} received")
-    else
-      {:ok, context, []}
-    end
+  def execute(%{type: type} = _action, context, [msg])
+      when type in ["wait_for_time", "wait_for_result"] do
+    if msg.body != "No Response",
+      do: FlowContext.log_error("Unexpected message #{msg.body} received"),
+      else: {:ok, context, []}
   end
 
   def execute(%{type: "wait_for_time"} = action, context, []) do
@@ -614,6 +616,20 @@ defmodule Glific.Flows.Action do
 
       {:wait, context, []}
     end
+  end
+
+  def execute(%{type: "wait_for_result"} = action, context, []) do
+    {:ok, context} =
+      FlowContext.update_flow_context(
+        context,
+        %{
+          wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+          # we will change column name
+          is_background_flow: context.flow.is_background
+        }
+      )
+
+    {:wait, context, []}
   end
 
   def execute(action, _context, _messages),
