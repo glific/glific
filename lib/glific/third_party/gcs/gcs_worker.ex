@@ -287,9 +287,13 @@ defmodule Glific.GCS.GcsWorker do
     |> Map.get(Glific.safe_string_to_atom(type), "png")
   end
 
+  @doc """
+  Download a file to the specific path. Should move this to a more generic
+  helper file in glific
+  """
   @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) ::
           {:ok, String.t()} | {:error, any()}
-  defp download_file_to_temp(url, path, org_id) do
+  def download_file_to_temp(url, path, org_id) do
     Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
 
     Tesla.get(url)
