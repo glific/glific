@@ -352,7 +352,8 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
+            body:
+              "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
           }
       end)
 
@@ -376,7 +377,10 @@ defmodule Glific.ContactsTest do
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
-      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)]
+      [
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -401,7 +405,10 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       Contacts.delete_contact(contact)
 
-      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)]
+      [
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 

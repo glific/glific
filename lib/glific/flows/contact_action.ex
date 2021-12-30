@@ -195,7 +195,8 @@ defmodule Glific.Flows.ContactAction do
     {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
-    vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
+    variables = Localization.get_translated_template_vars(context, templating)
+    vars = Enum.map(variables, &MessageVarParser.parse(&1, message_vars))
 
     session_template = Messages.parse_template_vars(templating.template, vars)
 

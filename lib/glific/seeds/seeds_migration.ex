@@ -111,7 +111,8 @@ defmodule Glific.Seeds.SeedsMigration do
     |> Templates.create_session_template()
   end
 
-  @spec set_newcontact_flow_id(non_neg_integer()) :: {:error, Ecto.Changeset.t()} | {:ok, Organization.t()}
+  @spec set_newcontact_flow_id(non_neg_integer()) ::
+          {:error, Ecto.Changeset.t()} | {:ok, Organization.t()}
   def set_newcontact_flow_id(org_id) do
     flow_id =
       org_id

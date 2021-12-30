@@ -58,7 +58,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
     updated_params = Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, consulting_hour} <-
-           Repo.fetch_by(ConsultingHour, %{id: id, organization_id: params.client_id}),
+           Repo.fetch_by(ConsultingHour, %{id: id}, skip_organization_id: true),
          {:ok, consulting_hour} <-
            ConsultingHour.update_consulting_hour(consulting_hour, updated_params) do
       {:ok, %{consulting_hour: consulting_hour}}

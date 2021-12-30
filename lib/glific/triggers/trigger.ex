@@ -114,11 +114,7 @@ defmodule Glific.Triggers.Trigger do
   defp validate_start_at(changeset), do: changeset
 
   @spec start_at(map()) :: DateTime.t()
-  defp start_at(%{start_at: nil} = attrs) do
-    DateTime.new!(attrs.start_date, attrs.start_time)
-  end
-
-  ## We might need to change this and convert the datetime to utc
+  defp start_at(%{start_at: nil} = attrs), do: DateTime.new!(attrs.start_date, attrs.start_time)
   defp start_at(%{start_at: start_at} = _attrs), do: start_at
 
   @spec get_name(map()) :: String.t()
@@ -156,7 +152,7 @@ defmodule Glific.Triggers.Trigger do
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
 
-    # set the initial value of the next firing of the trigger
+    # update next trigger at based on frequency set through Helper function
     |> update_next_trigger_at?()
   end
 
@@ -164,7 +160,9 @@ defmodule Glific.Triggers.Trigger do
          %{last_trigger_at: nil, next_trigger_at: next_trigger_at, frequency: frequency} = attrs
        ) do
     time =
-      if frequency == "none", do: next_trigger_at, else: next_trigger_at |> Timex.shift(days: -1)
+      if frequency == ["none"],
+        do: next_trigger_at,
+        else: next_trigger_at |> Timex.shift(days: -1)
 
     computed_next_trigger_at =
       attrs
