@@ -171,6 +171,18 @@ defmodule Glific.Flows.WebhookTest do
                Map.merge(webhook_log_1, %{status: "Success"})
              ] ==
                WebhookLog.list_webhook_logs(%{opts: %{order: :desc}, filter: attrs})
+
+      #  filter by contact_phone
+
+      webhook_log = webhook_log_1 |> Repo.preload([:contact])
+      phone = webhook_log.contact.phone
+
+      assert [
+               Map.merge(webhook_log_1, %{status: "Success"})
+             ] ==
+               WebhookLog.list_webhook_logs(%{
+                 filter: Map.merge(attrs, %{contact_phone: phone})
+               })
     end
 
     test "count_webhook_logs/0 returns count of all webhook logs", attrs do
