@@ -39,9 +39,12 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
-    init_broadcast_group(flow, group, group_message)
+    {:ok, flow_broadcast} = init_broadcast_group(flow, group, group_message)
 
-    ## should we start the flow broadcast here ? It can bring some inconsistency with the cron.
+    ## let's update the group message with the flow broadcast id to get the stasts and everything from that later.
+    {:ok, _} = Messages.update_message(group_message, %{flow_broadcast_id: flow_broadcast.id})
+
+    ## should we broadcast the first batch here ? It can bring some inconsistency with the cron.
     flow
   end
 
@@ -208,7 +211,7 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) ::
-          {:ok, FlowContext.t()} | {:error, String.t()}
+          {:ok, FlowBroadcast.t()} | {:error, String.t()}
   defp init_broadcast_group(flow, group, group_message) do
     # lets create a broadcast entry for this flow
     {:ok, flow_broadcast} =
@@ -273,21 +276,24 @@ defmodule Glific.Flows.Broadcast do
     """
   end
 
-  @spec broadcast_stats(non_neg_integer()) :: map()
+  @spec broadcast_stats(non_neg_integer()) :: {:ok, map()}
   def broadcast_stats(flow_broadcast_id) do
-    %{
-      success: 0,
-      failed: 0,
-      pending: 0,
-      failed_catogries: %{
-        sent: 0,
-        opted_out: 0
+    results =
+      %{
+        success: 0,
+        failed: 0,
+        pending: 0,
+        failed_catogries: %{
+          sent: 0,
+          opted_out: 0
+        }
       }
-    }
-    |> count_successfull_deliveries(flow_broadcast_id)
-    |> count_failed_deliveries(flow_broadcast_id)
-    |> count_pending_deliveries(flow_broadcast_id)
-    |> count_failed_deliveries_by_category(flow_broadcast_id)
+      |> count_successfull_deliveries(flow_broadcast_id)
+      |> count_failed_deliveries(flow_broadcast_id)
+      |> count_pending_deliveries(flow_broadcast_id)
+      |> count_failed_deliveries_by_category(flow_broadcast_id)
+
+    {:ok, results}
   end
 
   defp count_successfull_deliveries(map, flow_broadcast_id) do

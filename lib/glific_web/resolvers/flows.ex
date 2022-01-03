@@ -8,6 +8,7 @@ defmodule GlificWeb.Resolvers.Flows do
   alias Glific.{
     Contacts.Contact,
     Flows,
+    Flows.Broadcast,
     Flows.Flow,
     Groups.Group,
     Repo,
@@ -186,4 +187,12 @@ defmodule GlificWeb.Resolvers.Flows do
       {:ok, %{flow: flow}}
     end
   end
+
+  @doc """
+  Get broadcast stats for a flow
+  """
+  @spec broadcast_stats(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def broadcast_stats(_, %{flow_boradcast_id: flow_boradcast_id}, _),
+    do: Broadcast.broadcast_stats(flow_boradcast_id)
 end
