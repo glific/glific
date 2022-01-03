@@ -788,15 +788,13 @@ defmodule Glific.Partners.Billing do
     )
 
     case Stats.usage(organization_id, dates.start_usage_date, dates.end_usage_date) do
-      usage ->
+      %{messages: messages, users: users} ->
         record_subscription_item(
           subscription_items[stripe_ids()["users"]],
           usage.users,
           dates.time,
           "users: #{organization_id}, #{Date.to_string(dates.start_usage_date)}"
         )
-
-        :ok
 
       nil ->
         :ok
