@@ -1214,8 +1214,10 @@ defmodule Glific.Messages do
   defp do_validate_headers(headers, "document", _url),
     do: String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"])
 
-  defp do_validate_headers(headers, "sticker", _url),
-    do: String.contains?(headers["content-type"], "image")
+  ## sometimes webp files does not return any content type. We need to figure out another way to validate this
+  defp do_validate_headers(headers, "sticker", url),
+    do:
+      String.contains?(url, [".webp"]) && String.contains?(headers["content-type"], ["image", ""])
 
   defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
     do: String.contains?(headers["content-type"], type)
@@ -1246,7 +1248,8 @@ defmodule Glific.Messages do
       {:image, ["png", "jpg", "jpeg"]},
       {:video, ["mp4", "3gp", "3gpp"]},
       {:audio, ["mp3", "wav", "acc"]},
-      {:document, ["pdf", "docx", "xlxs"]}
+      {:document, ["pdf", "docx", "xlxs"]},
+      {:sticker, ["webp"]}
     ]
 
     Enum.find(mime_types, fn {_type, extension_list} -> extension in extension_list end)
