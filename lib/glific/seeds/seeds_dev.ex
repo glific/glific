@@ -6,6 +6,7 @@ if Code.ensure_loaded?(Faker) do
     alias Glific.{
       Contacts,
       Contacts.Contact,
+      Contacts.ContactHistory,
       Flows.Flow,
       Flows.FlowLabel,
       Flows.FlowResult,
@@ -1308,6 +1309,45 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_contact_history(Organization.t()) :: nil
+    def seed_contact_history(organization) do
+      {:ok, contact} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Adelle Cavin", organization_id: organization.id}
+        )
+
+      {:ok, flow} =
+        Repo.fetch_by(
+          Flow,
+          %{name: "Survey Workflow", organization_id: organization.id}
+        )
+
+      Repo.insert!(%ContactHistory{
+        contact_id: contact.id,
+        event_label: "Flow Started",
+        event_type: "contact_flow_started",
+        event_meta: %{
+          context_id: 1,
+          flow: %{
+            id: flow.id,
+            uuid: flow.uuid,
+            name: flow.name
+          }
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%ContactHistory{
+        contact_id: contact.id,
+        event_label: "All contact flows are ended",
+        event_type: "contact_flow_ended_all",
+        event_meta: %{},
+        organization_id: organization.id
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1351,6 +1391,8 @@ if Code.ensure_loaded?(Faker) do
       seed_notification(organization)
 
       seed_interactives(organization)
+
+      seed_contact_history(organization)
     end
   end
 end
