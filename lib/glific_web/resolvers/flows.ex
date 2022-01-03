@@ -161,7 +161,8 @@ defmodule GlificWeb.Resolvers.Flows do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         {:ok, _flow} <- FlowContext.resume_contact_flow(contact, flow_id, result) do
+         {:ok, _flow_context, _messages} <-
+           FlowContext.resume_contact_flow(contact, flow_id, result) do
       {:ok, %{success: true}}
     end
   end

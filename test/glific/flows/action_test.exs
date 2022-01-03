@@ -583,9 +583,14 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
+    context_args = %{
+      contact_id: contact.id,
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      organization_id: attrs.organization_id
+    }
+    {:ok, context} = FlowContext.create_flow_context(context_args)
+    context = Repo.preload(context, [:contact, :flow])
 
     # using uuid of language flow
     action = %Action{
@@ -600,11 +605,11 @@ defmodule Glific.Flows.ActionTest do
 
     # good message, proceed ahead
     result = Action.execute(action, context, [%{body: "No Response"}])
-    assert elem(result, 1) == context
+    assert match?(%FlowContext{}, elem(result, 1))
 
     # delay is 0
     result = Action.execute(action, context, [])
-    assert elem(result, 1) == context
+    assert match?(%FlowContext{}, elem(result, 1))
 
     node = %{uuid: Ecto.UUID.generate()}
     # here we need a real context
