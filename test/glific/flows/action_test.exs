@@ -589,6 +589,7 @@ defmodule Glific.Flows.ActionTest do
       flow_uuid: Ecto.UUID.generate(),
       organization_id: attrs.organization_id
     }
+
     {:ok, context} = FlowContext.create_flow_context(context_args)
     context = Repo.preload(context, [:contact, :flow])
 
