@@ -9,6 +9,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Groups.Group,
     Repo,
     State,
@@ -154,13 +155,13 @@ defmodule GlificWeb.Resolvers.Flows do
           }
         ) ::
           {:ok, any} | {:error, any}
-  def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id, result: map()}, %{
+  def resume_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id, result: result}, %{
         context: %{current_user: user}
       }) do
     with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
-         {:ok, _flow} <- Flows.resume_contact_flow(flow_id, contact, result) do
+         {:ok, _flow} <- FlowContext.resume_contact_flow(contact, flow_id, result) do
       {:ok, %{success: true}}
     end
   end
