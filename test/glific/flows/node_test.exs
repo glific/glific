@@ -292,5 +292,8 @@ defmodule Glific.Flows.NodeTest do
 
     # execute node
     {:ok, _context, []} = Node.execute(node, context, [])
+    {:ok, %Postgrex.Result{rows: rows}} = Repo.query("select is_await_result from flow_contexts")
+    assert length(rows) == 1
+    assert rows |> hd() |> hd() == true
   end
 end

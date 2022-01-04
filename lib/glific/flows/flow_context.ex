@@ -719,23 +719,30 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Resume the flow for a given contact and a given flow id if still active
   """
-  @spec resume_contact_flow(Contact.t(), non_neg_integer | FlowContext.t() | nil, map()) ::
-          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
-  def resume_contact_flow(contact, flow_id, result) when is_integer(flow_id) do
+  @spec resume_contact_flow(
+    Contact.t(),
+    non_neg_integer | FlowContext.t() | nil,
+    map(),
+    Message.t() | nil
+  ) ::
+  {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
+  def resume_contact_flow(contact, flow_id, result, message \\ nil)
+
+  def resume_contact_flow(contact, flow_id, result, message) when is_integer(flow_id) do
     context = await_context(contact.id, flow_id)
-    resume_contact_flow(contact, context, result)
+    resume_contact_flow(contact, context, result, message)
   end
 
-  def resume_contact_flow(contact, nil, _result) do
+  def resume_contact_flow(contact, nil, _result, _message) do
     {:error, "#{contact.id} does not have any active flows awaiting results"}
   end
 
-  def resume_contact_flow(_contact, context, result) do
+  def resume_contact_flow(_contact, context, result, message) do
     # first update the flow context with the result
     context = update_results(context, result)
 
     # and then proceed as if we are waking the flow up
-    wakeup_one(context)
+    wakeup_one(context, message)
   end
 
   @doc """
