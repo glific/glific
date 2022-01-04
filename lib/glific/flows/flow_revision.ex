@@ -88,6 +88,7 @@ defmodule Glific.Flows.FlowRevision do
     |> Repo.insert()
   end
 
+  ## check only when we are publishing a flow
   defp validate_published_flow_revision(changeset, flow_revision, %{status: "published"} = _attrs) do
     Repo.fetch_by(FlowRevision, %{flow_id: flow_revision.flow_id, status: "published"})
     |> case do
