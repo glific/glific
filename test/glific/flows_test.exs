@@ -557,4 +557,32 @@ defmodule Glific.FLowsTest do
     assert message_count < Repo.aggregate(Message, :count)
     assert context_count < Repo.aggregate(FlowContext, :count)
   end
+
+  test "publishing multiple flow revision of a same flow throws and error",
+       %{organization_id: organization_id} = _attrs do
+    SeedsDev.seed_test_flows()
+
+    name = "Language Workflow"
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
+    flow = Repo.preload(flow, [:revisions])
+
+    # should set status of recent flow revision as "published"
+    assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+
+    {:ok, revision} =
+      FlowRevision
+      |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+    assert revision.status == "published"
+
+    [flow_revision | _tail] =
+      FlowRevision
+      |> where([fr], fr.flow_id == ^flow.id)
+      |> Repo.all()
+
+    assert {:error, %Ecto.Changeset{}} =
+             flow_revision
+             |> FlowRevision.changeset(%{status: "published", revision_number: 0})
+             |> Repo.update()
+  end
 end
