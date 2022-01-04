@@ -298,7 +298,24 @@ defmodule Glific.Flows.ActionTest do
     assert uuid_map[action.uuid] == {:action, action}
 
     # ensure that not sending either of the required fields, raises an error
-    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_time", "text" => "Test Text"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for wait_for_result" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_result", "delay" => "23"}
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "wait_for_result"
+    assert action.node_uuid == node.uuid
+    assert action.wait_time == 23
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_result", "text" => "Test Text"}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
