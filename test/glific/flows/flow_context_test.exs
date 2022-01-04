@@ -231,14 +231,13 @@ defmodule Glific.Flows.FlowContextTest do
 
     assert {:ok, _context, []} = FlowContext.wakeup_one(flow_context, message)
 
-    flow_context = Repo.get!(FlowContext, flow_context.id) |> IO.inspect()
+    flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil
     assert flow_context.is_background_flow == false
   end
 
-
   test "resume_contact_flow/3 will process all the context for the contact",
-    %{organization_id: organization_id} = _attrs do
+       %{organization_id: organization_id} = _attrs do
     flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
     [node | _tail] = flow.nodes
 
@@ -247,21 +246,21 @@ defmodule Glific.Flows.FlowContextTest do
 
     flow_context =
       flow_context_fixture(%{
-            node_uuid: node.uuid,
-            is_await_result: true,
-            wakeup_at: wakeup_at,
-            is_background_flow: true,
-            flow_uuid: flow.uuid,
-            flow_id: flow.id
-                           })
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: wakeup_at,
+        is_background_flow: true,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
 
     assert {:ok, _context, []} =
-      FlowContext.resume_contact_flow(
-        %{id: flow_context.contact_id},
-        flow.id,
-        %{unit_test: %{first: 1, second: "two"}},
-        message
-      )
+             FlowContext.resume_contact_flow(
+               %{id: flow_context.contact_id},
+               flow.id,
+               %{unit_test: %{first: 1, second: "two"}},
+               message
+             )
 
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil

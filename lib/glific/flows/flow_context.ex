@@ -720,12 +720,12 @@ defmodule Glific.Flows.FlowContext do
   Resume the flow for a given contact and a given flow id if still active
   """
   @spec resume_contact_flow(
-    Contact.t(),
-    non_neg_integer | FlowContext.t() | nil,
-    map(),
-    Message.t() | nil
-  ) ::
-  {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
+          Contact.t(),
+          non_neg_integer | FlowContext.t() | nil,
+          map(),
+          Message.t() | nil
+        ) ::
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
   def resume_contact_flow(contact, flow_id, result, message \\ nil)
 
   def resume_contact_flow(contact, flow_id, result, message) when is_integer(flow_id) do
