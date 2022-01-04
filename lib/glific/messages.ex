@@ -1247,15 +1247,19 @@ defmodule Glific.Messages do
     mime_types = [
       {:image, ["png", "jpg", "jpeg"]},
       {:video, ["mp4", "3gp", "3gpp"]},
-      {:audio, ["mp3", "wav", "acc"]},
+      {:audio, ["mp3", "wav", "acc", "ogg"]},
       {:document, ["pdf", "docx", "xlxs"]},
       {:sticker, ["webp"]}
     ]
 
     Enum.find(mime_types, fn {_type, extension_list} -> extension in extension_list end)
     |> case do
-      {type, _} -> {type, url}
-      _ -> {:text, nil}
+      {type, _} ->
+        {type, url}
+
+      _ ->
+        Logger.info("Could not find media type for extension: #{extension}")
+        {:text, nil}
     end
   end
 

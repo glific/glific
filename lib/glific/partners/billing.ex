@@ -783,17 +783,22 @@ defmodule Glific.Partners.Billing do
     start_date = end_date |> Timex.beginning_of_month() |> Timex.beginning_of_day()
     dates = format_dates(start_date, end_date)
 
+    Logger.info(
+      "Updating metered user in billing for org_id: #{organization_id} between #{dates.start_usage_date} and #{dates.end_usage_date}"
+    )
+
     case Stats.usage(organization_id, dates.start_usage_date, dates.end_usage_date) do
-      usage ->
+      %{messages: _messages, users: users} ->
         record_subscription_item(
           subscription_items[stripe_ids()["users"]],
-          usage.users,
+          users,
           dates.time,
           "users: #{organization_id}, #{Date.to_string(dates.start_usage_date)}"
         )
-    end
 
-    :ok
+      nil ->
+        :ok
+    end
   end
 
   # record the usage against a subscription item in stripe
