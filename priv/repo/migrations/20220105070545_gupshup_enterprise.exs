@@ -6,6 +6,7 @@ defmodule Glific.Repo.Migrations.GupshupEnterprise do
     Partners.Provider,
     Repo
   }
+
   def change do
     add_gupshup_enterprise()
   end
@@ -13,7 +14,7 @@ defmodule Glific.Repo.Migrations.GupshupEnterprise do
   defp add_gupshup_enterprise do
     query = from p in Provider, where: p.shortcode == "gupshup_enterprise"
 
-    # add dialogflow
+    # add gupshup enterprise
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
