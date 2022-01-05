@@ -25,6 +25,7 @@ defmodule Glific.Fixtures do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Partners.Provider,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -128,6 +129,8 @@ defmodule Glific.Fixtures do
         do: Contacts.get_contact!(attrs.contact_id),
         else: contact_fixture()
 
+    {:ok, bsp} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
     valid_attrs = %{
       name: "Fixture Organization",
       is_active: true,
@@ -136,9 +139,7 @@ defmodule Glific.Fixtures do
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       last_communication_at: DateTime.backward(0),
-      # lets just hope its there :)
-      bsp_id: 1,
-      # lets just hope its there :)
+      bsp_id: bsp.id,
       default_language_id: 1,
       contact_id: contact.id,
       active_language_ids: [1],
