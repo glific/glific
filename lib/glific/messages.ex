@@ -1244,11 +1244,13 @@ defmodule Glific.Messages do
       |> String.downcase()
       |> String.replace(".", "")
 
+    ## mime type
+    ## We need to figure out a better way to get the mime type. May be MIME::type(url)
     mime_types = [
       {:image, ["png", "jpg", "jpeg"]},
       {:video, ["mp4", "3gp", "3gpp"]},
       {:audio, ["mp3", "wav", "acc", "ogg"]},
-      {:document, ["pdf", "docx", "xlxs"]},
+      {:document, ["pdf", "docx", "xlsx"]},
       {:sticker, ["webp"]}
     ]
 
