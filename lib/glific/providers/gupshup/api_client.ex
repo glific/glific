@@ -1,13 +1,12 @@
 defmodule Glific.Providers.Gupshup.ApiClient do
   @moduledoc """
-  Http API client to intract with Gupshup
+  Https API client to interact with Gupshup
   """
   alias Glific.Partners
   alias Plug.Conn.Query
   import GlificWeb.Gettext
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
-  # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
