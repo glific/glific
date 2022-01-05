@@ -250,13 +250,13 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
         Repo.insert!(%Provider{
           name: "Navana Tech",
           shortcode: "navana_tech",
-          description: "Setup Navana tech apis for NLP.",
+          description: "Setup Navana tech APIs for NLP",
           group: nil,
           is_required: false,
           keys: %{
             url: %{
               type: :string,
-              label: "Nanava tech Url",
+              label: "Nanava Tech URL",
               default: "https://speechapi.southeastasia.cloudapp.azure.com",
               view_only: false
             }
@@ -264,7 +264,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
           secrets: %{
             token: %{
               type: :string,
-              label: "JWT token ",
+              label: "JWT token",
               default: nil,
               view_only: false
             }
