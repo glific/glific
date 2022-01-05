@@ -14,7 +14,6 @@ defmodule Glific.Repo.Migrations.GupshupEnterprise do
   defp add_gupshup_enterprise do
     query = from p in Provider, where: p.shortcode == "gupshup_enterprise"
 
-    # add gupshup enterprise
     if !Repo.exists?(query),
       do:
         Repo.insert!(%Provider{
@@ -50,15 +49,15 @@ defmodule Glific.Repo.Migrations.GupshupEnterprise do
             }
           },
           secrets: %{
-            api_key: %{
+            user_id: %{
               type: :string,
-              label: "API Key",
+              label: "User ID",
               default: nil,
               view_only: false
             },
-            app_name: %{
+            password: %{
               type: :string,
-              label: "App Name",
+              label: "Password",
               default: nil,
               view_only: false
             }
