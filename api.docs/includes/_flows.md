@@ -410,7 +410,7 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                               | Description                      |
 | -------------------------------------------------- | -------------------------------- |
-| <a href="#publishflowresult">PublishFlowResult</a> | An error object or response true |
+| <a href="#flowresult">FlowResult</a> | An error object or response true |
 
 ## Start flow for a contact
 
@@ -473,7 +473,72 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                           | Description                              |
 | ---------------------------------------------- | ---------------------------------------- |
-| <a href="#startflowresult">StartFlowResult</a> | An error object or success response true |
+| <a href="#flowresult">FlowResult</a> | An error object or success response true |
+
+## Resume flow for a contact
+
+```graphql
+mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: JSON!) {
+  resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {
+    success
+    errors {
+        key
+        message
+    }
+  }
+}
+
+{
+  "flowId": "1",
+  "contactId": "2"
+  "result": {"one": 1, "two": 2, "three": 3}
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": [
+        {
+          "key": "contact",
+          "message": "does not have any active flows awaiting results."
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| flowId    | <a href="#id">ID</a>! | required |             |
+| contactId | <a href="#id">ID</a>! | required |             |
+| result | <a href="#json">JSON</a>! | required |             |
+
+### Return Parameters
+
+| Type                                           | Description                              |
+| ---------------------------------------------- | ---------------------------------------- |
+| <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Start flow for a group contacts
 
@@ -536,7 +601,7 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                           | Description                              |
 | ---------------------------------------------- | ---------------------------------------- |
-| <a href="#startflowresult">StartFlowResult</a> | An error object or success response true |
+| <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Copy a Flow
 
@@ -636,7 +701,7 @@ mutation ($flow: JSON!) {
 
 | Type                                             | Description                      |
 | ------------------------------------------------ | -------------------------------- |
-| <a href="#importflowresult">ImportFlowResult</a> | The imported flow success status |
+| <a href="#flowresult">FlowResult</a> | The imported flow success status |
 
 ## Export a Flow
 
@@ -869,81 +934,6 @@ query flowRelease {
 <tr>
 <td colspan="2" valign="top"><strong>flow</strong></td>
 <td valign="top"><a href="#flow">Flow</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### PublishFlowResult
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>errors</strong></td>
-<td valign="top">[<a href="#inputerror">InputError</a>]</td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>success</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### ImportFlowResult
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>errors</strong></td>
-<td valign="top">[<a href="#inputerror">InputError</a>]</td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>success</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### StartFlowResult
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>errors</strong></td>
-<td valign="top">[<a href="#inputerror">InputError</a>]</td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>success</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 </tbody>

@@ -164,6 +164,9 @@ defmodule GlificWeb.Resolvers.Flows do
          {:ok, _flow_context, _messages} <-
            FlowContext.resume_contact_flow(contact, flow_id, result) do
       {:ok, %{success: true}}
+    else
+      {:error, message} ->
+        {:ok, %{success: true, errors: %{key: "Flow", message: message}}}
     end
   end
 
