@@ -9,6 +9,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Contacts.Contact,
     Flows,
     Flows.Flow,
+    Flows.FlowContext,
     Groups.Group,
     Repo,
     State,
@@ -139,6 +140,29 @@ defmodule GlificWeb.Resolvers.Flows do
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
          {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
          {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Resume a flow for a contact
+  """
+  @spec resume_contact_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer | String.t(), contact_id: integer, result: map()},
+          %{
+            context: map()
+          }
+        ) ::
+          {:ok, any} | {:error, any}
+  def resume_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id, result: result}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
+         {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         {:ok, _flow_context, _messages} <-
+           FlowContext.resume_contact_flow(contact, flow_id, result) do
       {:ok, %{success: true}}
     end
   end

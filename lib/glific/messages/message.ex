@@ -181,8 +181,18 @@ defmodule Glific.Messages.Message do
 
   @spec to_minimal_map(Message.t()) :: map()
   def to_minimal_map(message) do
-    Map.take(message, [:id | @required_fields ++ @optional_fields])
+    message
+    |> Map.take([:id | @required_fields ++ @optional_fields])
+    |> Map.put(:source_url, source_url(message))
   end
+
+  @spec source_url(Message.t()) :: String.t()
+  defp source_url(message),
+    do:
+      if(!message.media || match?(%Ecto.Association.NotLoaded{}, message.media),
+        do: nil,
+        else: message.media.source_url
+      )
 
   @doc false
   # if message type is not text then it should have media id
