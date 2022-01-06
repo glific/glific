@@ -396,11 +396,15 @@ defmodule Glific.Messages do
   end
 
   @spec parse_interactive_message_fields(map(), map()) :: map()
-  defp parse_interactive_message_fields(attrs, message_vars),
-    do:
-      Map.merge(attrs, %{
-        interactive_content: MessageVarParser.parse_map(attrs[:interactive_content], message_vars)
-      })
+  defp parse_interactive_message_fields(attrs, message_vars) do
+    content =
+      MessageVarParser.parse_map(attrs[:interactive_content], message_vars)
+      |> InteractiveTemplates.clean_template_title()
+
+    Map.merge(attrs, %{
+      interactive_content: content
+    })
+  end
 
   @doc false
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
