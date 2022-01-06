@@ -245,6 +245,8 @@ defmodule Glific.Flows.Node do
     count > @node_max_count
   end
 
+  @wait_for ["wait_for_time", "wait_for_result"]
+
   @doc """
   Execute a node, given a message stream.
   Consume the message stream as processing occurs
@@ -271,7 +273,7 @@ defmodule Glific.Flows.Node do
 
       # we special case wait for time, since it has a router, which basically
       # is an empty shell and just exits along the normal path
-      !Enum.empty?(node.actions) && hd(node.actions).type == "wait_for_time" ->
+      !Enum.empty?(node.actions) && hd(node.actions).type in @wait_for ->
         execute_node_actions(node, context, messages)
 
       # if both are non-empty, it means that we have either a

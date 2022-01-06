@@ -13,17 +13,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :errors, list_of(:input_error)
   end
 
-  object :publish_flow_result do
-    field :success, :boolean
-    field :errors, list_of(:input_error)
-  end
-
-  object :start_flow_result do
-    field :success, :boolean
-    field :errors, list_of(:input_error)
-  end
-
-  object :import_flow_result do
+  object :common_flow_result do
     field :success, :boolean
     field :errors, list_of(:input_error)
   end
@@ -144,17 +134,25 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.delete_flow/3)
     end
 
-    field :publish_flow, :publish_flow_result do
+    field :publish_flow, :common_flow_result do
       arg(:uuid, non_null(:uuid4))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.publish_flow/3)
     end
 
-    field :start_contact_flow, :start_flow_result do
+    field :start_contact_flow, :common_flow_result do
       arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_contact_flow/3)
+    end
+
+    field :resume_contact_flow, :common_flow_result do
+      arg(:flow_id, non_null(:id))
+      arg(:contact_id, non_null(:id))
+      arg(:results, :json)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.resume_contact_flow/3)
     end
 
     field :copy_flow, :flow_result do
@@ -164,14 +162,14 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.copy_flow/3)
     end
 
-    field :start_group_flow, :start_flow_result do
+    field :start_group_flow, :common_flow_result do
       arg(:flow_id, non_null(:id))
       arg(:group_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.start_group_flow/3)
     end
 
-    field :import_flow, :import_flow_result do
+    field :import_flow, :common_flow_result do
       arg(:flow, :json)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.import_flow/3)

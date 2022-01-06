@@ -7,6 +7,7 @@ defmodule Glific.Dialogflow.Sessions do
     Dialogflow,
     Dialogflow.SessionWorker,
     Flows.FlowContext,
+    GCS.GcsWorker,
     Messages,
     Messages.Message,
     Repo
@@ -39,14 +40,7 @@ defmodule Glific.Dialogflow.Sessions do
   def make_request(message, session_id, language \\ "en", opts) do
     Repo.put_process_state(message.organization_id)
 
-    body = %{
-      queryInput: %{
-        text: %{
-          text: message.body,
-          languageCode: language
-        }
-      }
-    }
+    body = request_body(message, language)
 
     Dialogflow.request(
       message.organization_id,
@@ -55,6 +49,44 @@ defmodule Glific.Dialogflow.Sessions do
       body
     )
     |> handle_response(opts[:context_id], opts[:result_name])
+  end
+
+  defp request_body(%{type: "text"} = message, language),
+    do: %{
+      queryInput: %{
+        text: %{
+          text: message.body,
+          languageCode: language
+        }
+      }
+    }
+
+  defp request_body(%{type: "audio"} = message, language),
+    do: %{
+      queryInput: %{
+        audioConfig: %{
+          audioEncoding: "AUDIO_ENCODING_OGG_OPUS",
+          sampleRateHertz: 16_000,
+          languageCode: language
+        }
+      },
+      inputAudio: format_audio_file(message)
+    }
+
+  defp format_audio_file(message) do
+    # first retrieve the audio file as a string
+    tmp_file_name = System.tmp_dir!() <> "glific_msg_#{message.id}_media_#{message.media_id}.ogg"
+
+    GcsWorker.download_file_to_temp(
+      message.source_url,
+      tmp_file_name,
+      message.organization_id
+    )
+
+    # encode the file in base64
+    tmp_file_name
+    |> File.read!()
+    |> Base.encode64()
   end
 
   @spec handle_response(tuple(), non_neg_integer, String.t()) :: :ok | {:error, :string}
