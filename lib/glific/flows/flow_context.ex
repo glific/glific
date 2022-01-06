@@ -734,7 +734,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   def resume_contact_flow(contact, nil, _result, _message) do
-    {:error, "#{contact.id} does not have any active flows awaiting results"}
+    {:error, "#{contact.id} does not have any active flows awaiting results."}
   end
 
   def resume_contact_flow(_contact, context, result, message) do
