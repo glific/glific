@@ -297,7 +297,7 @@ defmodule GlificWeb.Schema.FlowTest do
     # this flow is not waiting, so it should return error
     # we'll expand test case for a flow waiting soon
     assert get_in(query_data, [:data, "resumeContactFlow", "success"]) == true
-    assert ! is_nil(get_in(query_data, [:data, "resumeContactFlow", "errors"]))
+    assert !is_nil(get_in(query_data, [:data, "resumeContactFlow", "errors"]))
 
     # will add test for success with integration tests
     # need to start the flow, setup the context, toggle the DB field
