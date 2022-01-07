@@ -1,8 +1,13 @@
 defmodule Glific.Mails.NewPartnerOnboardedMail do
+  @moduledoc """
+  NewPartnerOnboardedMail will have the content for formatting for the new partner onboarded email.
+  """
+
   import Swoosh.Email
   alias Glific.Communications.Mailer
   alias Glific.Partners.Saas
 
+  @spec new_mail(map()) :: Swoosh.Email.t()
   def new_mail(org) do
     new()
     |> from(Mailer.sender())

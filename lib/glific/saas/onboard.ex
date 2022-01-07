@@ -5,6 +5,7 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
   alias Glific.{
+    Communications.Mailer,
     Contacts.Contact,
     Mails.NewPartnerOnboardedMail,
     Partners,
@@ -127,7 +128,7 @@ defmodule Glific.Saas.Onboard do
   defp notify_saas_team(%{is_valid: true} = results) do
     {:ok, _} =
       NewPartnerOnboardedMail.new_mail(results.organization)
-      |> Glific.Communications.Mailer.deliver()
+      |> Mailer.deliver()
 
     results
   end
