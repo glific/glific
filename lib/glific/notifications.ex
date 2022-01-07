@@ -7,7 +7,9 @@ defmodule Glific.Notifications do
   require Logger
 
   alias Glific.{
+    Mails.CriticalNotificationMail,
     Notifications.Notification,
+    Partners,
     Repo
   }
 
@@ -16,9 +18,16 @@ defmodule Glific.Notifications do
   """
   @spec create_notification(map()) :: {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   def create_notification(attrs \\ %{}) do
-    %Notification{}
-    |> Notification.changeset(attrs)
-    |> Repo.insert()
+    results =
+      %Notification{}
+      |> Notification.changeset(attrs)
+      |> Repo.insert()
+
+    if(Glific.string_clean(attrs.severity) == "critical") do
+      handle_critical_notification(results)
+    end
+
+    results
   end
 
   @doc """
@@ -82,5 +91,15 @@ defmodule Glific.Notifications do
     |> Repo.update_all(set: [is_read: true])
 
     true
+  end
+
+  defp handle_critical_notification(results) do
+    {:ok, notification} = results
+
+    {:ok, _} =
+      Partners.organization(notification.organization_id)
+      |> CriticalNotificationMail.new_mail(notification.message)
+      |> Glific.Communications.Mailer.deliver()
+      |> IO.inspect()
   end
 end
