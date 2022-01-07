@@ -186,11 +186,14 @@ defmodule Glific.Templates.InteractiveTemplates do
 
   def clean_template_title(%{"type" => type, "content" => content} = interactive_content)
       when type == "quick_reply" do
-    if !is_nil(content["header"]) do
-      clean_content = String.replace(content["header"], ~r/[\p{P}\p{S}\p{C}]+/u, "")
-      Map.put(interactive_content, "content", Map.merge(content, %{"header" => clean_content}))
-    else
+    if is_nil(content["header"]) do
       interactive_content
+    else
+      Map.put(
+        interactive_content,
+        "content",
+        Map.merge(content, %{"header" => clean_string(content["header"])})
+      )
     end
   end
 
