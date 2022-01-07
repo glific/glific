@@ -150,7 +150,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :resume_contact_flow, :common_flow_result do
       arg(:flow_id, non_null(:id))
       arg(:contact_id, non_null(:id))
-      arg(:results, :json)
+      arg(:result, :json)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.resume_contact_flow/3)
     end
