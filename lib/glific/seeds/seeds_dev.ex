@@ -1132,7 +1132,7 @@ if Code.ensure_loaded?(Faker) do
       interactive_content_eng = %{
         "type" => "quick_reply",
         "content" => %{
-          "header" => "Are you excited for Glific?",
+          "header" => "Are you excited for *Glific*?",
           "type" => "text",
           "text" => "Glific comes with all new features"
         },
