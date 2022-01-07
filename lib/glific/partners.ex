@@ -693,8 +693,8 @@ defmodule Glific.Partners do
       credential.provider.shortcode
       |> case do
         "gupshup" ->
-          fetch_opted_in_contacts(attrs)
           update_organization(organization, %{bsp_id: credential.provider.id})
+          fetch_opted_in_contacts(attrs)
 
         "gupshup_enterprise" ->
           update_organization(organization, %{bsp_id: credential.provider.id})
