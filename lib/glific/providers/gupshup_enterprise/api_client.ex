@@ -14,6 +14,13 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     "auth_scheme" => "plain",
     "msg_type" => "DATA_TEXT"
   }
+  @default_optin_params %{
+    "method" => "OPT_IN",
+    "format" => "json",
+    "v" => "1.1",
+    "auth_scheme" => "plain",
+    "channel" => "WHATSAPP"
+  }
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
   plug(Tesla.Middleware.Logger)
@@ -72,10 +79,12 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   """
   @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
-      gupshup_post(@gupshup_enterprise_url, payload, credentials)
+      gupshup_post(
+        @gupshup_enterprise_url,
+        Map.merge(@default_optin_params, payload),
+        credentials
+      )
     end
   end
 end

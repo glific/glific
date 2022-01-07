@@ -5,5 +5,6 @@ defmodule Glific.Providers.ContactBehaviour do
 
   alias Glific.Contacts.Contact
 
-  @callback optin_contact(attrs :: map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  @callback optin_contact(attrs :: map()) ::
+              {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
 end

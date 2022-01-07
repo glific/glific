@@ -8,12 +8,12 @@ defmodule Glific.Providers.GupshupContacts do
   import GlificWeb.Gettext
 
   alias Glific.{
+    BSPContacts,
     Contacts,
     Contacts.Contact,
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient,
-    Repo
+    Providers.Gupshup.ApiClient
   }
 
   @behaviour Glific.Providers.ContactBehaviour
@@ -24,7 +24,8 @@ defmodule Glific.Providers.GupshupContacts do
   """
   @impl Glific.Providers.ContactBehaviour
 
-  @spec optin_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  @spec optin_contact(map()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     ApiClient.optin_contact(organization_id, %{user: attrs.phone})
     |> case do
@@ -40,35 +41,10 @@ defmodule Glific.Providers.GupshupContacts do
             Map.get(attrs, :language_id, Partners.organization_language_id(organization_id)),
           bsp_status: :hsm
         }
-        |> create_or_update_contact()
+        |> BSPContacts.Contact.create_or_update_contact()
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
-    end
-  end
-
-  @doc """
-  This method creates a contact if it does not exist. Otherwise, updates it.
-  """
-  @spec create_or_update_contact(map()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def create_or_update_contact(contact_data) do
-    case Repo.get_by(Contact, %{phone: contact_data.phone}) do
-      nil ->
-        Contacts.create_contact(contact_data)
-
-      contact ->
-        # in the case of update we need to ensure that we preserve bsp_status
-        # and optin_time, method if the contact is already opted in
-        contact_data =
-          if contact.optin_status,
-            do:
-              contact_data
-              |> Map.put(:bsp_status, contact.bsp_status || contact_data.bsp_status)
-              |> Map.put(:optin_method, contact.optin_method || contact_data.optin_method)
-              |> Map.put(:optin_time, contact.optin_time || contact_data.optin_time),
-            else: contact_data
-
-        Contacts.update_contact(contact, contact_data)
     end
   end
 
