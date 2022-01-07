@@ -397,13 +397,10 @@ defmodule Glific.Messages do
 
   @spec parse_interactive_message_fields(map(), map()) :: map()
   defp parse_interactive_message_fields(attrs, message_vars) do
-    interactive_content =
-      MessageVarParser.parse_map(attrs[:interactive_content], message_vars)
-      |> InteractiveTemplates.clean_template_title()
-
-    Map.merge(attrs, %{
-      interactive_content: interactive_content
-    })
+    attrs[:interactive_content]
+    |> MessageVarParser.parse_map(message_vars)
+    |> InteractiveTemplates.clean_template_title()
+    |> then(&Map.merge(attrs, %{interactive_content: &1}))
   end
 
   @doc false

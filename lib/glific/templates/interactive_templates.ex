@@ -179,22 +179,14 @@ defmodule Glific.Templates.InteractiveTemplates do
   def clean_template_title(nil), do: nil
 
   def clean_template_title(%{"type" => type, "title" => title} = interactive_content)
-      when type == "list" do
-    clean_title = clean_string(title)
-    Map.merge(interactive_content, %{"title" => clean_title})
-  end
+      when type == "list",
+      do: put_in(interactive_content["title"], clean_string(title))
 
   def clean_template_title(%{"type" => type, "content" => content} = interactive_content)
       when type == "quick_reply" do
-    if is_nil(content["header"]) do
-      interactive_content
-    else
-      Map.put(
-        interactive_content,
-        "content",
-        Map.merge(content, %{"header" => clean_string(content["header"])})
-      )
-    end
+    if is_nil(content["header"]),
+      do: interactive_content,
+      else: put_in(interactive_content["content"]["header"], clean_string(content["header"]))
   end
 
   def clean_template_title(interactive_content), do: interactive_content
