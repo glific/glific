@@ -75,8 +75,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     get_credentials(org_id)
 
     with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_url
-      gupshup_post(url, payload, credentials)
+      gupshup_post(@gupshup_enterprise_url, payload, credentials)
     end
   end
 end

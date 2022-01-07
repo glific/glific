@@ -683,6 +683,7 @@ defmodule Glific.PartnersTest do
       assert credential.secrets == valid_update_attrs.secrets
     end
 
+    @tag :pending
     test "update_credential/2 for bsp credentials should insert opted in contacts",
          %{organization_id: organization_id} = _attrs do
       provider = provider_fixture(%{group: "bsp"})

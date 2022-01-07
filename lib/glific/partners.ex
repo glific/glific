@@ -689,8 +689,17 @@ defmodule Glific.Partners do
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
-    if valid_bsp?(credential) && credential.provider.shortcode == "gupshup",
-      do: fetch_opted_in_contacts(attrs)
+    if valid_bsp?(credential) do
+      credential.provider.shortcode
+      |> case do
+        "gupshup" ->
+          fetch_opted_in_contacts(attrs)
+          update_organization(organization, %{bsp_id: credential.provider.id})
+
+        "gupshup_enterprise" ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+      end
+    end
 
     credential.organization
     |> credential_update_callback(credential.provider.shortcode)
