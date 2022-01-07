@@ -28,6 +28,7 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
   load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
+  load_gql(:contact_resume, GlificWeb.Schema, "assets/gql/flows/contact_resume.gql")
   load_gql(:group_flow, GlificWeb.Schema, "assets/gql/flows/group_flow.gql")
   load_gql(:copy, GlificWeb.Schema, "assets/gql/flows/copy.gql")
   load_gql(:flow_get, GlificWeb.Schema, "assets/gql/flows/flow_get.gql")
@@ -276,6 +277,31 @@ defmodule GlificWeb.Schema.FlowTest do
     assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
 
     # will add test for success with integration tests
+  end
+
+  test "Resume flow for a contact", %{staff: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    data = %{one: "1", two: "2"} |> Jason.encode!()
+
+    result =
+      auth_query_gql_by(:contact_resume, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id, "result" => data}
+      )
+
+    assert {:ok, query_data} = result
+
+    # this flow is not waiting, so it should return error
+    # we'll expand test case for a flow waiting soon
+    assert get_in(query_data, [:data, "resumeContactFlow", "success"]) == true
+    assert !is_nil(get_in(query_data, [:data, "resumeContactFlow", "errors"]))
+
+    # will add test for success with integration tests
+    # need to start the flow, setup the context, toggle the DB field
+    # and then resume the flow
   end
 
   test "Start flow for contacts of a group", %{staff: user} do

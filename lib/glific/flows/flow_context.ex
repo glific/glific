@@ -35,6 +35,7 @@ defmodule Glific.Flows.FlowContext do
     :results,
     :wakeup_at,
     :is_background_flow,
+    :is_await_result,
     :completed_at,
     :delay,
     :uuids_seen,
@@ -72,6 +73,7 @@ defmodule Glific.Flows.FlowContext do
           recent_outbound: [map()] | [],
           wakeup_at: :utc_datetime | nil,
           is_background_flow: boolean,
+          is_await_result: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -92,10 +94,11 @@ defmodule Glific.Flows.FlowContext do
     field(:completed_at, :utc_datetime, default: nil)
 
     field(:is_background_flow, :boolean, default: false)
+    field(:is_await_result, :boolean, default: false)
 
     field(:delay, :integer, default: 0, virtual: true)
 
-    # keep a counter of all uuids we encounter (start with flows)
+    # keep a map of all uuids we encounter (start with flows)
     # this allows to to detect infinite loops and abort
     field(:uuids_seen, :map, default: %{}, virtual: true)
 
@@ -648,7 +651,7 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec wakeup_flows(non_neg_integer) :: :ok
+  @spec wakeup_flows(non_neg_integer) :: any
   @doc """
   Find all the contexts which need to be woken up and processed
   """
@@ -659,8 +662,6 @@ defmodule Glific.Flows.FlowContext do
     |> preload(:flow)
     |> Repo.all()
     |> Enum.each(&wakeup_one(&1))
-
-    :ok
   end
 
   @doc """
@@ -671,7 +672,16 @@ defmodule Glific.Flows.FlowContext do
   def wakeup_one(context, message \\ nil) do
     # update the context woken up time as soon as possible to avoid someone else
     # grabbing this context
-    {:ok, context} = update_flow_context(context, %{wakeup_at: nil, is_background_flow: false})
+    {:ok, context} =
+      update_flow_context(
+        context,
+        %{
+          wakeup_at: nil,
+          is_background_flow: false,
+          is_await_result: false
+        }
+      )
+
     # also mark all newer contexts as completed
     mark_flows_complete(context.contact_id, context.flow.is_background, context.inserted_at)
 
@@ -693,6 +703,46 @@ defmodule Glific.Flows.FlowContext do
       {:ok, context} -> {:ok, context, []}
       {:error, message} -> {:error, message}
     end
+  end
+
+  @spec await_context(non_neg_integer, non_neg_integer) :: FlowContext.t() | nil
+  defp await_context(contact_id, flow_id) do
+    FlowContext
+    |> where([fc], fc.contact_id == ^contact_id)
+    |> where([fc], fc.flow_id == ^flow_id)
+    |> where([fc], fc.is_await_result == true)
+    |> where([fc], is_nil(fc.completed_at))
+    |> preload(:flow)
+    |> Repo.one()
+  end
+
+  @doc """
+  Resume the flow for a given contact and a given flow id if still active
+  """
+  @spec resume_contact_flow(
+          Contact.t(),
+          non_neg_integer | FlowContext.t() | nil,
+          map(),
+          Message.t() | nil
+        ) ::
+          {:ok, FlowContext.t() | nil, [String.t()]} | {:error, String.t()} | nil
+  def resume_contact_flow(contact, flow_id, result, message \\ nil)
+
+  def resume_contact_flow(contact, flow_id, result, message) when is_integer(flow_id) do
+    context = await_context(contact.id, flow_id)
+    resume_contact_flow(contact, context, result, message)
+  end
+
+  def resume_contact_flow(contact, nil, _result, _message) do
+    {:error, "#{contact.id} does not have any active flows awaiting results."}
+  end
+
+  def resume_contact_flow(_contact, context, result, message) do
+    # first update the flow context with the result
+    context = update_results(context, result)
+
+    # and then proceed as if we are waking the flow up
+    wakeup_one(context, message)
   end
 
   @doc """
