@@ -94,8 +94,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_url <> "/msg"
       gupshup_post(url, payload, credentials.api_key)

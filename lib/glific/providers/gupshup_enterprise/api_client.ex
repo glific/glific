@@ -6,8 +6,14 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   alias Plug.Conn.Query
   import GlificWeb.Gettext
 
-  @gupshup_url "https://media.smsgupshup.com/GatewayAPI/rest"
-
+  @gupshup_enterprise_url "https://media.smsgupshup.com/GatewayAPI/rest"
+  @default_send_message_params %{
+    "method" => "SendMessage",
+    "format" => "json",
+    "v" => "1.1",
+    "auth_scheme" => "plain",
+    "msg_type" => "DATA_TEXT"
+  }
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
   plug(Tesla.Middleware.Logger)
@@ -20,14 +26,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   Making Tesla post call and adding user_id and password from credentials
   """
   @spec gupshup_post(String.t(), any(), map()) :: Tesla.Env.result()
-  def gupshup_post(url, payload, credentials) do
-    payload =
-      payload
-      |> Map.put("user_id", credentials.user_id)
-      |> Map.put("password", credentials.password)
-
-    post(url, payload)
-  end
+  def gupshup_post(url, payload, credentials), do: post(url, Map.merge(payload, credentials))
 
   @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   defp get_credentials(org_id) do
@@ -56,11 +55,15 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
-      url = @gupshup_url
-      gupshup_post(url, payload, credentials)
+      %{"text" => msg_body} = payload["message"] |> Jason.decode!()
+
+      msg_payload =
+        @default_send_message_params
+        |> Map.put("send_to", payload["destination"])
+        |> Map.put("msg", msg_body)
+
+      gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
     end
   end
 
