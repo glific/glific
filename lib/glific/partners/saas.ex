@@ -80,9 +80,10 @@ defmodule Glific.Partners.Saas do
     do: saas_field(name, :stripe_ids)
 
   @doc """
-  SaaS stripe ids for billing purpose, convert the string keys to atoms
+  SaaS primary email for the service and notifications
+
   """
-  @spec stripe_ids(String.t()) :: map()
+  @spec primary_email(String.t()) :: map()
   def primary_email(name \\ "Tides"),
     do: saas_field(name, :email)
 
