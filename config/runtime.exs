@@ -57,3 +57,9 @@ config :glific, Glific.Vault,
 config :stripity_stripe,
   api_key: env!("STRIPE_API_KEY", :string!),
   signing_secret: env!("STRIPE_SIGNING_SECRET", :string!)
+
+config :glific, Glific.Communications.Mailer,
+  adapter: Swoosh.Adapters.AmazonSES,
+  region: env!("SES_REGION", :string!),
+  access_key: env!("SES_KEY", :string!),
+  secret: env!("SES_SECRET", :string!)

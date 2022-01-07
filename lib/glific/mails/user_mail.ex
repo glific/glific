@@ -4,7 +4,7 @@ defmodule Glific.Mails.UserEmail do
   def welcome(user) do
     new()
     |> to({user.name, user.email})
-    |> from({"Dr B Banner", "hulk.smash@example.com"})
+    |> from({"Pankaj Agrawal", "contact@coloredcow.com"})
     |> subject("Hello, Avengers!")
     |> html_body("<h1>Hello #{user.name}</h1>")
     |> text_body("Hello #{user.name}\n")
