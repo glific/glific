@@ -78,6 +78,13 @@ defmodule Glific.Partners.Saas do
     do: saas_field(name, :stripe_ids)
 
   @doc """
+  SaaS stripe ids for billing purpose, convert the string keys to atoms
+  """
+  @spec stripe_ids(String.t()) :: map()
+  def primary_email(name \\ "Tides"),
+    do: saas_field(name, :email)
+
+  @doc """
   SaaS tax rates for adding tax to subscription and invoices, convert the string keys to atoms
   """
   @spec tax_rates(String.t()) :: list()

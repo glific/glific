@@ -110,6 +110,7 @@ defmodule GlificWeb.Router do
 
   scope "/webhook", GlificWeb do
     post "/stripe", StripeController, :stripe_webhook
+    # we need to remove this. This was a experimental code
     post "/stir/survey", Flows.WebhookController, :stir_survey
     get "/exotel/optin", ExotelController, :optin
   end

@@ -100,6 +100,5 @@ defmodule Glific.Notifications do
       Partners.organization(notification.organization_id)
       |> CriticalNotificationMail.new_mail(notification.message)
       |> Glific.Communications.Mailer.deliver()
-      |> IO.inspect()
   end
 end

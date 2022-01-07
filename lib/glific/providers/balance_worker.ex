@@ -20,11 +20,12 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     Partners.get_bsp_balance(organization_id)
     |> case do
       {:ok, data} ->
+        bsp_balance = data["balance"]
         # We should move this to an embedded schema
         # and then fix the function in publish_data. Basically have a periodic
         # status message packet sent to frontend with this and other details
         Communications.publish_data(
-          %{"balance" => data["balance"]},
+          %{"balance" => bsp_balance},
           :bsp_balance,
           organization_id
         )

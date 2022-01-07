@@ -6,6 +6,7 @@ defmodule Glific.Saas.Onboard do
   """
   alias Glific.{
     Contacts.Contact,
+    Mails.NewPartnererOnboardedMail,
     Partners,
     Partners.Billing,
     Partners.Organization,
@@ -22,6 +23,7 @@ defmodule Glific.Saas.Onboard do
     |> Queries.validate(params)
     |> Queries.setup(params)
     |> format_results()
+    |> notify_saas_team()
   end
 
   @spec add_map(map(), atom(), any()) :: map()
@@ -120,4 +122,15 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp format_results(results), do: results
+
+  @spec notify_saas_team(map()) :: map()
+  defp notify_saas_team(%{is_valid: true} = results) do
+    {:ok, _} =
+      NewPartnererOnboardedMail.new_mail(results.organization)
+      |> Glific.Communications.Mailer.deliver()
+
+    results
+  end
+
+  defp notify_saas_team(results), do: results
 end
