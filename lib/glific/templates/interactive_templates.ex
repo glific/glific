@@ -171,18 +171,27 @@ defmodule Glific.Templates.InteractiveTemplates do
   def get_clean_interactive_content(interactive_content, _send_interactive_title, _type),
     do: interactive_content
 
+  defp clean_string(str), do: String.replace(str, ~r/[\p{P}\p{S}\p{C}]+/u, "")
   def clean_template_title(nil), do: nil
 
-  def clean_template_title(%{"type" => type} = interactive_content) when type == "list" do
-    clean_title = String.replace(interactive_content["title"], ~r/[\p{P}\p{S}\p{C}]+/u, "")
+  def clean_template_title(%{"type" => type, "title" => title} = interactive_content)
+      when type == "list" do
+    clean_title = clean_string(title)
     Map.merge(interactive_content, %{"title" => clean_title})
   end
 
   def clean_template_title(%{"type" => type} = interactive_content) when type == "quick_reply" do
     content = interactive_content["content"]
-    clean_content = String.replace(content["header"], ~r/[\p{P}\p{S}\p{C}]+/u, "")
-    Map.put(interactive_content, "content", Map.merge(content, %{"header" => clean_content}))
+
+    if !is_nil(content["header"]) do
+      clean_content = String.replace(content["header"], ~r/[\p{P}\p{S}\p{C}]+/u, "")
+      Map.put(interactive_content, "content", Map.merge(content, %{"header" => clean_content}))
+    else
+      interactive_content
+    end
   end
+
+  def clean_template_title(interactive_content), do: interactive_content
 
   @doc """
   Create a message media from interactive content and return id
