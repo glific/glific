@@ -5,6 +5,7 @@ defmodule Glific.ContactsTest do
   import Mock
 
   alias Glific.{
+    BSPContacts,
     Contacts,
     Contacts.Contact,
     Contacts.Import,
@@ -12,7 +13,6 @@ defmodule Glific.ContactsTest do
     Partners,
     Partners.Organization,
     Partners.Saas,
-    Providers.GupshupContacts,
     Seeds.SeedsDev,
     Settings,
     Settings.Language
@@ -219,7 +219,7 @@ defmodule Glific.ContactsTest do
 
       assert contacts_count == 0
 
-      assert {:ok, %Contact{}} = GupshupContacts.create_or_update_contact(attrs)
+      assert {:ok, %Contact{}} = BSPContacts.Contact.create_or_update_contact(attrs)
     end
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
@@ -500,7 +500,7 @@ defmodule Glific.ContactsTest do
       contact = contact_fixture(attrs)
 
       assert {:ok, %Contact{} = contact} =
-               GupshupContacts.create_or_update_contact(
+               BSPContacts.Contact.create_or_update_contact(
                  Map.merge(@update_attrs, %{phone: contact.phone})
                )
 
