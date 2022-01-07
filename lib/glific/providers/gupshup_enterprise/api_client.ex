@@ -48,7 +48,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
            false <- is_nil(bsp_credentials.secrets["password"]) do
         user_id = bsp_credentials.secrets["user_id"]
         password = bsp_credentials.secrets["password"]
-        {:ok, %{user_id: user_id, password: password}}
+        {:ok, %{"userid" => user_id, "password" => password}}
       else
         _ ->
           {:error,

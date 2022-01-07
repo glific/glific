@@ -22,7 +22,7 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    ApiClient.optin_contact(organization_id, %{phone_number: attrs.phone})
+    ApiClient.optin_contact(organization_id, %{"phone_number" => attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         %{
