@@ -171,7 +171,11 @@ defmodule Glific.Templates.InteractiveTemplates do
   def get_clean_interactive_content(interactive_content, _send_interactive_title, _type),
     do: interactive_content
 
+  @spec clean_string(String.t()) :: String.t()
   defp clean_string(str), do: String.replace(str, ~r/[\p{P}\p{S}\p{C}]+/u, "")
+
+  #  Cleaning interactive template title as per WhatsApp policy
+  @spec clean_template_title(map() | nil) :: map() | nil
   def clean_template_title(nil), do: nil
 
   def clean_template_title(%{"type" => type, "title" => title} = interactive_content)
@@ -180,9 +184,8 @@ defmodule Glific.Templates.InteractiveTemplates do
     Map.merge(interactive_content, %{"title" => clean_title})
   end
 
-  def clean_template_title(%{"type" => type} = interactive_content) when type == "quick_reply" do
-    content = interactive_content["content"]
-
+  def clean_template_title(%{"type" => type, "content" => content} = interactive_content)
+      when type == "quick_reply" do
     if !is_nil(content["header"]) do
       clean_content = String.replace(content["header"], ~r/[\p{P}\p{S}\p{C}]+/u, "")
       Map.put(interactive_content, "content", Map.merge(content, %{"header" => clean_content}))
