@@ -6,7 +6,7 @@ defmodule Glific.Saas.Onboard do
   """
   alias Glific.{
     Contacts.Contact,
-    Mails.NewPartnererOnboardedMail,
+    Mails.NewPartnerOnboardedMail,
     Partners,
     Partners.Billing,
     Partners.Organization,
@@ -126,7 +126,7 @@ defmodule Glific.Saas.Onboard do
   @spec notify_saas_team(map()) :: map()
   defp notify_saas_team(%{is_valid: true} = results) do
     {:ok, _} =
-      NewPartnererOnboardedMail.new_mail(results.organization)
+      NewPartnerOnboardedMail.new_mail(results.organization)
       |> Glific.Communications.Mailer.deliver()
 
     results
