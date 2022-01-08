@@ -19,16 +19,20 @@ defmodule Glific.Notifications do
   """
   @spec create_notification(map()) :: {:ok, Notification.t()} | {:error, Ecto.Changeset.t()}
   def create_notification(attrs \\ %{}) do
-    results =
-      %Notification{}
-      |> Notification.changeset(attrs)
-      |> Repo.insert()
+    %Notification{}
+    |> Notification.changeset(attrs)
+    |> Repo.insert()
+    |> case do
+      {:ok, notification} ->
+        if Glific.string_clean(attrs.severity) == "critical" do
+          handle_critical_notification(notification)
+        end
 
-    if Glific.string_clean(attrs.severity) == "critical" do
-      handle_critical_notification(results)
+        {:ok, notification}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
-
-    results
   end
 
   @doc """
@@ -94,9 +98,7 @@ defmodule Glific.Notifications do
     true
   end
 
-  defp handle_critical_notification(results) do
-    {:ok, notification} = results
-
+  defp handle_critical_notification(notification) do
     {:ok, _} =
       Partners.organization(notification.organization_id)
       |> CriticalNotificationMail.new_mail(notification.message)
