@@ -171,6 +171,26 @@ defmodule Glific.Templates.InteractiveTemplates do
   def get_clean_interactive_content(interactive_content, _send_interactive_title, _type),
     do: interactive_content
 
+  @spec clean_string(String.t()) :: String.t()
+  defp clean_string(str), do: String.replace(str, ~r/[\p{P}\p{S}\p{C}]+/u, "")
+
+  #  Cleaning interactive template title as per WhatsApp policy
+  @spec clean_template_title(map() | nil) :: map() | nil
+  def clean_template_title(nil), do: nil
+
+  def clean_template_title(%{"type" => type, "title" => title} = interactive_content)
+      when type == "list",
+      do: put_in(interactive_content["title"], clean_string(title))
+
+  def clean_template_title(%{"type" => type, "content" => content} = interactive_content)
+      when type == "quick_reply" do
+    if is_nil(content["header"]),
+      do: interactive_content,
+      else: put_in(interactive_content["content"]["header"], clean_string(content["header"]))
+  end
+
+  def clean_template_title(interactive_content), do: interactive_content
+
   @doc """
   Create a message media from interactive content and return id
   """

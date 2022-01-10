@@ -1132,7 +1132,7 @@ if Code.ensure_loaded?(Faker) do
       interactive_content_eng = %{
         "type" => "quick_reply",
         "content" => %{
-          "header" => "Are you excited for Glific?",
+          "header" => "Are you excited for *Glific*?",
           "type" => "text",
           "text" => "Glific comes with all new features"
         },
@@ -1256,12 +1256,12 @@ if Code.ensure_loaded?(Faker) do
             "options" => [
               %{
                 "type" => "text",
-                "title" => "Custom flows for automating conversation",
+                "title" => "Custom Flows",
                 "description" => "Flow Editor for creating flows"
               },
               %{
                 "type" => "text",
-                "title" => "Custom reports for  analytics",
+                "title" => "Analytic Reports",
                 "description" => "DataStudio for report generation"
               },
               %{
@@ -1290,7 +1290,7 @@ if Code.ensure_loaded?(Faker) do
                 "type" => "text",
                 "title" => "SOL",
                 "description" =>
-                  "Slam Out Loud is an Indian for mission, non-profit that envisions that every individual will have a voice that empowers them to change lives."
+                  "Slam Out Loud is a non-profit with a vision to change lives."
               }
             ]
           }

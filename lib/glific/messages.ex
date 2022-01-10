@@ -396,11 +396,12 @@ defmodule Glific.Messages do
   end
 
   @spec parse_interactive_message_fields(map(), map()) :: map()
-  defp parse_interactive_message_fields(attrs, message_vars),
-    do:
-      Map.merge(attrs, %{
-        interactive_content: MessageVarParser.parse_map(attrs[:interactive_content], message_vars)
-      })
+  defp parse_interactive_message_fields(attrs, message_vars) do
+    attrs[:interactive_content]
+    |> MessageVarParser.parse_map(message_vars)
+    |> InteractiveTemplates.clean_template_title()
+    |> then(&Map.merge(attrs, %{interactive_content: &1}))
+  end
 
   @doc false
   @spec create_and_send_otp_verification_message(Contact.t(), String.t()) ::
@@ -668,9 +669,6 @@ defmodule Glific.Messages do
   @spec create_and_send_message_to_group(map(), Group.t(), atom()) :: {:ok, list()}
   def create_and_send_message_to_group(message_params, group, type) do
     contact_ids = Groups.contact_ids(group.id)
-
-    if length(contact_ids) > 32 do
-    end
 
     {:ok, group_message} =
       if type == :session,
