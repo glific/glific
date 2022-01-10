@@ -61,5 +61,4 @@ config :glific,
     consulting_hours: "random_price_1IfNe9EMShk"
   ]
 
-config :glific, Glific.Communications.Mailer,
-  adapter: Swoosh.Adapters.Test,
+config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Test
