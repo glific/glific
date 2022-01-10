@@ -4,7 +4,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   """
 
   @channel "whatsapp"
-  @behaviour Glific.Providers.MessageBehaviour
 
   alias Glific.{
     Communications,
@@ -15,7 +14,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   require Logger
 
   @doc false
-  @impl Glific.Providers.MessageBehaviour
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
@@ -40,12 +38,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec check_size(map()) :: map()
   defp check_size(%{text: text} = attrs) do
     if String.length(text) < @max_size,
-      do: attrs,
-      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
-  end
-
-  defp check_size(%{caption: caption} = attrs) do
-    if String.length(caption) < @max_size,
       do: attrs,
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
