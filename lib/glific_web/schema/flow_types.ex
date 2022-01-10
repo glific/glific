@@ -112,6 +112,13 @@ defmodule GlificWeb.Schema.FlowTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow_release/3)
     end
+
+    @desc "Get broadcast flow stats"
+    field :broadcast_stats, :json do
+      arg(:flow_boradcast_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.broadcast_stats/3)
+    end
   end
 
   object :flow_mutations do
