@@ -5,6 +5,8 @@ defmodule Glific.Application do
 
   use Application
 
+  alias Glific.Communications.Mailer
+
   def start(_type, _args) do
     children = [
       # Start the vault server before ecto
@@ -138,7 +140,7 @@ defmodule Glific.Application do
     )
   end
 
-  defp attach_mailer_telemetry_event() do
+  defp attach_mailer_telemetry_event do
     :telemetry.attach_many(
       "mailer-event-handler",
       [
@@ -147,7 +149,7 @@ defmodule Glific.Application do
         [:swoosh, :deliver_many, :stop],
         [:swoosh, :deliver_many, :exception]
       ],
-      &Glific.Communications.Mailer.handle_event/4,
+      &Mailer.handle_event/4,
       nil
     )
   end
