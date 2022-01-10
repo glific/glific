@@ -51,33 +51,10 @@ defmodule Glific.Application do
     ]
 
     # Add this :telemetry.attach/4 for oban success/failure call:
-    :telemetry.attach(
-      "oban-success",
-      [:oban, :job, :stop],
-      &Glific.Appsignal.handle_event/4,
-      []
-    )
+    attach_oban_telemetry_event()
 
-    :telemetry.attach(
-      "oban-failure",
-      [:oban, :job, :exception],
-      &Glific.Appsignal.handle_event/4,
-      []
-    )
-
-    :telemetry.attach(
-      "oban-plugin-success",
-      [:oban, :plugin, :stop],
-      &Glific.Appsignal.handle_event/4,
-      []
-    )
-
-    :telemetry.attach(
-      "oban-plugin-failure",
-      [:oban, :plugin, :exception],
-      &Glific.Appsignal.handle_event/4,
-      []
-    )
+    # Add this :telemetry.attach/4 for swoosh success/failure call:
+    attach_mailer_telemetry_event()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
@@ -129,5 +106,49 @@ defmodule Glific.Application do
 
   defp in_console? do
     Code.ensure_loaded?(IEx) && IEx.started?()
+  end
+
+  defp attach_oban_telemetry_event do
+    :telemetry.attach(
+      "oban-success",
+      [:oban, :job, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
+      "oban-failure",
+      [:oban, :job, :exception],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
+      "oban-plugin-success",
+      [:oban, :plugin, :stop],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+
+    :telemetry.attach(
+      "oban-plugin-failure",
+      [:oban, :plugin, :exception],
+      &Glific.Appsignal.handle_event/4,
+      []
+    )
+  end
+
+  defp attach_mailer_telemetry_event() do
+    :telemetry.attach_many(
+      "mailer-event-handler",
+      [
+        [:swoosh, :deliver, :stop],
+        [:swoosh, :deliver, :exception],
+        [:swoosh, :deliver_many, :stop],
+        [:swoosh, :deliver_many, :exception]
+      ],
+      &Glific.Communications.Mailer.handle_event/4,
+      nil
+    )
   end
 end

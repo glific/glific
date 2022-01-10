@@ -128,7 +128,7 @@ defmodule Glific.Saas.Onboard do
   defp notify_saas_team(%{is_valid: true} = results) do
     {:ok, _} =
       NewPartnerOnboardedMail.new_mail(results.organization)
-      |> Mailer.deliver()
+      |> Mailer.send()
 
     results
   end

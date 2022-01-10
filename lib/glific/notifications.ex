@@ -102,6 +102,6 @@ defmodule Glific.Notifications do
     {:ok, _} =
       Partners.organization(notification.organization_id)
       |> CriticalNotificationMail.new_mail(notification.message)
-      |> Mailer.deliver()
+      |> Mailer.send()
   end
 end
