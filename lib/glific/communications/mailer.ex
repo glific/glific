@@ -8,20 +8,18 @@ defmodule Glific.Communications.Mailer do
   @doc """
    Sends an email to the given recipient.
   """
-  @spec send(Swoosh.Email.t(), Keyword.t()) :: {:ok, term} | {:error, term}
-  def send(mail, _config \\ []) do
-    IO.inspect("mail")
-    IO.inspect(mail)
+  @spec send(Swoosh.Email.t(), map()) :: {:ok, term} | {:error, term}
+  def send(mail, %{category: _category, organization_id: _organization_id} = attrs) do
     ## We will do all the validation here.
     deliver(mail)
+    |> capture_log(mail, attrs)
   end
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:swoosh, _action, event], measurement, meta, config)
-      when event in [:stop, :exception] do
-    # IO.inspect(meta)
-  end
+  def handle_event([:swoosh, _action, event], _measurement, _meta, _config)
+      when event in [:stop, :exception],
+      do: nil
 
   def handle_event(_, _, _, _), do: nil
 
@@ -31,5 +29,38 @@ defmodule Glific.Communications.Mailer do
   @spec sender() :: tuple()
   def sender do
     {"Glific Team", "glific-tides-support@coloredcow.com"}
+  end
+
+  defp capture_log(
+         {:ok, results},
+         mail,
+         %{category: category, organization_id: organization_id} = _attrs
+       ) do
+    %{
+      category: category,
+      organization_id: organization_id,
+      status: "sent",
+      content: mail
+    }
+    |> Glific.Mails.MailLog.create_mail_log()
+
+    {:ok, results}
+  end
+
+  defp capture_log(
+         {:error, error},
+         mail,
+         %{category: category, organization_id: organization_id} = _attrs
+       ) do
+    %{
+      category: category,
+      organization_id: organization_id,
+      status: "error",
+      content: mail,
+      error: "error while sending the mail. #{inspect(error)}"
+    }
+    |> Glific.Mails.MailLog.create_mail_log()
+
+    {:error, error}
   end
 end
