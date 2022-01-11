@@ -23,15 +23,25 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @doc false
-  @spec format_sender(Message.t()) :: map()
-  defp format_sender(message) do
-    organization = Partners.organization(message.organization_id)
+  @spec send_image(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_image(message, attrs \\ %{}) do
+    message_media = message.media
 
     %{
-      "source" => message.sender.phone,
-      "src.name" => organization.services["bsp"].secrets["app_name"]
+      type: :image,
+      originalUrl: message_media.source_url,
+      previewUrl: message_media.url,
+      caption: caption(message_media.caption)
     }
+    |> check_size()
+    |> send_message(message, attrs)
   end
+
+  @doc false
+  @spec caption(nil | String.t()) :: String.t()
+  defp caption(nil), do: ""
+  defp caption(caption), do: caption
 
   @max_size 4096
   @doc false
@@ -42,15 +52,22 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
 
+  defp check_size(%{caption: caption} = attrs) do
+    if String.length(caption) < @max_size,
+      do: attrs,
+      else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
+  end
+
   @doc false
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
+
+
     request_body =
       %{"channel" => @channel}
-      |> Map.merge(format_sender(message))
       |> Map.put(:destination, message.receiver.phone)
       |> Map.put("message", Jason.encode!(payload))
 

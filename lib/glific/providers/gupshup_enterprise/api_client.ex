@@ -7,13 +7,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   import GlificWeb.Gettext
 
   @gupshup_enterprise_url "https://media.smsgupshup.com/GatewayAPI/rest"
-  @default_send_message_params %{
-    "method" => "SendMessage",
-    "format" => "json",
-    "v" => "1.1",
-    "auth_scheme" => "plain",
-    "msg_type" => "DATA_TEXT"
-  }
   @default_optin_params %{
     "method" => "OPT_IN",
     "format" => "json",
@@ -21,6 +14,21 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     "auth_scheme" => "plain",
     "channel" => "WHATSAPP"
   }
+  @default_send_message_params %{
+    "method" => "SendMessage",
+    "format" => "json",
+    "v" => "1.1",
+    "auth_scheme" => "plain",
+    "msg_type" => "DATA_TEXT"
+  }
+  @default_send_media_message_params %{
+    "method" => "SendMediaMessage",
+    "format" => "json",
+    "v" => "1.1",
+    "auth_scheme" => "plain",
+    "isHSM" => "false"
+  }
+
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
   plug(Tesla.Middleware.Logger)
@@ -63,15 +71,33 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      %{"text" => msg_body} = payload["message"] |> Jason.decode!()
-
-      msg_payload =
-        @default_send_message_params
-        |> Map.put("send_to", payload["destination"])
-        |> Map.put("msg", msg_body)
-
-      gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+      %{"type" => type} = payload["message"] |> Jason.decode!()
+      do_send_message(type, payload, credentials)
     end
+  end
+
+  defp do_send_message("text", payload, credentials) do
+    %{"text" => msg_body} = payload["message"] |> Jason.decode!()
+
+    msg_payload =
+      @default_send_message_params
+      |> Map.put("send_to", payload["destination"])
+      |> Map.put("msg", msg_body)
+
+    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  end
+
+  defp do_send_message("image", payload, credentials) do
+    image = payload["message"] |> Jason.decode!()
+
+    msg_payload =
+      @default_send_media_message_params
+      |> Map.put("msg_type", "IMAGE")
+      |> Map.put("send_to", payload["destination"])
+      |> Map.put("media_url", image["originalUrl"])
+      |> Map.put("caption", image["caption"])
+
+    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
 
   @doc """
