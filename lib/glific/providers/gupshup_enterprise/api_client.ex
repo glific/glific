@@ -87,6 +87,19 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
 
+  defp do_send_message("file", payload, credentials) do
+    doc = payload["message"] |> Jason.decode!()
+
+    msg_payload =
+      @default_send_media_message_params
+      |> Map.put("msg_type", "DOCUMENT")
+      |> Map.put("send_to", payload["destination"])
+      |> Map.put("media_url", doc["url"])
+      |> Map.put("caption", doc["filename"])
+
+    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials) |> IO.inspect()
+  end
+
   defp do_send_message("image", payload, credentials) do
     image = payload["message"] |> Jason.decode!()
 

@@ -39,6 +39,20 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @doc false
+  @spec send_document(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_document(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :file,
+      url: message_media.source_url,
+      filename: message_media.caption
+    }
+    |> send_message(message, attrs)
+  end
+
+  @doc false
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""
   defp caption(caption), do: caption
@@ -64,8 +78,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-
-
     request_body =
       %{"channel" => @channel}
       |> Map.put(:destination, message.receiver.phone)
