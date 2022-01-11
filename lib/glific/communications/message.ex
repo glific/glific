@@ -282,22 +282,36 @@ defmodule Glific.Communications.Message do
 
   defp publish_data(message, data_type) do
     message
-    |> Repo.preload([:context_message])
+    |> Repo.preload([:context_message, :contact])
     |> Communications.publish_data(
-      update_data_type(data_type, message),
-    message.organization_id
+      data_type,
+      message.organization_id
     )
+    |> check_for_simulator(data_type)
   end
 
-  @spec update_data_type(atom(), Message.t()) :: atom()
-  defp update_data_type(type, message) when type in [:sent_message, :received_message] do
-    # inspect the message
-    # check the contact object
-    # if contact.phone is simularor (use Contacts.is_simulator())
-    # return :sent_message_simulator, OR :rec...
+  # check if the contact is simulator and send another subscription only for it
+  @spec check_for_simulator(Message.t(), atom()) :: Message.t()
+  defp check_for_simulator(message, type) when type in [:sent_message, :received_message] do
+    if Contacts.is_simulator_contact?(message.contact.phone) do
+      message_type =
+        if type == :sent_message do
+          :sent_simulator_message
+        else
+          :received_simulator_message
+        end
+
+      Communications.publish_data(
+        message,
+        message_type,
+        message.organization_id
+      )
+    end
+
+    message
   end
 
-  defp update_data_type(type, _message), do: type
+  defp check_for_simulator(message, _type), do: message
 
   # lets have a default timeout of 3 seconds for each call
   @timeout 4000
