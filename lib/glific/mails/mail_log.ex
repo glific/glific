@@ -100,4 +100,20 @@ defmodule Glific.Mails.MailLog do
   @spec count_mail_logs(map()) :: integer
   def count_mail_logs(args),
     do: Repo.count_filter(args, MailLog, &filter_with/2)
+
+  @doc """
+  Check if we have sent the mail in given time
+  """
+
+  @spec mail_sent_in_past_time?(String.t(), DateTime.t(), non_neg_integer()) :: boolean
+  def mail_sent_in_past_time?(category, time, organization_id) do
+    count =
+      MailLog
+      |> where([ml], ml.category == ^category)
+      |> where([ml], ml.organization_id == ^organization_id)
+      |> where([ml], ml.inserted_at >= ^time)
+      |> Repo.aggregate(:count)
+
+    count > 0
+  end
 end
