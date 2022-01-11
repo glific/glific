@@ -52,9 +52,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     3 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In case the primary caregiver has to be quarantined due to Covid-19, create a list of things that will come in handy for the next person in line of caregiving to ensure the individual being cared for feels safe and will continue to be in good hands at all times. List can include the following details:- 1) Medication regularly used by the individual with IDD with doctor's prescription💊📝 2)Names and numbers of therapy centers, doctors or counselor🩺☎️ 3)Legal documents such as the Disability certificate, Guardianship form,
-        Identity card 📄📃 4)List out a set of toys, tools or activities that entertain or help calm the
-        individual 🧸🏎️ 5) Specific food preferences, allergies or intolerances, if any.🥕🥗 6) Daily schedule  **Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters) https://www.nayi-disha.org/article/covid-19-awareness-safeguarding-child-developmental-disability"
+        "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In case the primary caregiver has to be quarantined due to Covid-19, create a list of things that will come in handy for the next person in line of caregiving to ensure the individual being cared for feels safe and will continue to be in good hands at all times. List can include the following details:- 1) Medication regularly used by the individual with IDD with doctor's prescription💊📝 2)Names and numbers of therapy centers, doctors or counselor🩺☎️ 3)Legal documents such as the Disability certificate, Guardianship form, Identity card 📄📃 4)List out a set of toys, tools or activities that entertain or help calm the individual 🧸🏎️ 5) Specific food preferences, allergies or intolerances, if any.🥕🥗 6) Daily schedule  **Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters) https://www.nayi-disha.org/article/covid-19-awareness-safeguarding-child-developmental-disability"
       ],
       translations: %{
         "hi" => %{
@@ -66,9 +64,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In case the primary caregiver has to be quarantined due to Covid-19, create a list of things that will come in handy for the next person in line of caregiving to ensure the individual being cared for feels safe and will continue to be in good hands at all times. List can include the following details:- 1) Medication regularly used by the individual with IDD with doctor's prescription💊📝 2)Names and numbers of therapy centers, doctors or counselor🩺☎️ 3)Legal documents such as the Disability certificate, Guardianship form,
-            Identity card 📄📃 4)List out a set of toys, tools or activities that entertain or help calm the
-            individual 🧸🏎️ 5) Specific food preferences, allergies or intolerances, if any.🥕🥗 6) Daily schedule  **Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters) https://www.nayi-disha.org/article/covid-19-awareness-safeguarding-child-developmental-disability"
+            "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In case the primary caregiver has to be quarantined due to Covid-19, create a list of things that will come in handy for the next person in line of caregiving to ensure the individual being cared for feels safe and will continue to be in good hands at all times. List can include the following details:- 1) Medication regularly used by the individual with IDD with doctor's prescription💊📝 2)Names and numbers of therapy centers, doctors or counselor🩺☎️ 3)Legal documents such as the Disability certificate, Guardianship form, Identity card 📄📃 4)List out a set of toys, tools or activities that entertain or help calm the individual 🧸🏎️ 5) Specific food preferences, allergies or intolerances, if any.🥕🥗 6) Daily schedule  **Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters) https://www.nayi-disha.org/article/covid-19-awareness-safeguarding-child-developmental-disability"
           ]
         }
       }
@@ -241,9 +237,9 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     12 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: ["
-        *Concessions under UDID* 1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges 2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000 3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability 4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class 5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000) 6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)
-      "],
+      variables: [
+        "*Concessions under UDID* 1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges 2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000 3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability 4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class 5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000) 6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
@@ -253,9 +249,9 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: ["
-          *Concessions under UDID* 1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges 2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000 3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability 4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class 5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000) 6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)
-          "]
+          variables: [
+            "*Concessions under UDID* 1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges 2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000 3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability 4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class 5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000) 6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)"
+          ]
         }
       }
     },
