@@ -12,16 +12,13 @@ defmodule Glific.Clients.NayiDisha.Data do
     1 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In this question series Neuro-Developmental Pediatrician Dr. Ajay Sharma talks about some common concerns about Covid-19 and and vaccinations to manage the illness in children who need special care.
-        Dr.Ajay Sharma is a consultant Neurodevelopmental Paediatrician and the ex-Clinical Director at Evelina London, Guy’s and St Thomas’ Hospital, UK.
-        Click on this link to listen to the question series👉 https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-english"
+        "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In this question series Neuro-Developmental Pediatrician Dr. Ajay Sharma talks about some common concerns about Covid-19 and and vaccinations to manage the illness in children who need special care.Dr.Ajay Sharma is a consultant Neurodevelopmental Paediatrician and the ex-Clinical Director at Evelina London, Guy’s and St Thomas’ Hospital, UK. Click on this link to listen to the question series👉 https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-english"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडियाट्रिशियन, डॉ. अजय शर्मा कोविड -19 के बारे में कुछ सामान्य चिंताओं, बीमारी के प्रबंधन के लिए टीकाकरण के बारे में बात करते हैं, ख़ास तौर से उन बच्चों में जिन्हें विशेष देखभाल की आवश्यकता होती है।
-            डॉ. अजय शर्मा एवेलीना हॉस्पिटल, इंग्लैंड के न्यूरो-डेवलपमेंटल पेडिअट्रिशन (परामर्शदाता) और सत. थॉमस हॉस्पिटल, इंग्लैंड के पूर्व क्लीनिकल डायरेक्टर है।
+            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडियाट्रिशियन, डॉ. अजय शर्मा कोविड -19 के बारे में कुछ सामान्य चिंताओं, बीमारी के प्रबंधन के लिए टीकाकरण के बारे में बात करते हैं, ख़ास तौर से उन बच्चों में जिन्हें विशेष देखभाल की आवश्यकता होती है। डॉ. अजय शर्मा एवेलीना हॉस्पिटल, इंग्लैंड के न्यूरो-डेवलपमेंटल पेडिअट्रिशन (परामर्शदाता) और सत. थॉमस हॉस्पिटल, इंग्लैंड के पूर्व क्लीनिकल डायरेक्टर है।
             प्रश्न श्रृंखला को सुनने के लिए यह लिंक दबाएं  https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-hindi"
           ]
         },
@@ -29,8 +26,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In this question series Neuro-Developmental Pediatrician Dr. Ajay Sharma talks about some common concerns about Covid-19 and and vaccinations to manage the illness in children who need special care.
-            Dr.Ajay Sharma is a consultant Neurodevelopmental Paediatrician and the ex-Clinical Director at Evelina London, Guy’s and St Thomas’ Hospital, UK.
-            Click on this link to listen to the question series👉 https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-english"
+            Dr.Ajay Sharma is a consultant Neurodevelopmental Paediatrician and the ex-Clinical Director at Evelina London, Guy’s and St Thomas’ Hospital, UK. Click on this link to listen to the question series👉 https://www.nayi-disha.org/article/covid-19-care-illness-and-its-vaccine-special-children-english"
           ]
         }
       }
@@ -44,8 +40,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।
-            इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडिएट्रिशन डॉ. अजय शर्मा  कोविद -19 महामारी के दौरान विशेष आवश्यकताओं से प्रभावित बच्चों की देखभाल के बारे में बच्चों की घर पर मदद करने के तरीके समझाते हैं।
+            "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें ।इस प्रश्न श्रृंखला में न्यूरो-डेवलपमेंटल पीडिएट्रिशन डॉ. अजय शर्मा  कोविद -19 महामारी के दौरान विशेष आवश्यकताओं से प्रभावित बच्चों की देखभाल के बारे में बच्चों की घर पर मदद करने के तरीके समझाते हैं।
             प्रश्न श्रृंखला को सुनने के लिए यह लिंक दबाएं 👉  https://www.nayi-disha.org/article/covid-19-care-coping-needs-special-children-home-hindi"
           ]
         },
@@ -61,21 +56,14 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In case the primary caregiver has to be quarantined due to Covid-19, create a list of things that will come in handy for the next person in line of caregiving to ensure the individual being cared for feels safe and will continue to be in good hands at all times. List can include the following details:-
-
         1) Medication regularly used by the individual with IDD with doctor's prescription💊📝
-
         2)Names and numbers of therapy centers, doctors or counselor🩺☎️
-
         3)Legal documents such as the Disability certificate, Guardianship form,
         Identity card 📄📃
-
         4)List out a set of toys, tools or activities that entertain or help calm the
         individual 🧸🏎️
-
         5) Specific food preferences, allergies or intolerances, if any.🥕🥗
-
         6) Daily schedule  **Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters)
-
         https://www.nayi-disha.org/article/covid-19-awareness-safeguarding-child-developmental-disability
       "
       ],
@@ -84,17 +72,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             "कोविड -19 के मामले बढ़ रहे हैं और हम आप सभी से अनुरोध करते हैं कि कोविड से बचने की सावधानियों का पालन करते रहें l ऐसे समय में इस बीमारी से सम्बंधित संभव कठिनाइयों के लिए तैयार रहना उचित रहेगा। यदि भविष्य में मुख्य देखभाल कर्ता कोविड-19 से संक्रमित होता है, तो वह अगले देखभाल कर्ता के सहायता लिए निम्नलिखित जानकारी प्रदान कर सकता है|
-
             1) विकलांग व्यक्ति की रोज़मर्रा की दवाईयां (डॉक्टर प्रिस्क्रिप्शन समेत)💊📝
-
             2) काउंसलर, डॉक्टर एवं थेरेपी केंद्रों के नाम तथा टेलीफोन नंबर 🩺☎️
-
             3) कानूनी दस्तावेज़- जैसे विकलांगता प्रमाण पत्र, गार्डियन शिप फॉर्म, पहचान पत्र 📄📃
-
             4) विशिष्ट उपकरण/ खिलौने जो विकलांग व्यक्ति को दुखी या उदास से सामान्य स्तिथि में लाने में मदद करे 🧸🏎️
-
             5) विशिष्ट खाद्य प्राथमिकताएं (एलर्जी या असहिष्णुता) 🥕🥗
-
             6) समय अनुसार दैनिक कार्यक्रम 🛌🚿🍽️🏃  Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters)"
           ]
         },
@@ -102,21 +84,14 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Covid 19 cases are still on the rise. Therefore, we request you to continue taking preventive measures at all times. In case the primary caregiver has to be quarantined due to Covid-19, create a list of things that will come in handy for the next person in line of caregiving to ensure the individual being cared for feels safe and will continue to be in good hands at all times. List can include the following details:-
-
             1) Medication regularly used by the individual with IDD with doctor's prescription💊📝
-
             2)Names and numbers of therapy centers, doctors or counselor🩺☎️
-
             3)Legal documents such as the Disability certificate, Guardianship form,
             Identity card 📄📃
-
             4)List out a set of toys, tools or activities that entertain or help calm the
             individual 🧸🏎️
-
             5) Specific food preferences, allergies or intolerances, if any.🥕🥗
-
             6) Daily schedule  **Attachment-  Caregiver's Guidance Charts (SBI-MF Box Folder: Whatsapp_content_posters)
-
             https://www.nayi-disha.org/article/covid-19-awareness-safeguarding-child-developmental-disability
           "
           ]
@@ -127,7 +102,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "Enlisted below are things to be kept in mind if a member of the family is Covid-19 positive
-
         1) Identify two or more caregivers in the event that the immediate caregiver
         falls ill/infected.
         2) Have a plan in place to self-quarantine as a care-giver away from the person with IDD.
@@ -149,7 +123,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Enlisted below are things to be kept in mind if a member of the family is Covid-19 positive
-
             1) Identify two or more caregivers in the event that the immediate caregiver
             falls ill/infected.
             2) Have a plan in place to self-quarantine as a care-giver away from the person with IDD.
@@ -163,17 +136,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "Remember the lessons this pandemic taught us and plan your child's future accordingly. The 6 documents/processes mentioned below are vital for your child's secure future.
-
       ⚪ Disability Certificate
-
       🟠 UDID
-
       🔵 Legal Guardianship Certificate
-
       🔴 Letter of Intent
-
       🟡  Will
-
       🟢 Financial Planning"
       ],
       translations: %{
@@ -181,17 +148,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             "कोरोना महामारी को न भूले और उसके परिणाम से सीखे। अपने बच्चे के भविष्य की योजनाओं में निवेश करे ताकि कल के आपात स्तिथि में आप तैयार हो । अपने बच्चे के कानूनी और वित्तीय भविष्य को सुरक्षित रखने के लिए इन ६ दस्तावेज़ो का प्रबन्द ज़रूर करे।
-
             ⚪ डिसेबिलिटी सर्टिफिकेट (विकलांगता प्रमाण पत्र)
-
             🟠 यू.डी.आई.डी
-
             🔵 लीगल गार्डियनशिप सर्टिफिकेट (विधिक संरक्षकता प्रमाण पत्र)
-
             🔴 लेटर ऑफ़ इंटेंट (विशिष्ट उद्देश्य पत्र)
-
             🟡  वसीयत
-
             🟢 वित्तीय योजना"
           ]
         },
@@ -199,17 +160,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Remember the lessons this pandemic taught us and plan your child's future accordingly. The 6 documents/processes mentioned below are vital for your child's secure future.
-
           ⚪ Disability Certificate
-
           🟠 UDID
-
           🔵 Legal Guardianship Certificate
-
           🔴 Letter of Intent
-
           🟡  Will
-
           🟢 Financial Planning"
           ]
         }
@@ -228,9 +183,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           variables: [
             "*विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)*
             १) यदि आपको/आपके परिजन को इन कार्यों (चलना, सुनना, देखना, बोलना, समझना, समिल्लित करना) में से किसी एक या अधिक को दर्शाने में असमर्थ होते हैं, तो आप विकलांगता प्रमाणपत्र के लिए आवेदन कर सकते है।
-
             २) विकलांगता प्रमाणपत्र के लिए व्यक्ति का भारतीय मूल का नागरिक होना अनिवार्य है। प्रत्येक व्यक्ति अधिनियम में निर्देशित विकलांगता की न्यूनतम सीमा से प्रभावित होगा।
-
             ३)वैधता- 18 वर्ष से कम के व्यक्ति के लिए विक्लांग्ता प्रमाणपत्र 3 वर्ष की अवधि के लिए बनाया जाता है।18 वर्ष से अधिक की आयु होने पर विकलांग व्यक्ति का प्रमाणपत्र आजीवन वैध रहता है। अधिक जानकारी के लिए यह लिंक दबाए- https://www.nayi-disha.org/article/how-apply-disability-certificate-india"
           ]
         },
@@ -238,13 +191,9 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "*Disability Certificate*
-
           1) Disability certificate is issued to all individuals with disabilities that are recognized under the Persons with Disabilities Act, 2016. The minimum degree of disability for each category of disability must be met
-
           2) The individual applying for the certificate must be an Indian Citizen.
-
           3)The certificate is given for 3 years only for PwD below 18 years of age. The certificate is valid for life for PwD who are above 18 years of age.
-
           Click on this link for more information- https://www.nayi-disha.org/article/how-apply-disability-certificate-india"
           ]
         }
@@ -254,13 +203,9 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "Today's message for parents and caregivers👉  *Disability Certificate*-Important documents for the application process.
-
       2 passport size photographs
-
       Copy of Government I.D. like Aadhar card of the PwD
-
       Copy of Government I.D. like Aadhar of parents
-
       Copy of all medical and psychological reports of the individual"
       ],
       translations: %{
@@ -268,13 +213,9 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             "विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- ज़रूरी दस्तावेज़
-
             ~2 पासपोर्ट आकार की फोटो
-
             ~सरकारी पहचान पत्र की प्रति (आवेदन करने वाले व्यक्ति का आधार कार्ड/पासपोर्ट/ड्राइविंग लाइसेंस)
-
             ~आवेदन करने वाले व्यक्ति के अभिभावकों के सरकारी पहचान पत्र प्रति
-
             ~आवेदक की सभी प्रकार की चिकित्सकीय व मानसिक रिपोर्ट की प्रतियाँ"
           ]
         },
@@ -282,13 +223,9 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Today's message for parents and caregivers👉  *Disability Certificate*-Important documents for the application process.
-
           2 passport size photographs
-
           Copy of Government I.D. like Aadhar card of the PwD
-
           Copy of Government I.D. like Aadhar of parents
-
           Copy of all medical and psychological reports of the individual"
           ]
         }
@@ -297,15 +234,10 @@ defmodule Glific.Clients.NayiDisha.Data do
     8 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: ["*Disability Certificate*- Evaluation
-
       Every individual with a disability will be evaluated in three areas –
-
       1)Clinical- General analysis by a medical doctor and/or physiotherapist/OT
-
       2)Behavioral- Psychological evaluation by psychologist
-
       3)Intellectual Functioning- Learning & communication abilities are assessed by a special educator & speech language pathologist
-
       Click on this link for more information- https://www.nayi-disha.org/article/how-apply-disability-certificate-india
       "],
       translations: %{
@@ -313,13 +245,9 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             "विकलांगता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- मूल्यांकन
-
             विकलांगता से प्रभावित व्यक्ति को तीन प्रकार की जांच से गुजरना होता है –
-
             १) चिकित्सकीय मूल्यांकन -चिकित्सक और/अथवा फिजियोथेरेपिस्ट/ओटी और/अथवा दृष्टि विशेषज्ञ और/अथवा श्रवण विशेषज्ञ के द्वारा
-
             २) व्यावहारिक मूल्यांकन- उसी स्थान से मनोवैज्ञानिक द्वारा होता है जहां से प्रमाणपत्र जारी किया जाता है
-
             ३) बौद्धिक कार्यक्षमता- चिकित्सक के द्वारा
             सभी मूल्यांकन सम्पूर्ण होने के बाद प्रत्येक व्यक्ति की परीक्षण रिपोर्ट तैयार की जाती है।विकलांगता प्रमाणपत्र प्राप्त करने के लिए यह एक महत्वपूर्ण दस्तावेज़ माना जाता है।अधिक जानकारी के लिए यह लिंक दबाए- https://www.nayi-disha.org/article/how-apply-disability-certificate-india"
           ]
@@ -327,15 +255,10 @@ defmodule Glific.Clients.NayiDisha.Data do
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: ["*Disability Certificate*- Evaluation
-
           Every individual with a disability will be evaluated in three areas –
-
           1)Clinical- General analysis by a medical doctor and/or physiotherapist/OT
-
           2)Behavioral- Psychological evaluation by psychologist
-
           3)Intellectual Functioning- Learning & communication abilities are assessed by a special educator & speech language pathologist
-
           Click on this link for more information- https://www.nayi-disha.org/article/how-apply-disability-certificate-india
           "]
         }
@@ -345,7 +268,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*Disability Certificate*
-
       In India, this certificate is usually issued by authorized medical authorities (or a board).
       The PwD and their parents must apply for the disability certificate from specific authorized Medical centers/hospitals. The certificate is processed by the Government. Use the certificate to avail government benefits. For more information, please click on this link- https://www.nayi-disha.org/article/how-apply-disability-certificate-india"
       ],
@@ -364,7 +286,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "*Disability Certificate*
-
           In India, this certificate is usually issued by authorized medical authorities (or a board).
           The PwD and their parents must apply for the disability certificate from specific authorized Medical centers/hospitals. The certificate is processed by the Government. Use the certificate to avail government benefits. For more information, please click on this link- https://www.nayi-disha.org/article/how-apply-disability-certificate-india"
           ]
@@ -401,23 +322,14 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*UDID Process*
-
         1) Visit Swavlamban website at www.swavlambancard.gov.in.(This Is A Government Website and all data provided here is completely secure.)
-
         2) Click on the link www.swavlambancard.gov.in to apply for Disability Certificate and UDID Card. (You can see the link on the right side of the homepage screen)
-
         3) Fill in all the details on the form:Personal,Disability, Employment and IdentityDetails.
-
         4) Upload All Necessary Documents Required (OriginalDisability Certificate, Original Aadhaar Card, Passport Size Picture and Signature or Thumb Impressions)
-
         5) Click on ‘submit details’ to complete the registration.
-
         6) Once The Registration Completed, you will receive enrollment number on the email ID and contact number provided by in the form above.(Please Download and save the receipt.The receipt will contain the child’s UDID enrollment number and the names of the government hospitals available in nearby areas to which you can take your child for assessment).
-
         7) You can visit www.swavlambancard.gov.in and access the video available on the home page to understand the step by step procedure for the registration of the UDID.
-
         8) Once the assessment and Verification is done, your UDID card will be sent for printing.
-
         9) Once the UDID card is generated you can download your e-Disability Card and e-UDID Card."
       ],
       translations: %{
@@ -425,48 +337,29 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: ["
           *यू.डी.आई.डी की प्रक्रिया*
-
           1) स्वावलंबन वेबसाइट पर जाएं। यह एक सरकारी वेबसाइट है और यहां प्रदान किया गया सभी डेटा पूरी तरह से सुरक्षित है।इस लिंक पर क्लिक करें-  www.swavlambancard.gov.in.
-
           2) विकलांगता प्रमाण पत्र और यूडीआईडी ​​कार्ड के लिए आवेदन करने के लिए लिंक www.swavlambancard.gov.in पर क्लिक करें।
-
           3) फॉर्म में सभी विवरण भरें: व्यक्तिगत, विकलांगता, रोजगार और पहचान विवरण।
-
           4) आवश्यक सभी दस्तावेज अपलोड करें (मूल विकलांगता प्रमाण पत्र, मूल आधार कार्ड, पासपोर्ट साइज का फोटो और हस्ताक्षर या अंगूठे के निशान)।
-
           5) पंजीकरण पूरा करने के लिए 'सबमिट डिटेल्स' पर क्लिक करें।
-
           6) एक बार पंजीकरण पूरा हो जाने के बाद, आपको अपने ईमेल आई.डी. और फ़ोन नंबर पर एक नामांकन संख्या प्राप्त होगी। (कृपया रसीद को डाउनलोड करके सेव करे। रसीद में बच्चे की यू.डी.आई.डी. ​​नामांकन संख्या होगी और आस-पास के क्षेत्र में उपलब्ध सरकारी अस्पताल जहाँ आप अपने बच्चे को मूल्यांकन के लिए ले जा सकते है के नाम भी वर्णित होंगे।)
-
           7) आप www.swavlambancard.gov.in पर उपलब्ध वीडियो से यू.डी.आई.डी ​​​​के पंजीकरण के लिए चरण दर चरण प्रक्रिया को समझ  सकते हैं।
-
           8) एक बार आकलन और सत्यापन हो जाने के बाद, आपका यूडीआईडी ​​कार्ड छपाई के लिए भेजा जाएगा।आप अपने यू.डी.आई.डी. कार्ड का स्टेटस को स्वावलंबन कार्ड वेबसाइट पर ट्रैक कर सकते हैं।
-
           9) आप अपने यू.डी.आई.डी. कार्ड की स्थिति को स्वावलंबन कार्ड वेबसाइट पर ट्रैक कर सकते हैं।आप अपना ई-विकलांगता कार्ड और ई-यूडीआईडी ​​कार्ड डाउनलोड कर सकते हैं।
-
           "]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "*UDID Process*
-
           1) Visit Swavlamban website at www.swavlambancard.gov.in.(This Is A Government Website and all data provided here is completely secure.)
-
           2) Click on the link www.swavlambancard.gov.in to apply for Disability Certificate and UDID Card. (You can see the link on the right side of the homepage screen)
-
           3) Fill in all the details on the form:Personal,Disability, Employment and IdentityDetails.
-
           4) Upload All Necessary Documents Required (OriginalDisability Certificate, Original Aadhaar Card, Passport Size Picture and Signature or Thumb Impressions)
-
           5) Click on ‘submit details’ to complete the registration.
-
           6) Once The Registration Completed, you will receive enrollment number on the email ID and contact number provided by in the form above.(Please Download and save the receipt.The receipt will contain the child’s UDID enrollment number and the names of the government hospitals available in nearby areas to which you can take your child for assessment).
-
           7) You can visit www.swavlambancard.gov.in and access the video available on the home page to understand the step by step procedure for the registration of the UDID.
-
           8) Once the assessment and Verification is done, your UDID card will be sent for printing.
-
           9) Once the UDID card is generated you can download your e-Disability Card and e-UDID Card."
           ]
         }
@@ -476,17 +369,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: ["
         *Concessions under UDID*
-
         1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges
-
         2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000
-
         3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability
-
         4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class
-
         5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000)
-
         6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)
       "],
       translations: %{
@@ -494,17 +381,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: ["
             *यूडीआईडी ​​के तहत रियायतें*
-
             1.शिक्षा-किसी भी पड़ोस के स्कूल में 6 से 18 वर्ष की आयु के बच्चों को निःशुल्क और अनिवार्य शिक्षा और सार्वजनिक वित्त पोषित कॉलेजों में 5% आरक्षित सीटें
-
             2. यात्रा-सभी विकलांग लोग कोच वर्ग के आधार पर बस/ट्रेन के किराए में 50-75% की छूट के हकदार हैं
-
             3. आयकर- 40-80% विकलांगता- Rs. 75000 तक की कटौती
-
             4. ऐ.डी.आई.पी स्कीम-विकलांग व्यक्ति को वित्तीय सहायता (जिनकी आय 20000 से अधिक नहीं)
-
             5. लीगल गार्डियनशिप-विकलांग व्यक्ति को अभिभावक नियुक्त करने की कानूनी प्रक्रिया(जो 18 वर्ष से अधिक आयु का है)
-
             6. निर्माया- स्वास्थ्य बीमा योजना जो सीपी, आईडी, एएसडी और बहु ​​विकलांगता के लिए 1 लाख रुपये तक कवर करती है
           "]
         },
@@ -512,17 +393,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: ["
             *Concessions under UDID*
-
             1)Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges
-
             2)Income Tax- 40-80% Disability- Deduction upto Rs. 75000
-
             3)Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability
-
             4)Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class
-
             5)ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000)
-
             6)Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)
           "]
         }
@@ -558,7 +433,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link-
-
         https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
       ],
       translations: %{
@@ -566,9 +440,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             "लीगल गार्डियन या वैध/कानूनी पालक
-
             माता पिता के अनुपस्थिति में, एक रक्त सम्बन्धी ही बच्चे का कानूनी पालक हो सकता है।आमतौर पर, निश्चित उम्मीदवार से लिखित सहमति लेना उचित रहता है📝 । अगर बच्चे का कोई भी रक्त सम्बन्धी जीवित नहीं है, आपके परिवार के दूसरे सदस्य (जैसे भाभी, चाची, मामी), बच्चे के वैध पालक बन सकते है 👩‍👧। बेहतर है की ट्रस्टी और पालक अलग अलग व्यक्ति ही हो क्योकि पालक व्यक्तिगत मामले ही संभालता है। वसीयत में पालक का कोई हस्तक्षेप नहीं होता 📜। अगर पालक बच्चे का उचित ख्याल नहीं रखता, न्यायालय माता पिता का निर्णय उलट सकता है 👨‍⚖️ । अधिक् जानकारी के लिए यह लिंक दबाएं -
-
             https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child
           "
           ]
@@ -577,7 +449,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . it is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link-
-
             https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
           ]
         }
@@ -587,7 +458,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*Legal Guardianship- Application Process*- There are two processes – National Trust recognizes four levels of disabilities. Check if your child qualifies to come under these four sections. If yes, then you can apply it through their LLC (Local level committee) process in your State. If the child doesn’t fall under the four specified categories, or if LLC isn’t available in your resident city then you have to apply for guardianship at the sub-divisional magistrate office in your State. It may take 3-4months to get the guardian certificate. For more information, please click on this link-
-
         https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
       ],
       translations: %{
@@ -637,7 +507,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             " *लीगल गार्डियन*
-
             १) लीगल गार्डियन कौन होता है?
             १) गार्डियनशिप एक कानूनी प्रक्रिया होती है जिससे आप अपने बच्चे के देख रेख के लिए एक व्यक्ति (लीगल गार्डियन) को नियुक्त कर सकते है। बच्चे के व्यक्तिगत मामलो के साथ साथ गार्डियन को बच्चे के हित के लिए उनके तरफ से कानूनी कर्त्तव्य भी निभाने पढ़ते है।
             २) लीगल गार्डियनशिप की प्रक्रिया में कौन कौन शामिल होता है?
@@ -656,7 +525,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           Who is a Legal Guardian?
           Legal Guardianship is the legal process of appointing a legal guardian
           to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests.
-
           Who are the key players in a legal guardianship process?
           ~ 👨‍👩‍👧 Biological Parents of the PwD
           ~👱👶Person with Disability (PwD)
@@ -664,9 +532,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           ~Registered Organisation-In absence of relatives, LLC may direct a
           Registered Organization(RO) to become the guardian instead.
           ~Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district
-
           For more information please click on this link-
-
           https://www.nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child"
           ]
         }
@@ -676,7 +542,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*Legal Guardianship*
-
       Who can be the legal guardian of your child?
       1)Biological Parents
       2)Siblings
@@ -703,7 +568,6 @@ defmodule Glific.Clients.NayiDisha.Data do
             ३) रक्त समबंधी परिवार जन 👨‍👩‍👧‍👦
             ४) पंजीकृत संस्थान (रजिस्टर्ड आर्गेनाईजेशन- आर.ओ.)
             माता पिता अपने बच्चे के लीगल गार्डियन उसके १८ वर्ष होने तक ही रह सकते है। राष्ट्रीय न्यास (नेशनल ट्रस्ट) के नियमों के अनुसार, विक्लांग बच्चे के १८ वर्ष होने के बाद, माता पिता को उसका लीगल गार्डियन बनने के लिए आवेदन करना पढ़ता है। एक लीगल गार्डियन में यह विशिष्टताऐं होना ज़रूरी है👇
-
             ॰भारतीय नागरिक 🇮🇳
             ॰जिसका कोई आपराधिक रिकॉर्ड या लंबित कोर्ट केस न हो ⚖
             ॰ जो आर्थिक रूप से आत्मनिर्भर हो 💵
@@ -714,7 +578,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "*Legal Guardianship*
-
           Who can be the legal guardian of your child?
           1)Biological Parents
           2)Siblings
@@ -790,7 +653,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       variables: [
         "*Letter of Intent*
       A LOI as it is known is not a legal document but a description about your child’s life and vision. This one document passes on vital information about your child to the future caretaker(s). You can include the following sections to your letter of intent:-
-
       Family History- Details about child’s birth, place of residence, school, relatives and parents’ vision for the child
       Living- Overview about your child’s living, daily routine, affairs, habits, likes and dislikes
       Education and employment- Details about current education of the child, special classes, special schools, recreational/extracurricular activities, vocational trainings.
@@ -829,7 +691,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: ["*Letter of Intent*
       You can further add these sections to your letter of intent:-
-
       Behaviors- Understanding of child’s behaviour, child’s likes, dislikes, preferred company among friends and family and specific behavior management strategies
       Religious environment- Details about a particular religious/spiritual interest that the child
       Social environment- Specifications regarding places that the child may like visiting.
@@ -855,7 +716,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: ["*Letter of Intent*
           You can further add these sections to your letter of intent:-
-
           Behaviors- Understanding of child’s behaviour, child’s likes, dislikes, preferred company among friends and family and specific behavior management strategies
           Religious environment- Details about a particular religious/spiritual interest that the child
           Social environment- Specifications regarding places that the child may like visiting.
@@ -1082,11 +942,8 @@ defmodule Glific.Clients.NayiDisha.Data do
           variables: [
             "वसीयत बनाने के कुछ सुझाव- पार्ट २
             १) जब तक आपका बच्चा/बच्ची 18 वर्ष की आयु तक नहीं पहुँचते हैं, तब तक आप उनकी संपत्ति की देखभाल का अधिकार किसे देना चाहेंगे? इसका स्पष्ट उल्लेख करें ।
-
             २) विशिष्ट ज़रुरत वाले बच्चे को 18 साल की उम्र के बाद भी अभिभावक की ज़रुरत होगी I माता पिता पहले अभिभावक होते हैं मगर आपकी मृत्य के पश्चात कौन इस बच्चे का अभिभावक बनेगा इसका निर्णय ले कर इसका उल्लेख वसीहत में स्पष्ट करें।
-
             ३) यदि आपके किसी बच्चे की मृत्यु हो जाती है, इस स्थिति में क्या आप संपत्ति में उसके हिस्से को, उसके या फिर अपने दूसरे बच्चों को देना चाहते हैं या फिर इसके लिए दूसरे कानूनी दावेदार जैसे जीवनसाथी या फिर दूसरे भाई-बहन को देना चाहेंगे?
-
             ४) बच्चे के किस उम्र में आप यह सुनिश्चित करना चाहेंगे कि उन्हें आपकी सम्पत्ति प्राप्त होगी ।"
           ]
         },
@@ -1094,7 +951,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Here are some points to help you get started when planning a will for your family
-
           1) If you leave more for the special child, clearly state the reasons
           How will the remainder of your assets be distributed among your other family members such as your Spouse, other children or other causes (Charities, if applicable)?
           2) If you wish to disinherit any family members, state the reason clearly why you want to do so?
@@ -1108,7 +964,6 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "Here are some points to help you get started when planning a will for your family- Part 3
-
       1) At what age do I ensure my child receives his/her inheritance?
       2) How will the funds be provided for managing your special child’s expenses by the caretaker when taking over financial duties from you?
       3) Make your intentions clear in the Will and do not keep any ambiguous clause. Avoid irreconcilable clauses in the Will, otherwise the last known Will shall prevail.
@@ -1120,17 +975,11 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             "वसीयत बनाने के कुछ सुझाव- पार्ट ३
-
             १) वसीयत को बनाते समय अपनी सभी इच्छाएँ और मर्ज़ी स्पष्ट रूप से लिखें और कहीं भी किसी प्रकार का कोई असपष्ट या अनेक अर्थ वाला वाक्य नहीं लिखें नहीं तो आखिरी स्पष्ट लिखी वसीयत ही जारी मानी जाएगी।
-
             २)आपकी मृत्य होने पर कौन आपकी वसीहत को संचालित करेगा इसकी नियुक्ति करें
-
             ३) जो व्यक्ति इस वसीयत को संचालित करेगा, उसे इसके बने होने की जानकारी जरूर दें जिससे वसीयत के होने का पता रहेगा I
-
             ४) किसी भी प्रकार का परिवर्तन होने की स्थिति में वसीयत को प्रत्येक 3-4 वर्ष बाद इस परिवर्तन के साथ दोबारा अवश्य लिखें
-
             ५) आपने जो कुछ लिखा है उसको प्रमाणित करवाने के लिए किसी पेशेवर व्यक्ति की मदद जरूर लें।
-
             अधिक जानकारी के लिए यह लिंक दबाए- https://www.nayi-disha.org/article/tipsforwritingawill_specialneeds_hindi"
           ]
         },
@@ -1138,7 +987,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "Here are some points to help you get started when planning a will for your family- Part 3
-
           1) At what age do I ensure my child receives his/her inheritance?
           2) How will the funds be provided for managing your special child’s expenses by the caretaker when taking over financial duties from you?
           3) Make your intentions clear in the Will and do not keep any ambiguous clause. Avoid irreconcilable clauses in the Will, otherwise the last known Will shall prevail.
@@ -1178,9 +1026,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "How to find a suitable trustee for your Special Needs Trust?
-
         Factors to consider while identifying a suitable trustee:
-
         The trustee should be competent enough to manage accounts, taxation, investments and other financial affairs.
         The trustee should be a person who can put the beneficiary interest on the top.
         The trustees are going to work for the beneficiary and so it’s important that they understand his/her requirement well.
@@ -1193,7 +1039,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: ["
             *विश्वसनीय ट्रस्टी कैसे ढूंढे?* 🤔
-
             १) जो हिसाब किताब, पूँजी निवेश और कर (टैक्स) सम्बंधित मामलों में विशेषज्ञ हो 💵
             २) जो विकलांग बच्चे की ज़रूरतों को समझे और औरो से भी बना के रखे 🚸
             ३) जो लाभार्थी के ज़रूरतों को प्राथमिकता दे और ट्रस्ट का फायदा न उठाय 👶
@@ -1207,9 +1052,7 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
             "How to find a suitable trustee for your Special Needs Trust?
-
             Factors to consider while identifying a suitable trustee:
-
             The trustee should be competent enough to manage accounts, taxation, investments and other financial affairs.
             The trustee should be a person who can put the beneficiary interest on the top.
             The trustees are going to work for the beneficiary and so it’s important that they understand his/her requirement well.
@@ -1233,7 +1076,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
             " *बच्चे के लिए ट्रस्ट का महत्व*
-
             ट्रस्ट बच्चे के मेडिकल और जीवन शैली ज़रूरतों के लिए अविरत वित्तीय सहारा प्रदान करता है । ट्रस्ट की कानूनी अस्तित्व अलग और स्वाधीन होती है । माता पिता प्राइवेट ट्रस्ट द्वारा अपने विकलांग बच्चे का भविष्य सुरक्षित कर सकते है। सेट्लर/ व्यवस्थापक उल्लेखित कर सकता है की वित्त का प्रयोग कैसे होगा। ट्रस्ट बच्चे के देख रेख के लिए कानूनी/वैध समझौता होता है (जिसका दानकर्ता भी बच्चा ही होता है)।ट्रस्ट दीड, ट्रस्टी के उद्देश्य, अधिकार, और बच्चे की आय की देख रेख की शर्ते स्पष्ट करता है ।*एक विकलांग बच्चे के लिए स्थिर (इररेवोकेबल) प्राइवेट ट्रस्ट सबसे उपयुक्त होता है |* अधिक जानकारी के लिए यह लिंक दबाए-
 
             https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
@@ -1244,7 +1086,6 @@ defmodule Glific.Clients.NayiDisha.Data do
           variables: [
             "A trust is legal agreement for management, preservation and upkeep of the child who is the benefactor of the Trust. The Trust deed defines the objective, power of trustees (people managing the trust), management, preservation and distribution of income to the child. It gives the child ongoing financial support for his/her medical and lifestyle requirements. A Trust being an independent separate legal entity is not impacted by any eventualities in the personal life of the child’s parents/caregivers. Any parent with a child with special needs can set up a private trust and secure the future of the child. This Trust can fund all expenses related to child care. The Settler of the Trust (person creating the trust) can specify how the funds should be utilized.
             For more information click on this link-
-
             https://www.nayi-disha.org/article/setting-trust-my-child-financial-planning-my-special-child"
           ]
         }
