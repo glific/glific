@@ -36,13 +36,14 @@ defmodule Glific.Communications.Mailer do
          mail,
          %{category: category, organization_id: organization_id} = _attrs
        ) do
-    %{
-      category: category,
-      organization_id: organization_id,
-      status: "sent",
-      content: mail
-    }
-    |> Glific.Mails.MailLog.create_mail_log()
+    {:ok, _} =
+      %{
+        category: category,
+        organization_id: organization_id,
+        status: "sent",
+        content: %{data: "#{inspect(Map.from_struct(mail))}"}
+      }
+      |> Glific.Mails.MailLog.create_mail_log()
 
     {:ok, results}
   end
@@ -52,14 +53,15 @@ defmodule Glific.Communications.Mailer do
          mail,
          %{category: category, organization_id: organization_id} = _attrs
        ) do
-    %{
-      category: category,
-      organization_id: organization_id,
-      status: "error",
-      content: mail,
-      error: "error while sending the mail. #{inspect(error)}"
-    }
-    |> Glific.Mails.MailLog.create_mail_log()
+    {:ok, _} =
+      %{
+        category: category,
+        organization_id: organization_id,
+        status: "error",
+        content: %{data: "#{inspect(Map.from_struct(mail))}"},
+        error: "error while sending the mail. #{inspect(error)}"
+      }
+      |> Glific.Mails.MailLog.create_mail_log()
 
     {:error, error}
   end

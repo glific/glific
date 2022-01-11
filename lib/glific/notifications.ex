@@ -100,8 +100,11 @@ defmodule Glific.Notifications do
 
   defp handle_critical_notification(notification) do
     {:ok, _} =
-      Partners.organization(1)
+      Partners.organization(notification.organization_id)
       |> CriticalNotificationMail.new_mail(notification.message)
-      |> Mailer.send()
+      |> Mailer.send(%{
+        category: "critical_notification",
+        organization_id: notification.organization_id
+      })
   end
 end
