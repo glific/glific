@@ -360,4 +360,21 @@ defmodule Glific.CommunicationsTest do
       Oban.drain_queue(queue: :gupshup)
     end
   end
+
+  describe "mailer" do
+    alias Swoosh.Email
+    import Swoosh.TestAssertions
+    alias Glific.Mails.MailLog
+
+    test "send/2 will deliver a mail based on given args", attrs do
+      attrs = %{category: "test", organization_id: attrs.organization_id}
+      email = Email.new(subject: "Hello, Glific Team!", from: Communications.Mailer.sender())
+      Communications.Mailer.send(email, attrs)
+      assert_email_sent(email)
+
+      assert MailLog.count_mail_logs(%{
+               filter: Map.merge(attrs, %{category: "test"})
+             }) == 1
+    end
+  end
 end
