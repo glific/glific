@@ -296,9 +296,8 @@ defmodule Glific.Communications.Message do
     if Contacts.is_simulator_contact?(message.contact.phone) do
       message_type =
         if type == :sent_message,
-        do: :sent_simulator_message,
-        else: :received_simulator_message
-
+          do: :sent_simulator_message,
+          else: :received_simulator_message
 
       Communications.publish_data(
         message,
