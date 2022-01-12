@@ -3,12 +3,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   Message API layer between application and Gupshup
   """
 
-  @channel "whatsapp"
-
   alias Glific.{
     Communications,
-    Messages.Message,
-    Partners
+    Messages.Message
   }
 
   require Logger
@@ -17,7 +14,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
-    %{type: :text, text: message.body, isHSM: message.is_hsm}
+    %{type: :text, msg: message.body}
     |> check_size()
     |> send_message(message, attrs)
   end
@@ -87,7 +84,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @max_size 4096
   @doc false
   @spec check_size(map()) :: map()
-  defp check_size(%{text: text} = attrs) do
+  defp check_size(%{msg: text} = attrs) do
     if String.length(text) < @max_size,
       do: attrs,
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
@@ -105,18 +102,14 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
   defp send_message(payload, message, attrs) do
-    request_body =
-      %{"channel" => @channel}
-      |> Map.put(:destination, message.receiver.phone)
-      |> Map.put("message", Jason.encode!(payload))
-
     ## gupshup does not allow null in the caption.
     attrs =
       if Map.has_key?(attrs, :caption) and is_nil(attrs[:caption]),
         do: Map.put(attrs, :caption, ""),
         else: attrs
 
-    create_oban_job(message, request_body, attrs)
+    %{"send_to" => message.receiver.phone, "message" => Jason.encode!(payload)}
+    |> then(&create_oban_job(message, &1, attrs))
   end
 
   @doc false

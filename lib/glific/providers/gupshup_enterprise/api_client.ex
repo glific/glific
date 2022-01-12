@@ -71,71 +71,59 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      %{"type" => type} = payload["message"] |> Jason.decode!()
-      IO.inspect(payload)
-      do_send_message(type, payload, credentials)
+      Jason.decode!(payload["message"])
+      |> Map.merge(%{"send_to" => payload["send_to"]})
+      |> do_send_message(credentials)
     end
   end
 
-  defp do_send_message("text", payload, credentials) do
-    %{"text" => msg_body} = payload["message"] |> Jason.decode!()
-
-    msg_payload =
-      @default_send_message_params
-      |> Map.put("send_to", payload["destination"])
-      |> Map.put("msg", msg_body)
-
-    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  defp do_send_message(%{"type" => "text"} = payload, credentials) do
+    payload
+    |> Map.take(["send_to", "msg"])
+    |> Map.merge(@default_send_message_params)
+    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
-  defp do_send_message("file", payload, credentials) do
-    doc = payload["message"] |> Jason.decode!()
-
+  defp do_send_message(%{"type" => "file"} = payload, credentials) do
     msg_payload =
       @default_send_media_message_params
       |> Map.put("msg_type", "DOCUMENT")
-      |> Map.put("send_to", payload["destination"])
-      |> Map.put("media_url", doc["url"])
-      |> Map.put("caption", doc["filename"])
+      |> Map.put("media_url", payload["url"])
+      |> Map.put("caption", payload["filename"])
+      |> Map.put("send_to", payload["send_to"])
 
     gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
 
-  defp do_send_message("video", payload, credentials) do
-    video = payload["message"] |> Jason.decode!()
-
+  defp do_send_message(%{"type" => "video"} = payload, credentials) do
     msg_payload =
       @default_send_media_message_params
       |> Map.put("msg_type", "VIDEO")
-      |> Map.put("send_to", payload["destination"])
-      |> Map.put("media_url", video["url"])
-      |> Map.put("caption", video["caption"])
+      |> Map.put("media_url", payload["url"])
+      |> Map.put("caption", payload["caption"])
+      |> Map.put("send_to", payload["send_to"])
 
     gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
 
-  defp do_send_message("audio", payload, credentials) do
-    audio = payload["message"] |> Jason.decode!()
-
+  defp do_send_message(%{"type" => "audio"} = payload, credentials) do
     msg_payload =
       @default_send_media_message_params
       |> Map.put("msg_type", "AUDIO")
-      |> Map.put("send_to", payload["destination"])
-      |> Map.put("media_url", audio["url"])
-      |> Map.put("caption", audio["caption"])
+      |> Map.put("media_url", payload["url"])
+      |> Map.put("caption", payload["caption"])
+      |> Map.put("send_to", payload["send_to"])
 
     gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
 
-  defp do_send_message("image", payload, credentials) do
-    image = payload["message"] |> Jason.decode!()
-
+  defp do_send_message(%{"type" => "image"} = payload, credentials) do
     msg_payload =
       @default_send_media_message_params
       |> Map.put("msg_type", "IMAGE")
-      |> Map.put("send_to", payload["destination"])
-      |> Map.put("media_url", image["originalUrl"])
-      |> Map.put("caption", image["caption"])
+      |> Map.put("media_url", payload["originalUrl"])
+      |> Map.put("caption", payload["caption"])
+      |> Map.put("send_to", payload["send_to"])
 
     gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
