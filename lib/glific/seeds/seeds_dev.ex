@@ -1289,8 +1289,7 @@ if Code.ensure_loaded?(Faker) do
               %{
                 "type" => "text",
                 "title" => "SOL",
-                "description" =>
-                  "Slam Out Loud is a non-profit with a vision to change lives."
+                "description" => "Slam Out Loud is a non-profit with a vision to change lives."
               }
             ]
           }
