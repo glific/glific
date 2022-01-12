@@ -3,6 +3,8 @@ defmodule Glific.Communications.Mailer do
 
   alias Glific.Mails.MailLog
 
+  require Logger
+
   @moduledoc """
   This module provides a simple interface for sending emails.
   """
@@ -19,9 +21,10 @@ defmodule Glific.Communications.Mailer do
 
   @doc false
   @spec handle_event(list(), any(), any(), any()) :: any()
-  def handle_event([:swoosh, _action, event], _measurement, _meta, _config)
-      when event in [:stop, :exception],
-      do: nil
+  def handle_event([:swoosh, _action, event], _measurement, meta, _config)
+      when event in [:exception] do
+    Logger.error("Error while sending the mail: #{inspect(meta)}")
+  end
 
   def handle_event(_, _, _, _), do: nil
 
