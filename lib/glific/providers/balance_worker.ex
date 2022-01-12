@@ -49,7 +49,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     category = "low_bsp_balance"
     time = Glific.go_back_time(24)
 
-    if MailLog.mail_sent_in_past_time?(category, time, organization_id) do
+    if MailLog.mail_sent_in_past_time?(category, time, organization_id) == false do
       {:ok, _} =
         Partners.organization(organization_id)
         |> LowBalanceAlertMail.new_mail(bsp_balance)
