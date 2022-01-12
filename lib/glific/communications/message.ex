@@ -291,7 +291,7 @@ defmodule Glific.Communications.Message do
   end
 
   # check if the contact is simulator and send another subscription only for it
-  @spec publish_simulator(Message.t(), atom()) :: Message.t()
+  @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
   defp publish_simulator(message, type) when type in [:sent_message, :received_message] do
     if Contacts.is_simulator_contact?(message.contact.phone) do
       message_type =
