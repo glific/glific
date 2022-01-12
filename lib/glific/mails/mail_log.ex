@@ -83,11 +83,10 @@ defmodule Glific.Mails.MailLog do
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to mail logs only.
-    # We might want to move them in the repo in the future.
+
     Enum.reduce(filter, query, fn
       {:category, category}, query ->
-        from(q in query, or_where: ilike(q.url, ^"%#{category}%"))
+        from(q in query, where: ilike(q.category, ^"%#{category}%"))
 
       _, query ->
         query
