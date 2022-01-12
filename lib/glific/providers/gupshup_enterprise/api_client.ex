@@ -7,27 +7,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   import GlificWeb.Gettext
 
   @gupshup_enterprise_url "https://media.smsgupshup.com/GatewayAPI/rest"
-  @default_optin_params %{
-    "method" => "OPT_IN",
-    "format" => "json",
-    "v" => "1.1",
-    "auth_scheme" => "plain",
-    "channel" => "WHATSAPP"
-  }
-  @default_send_message_params %{
-    "method" => "SendMessage",
-    "format" => "json",
-    "v" => "1.1",
-    "auth_scheme" => "plain",
-    "msg_type" => "DATA_TEXT"
-  }
-  @default_send_media_message_params %{
-    "method" => "SendMediaMessage",
-    "format" => "json",
-    "v" => "1.1",
-    "auth_scheme" => "plain",
-    "isHSM" => "false"
-  }
+  @common_message_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
+  @default_optin_params %{"method" => "OPT_IN", "channel" => "WHATSAPP"}
+  @default_send_message_params %{"method" => "SendMessage"}
+  @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -69,63 +52,45 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   Sending message to contact
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
-  def send_message(org_id, payload) do
-    with {:ok, credentials} <- get_credentials(org_id) do
-      Jason.decode!(payload["message"])
-      |> Map.merge(%{"send_to" => payload["send_to"]})
+  def send_message(org_id, attrs) do
+    with {:ok, credentials} <- get_credentials(org_id),
+         {:ok, payload} <- Jason.decode(attrs["message"]) do
+      payload
+      |> Map.put("send_to", attrs["send_to"])
+      |> Map.merge(@common_message_params)
       |> do_send_message(credentials)
     end
   end
 
-  defp do_send_message(%{"type" => "text"} = payload, credentials) do
+  @spec do_send_message(map(), map()) :: Tesla.Env.result()
+  defp do_send_message(%{"msg_type" => "DATA_TEXT"} = payload, credentials) do
     payload
-    |> Map.take(["send_to", "msg"])
     |> Map.merge(@default_send_message_params)
     |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
-  defp do_send_message(%{"type" => "file"} = payload, credentials) do
-    msg_payload =
-      @default_send_media_message_params
-      |> Map.put("msg_type", "DOCUMENT")
-      |> Map.put("media_url", payload["url"])
-      |> Map.put("caption", payload["filename"])
-      |> Map.put("send_to", payload["send_to"])
-
-    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  defp do_send_message(%{"msg_type" => "DOCUMENT"} = payload, credentials) do
+    payload
+    |> Map.merge(@default_send_media_message_params)
+    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
-  defp do_send_message(%{"type" => "video"} = payload, credentials) do
-    msg_payload =
-      @default_send_media_message_params
-      |> Map.put("msg_type", "VIDEO")
-      |> Map.put("media_url", payload["url"])
-      |> Map.put("caption", payload["caption"])
-      |> Map.put("send_to", payload["send_to"])
-
-    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  defp do_send_message(%{"msg_type" => "VIDEO"} = payload, credentials) do
+    payload
+    |> Map.merge(@default_send_media_message_params)
+    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
-  defp do_send_message(%{"type" => "audio"} = payload, credentials) do
-    msg_payload =
-      @default_send_media_message_params
-      |> Map.put("msg_type", "AUDIO")
-      |> Map.put("media_url", payload["url"])
-      |> Map.put("caption", payload["caption"])
-      |> Map.put("send_to", payload["send_to"])
-
-    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  defp do_send_message(%{"msg_type" => "AUDIO"} = payload, credentials) do
+    payload
+    |> Map.merge(@default_send_media_message_params)
+    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
-  defp do_send_message(%{"type" => "image"} = payload, credentials) do
-    msg_payload =
-      @default_send_media_message_params
-      |> Map.put("msg_type", "IMAGE")
-      |> Map.put("media_url", payload["originalUrl"])
-      |> Map.put("caption", payload["caption"])
-      |> Map.put("send_to", payload["send_to"])
-
-    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  defp do_send_message(%{"msg_type" => "IMAGE"} = payload, credentials) do
+    payload
+    |> Map.merge(@default_send_media_message_params)
+    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
   @doc """

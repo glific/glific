@@ -14,7 +14,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec send_text(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_text(message, attrs \\ %{}) do
-    %{type: :text, msg: message.body}
+    %{msg_type: :DATA_TEXT, msg: message.body}
     |> check_size()
     |> send_message(message, attrs)
   end
@@ -23,12 +23,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec send_video(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_video(message, attrs \\ %{}) do
-    message_media = message.media
-
     %{
-      type: :video,
-      url: message_media.source_url,
-      caption: caption(message_media.caption)
+      msg_type: :VIDEO,
+      media_url: message.media.source_url,
+      caption: caption(message.media.caption)
     }
     |> check_size()
     |> send_message(message, attrs)
@@ -37,11 +35,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @doc false
   @spec send_audio(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_audio(message, attrs \\ %{}) do
-    message_media = message.media
-
     %{
-      type: :audio,
-      url: message_media.source_url
+      msg_type: :AUDIO,
+      media_url: message.media.source_url
     }
     |> send_message(message, attrs)
   end
@@ -50,13 +46,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec send_image(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
-    message_media = message.media
-
     %{
-      type: :image,
-      originalUrl: message_media.source_url,
-      previewUrl: message_media.url,
-      caption: caption(message_media.caption)
+      msg_type: :IMAGE,
+      media_url: message.media.source_url,
+      caption: caption(message.media.caption)
     }
     |> check_size()
     |> send_message(message, attrs)
@@ -66,12 +59,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @spec send_document(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_document(message, attrs \\ %{}) do
-    message_media = message.media
-
     %{
-      type: :file,
-      url: message_media.source_url,
-      filename: message_media.caption
+      msg_type: :DOCUMENT,
+      media_url: message.media.source_url,
+      caption: message.media.caption
     }
     |> send_message(message, attrs)
   end
