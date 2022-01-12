@@ -72,6 +72,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def send_message(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
       %{"type" => type} = payload["message"] |> Jason.decode!()
+      IO.inspect(payload)
       do_send_message(type, payload, credentials)
     end
   end
@@ -97,7 +98,33 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       |> Map.put("media_url", doc["url"])
       |> Map.put("caption", doc["filename"])
 
-    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials) |> IO.inspect()
+    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  end
+
+  defp do_send_message("video", payload, credentials) do
+    video = payload["message"] |> Jason.decode!()
+
+    msg_payload =
+      @default_send_media_message_params
+      |> Map.put("msg_type", "VIDEO")
+      |> Map.put("send_to", payload["destination"])
+      |> Map.put("media_url", video["url"])
+      |> Map.put("caption", video["caption"])
+
+    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
+  end
+
+  defp do_send_message("audio", payload, credentials) do
+    audio = payload["message"] |> Jason.decode!()
+
+    msg_payload =
+      @default_send_media_message_params
+      |> Map.put("msg_type", "AUDIO")
+      |> Map.put("send_to", payload["destination"])
+      |> Map.put("media_url", audio["url"])
+      |> Map.put("caption", audio["caption"])
+
+    gupshup_post(@gupshup_enterprise_url, msg_payload, credentials)
   end
 
   defp do_send_message("image", payload, credentials) do

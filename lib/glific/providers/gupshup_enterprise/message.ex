@@ -23,6 +23,33 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @doc false
+  @spec send_video(Message.t(), map()) ::
+          {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
+  def send_video(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :video,
+      url: message_media.source_url,
+      caption: caption(message_media.caption)
+    }
+    |> check_size()
+    |> send_message(message, attrs)
+  end
+
+  @doc false
+  @spec send_audio(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_audio(message, attrs \\ %{}) do
+    message_media = message.media
+
+    %{
+      type: :audio,
+      url: message_media.source_url
+    }
+    |> send_message(message, attrs)
+  end
+
+  @doc false
   @spec send_image(Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def send_image(message, attrs \\ %{}) do
