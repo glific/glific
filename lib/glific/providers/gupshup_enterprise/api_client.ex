@@ -69,25 +69,8 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
   end
 
-  defp do_send_message(%{"msg_type" => "DOCUMENT"} = payload, credentials) do
-    payload
-    |> Map.merge(@default_send_media_message_params)
-    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
-  end
-
-  defp do_send_message(%{"msg_type" => "VIDEO"} = payload, credentials) do
-    payload
-    |> Map.merge(@default_send_media_message_params)
-    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
-  end
-
-  defp do_send_message(%{"msg_type" => "AUDIO"} = payload, credentials) do
-    payload
-    |> Map.merge(@default_send_media_message_params)
-    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
-  end
-
-  defp do_send_message(%{"msg_type" => "IMAGE"} = payload, credentials) do
+  defp do_send_message(%{"msg_type" => msg_type} = payload, credentials)
+       when msg_type in ["DOCUMENT", "VIDEO", "AUDIO", "IMAGE"] do
     payload
     |> Map.merge(@default_send_media_message_params)
     |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
