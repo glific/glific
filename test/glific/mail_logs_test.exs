@@ -93,4 +93,18 @@ defmodule Glific.MailLogTest do
 
     assert updated_mail_log.category == "updated_category_2"
   end
+
+  test "mail_sent_in_past_time?/3 checks if we have sent in a mail in the given time", %{
+    organization_id: organization_id
+  } do
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
+    assert {:ok, %MailLog{} = mail_log} = MailLog.create_mail_log(attrs)
+    oldTime = Glific.go_back_time(24)
+    assert true == MailLog.mail_sent_in_past_time?(mail_log.category, oldTime, organization_id)
+
+    assert {:ok, %MailLog{} = _updated_mail_log} =
+             MailLog.update_mail_log(mail_log, %{inserted_at: Glific.go_back_time(25)})
+
+    assert true == MailLog.mail_sent_in_past_time?(mail_log.category, oldTime, organization_id)
+  end
 end
