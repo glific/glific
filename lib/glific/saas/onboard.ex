@@ -130,7 +130,7 @@ defmodule Glific.Saas.Onboard do
       NewPartnerOnboardedMail.new_mail(results.organization)
       |> Mailer.send(%{
         category: "new_partner_onboarded",
-        organization_id: results.organization.organization_id
+        organization_id: results.organization.id
       })
 
     results

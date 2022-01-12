@@ -18,10 +18,4 @@ defmodule Glific.Mails.CriticalNotificationMail do
       \n#{message} \n\n Please contact the Glific team in case you don't understand the issue.
       \n\n The Glific team")
   end
-
-  def meta do
-    %{
-      category: "notification_email"
-    }
-  end
 end

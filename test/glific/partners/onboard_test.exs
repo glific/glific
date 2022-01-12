@@ -97,6 +97,7 @@ defmodule Glific.OnboardTest do
 
   test "ensure that sending in valid parameters, delete inactive organization" do
     result = Onboard.setup(@valid_attrs)
+
     {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
     Onboard.delete(organization.id, true)
 

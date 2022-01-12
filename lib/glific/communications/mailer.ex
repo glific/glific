@@ -1,6 +1,8 @@
 defmodule Glific.Communications.Mailer do
   use Swoosh.Mailer, otp_app: :glific
 
+  alias Glific.Mails.MailLog
+
   @moduledoc """
   This module provides a simple interface for sending emails.
   """
@@ -43,7 +45,7 @@ defmodule Glific.Communications.Mailer do
         status: "sent",
         content: %{data: "#{inspect(Map.from_struct(mail))}"}
       }
-      |> Glific.Mails.MailLog.create_mail_log()
+      |> MailLog.create_mail_log()
 
     {:ok, results}
   end
@@ -61,7 +63,7 @@ defmodule Glific.Communications.Mailer do
         content: %{data: "#{inspect(Map.from_struct(mail))}"},
         error: "error while sending the mail. #{inspect(error)}"
       }
-      |> Glific.Mails.MailLog.create_mail_log()
+      |> MailLog.create_mail_log()
 
     {:error, error}
   end
