@@ -367,9 +367,9 @@ defmodule Glific.CommunicationsTest do
     alias Glific.Mails.MailLog
 
     test "send/2 will deliver a mail based on given args", attrs do
-      attrs = %{category: "test", organization_id: attrs.organization_id}
+      mail_attrs = %{category: "test", organization_id: attrs.organization_id}
       email = Email.new(subject: "Hello, Glific Team!", from: Communications.Mailer.sender())
-      Communications.Mailer.send(email, attrs)
+      Communications.Mailer.send(email, mail_attrs)
       assert_email_sent(email)
 
       assert MailLog.count_mail_logs(%{
