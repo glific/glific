@@ -9,8 +9,9 @@ defmodule Glific.Mails.LowBalanceAlertMail do
   @spec new_mail(map(), integer()) :: Swoosh.Email.t()
   def new_mail(org, bsp_balance) do
     new()
-    |> from(Mailer.sender())
     |> to({org.name, org.email})
+    |> from(Mailer.sender())
+    |> cc(Mailer.glific_support())
     |> subject("Gupshup balance is low.")
     |> text_body(
       "Your balance is low $#{bsp_balance}. Please top up your account to keep sending the messages."

@@ -12,6 +12,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     new()
     |> from(Mailer.sender())
     |> to({"", Saas.primary_email()})
+    |> cc(Mailer.glific_support())
     |> subject("Congratulations! We onboarded new NGO.")
     |> text_body(
       "Hello Team\nA new organization is onboarded on Tides.\n\n Name: #{org.name}\n Email: #{org.email}"

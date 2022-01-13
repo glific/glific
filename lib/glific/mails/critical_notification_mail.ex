@@ -13,6 +13,7 @@ defmodule Glific.Mails.CriticalNotificationMail do
     new()
     |> to({org.name, org.email})
     |> from(Mailer.sender())
+    |> cc(Mailer.glific_support())
     |> subject("CRITICAL: Needs your attention.")
     |> text_body("Hello #{org.name}\nThere is one critical error on Glific.
       \n#{message} \n\n Please contact the Glific team in case you don't understand the issue.

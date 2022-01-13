@@ -33,8 +33,18 @@ defmodule Glific.Communications.Mailer do
   """
   @spec sender() :: tuple()
   def sender do
-    {"Glific Team", "glific-tides-support@coloredcow.com"}
+    {"Glific Team", "glific-team@coloredcow.com"}
   end
+
+
+  @doc """
+  Support CC for all the emails
+  """
+  @spec glific_support() :: tuple()
+  def glific_support do
+    {"Glific support", "glific-support@coloredcow.com"}
+  end
+
 
   defp capture_log(
          {:ok, results},
