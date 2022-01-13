@@ -57,9 +57,10 @@ defmodule Glific.Jobs.BSPBalanceWorker do
           category: category,
           organization_id: organization_id
         })
-    end
 
-    {:ok, "no email"}
+    else
+      {:ok, "no email"}
+    end
   end
 
   defp send_low_balance_notification(_, _), do: nil

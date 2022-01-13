@@ -255,6 +255,22 @@ defmodule GlificWeb.Schema.MessageTypes do
       resolve(&Resolvers.Messages.publish_message/3)
     end
 
+    field :received_simulator_message, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :sent_simulator_message, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
+    end
+
     field :cleared_messages, :contact do
       arg(:organization_id, non_null(:id))
 
