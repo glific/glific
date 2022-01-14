@@ -36,7 +36,6 @@ defmodule Glific.Communications.Mailer do
     {"Glific Team", "glific-team@coloredcow.com"}
   end
 
-
   @doc """
   Support CC for all the emails
   """
@@ -44,7 +43,6 @@ defmodule Glific.Communications.Mailer do
   def glific_support do
     {"Glific support", "glific-support@coloredcow.com"}
   end
-
 
   defp capture_log(
          {:ok, results},
