@@ -107,6 +107,10 @@ defmodule Glific.Clients.DigitalGreen do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
+  def webhook("test", fields) do
+    _abc = fields.abc
+  end
+
   def webhook("daily", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])

@@ -219,12 +219,21 @@ defmodule Glific.Flows.Webhook do
         opts: [adapter: [recv_timeout: 10_000]]
       )
 
-  defp do_action("function", function, body, _headers),
-    do: {
+  defp do_action("function", function, body, _headers) do
+    {
       :ok,
       :function,
       Glific.Clients.webhook(function, Jason.decode!(body))
     }
+  rescue
+    error ->
+      error_message =
+        "Calling webhook function threw an exception, args: #{inspect(function)}, object: #{inspect(body)}, error: #{inspect(error)}"
+
+      Logger.error(error_message)
+      Appsignal.send_error(:error, error_message, __STACKTRACE__)
+      {:error, error_message}
+  end
 
   @doc """
   Standard perform method to use Oban worker
