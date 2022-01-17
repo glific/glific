@@ -3,7 +3,14 @@ defmodule Glific.PartnersTest do
   use Glific.DataCase
   import Mock
 
-  alias Glific.{Fixtures, Notifications.Notification, Partners}
+  alias Glific.{
+    Fixtures,
+    Notifications.Notification,
+    Partners,
+    Partners.Credential,
+    Partners.Provider,
+    Repo
+  }
 
   describe "provider" do
     alias Glific.Partners.Provider
@@ -733,6 +740,28 @@ defmodule Glific.PartnersTest do
       organization = Fixtures.organization_fixture(%{fields: %{"org_name" => "Glific"}})
       global_fields = Partners.get_global_field_map(organization.id)
       assert global_fields == %{"org_name" => "Glific"}
+    end
+
+    test "valid_bsp?/2 for credentials should return true/false",
+         %{organization_id: organization_id} = _attrs do
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
+      {:ok, credentials} = Repo.fetch_by(Credential, %{provider_id: provider.id})
+
+      assert true == credentials |> Repo.preload([:provider]) |> Partners.valid_bsp?()
+      {:ok, provider1} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
+
+      valid_attrs = %{
+        keys: %{"api_end_point" => provider1.keys["api_end_point"]["default"]},
+        shortcode: provider1.shortcode,
+        secrets: %{user_id: "user_id", password: "password"},
+        organization_id: organization_id
+      }
+
+      assert {:ok, %Credential{} = _credential} = Partners.create_credential(valid_attrs)
+
+      {:ok, credentials1} = Repo.fetch_by(Credential, %{provider_id: provider1.id})
+      assert true == credentials1 |> Repo.preload([:provider]) |> Partners.valid_bsp?()
     end
 
     @default_goth_json """
