@@ -3,7 +3,10 @@ defmodule Glific.Providers.ResponseHandler do
   Module for handling response from Provider end
   or Handle response for simulators
   """
-  alias Glific.Communications
+  alias Glific.{
+    Communications,
+    Messages.Message
+  }
 
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
