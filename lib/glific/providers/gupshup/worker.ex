@@ -9,12 +9,12 @@ defmodule Glific.Providers.Gupshup.Worker do
     priority: 0
 
   alias Glific.{
-    Communications,
     Contacts,
     Messages.Message,
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient
+    Providers.Gupshup.ApiClient,
+    Providers.ResponseHandler
   }
 
   @doc """
@@ -26,7 +26,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     organization = Partners.organization(message["organization_id"])
 
     if is_nil(organization.services["bsp"]) do
-      handle_fake_response(
+      ResponseHandler.handle_fake_response(
         message,
         "{\"message\": \"API Key does not exist\"}",
         401
@@ -71,25 +71,11 @@ defmodule Glific.Providers.Gupshup.Worker do
   defp process_simulator(_destination, message) do
     message_id = Faker.String.base64(36)
 
-    handle_fake_response(
+    ResponseHandler.handle_fake_response(
       message,
       "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
       200
     )
-  end
-
-  @spec handle_fake_response(Message.t(), String.t(), non_neg_integer) ::
-          :ok | {:error, String.t()}
-  defp handle_fake_response(message, body, status) do
-    {:ok,
-     %Tesla.Env{
-       __client__: %Tesla.Client{adapter: nil, fun: nil, post: [], pre: []},
-       __module__: Glific.Providers.Gupshup.ApiClient,
-       body: body,
-       method: :post,
-       status: status
-     }}
-    |> handle_response(message)
   end
 
   @spec process_gupshup(
@@ -123,7 +109,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       org_id,
       template_payload
     )
-    |> handle_response(message)
+    |> ResponseHandler.handle_response(message)
   end
 
   defp process_gupshup(org_id, payload, message, _attrs) do
@@ -131,7 +117,7 @@ defmodule Glific.Providers.Gupshup.Worker do
       org_id,
       payload
     )
-    |> handle_response(message)
+    |> ResponseHandler.handle_response(message)
   end
 
   @spec check_media_template(map(), map(), String.t()) :: map()
@@ -156,24 +142,4 @@ defmodule Glific.Providers.Gupshup.Worker do
   defp parse_media_url(template_payload, template_type)
        when template_type in ["video", "document"],
        do: Jason.decode!(template_payload["message"])["url"]
-
-  @doc false
-  @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
-          :ok | {:error, String.t()}
-  defp handle_response({:ok, response}, message) do
-    case response do
-      %Tesla.Env{status: status} when status in 200..299 ->
-        Communications.Message.handle_success_response(response, message)
-        :ok
-
-      # Not authorized, Job succeeded, we should return an ok, so we dont retry
-      %Tesla.Env{status: status} when status in 400..499 ->
-        Communications.Message.handle_error_response(response, message)
-        :ok
-
-      # We dont know why this failed, so we should try again
-      _ ->
-        Communications.Message.handle_error_response(response, message)
-    end
-  end
 end
