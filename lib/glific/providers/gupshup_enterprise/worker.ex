@@ -28,7 +28,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
     if is_nil(organization.services["bsp"]) do
       ResponseHandler.handle_fake_response(
         message,
-        "{\"message\": \"API Key does not exist\"}",
+        "{\"message\": \"BSP credentials does not exist\"}",
         401
       )
     else
