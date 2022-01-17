@@ -118,7 +118,11 @@ defmodule GlificWeb.StripeController do
          organization_id
        ) do
     Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
-    |> Billing.update_billing(%{email: customer.email})
+    |> then(
+      &if is_nil(&1),
+        do: {:ok, "No Billing corresponding to customer id #{customer.id} exist"},
+        else: Billing.update_billing(&1, %{email: customer.email})
+    )
   end
 
   defp handle_webhook(
