@@ -690,31 +690,29 @@ defmodule Glific.PartnersTest do
       assert credential.secrets == valid_update_attrs.secrets
     end
 
-    @tag :pending
-    test "update_credential/2 for bsp credentials should insert opted in contacts",
+    test "update_credential/2 for guphsup enterprise should update credentials",
          %{organization_id: organization_id} = _attrs do
-      provider = provider_fixture(%{group: "bsp"})
+      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
 
       valid_attrs = %{
+        keys: %{"api_end_point" => provider.keys["api_end_point"]["default"]},
         shortcode: provider.shortcode,
-        secrets: %{api_key: "test_value"},
+        secrets: %{"user_id" => "user_id", "password" => "password"},
         organization_id: organization_id
       }
 
-      {:ok, credential} = Partners.create_credential(valid_attrs)
+      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
 
       valid_update_attrs = %{
         keys: %{"api_end_point" => "test_end_point"},
-        secrets: %{"api_key" => "updated_test_value", "app_name" => "test_app_name"},
+        shortcode: provider.shortcode,
+        secrets: %{"user_id" => "updated_user_id", "password" => "updated_password"},
         organization_id: organization_id
       }
 
-      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
-
-      assert [_contact] =
-               Contacts.list_contacts(%{
-                 filter: %{organization_id: organization_id, phone: @opted_in_contact_phone}
-               })
+      {:ok, updated_credential} = Partners.update_credential(credential, valid_update_attrs)
+      assert "updated_password" == updated_credential.secrets["password"]
+      assert "updated_user_id" == updated_credential.secrets["user_id"]
     end
 
     test "update_credential/2 for bigquery should call create bigquery dataset",
@@ -742,7 +740,7 @@ defmodule Glific.PartnersTest do
       assert global_fields == %{"org_name" => "Glific"}
     end
 
-    test "valid_bsp?/2 for credentials should return true/false",
+    test "valid_bsp?/2 for credentials should return true when credentials are valid",
          %{organization_id: organization_id} = _attrs do
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
