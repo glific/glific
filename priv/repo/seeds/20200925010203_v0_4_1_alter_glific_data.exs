@@ -120,6 +120,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_navana_tech()
 
     add_exotel()
+
+    add_gupshup_enterprise()
   end
 
   defp add_dialogflow do
@@ -307,5 +309,37 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             }
           }
         })
+  end
+
+  defp add_gupshup_enterprise() do
+    {:ok, gupshup_enterprise} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
+
+    Partners.active_organizations([])
+    |> Enum.each(fn {org_id, _name} ->
+      Glific.Repo.put_organization_id(org_id)
+
+      query =
+        from c in Credential,
+          where: c.organization_id == ^org_id and c.provider_id == ^gupshup_enterprise.id
+
+      if !Repo.exists?(query),
+        do:
+          Repo.insert!(%Credential{
+            organization_id: org_id,
+            provider_id: gupshup_enterprise.id,
+            keys: %{
+              url: "https://enterprise.smsgupshup.com/",
+              api_end_point: "https://media.smsgupshup.com/GatewayAPI/rest",
+              handler: "Glific.Providers.Gupshup.Enterprise.Message",
+              worker: "Glific.Providers.Gupshup.Enterprise.Worker",
+              bsp_limit: 40
+            },
+            secrets: %{
+              user_id: "user id",
+              password: "password"
+            },
+            is_active: false
+          })
+    end)
   end
 end

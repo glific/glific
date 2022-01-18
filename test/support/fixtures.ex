@@ -181,6 +181,23 @@ defmodule Glific.Fixtures do
 
     Partners.create_credential(%{
       organization_id: organization.id,
+      shortcode: "gupshup_enterprise",
+      keys: %{
+        url: "test_url",
+        api_end_point: "test_api_end_point",
+        handler: "Glific.Providers.Gupshup.Enterprise.Message",
+        worker: "Glific.Providers.Gupshup.Enterprise.Worker",
+        bsp_limit: 60
+      },
+      secrets: %{
+        user_id: "Please enter your user id here",
+        password: "Please enter your password here"
+      },
+      is_active: false
+    })
+
+    Partners.create_credential(%{
+      organization_id: organization.id,
       shortcode: "gupshup",
       keys: %{
         url: "test_url",

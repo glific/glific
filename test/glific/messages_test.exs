@@ -99,6 +99,23 @@ defmodule Glific.MessagesTest do
       %{sender_id: sender.id, receiver_id: receiver.id, organization_id: sender.organization_id}
     end
 
+    # Update Gupshup Enterprise as default bsp
+    defp enable_gupshup_enterprise(attrs) do
+      updated_attrs = %{
+        is_active: true,
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup_enterprise"
+      }
+
+      {:ok, cred} =
+        Partners.get_credential(%{
+          organization_id: attrs.organization_id,
+          shortcode: "gupshup_enterprise"
+        })
+
+      Partners.update_credential(cred, updated_attrs)
+    end
+
     def message_fixture(attrs) do
       valid_attrs = Map.merge(@valid_attrs, foreign_key_constraint(attrs))
 
@@ -626,6 +643,23 @@ defmodule Glific.MessagesTest do
         type: :text
       }
 
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message"
+    end
+
+    test "create and send message should send message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      Partners.get_organization!(attrs.organization_id) |> Repo.preload([:bsp])
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
