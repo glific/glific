@@ -21,6 +21,7 @@ defmodule Glific.Contacts do
     Groups.UserGroup,
     Partners,
     Providers.GupshupContacts,
+    Providers.GupshupEnterpriseContacts,
     Repo,
     Tags.ContactTag,
     Users.User
@@ -648,6 +649,7 @@ defmodule Glific.Contacts do
 
     case organization.bsp.shortcode do
       "gupshup" -> GupshupContacts.optin_contact(attrs)
+      "gupshup_enterprise" -> GupshupEnterpriseContacts.optin_contact(attrs)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
