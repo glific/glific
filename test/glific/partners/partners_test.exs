@@ -735,16 +735,22 @@ defmodule Glific.PartnersTest do
     end
 
     test "valid_bsp?/2 for credentials should return true when credentials are valid", _attrs do
-      {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+      {:ok, gupshup_provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
-      {:ok, credentials} = Repo.fetch_by(Credential, %{provider_id: provider.id})
+      {:ok, gupshup_credentials} = Repo.fetch_by(Credential, %{provider_id: gupshup_provider.id})
 
-      assert true == credentials |> Repo.preload([:provider]) |> Partners.valid_bsp?()
-      {:ok, provider1} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
+      assert true == gupshup_credentials |> Repo.preload([:provider]) |> Partners.valid_bsp?()
 
-      assert {:ok, credentials1} = Repo.fetch_by(Credential, %{provider_id: provider1.id})
+      {:ok, gupshup_enterprise_provider} =
+        Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
 
-      assert true == credentials1 |> Repo.preload([:provider]) |> Partners.valid_bsp?()
+      assert {:ok, gupshup_enterprise_credentials} =
+               Repo.fetch_by(Credential, %{provider_id: gupshup_enterprise_provider.id})
+
+      assert true ==
+               gupshup_enterprise_credentials
+               |> Repo.preload([:provider])
+               |> Partners.valid_bsp?()
     end
 
     @default_goth_json """
