@@ -659,11 +659,33 @@ defmodule Glific.MessagesTest do
         type: :text
       }
 
-      Partners.get_organization!(attrs.organization_id) |> Repo.preload([:bsp])
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "test message"
+    end
+
+    test "create and send message should send image message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          caption: "image caption",
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :image,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :image
+      assert is_nil(message.media_id) == false
     end
 
     test "create and send message interactive quick reply message with image should have message body as image caption",

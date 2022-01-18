@@ -694,14 +694,8 @@ defmodule Glific.PartnersTest do
          %{organization_id: organization_id} = _attrs do
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
 
-      valid_attrs = %{
-        keys: %{"api_end_point" => provider.keys["api_end_point"]["default"]},
-        shortcode: provider.shortcode,
-        secrets: %{"user_id" => "user_id", "password" => "password"},
-        organization_id: organization_id
-      }
-
-      assert {:ok, %Credential{} = credential} = Partners.create_credential(valid_attrs)
+      assert {:ok, %Credential{} = credential} =
+               Repo.fetch_by(Credential, %{provider_id: provider.id})
 
       valid_update_attrs = %{
         keys: %{"api_end_point" => "test_end_point"},
@@ -740,8 +734,7 @@ defmodule Glific.PartnersTest do
       assert global_fields == %{"org_name" => "Glific"}
     end
 
-    test "valid_bsp?/2 for credentials should return true when credentials are valid",
-         %{organization_id: organization_id} = _attrs do
+    test "valid_bsp?/2 for credentials should return true when credentials are valid", _attrs do
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
 
       {:ok, credentials} = Repo.fetch_by(Credential, %{provider_id: provider.id})
@@ -749,16 +742,8 @@ defmodule Glific.PartnersTest do
       assert true == credentials |> Repo.preload([:provider]) |> Partners.valid_bsp?()
       {:ok, provider1} = Repo.fetch_by(Provider, %{shortcode: "gupshup_enterprise"})
 
-      valid_attrs = %{
-        keys: %{"api_end_point" => provider1.keys["api_end_point"]["default"]},
-        shortcode: provider1.shortcode,
-        secrets: %{user_id: "user_id", password: "password"},
-        organization_id: organization_id
-      }
+      assert {:ok, credentials1} = Repo.fetch_by(Credential, %{provider_id: provider1.id})
 
-      assert {:ok, %Credential{} = _credential} = Partners.create_credential(valid_attrs)
-
-      {:ok, credentials1} = Repo.fetch_by(Credential, %{provider_id: provider1.id})
       assert true == credentials1 |> Repo.preload([:provider]) |> Partners.valid_bsp?()
     end
 
