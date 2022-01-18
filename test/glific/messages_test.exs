@@ -688,6 +688,74 @@ defmodule Glific.MessagesTest do
       assert is_nil(message.media_id) == false
     end
 
+    test "create and send message should send video message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          caption: "video caption",
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :video,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :video
+      assert is_nil(message.media_id) == false
+    end
+
+    test "create and send message should send file message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          caption: "file name",
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :document,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :document
+      assert is_nil(message.media_id) == false
+    end
+
+    test "create and send message should send audio message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :audio,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :audio
+      assert is_nil(message.media_id) == false
+    end
+
     test "create and send message interactive quick reply message with image should have message body as image caption",
          %{organization_id: organization_id} = attrs do
       label = "Quick Reply Image"
