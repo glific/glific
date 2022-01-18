@@ -1,0 +1,6 @@
+
+query pauseContactFlow( contactId: ID!) {
+  pauseContactFlow(contactId: $contactId) {
+    success
+  }
+}

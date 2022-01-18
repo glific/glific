@@ -155,7 +155,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     end
 
     field :resume_contact_flow, :common_flow_result do
-      arg(:flow_id, non_null(:id))
+      arg(:flow_id, :id)
       arg(:contact_id, non_null(:id))
       arg(:result, :json)
       middleware(Authorize, :staff)
@@ -167,6 +167,12 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:input, :flow_input)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.copy_flow/3)
+    end
+
+    field :pause_contact_flow, :common_flow_result do
+      arg(:contact_id, non_null(:id))
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.Flows.pause_contact_flow/3)
     end
 
     field :start_group_flow, :common_flow_result do
