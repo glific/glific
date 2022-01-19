@@ -651,12 +651,24 @@ defmodule Glific.Partners do
 
   # Ensures we have all the keys required in the credential to call Gupshup
   @spec valid_bsp?(Credential.t()) :: boolean()
-  defp valid_bsp?(credential) do
-    credential.provider.group == "bsp" &&
-      non_nil_string(credential.keys["api_end_point"]) &&
-      non_nil_string(credential.secrets["app_name"]) &&
-      non_nil_string(credential.secrets["api_key"])
+  defp valid_bsp?(credential)
+       when credential.provider.shortcode in ["gupshup_enterprise", "gupshup"] do
+    case credential.provider.shortcode do
+      "gupshup" ->
+        credential.provider.group == "bsp" &&
+          non_nil_string(credential.keys["api_end_point"]) &&
+          non_nil_string(credential.secrets["app_name"]) &&
+          non_nil_string(credential.secrets["api_key"])
+
+      "gupshup_enterprise" ->
+        credential.provider.group == "bsp" &&
+          non_nil_string(credential.keys["api_end_point"]) &&
+          non_nil_string(credential.secrets["user_id"]) &&
+          non_nil_string(credential.secrets["password"])
+    end
   end
+
+  defp valid_bsp?(_credential), do: false
 
   @doc """
   Updates an organization's credential
@@ -677,8 +689,17 @@ defmodule Glific.Partners do
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
-    if valid_bsp?(credential),
-      do: fetch_opted_in_contacts(attrs)
+    if valid_bsp?(credential) do
+      credential.provider.shortcode
+      |> case do
+        "gupshup" ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+          fetch_opted_in_contacts(attrs)
+
+        "gupshup_enterprise" ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+      end
+    end
 
     credential.organization
     |> credential_update_callback(credential.provider.shortcode)
