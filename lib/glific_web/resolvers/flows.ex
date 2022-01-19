@@ -211,7 +211,7 @@ defmodule GlificWeb.Resolvers.Flows do
   def pause_contact_flows(_, %{contact_id: contact_id}, _context) do
     Contacts.get_contact!(contact_id)
     |> Contacts.update_contact(%{
-      flows_paused_at: DateTime.add(DateTime.utc_now(), 10800)
+      flows_paused_at: DateTime.utc_now()
     })
 
     {:ok, %{success: true}}
