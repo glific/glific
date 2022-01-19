@@ -570,7 +570,7 @@ defmodule Glific.Contacts do
   @spec wakeup_paused_contacts(non_neg_integer) :: :ok
   def wakeup_paused_contacts(_organization_id) do
     Contact
-    |> where([fc], fc.flows_paused_at < ^DateTime.add(DateTime.utc_now(), -10800))
+    |> where([fc], fc.flows_paused_at < ^DateTime.add(DateTime.utc_now(), -10_800))
     |> Repo.all(skip_organization_id: true)
     |> Enum.each(fn x -> update_contact(x, %{flows_paused_at: nil}) end)
 

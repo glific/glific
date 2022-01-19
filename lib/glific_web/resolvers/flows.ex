@@ -6,9 +6,9 @@ defmodule GlificWeb.Resolvers.Flows do
   import GlificWeb.Gettext
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows,
-    Contacts,
     Flows.Broadcast,
     Flows.Flow,
     Flows.FlowContext,
