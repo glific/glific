@@ -564,12 +564,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Invoked from cron jobs to mass update the status of contacts belonging to
-  a specific organization
-
-  In this case, if we can, we might want to do it across the entire DB since the
-  update is across all organizations. The main issue might be the row level security
-  of postgres and how it ties in. For now, lets stick to per organization
+  Invoked from cron jobs to mass update the flow paused time if the flow is paused for more than three hours
   """
   @spec wakeup_paused_contacts(non_neg_integer) :: :ok
   def wakeup_paused_contacts(_organization_id) do

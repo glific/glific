@@ -151,13 +151,13 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec resume_contact_flow(
           Absinthe.Resolution.t(),
-          map(),
+          %{flow_id: integer | String.t(), contact_id: integer, result: map()},
           %{
             context: map()
           }
         ) ::
           {:ok, any} | {:error, any}
-  def resume_contact_flow(_, %{contact_id: contact_id, flow_id: flow_id, result: result}, %{
+  def resume_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id, result: result}, %{
         context: %{current_user: user}
       }) do
     with {:ok, contact} <-

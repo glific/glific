@@ -108,7 +108,7 @@ defmodule Glific.Processor.ConsumerFlow do
 
   @spec is_flow_paused?(map()) :: boolean()
   defp is_flow_paused?(contact) do
-    contact.flows_paused_at === nil
+    contact.flows_paused_at !== nil
   end
 
   @doc """

@@ -695,8 +695,6 @@ defmodule Glific.Flows.FlowContext do
         do: Messages.create_temp_message(context.organization_id, "No Response"),
         else: message
 
-    # what to do if we have a waiting for response. Don't want to move forward in that case. Need to check if we have a router type or an action
-
     context
     |> FlowContext.load_context(flow)
     |> FlowContext.step_forward(message)
@@ -706,7 +704,7 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec await_context(non_neg_integer, non_neg_integer | nil) :: FlowContext.t() | nil
+  @spec await_context(non_neg_integer, non_neg_integer) :: FlowContext.t() | nil
   defp await_context(contact_id, flow_id) do
     FlowContext
     |> where([fc], fc.contact_id == ^contact_id)
