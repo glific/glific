@@ -9,6 +9,7 @@ defmodule Glific.Flows.Broadcast do
   require Logger
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows,
     Flows.Flow,
@@ -186,7 +187,11 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
-          response = FlowContext.init_context(flow, contact, @status, opts)
+
+          response =
+            if Contact.is_flow_paused(contact),
+              do: {:error},
+              else: FlowContext.init_context(flow, contact, @status, opts)
 
           if elem(response, 0) in [:ok, :wait] do
             Keyword.get(opts, :flow_broadcast_id, nil)

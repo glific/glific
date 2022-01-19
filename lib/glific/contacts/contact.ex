@@ -142,4 +142,9 @@ defmodule Glific.Contacts.Contact do
 
     %{contact | masked_phone: masked_phone}
   end
+
+  @spec is_flow_paused(map()) :: boolean()
+  def is_flow_paused(contact) do
+    contact.flows_paused_at !== nil
+  end
 end

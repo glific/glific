@@ -26,7 +26,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
     # check if flows are paused for this contact. If yes return early
-    if is_flow_paused?(message.contact) === false do
+    if Contact.is_flow_paused(message.contact) === false do
       is_draft = is_draft_keyword?(state, body)
       # check if draft keyword, if so bypass ignore keywords
       # and start draft flow, issue #621
@@ -104,11 +104,6 @@ defmodule Glific.Processor.ConsumerFlow do
          ),
        do: true,
        else: false
-  end
-
-  @spec is_flow_paused?(map()) :: boolean()
-  defp is_flow_paused?(contact) do
-    contact.flows_paused_at !== nil
   end
 
   @doc """
