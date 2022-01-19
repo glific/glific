@@ -571,7 +571,7 @@ defmodule Glific.Contacts do
     Contact
     |> where([fc], fc.flows_paused_at < ^DateTime.add(DateTime.utc_now(), -10800))
     |> Repo.all(skip_organization_id: true)
-    |> Enum.map(fn x -> update_contact(x, %{flows_paused_at: nil}) end)
+    |> Enum.each(fn x -> update_contact(x, %{flows_paused_at: nil}) end)
 
     :ok
   end
