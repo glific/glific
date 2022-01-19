@@ -5,7 +5,9 @@ defmodule Glific.Saas.Onboard do
   At some later point, we might decide to have a separate onboarding table and managment structure
   """
   alias Glific.{
+    Communications.Mailer,
     Contacts.Contact,
+    Mails.NewPartnerOnboardedMail,
     Partners,
     Partners.Billing,
     Partners.Organization,
@@ -22,6 +24,7 @@ defmodule Glific.Saas.Onboard do
     |> Queries.validate(params)
     |> Queries.setup(params)
     |> format_results()
+    |> notify_saas_team()
   end
 
   @spec add_map(map(), atom(), any()) :: map()
@@ -120,4 +123,18 @@ defmodule Glific.Saas.Onboard do
   end
 
   defp format_results(results), do: results
+
+  @spec notify_saas_team(map()) :: map()
+  defp notify_saas_team(%{is_valid: true} = results) do
+    {:ok, _} =
+      NewPartnerOnboardedMail.new_mail(results.organization)
+      |> Mailer.send(%{
+        category: "new_partner_onboarded",
+        organization_id: results.organization.id
+      })
+
+    results
+  end
+
+  defp notify_saas_team(results), do: results
 end

@@ -161,6 +161,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert!(%Saas{
       name: "Tides",
       organization_id: organization.id,
+      email: "glific@glific.com",
       phone: "91111222333",
       stripe_ids: Enum.into(get_stripe_ids(), %{}),
       tax_rates: %{
