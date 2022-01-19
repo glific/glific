@@ -571,6 +571,24 @@ defmodule Glific.Contacts do
   update is across all organizations. The main issue might be the row level security
   of postgres and how it ties in. For now, lets stick to per organization
   """
+  @spec wakeup_paused_contacts(non_neg_integer) :: :ok
+  def wakeup_paused_contacts(_organization_id) do
+    Contact
+    |> where([fc], fc.flows_paused_at < ^DateTime.add(DateTime.utc_now(), -10800))
+    |> Repo.all(skip_organization_id: true)
+    |> Enum.map(fn x -> update_contact(x, %{flows_paused_at: nil}) end)
+
+    :ok
+  end
+
+  @doc """
+  Invoked from cron jobs to mass update the status of contacts belonging to
+  a specific organization
+
+  In this case, if we can, we might want to do it across the entire DB since the
+  update is across all organizations. The main issue might be the row level security
+  of postgres and how it ties in. For now, lets stick to per organization
+  """
   @spec update_contact_status(non_neg_integer, map()) :: :ok
   def update_contact_status(organization_id, _args) do
     t = Glific.go_back_time(24)

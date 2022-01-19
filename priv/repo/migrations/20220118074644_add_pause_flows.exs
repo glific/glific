@@ -2,14 +2,14 @@ defmodule Glific.Repo.Migrations.AddPauseFlows do
   use Ecto.Migration
 
   def change do
-    flow_contexts()
+    contacts()
   end
 
-  defp flow_contexts do
-    alter table(:flow_contexts) do
-      add :is_flow_paused, :boolean,
-        default: false,
-        comment: "Is the flow context in paused state"
+  defp contacts do
+    alter table(:contacts) do
+      add :flows_paused_at, :utc_datetime,
+        default: nil,
+        comment: "Is the flow paused for a particular contact"
     end
   end
 end

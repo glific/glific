@@ -169,10 +169,16 @@ defmodule GlificWeb.Schema.FlowTypes do
       resolve(&Resolvers.Flows.copy_flow/3)
     end
 
-    field :pause_contact_flow, :common_flow_result do
+    field :pause_contact_flows, :common_flow_result do
       arg(:contact_id, non_null(:id))
-      middleware(Authorize, :manager)
-      resolve(&Resolvers.Flows.pause_contact_flow/3)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.pause_contact_flows/3)
+    end
+
+    field :resume_contact_flows, :common_flow_result do
+      arg(:contact_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.resume_contact_flows/3)
     end
 
     field :start_group_flow, :common_flow_result do

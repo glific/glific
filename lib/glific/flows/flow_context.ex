@@ -36,7 +36,6 @@ defmodule Glific.Flows.FlowContext do
     :wakeup_at,
     :is_background_flow,
     :is_await_result,
-    :is_flow_paused,
     :completed_at,
     :delay,
     :uuids_seen,
@@ -75,7 +74,6 @@ defmodule Glific.Flows.FlowContext do
           wakeup_at: :utc_datetime | nil,
           is_background_flow: boolean,
           is_await_result: boolean,
-          is_flow_paused: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -97,7 +95,6 @@ defmodule Glific.Flows.FlowContext do
 
     field(:is_background_flow, :boolean, default: false)
     field(:is_await_result, :boolean, default: false)
-    field(:is_flow_paused, :boolean, default: false)
 
     field(:delay, :integer, default: 0, virtual: true)
 
@@ -397,33 +394,28 @@ defmodule Glific.Flows.FlowContext do
     do: {:error, dgettext("errors", "We have finished the flow")}
 
   def execute(context, messages) do
-    # resturn early if flow paused
-    if context.is_flow_paused == true do
-      {:ok, context, []}
-    else
-      case Node.execute(context.node, context, messages) do
-        {:ok, context, []} ->
+    case Node.execute(context.node, context, messages) do
+      {:ok, context, []} ->
+        {:ok, context, []}
+
+      {:wait, context, messages} ->
+        {:wait, context, messages}
+
+      # Routers basically break the processing, and return back to the top level
+      # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
+      # the flow has multiple webhooks in it), we recurse till we no longer change state
+      {:ok, context, new_messages} ->
+        # if we've consumed some messages, lets continue calling the function,
+        # till we consume all messages that we potentially can
+        if messages != new_messages do
+          execute(context, new_messages)
+        else
+          # lets discard the message stream and go forward
           {:ok, context, []}
+        end
 
-        {:wait, context, messages} ->
-          {:wait, context, messages}
-
-        # Routers basically break the processing, and return back to the top level
-        # and hence we hit this case. Since they can be multiple routers stacked (e.g. when
-        # the flow has multiple webhooks in it), we recurse till we no longer change state
-        {:ok, context, new_messages} ->
-          # if we've consumed some messages, lets continue calling the function,
-          # till we consume all messages that we potentially can
-          if messages != new_messages do
-            execute(context, new_messages)
-          else
-            # lets discard the message stream and go forward
-            {:ok, context, []}
-          end
-
-        others ->
-          others
-      end
+      others ->
+        others
     end
   end
 
@@ -685,8 +677,7 @@ defmodule Glific.Flows.FlowContext do
         %{
           wakeup_at: nil,
           is_background_flow: false,
-          is_await_result: false,
-          is_flow_paused: false
+          is_await_result: false
         }
       )
 
@@ -705,16 +696,13 @@ defmodule Glific.Flows.FlowContext do
         else: message
 
     # what to do if we have a waiting for response. Don't want to move forward in that case. Need to check if we have a router type or an action
-    if context.is_flow_paused do
-      {:ok, context}
-    else
-      context
-      |> FlowContext.load_context(flow)
-      |> FlowContext.step_forward(message)
-      |> case do
-        {:ok, context} -> {:ok, context, []}
-        {:error, message} -> {:error, message}
-      end
+
+    context
+    |> FlowContext.load_context(flow)
+    |> FlowContext.step_forward(message)
+    |> case do
+      {:ok, context} -> {:ok, context, []}
+      {:error, message} -> {:error, message}
     end
   end
 
@@ -724,16 +712,6 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], fc.contact_id == ^contact_id)
     |> where([fc], fc.flow_id == ^flow_id)
     |> where([fc], fc.is_await_result == true)
-    |> where([fc], is_nil(fc.completed_at))
-    |> preload(:flow)
-    |> Repo.one()
-  end
-
-  @spec pause_context(non_neg_integer) :: FlowContext.t() | nil
-  def pause_context(contact_id) do
-    FlowContext
-    |> where([fc], fc.contact_id == ^contact_id)
-    |> where([fc], fc.is_flow_paused == true)
     |> where([fc], is_nil(fc.completed_at))
     |> preload(:flow)
     |> Repo.one()

@@ -42,6 +42,7 @@ defmodule Glific.Jobs.MinuteWorker do
        when job in [
               "contact_status",
               "wakeup_flows",
+              "wakeup_paused_contacts",
               "bigquery",
               "gcs",
               "triggers_and_broadcast",
@@ -51,6 +52,9 @@ defmodule Glific.Jobs.MinuteWorker do
     case job do
       "contact_status" ->
         Partners.perform_all(&Contacts.update_contact_status/2, args, [])
+
+      "wakeup_paused_contacts" ->
+        Partners.perform_all(&Contacts.wakeup_paused_contacts/1, nil, [])
 
       "wakeup_flows" ->
         Partners.perform_all(&FlowContext.wakeup_flows/1, nil, [])

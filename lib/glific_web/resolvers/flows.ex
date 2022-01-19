@@ -173,16 +173,6 @@ defmodule GlificWeb.Resolvers.Flows do
     end
   end
 
-  def resume_contact_flow(_, %{contact_id: contact_id}, _context) do
-    FlowContext.pause_context(contact_id)
-    |> FlowContext.update_flow_context(%{
-      is_flow_paused: false,
-      wakeup_at: nil
-    })
-
-    {:ok, %{success: true}}
-  end
-
   @doc """
   Start a flow for all contacts of a group
   """
@@ -214,16 +204,32 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc """
-  pause a flow for the contact
+  pause all flows for the contact
   """
-  @spec pause_contact_flow(Absinthe.Resolution.t(), %{contact_id: integer}, %{context: map()}) ::
+  @spec pause_contact_flows(Absinthe.Resolution.t(), %{contact_id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def pause_contact_flow(_, %{contact_id: contact_id}, _context) do
-    # add handling if no active context
-    FlowContext.active_context(contact_id)
-    |> FlowContext.update_flow_context(%{
-      is_flow_paused: true,
-      wakeup_at: DateTime.add(DateTime.utc_now(), 10800)
+  def pause_contact_flows(_, %{contact_id: contact_id}, _context) do
+    Contacts.get_contact!(contact_id)
+    |> Contacts.update_contact(%{
+      flows_paused_at: DateTime.add(DateTime.utc_now(), 10800)
+    })
+
+    {:ok, %{success: true}}
+  end
+
+  @doc """
+  Resume all flows for a contact
+  """
+  @spec resume_contact_flows(
+          Absinthe.Resolution.t(),
+          %{contact_id: integer},
+          map()
+        ) ::
+          {:ok, any} | {:error, any}
+  def resume_contact_flows(_, %{contact_id: contact_id}, _context) do
+    Contacts.get_contact!(contact_id)
+    |> Contacts.update_contact(%{
+      flows_paused_at: nil
     })
 
     {:ok, %{success: true}}

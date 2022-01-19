@@ -25,29 +25,33 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    # check if draft keyword, if so bypass ignore keywords
-    # and start draft flow, issue #621
-    is_draft = is_draft_keyword?(state, body)
+    # check if flows are paused for this contact. If yes return early
+    if is_flow_paused?(message.contact) === false do
+      is_draft = is_draft_keyword?(state, body)
+      # check if draft keyword, if so bypass ignore keywords
+      # and start draft flow, issue #621
+      if is_draft,
+        do: FlowContext.mark_flows_complete(message.contact_id, false)
 
-    if is_draft,
-      do: FlowContext.mark_flows_complete(message.contact_id, false)
+      context = FlowContext.active_context(message.contact_id)
 
-    context = FlowContext.active_context(message.contact_id)
+      # if contact is not optout if we are in a flow and the flow is set to ignore keywords
+      # then send control to the flow directly
+      # context is not nil
 
-    # if contact is not optout if we are in a flow and the flow is set to ignore keywords
-    # then send control to the flow directly
-    # context is not nil
-
-    if start_optin_flow?(message.contact, context, body),
-      do: start_optin_flow(message, state),
-      else: move_forward({message, state}, body, context, is_draft: is_draft)
+      if start_optin_flow?(message.contact, context, body),
+        do: start_optin_flow(message, state),
+        else: move_forward({message, state}, body, context, is_draft: is_draft)
+    else
+      {message, state}
+    end
   end
 
   # Setting this to 0 since we are pushing out our own optin flow
   @delay_time 0
 
   @doc """
-  In case contact is not in optin flow let's move ahead with the regualr processing.
+  In case contact is not in optin flow let's move ahead with the regular processing.
   """
   @spec move_forward({Message.t(), map()}, String.t(), FlowContext.t(), Keyword.t()) ::
           {Message.t(), map()}
@@ -100,6 +104,11 @@ defmodule Glific.Processor.ConsumerFlow do
          ),
        do: true,
        else: false
+  end
+
+  @spec is_flow_paused?(map()) :: boolean()
+  defp is_flow_paused?(contact) do
+    contact.flows_paused_at === nil
   end
 
   @doc """

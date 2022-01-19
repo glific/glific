@@ -37,6 +37,7 @@ defmodule Glific.Contacts.Contact do
     :last_message_number,
     :last_message_at,
     :last_communication_at,
+    :flows_paused_at,
     :settings,
     :fields
   ]
@@ -66,6 +67,7 @@ defmodule Glific.Contacts.Contact do
           last_message_number: integer,
           last_message_at: :utc_datetime | nil,
           last_communication_at: :utc_datetime | nil,
+          flows_paused_at: :utc_datetime | nil,
           settings: map() | nil,
           fields: map() | nil,
           inserted_at: :utc_datetime_usec | nil,
@@ -100,6 +102,7 @@ defmodule Glific.Contacts.Contact do
 
     field :last_message_at, :utc_datetime
     field :last_communication_at, :utc_datetime
+    field :flows_paused_at, :utc_datetime
 
     field :settings, :map, default: %{}
     field :fields, :map, default: %{}

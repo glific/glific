@@ -46,6 +46,7 @@ oban_crontab = [
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
   {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :stats}},
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
+  {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_paused_contacts}},
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
   {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
