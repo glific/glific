@@ -57,7 +57,6 @@ defmodule Glific.Jobs.BSPBalanceWorker do
           category: category,
           organization_id: organization_id
         })
-
     else
       {:ok, "no email"}
     end
