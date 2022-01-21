@@ -13,7 +13,8 @@ defmodule Glific.Flows do
     Groups,
     Groups.Group,
     Partners,
-    Repo
+    Repo,
+    Templates.SessionTemplate
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -95,11 +96,12 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from f in query,
+        from(f in query,
           where: ^keyword in f.keywords
+        )
 
       {:uuid, uuid}, query ->
-        from q in query, where: q.uuid == ^uuid
+        from(q in query, where: q.uuid == ^uuid)
 
       {:status, status}, query ->
         query
@@ -113,10 +115,10 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:is_background, is_background}, query ->
-        from q in query, where: q.is_background == ^is_background
+        from(q in query, where: q.is_background == ^is_background)
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
@@ -758,27 +760,34 @@ defmodule Glific.Flows do
     !Enum.member?(import_flow_list, false)
   end
 
+  @spec clean_flow_with_template(map()) :: map()
   defp clean_flow_with_template(definition) do
+    # checking if the imported template is present in database
+    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_template(&1)))
+      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_template(&1, template_uuid_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec do_clean_flow_with_template(map()) :: list()
-  defp do_clean_flow_with_template(%{"actions" => actions} = node) do
+  @spec do_clean_flow_with_template(map(), list()) :: list()
+  defp do_clean_flow_with_template(%{"actions" => actions} = node, template_uuid_list) do
     action = actions |> hd
+    template_uuid = get_in(action, ["templating", "template", "uuid"])
 
-    if action["type"] == "send_msg" && Map.has_key?(action, "templating") do
-      updated_action =
-        action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+    with "send_msg" <- action["type"],
+         true <- Map.has_key?(action, "templating"),
+         false <- template_uuid in template_uuid_list do
+      # update the node if template uuid in the node is not present in DB
+      action = action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
 
-      node = put_in(node, ["actions"], [updated_action])
+      node = put_in(node, ["actions"], [action])
       [node]
     else
-      [node]
+      _ -> [node]
     end
   end
 
