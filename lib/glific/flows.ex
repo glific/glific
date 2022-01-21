@@ -804,11 +804,7 @@ defmodule Glific.Flows do
       results
     else
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
-
-      definition =
-        get_latest_definition(flow_uuid)
-        |> put_in(["name"], flow.name)
-        |> clean_templates()
+      definition = get_latest_definition(flow_uuid) |> Map.put("name", flow.name)
 
       results =
         Map.put(
@@ -831,30 +827,6 @@ defmodule Glific.Flows do
       |> Map.get("nodes", [])
       |> get_sub_flows()
       |> Enum.reduce(results, &export_flow_details(&1["uuid"], &2))
-    end
-  end
-
-  @spec clean_templates(map()) :: map()
-  def clean_templates(definition) do
-    nodes =
-      definition
-      |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ do_clean_templates(&1)))
-
-    put_in(definition, ["nodes"], nodes)
-  end
-
-  @spec do_clean_templates(map()) :: list()
-  defp do_clean_templates(%{"actions" => actions}) do
-    action = actions |> hd
-
-    if action["type"] == "send_msg" && Map.has_key?(action, "templating") do
-      updated_action =
-        action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
-
-      [updated_action]
-    else
-      [action]
     end
   end
 
