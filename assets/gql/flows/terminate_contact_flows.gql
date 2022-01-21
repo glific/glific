@@ -3,7 +3,7 @@ mutation terminateContactFlows($contactId: ID!) {
   	success
   	errors {
     	key
-		message
+  		message
   	}
   }
 }
