@@ -1,7 +1,7 @@
 query searchMulti(
     $contactOpts: Opts!,
     $messageOpts: Opts!,
-    $filter: SearchFilter
+    $filter: SearchFilter!
   ) {
     searchMulti(contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
       contacts {

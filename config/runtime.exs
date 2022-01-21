@@ -57,3 +57,8 @@ config :glific, Glific.Vault,
 config :stripity_stripe,
   api_key: env!("STRIPE_API_KEY", :string!),
   signing_secret: env!("STRIPE_SIGNING_SECRET", :string!)
+
+config :glific, Glific.Communications.Mailer,
+  region: env!("SES_REGION", :string!, "This is not a Region"),
+  access_key: env!("SES_KEY", :string!, "This is not a Key"),
+  secret: env!("SES_SECRET", :string!, "This is not a Secret")

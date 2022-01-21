@@ -18,6 +18,7 @@ defmodule Glific.Fixtures do
     Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
+    Mails.MailLog,
     Messages,
     Messages.MessageMedia,
     Notifications,
@@ -25,6 +26,7 @@ defmodule Glific.Fixtures do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Partners.Provider,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -128,6 +130,8 @@ defmodule Glific.Fixtures do
         do: Contacts.get_contact!(attrs.contact_id),
         else: contact_fixture()
 
+    {:ok, bsp} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
     valid_attrs = %{
       name: "Fixture Organization",
       is_active: true,
@@ -136,9 +140,7 @@ defmodule Glific.Fixtures do
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       last_communication_at: DateTime.backward(0),
-      # lets just hope its there :)
-      bsp_id: 1,
-      # lets just hope its there :)
+      bsp_id: bsp.id,
       default_language_id: 1,
       contact_id: contact.id,
       active_language_ids: [1],
@@ -177,6 +179,23 @@ defmodule Glific.Fixtures do
       String.to_atom("provider_key_#{organization.id}"),
       "This is a fake key"
     )
+
+    Partners.create_credential(%{
+      organization_id: organization.id,
+      shortcode: "gupshup_enterprise",
+      keys: %{
+        url: "test_url",
+        api_end_point: "test_api_end_point",
+        handler: "Glific.Providers.Gupshup.Enterprise.Message",
+        worker: "Glific.Providers.Gupshup.Enterprise.Worker",
+        bsp_limit: 60
+      },
+      secrets: %{
+        user_id: "Please enter your user id here",
+        password: "Please enter your password here"
+      },
+      is_active: false
+    })
 
     Partners.create_credential(%{
       organization_id: organization.id,
@@ -851,5 +870,22 @@ defmodule Glific.Fixtures do
       |> InteractiveTemplates.create_interactive_template()
 
     interactive
+  end
+
+  @doc false
+  @spec mail_log_fixture(map()) :: MailLog.t()
+  def mail_log_fixture(attrs) do
+    valid_attrs = %{
+      category: Faker.Lorem.word(),
+      status: Faker.Lorem.word(),
+      content: %{}
+    }
+
+    {:ok, mail_log} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> MailLog.create_mail_log()
+
+    mail_log
   end
 end

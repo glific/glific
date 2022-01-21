@@ -1,6 +1,6 @@
 #import "./ImportFields.frag.gql"
 
-mutation importContacts($group_label : String, $data : String, $type : ImportContactsTypeEnum, $id : ID!) {
+mutation importContacts($group_label : String!, $data : String!, $type : ImportContactsTypeEnum, $id : ID!) {
   importContacts(group_label: $group_label, data: $data, type: $type, id: $id) {
       status
 

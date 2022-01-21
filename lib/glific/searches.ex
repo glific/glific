@@ -409,6 +409,7 @@ defmodule Glific.Searches do
 
     query
     |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
+    |> where([m, c: c], c.status != :blocked)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)

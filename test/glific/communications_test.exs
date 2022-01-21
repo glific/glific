@@ -360,4 +360,78 @@ defmodule Glific.CommunicationsTest do
       Oban.drain_queue(queue: :gupshup)
     end
   end
+
+  describe "mailer" do
+    alias Swoosh.Email
+    import Swoosh.TestAssertions
+
+    alias Glific.{
+      Fixtures,
+      Mails.CriticalNotificationMail,
+      Mails.LowBalanceAlertMail,
+      Mails.MailLog,
+      Mails.NewPartnerOnboardedMail,
+      Partners
+    }
+
+    test "send/2 will deliver a mail based on given args", attrs do
+      mail_attrs = %{category: "test", organization_id: attrs.organization_id}
+      email = Email.new(subject: "Hello, Glific Team!", from: Communications.Mailer.sender())
+      Communications.Mailer.send(email, mail_attrs)
+      assert_email_sent(email)
+
+      assert MailLog.count_mail_logs(%{
+               filter: Map.merge(attrs, %{category: "test"})
+             }) == 1
+    end
+
+    test "CriticalNotificationMail mail struct sends the critical notification mail", attrs do
+      mail_attrs = %{category: "critical_notification", organization_id: attrs.organization_id}
+      notification = Fixtures.notification_fixture(%{organization_id: attrs.organization_id})
+
+      critical_notification_mail =
+        Partners.organization(notification.organization_id)
+        |> CriticalNotificationMail.new_mail(notification.message)
+
+      assert {:ok, _} = Communications.Mailer.send(critical_notification_mail, mail_attrs)
+
+      assert_email_sent(critical_notification_mail)
+
+      assert MailLog.count_mail_logs(%{
+               filter: Map.merge(attrs, %{category: "critical_notification"})
+             }) == 1
+    end
+
+    test "NewPartnerOnboardedMail mail struct sends the onboard notification mail", attrs do
+      mail_attrs = %{category: "new_partner_onboarded", organization_id: attrs.organization_id}
+
+      new_partner_onboarded_email =
+        Partners.organization(attrs.organization_id)
+        |> NewPartnerOnboardedMail.new_mail()
+
+      assert {:ok, _} = Communications.Mailer.send(new_partner_onboarded_email, mail_attrs)
+
+      assert_email_sent(new_partner_onboarded_email)
+
+      assert MailLog.count_mail_logs(%{
+               filter: Map.merge(attrs, %{category: "new_partner_onboarded"})
+             }) == 1
+    end
+
+    test "LowBalanceAlertMail mail struct sends the low balance mail", attrs do
+      mail_attrs = %{category: "low_bsp_balance", organization_id: attrs.organization_id}
+
+      low_balance_email =
+        Partners.organization(attrs.organization_id)
+        |> LowBalanceAlertMail.new_mail(2.5)
+
+      assert {:ok, _} = Communications.Mailer.send(low_balance_email, mail_attrs)
+
+      assert_email_sent(low_balance_email)
+
+      assert MailLog.count_mail_logs(%{
+               filter: Map.merge(attrs, %{category: "low_bsp_balance"})
+             }) == 1
+    end
+  end
 end

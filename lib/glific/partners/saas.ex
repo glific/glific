@@ -19,12 +19,13 @@ defmodule Glific.Partners.Saas do
   ]
 
   # define all the optional fields for saas
-  @optional_fields [:stripe_ids, :tax_rates]
+  @optional_fields [:email, :stripe_ids, :tax_rates]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
+          email: String.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           phone: String.t() | nil,
@@ -35,6 +36,7 @@ defmodule Glific.Partners.Saas do
   schema "saas" do
     field :name, :string
     field :phone, :string
+    field :email, :string
 
     field :stripe_ids, :map
     field :tax_rates, :map
@@ -76,6 +78,14 @@ defmodule Glific.Partners.Saas do
   @spec stripe_ids(String.t()) :: map()
   def stripe_ids(name \\ "Tides"),
     do: saas_field(name, :stripe_ids)
+
+  @doc """
+  SaaS primary email for the service and notifications
+
+  """
+  @spec primary_email(String.t()) :: map()
+  def primary_email(name \\ "Tides"),
+    do: saas_field(name, :email)
 
   @doc """
   SaaS tax rates for adding tax to subscription and invoices, convert the string keys to atoms

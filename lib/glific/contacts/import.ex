@@ -5,13 +5,13 @@ defmodule Glific.Contacts.Import do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    BSPContacts,
     Contacts,
     Contacts.Contact,
     Groups,
     Groups.ContactGroup,
     Groups.GroupContacts,
     Partners,
-    Providers.GupshupContacts,
     Repo,
     Settings
   }
@@ -56,7 +56,7 @@ defmodule Glific.Contacts.Import do
   defp process_data(contact, group_id) do
     result =
       case contact.optin_time do
-        nil -> GupshupContacts.create_or_update_contact(Map.put(contact, :method, "Import"))
+        nil -> BSPContacts.Contact.create_or_update_contact(Map.put(contact, :method, "Import"))
         _ -> Contacts.optin_contact(Map.put(contact, :method, "Import"))
       end
 

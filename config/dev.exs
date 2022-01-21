@@ -51,4 +51,6 @@ config :appsignal, :config,
   active: false,
   env: :dev
 
+config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.Local
+
 import_config "dev.secret.exs"

@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "4.0.1",
+      version: "4.0.2",
       elixir: "~> 1.12",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -152,7 +152,9 @@ defmodule Glific.MixProject do
       {:stripe_mock, "~> 0.1", only: @test_envs},
       {:remote_ip, "~> 1.0"},
       {:exvcr, "~> 0.13", only: @test_envs},
-      {:dotenvy, "~> 0.1"}
+      {:dotenvy, "~> 0.1"},
+      {:phoenix_swoosh, "~> 1.0"},
+      {:gen_smtp, "~> 1.1"}
     ]
   end
 
