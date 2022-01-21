@@ -9,65 +9,65 @@ defmodule GlificWeb.Schema.FlowTypes do
   alias GlificWeb.Schema.Middleware.Authorize
 
   object :flow_result do
-    field :flow, :flow
-    field :errors, list_of(:input_error)
+    field(:flow, :flow)
+    field(:errors, list_of(:input_error))
   end
 
   object :common_flow_result do
-    field :success, :boolean
-    field :errors, list_of(:input_error)
+    field(:success, :boolean)
+    field(:errors, list_of(:input_error))
   end
 
   object :export_flow do
-    field :export_data, :json
+    field(:export_data, :json)
   end
 
   object :flow do
-    field :id, :id
-    field :uuid, :uuid4
-    field :name, :string
-    field :keywords, list_of(:string)
-    field :ignore_keywords, :boolean
-    field :is_active, :boolean
-    field :version_number, :string
-    field :flow_type, :flow_type_enum
-    field :inserted_at, :datetime
-    field :updated_at, :datetime
-    field :last_published_at, :datetime
-    field :last_changed_at, :datetime
-    field :is_background, :boolean
+    field(:id, :id)
+    field(:uuid, :uuid4)
+    field(:name, :string)
+    field(:keywords, list_of(:string))
+    field(:ignore_keywords, :boolean)
+    field(:is_active, :boolean)
+    field(:version_number, :string)
+    field(:flow_type, :flow_type_enum)
+    field(:inserted_at, :datetime)
+    field(:updated_at, :datetime)
+    field(:last_published_at, :datetime)
+    field(:last_changed_at, :datetime)
+    field(:is_background, :boolean)
   end
 
   input_object :flow_input do
-    field :name, :string
-    field :keywords, list_of(:string)
-    field :ignore_keywords, :boolean
-    field :is_active, :boolean
-    field :is_background, :boolean
+    field(:name, :string)
+    field(:keywords, list_of(:string))
+    field(:ignore_keywords, :boolean)
+    field(:is_active, :boolean)
+    field(:is_background, :boolean)
   end
 
   @desc "Filtering options for flows"
   input_object :flow_filter do
     @desc "Match the name"
-    field :name, :string
+    field(:name, :string)
 
     @desc "Match the name and keyword"
-    field :name_or_keyword, :string
+    field(:name_or_keyword, :string)
 
     @desc "Match the keyword"
-    field :keyword, :string
+    field(:keyword, :string)
 
     @desc "Match the uuid"
-    field :uuid, :uuid4
+    field(:uuid, :uuid4)
 
     @desc "Match the status of flow revision"
-    field :status, :string
+    field(:status, :string)
 
     @desc "Match the is_active flag of flow"
-    field :is_active, :boolean
+    field(:is_active, :boolean)
 
     @desc "Match the is_background flag of flow"
-    field :is_background, :boolean
+    field(:is_background, :boolean)
   end
 
   object :flow_queries do
@@ -160,6 +160,12 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:result, :json)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.resume_contact_flow/3)
+    end
+
+    field :terminate_contact_flows, :common_flow_result do
+      arg(:contact_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.terminate_contact_flows/3)
     end
 
     field :copy_flow, :flow_result do
