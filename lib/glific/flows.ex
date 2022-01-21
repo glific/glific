@@ -742,7 +742,7 @@ defmodule Glific.Flows do
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: flow_revision["definition"],
+                 definition: clean_flow_with_template(flow_revision["definition"]),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
@@ -756,6 +756,30 @@ defmodule Glific.Flows do
       end)
 
     !Enum.member?(import_flow_list, false)
+  end
+
+  defp clean_flow_with_template(definition) do
+    nodes =
+      definition
+      |> Map.get("nodes", [])
+      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_template(&1)))
+
+    put_in(definition, ["nodes"], nodes)
+  end
+
+  @spec do_clean_flow_with_template(map()) :: list()
+  defp do_clean_flow_with_template(%{"actions" => actions} = node) do
+    action = actions |> hd
+
+    if action["type"] == "send_msg" && Map.has_key?(action, "templating") do
+      updated_action =
+        action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+
+      node = put_in(node, ["actions"], [updated_action])
+      [node]
+    else
+      [node]
+    end
   end
 
   defp import_contact_field(import_flow, organization_id) do
