@@ -154,7 +154,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # Deleting all existing collections as importing New Contact Flow creates collections
     Groups.list_groups(%{})
-    |> Enum.each(fn flow -> Groups.delete_group(flow) end)
+    |> Enum.each(fn group -> Groups.delete_group(group) end)
 
     import_flow = data |> Jason.encode!()
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
