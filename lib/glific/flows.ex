@@ -773,6 +773,10 @@ defmodule Glific.Flows do
   end
 
   @spec do_clean_flow_with_template(map(), list()) :: list()
+  defp do_clean_flow_with_template(%{"actions" => actions} = node, _template_uuid_list)
+       when actions == [],
+       do: [node]
+
   defp do_clean_flow_with_template(%{"actions" => actions} = node, template_uuid_list) do
     action = actions |> hd
     template_uuid = get_in(action, ["templating", "template", "uuid"])
