@@ -165,4 +165,66 @@ defmodule Glific.Clients.Avanti do
     length = String.length(phone)
     String.slice(phone, length - 10, length)
   end
+
+
+  def webhook("get_query_data", fields) do
+    with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
+      data
+      |> Enum.reduce(%{found: false}, fn results , acc ->
+        if Enum.count(results) > 0,
+          do: acc |> Map.merge(%{found: true, results: results}),
+          else: acc
+      end)
+    end
+  end
+
+
+
+
+  defp fetch_dynamic_bigquery_data(fields) do
+    Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
+        with sql <- get_report_dynamic_sql(fields),
+             {:ok, %{totalRows: total_rows} = response}  <-
+               Jobs.bigquery_jobs_query(conn, project_id,
+                 body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+               ),
+             true <- total_rows != "0" do
+          data =
+            response.rows
+            |> Enum.map(fn row ->
+              row.f
+              |> Enum.with_index()
+              |> Enum.reduce(%{}, fn {cell, i}, acc ->
+                acc |> Map.put_new("#{Enum.at(response.schema.fields, i).name}", cell.v)
+              end)
+            end)
+          %{is_valid: true, data: data}
+        else
+          _ -> %{is_valid: false, message: "No data found for phone: #{fields["phone"]}"}
+        end
+      _ ->
+        %{is_valid: false, message: "Credentials not valid"}
+    end
+  end
+
+
+
+
+
+  defp get_report_dynamic_sql(fields) do
+    columns = fields["table_columns"]
+    tablename = fields["table_name"] |> String.trim()
+    if Map.has_key?(fields, "condition")  && fields["condition"] != 0 do
+      IO.inspect("gaurav_1")
+      condition = fields["condition"] |> String.trim()
+      "SELECT #{columns} FROM `#{@plio["dataset"]}.#{tablename}` WHERE #{condition} ;"
+    else
+      IO.inspect("gaurav_2")
+      "SELECT #{columns} FROM `#{@plio["dataset"]}.#{tablename}`;"
+    end
+  end
+
+
 end
