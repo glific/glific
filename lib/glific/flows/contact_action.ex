@@ -272,6 +272,7 @@ defmodule Glific.Flows.ContactAction do
       Node.infinite_loop(context, body)
     else
       # :loop_detected
+      FlowContext.notification(context, "Infinite loop detected, body: #{body}. Aborting flow.")
       exit_loop(context, messages)
     end
   end

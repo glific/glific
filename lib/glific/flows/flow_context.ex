@@ -150,9 +150,13 @@ defmodule Glific.Flows.FlowContext do
     |> Repo.update()
   end
 
+  @doc """
+  Generate a notifcation having all the flow context data.
+  """
   @spec notification(FlowContext.t(), String.t()) :: nil
-  defp notification(context, message) do
+  def notification(context, message) do
     context = Repo.preload(context, [:flow])
+    Logger.info(message)
 
     {:ok, _} =
       Notifications.create_notification(%{
