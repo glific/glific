@@ -1,0 +1,71 @@
+{
+  "_ui": {
+    "nodes": {
+      "c6527e2d-7312-4375-8c8d-156c2bd53f5c": {
+        "type": "execute_actions",
+        "position": { "top": 100, "left": 420 }
+      },
+      "e183a4fd-6504-49f9-b13a-495589c20573": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 0 }
+      }
+    }
+  },
+  "name": "import_tester",
+  "type": "messaging",
+  "uuid": "63a9c563-a735-4b7d-9890-b9298a2de406",
+  "vars": ["63a9c563-a735-4b7d-9890-b9298a2de406"],
+  "nodes": [
+    {
+      "uuid": "e183a4fd-6504-49f9-b13a-495589c20573",
+      "exits": [
+        {
+          "uuid": "44054bee-e467-4fdb-a35d-eeab6ded7797",
+          "destination_uuid": "c6527e2d-7312-4375-8c8d-156c2bd53f5c"
+        }
+      ],
+      "actions": [
+        {
+          "text": "",
+          "type": "send_msg",
+          "uuid": "4600b3f0-b4de-4be8-8c94-3c91e71b09e0",
+          "labels": [],
+          "templating": {
+            "uuid": "b153b0d3-ce4e-487a-b35d-e12f9686b261",
+            "template": {
+              "name": "arogya_msg",
+              "uuid": "b9267e61-f48f-429f-a16d-0ec70265bdb2"
+            },
+            "variables": ["helo", "helo", "helo"]
+          },
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "c6527e2d-7312-4375-8c8d-156c2bd53f5c",
+      "exits": [
+        {
+          "uuid": "782ee6c5-9a9e-41f2-a0ba-37c697ee3176",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "hello",
+          "type": "send_msg",
+          "uuid": "3d669eaa-7a04-4ddd-921a-6396e749136c",
+          "labels": [],
+          "all_urns": false,
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {},
+  "spec_version": "13.1.0",
+  "expire_after_minutes": 10080
+}

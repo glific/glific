@@ -9,6 +9,7 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.Flow,
     Flows.FlowRevision,
     Groups,
+    # Messages,
     Repo,
     Seeds.SeedsDev,
     State
@@ -130,6 +131,40 @@ defmodule GlificWeb.Schema.FlowTest do
     assert length(data["flows"]) > 0
 
     assert Enum.any?(data["flows"], fn flow -> flow["definition"]["name"] == name end)
+  end
+
+  test "export flow and the import flow with template when published returns no error",
+       %{admin: user} = attrs do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "Import Workflow"}})
+
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    data =
+      get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> Jason.decode!()
+
+    # Deleting all existing flows as importing same flow
+    Flows.list_flows(%{})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    assert length(data["flows"]) > 0
+    import_flow = data |> Jason.encode!()
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+    assert true = get_in(query_data, [:data, "importFlow", "success"])
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Import Workflow", organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
+    assert get_in(query_data, [:data, "publishFlow", "success"]) == true
   end
 
   test "export flow and the import flow", %{staff: user} do
