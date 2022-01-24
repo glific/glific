@@ -743,7 +743,7 @@ defmodule Glific.Flows do
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: clean_flow_with_HSM_template(flow_revision["definition"]),
+                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
@@ -759,25 +759,25 @@ defmodule Glific.Flows do
     !Enum.member?(import_flow_list, false)
   end
 
-  @spec clean_flow_with_HSM_template(map()) :: map()
-  defp clean_flow_with_HSM_template(definition) do
+  @spec clean_flow_with_hsm_template(map()) :: map()
+  defp clean_flow_with_hsm_template(definition) do
     # checking if the imported template is present in database
     template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
 
     nodes =
       definition
       |> Map.get("nodes", [])
-      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_HSM_template(&1, template_uuid_list)))
+      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_hsm_template(&1, template_uuid_list)))
 
     put_in(definition, ["nodes"], nodes)
   end
 
-  @spec do_clean_flow_with_HSM_template(map(), list()) :: list()
-  defp do_clean_flow_with_HSM_template(%{"actions" => actions} = node, _template_uuid_list)
+  @spec do_clean_flow_with_hsm_template(map(), list()) :: list()
+  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, _template_uuid_list)
        when actions == [],
        do: [node]
 
-  defp do_clean_flow_with_HSM_template(%{"actions" => actions} = node, template_uuid_list) do
+  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, template_uuid_list) do
     action = actions |> hd
     template_uuid = get_in(action, ["templating", "template", "uuid"])
 
