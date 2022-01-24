@@ -9,7 +9,6 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.Flow,
     Flows.FlowRevision,
     Groups,
-    # Messages,
     Repo,
     Seeds.SeedsDev,
     State
