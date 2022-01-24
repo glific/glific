@@ -134,7 +134,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "export flow and the import flow with template when published returns no error",
-       %{admin: user} = attrs do
+       %{admin: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "Import Workflow"}})
 
     flow_id = flow.id
