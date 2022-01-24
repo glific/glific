@@ -248,8 +248,10 @@ defmodule Glific.Flows.Router do
   end
 
   defp split_by_expression(router, context) do
+    operand = format_operand(router.operand)
+
     content =
-      FlowContext.parse_context_string(context, router.operand)
+      FlowContext.parse_context_string(context, operand)
       # Once we have the content, we send it over to EEx to execute
       |> Glific.execute_eex()
 
@@ -338,5 +340,14 @@ defmodule Glific.Flows.Router do
       end
 
     FlowContext.update_results(context, results)
+  end
+
+  ## Format operand and replcae @fields. to @contact.fields. so that system can parse it automatically.
+  ## for other router operand we are handling everything in a same way.
+  @spec format_operand(String.t()) :: String.t()
+  defp format_operand(operand) do
+    if String.starts_with?(operand, "@fields."),
+      do: String.replace(operand, "fields.", "contact.fields.", global: false),
+      else: operand
   end
 end
