@@ -208,7 +208,7 @@ defmodule Glific.Clients.Avanti do
     columns = fields["table_columns"]
     tablename = fields["table_name"] |> String.trim()
 
-    if Map.has_key?(fields, "condition") && fields["condition"] != 0 do
+    if Map.has_key?(fields, "condition") && String.length(fields["condition"]) != 0 do
       condition = fields["condition"] |> String.trim()
       "SELECT #{columns} FROM `#{@plio["dataset"]}.#{tablename}` WHERE #{condition} ;"
     else
