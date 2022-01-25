@@ -90,6 +90,15 @@ defmodule Glific.Clients.Avanti do
     end
   end
 
+  def webhook("get_query_data", fields) do
+    with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
+      data
+      |> List.first()
+      |> Map.merge(%{found: true})
+    end
+  end
+  def webhook("clean_phone", fields), do: %{phone: clean_phone(fields)}
+
   # returns data queried from bigquery in the form %{data: data, is_valid: true}
   # or returns error as %{is_valid: false, message: error_message}
   @spec fetch_bigquery_data(map(), atom()) :: map()
@@ -164,14 +173,6 @@ defmodule Glific.Clients.Avanti do
     phone = String.trim(fields["phone"])
     length = String.length(phone)
     String.slice(phone, length - 10, length)
-  end
-
-  def webhook("get_query_data", fields) do
-    with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
-      data
-      |> List.first()
-      |> Map.merge(%{found: true})
-    end
   end
 
   defp fetch_dynamic_bigquery_data(fields) do
