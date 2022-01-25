@@ -18,6 +18,7 @@ defmodule Glific.Fixtures do
     Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
+    Mails.MailLog,
     Messages,
     Messages.MessageMedia,
     Notifications,
@@ -869,5 +870,22 @@ defmodule Glific.Fixtures do
       |> InteractiveTemplates.create_interactive_template()
 
     interactive
+  end
+
+  @doc false
+  @spec mail_log_fixture(map()) :: MailLog.t()
+  def mail_log_fixture(attrs) do
+    valid_attrs = %{
+      category: Faker.Lorem.word(),
+      status: Faker.Lorem.word(),
+      content: %{}
+    }
+
+    {:ok, mail_log} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> MailLog.create_mail_log()
+
+    mail_log
   end
 end

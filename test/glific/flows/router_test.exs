@@ -310,7 +310,9 @@ defmodule Glific.Flows.RouterTest do
 
     {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
     [recent_inbound_message] = updated_context.recent_inbound
-    assert recent_inbound_message["message"] == "Invalid Code"
+
+    assert recent_inbound_message["message"] ==
+             "Suspicious Code. Please change your code. <%= IO.inspect('This is for test') %>"
   end
 
   test "router with split by groups" do

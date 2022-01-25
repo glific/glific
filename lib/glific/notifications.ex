@@ -7,7 +7,10 @@ defmodule Glific.Notifications do
   require Logger
 
   alias Glific.{
+    Communications.Mailer,
+    Mails.CriticalNotificationMail,
     Notifications.Notification,
+    Partners,
     Repo
   }
 
@@ -19,6 +22,17 @@ defmodule Glific.Notifications do
     %Notification{}
     |> Notification.changeset(attrs)
     |> Repo.insert()
+    |> case do
+      {:ok, notification} ->
+        if Glific.string_clean(attrs.severity) == "critical" do
+          handle_critical_notification(notification)
+        end
+
+        {:ok, notification}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @doc """
@@ -82,5 +96,15 @@ defmodule Glific.Notifications do
     |> Repo.update_all(set: [is_read: true])
 
     true
+  end
+
+  defp handle_critical_notification(notification) do
+    {:ok, _} =
+      Partners.organization(notification.organization_id)
+      |> CriticalNotificationMail.new_mail(notification.message)
+      |> Mailer.send(%{
+        category: "critical_notification",
+        organization_id: notification.organization_id
+      })
   end
 end

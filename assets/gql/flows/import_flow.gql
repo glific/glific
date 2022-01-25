@@ -1,4 +1,4 @@
-mutation importFlow($flow: JSON!) {
+mutation importFlow($flow: Json!) {
   importFlow(flow: $flow) {
     errors {
       key

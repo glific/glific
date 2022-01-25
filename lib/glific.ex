@@ -156,7 +156,7 @@ defmodule Glific do
   def execute_eex(content) do
     if suspicious_code(content) do
       Logger.error("EEx suspicious code: #{content}")
-      "Invalid Code"
+      "Suspicious Code. Please change your code. #{content}"
     else
       EEx.eval_string(content)
     end

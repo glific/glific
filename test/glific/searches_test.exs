@@ -1,7 +1,11 @@
 defmodule Glific.SearchesTest do
   use Glific.DataCase
 
-  alias Glific.Searches
+  alias Glific.{
+    Contacts,
+    Fixtures,
+    Searches
+  }
 
   describe "searches" do
     alias Glific.Searches.SavedSearch
@@ -96,6 +100,26 @@ defmodule Glific.SearchesTest do
     test "change_saved_search/1 returns a saved search changeset", attrs do
       saved_search = saved_search_fixture(attrs)
       assert %Ecto.Changeset{} = Searches.change_saved_search(saved_search)
+    end
+
+    test "search_multi/2 returns the search result and exclude when contact is blocked", attrs do
+      message = Fixtures.message_fixture(attrs)
+
+      args = %{
+        contact_opts: %{limit: 25, offset: 0},
+        message_opts: %{limit: 20, offset: 0}
+      }
+
+      search = Searches.search_multi(message.body, args)
+      message_count = search.messages |> length()
+      assert message_count > 0
+
+      Contacts.get_contact!(message.sender_id)
+      |> Contacts.update_contact(%{status: :blocked})
+
+      search_after_block = Searches.search_multi(message.body, args)
+      new_message_count = search_after_block.messages |> length()
+      assert message_count > new_message_count
     end
   end
 end

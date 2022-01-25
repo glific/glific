@@ -91,6 +91,9 @@ defmodule Glific.Jobs.MinuteWorker do
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
         Erase.perform_periodic()
 
+      "weekly_tasks" ->
+        Erase.perform_weekly()
+
       "delete_tasks" ->
         # lets do this first, before we delete any records, so we have a better picture
         # of the DB we generate for all organizations, not the most recent ones

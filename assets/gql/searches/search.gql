@@ -2,7 +2,7 @@ query search(
     $saveSearchInput: SaveSearchInput,
     $contactOpts: Opts!,
     $messageOpts: Opts!,
-    $filter: SearchFilter
+    $filter: SearchFilter!
   ) {
     search(saveSearchInput:$saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts, filter: $filter) {
       contact {
