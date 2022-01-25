@@ -28,11 +28,11 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  add weekly data that needs to be sent to the database
+  add data that needs to be sent to the database
   """
-  @spec add_week_data_from_csv(String.t(), String.t(), any()) ::
+  @spec add_data_from_csv(String.t(), String.t(), any()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def add_week_data_from_csv(key, file_url, cleanup_func) do
+  def add_data_from_csv(key, file_url, cleanup_func) do
     # how to validate if the data is in correct format
     data =
       ApiClient.get_csv_content(url: file_url)
@@ -41,6 +41,30 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     maybe_insert_data(key, data)
+  end
+
+  @doc """
+  message mapping to HSM UUID
+  """
+  @spec message_hsm_mapping(String.t()) ::
+          {:ok, any()} | {:error, Ecto.Changeset.t()}
+  def message_hsm_mapping(file_url) do
+    add_data_from_csv("message_id_hsm_map", file_url, fn acc, data ->
+      acc
+      |> Map.put_new(data["MESSAGE_ID"], data["HSM_UUID"])
+    end)
+  end
+
+  @doc """
+  question mapping to HSM UUID
+  """
+  @spec question_hsm_mapping(String.t()) ::
+          {:ok, any()} | {:error, Ecto.Changeset.t()}
+  def question_hsm_mapping(file_url) do
+    add_data_from_csv("question_id_hsm_map", file_url, fn acc, data ->
+      acc
+      |> Map.put_new(data["QUESTION_ID"], data["HSM_UUID"])
+    end)
   end
 
   @doc """
@@ -60,7 +84,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  Clean the data from the CSV file.
+  Insert or update data if key present for ClientData table.
   """
   @spec maybe_insert_data(String.t(), map()) ::
           {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
