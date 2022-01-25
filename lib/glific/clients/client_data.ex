@@ -30,7 +30,7 @@ defmodule Glific.Clients.ClientData do
     :text
   ]
 
-  schema "messages" do
+  schema "client_data" do
     field :key, :string
     field :descriptioon, :string
     field :text, :string
