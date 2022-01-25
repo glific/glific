@@ -1,6 +1,6 @@
 defmodule Glific.Clients.Arogya do
   @moduledoc """
-
+  Fetching data from CSV and using it to send messages for Arogya usecase.
   """
 
   alias Glific.{
