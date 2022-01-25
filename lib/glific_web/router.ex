@@ -106,6 +106,7 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     # pipe_through :gupshup
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
+    forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
   end
 
   scope "/webhook", GlificWeb do
