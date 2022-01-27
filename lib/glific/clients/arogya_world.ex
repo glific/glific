@@ -6,6 +6,52 @@ defmodule Glific.Clients.ArogyaWorld do
     Sheets.ApiClient
   }
 
+  def webhook("static_message", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    current_week = get_current_week(organization_id)
+    current_week_day = get_week_day_number()
+    message_id = get_message_id(organization_id, current_week, current_week_day)
+    template_id = get_message_template_id(organization_id, message_id)
+
+    %{
+      message_id: message_id,
+      template_id: template_id || false,
+      current_week: current_week,
+      current_week_day: current_week_day
+    }
+  end
+
+  def webhook("dynamic_message", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    {:ok, contact_id} = Glific.parse_maybe_integer(get_in(fields, ["contact", "id"]))
+
+    current_week = get_current_week(organization_id)
+    current_week_day = get_week_day_number()
+
+    message_id =
+      get_dynamic_message_id(organization_id, current_week, current_week_day, contact_id)
+
+    question_id =
+      get_dynamic_question_id(organization_id, current_week, current_week_day, contact_id)
+
+    message_template_id = get_message_template_id(organization_id, message_id)
+    question_template_id = get_question_template_id(organization_id, question_id)
+
+    %{
+      current_week: current_week,
+      current_week_day: current_week_day,
+      message_id: message_id,
+      question_id: question_id,
+      message_template_id: message_template_id || false,
+      question_template_id: question_template_id || false
+    }
+  end
+
+  def webhook("weekly_task", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    run_weekly_tasks(organization_id, fields)
+  end
+
   defp get_current_week(organization_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{organization_id: organization_id, key: "current_week"})
@@ -128,52 +174,6 @@ defmodule Glific.Clients.ArogyaWorld do
       expression: nil
     }
     |> Jason.encode!()
-  end
-
-  def webhook("static_message", fields) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    current_week = get_current_week(organization_id)
-    current_week_day = get_week_day_number()
-    message_id = get_message_id(organization_id, current_week, current_week_day)
-    template_id = get_message_template_id(organization_id, message_id)
-
-    %{
-      message_id: message_id,
-      template_id: template_id || false,
-      current_week: current_week,
-      current_week_day: current_week_day
-    }
-  end
-
-  def webhook("dynamic_message", fields) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    {:ok, contact_id} = Glific.parse_maybe_integer(get_in(fields, ["contact", "id"]))
-
-    current_week = get_current_week(organization_id)
-    current_week_day = get_week_day_number()
-
-    message_id =
-      get_dynamic_message_id(organization_id, current_week, current_week_day, contact_id)
-
-    question_id =
-      get_dynamic_question_id(organization_id, current_week, current_week_day, contact_id)
-
-    message_template_id = get_message_template_id(organization_id, message_id)
-    question_template_id = get_question_template_id(organization_id, question_id)
-
-    %{
-      current_week: current_week,
-      current_week_day: current_week_day,
-      message_id: message_id,
-      question_id: question_id,
-      message_template_id: message_template_id || false,
-      question_template_id: question_template_id || false
-    }
-  end
-
-  def webhook("weekly_task", fields) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    run_weekly_tasks(organization_id, fields)
   end
 
   @doc """
