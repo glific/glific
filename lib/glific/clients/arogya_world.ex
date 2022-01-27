@@ -134,18 +134,28 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  static message id and uuid mapping with weeks and days
+  adds the weekly dynamic data loaded from the sheet based on current week
   """
-  @spec static_week_message_mapping(String.t()) ::
+  @spec add_weekly_dynamic_data(String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def static_week_message_mapping(file_url) do
+  def add_weekly_dynamic_data(file_url) do
     add_data_from_csv(
-      "static_week_message_mapping",
+      "dynamic_message_schedule_week_" <> get_current_week(1),
       file_url,
-      fn acc, data ->
-        %{static_week_data: acc.static_week_data ++ [data]}
-      end,
-      %{static_week_data: []}
+      &cleanup_week_data/2
+    )
+  end
+
+  @doc """
+  creates the static data map that needs to be sent to users
+  """
+  @spec static_message_schedule_map(String.t()) ::
+          {:ok, any()} | {:error, Ecto.Changeset.t()}
+  def static_message_schedule_map(file_url) do
+    add_data_from_csv(
+      "static_message_schedule",
+      file_url,
+      &cleanup_static_data/2
     )
   end
 
@@ -171,9 +181,9 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec message_hsm_mapping(String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def message_hsm_mapping(file_url) do
-    add_data_from_csv("message_hsm_map", file_url, fn acc, data ->
+    add_data_from_csv("message_template_map", file_url, fn acc, data ->
       acc
-      |> Map.put_new(data["MESSAGE_ID"], data["HSM_UUID"])
+      |> Map.put_new(data["msg_id"], data["template_uuid"])
     end)
   end
 
@@ -183,9 +193,9 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec question_hsm_mapping(String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def question_hsm_mapping(file_url) do
-    add_data_from_csv("question_hsm_map", file_url, fn acc, data ->
+    add_data_from_csv("question_template_map", file_url, fn acc, data ->
       acc
-      |> Map.put_new(data["QUESTION_ID"], data["HSM_UUID"])
+      |> Map.put_new(data["question_id"], data["template_uuid"])
     end)
   end
 
@@ -195,14 +205,34 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec cleanup_week_data(map(), map()) :: map()
   def cleanup_week_data(acc, data) do
     attr = %{
-      message_one_id: data["M1_ID"],
-      question_one_id: data["Q1_ID"],
-      message_two_id: data["M2_ID"],
-      question_two_id: data["Q2_ID"]
+      "1" => %{
+        "q_id" => data["Q1_ID"],
+        "m_id" => data["M1_ID"]
+      },
+      "4" => %{
+        "q_id" => data["Q2_ID"],
+        "m_id" => data["M2_ID"]
+      }
     }
 
     acc
     |> Map.put_new(data["ID"], attr)
+  end
+
+  @doc """
+  Clean static weekly data from the CSV file.
+  """
+  @spec cleanup_static_data(map(), map()) :: map()
+  def cleanup_static_data(acc, data) do
+    week =
+      if(Map.has_key?(acc, data["Week"])) do
+        acc[data["Week"]] |> Map.put(data["Message No."], data["Sl. No"])
+      else
+        %{} |> Map.put(data["Message No."], data["Sl. No"])
+      end
+
+    acc
+    |> Map.put(data["Week"], week)
   end
 
   @doc """
