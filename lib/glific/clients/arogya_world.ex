@@ -1,5 +1,11 @@
 defmodule Glific.Clients.ArogyaWorld do
-  alias Glific.{Caches, Partners.OrganizationData, Repo, Sheets.ApiClient}
+  alias Glific.{
+    Caches,
+    Partners,
+    Partners.OrganizationData,
+    Repo,
+    Sheets.ApiClient
+  }
 
   defp get_current_week(organization_id) do
     {:ok, organization_data} =
@@ -11,6 +17,9 @@ defmodule Glific.Clients.ArogyaWorld do
   defp get_week_day_number() do
     Timex.weekday(Timex.today())
   end
+
+  defp get_dynamic_week_key(current_week),
+    do: "dynamic_message_schedule_week_#{current_week}"
 
   defp get_message_id(organization_id, current_week, current_week_day) do
     {:ok, organization_data} =
@@ -51,7 +60,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_dynamic_message_id(organization_id, current_week, current_week_day, contact_id) do
-    key = "dynamic_message_schedule_week_#{current_week}"
+    key = get_dynamic_week_key(current_week)
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -65,7 +74,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_dynamic_question_id(organization_id, current_week, current_week_day, contact_id) do
-    key = "dynamic_message_schedule_week_#{current_week}"
+    key = get_dynamic_week_key(current_week)
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -76,6 +85,36 @@ defmodule Glific.Clients.ArogyaWorld do
     current_week_day = to_string(current_week_day)
     dynamic_message_schedule = organization_data.json
     get_in(dynamic_message_schedule, [contact_id, current_week_day, contact_id, "q_id"])
+  end
+
+  defp update_week_number(org_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: "current_week"
+      })
+
+    {:ok, current_week} = Glific.parse_maybe_integer(organization_data.text)
+
+    next_week = current_week + 1
+
+    {:ok, _} =
+      Partners.update_organization_data(organization_data, %{
+        key: "current_week",
+        text: next_week
+      })
+
+    {current_week, next_week}
+  end
+
+  defp load_participient_file(_org_id, week_number) do
+    _key = get_dynamic_week_key(week_number)
+    ## Shamoon can you call the function here. to load weekly participant file
+  end
+
+  defp run_weekly_tasks(org_id, _fields) do
+    {_current_week, next_week} = update_week_number(org_id)
+    load_participient_file(org_id, next_week)
   end
 
   @doc """
@@ -131,6 +170,11 @@ defmodule Glific.Clients.ArogyaWorld do
       message_template_id: message_template_id || false,
       question_template_id: question_template_id || false
     }
+  end
+
+  def webhook("weekly_task", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    run_weekly_tasks(organization_id, fields)
   end
 
   @doc """
