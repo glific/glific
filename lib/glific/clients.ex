@@ -7,7 +7,7 @@ defmodule Glific.Clients do
   At some point we will move this to a more extensible scheme, which is as yet undetermined
   """
 
-  alias Glific.{Clients.ClientData, Contacts.Contact, Flows.Action, Repo}
+  alias Glific.{Clients.OrganizationData, Contacts.Contact, Flows.Action, Repo}
 
   @dev %{
     id: 1,
@@ -174,32 +174,32 @@ defmodule Glific.Clients do
   end
 
   @doc """
-  Create a Client Data struct
+  Create a Organization Data struct
   """
-  @spec create_client_data(map()) :: {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
-  def create_client_data(attrs \\ %{}) do
-    %ClientData{}
-    |> ClientData.changeset(attrs)
+  @spec create_organization_data(map()) :: {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def create_organization_data(attrs \\ %{}) do
+    %OrganizationData{}
+    |> OrganizationData.changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  Update a Client Data struct
+  Update a Organization Data struct
   """
-  @spec update_client_data(ClientData.t(), map()) ::
-          {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
-  def update_client_data(client_data, attrs) do
-    client_data
-    |> ClientData.changeset(attrs)
+  @spec update_organization_data(OrganizationData.t(), map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def update_organization_data(organization_data, attrs) do
+    organization_data
+    |> OrganizationData.changeset(attrs)
     |> Repo.update()
   end
 
   @doc """
-  Delete Client Data struct
+  Delete Organization Data struct
   """
 
-  @spec delete_client_data(ClientData.t()) :: {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
-  def delete_client_data(%ClientData{} = client_data) do
-    Repo.delete(client_data)
+  @spec delete_organization_data(OrganizationData.t()) :: {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def delete_organization_data(%OrganizationData{} = organization_data) do
+    Repo.delete(organization_data)
   end
 end

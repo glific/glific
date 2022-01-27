@@ -1,8 +1,5 @@
 defmodule Glific.Clients.ArogyaWorld do
-  alias Glific.Caches
-  alias Glific.Clients.ClientData
-  alias Glific.Repo
-  alias Sheets.ApiClient
+  alias Glific.{Caches, Clients.OrganizationData, Repo, Sheets.ApiClient}
 
   @start_date "2022-01-24"
 
@@ -44,8 +41,11 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp load_message_hsm_map(cache_key) do
     {organization_id, key} = cache_key
-    {:ok, client_data} = Repo.fetch(ClientData, %{organization_id: organization_id, key: key})
-    {:commit, client_data.json}
+
+    {:ok, organization_data} =
+      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: key})
+
+    {:commit, organization_data.json}
   end
 
   defp get_question_teamplate(organization_id, question_id) do
@@ -62,8 +62,11 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp load_question_hsm_map(cache_key) do
     {organization_id, key} = cache_key
-    {:ok, client_data} = Repo.fetch(ClientData, %{organization_id: organization_id, key: key})
-    {:commit, client_data.json}
+
+    {:ok, organization_data} =
+      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: key})
+
+    {:commit, organization_data.json}
   end
 
   def webhook("static_morning", attrs) do
@@ -109,7 +112,7 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec message_hsm_mapping(String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def message_hsm_mapping(file_url) do
-    add_data_from_csv("message_id_hsm_map", file_url, fn acc, data ->
+    add_data_from_csv("message_hsm_map", file_url, fn acc, data ->
       acc
       |> Map.put_new(data["MESSAGE_ID"], data["HSM_UUID"])
     end)
@@ -121,7 +124,7 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec question_hsm_mapping(String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def question_hsm_mapping(file_url) do
-    add_data_from_csv("question_id_hsm_map", file_url, fn acc, data ->
+    add_data_from_csv("question_hsm_map", file_url, fn acc, data ->
       acc
       |> Map.put_new(data["QUESTION_ID"], data["HSM_UUID"])
     end)
@@ -144,13 +147,13 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  Insert or update data if key present for ClientData table.
+  Insert or update data if key present for OrganizationData table.
   """
   @spec maybe_insert_data(String.t(), map()) ::
-          {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   def maybe_insert_data(key, data) do
     # check if the week key is already present in the database
-    case Repo.get_by(ClientData, %{key: key}) do
+    case Repo.get_by(OrganizationData, %{key: key}) do
       nil ->
         attrs =
           %{}
@@ -158,13 +161,13 @@ defmodule Glific.Clients.ArogyaWorld do
           |> Map.put(:json, data)
           |> Map.put(:organization_id, 1)
 
-        %ClientData{}
-        |> ClientData.changeset(attrs)
+        %OrganizationData{}
+        |> OrganizationData.changeset(attrs)
         |> Repo.insert()
 
-      client_data ->
-        client_data
-        |> ClientData.changeset(%{json: data})
+      organization_data ->
+        organization_data
+        |> OrganizationData.changeset(%{json: data})
         |> Repo.update()
     end
   end
