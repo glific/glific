@@ -174,9 +174,10 @@ defmodule Glific.Clients do
   end
 
   @doc """
-  Create a Organization Data struct
+  Create an organization data struct
   """
-  @spec create_organization_data(map()) :: {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_organization_data(map()) ::
+          {:ok, OrganizaationData.t()} | {:error, Ecto.Changeset.t()}
   def create_organization_data(attrs \\ %{}) do
     %OrganizationData{}
     |> OrganizationData.changeset(attrs)
@@ -184,7 +185,7 @@ defmodule Glific.Clients do
   end
 
   @doc """
-  Update a Organization Data struct
+  Update an organization data struct
   """
   @spec update_organization_data(OrganizationData.t(), map()) ::
           {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
@@ -195,10 +196,11 @@ defmodule Glific.Clients do
   end
 
   @doc """
-  Delete Organization Data struct
+  Delete organization data struct
   """
 
-  @spec delete_organization_data(OrganizationData.t()) :: {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  @spec delete_organization_data(OrganizationData.t()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization_data(%OrganizationData{} = organization_data) do
     Repo.delete(organization_data)
   end

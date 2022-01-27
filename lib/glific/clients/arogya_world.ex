@@ -91,15 +91,31 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
+  static message id and uuid mapping with weeks and days
+  """
+  @spec static_week_message_mapping(String.t()) ::
+          {:ok, any()} | {:error, Ecto.Changeset.t()}
+  def static_week_message_mapping(file_url) do
+    add_data_from_csv(
+      "static_week_message_mapping",
+      file_url,
+      fn acc, data ->
+        %{static_week_data: acc.static_week_data ++ [data]}
+      end,
+      %{static_week_data: []}
+    )
+  end
+
+  @doc """
   add data that needs to be sent to the database
   """
-  @spec add_data_from_csv(String.t(), String.t(), any()) ::
+  @spec add_data_from_csv(String.t(), String.t(), any(), map()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def add_data_from_csv(key, file_url, cleanup_func) do
+  def add_data_from_csv(key, file_url, cleanup_func, default_value \\ %{}) do
     # how to validate if the data is in correct format
     data =
       ApiClient.get_csv_content(url: file_url)
-      |> Enum.reduce(%{}, fn {_, data}, acc ->
+      |> Enum.reduce(default_value, fn {_, data}, acc ->
         cleanup_func.(acc, data)
       end)
 
