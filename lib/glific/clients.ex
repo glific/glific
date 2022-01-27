@@ -172,39 +172,4 @@ defmodule Glific.Clients do
       do: module_name.daily_tasks(org_id),
       else: %{error: "Missing daily function implementation"}
   end
-<<<<<<< HEAD
-=======
-
-  @doc """
-  Create an organization data struct
-  """
-  @spec create_organization_data(map()) ::
-          {:ok, OrganizaationData.t()} | {:error, Ecto.Changeset.t()}
-  def create_organization_data(attrs \\ %{}) do
-    %OrganizationData{}
-    |> OrganizationData.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Update an organization data struct
-  """
-  @spec update_organization_data(OrganizationData.t(), map()) ::
-          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
-  def update_organization_data(organization_data, attrs) do
-    organization_data
-    |> OrganizationData.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Delete organization data struct
-  """
-
-  @spec delete_organization_data(OrganizationData.t()) ::
-          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
-  def delete_organization_data(%OrganizationData{} = organization_data) do
-    Repo.delete(organization_data)
-  end
->>>>>>> 8b86eba40f7d028c0e8a34de62af61cb3395059f
 end

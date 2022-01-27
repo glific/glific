@@ -1,5 +1,5 @@
 defmodule Glific.Clients.ArogyaWorld do
-  alias Glific.{Caches, Clients.OrganizationData, Repo, Sheets.ApiClient}
+  alias Glific.{Caches, Partners.OrganizationData, Repo, Sheets.ApiClient}
 
   @start_date "2022-01-24"
 
@@ -82,17 +82,17 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def webhook("static_message", fields) do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    current_week = get_current_week(organization_id)
-    current_week_day = get_current_week_day()
-    message_id = get_message_id(current_week, current_week_day)
-    template_id = get_template_id(organization_id, message_id)
+    # current_week = get_current_week(organization_id)
+    # current_week_day = get_current_week_day()
+    # message_id = get_message_id(current_week, current_week_day)
+    # template_id = get_template_id(organization_id, message_id)
 
-    %{
-      message_id: message_id,
-      template_id: template_id,
-      current_week: current_week,
-      current_week_day: current_week_day
-    }
+    # %{
+    #   message_id: message_id,
+    #   template_id: template_id,
+    #   current_week: current_week,
+    #   current_week_day: current_week_day
+    # }
   end
 
   def webhook("static_morning", attrs) do
