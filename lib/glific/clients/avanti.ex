@@ -33,15 +33,7 @@ defmodule Glific.Clients.Avanti do
     |> Map.put(:url, url)
   end
 
-  def webhook("process_reports", fields) do
-    count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
-
-    fields["reports"]
-    |> Jason.decode!()
-    |> Map.get(fields["count"])
-    |> Map.put(:is_valid, true)
-    |> Map.put(:count, count - 1)
-  end
+  def webhook("process_reports", fields), do: parse_query_data(fields["count"], fields["reports"])
 
   def webhook("check_if_existing_teacher", fields) do
     phone = clean_phone(fields)
@@ -77,27 +69,57 @@ defmodule Glific.Clients.Avanti do
 
   def webhook("fetch_reports", fields) do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
-      indexed_report =
-        data
-        |> Enum.with_index(1)
-        |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
+      {indexed_report, key_map} = get_multi_query_data(data)
 
-      %{
-        is_valid: true,
-        count: length(data),
-        reports: Jason.encode!(indexed_report)
-      }
+      key_map
+      |> Map.put(:reports, Jason.encode!(indexed_report))
     end
   end
 
-  def webhook("get_query_data", fields) do
+  def webhook("get_single_query_data", fields) do
     with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
       data
       |> List.first()
       |> Map.merge(%{found: true})
     end
   end
+
+  def webhook("get_multi_query_data", fields) do
+    with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
+      {indexed_report, key_map} = get_multi_query_data(data)
+
+      key_map
+      |> Map.put(:multi_data, Jason.encode!(indexed_report))
+    end
+  end
+
+  def webhook("parse_query_data", fields),
+    do: parse_query_data(fields["count"], fields["multi_data"])
+
   def webhook("clean_phone", fields), do: %{phone: clean_phone(fields)}
+
+  defp get_multi_query_data(data) do
+    indexed_report =
+      data
+      |> Enum.with_index(1)
+      |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
+
+    {indexed_report,
+     %{
+       is_valid: true,
+       count: length(data)
+     }}
+  end
+
+  defp parse_query_data(count, data) do
+    counter = count |> Glific.parse_maybe_integer() |> elem(1)
+
+    data
+    |> Jason.decode!()
+    |> Map.get(count)
+    |> Map.put(:is_valid, true)
+    |> Map.put(:count, counter - 1)
+  end
 
   # returns data queried from bigquery in the form %{data: data, is_valid: true}
   # or returns error as %{is_valid: false, message: error_message}
