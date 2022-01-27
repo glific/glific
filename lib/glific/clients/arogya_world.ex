@@ -50,7 +50,7 @@ defmodule Glific.Clients.ArogyaWorld do
     get_in(question_template_map, [question_id])
   end
 
-  defp get_dynamic_message_id(organization_id, current_week, current_week_day) do
+  defp get_dynamic_message_id(organization_id, current_week, current_week_day, contact_id) do
     key = "dynamic_message_schedule_week_#{current_week}"
 
     {:ok, organization_data} =
@@ -61,10 +61,10 @@ defmodule Glific.Clients.ArogyaWorld do
 
     current_week_day = to_string(current_week_day)
     dynamic_message_schedule = organization_data.json
-    get_in(dynamic_message_schedule, [current_week, current_week_day, "m_id"])
+    get_in(dynamic_message_schedule, [contact_id, current_week_day, "m_id"])
   end
 
-  defp get_dynamic_question_id(organization_id, current_week, current_week_day) do
+  defp get_dynamic_question_id(organization_id, current_week, current_week_day, contact_id) do
     key = "dynamic_message_schedule_week_#{current_week}"
 
     {:ok, organization_data} =
@@ -75,7 +75,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
     current_week_day = to_string(current_week_day)
     dynamic_message_schedule = organization_data.json
-    get_in(dynamic_message_schedule, [current_week, current_week_day, "q_id"])
+    get_in(dynamic_message_schedule, [contact_id, current_week_day, contact_id, "q_id"])
   end
 
   @doc """
@@ -109,10 +109,17 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def webhook("dynamic_message", fields) do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    {:ok, contact_id} = Glific.parse_maybe_integer(get_in(fields, ["contact", "id"]))
+
     current_week = get_current_week(organization_id)
     current_week_day = get_week_day_number()
-    message_id = get_dynamic_message_id(organization_id, current_week, current_week_day)
-    question_id = get_dynamic_question_id(organization_id, current_week, current_week_day)
+
+    message_id =
+      get_dynamic_message_id(organization_id, current_week, current_week_day, contact_id)
+
+    question_id =
+      get_dynamic_question_id(organization_id, current_week, current_week_day, contact_id)
+
     message_template_id = get_message_template_id(organization_id, message_id)
     question_template_id = get_question_template_id(organization_id, question_id)
 
