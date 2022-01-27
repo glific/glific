@@ -115,6 +115,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
     current_week_day = to_string(current_week_day)
     dynamic_message_schedule = organization_data.json
+    contact_id = to_string(contact_id)
     get_in(dynamic_message_schedule, [contact_id, current_week_day, "m_id"])
   end
 
@@ -127,9 +128,11 @@ defmodule Glific.Clients.ArogyaWorld do
         key: key
       })
 
+    contact_id = to_string(contact_id)
     current_week_day = to_string(current_week_day)
     dynamic_message_schedule = organization_data.json
-    get_in(dynamic_message_schedule, [contact_id, current_week_day, contact_id, "q_id"])
+
+    get_in(dynamic_message_schedule, [contact_id, current_week_day, "q_id"])
   end
 
   defp update_week_number(org_id) do
