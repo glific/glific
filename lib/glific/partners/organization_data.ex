@@ -1,8 +1,4 @@
-<<<<<<< HEAD:lib/glific/partners/organization_data.ex
 defmodule Glific.Partners.OrganizationData do
-=======
-defmodule Glific.Clients.OrganizationData do
->>>>>>> 8b86eba40f7d028c0e8a34de62af61cb3395059f:lib/glific/clients/organization_data.ex
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
