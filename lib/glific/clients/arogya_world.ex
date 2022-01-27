@@ -1,119 +1,129 @@
 defmodule Glific.Clients.ArogyaWorld do
   alias Glific.{Caches, Partners.OrganizationData, Repo, Sheets.ApiClient}
 
-  @start_date "2022-01-24"
+  defp get_current_week(organization_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{organization_id: organization_id, key: "current_week"})
 
-  defp start_date() do
-    @start_date
-    |> Timex.parse!("{YYYY}-{0M}-{D}")
-    |> Timex.to_date()
-  end
-
-  def get_week_number,
-    do: Timex.diff(Timex.today(), start_date(), :weeks)
-
-  def current_week_and_day() do
-    day_name =
-      start_date()
-      |> Timex.weekday()
-      |> Timex.day_name()
-      |> Glific.string_clean()
-      |> Glific.safe_string_to_atom()
-
-    %{
-      week_number: get_week_number(),
-      week_day: Timex.weekday(Timex.today(), day_name)
-    }
+    organization_data.text
   end
 
   defp get_week_day_number() do
     Timex.weekday(Timex.today())
   end
 
-  @spec get_message_teamplate(non_neg_integer, any) :: any
-  defp get_message_teamplate(organization_id, message_id) do
-    case Caches.fetch(organization_id, "message_hsm_map", &load_message_hsm_map/1) do
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve data for key #{"message_hsm_map"} error #{inspect(error)}"
-        )
+  defp get_message_id(organization_id, current_week, current_week_day) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: "static_message_schedule"
+      })
 
-      {_, message_hsm_map} ->
-        message_hsm_map[message_id]
-    end
+    current_week_day = to_string(current_week_day)
+    static_message_schedule = organization_data.json
+    get_in(static_message_schedule, [current_week, current_week_day])
   end
 
-  defp load_message_hsm_map(cache_key) do
-    {organization_id, key} = cache_key
+  defp get_message_template_id(organization_id, message_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: "message_template_map"
+      })
+
+    message_id = to_string(message_id)
+
+    message_template_map = organization_data.json
+    get_in(message_template_map, [message_id])
+  end
+
+  defp get_question_template_id(organization_id, question_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: "question_template_map"
+      })
+
+    question_id = to_string(question_id)
+
+    question_template_map = organization_data.json
+    get_in(question_template_map, [question_id])
+  end
+
+  defp get_dynamic_message_id(organization_id, current_week, current_week_day) do
+    key = "dynamic_message_schedule_week_#{current_week}"
 
     {:ok, organization_data} =
-      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: key})
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: key
+      })
 
-    {:commit, organization_data.json}
+    current_week_day = to_string(current_week_day)
+    dynamic_message_schedule = organization_data.json
+    get_in(dynamic_message_schedule, [current_week, current_week_day, "m_id"])
   end
 
-  defp get_question_teamplate(organization_id, question_id) do
-    case Caches.fetch(organization_id, "question_hsm_map", &load_question_hsm_map/1) do
-      {:error, error} ->
-        raise(ArgumentError,
-          message: "Failed to retrieve data for key #{"question_hsm_map"} error #{inspect(error)}"
-        )
-
-      {_, question_hsm_map} ->
-        question_hsm_map[question_id]
-    end
-  end
-
-  defp load_question_hsm_map(cache_key) do
-    {organization_id, key} = cache_key
+  defp get_dynamic_question_id(organization_id, current_week, current_week_day) do
+    key = "dynamic_message_schedule_week_#{current_week}"
 
     {:ok, organization_data} =
-      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: key})
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: key
+      })
 
-    {:commit, organization_data.json}
+    current_week_day = to_string(current_week_day)
+    dynamic_message_schedule = organization_data.json
+    get_in(dynamic_message_schedule, [current_week, current_week_day, "q_id"])
   end
 
-  defp get_current_week(organization_id) do
-    {:ok, organization_data} =
-      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: "current_week"})
-
-    organization_data.text
+  @doc """
+    get template for IEX
+  """
+  @spec template(integer(), String.t()) :: binary
+  def template(template_uuid, name) do
+    %{
+      uuid: template_uuid,
+      name: name,
+      variables: ["@contact.name"],
+      expression: nil
+    }
+    |> Jason.encode!()
   end
 
   def webhook("static_message", fields) do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    # current_week = get_current_week(organization_id)
-    # current_week_day = get_current_week_day()
-    # message_id = get_message_id(current_week, current_week_day)
-    # template_id = get_template_id(organization_id, message_id)
+    current_week = get_current_week(organization_id)
+    current_week_day = get_week_day_number()
+    message_id = get_message_id(organization_id, current_week, current_week_day)
+    template_id = get_message_template_id(organization_id, message_id)
 
-    # %{
-    #   message_id: message_id,
-    #   template_id: template_id,
-    #   current_week: current_week,
-    #   current_week_day: current_week_day
-    # }
+    %{
+      message_id: message_id,
+      template_id: template_id || false,
+      current_week: current_week,
+      current_week_day: current_week_day
+    }
   end
 
-  def webhook("static_morning", attrs) do
-    ## get current week
-    ## get current day
-    ## get the message id which we need to send to users
-    ## return the template id.
-  end
+  def webhook("dynamic_message", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    current_week = get_current_week(organization_id)
+    current_week_day = get_week_day_number()
+    message_id = get_dynamic_message_id(organization_id, current_week, current_week_day)
+    question_id = get_dynamic_question_id(organization_id, current_week, current_week_day)
+    message_template_id = get_message_template_id(organization_id, message_id)
+    question_template_id = get_question_template_id(organization_id, question_id)
 
-  def webhook("static_noon", attrs) do
-    ## get current week
-    ## get current day
-    ## get the message id which we need to send to users
-    ## return the template id.
-  end
-
-  def webhook("static_evening", attrs) do
-    ## get current week
-    ## get current day
-    ## get the message id which we need to send to users
-    ## return the template id.
+    %{
+      current_week: current_week,
+      current_week_day: current_week_day,
+      message_id: message_id,
+      question_id: question_id,
+      message_template_id: message_template_id || false,
+      question_template_id: question_template_id || false
+    }
   end
 
   @doc """

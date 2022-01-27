@@ -15,7 +15,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.DigitalGreen,
+    webhook: Glific.Clients.ArogyaWorld,
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
