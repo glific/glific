@@ -1,6 +1,6 @@
 defmodule Glific.Clients.ArogyaWorld do
   alias Glific.Caches
-  alias Glific.Clients.ClientData
+  alias Glific.Partners.OrganizationData
   alias Glific.Repo
   alias Sheets.ApiClient
 
@@ -29,6 +29,10 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
+  defp get_week_day_number() do
+    Timex.weekday(Timex.today())
+  end
+
   @spec get_message_teamplate(non_neg_integer, any) :: any
   defp get_message_teamplate(organization_id, message_id) do
     case Caches.fetch(organization_id, "message_hsm_map", &load_message_hsm_map/1) do
@@ -44,8 +48,11 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp load_message_hsm_map(cache_key) do
     {organization_id, key} = cache_key
-    {:ok, client_data} = Repo.fetch(ClientData, %{organization_id: organization_id, key: key})
-    {:commit, client_data.json}
+
+    {:ok, organization_data} =
+      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: key})
+
+    {:commit, organization_data.json}
   end
 
   defp get_question_teamplate(organization_id, question_id) do
@@ -62,8 +69,33 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp load_question_hsm_map(cache_key) do
     {organization_id, key} = cache_key
-    {:ok, client_data} = Repo.fetch(ClientData, %{organization_id: organization_id, key: key})
-    {:commit, client_data.json}
+
+    {:ok, organization_data} =
+      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: key})
+
+    {:commit, organization_data.json}
+  end
+
+  defp get_current_week(organization_id) do
+    {:ok, organization_data} =
+      Repo.fetch(OrganizationData, %{organization_id: organization_id, key: "current_week"})
+
+    organization_data.text
+  end
+
+  def webhook("static_message", fields) do
+    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    current_week = get_current_week(organization_id)
+    # current_week_day = get_current_week_day()
+    # message_id = get_message_id(current_week, current_week_day)
+    # template_id = get_template_id(organization_id, message_id)
+
+    # %{
+    #   message_id: message_id,
+    #   template_id: template_id,
+    #   current_week: current_week,
+    #   current_week_day: current_week_day
+    # }
   end
 
   def webhook("static_morning", attrs) do
@@ -144,13 +176,13 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  Insert or update data if key present for ClientData table.
+  Insert or update data if key present for OrganizationData table.
   """
   @spec maybe_insert_data(String.t(), map()) ::
-          {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   def maybe_insert_data(key, data) do
     # check if the week key is already present in the database
-    case Repo.get_by(ClientData, %{key: key}) do
+    case Repo.get_by(OrganizationData, %{key: key}) do
       nil ->
         attrs =
           %{}
@@ -158,13 +190,13 @@ defmodule Glific.Clients.ArogyaWorld do
           |> Map.put(:json, data)
           |> Map.put(:organization_id, 1)
 
-        %ClientData{}
-        |> ClientData.changeset(attrs)
+        %OrganizationData{}
+        |> OrganizationData.changeset(attrs)
         |> Repo.insert()
 
-      client_data ->
-        client_data
-        |> ClientData.changeset(%{json: data})
+      organization_data ->
+        organization_data
+        |> OrganizationData.changeset(%{json: data})
         |> Repo.update()
     end
   end

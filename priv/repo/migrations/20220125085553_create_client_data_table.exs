@@ -2,11 +2,11 @@ defmodule Glific.Repo.Migrations.CreateClientDataTable do
   use Ecto.Migration
 
   def change do
-    client_data_table()
+    organization_data_table()
   end
 
-  def client_data_table do
-    create table(:client_data) do
+  def organization_data_table do
+    create table(:organization_data) do
       add(:key, :string, null: false)
       add(:descriptioon, :string)
       add(:json, :map, default: %{})

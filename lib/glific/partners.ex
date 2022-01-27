@@ -18,6 +18,7 @@ defmodule Glific.Partners do
     Notifications,
     Partners.Credential,
     Partners.Organization,
+    Partners.OrganizationData,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.GupshupContacts,
@@ -967,5 +968,37 @@ defmodule Glific.Partners do
       )
 
     Map.merge(services, combined)
+  end
+
+  @doc """
+  Create a Client Data struct
+  """
+  @spec create_organization_data(map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def create_organization_data(attrs \\ %{}) do
+    %OrganizationData{}
+    |> OrganizationData.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Update a Client Data struct
+  """
+  @spec update_organization_data(OrganizationData.t(), map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def update_organization_data(organization_data, attrs) do
+    organization_data
+    |> OrganizationData.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Delete Client Data struct
+  """
+
+  @spec delete_organization_data(OrganizationData.t()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def delete_organization_data(%OrganizationData{} = organization_data) do
+    Repo.delete(organization_data)
   end
 end

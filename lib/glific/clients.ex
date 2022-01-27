@@ -7,7 +7,7 @@ defmodule Glific.Clients do
   At some point we will move this to a more extensible scheme, which is as yet undetermined
   """
 
-  alias Glific.{Clients.ClientData, Contacts.Contact, Flows.Action, Repo}
+  alias Glific.{Contacts.Contact, Flows.Action}
 
   @dev %{
     id: 1,
@@ -171,35 +171,5 @@ defmodule Glific.Clients do
     if module_name,
       do: module_name.daily_tasks(org_id),
       else: %{error: "Missing daily function implementation"}
-  end
-
-  @doc """
-  Create a Client Data struct
-  """
-  @spec create_client_data(map()) :: {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
-  def create_client_data(attrs \\ %{}) do
-    %ClientData{}
-    |> ClientData.changeset(attrs)
-    |> Repo.insert()
-  end
-
-  @doc """
-  Update a Client Data struct
-  """
-  @spec update_client_data(ClientData.t(), map()) ::
-          {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
-  def update_client_data(client_data, attrs) do
-    client_data
-    |> ClientData.changeset(attrs)
-    |> Repo.update()
-  end
-
-  @doc """
-  Delete Client Data struct
-  """
-
-  @spec delete_client_data(ClientData.t()) :: {:ok, ClientData.t()} | {:error, Ecto.Changeset.t()}
-  def delete_client_data(%ClientData{} = client_data) do
-    Repo.delete(client_data)
   end
 end

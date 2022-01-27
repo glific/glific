@@ -1,4 +1,4 @@
-defmodule Glific.Clients.ClientData do
+defmodule Glific.Partners.OrganizationData do
   @moduledoc false
   use Ecto.Schema
   import Ecto.Changeset
@@ -30,7 +30,7 @@ defmodule Glific.Clients.ClientData do
     :text
   ]
 
-  schema "client_data" do
+  schema "organization_data" do
     field :key, :string
     field :descriptioon, :string
     field :text, :string
@@ -42,9 +42,9 @@ defmodule Glific.Clients.ClientData do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(ClientData.t(), map()) :: Ecto.Changeset.t()
-  def changeset(client_data, attrs) do
-    client_data
+  @spec changeset(OrganizationData.t(), map()) :: Ecto.Changeset.t()
+  def changeset(organization_data, attrs) do
+    organization_data
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:key, :organization_id])
