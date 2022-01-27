@@ -1,6 +1,5 @@
 defmodule Glific.Clients.ArogyaWorld do
   alias Glific.{
-    Caches,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -118,7 +117,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-    get template for IEX
+    get template form EEx
   """
   @spec template(integer(), String.t()) :: binary
   def template(template_uuid, name) do
