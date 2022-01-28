@@ -31,21 +31,27 @@ defmodule Glific.Clients.ArogyaWorld do
     flow_id: 2
   }
 
-  @week_url_map %{
-    "static_message_schedule" => "",
-    "message_template_map" => "",
-    "question_template_map" => "",
+  @csv_url_key_map %{
+    "static_message_schedule" =>
+      "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Messages.csv",
+    "message_template_map" =>
+      "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Messages.csv",
+    "question_template_map" =>
+      "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Questions.csv",
     "dynamic_message_schedule_week" =>
-      "https://storage.googleapis.com/week1_to_participant%20-%20Sheet1.csv"
+      "https://storage.googleapis.com/arogya-sheets/week1_to_participant%20-%20Sheet1.csv"
   }
 
-  @csv_url_key_map %{
-    "static_message_schedule" => "",
-    "message_template_map" => "",
-    "question_template_map" => "",
-    "dynamic_message_schedule_week" =>
-      "https://storage.googleapis.com/week1_to_participant%20-%20Sheet1.csv"
-  }
+  @doc """
+  Run this function on the initial load
+  """
+  @spec initial_load() :: any()
+  def initial_load() do
+    static_message_schedule_map(@csv_url_key_map["static_message_schedule"])
+    message_hsm_mapping(@csv_url_key_map["message_template_map"])
+    question_hsm_mapping(@csv_url_key_map["question_template_map"])
+    load_participient_file(56, 1)
+  end
 
   @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
@@ -241,7 +247,7 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec load_participient_file(non_neg_integer(), non_neg_integer()) :: any()
   def load_participient_file(_org_id, week_number) do
     key = get_dynamic_week_key(week_number)
-    add_weekly_dynamic_data(key, @week_url_map[key])
+    add_weekly_dynamic_data(key, @csv_url_key_map["dynamic_message_schedule_week"])
   end
 
   @doc """
