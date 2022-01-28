@@ -228,7 +228,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def message_hsm_mapping(file_url) do
     add_data_from_csv("message_template_map", file_url, fn acc, data ->
       acc
-      |> Map.put_new(data["msg_id"], data["template_uuid"])
+      |> Map.put_new(data["message_id"], data["template_id"])
     end)
   end
 
@@ -240,7 +240,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def question_hsm_mapping(file_url) do
     add_data_from_csv("question_template_map", file_url, fn acc, data ->
       acc
-      |> Map.put_new(data["question_id"], data["template_uuid"])
+      |> Map.put_new(data["question_id"], data["template_id"])
     end)
   end
 
