@@ -564,8 +564,14 @@ defmodule Glific.Partners do
             Map.put(handler_args, :organization_name, name)
           )
     end)
+  rescue
+    # If we fail, we need to mark the organization as failed
+    # and log the error
+    err ->
+      Logger.error("Error occured while executing handler for organizations.
+         Error: #{err}, handler: #{handler}, handler_args: #{handler_args}")
 
-    :ok
+      :ok
   end
 
   @active_minutes 60

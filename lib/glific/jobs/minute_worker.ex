@@ -105,6 +105,7 @@ defmodule Glific.Jobs.MinuteWorker do
       "hourly_tasks" ->
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
+        Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])
 
       "five_minute_tasks" ->
         Partners.perform_all(&Flags.out_of_office_update/1, nil, services["fun_with_flags"])
