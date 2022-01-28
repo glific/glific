@@ -86,10 +86,7 @@ defmodule Glific.Clients do
 
   @arogyaworld %{
     id: 56,
-    name: "Glific",
-    gcs_file_name: Glific.Clients.Tap,
-    blocked?: Glific.Clients.Stir,
-    broadcast: Glific.Clients.Weunlearn,
+    name: "Arogya World",
     webhook: Glific.Clients.ArogyaWorld,
     daily_tasks: Glific.Clients.ArogyaWorld,
     weekly_tasks: Glific.Clients.ArogyaWorld,
