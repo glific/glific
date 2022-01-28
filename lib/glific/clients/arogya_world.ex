@@ -22,13 +22,13 @@ defmodule Glific.Clients.ArogyaWorld do
   }
 
   @static_flow %{
-    group_id: 1,
-    flow_id: 1
+    group_id: 679,
+    flow_id: 2500
   }
 
   @dynamic_flow %{
-    group_id: 1,
-    flow_id: 2
+    group_id: 680,
+    flow_id: 2501
   }
 
   @csv_url_key_map %{
