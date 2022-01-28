@@ -134,7 +134,7 @@ defmodule Glific do
     inspect(stacktrace)
   end
 
-  @not_allowed ["Repo", "IO", "File", "Code"]
+  @not_allowed ["Repo.", "IO.", "File.", "Code."]
 
   @doc """
   Really simple function to ensure folks do not add Repo and/or IO calls
