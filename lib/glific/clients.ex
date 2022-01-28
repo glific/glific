@@ -16,7 +16,8 @@ defmodule Glific.Clients do
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
     webhook: Glific.Clients.ArogyaWorld,
-    daily_tasks: Glific.Clients.DigitalGreen
+    daily_tasks: Glific.Clients.DigitalGreen,
+    weekly_tasks: Glific.Clients.ArogyaWorld
   }
 
   @sol %{
@@ -171,5 +172,17 @@ defmodule Glific.Clients do
     if module_name,
       do: module_name.daily_tasks(org_id),
       else: %{error: "Missing daily function implementation"}
+  end
+
+  @doc """
+  Allow an organization to ran a  glific functions on a weekly basis.
+  """
+  @spec weekly_tasks(non_neg_integer()) :: map()
+  def weekly_tasks(org_id) do
+    module_name = get_in(plugins(), [org_id, :weekly_tasks])
+
+    if module_name,
+      do: module_name.weekly_tasks(org_id),
+      else: %{error: "Missing weekly function implementation"}
   end
 end

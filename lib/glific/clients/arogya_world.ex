@@ -47,9 +47,11 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  def webhook("weekly_task", fields) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    run_weekly_tasks(organization_id, fields)
+  def webhook(_, fields), do: fields
+
+  def weekly_tasks(org_id) do
+    {_current_week, next_week} = update_week_number(org_id)
+    load_participient_file(org_id, next_week)
   end
 
   defp get_current_week(organization_id) do
@@ -158,11 +160,6 @@ defmodule Glific.Clients.ArogyaWorld do
   defp load_participient_file(_org_id, week_number) do
     key = get_dynamic_week_key(week_number)
     add_weekly_dynamic_data(key, "need to get file url")
-  end
-
-  defp run_weekly_tasks(org_id, _fields) do
-    {_current_week, next_week} = update_week_number(org_id)
-    load_participient_file(org_id, next_week)
   end
 
   @doc """

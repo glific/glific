@@ -88,10 +88,12 @@ defmodule Glific.Jobs.MinuteWorker do
     # This is a bit simpler and shorter than multiple function calls with pattern matching
     case job do
       "daily_tasks" ->
+        Partners.perform_all(&Glific.Clients.daily_tasks/1, nil, [])
         Partners.perform_all(&Billing.update_usage/2, %{time: DateTime.utc_now()}, [])
         Erase.perform_periodic()
 
       "weekly_tasks" ->
+        Partners.perform_all(&Glific.Clients.weekly_tasks/1, nil, [])
         Erase.perform_weekly()
 
       "delete_tasks" ->
