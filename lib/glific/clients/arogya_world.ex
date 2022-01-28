@@ -1,4 +1,7 @@
 defmodule Glific.Clients.ArogyaWorld do
+  @moduledoc """
+  Custom code extenison for ArogyaWorld
+  """
   require Logger
 
   alias Glific.{
@@ -93,7 +96,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-    if(is_nil(get_week_day_number())) do
+    if is_nil(get_week_day_number()) do
       Logger.info("Weekday is nil. Skipping hourly tasks.")
     else
       broadcast_static_group(org_id)
@@ -123,11 +126,12 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_data.text
   end
 
-  defp get_week_day_number() do
+  defp get_week_day_number do
     ## For pilot phase, we will use the hour number.
     hour = Timex.now().hour
     @pilot_hour_to_day[hour]
-    # Todo: ## we will enable this when pilot phase is over.
+
+    ## we will enable this when pilot phase is over.
     # Timex.weekday(Timex.today())
   end
 
@@ -340,7 +344,7 @@ defmodule Glific.Clients.ArogyaWorld do
         else: data["Message No"]
 
     week =
-      if(Map.has_key?(acc, data["Week"])) do
+      if Map.has_key?(acc, data["Week"]) do
         acc[data["Week"]] |> Map.put(check_second_day, data["Message ID"])
       else
         %{check_second_day => data["Message ID"]}
