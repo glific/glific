@@ -45,12 +45,12 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Run this function on the initial load
   """
-  @spec initial_load() :: any()
-  def initial_load do
+  @spec initial_load(non_neg_integer()) :: any()
+  def initial_load(org_id) do
     static_message_schedule_map(@csv_url_key_map["static_message_schedule"])
     message_hsm_mapping(@csv_url_key_map["message_template_map"])
     question_hsm_mapping(@csv_url_key_map["question_template_map"])
-    load_participient_file(56, 1)
+    load_participient_file(org_id, 1)
   end
 
   @spec webhook(String.t(), map) :: map()
@@ -385,7 +385,7 @@ defmodule Glific.Clients.ArogyaWorld do
           %{}
           |> Map.put(:key, key)
           |> Map.put(:json, data)
-          |> Map.put(:organization_id, 1)
+          |> Map.put(:organization_id, Repo.get_organization_id())
 
         %OrganizationData{}
         |> OrganizationData.changeset(attrs)
