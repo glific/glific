@@ -39,6 +39,7 @@ defmodule Glific.Clients.ArogyaWorld do
     "dynamic_message_schedule_week_4" => ""
   }
 
+  @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
     current_week = get_current_week(organization_id)
@@ -81,7 +82,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   def webhook(_, fields), do: fields
-
+  @spec weekly_tasks(non_neg_integer()) :: any()
   def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
 
   defp run_weekly_tasks(org_id) do
@@ -89,11 +90,13 @@ defmodule Glific.Clients.ArogyaWorld do
     load_participient_file(org_id, next_week)
   end
 
+  @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the weeknumber on a daily basis.
     run_weekly_tasks(org_id)
   end
 
+  @spec hourly_tasks(non_neg_integer()) :: any()
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
     if is_nil(get_week_day_number()) do
@@ -227,6 +230,7 @@ defmodule Glific.Clients.ArogyaWorld do
     {current_week, next_week}
   end
 
+  @spec load_participient_file(non_neg_integer(), non_neg_integer()) :: any()
   def load_participient_file(_org_id, week_number) do
     key = get_dynamic_week_key(week_number)
     add_weekly_dynamic_data(key, @week_url_map[key])
