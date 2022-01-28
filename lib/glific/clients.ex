@@ -84,6 +84,15 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.NayiDisha
   }
 
+  @arogyaworld %{
+    id: 56,
+    name: "Arogya World",
+    webhook: Glific.Clients.ArogyaWorld,
+    daily_tasks: Glific.Clients.ArogyaWorld,
+    weekly_tasks: Glific.Clients.ArogyaWorld,
+    hourly_tasks: Glific.Clients.ArogyaWorld
+  }
+
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
@@ -94,7 +103,8 @@ defmodule Glific.Clients do
     @weunlearn[:id] => @weunlearn,
     @balajanaagraha[:id] => @balajanaagraha,
     @digital_green[:id] => @digital_green,
-    @nayi_disha[:id] => @nayi_disha
+    @nayi_disha[:id] => @nayi_disha,
+    @arogyaworld[:id] => @arogyaworld
   }
 
   @spec env(atom() | nil) :: atom()
@@ -171,5 +181,29 @@ defmodule Glific.Clients do
     if module_name,
       do: module_name.daily_tasks(org_id),
       else: %{error: "Missing daily function implementation"}
+  end
+
+  @doc """
+  Allow an organization to ran a  glific functions on a weekly basis.
+  """
+  @spec weekly_tasks(non_neg_integer()) :: map()
+  def weekly_tasks(org_id) do
+    module_name = get_in(plugins(), [org_id, :weekly_tasks])
+
+    if module_name,
+      do: module_name.weekly_tasks(org_id),
+      else: %{error: "Missing weekly function implementation"}
+  end
+
+  @doc """
+  Allow an organization to ran a  glific functions on a weekly basis.
+  """
+  @spec hourly_tasks(non_neg_integer()) :: map()
+  def hourly_tasks(org_id) do
+    module_name = get_in(plugins(), [org_id, :hourly_tasks])
+
+    if module_name,
+      do: module_name.hourly_tasks(org_id),
+      else: %{error: "Missing hourly function implementation"}
   end
 end
