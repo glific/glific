@@ -46,7 +46,7 @@ defmodule Glific.Clients.ArogyaWorld do
   Run this function on the initial load
   """
   @spec initial_load() :: any()
-  def initial_load() do
+  def initial_load do
     static_message_schedule_map(@csv_url_key_map["static_message_schedule"])
     message_hsm_mapping(@csv_url_key_map["message_template_map"])
     question_hsm_mapping(@csv_url_key_map["question_template_map"])
