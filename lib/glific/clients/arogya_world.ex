@@ -1,9 +1,21 @@
 defmodule Glific.Clients.ArogyaWorld do
+  require Logger
+
   alias Glific.{
     Partners,
     Partners.OrganizationData,
     Repo,
     Sheets.ApiClient
+  }
+
+  @pilot_hour_to_day %{
+    3 => 1,
+    4 => 2,
+    5 => 3,
+    6 => 4,
+    7 => 5,
+    8 => 6,
+    9 => 7
   }
 
   def webhook("static_message", fields) do
@@ -56,7 +68,41 @@ defmodule Glific.Clients.ArogyaWorld do
     load_participient_file(org_id, next_week)
   end
 
+  def daily_tasks(org_id) do
+    ## This is just for pilot phase. Will be removed later. We will update the weeknumber on a daily basis.
+    run_weekly_tasks(org_id)
+  end
+
+  def hourly_tasks(org_id) do
+    ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
+    if(is_nil(get_week_day_number()))
+      Logger.info("Weekday is nil. Skipping hourly tasks.")
+    else
+      broadcast_static_group(org_id)
+      broadcast_dynamic_group(org_id)
+    end
+
+    ## broadcast for dynamic group
+  end
+
+  defp broadcast_static_group(_org_id) do
+    static_flow_id = 1
+    static_group_id = 1
+    static_flow = Glific.Flows.get_flow!(static_flow_id)
+    static_group = Glific.Groups.get_group!(static_group_id)
+    Glific.Flows.start_group_flow(static_flow, static_group)
+  end
+
+  defp broadcast_dynamic_group(_org_id) do
+    dynamic_flow_id = 1
+    dynamic_group_id = 1
+    dynamic_flow = Glific.Flows.get_flow!(dynamic_flow_id)
+    dynamic_group = Glific.Groups.get_group!(dynamic_group_id)
+    Glific.Flows.start_group_flow(dynamic_flow, dynamic_group)
+  end
+
   defp get_current_week(organization_id) do
+    ## For pilot phase, it will be the day number.
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{organization_id: organization_id, key: "current_week"})
 
@@ -64,7 +110,11 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_week_day_number() do
-    Timex.weekday(Timex.today())
+    ## For pilot phase, we will use the hour number.
+    hour = Timex.now().hour
+    @pilot_hour_to_day[hour]
+    # Todo: ## we will enable this when pilot phase is over.
+    # Timex.weekday(Timex.today())
   end
 
   defp get_dynamic_week_key(current_week),
