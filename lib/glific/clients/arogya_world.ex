@@ -49,7 +49,9 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def webhook(_, fields), do: fields
 
-  def weekly_tasks(org_id) do
+  def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
+
+  defp run_weekly_tasks(org_id) do
     {_current_week, next_week} = update_week_number(org_id)
     load_participient_file(org_id, next_week)
   end
