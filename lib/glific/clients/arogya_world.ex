@@ -156,8 +156,8 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp load_participient_file(_org_id, week_number) do
-    _key = get_dynamic_week_key(week_number)
-    ## Shamoon can you call the function here. to load weekly participant file
+    key = get_dynamic_week_key(week_number)
+    add_weekly_dynamic_data(key, "need to get file url")
   end
 
   defp run_weekly_tasks(org_id, _fields) do
@@ -182,11 +182,11 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   adds the weekly dynamic data loaded from the sheet based on current week
   """
-  @spec add_weekly_dynamic_data(String.t()) ::
+  @spec add_weekly_dynamic_data(String.t(), String.t()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def add_weekly_dynamic_data(file_url) do
+  def add_weekly_dynamic_data(key, file_url) do
     add_data_from_csv(
-      "dynamic_message_schedule_week_" <> get_current_week(1),
+      key,
       file_url,
       &cleanup_week_data/2
     )
