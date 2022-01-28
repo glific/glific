@@ -8,7 +8,6 @@ defmodule Glific.Clients.ArogyaWorld do
     Sheets.ApiClient
   }
 
-
   @pilot_hour_to_day %{
     3 => 1,
     4 => 2,
@@ -17,6 +16,16 @@ defmodule Glific.Clients.ArogyaWorld do
     7 => 5,
     8 => 6,
     9 => 7
+  }
+
+  @static_flow %{
+    group_id: 1,
+    flow_id: 1
+  }
+
+  @dynamic_flow %{
+    group_id: 1,
+    flow_id: 2
   }
 
   @week_url_map %{
@@ -84,7 +93,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-    if(is_nil(get_week_day_number()))
+    if(is_nil(get_week_day_number())) do
       Logger.info("Weekday is nil. Skipping hourly tasks.")
     else
       broadcast_static_group(org_id)
@@ -95,18 +104,14 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp broadcast_static_group(_org_id) do
-    static_flow_id = 1
-    static_group_id = 1
-    static_flow = Glific.Flows.get_flow!(static_flow_id)
-    static_group = Glific.Groups.get_group!(static_group_id)
+    static_flow = Glific.Flows.get_flow!(@static_flow.flow_id)
+    static_group = Glific.Groups.get_group!(@static_flow.group_id)
     Glific.Flows.start_group_flow(static_flow, static_group)
   end
 
   defp broadcast_dynamic_group(_org_id) do
-    dynamic_flow_id = 1
-    dynamic_group_id = 1
-    dynamic_flow = Glific.Flows.get_flow!(dynamic_flow_id)
-    dynamic_group = Glific.Groups.get_group!(dynamic_group_id)
+    dynamic_flow = Glific.Flows.get_flow!(@dynamic_flow.flow_id)
+    dynamic_group = Glific.Groups.get_group!(@dynamic_flow.group_id)
     Glific.Flows.start_group_flow(dynamic_flow, dynamic_group)
   end
 
