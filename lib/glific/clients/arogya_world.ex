@@ -32,11 +32,19 @@ defmodule Glific.Clients.ArogyaWorld do
   }
 
   @week_url_map %{
-    "dynamic_message_schedule_week_1" =>
-      "https://storage.googleapis.com/week1_to_participant%20-%20Sheet1.csv",
-    "dynamic_message_schedule_week_2" => "",
-    "dynamic_message_schedule_week_3" => "",
-    "dynamic_message_schedule_week_4" => ""
+    "static_message_schedule" => "",
+    "message_template_map" => "",
+    "question_template_map" => "",
+    "dynamic_message_schedule_week" =>
+      "https://storage.googleapis.com/week1_to_participant%20-%20Sheet1.csv"
+  }
+
+  @csv_url_key_map %{
+    "static_message_schedule" => "",
+    "message_template_map" => "",
+    "question_template_map" => "",
+    "dynamic_message_schedule_week" =>
+      "https://storage.googleapis.com/week1_to_participant%20-%20Sheet1.csv"
   }
 
   @spec webhook(String.t(), map) :: map()
