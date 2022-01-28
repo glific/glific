@@ -8,6 +8,7 @@ defmodule Glific.Clients.ArogyaWorld do
     Sheets.ApiClient
   }
 
+
   @pilot_hour_to_day %{
     3 => 1,
     4 => 2,
@@ -16,6 +17,14 @@ defmodule Glific.Clients.ArogyaWorld do
     7 => 5,
     8 => 6,
     9 => 7
+  }
+
+  @week_url_map %{
+    "dynamic_message_schedule_week_1" =>
+      "https://storage.googleapis.com/week1_to_participant%20-%20Sheet1.csv",
+    "dynamic_message_schedule_week_2" => "",
+    "dynamic_message_schedule_week_3" => "",
+    "dynamic_message_schedule_week_4" => ""
   }
 
   def webhook("static_message", fields) do
@@ -209,9 +218,9 @@ defmodule Glific.Clients.ArogyaWorld do
     {current_week, next_week}
   end
 
-  defp load_participient_file(_org_id, week_number) do
+  def load_participient_file(_org_id, week_number) do
     key = get_dynamic_week_key(week_number)
-    add_weekly_dynamic_data(key, "need to get file url")
+    add_weekly_dynamic_data(key, @week_url_map[key])
   end
 
   @doc """
@@ -278,7 +287,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def message_hsm_mapping(file_url) do
     add_data_from_csv("message_template_map", file_url, fn acc, data ->
       acc
-      |> Map.put_new(data["message_id"], data["template_id"])
+      |> Map.put_new(data["Message ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -290,7 +299,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def question_hsm_mapping(file_url) do
     add_data_from_csv("question_template_map", file_url, fn acc, data ->
       acc
-      |> Map.put_new(data["question_id"], data["template_id"])
+      |> Map.put_new(data["Question ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -319,11 +328,17 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   @spec cleanup_static_data(map(), map()) :: map()
   def cleanup_static_data(acc, data) do
+    # check for 2nd day and update it to 4th
+    check_second_day =
+      if data["Message No"] === "2",
+        do: "4",
+        else: data["Message No"]
+
     week =
       if(Map.has_key?(acc, data["Week"])) do
-        acc[data["Week"]] |> Map.put(data["Message No."], data["Sl. No"])
+        acc[data["Week"]] |> Map.put(check_second_day, data["Message ID"])
       else
-        %{} |> Map.put(data["Message No."], data["Sl. No"])
+        %{check_second_day => data["Message ID"]}
       end
 
     acc
