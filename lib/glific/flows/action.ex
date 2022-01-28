@@ -609,14 +609,11 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: type} = _action, context, [msg]) when type in @wait_for do
-    if msg.body != "No Response" do
-      # we have a response, so we can continue
-      Logger.info("Unexpected message #{msg.body} received.")
-      {:ok, context, []}
-    else
-      {:ok, context, []}
-    end
+  def execute(%{type: type} = _action, context, [msg])
+      when type in @wait_for do
+    if msg.body != "No Response",
+      do: FlowContext.log_error("Unexpected message #{msg.body} received"),
+      else: {:ok, context, []}
   end
 
   def execute(%{type: type} = action, context, [])
