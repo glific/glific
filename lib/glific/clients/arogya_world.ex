@@ -299,13 +299,11 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def add_data_from_csv(key, file_url, cleanup_func, default_value \\ %{}) do
     # how to validate if the data is in correct format
-    data =
-      ApiClient.get_csv_content(url: file_url)
-      |> Enum.reduce(default_value, fn {_, data}, acc ->
-        cleanup_func.(acc, data)
-      end)
-
-    maybe_insert_data(key, data)
+    ApiClient.get_csv_content(url: file_url)
+    |> Enum.reduce(default_value, fn {_, data}, acc ->
+      cleanup_func.(acc, data)
+    end)
+    |> then(fn data -> maybe_insert_data(key, data) end)
   end
 
   @doc """
@@ -315,8 +313,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def message_hsm_mapping(file_url) do
     add_data_from_csv("message_template_map", file_url, fn acc, data ->
-      acc
-      |> Map.put_new(data["Message ID"], data["Glific Template UUID"])
+      Map.put_new(acc, data["Message ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -327,8 +324,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def question_hsm_mapping(file_url) do
     add_data_from_csv("question_template_map", file_url, fn acc, data ->
-      acc
-      |> Map.put_new(data["Question ID"], data["Glific Template UUID"])
+      Map.put_new(acc, data["Question ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -348,8 +344,7 @@ defmodule Glific.Clients.ArogyaWorld do
       }
     }
 
-    acc
-    |> Map.put_new(data["ID"], attr)
+    Map.put_new(acc, data["ID"], attr)
   end
 
   @doc """
@@ -365,13 +360,12 @@ defmodule Glific.Clients.ArogyaWorld do
 
     week =
       if Map.has_key?(acc, data["Week"]) do
-        acc[data["Week"]] |> Map.put(check_second_day, data["Message ID"])
+        Map.put(acc[data["Week"]], check_second_day, data["Message ID"])
       else
         %{check_second_day => data["Message ID"]}
       end
 
-    acc
-    |> Map.put(data["Week"], week)
+    Map.put(acc, data["Week"], week)
   end
 
   @doc """
