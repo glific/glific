@@ -24,6 +24,7 @@ defmodule Glific.Triggers do
   def execute_triggers(organization_id, now \\ DateTime.utc_now()) do
     # triggers can be executed multiple times a day based on frequency
     now = Timex.shift(now, minutes: 1)
+
     Trigger
     |> where([t], t.organization_id == ^organization_id and t.is_active == true)
     |> where([t], t.next_trigger_at < ^now)

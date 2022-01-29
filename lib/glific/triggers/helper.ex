@@ -65,6 +65,7 @@ defmodule Glific.Triggers.Helper do
     Timex.shift(time, days: shift) |> Timex.to_datetime()
   end
 
+  @spec compute_hourly(list(), DateTime.t()) :: DateTime.t()
   defp compute_hourly(hours, next_time) do
     current = next_time.hour
 
@@ -81,6 +82,7 @@ defmodule Glific.Triggers.Helper do
     |> add_next_day(shift, hours)
   end
 
+  @spec add_next_day(DateTime.t(), integer(), list()) :: DateTime.t()
   defp add_next_day(next_time, shift, hours),
     do: if(hours |> hd == shift, do: next_time |> Timex.shift(days: 1), else: next_time)
 
