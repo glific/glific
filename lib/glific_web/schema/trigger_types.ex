@@ -26,6 +26,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :is_repeating, :boolean
     field :frequency, :string
     field :days, list_of(:integer)
+    field :hours, list_of(:integer)
 
     field :flow, :flow do
       resolve(dataloader(Repo))
@@ -56,6 +57,7 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :is_repeating, :boolean
     field :frequency, list_of(:string)
     field :days, list_of(:integer)
+    field :hours, list_of(:integer)
 
     # the input widgets in the front end collect this seperately
     field :start_date, :date
