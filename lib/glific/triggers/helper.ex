@@ -14,16 +14,31 @@ defmodule Glific.Triggers.Helper do
           frequency: frequency,
           days: days,
           next_trigger_at: next_time
-        } = _trigger
+        } = trigger
       ) do
     cond do
-      "daily" in frequency -> Timex.shift(next_time, days: 1) |> Timex.to_datetime()
+      "daily" in frequency ->
+        Timex.shift(next_time, days: 1) |> Timex.to_datetime()
+
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      "monthly" in frequency -> monthly(next_time, days)
-      "weekday" in frequency -> weekday(next_time)
-      "weekend" in frequency -> weekend(next_time)
-      "none" in frequency -> next_time
-      true -> others(next_time, days)
+      "hourly" in frequency ->
+        Map.get(trigger, :hours, [])
+        |> compute_hourly(next_time)
+
+      "monthly" in frequency ->
+        monthly(next_time, days)
+
+      "weekday" in frequency ->
+        weekday(next_time)
+
+      "weekend" in frequency ->
+        weekend(next_time)
+
+      "none" in frequency ->
+        next_time
+
+      true ->
+        others(next_time, days)
     end
   end
 
@@ -31,23 +46,37 @@ defmodule Glific.Triggers.Helper do
 
   # day of week is a integer: 1 - Monday, 7 - Sunday
   @spec others(DateTime.t(), list()) :: DateTime.t()
-  defp others(time, []), do: time
+  def others(time, []), do: time
 
-  defp others(time, days) do
+  def others(time, days) do
     # so basically this clause picks a few days of the week
     # we need to loop from current to 7 and then back to current
     # and pick the number of days to shift
     current = Date.day_of_week(time)
     start_list = if current == 7, do: [], else: Enum.to_list((current + 1)..7)
 
-    shift =
-      (start_list ++ Enum.to_list(1..current))
-      |> Enum.with_index(1)
-      |> Enum.filter(fn {x, _shift} -> x in days end)
-      |> hd
-      |> elem(1)
+    shift = shift_duration(start_list, days, current)
 
     Timex.shift(time, days: shift) |> Timex.to_datetime()
+  end
+
+  @spec shift_duration(list(), list(), integer()) :: integer()
+  defp shift_duration(start_list, measures, current) do
+    (start_list ++ Enum.to_list(1..current))
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {x, _shift} -> x in measures end)
+    |> hd
+    |> elem(1)
+  end
+
+  @spec compute_hourly(list(), DateTime.t()) :: DateTime.t()
+  defp compute_hourly(hours, time) do
+    current = time.hour
+    start_list = if current == 23, do: [], else: Enum.to_list((current + 1)..23)
+
+    shift = shift_duration(start_list, hours, current)
+
+    Timex.shift(time, hours: shift) |> Timex.to_datetime()
   end
 
   @spec weekday(DateTime.t()) :: DateTime.t()
