@@ -46,38 +46,43 @@ defmodule Glific.Triggers.Helper do
 
   # day of week is a integer: 1 - Monday, 7 - Sunday
   @spec others(DateTime.t(), list()) :: DateTime.t()
-  def others(time, []), do: time
+  defp others(time, []), do: time
 
-  def others(time, days) do
+  defp others(time, days) do
     # so basically this clause picks a few days of the week
     # we need to loop from current to 7 and then back to current
     # and pick the number of days to shift
     current = Date.day_of_week(time)
     start_list = if current == 7, do: [], else: Enum.to_list((current + 1)..7)
 
-    shift = shift_duration(start_list, days, current)
+    shift =
+      (start_list ++ Enum.to_list(1..current))
+      |> Enum.with_index(1)
+      |> Enum.filter(fn {x, _shift} -> x in days end)
+      |> hd
+      |> elem(1)
 
     Timex.shift(time, days: shift) |> Timex.to_datetime()
   end
 
-  @spec shift_duration(list(), list(), integer()) :: integer()
-  defp shift_duration(start_list, measures, current) do
-    (start_list ++ Enum.to_list(1..current))
-    |> Enum.with_index(1)
-    |> Enum.filter(fn {x, _shift} -> x in measures end)
-    |> hd
-    |> elem(1)
+  defp compute_hourly(hours, next_time) do
+    current = next_time.hour
+
+    start_list =
+      if current == 23, do: [], else: Enum.reject(hours, fn hour -> hour <= current end)
+
+    shift =
+      (start_list ++ Enum.filter(hours, fn hour -> hour <= current end))
+      |> hd
+
+    DateTime.utc_now()
+    |> Timex.beginning_of_day()
+    |> Timex.shift(hours: shift, minutes: next_time.minute)
+    |> add_next_day(shift, hours)
   end
 
-  @spec compute_hourly(list(), DateTime.t()) :: DateTime.t()
-  defp compute_hourly(hours, time) do
-    current = time.hour
-    start_list = if current == 23, do: [], else: Enum.to_list((current + 1)..23)
-
-    shift = shift_duration(start_list, hours, current)
-
-    Timex.shift(time, hours: shift) |> Timex.to_datetime()
-  end
+  defp add_next_day(next_time, shift, hours),
+    do: if(hours |> hd == shift, do: next_time |> Timex.shift(days: 1), else: next_time)
 
   @spec weekday(DateTime.t()) :: DateTime.t()
   defp weekday(time) do
