@@ -295,10 +295,9 @@ mutation deleteTrigger($id: ID!)) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
 
@@ -515,19 +514,7 @@ Match the flow name
 <tbody>
 
 <tr>
-<td colspan="2" valign="top"><strong>eventType</strong></td>
-<td valign="top"><a href="#string">String</a></td>
-<td></td>
-</tr>
-
-<tr>
-<td colspan="2" valign="top"><strong>isRepeating</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-
-<tr>
-<td colspan="2" valign="top"><strong>frequency</strong></td>
+<td colspan="2" valign="top"><strong>name</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -553,6 +540,35 @@ Match the flow name
 <tr>
 <td colspan="2" valign="top"><strong>GroupId</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>isRepeating</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>frequency</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>hours</strong></td>
+<td valign="top"><a href="#list">List</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>days</strong></td>
+<td valign="top"><a href="#list">List</a></td>
 <td></td>
 </tr>
 
