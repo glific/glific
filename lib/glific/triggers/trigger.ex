@@ -141,7 +141,7 @@ defmodule Glific.Triggers.Trigger do
   defp get_next_trigger_at(_attrs, start_at), do: start_at
 
   @spec fix_attrs(map()) :: map()
-  defp fix_attrs(attrs) do
+  def fix_attrs(attrs) do
     # compute start_at if not set
     start_at = start_at(attrs)
 
@@ -154,28 +154,7 @@ defmodule Glific.Triggers.Trigger do
 
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
-
-    # update next trigger at based on frequency set through Helper function
-    |> update_next_trigger_at?()
   end
-
-  defp update_next_trigger_at?(
-         %{last_trigger_at: nil, next_trigger_at: next_trigger_at, frequency: frequency} = attrs
-       ) do
-    time =
-      if frequency == ["none"],
-        do: next_trigger_at,
-        else: next_trigger_at |> Timex.shift(days: -1)
-
-    computed_next_trigger_at =
-      attrs
-      |> Map.merge(%{next_trigger_at: time})
-      |> Helper.compute_next()
-
-    Map.merge(attrs, %{next_trigger_at: computed_next_trigger_at})
-  end
-
-  defp update_next_trigger_at?(attrs), do: attrs
 
   @doc false
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}

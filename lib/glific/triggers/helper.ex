@@ -22,8 +22,11 @@ defmodule Glific.Triggers.Helper do
 
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
       "hourly" in frequency ->
+        org = Glific.Partners.get_organization!(trigger.organization_id)
+        org_time = DateTime.shift_zone!(next_time, org.timezone)
+
         Map.get(trigger, :hours, [])
-        |> compute_hourly(next_time)
+        |> compute_hourly(org_time)
 
       "monthly" in frequency ->
         monthly(next_time, days)
@@ -66,7 +69,7 @@ defmodule Glific.Triggers.Helper do
   end
 
   @spec compute_hourly(list(), DateTime.t()) :: DateTime.t()
-  defp compute_hourly(hours, next_time) do
+  def compute_hourly(hours, next_time) do
     current = next_time.hour
 
     start_list =
@@ -76,10 +79,11 @@ defmodule Glific.Triggers.Helper do
       (start_list ++ Enum.filter(hours, fn hour -> hour <= current end))
       |> hd
 
-    DateTime.utc_now()
+    next_time
     |> Timex.beginning_of_day()
     |> Timex.shift(hours: shift, minutes: next_time.minute)
     |> add_next_day(shift, hours)
+    |> DateTime.shift_zone!("Etc/UTC")
   end
 
   @spec add_next_day(DateTime.t(), integer(), list()) :: DateTime.t()
