@@ -38,6 +38,15 @@ defmodule Glific do
   end
 
   @doc """
+  parse and integer and die if parse fails
+  """
+  @spec parse_maybe_integer!(String.t() | integer) :: integer
+  def parse_maybe_integer!(value) do
+    {:ok, value} = parse_maybe_integer(value)
+    value
+  end
+
+  @doc """
   Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
   along with the valid shortcode.
   """

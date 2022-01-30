@@ -7,7 +7,11 @@ defmodule Glific.Clients do
   At some point we will move this to a more extensible scheme, which is as yet undetermined
   """
 
-  alias Glific.{Contacts.Contact, Flows.Action}
+  alias Glific.{
+    Contacts.Contact,
+    Flows.Action,
+    Triggers.Trigger
+  }
 
   @dev %{
     id: 1,
@@ -16,7 +20,8 @@ defmodule Glific.Clients do
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
     webhook: Glific.Clients.DigitalGreen,
-    daily_tasks: Glific.Clients.DigitalGreen
+    daily_tasks: Glific.Clients.DigitalGreen,
+    trigger_condition: Glific.Clients.ArogyaWorld
   }
 
   @sol %{
@@ -59,12 +64,6 @@ defmodule Glific.Clients do
     # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
-  @weunlearn %{
-    id: 25,
-    name: "WeUnlearn"
-    # broadcast: Glific.Clients.Weunlearn
-  }
-
   @balajanaagraha %{
     id: 27,
     name: "BalaJanaagraha",
@@ -90,7 +89,8 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.ArogyaWorld,
     daily_tasks: Glific.Clients.ArogyaWorld,
     weekly_tasks: Glific.Clients.ArogyaWorld,
-    hourly_tasks: Glific.Clients.ArogyaWorld
+    hourly_tasks: Glific.Clients.ArogyaWorld,
+    trigger_condition: Glific.Clients.ArogyaWorld
   }
 
   @plugins %{
@@ -100,7 +100,6 @@ defmodule Glific.Clients do
     @reap_benefit[:id] => @reap_benefit,
     @stir[:id] => @stir,
     @tap[:id] => @tap,
-    @weunlearn[:id] => @weunlearn,
     @balajanaagraha[:id] => @balajanaagraha,
     @digital_green[:id] => @digital_green,
     @nayi_disha[:id] => @nayi_disha,
@@ -205,5 +204,19 @@ defmodule Glific.Clients do
     if module_name,
       do: module_name.hourly_tasks(org_id),
       else: %{error: "Missing hourly function implementation"}
+  end
+
+  @doc """
+  Allow an organization to add additional conditions on starting a trigger
+  This allows an org to add a daily trigger which is executed only on some
+  days of the week
+  """
+  @spec trigger_condition(Trigger.t()) :: boolean
+  def trigger_condition(trigger) do
+    module_name = get_in(plugins(), [trigger.organization_id, :trigger_condition])
+
+    if module_name,
+      do: module_name.trigger_condition(trigger),
+      else: true
   end
 end

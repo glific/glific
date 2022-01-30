@@ -119,8 +119,14 @@ defmodule Glific.Triggers do
     end
   end
 
-  @spec start_flow(Trigger.t()) :: nil
+  @spec start_flow(Trigger.t()) :: any
   defp start_flow(trigger) do
+    if Glific.Clients.trigger_condition(trigger),
+      do: do_start_flow(trigger)
+  end
+
+  @spec do_start_flow(Trigger.t()) :: any
+  defp do_start_flow(trigger) do
     flow = Flows.get_flow!(trigger.flow_id)
 
     Logger.info(
@@ -131,7 +137,5 @@ defmodule Glific.Triggers do
       group = Groups.get_group!(trigger.group_id)
       Flows.start_group_flow(flow, group)
     end
-
-    nil
   end
 end
