@@ -22,7 +22,7 @@ defmodule Glific.Triggers.Helper do
 
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
       "hourly" in frequency ->
-        org = Glific.Partners.get_organization!(trigger.organization_id)
+        org = Glific.Partners.organization(trigger.organization_id)
         org_time = DateTime.shift_zone!(next_time, org.timezone)
 
         Map.get(trigger, :hours, [])
@@ -86,7 +86,7 @@ defmodule Glific.Triggers.Helper do
     |> DateTime.shift_zone!("Etc/UTC")
   end
 
-  #shift to next day when trigger is executed for the last hourly frequency for the day
+  # shift to next day when trigger is executed for the last hourly frequency for the day
   @spec check_for_next_day(DateTime.t(), integer(), list()) :: DateTime.t()
   defp check_for_next_day(next_time, shift, hours),
     do: if(hours |> hd == shift, do: next_time |> Timex.shift(days: 1), else: next_time)
