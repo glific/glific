@@ -47,9 +47,6 @@ defmodule Glific.Triggers do
 
       trigger.frequency == ["hourly"] and trigger.last_trigger_at.hour < now.hour ->
         do_execute_trigger(trigger)
-
-      true ->
-        nil
     end
 
     nil
