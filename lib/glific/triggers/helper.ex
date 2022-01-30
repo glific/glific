@@ -69,7 +69,7 @@ defmodule Glific.Triggers.Helper do
   end
 
   @spec compute_hourly(list(), DateTime.t()) :: DateTime.t()
-  def compute_hourly(hours, next_time) do
+  defp compute_hourly(hours, next_time) do
     current = next_time.hour
 
     start_list =
@@ -82,12 +82,13 @@ defmodule Glific.Triggers.Helper do
     next_time
     |> Timex.beginning_of_day()
     |> Timex.shift(hours: shift, minutes: next_time.minute)
-    |> add_next_day(shift, hours)
+    |> check_for_next_day(shift, hours)
     |> DateTime.shift_zone!("Etc/UTC")
   end
 
-  @spec add_next_day(DateTime.t(), integer(), list()) :: DateTime.t()
-  defp add_next_day(next_time, shift, hours),
+  #shift to next day when trigger is executed for the last hourly frequency for the day
+  @spec check_for_next_day(DateTime.t(), integer(), list()) :: DateTime.t()
+  defp check_for_next_day(next_time, shift, hours),
     do: if(hours |> hd == shift, do: next_time |> Timex.shift(days: 1), else: next_time)
 
   @spec weekday(DateTime.t()) :: DateTime.t()

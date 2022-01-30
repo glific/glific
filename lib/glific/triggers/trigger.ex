@@ -11,8 +11,7 @@ defmodule Glific.Triggers.Trigger do
     Groups.Group,
     Partners,
     Partners.Organization,
-    Repo,
-    Triggers.Helper
+    Repo
   }
 
   @type t() :: %__MODULE__{
@@ -141,7 +140,7 @@ defmodule Glific.Triggers.Trigger do
   defp get_next_trigger_at(_attrs, start_at), do: start_at
 
   @spec fix_attrs(map()) :: map()
-  def fix_attrs(attrs) do
+  defp fix_attrs(attrs) do
     # compute start_at if not set
     start_at = start_at(attrs)
 

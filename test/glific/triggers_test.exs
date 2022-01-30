@@ -203,15 +203,18 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
 
-    @hour_1am 1
-    @hour_3am 3
+    @hour_12pm 12
+    @hour_3pm 15
     @hour_9pm 21
     test "execute_triggers/2 should execute a trigger with frequency as hourly", attrs do
+      # Setting trigger start at 12pm IST
       start_at =
         DateTime.utc_now()
-        |> Timex.shift(days: 1)
         |> Timex.beginning_of_day()
+        |> Timex.shift(hours: 6, minutes: 30)
+        |> Timex.shift(days: 1)
 
+      # Setting trigger start at 5 days later
       end_date =
         DateTime.utc_now()
         |> Timex.beginning_of_day()
@@ -223,26 +226,25 @@ defmodule Glific.TriggersTest do
           frequency: ["hourly"],
           is_repeating: true,
           organization_id: attrs.organization_id,
-          last_trigger_at: start_at,
           end_date: end_date,
-          hours: [@hour_1am, @hour_3am, @hour_9pm]
+          hours: [@hour_12pm, @hour_3pm, @hour_9pm]
         })
 
-      execute_time = start_at |> Timex.shift(hours: 1)
-
       msg_count1 = Messages.count_messages(%{filter: attrs})
-      Triggers.execute_triggers(attrs.organization_id, execute_time)
+      # Executing trigger at the starting time
+      Triggers.execute_triggers(attrs.organization_id, start_at)
       msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
       trigger = Trigger.get_trigger!(trigger.id)
-      assert trigger.next_trigger_at.hour == @hour_1am
+      assert trigger.next_trigger_at.hour == 9
 
+      # Executing trigger at second set time i.e 3PM IST
       execute_time = start_at |> Timex.shift(hours: 3)
       Triggers.execute_triggers(attrs.organization_id, execute_time)
       msg_count3 = Messages.count_messages(%{filter: attrs})
       assert msg_count3 > msg_count2
       trigger = Trigger.get_trigger!(trigger.id)
-      assert trigger.next_trigger_at.hour == @hour_9pm
+      assert trigger.next_trigger_at.hour == 15
     end
 
     test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined",
