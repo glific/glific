@@ -22,20 +22,11 @@ defmodule Glific.Triggers do
   """
   @spec execute_triggers(non_neg_integer(), DateTime.t()) :: [Trigger.t()]
   def execute_triggers(organization_id, now \\ DateTime.utc_now()) do
-    # triggers are executed at most once per day
+    # triggers can be executed multiple times a day based on frequency
     now = Timex.shift(now, minutes: 1)
 
     Trigger
     |> where([t], t.organization_id == ^organization_id and t.is_active == true)
-    |> where(
-      [t],
-      is_nil(t.last_trigger_at) or
-        fragment(
-          "date_trunc('day', ?) != ?",
-          t.last_trigger_at,
-          ^Timex.beginning_of_day(now)
-        )
-    )
     |> where([t], t.next_trigger_at < ^now)
     |> select([t], t.id)
     |> limit(@max_trigger_limit)
@@ -49,16 +40,24 @@ defmodule Glific.Triggers do
     # to avoid other process, unlikely to happen, but might
     trigger = Repo.get!(Trigger, id)
 
-    if is_nil(trigger.last_trigger_at) or
-         Date.diff(DateTime.to_date(trigger.last_trigger_at), DateTime.to_date(now)) < 0 do
-      Logger.info("executing trigger: #{trigger.name} for org_id: #{trigger.organization_id}")
+    cond do
+      is_nil(trigger.last_trigger_at) or
+          Date.diff(DateTime.to_date(trigger.last_trigger_at), DateTime.to_date(now)) < 0 ->
+        do_execute_trigger(trigger)
 
-      trigger
-      |> update_next()
-      |> start_flow()
+      trigger.frequency == ["hourly"] and trigger.last_trigger_at.hour < now.hour ->
+        do_execute_trigger(trigger)
     end
 
     nil
+  end
+
+  defp do_execute_trigger(trigger) do
+    Logger.info("executing trigger: #{trigger.name} for org_id: #{trigger.organization_id}")
+
+    trigger
+    |> update_next()
+    |> start_flow()
   end
 
   @spec update_next(Trigger.t()) :: Trigger.t()

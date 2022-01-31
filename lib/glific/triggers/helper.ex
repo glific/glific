@@ -14,16 +14,34 @@ defmodule Glific.Triggers.Helper do
           frequency: frequency,
           days: days,
           next_trigger_at: next_time
-        } = _trigger
+        } = trigger
       ) do
     cond do
-      "daily" in frequency -> Timex.shift(next_time, days: 1) |> Timex.to_datetime()
+      "daily" in frequency ->
+        Timex.shift(next_time, days: 1) |> Timex.to_datetime()
+
       # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
-      "monthly" in frequency -> monthly(next_time, days)
-      "weekday" in frequency -> weekday(next_time)
-      "weekend" in frequency -> weekend(next_time)
-      "none" in frequency -> next_time
-      true -> others(next_time, days)
+      "hourly" in frequency ->
+        org = Glific.Partners.organization(trigger.organization_id)
+        org_time = DateTime.shift_zone!(next_time, org.timezone)
+
+        Map.get(trigger, :hours, [])
+        |> compute_hourly(org_time)
+
+      "monthly" in frequency ->
+        monthly(next_time, days)
+
+      "weekday" in frequency ->
+        weekday(next_time)
+
+      "weekend" in frequency ->
+        weekend(next_time)
+
+      "none" in frequency ->
+        next_time
+
+      true ->
+        others(next_time, days)
     end
   end
 
@@ -49,6 +67,29 @@ defmodule Glific.Triggers.Helper do
 
     Timex.shift(time, days: shift) |> Timex.to_datetime()
   end
+
+  @spec compute_hourly(list(), DateTime.t()) :: DateTime.t()
+  defp compute_hourly(hours, next_time) do
+    current = next_time.hour
+
+    start_list =
+      if current == 23, do: [], else: Enum.reject(hours, fn hour -> hour <= current end)
+
+    shift =
+      (start_list ++ Enum.filter(hours, fn hour -> hour <= current end))
+      |> hd
+
+    next_time
+    |> Timex.beginning_of_day()
+    |> Timex.shift(hours: shift, minutes: next_time.minute)
+    |> check_for_next_day(shift, hours)
+    |> DateTime.shift_zone!("Etc/UTC")
+  end
+
+  # shift to next day when trigger is executed for the last hourly frequency for the day
+  @spec check_for_next_day(DateTime.t(), integer(), list()) :: DateTime.t()
+  defp check_for_next_day(next_time, shift, hours),
+    do: if(hours |> hd == shift, do: next_time |> Timex.shift(days: 1), else: next_time)
 
   @spec weekday(DateTime.t()) :: DateTime.t()
   defp weekday(time) do

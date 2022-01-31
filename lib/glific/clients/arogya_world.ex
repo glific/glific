@@ -96,7 +96,8 @@ defmodule Glific.Clients.ArogyaWorld do
       message_id: message_id,
       question_id: question_id,
       message_template_id: message_template_id || false,
-      question_template_id: question_template_id || false
+      question_template_id: question_template_id || false,
+      question_lable: "Q#{current_week_day}_#{question_id}"
     }
   end
 
