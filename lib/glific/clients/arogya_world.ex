@@ -97,7 +97,7 @@ defmodule Glific.Clients.ArogyaWorld do
       question_id: question_id,
       message_template_id: message_template_id || false,
       question_template_id: question_template_id || false,
-      question_lable: "Q#{current_week_day}_#{question_id}"
+      question_label: "Q#{current_week}_#{current_week_day}_#{question_id}"
     }
   end
 
@@ -106,7 +106,11 @@ defmodule Glific.Clients.ArogyaWorld do
   def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
 
   defp run_weekly_tasks(org_id) do
-    {_current_week, next_week} = update_week_number(org_id)
+    {current_week, next_week} = update_week_number(org_id)
+
+    # This needs to be called way before loading the next file
+    upload_participant_responses(org_id, current_week)
+
     load_participant_file(org_id, next_week)
   end
 
@@ -410,7 +414,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  get the messages based on flow label
+  Get the messages based on flow label
   """
   @spec get_messages_by_flow_label(non_neg_integer(), String.t()) :: any()
   def get_messages_by_flow_label(org_id, label) do
@@ -423,16 +427,18 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Create a file in GCS bucket for candidate response
   """
-  @spec response_from_participant(non_neg_integer()) :: any()
-  def response_from_participant(org_id) do
+  @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
+  def upload_participant_responses(org_id, week) do
+    # Question 1 responses for current week
     q1_responses =
-      get_messages_by_flow_label(org_id, "q_1_")
+      get_messages_by_flow_label(org_id, "Q#{week}_1_")
       |> Enum.map(fn m ->
         %{"ID" => m.contact_id, "Q1_ID" => get_question_id(m.flow_label), "Q1_response" => m.body}
       end)
 
+    # Question 2 responses for current week
     q2_responses =
-      get_messages_by_flow_label(org_id, "q_4_")
+      get_messages_by_flow_label(org_id, "Q#{week}_4_")
       |> Enum.map(fn m ->
         %{"ID" => m.contact_id, "Q2_ID" => get_question_id(m.flow_label), "Q2_response" => m.body}
       end)
@@ -455,6 +461,7 @@ defmodule Glific.Clients.ArogyaWorld do
         }
       end)
 
+    # Creating a CSV file
     temp_path =
       System.tmp_dir!()
       |> Path.join("participant_response.csv")
@@ -465,9 +472,8 @@ defmodule Glific.Clients.ArogyaWorld do
     |> CSV.encode(headers: ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"])
     |> Enum.each(&IO.write(file, &1))
 
-    current_week = get_current_week(org_id)
-
-    GcsWorker.upload_media(temp_path, "participant_response_week_#{current_week}.csv", org_id)
+    # Upload the file to GCS
+    GcsWorker.upload_media(temp_path, "participant_responses_week_#{week}.csv", org_id)
     |> case do
       {:ok, gcs_url} -> %{url: gcs_url, error: nil}
       {:error, error} -> %{url: nil, error: error}
@@ -475,7 +481,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-
+  Return the question id based on the label
   """
   @spec get_question_id(String.t()) :: any()
   def get_question_id(label) do
