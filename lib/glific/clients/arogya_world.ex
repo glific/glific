@@ -77,7 +77,6 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Send the response data back to arogya team in a CSV file
   """
-  @spec webhook(String.t(), map) :: map()
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     current_week = get_current_week(organization_id)
