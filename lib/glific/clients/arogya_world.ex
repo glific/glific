@@ -74,6 +74,16 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
+  @doc """
+  Send the response data back to arogya team in a CSV file
+  """
+  @spec webhook(String.t(), map) :: map()
+  def webhook("send_participant_responses", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    current_week = get_current_week(organization_id)
+    upload_participant_responses(organization_id, current_week)
+  end
+
   def webhook("dynamic_message", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
@@ -106,11 +116,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
 
   defp run_weekly_tasks(org_id) do
-    {current_week, next_week} = update_week_number(org_id)
-
-    # This needs to be called way before loading the next file
-    upload_participant_responses(org_id, current_week)
-
+    {_current_week, next_week} = update_week_number(org_id)
     load_participant_file(org_id, next_week)
   end
 
