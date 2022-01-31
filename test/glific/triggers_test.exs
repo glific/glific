@@ -203,6 +203,50 @@ defmodule Glific.TriggersTest do
       assert msg_count2 > msg_count1
     end
 
+    @hour_12pm 12
+    @hour_3pm 15
+    @hour_9pm 21
+    test "execute_triggers/2 should execute a trigger with frequency as hourly", attrs do
+      # Setting trigger start at 12pm IST
+      start_at =
+        DateTime.utc_now()
+        |> Timex.beginning_of_day()
+        |> Timex.shift(hours: 6, minutes: 30)
+        |> Timex.shift(days: 1)
+
+      # Setting trigger start at 5 days later
+      end_date =
+        DateTime.utc_now()
+        |> Timex.beginning_of_day()
+        |> Timex.shift(days: 5)
+
+      trigger =
+        Fixtures.trigger_fixture(%{
+          start_at: start_at,
+          frequency: ["hourly"],
+          is_repeating: true,
+          organization_id: attrs.organization_id,
+          end_date: end_date,
+          hours: [@hour_12pm, @hour_3pm, @hour_9pm]
+        })
+
+      msg_count1 = Messages.count_messages(%{filter: attrs})
+      # Executing trigger at the starting time
+      Triggers.execute_triggers(attrs.organization_id, start_at)
+      msg_count2 = Messages.count_messages(%{filter: attrs})
+      assert msg_count2 > msg_count1
+      trigger = Trigger.get_trigger!(trigger.id)
+      assert trigger.next_trigger_at.hour == 9
+
+      # Executing trigger at second set time i.e 3PM IST
+      execute_time = start_at |> Timex.shift(hours: 3)
+      Triggers.execute_triggers(attrs.organization_id, execute_time)
+      msg_count3 = Messages.count_messages(%{filter: attrs})
+      assert msg_count3 > msg_count2
+      trigger = Trigger.get_trigger!(trigger.id)
+      assert trigger.next_trigger_at.hour == 15
+    end
+
     test "execute_triggers/2 should execute a trigger with frequency as weekly with days defined",
          attrs do
       start_at = Timex.shift(DateTime.utc_now(), days: 1)

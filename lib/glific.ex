@@ -38,6 +38,15 @@ defmodule Glific do
   end
 
   @doc """
+  parse and integer and die if parse fails
+  """
+  @spec parse_maybe_integer!(String.t() | integer) :: integer
+  def parse_maybe_integer!(value) do
+    {:ok, value} = parse_maybe_integer(value)
+    value
+  end
+
+  @doc """
   Validates inputed shortcode, if shortcode is invalid it returns message that the shortcode is invalid
   along with the valid shortcode.
   """
@@ -134,7 +143,7 @@ defmodule Glific do
     inspect(stacktrace)
   end
 
-  @not_allowed ["Repo", "IO", "File", "Code"]
+  @not_allowed ["Repo.", "IO.", "File.", "Code."]
 
   @doc """
   Really simple function to ensure folks do not add Repo and/or IO calls

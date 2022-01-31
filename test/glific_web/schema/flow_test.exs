@@ -241,7 +241,7 @@ defmodule GlificWeb.Schema.FlowTest do
              "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
-  test "update a flow and test possible scenarios and errors", %{manager: user} do
+  test "update a flow and test possible scenarios and errorss", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
