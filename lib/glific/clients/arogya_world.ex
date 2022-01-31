@@ -7,13 +7,13 @@ defmodule Glific.Clients.ArogyaWorld do
   import Ecto.Query
 
   alias Glific.{
+    GCS.GcsWorker,
+    Messages.Message,
     Partners,
     Partners.OrganizationData,
     Repo,
     Sheets.ApiClient,
-    Triggers.Trigger,
-    Messages.Message,
-    GCS.GcsWorker
+    Triggers.Trigger
   }
 
   @pilot_hour_to_day %{
