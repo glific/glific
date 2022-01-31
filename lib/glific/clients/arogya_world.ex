@@ -8,7 +8,8 @@ defmodule Glific.Clients.ArogyaWorld do
     Partners,
     Partners.OrganizationData,
     Repo,
-    Sheets.ApiClient
+    Sheets.ApiClient,
+    Triggers.Trigger
   }
 
   @pilot_hour_to_day %{
@@ -50,12 +51,12 @@ defmodule Glific.Clients.ArogyaWorld do
     static_message_schedule_map(@csv_url_key_map["static_message_schedule"])
     message_hsm_mapping(@csv_url_key_map["message_template_map"])
     question_hsm_mapping(@csv_url_key_map["question_template_map"])
-    load_participient_file(org_id, 1)
+    load_participant_file(org_id, 1)
   end
 
   @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     current_week = get_current_week(organization_id)
     current_week_day = get_week_day_number()
     message_id = get_message_id(organization_id, current_week, current_week_day)
@@ -70,8 +71,8 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   def webhook("dynamic_message", fields) do
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-    {:ok, contact_id} = Glific.parse_maybe_integer(get_in(fields, ["contact", "id"]))
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
 
     current_week = get_current_week(organization_id)
     current_week_day = get_week_day_number()
@@ -102,7 +103,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp run_weekly_tasks(org_id) do
     {_current_week, next_week} = update_week_number(org_id)
-    load_participient_file(org_id, next_week)
+    load_participant_file(org_id, next_week)
   end
 
   @spec daily_tasks(non_neg_integer()) :: any()
@@ -232,7 +233,7 @@ defmodule Glific.Clients.ArogyaWorld do
         key: "current_week"
       })
 
-    {:ok, current_week} = Glific.parse_maybe_integer(organization_data.text)
+    current_week = Glific.parse_maybe_integer!(organization_data.text)
 
     next_week = current_week + 1
 
@@ -245,14 +246,15 @@ defmodule Glific.Clients.ArogyaWorld do
     {current_week, next_week}
   end
 
-  @spec load_participient_file(non_neg_integer(), non_neg_integer()) :: any()
-  def load_participient_file(_org_id, week_number) do
+  @doc false
+  @spec load_participant_file(non_neg_integer(), non_neg_integer()) :: any()
+  def load_participant_file(_org_id, week_number) do
     key = get_dynamic_week_key(week_number)
     add_weekly_dynamic_data(key, @csv_url_key_map["dynamic_message_schedule_week"])
   end
 
   @doc """
-    get template form EEx
+  get template form EEx
   """
   @spec template(integer(), String.t()) :: binary
   def template(template_uuid, name) do
@@ -298,13 +300,11 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def add_data_from_csv(key, file_url, cleanup_func, default_value \\ %{}) do
     # how to validate if the data is in correct format
-    data =
-      ApiClient.get_csv_content(url: file_url)
-      |> Enum.reduce(default_value, fn {_, data}, acc ->
-        cleanup_func.(acc, data)
-      end)
-
-    maybe_insert_data(key, data)
+    ApiClient.get_csv_content(url: file_url)
+    |> Enum.reduce(default_value, fn {_, data}, acc ->
+      cleanup_func.(acc, data)
+    end)
+    |> then(fn data -> maybe_insert_data(key, data) end)
   end
 
   @doc """
@@ -314,8 +314,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def message_hsm_mapping(file_url) do
     add_data_from_csv("message_template_map", file_url, fn acc, data ->
-      acc
-      |> Map.put_new(data["Message ID"], data["Glific Template UUID"])
+      Map.put_new(acc, data["Message ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -326,8 +325,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def question_hsm_mapping(file_url) do
     add_data_from_csv("question_template_map", file_url, fn acc, data ->
-      acc
-      |> Map.put_new(data["Question ID"], data["Glific Template UUID"])
+      Map.put_new(acc, data["Question ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -347,8 +345,7 @@ defmodule Glific.Clients.ArogyaWorld do
       }
     }
 
-    acc
-    |> Map.put_new(data["ID"], attr)
+    Map.put_new(acc, data["ID"], attr)
   end
 
   @doc """
@@ -364,13 +361,12 @@ defmodule Glific.Clients.ArogyaWorld do
 
     week =
       if Map.has_key?(acc, data["Week"]) do
-        acc[data["Week"]] |> Map.put(check_second_day, data["Message ID"])
+        Map.put(acc[data["Week"]], check_second_day, data["Message ID"])
       else
         %{check_second_day => data["Message ID"]}
       end
 
-    acc
-    |> Map.put(data["Week"], week)
+    Map.put(acc, data["Week"], week)
   end
 
   @doc """
@@ -397,5 +393,15 @@ defmodule Glific.Clients.ArogyaWorld do
         |> OrganizationData.changeset(%{json: data})
         |> Repo.update()
     end
+  end
+
+  @doc """
+  Conditionally execute the trigger based on: ID, Week, Day.
+  """
+  @spec trigger_condition(Trigger.t()) :: boolean
+  def trigger_condition(trigger) do
+    if trigger.id > 0,
+      do: true,
+      else: false
   end
 end

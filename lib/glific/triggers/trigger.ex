@@ -11,8 +11,7 @@ defmodule Glific.Triggers.Trigger do
     Groups.Group,
     Partners,
     Partners.Organization,
-    Repo,
-    Triggers.Helper
+    Repo
   }
 
   @type t() :: %__MODULE__{
@@ -31,6 +30,7 @@ defmodule Glific.Triggers.Trigger do
           is_repeating: boolean(),
           frequency: list() | nil,
           days: list() | nil,
+          hours: list() | nil,
           is_active: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -53,7 +53,8 @@ defmodule Glific.Triggers.Trigger do
     :next_trigger_at,
     :is_repeating,
     :frequency,
-    :days
+    :days,
+    :hours
   ]
 
   schema "triggers" do
@@ -71,6 +72,7 @@ defmodule Glific.Triggers.Trigger do
 
     field :frequency, {:array, :string}, default: []
     field :days, {:array, :integer}, default: []
+    field :hours, {:array, :integer}, default: []
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
@@ -151,28 +153,7 @@ defmodule Glific.Triggers.Trigger do
 
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
-
-    # update next trigger at based on frequency set through Helper function
-    |> update_next_trigger_at?()
   end
-
-  defp update_next_trigger_at?(
-         %{last_trigger_at: nil, next_trigger_at: next_trigger_at, frequency: frequency} = attrs
-       ) do
-    time =
-      if frequency == ["none"],
-        do: next_trigger_at,
-        else: next_trigger_at |> Timex.shift(days: -1)
-
-    computed_next_trigger_at =
-      attrs
-      |> Map.merge(%{next_trigger_at: time})
-      |> Helper.compute_next()
-
-    Map.merge(attrs, %{next_trigger_at: computed_next_trigger_at})
-  end
-
-  defp update_next_trigger_at?(attrs), do: attrs
 
   @doc false
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
