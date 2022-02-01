@@ -26,14 +26,24 @@ defmodule Glific.Clients.ArogyaWorld do
     9 => 7
   }
 
-  @static_flow %{
-    group_id: 679,
-    flow_id: 2500
-  }
-
-  @dynamic_flow %{
-    group_id: 680,
-    flow_id: 2501
+  @response_score %{
+    "Not very soon" => 1,
+    "0 to 1 serving" => 1,
+    "0 to 1 snacks" => 1,
+    "No" => 1,
+    "Never" => 1,
+    "Some Days/Weekends" => 2,
+    "2-3 servings" => 2,
+    "2-3 snacks" => 2,
+    "Sometimes/Occasionally" => 2,
+    "2-3 times" => 2,
+    "Sometimes" => 2,
+    "In the next 60 days" => 2,
+    "Daily/Often" => 3,
+    "4 or more servings" => 3,
+    "4 or more snacks" => 3,
+    "Yes" => 3,
+    "In the next 30 days" => 3
   }
 
   @csv_url_key_map %{
@@ -128,26 +138,10 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec hourly_tasks(non_neg_integer()) :: any()
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-    if is_nil(get_week_day_number()) do
-      Logger.info("Weekday is nil. Skipping hourly tasks.")
-    else
-      broadcast_static_group(org_id)
-      broadcast_dynamic_group(org_id)
+    if get_week_day_number() === 23 do
+      current_week = get_current_week(org_id)
+      upload_participant_responses(org_id, current_week)
     end
-
-    ## broadcast for dynamic group
-  end
-
-  defp broadcast_static_group(_org_id) do
-    static_flow = Glific.Flows.get_flow!(@static_flow.flow_id)
-    static_group = Glific.Groups.get_group!(@static_flow.group_id)
-    Glific.Flows.start_group_flow(static_flow, static_group)
-  end
-
-  defp broadcast_dynamic_group(_org_id) do
-    dynamic_flow = Glific.Flows.get_flow!(@dynamic_flow.flow_id)
-    dynamic_group = Glific.Groups.get_group!(@dynamic_flow.group_id)
-    Glific.Flows.start_group_flow(dynamic_flow, dynamic_group)
   end
 
   defp get_current_week(organization_id) do
@@ -438,14 +432,26 @@ defmodule Glific.Clients.ArogyaWorld do
     q1_responses =
       get_messages_by_flow_label(org_id, "Q#{week}_1_")
       |> Enum.map(fn m ->
-        %{"ID" => m.contact_id, "Q1_ID" => get_question_id(m.flow_label), "Q1_response" => m.body}
+        q1_id = get_question_id(m.flow_label)
+
+        %{
+          "ID" => m.contact_id,
+          "Q1_ID" => q1_id,
+          "Q1_response" => get_response_score(m.body, q1_id)
+        }
       end)
 
     # Question 2 responses for current week
     q2_responses =
       get_messages_by_flow_label(org_id, "Q#{week}_4_")
       |> Enum.map(fn m ->
-        %{"ID" => m.contact_id, "Q2_ID" => get_question_id(m.flow_label), "Q2_response" => m.body}
+        q2_id = get_question_id(m.flow_label)
+
+        %{
+          "ID" => m.contact_id,
+          "Q2_ID" => q2_id,
+          "Q2_response" => get_response_score(m.body, q2_id)
+        }
       end)
 
     # merging response
@@ -492,5 +498,36 @@ defmodule Glific.Clients.ArogyaWorld do
   def get_question_id(label) do
     String.split(label, "_", trim: true)
     |> List.last()
+  end
+
+  @doc """
+  Return the response score based on the body
+  """
+  @spec get_response_score(String.t(), String.t()) :: any()
+  def get_response_score(response, q_id) do
+    # Need to add type of question and check from that instead of id
+    if q_id == "27" do
+      count = String.split(response, ",") |> length()
+
+      cond do
+        count === 1 ->
+          1
+
+        count > 1 and count < 4 ->
+          2
+
+        count === 4 ->
+          3
+
+        true ->
+          response
+      end
+    else
+      if @response_score[response] !== nil do
+        @response_score[response]
+      else
+        response
+      end
+    end
   end
 end
