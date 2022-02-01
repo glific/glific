@@ -26,26 +26,6 @@ defmodule Glific.Clients.ArogyaWorld do
     9 => 7
   }
 
-  @response_score %{
-    "Not very soon" => 1,
-    "0 to 1 serving" => 1,
-    "0 to 1 snacks" => 1,
-    "No" => 1,
-    "Never" => 1,
-    "Some Days/Weekends" => 2,
-    "2-3 servings" => 2,
-    "2-3 snacks" => 2,
-    "Sometimes/Occasionally" => 2,
-    "2-3 times" => 2,
-    "Sometimes" => 2,
-    "In the next 60 days" => 2,
-    "Daily/Often" => 3,
-    "4 or more servings" => 3,
-    "4 or more snacks" => 3,
-    "Yes" => 3,
-    "In the next 30 days" => 3
-  }
-
   @csv_url_key_map %{
     "static_message_schedule" =>
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Messages.csv",
@@ -53,6 +33,7 @@ defmodule Glific.Clients.ArogyaWorld do
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Messages.csv",
     "question_template_map" =>
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Questions.csv",
+    "response_score_map" => "https://storage.googleapis.com/arogya-sheets/score_encoding.csv",
     "dynamic_message_schedule_week" =>
       "https://storage.googleapis.com/arogya-sheets/week1_to_participant%20-%20Sheet1.csv"
   }
@@ -65,6 +46,7 @@ defmodule Glific.Clients.ArogyaWorld do
     static_message_schedule_map(@csv_url_key_map["static_message_schedule"])
     message_hsm_mapping(@csv_url_key_map["message_template_map"])
     question_hsm_mapping(@csv_url_key_map["question_template_map"])
+    response_score_mapping(@csv_url_key_map["response_score_map"])
     load_participant_file(org_id, 1)
   end
 
@@ -337,6 +319,19 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
+  response to score mapping
+  """
+  @spec response_score_mapping(String.t()) ::
+          {:ok, any()} | {:error, Ecto.Changeset.t()}
+  def response_score_mapping(file_url) do
+    add_data_from_csv("response_score_map", file_url, fn acc, data ->
+      Map.put(acc, data["1"], 1)
+      |> Map.put(data["2"], 2)
+      |> Map.put(data["3"], 3)
+    end)
+  end
+
+  @doc """
   Clean week data from the CSV file.
   """
   @spec cleanup_week_data(map(), map()) :: map()
@@ -437,7 +432,7 @@ defmodule Glific.Clients.ArogyaWorld do
         %{
           "ID" => m.contact_id,
           "Q1_ID" => q1_id,
-          "Q1_response" => get_response_score(m.body, q1_id)
+          "Q1_response" => get_response_score(m.body, q1_id, org_id)
         }
       end)
 
@@ -450,7 +445,7 @@ defmodule Glific.Clients.ArogyaWorld do
         %{
           "ID" => m.contact_id,
           "Q2_ID" => q2_id,
-          "Q2_response" => get_response_score(m.body, q2_id)
+          "Q2_response" => get_response_score(m.body, q2_id, org_id)
         }
       end)
 
@@ -503,8 +498,16 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Return the response score based on the body
   """
-  @spec get_response_score(String.t(), String.t()) :: any()
-  def get_response_score(response, q_id) do
+  @spec get_response_score(String.t(), String.t(), non_neg_integer()) :: any()
+  def get_response_score(response, q_id, org_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: "response_score_map"
+      })
+
+    response_score = organization_data.json
+
     # Need to add type of question and check from that instead of id
     if q_id == "27" do
       count = String.split(response, ",") |> length()
@@ -523,8 +526,8 @@ defmodule Glific.Clients.ArogyaWorld do
           response
       end
     else
-      if @response_score[response] !== nil do
-        @response_score[response]
+      if response_score[response] !== nil do
+        response_score[response]
       else
         response
       end
