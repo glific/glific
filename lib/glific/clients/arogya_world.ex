@@ -108,12 +108,19 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp run_weekly_tasks(org_id) do
     {_current_week, next_week} = update_week_number(org_id)
+
+    Logger.info(
+      "Ran daily tasks for update_week_number for org id: #{org_id}, next week: #{next_week}"
+    )
+
     load_participant_file(org_id, next_week)
   end
 
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
-    ## This is just for pilot phase. Will be removed later. We will update the weeknumber on a daily basis.
+    Logger.info("Ran daily tasks for organization #{org_id}")
+
+    ## This is just for pilot phase. Will be rmoved later. We will update the weeknumber on a daily basis.
     run_weekly_tasks(org_id)
   end
 
