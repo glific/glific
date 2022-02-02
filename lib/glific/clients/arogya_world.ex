@@ -222,6 +222,7 @@ defmodule Glific.Clients.ArogyaWorld do
     get_in(dynamic_message_schedule, [contact_id, current_week_day, "q_id"])
   end
 
+  @spec update_week_number(non_neg_integer()) :: {integer, integer}
   defp update_week_number(org_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -236,7 +237,7 @@ defmodule Glific.Clients.ArogyaWorld do
     {:ok, _} =
       Partners.update_organization_data(organization_data, %{
         key: "current_week",
-        text: next_week
+        text: to_string(next_week)
       })
 
     {current_week, next_week}
