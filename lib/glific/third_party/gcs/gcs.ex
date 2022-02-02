@@ -102,12 +102,16 @@ defmodule Glific.GCS do
     end
   end
 
+  @doc """
+  Generate a sigend url for a private file
+  """
+  @spec get_signed_url(String.t(), non_neg_integer, keyword) :: String.t()
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
     Partners.get_goth_token(organization_id, "google_cloud_storage")
 
     opts =
-      [signed: true, url_builder: Glific.GCS.SignedUrl, expires_in: 300]
+      [signed: true, expires_in: 300]
       |> Keyword.merge(opts)
 
     CloudStorage.url(

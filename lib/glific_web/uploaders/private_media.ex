@@ -17,17 +17,22 @@ defmodule Glific.PrivateMedia do
   # @versions [:original, :thumb]
 
   # Override the bucket on a per definition basis:
-  def bucket({_file, org_id}) when is_binary(org_id) do
+  def bucket({_file, org_id}) when is_binary(org_id) or is_integer(org_id) do
     organization =
-      Repo.get_organization_id()
+      org_id
       |> Partners.organization()
 
+    organization.services["google_cloud_storage"]
+    |> case do
+      nil -> "test-private-cc"
+      credentials -> credentials.secrets["private_bucket"]
+    end
+
     "test-private-cc"
   end
 
-  def bucket(attr) do
-    "test-private-cc"
-  end
+  def bucket(attr),
+    do: bucket({attr, Repo.get_organization_id()})
 
   # Whitelist file extensions:
   def validate({file, _}) do
