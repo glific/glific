@@ -4,7 +4,11 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   require Logger
 
+  import Ecto.Query
+
   alias Glific.{
+    GCS.GcsWorker,
+    Messages.Message,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -70,6 +74,15 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
+  @doc """
+  Send the response data back to arogya team in a CSV file
+  """
+  def webhook("send_participant_responses", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    current_week = get_current_week(organization_id)
+    upload_participant_responses(organization_id, current_week)
+  end
+
   def webhook("dynamic_message", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
@@ -93,7 +106,7 @@ defmodule Glific.Clients.ArogyaWorld do
       question_id: question_id,
       message_template_id: message_template_id || false,
       question_template_id: question_template_id || false,
-      question_lable: "Q#{current_week_day}_#{question_id}"
+      question_label: "Q#{current_week}_#{current_week_day}_#{question_id}"
     }
   end
 
@@ -314,7 +327,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def message_hsm_mapping(file_url) do
     add_data_from_csv("message_template_map", file_url, fn acc, data ->
-      Map.put_new(acc, data["Message ID"], data["Glific Template UUID"])
+      Map.put(acc, data["Message ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -325,7 +338,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def question_hsm_mapping(file_url) do
     add_data_from_csv("question_template_map", file_url, fn acc, data ->
-      Map.put_new(acc, data["Question ID"], data["Glific Template UUID"])
+      Map.put(acc, data["Question ID"], data["Glific Template UUID"])
     end)
   end
 
@@ -345,7 +358,7 @@ defmodule Glific.Clients.ArogyaWorld do
       }
     }
 
-    Map.put_new(acc, data["ID"], attr)
+    Map.put(acc, data["ID"], attr)
   end
 
   @doc """
@@ -403,5 +416,81 @@ defmodule Glific.Clients.ArogyaWorld do
     if trigger.id > 0,
       do: true,
       else: false
+  end
+
+  @doc """
+  Get the messages based on flow label
+  """
+  @spec get_messages_by_flow_label(non_neg_integer(), String.t()) :: any()
+  def get_messages_by_flow_label(org_id, label) do
+    Message
+    |> where([m], like(m.flow_label, ^"#{label}%"))
+    |> where([m], m.organization_id == ^org_id)
+    |> Repo.all()
+  end
+
+  @doc """
+  Create a file in GCS bucket for candidate response
+  """
+  @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
+  def upload_participant_responses(org_id, week) do
+    # Question 1 responses for current week
+    q1_responses =
+      get_messages_by_flow_label(org_id, "Q#{week}_1_")
+      |> Enum.map(fn m ->
+        %{"ID" => m.contact_id, "Q1_ID" => get_question_id(m.flow_label), "Q1_response" => m.body}
+      end)
+
+    # Question 2 responses for current week
+    q2_responses =
+      get_messages_by_flow_label(org_id, "Q#{week}_4_")
+      |> Enum.map(fn m ->
+        %{"ID" => m.contact_id, "Q2_ID" => get_question_id(m.flow_label), "Q2_response" => m.body}
+      end)
+
+    # merging response
+    current_week_responses =
+      q1_responses
+      |> Enum.map(fn q1 ->
+        q2 =
+          Enum.find(q2_responses, nil, fn x ->
+            x["ID"] === q1["ID"]
+          end)
+
+        %{
+          "ID" => q1["ID"],
+          "Q1_ID" => q1["Q1_ID"],
+          "Q1_response" => q1["Q1_response"],
+          "Q2_ID" => q2["Q2_ID"],
+          "Q2_response" => q2["Q2_response"]
+        }
+      end)
+
+    # Creating a CSV file
+    temp_path =
+      System.tmp_dir!()
+      |> Path.join("participant_response.csv")
+
+    file = temp_path |> File.open!([:write, :utf8])
+
+    current_week_responses
+    |> CSV.encode(headers: ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"])
+    |> Enum.each(&IO.write(file, &1))
+
+    # Upload the file to GCS
+    GcsWorker.upload_media(temp_path, "participant_responses_week_#{week}.csv", org_id)
+    |> case do
+      {:ok, gcs_url} -> %{url: gcs_url, error: nil}
+      {:error, error} -> %{url: nil, error: error}
+    end
+  end
+
+  @doc """
+  Return the question id based on the label
+  """
+  @spec get_question_id(String.t()) :: any()
+  def get_question_id(label) do
+    String.split(label, "_", trim: true)
+    |> List.last()
   end
 end
