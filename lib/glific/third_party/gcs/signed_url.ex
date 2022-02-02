@@ -59,7 +59,6 @@ defmodule Glific.GCS.SignedUrl do
   @impl Waffle.Storage.Google.Url
   def build(definition, version, meta, options) do
     path = CloudStorage.path_for(definition, version, meta)
-    get_goth_config(1)
 
     if signed?(options) do
       build_signed_url(definition, path, options)
@@ -141,9 +140,5 @@ defmodule Glific.GCS.SignedUrl do
     |> :public_key.sign(:sha256, rsa_key)
     |> Base.encode64()
     |> URI.encode_www_form()
-  end
-
-  def get_goth_config(org_id) do
-    Glific.Partners.get_goth_token(org_id, "google_cloud_storage")
   end
 end
