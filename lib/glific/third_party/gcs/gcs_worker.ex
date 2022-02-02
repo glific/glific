@@ -19,6 +19,7 @@ defmodule Glific.GCS.GcsWorker do
 
   alias Glific.{
     Jobs,
+    Messages,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
@@ -271,9 +272,16 @@ defmodule Glific.GCS.GcsWorker do
   @spec update_gcs_url(String.t(), integer()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp update_gcs_url(gcs_url, id) do
-    Repo.get(MessageMedia, id)
-    |> MessageMedia.changeset(%{gcs_url: gcs_url})
-    |> Repo.update()
+    {:ok, message_media} =
+      Repo.get(MessageMedia, id)
+      |> MessageMedia.changeset(%{gcs_url: gcs_url})
+      |> Repo.update()
+
+    ## updating message timestamp so that we can update gcs url in that on bigquery
+    {:ok, message} = Repo.fetch_by(Message, %{media_id: id})
+    Messages.update_message(message, %{updated_at: Timex.shift(Timex.now(), minutes: 2)})
+
+    {:ok, message_media}
   end
 
   @spec get_media_extension(String.t()) :: String.t()
