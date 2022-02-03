@@ -33,15 +33,7 @@ defmodule Glific.Clients.Avanti do
     |> Map.put(:url, url)
   end
 
-  def webhook("process_reports", fields) do
-    count = fields["count"] |> Glific.parse_maybe_integer() |> elem(1)
-
-    fields["reports"]
-    |> Jason.decode!()
-    |> Map.get(fields["count"])
-    |> Map.put(:is_valid, true)
-    |> Map.put(:count, count - 1)
-  end
+  def webhook("process_reports", fields), do: parse_query_data(fields["count"], fields["reports"])
 
   def webhook("check_if_existing_teacher", fields) do
     phone = clean_phone(fields)
@@ -77,17 +69,56 @@ defmodule Glific.Clients.Avanti do
 
   def webhook("fetch_reports", fields) do
     with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, :analytics) do
-      indexed_report =
-        data
-        |> Enum.with_index(1)
-        |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
+      {indexed_report, key_map} = get_multi_query_data(data)
 
-      %{
-        is_valid: true,
-        count: length(data),
-        reports: Jason.encode!(indexed_report)
-      }
+      key_map
+      |> Map.put(:reports, Jason.encode!(indexed_report))
     end
+  end
+
+  def webhook("get_single_query_data", fields) do
+    with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
+      data
+      |> List.first()
+      |> Map.merge(%{found: true})
+    end
+  end
+
+  def webhook("get_multi_query_data", fields) do
+    with %{is_valid: true, data: data} <- fetch_dynamic_bigquery_data(fields) do
+      {indexed_report, key_map} = get_multi_query_data(data)
+
+      key_map
+      |> Map.put(:multi_data, Jason.encode!(indexed_report))
+    end
+  end
+
+  def webhook("parse_query_data", fields),
+    do: parse_query_data(fields["count"], fields["multi_data"])
+
+  def webhook("clean_phone", fields), do: %{phone: clean_phone(fields)}
+
+  defp get_multi_query_data(data) do
+    indexed_report =
+      data
+      |> Enum.with_index(1)
+      |> Enum.reduce(%{}, fn {report, index}, acc -> Map.put(acc, index, report) end)
+
+    {indexed_report,
+     %{
+       is_valid: true,
+       count: length(data)
+     }}
+  end
+
+  defp parse_query_data(count, data) do
+    counter = count |> Glific.parse_maybe_integer() |> elem(1)
+
+    data
+    |> Jason.decode!()
+    |> Map.get(count)
+    |> Map.put(:is_valid, true)
+    |> Map.put(:count, counter - 1)
   end
 
   # returns data queried from bigquery in the form %{data: data, is_valid: true}
@@ -164,5 +195,47 @@ defmodule Glific.Clients.Avanti do
     phone = String.trim(fields["phone"])
     length = String.length(phone)
     String.slice(phone, length - 10, length)
+  end
+
+  defp fetch_dynamic_bigquery_data(fields) do
+    Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
+        with sql <- get_report_dynamic_sql(fields),
+             {:ok, %{totalRows: total_rows} = response} <-
+               Jobs.bigquery_jobs_query(conn, project_id,
+                 body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+               ),
+             true <- total_rows != "0" do
+          data =
+            response.rows
+            |> Enum.map(fn row ->
+              row.f
+              |> Enum.with_index()
+              |> Enum.reduce(%{}, fn {cell, i}, acc ->
+                acc |> Map.put_new("#{Enum.at(response.schema.fields, i).name}", cell.v)
+              end)
+            end)
+
+          %{is_valid: true, data: data}
+        else
+          _ -> %{is_valid: false, message: "No data found for phone: #{fields["phone"]}"}
+        end
+
+      _ ->
+        %{is_valid: false, message: "Credentials not valid"}
+    end
+  end
+
+  defp get_report_dynamic_sql(fields) do
+    columns = fields["table_columns"]
+    tablename = fields["table_name"] |> String.trim()
+
+    if Map.has_key?(fields, "condition") && String.length(fields["condition"]) != 0 do
+      condition = fields["condition"] |> String.trim()
+      "SELECT #{columns} FROM `#{@plio["dataset"]}.#{tablename}` WHERE #{condition} ;"
+    else
+      "SELECT #{columns} FROM `#{@plio["dataset"]}.#{tablename}`;"
+    end
   end
 end
