@@ -119,17 +119,21 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     Logger.info("Ran daily tasks for organization #{org_id}")
-
-    ## This is just for pilot phase. Will be rmoved later. We will update the weeknumber on a daily basis.
-    run_weekly_tasks(org_id)
   end
 
   @spec hourly_tasks(non_neg_integer()) :: any()
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-    if get_week_day_number() === 23 do
-      current_week = get_current_week(org_id)
-      upload_participant_responses(org_id, current_week)
+
+    case Timex.now().hour do
+      ## update week number and load participant files
+      1 ->
+        run_weekly_tasks(org_id)
+
+      # upload the participat files around 7 pm
+      13 ->
+        current_week = get_current_week(org_id)
+        upload_participant_responses(org_id, current_week)
     end
   end
 
