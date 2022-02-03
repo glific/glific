@@ -27,6 +27,9 @@ defmodule Glific.Media do
     end
   end
 
+  def bucket(_attr),
+    do: Glific.GCS.get_bucket_name()
+
   # Whitelist file extensions:
   def validate({file, _}) do
     ~w(.jpg .jpeg .gif .png .pdf .wav .mp3 .mp4 .aac .mpeg)
