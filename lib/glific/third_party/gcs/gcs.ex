@@ -74,6 +74,19 @@ defmodule Glific.GCS do
   def put_bucket_name(bucket_name),
     do: Process.put(@gcs_bucket_key, bucket_name)
 
+  @spec get_private_bucket(non_neg_integer()) :: String.t() | nil
+  defp get_private_bucket(org_id) do
+    organization =
+      String.to_integer(org_id)
+      |> Partners.organization()
+
+    organization.services["google_cloud_storage"]
+    |> case do
+      nil -> nil
+      credentials -> credentials.secrets["private_bucket"]
+    end
+  end
+
   @doc """
   Generate a sigend url for a private file
   """
@@ -81,7 +94,7 @@ defmodule Glific.GCS do
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
     Partners.get_goth_token(organization_id, "google_cloud_storage")
-    put_bucket_name("test-private-cc")
+    put_bucket_name(get_private_bucket(organization_id))
 
     opts =
       [signed: true, expires_in: 300]
