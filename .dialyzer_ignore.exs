@@ -9,6 +9,7 @@
   {":0:unknown_function Function Phoenix.LiveReloader.call/2 does not exist."},
   {":0:unknown_function Function Phoenix.LiveReloader.init/1 does not exist."},
   {":0:no_return Function GlificWeb.LayoutView.template_not_found/2 has no local return."},
+  {"lib/glific_web/views/layout_view.ex"},
   {"lib/glific/flows/contact_field.ex"},
   {"lib/glific_web/channels/user_socket.ex"},
   {"lib/glific_web/misc/http_signature.ex"},
