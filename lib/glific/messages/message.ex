@@ -101,64 +101,65 @@ defmodule Glific.Messages.Message do
     :session_uuid,
     :interactive_content,
     :template_id,
-    :interactive_template_id
+    :interactive_template_id,
+    :updated_at
   ]
 
   schema "messages" do
-    field :uuid, Ecto.UUID
-    field :body, :string
-    field :flow_label, :string
-    field :flow, MessageFlow
-    field :type, MessageType
-    field :status, MessageStatus
+    field(:uuid, Ecto.UUID)
+    field(:body, :string)
+    field(:flow_label, :string)
+    field(:flow, MessageFlow)
+    field(:type, MessageType)
+    field(:status, MessageStatus)
 
-    field :send_by, :string, virtual: true
+    field(:send_by, :string, virtual: true)
     # we keep the clean version of the body here for easy access by flows
     # and other actors
-    field :clean_body, :string, virtual: true
+    field(:clean_body, :string, virtual: true)
 
     # should we publish this message. When we are sending to a group, it could be to a large
     # number of contacts which will overwhelm the frontend. Hence we suppress the subscription
     # when sendign to a group
-    field :publish?, :boolean, default: true, virtual: true
+    field(:publish?, :boolean, default: true, virtual: true)
 
     # adding an extra virtual field so we can hang dynamic data to pass during processing of
     # agents and flows. Specifically used for now during dialogflow
-    field :extra, :map, default: %{intent: nil}, virtual: true
+    field(:extra, :map, default: %{intent: nil}, virtual: true)
 
-    field :is_hsm, :boolean, default: false
+    field(:is_hsm, :boolean, default: false)
 
-    field :bsp_message_id, :string
-    field :bsp_status, MessageStatus
+    field(:bsp_message_id, :string)
+    field(:bsp_status, MessageStatus)
 
-    field :context_id, :string
-    belongs_to :context_message, Message, foreign_key: :context_message_id
+    field(:context_id, :string)
+    belongs_to(:context_message, Message, foreign_key: :context_message_id)
 
     # the originating group message which kicked off this flow if any
-    belongs_to :flow_broadcast, FlowBroadcast
+    belongs_to(:flow_broadcast, FlowBroadcast)
 
-    field :errors, :map, default: %{}
-    field :send_at, :utc_datetime
-    field :sent_at, :utc_datetime
-    field :message_number, :integer, default: 0, read_after_writes: true
-    field :session_uuid, Ecto.UUID, read_after_writes: true
-    field :interactive_content, :map, default: %{}
+    field(:errors, :map, default: %{})
+    field(:send_at, :utc_datetime)
+    field(:sent_at, :utc_datetime)
+    field(:message_number, :integer, default: 0, read_after_writes: true)
+    field(:session_uuid, Ecto.UUID, read_after_writes: true)
+    field(:interactive_content, :map, default: %{})
 
-    belongs_to :sender, Contact
-    belongs_to :receiver, Contact
-    belongs_to :contact, Contact
-    belongs_to :user, User
-    belongs_to :flow_object, Flow, foreign_key: :flow_id
-    belongs_to :media, MessageMedia
-    belongs_to :organization, Organization
+    belongs_to(:sender, Contact)
+    belongs_to(:receiver, Contact)
+    belongs_to(:contact, Contact)
+    belongs_to(:user, User)
+    belongs_to(:flow_object, Flow, foreign_key: :flow_id)
+    belongs_to(:media, MessageMedia)
+    belongs_to(:organization, Organization)
 
-    belongs_to :group, Group
-    has_one :location, Location
+    belongs_to(:group, Group)
+    has_one(:location, Location)
 
-    belongs_to :template, SessionTemplate
-    belongs_to :interactive_template, InteractiveTemplate
+    belongs_to(:template, SessionTemplate)
+    belongs_to(:interactive_template, InteractiveTemplate)
 
-    many_to_many :tags, Tag, join_through: "messages_tags", on_replace: :delete
+    many_to_many(:tags, Tag, join_through: "messages_tags", on_replace: :delete)
 
     timestamps(type: :utc_datetime_usec)
   end
