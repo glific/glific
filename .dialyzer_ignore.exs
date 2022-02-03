@@ -8,6 +8,7 @@
   {":0:unknown_function Function Appsignal.Ecto.handle_event/4 does not exist."},
   {":0:unknown_function Function Phoenix.LiveReloader.call/2 does not exist."},
   {":0:unknown_function Function Phoenix.LiveReloader.init/1 does not exist."},
+  {":0:no_return Function GlificWeb.LayoutView.template_not_found/2 has no local return."},
   {"lib/glific/flows/contact_field.ex"},
   {"lib/glific_web/channels/user_socket.ex"},
   {"lib/glific_web/misc/http_signature.ex"},
