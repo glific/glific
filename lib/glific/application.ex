@@ -111,12 +111,12 @@ defmodule Glific.Application do
   end
 
   defp attach_oban_telemetry_event do
-    :telemetry.attach(
-      "oban-success",
-      [:oban, :job, :stop],
-      &Glific.Appsignal.handle_event/4,
-      []
-    )
+    # :telemetry.attach(
+    #   "oban-success",
+    #   [:oban, :job, :stop],
+    #   &Glific.Appsignal.handle_event/4,
+    #   []
+    # )
 
     :telemetry.attach(
       "oban-failure",
@@ -125,12 +125,12 @@ defmodule Glific.Application do
       []
     )
 
-    :telemetry.attach(
-      "oban-plugin-success",
-      [:oban, :plugin, :stop],
-      &Glific.Appsignal.handle_event/4,
-      []
-    )
+    # :telemetry.attach(
+    #   "oban-plugin-success",
+    #   [:oban, :plugin, :stop],
+    #   &Glific.Appsignal.handle_event/4,
+    #   []
+    # )
 
     :telemetry.attach(
       "oban-plugin-failure",
