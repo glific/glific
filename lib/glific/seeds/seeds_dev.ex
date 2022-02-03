@@ -770,6 +770,26 @@ if Code.ensure_loaded?(Faker) do
         status: "published",
         organization_id: organization.id
       })
+
+      import_flow =
+        Repo.insert!(%Flow{
+          name: "Import Workflow",
+          keywords: ["importtest"],
+          version_number: "13.1.0",
+          uuid: "63a9c563-a735-4b7d-9890-b9298a2de406",
+          organization_id: organization.id
+        })
+
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "import.json"))
+        |> Jason.decode!()
+
+      Repo.insert!(%FlowRevision{
+        definition: definition,
+        flow_id: import_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
     end
 
     @doc false

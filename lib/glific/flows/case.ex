@@ -247,7 +247,7 @@ defmodule Glific.Flows.Case do
 
   defp do_execute(%{type: "has_group"} = c, _context, msg) do
     [_group_id, group_label] = c.arguments
-    group_label in msg.extra.contact_groups
+    group_label in Map.get(msg.extra, :contact_groups, [])
   end
 
   defp do_execute(%{type: "has_category"}, _context, _msg), do: true
