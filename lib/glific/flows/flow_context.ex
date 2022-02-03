@@ -624,13 +624,13 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Log the error and also send it over to our friends at appsignal
   """
-  @spec log_error(String.t()) :: {:error, String.t()}
-  def log_error(error) do
+  @spec log_error(String.t(), boolean()) :: {:error, String.t()}
+  def log_error(error, report_to_appsignal \\ true) do
     Logger.error(error)
 
     # disable sending exit loop and finished flow errors, since
     # these are beneficiary errors
-    if !ignore_error?(error) do
+    if report_to_appsignal && !ignore_error?(error) do
       {_, stacktrace} = Process.info(self(), :current_stacktrace)
       Appsignal.send_error(:error, error, stacktrace)
     end
