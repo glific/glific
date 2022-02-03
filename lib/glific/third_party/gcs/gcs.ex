@@ -74,17 +74,22 @@ defmodule Glific.GCS do
   def put_bucket_name(bucket_name),
     do: Process.put(@gcs_bucket_key, bucket_name)
 
-  @spec get_private_bucket(non_neg_integer()) :: String.t() | nil
-  defp get_private_bucket(org_id) do
-    organization =
-      String.to_integer(org_id)
-      |> Partners.organization()
+  @spec get_secrets(non_neg_integer()) :: map()
+  defp get_secrets(org_id) do
+    organization = Partners.organization(org_id)
 
     organization.services["google_cloud_storage"]
     |> case do
-      nil -> nil
-      credentials -> credentials.secrets["private_bucket"]
+      nil -> %{}
+      credentials -> credentials.secrets
     end
+  end
+
+  @spec load_goth(map()) :: :ok
+  defp load_goth(service_account) do
+    Goth.Config.add_config(service_account)
+    Goth.Config.set(:client_email, service_account["client_email"])
+    Goth.Config.set("private_key", service_account["private_key"])
   end
 
   @doc """
@@ -93,18 +98,25 @@ defmodule Glific.GCS do
   @spec get_signed_url(String.t(), non_neg_integer, keyword) :: String.t()
   def get_signed_url(file_name, organization_id, opts \\ []) do
     Repo.put_organization_id(organization_id)
-    Partners.get_goth_token(organization_id, "google_cloud_storage")
-    put_bucket_name(get_private_bucket(organization_id))
+    gcs_secrets = get_secrets(organization_id)
+    gcs_secrets = Map.put(gcs_secrets, "private_bucket", "test-private-cc")
 
-    opts =
-      [signed: true, expires_in: 300]
-      |> Keyword.merge(opts)
+    if is_nil(gcs_secrets["private_bucket"]) do
+      Logger.info("no private bucket for org_id: #{organization_id}")
+    else
+      put_bucket_name(gcs_secrets["private_bucket"])
+      load_goth(Jason.decode!(gcs_secrets["service_account"]))
 
-    CloudStorage.url(
-      Glific.Media,
-      :original,
-      {%Waffle.File{file_name: file_name}, "#{organization_id}"},
-      opts
-    )
+      opts =
+        [signed: true, expires_in: 300]
+        |> Keyword.merge(opts)
+
+      CloudStorage.url(
+        Glific.Media,
+        :original,
+        {%Waffle.File{file_name: file_name}, "#{organization_id}"},
+        opts
+      )
+    end
   end
 end

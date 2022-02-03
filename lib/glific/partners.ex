@@ -752,9 +752,6 @@ defmodule Glific.Partners do
           end
 
         Goth.Config.add_config(config)
-        Goth.Config.set(:client_email, config["client_email"])
-        Goth.Config.set("private_key", config["private_key"])
-        # Goth.Config.set(config)
 
         Goth.Token.for_scope(
           {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
