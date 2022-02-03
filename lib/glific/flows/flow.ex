@@ -323,10 +323,17 @@ defmodule Glific.Flows.Flow do
     |> process(flow, start_node_uuid)
   end
 
-  @spec start_node(map()) :: Ecto.UUID.t()
+  @spec start_node(map()) :: Ecto.UUID.t() | nil
   defp start_node(json) do
+    # during validation and saving, this might be
+    # called with an empty nodes list, issue #1997
+    nodes =
+      if is_nil(json["nodes"]),
+        do: [],
+        else: json["nodes"]
+
     {node_uuid, _top, _left} =
-      json["nodes"]
+      nodes
       |> Enum.reduce(
         {nil, 1_000_000, 1_000_000},
         fn {node_uuid, node}, {uuid, top, left} ->
