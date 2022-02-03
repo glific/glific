@@ -467,7 +467,7 @@ defmodule Glific.Flows.Action do
 
     # check if we've seen this flow in this execution
     if Map.has_key?(context.uuids_seen, flow_uuid) do
-      FlowContext.log_error("Repeated loop, hence finished the flow")
+      FlowContext.log_error("Repeated loop, hence finished the flow", false)
     else
       # check if we are looping with the same flow, if so reset
       # and start from scratch, since we really dont want to have too deep a stack
