@@ -62,7 +62,8 @@ defmodule Glific.Clients.ArogyaWorld do
       message_id: message_id,
       template_id: template_id || false,
       current_week: current_week,
-      current_week_day: current_week_day
+      current_week_day: current_week_day,
+      message_label: "static_message_#{current_week}_#{current_week_day}"
     }
   end
 
@@ -98,7 +99,8 @@ defmodule Glific.Clients.ArogyaWorld do
       question_id: question_id,
       message_template_id: message_template_id || false,
       question_template_id: question_template_id || false,
-      question_label: "Q#{current_week}_#{current_week_day}_#{question_id}"
+      question_label: "Q#{current_week}_#{current_week_day}_#{question_id}",
+      message_label: "dynamic_message_#{current_week}_#{current_week_day}"
     }
   end
 
