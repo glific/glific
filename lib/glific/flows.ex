@@ -472,6 +472,7 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
+
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
     do_publish_flow(flow)
 

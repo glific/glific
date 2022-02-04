@@ -316,14 +316,18 @@ defmodule Glific.Flows.Flow do
       |> Repo.one!()
       |> Map.put(:status, status)
 
-    start_node_uuid = start_node(flow.definition["_ui"])
+    if flow.definition["nodes"] == [] do
+      flow
+    else
+      start_node_uuid = start_node(flow.definition["_ui"])
 
-    flow.definition
-    |> clean_definition()
-    |> process(flow, start_node_uuid)
+      flow.definition
+      |> clean_definition()
+      |> process(flow, start_node_uuid)
+    end
   end
 
-  @spec start_node(map()) :: Ecto.UUID.t()
+  @spec start_node(map()) :: Ecto.UUID.t() | nil
   defp start_node(json) do
     {node_uuid, _top, _left} =
       json["nodes"]
@@ -356,15 +360,17 @@ defmodule Glific.Flows.Flow do
 
   @spec validate_flow(map()) :: Keyword.t()
   defp validate_flow(flow) do
-    errors = []
-
-    flow.nodes
-    |> Enum.reduce(
-      errors,
-      &Node.validate(&1, &2, flow)
-    )
-    |> dangling_nodes(flow)
-    |> missing_flow_context_nodes(flow)
+    if flow.definition["nodes"] == [] do
+      [Flow: "Flow is empty"]
+    else
+      flow.nodes
+      |> Enum.reduce(
+        [],
+        &Node.validate(&1, &2, flow)
+      )
+      |> dangling_nodes(flow)
+      |> missing_flow_context_nodes(flow)
+    end
   end
 
   @spec flow_objects(map(), atom()) :: MapSet.t()

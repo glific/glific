@@ -35,7 +35,7 @@ defmodule Glific.Clients.ArogyaWorld do
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Questions.csv",
     "response_score_map" => "https://storage.googleapis.com/arogya-sheets/score_encoding.csv",
     "dynamic_message_schedule_week" =>
-      "https://storage.googleapis.com/arogya-sheets/week1_to_participant%20-%20Sheet1.csv"
+      "https://storage.googleapis.com/participant-files/uploads/to_participants_week_"
   }
 
   @doc """
@@ -62,7 +62,8 @@ defmodule Glific.Clients.ArogyaWorld do
       message_id: message_id,
       template_id: template_id || false,
       current_week: current_week,
-      current_week_day: current_week_day
+      current_week_day: current_week_day,
+      message_label: "static_message_#{current_week}_#{current_week_day}"
     }
   end
 
@@ -98,7 +99,8 @@ defmodule Glific.Clients.ArogyaWorld do
       question_id: question_id,
       message_template_id: message_template_id || false,
       question_template_id: question_template_id || false,
-      question_label: "Q#{current_week}_#{current_week_day}_#{question_id}"
+      question_label: "Q#{current_week}_#{current_week_day}_#{question_id}",
+      message_label: "dynamic_message_#{current_week}_#{current_week_day}"
     }
   end
 
@@ -119,17 +121,21 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     Logger.info("Ran daily tasks for organization #{org_id}")
-
-    ## This is just for pilot phase. Will be rmoved later. We will update the weeknumber on a daily basis.
-    run_weekly_tasks(org_id)
   end
 
   @spec hourly_tasks(non_neg_integer()) :: any()
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-    if get_week_day_number() === 23 do
-      current_week = get_current_week(org_id)
-      upload_participant_responses(org_id, current_week)
+
+    case Timex.now().hour do
+      ## update week number and load participant files
+      1 ->
+        run_weekly_tasks(org_id)
+
+      # upload the participat files around 7 pm
+      13 ->
+        current_week = get_current_week(org_id)
+        upload_participant_responses(org_id, current_week)
     end
   end
 
@@ -247,7 +253,8 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec load_participant_file(non_neg_integer(), non_neg_integer()) :: any()
   def load_participant_file(_org_id, week_number) do
     key = get_dynamic_week_key(week_number)
-    add_weekly_dynamic_data(key, @csv_url_key_map["dynamic_message_schedule_week"])
+    url = "#{@csv_url_key_map["dynamic_message_schedule_week"]}#{week_number}.csv"
+    add_weekly_dynamic_data(key, url)
   end
 
   @doc """
@@ -355,7 +362,7 @@ defmodule Glific.Clients.ArogyaWorld do
       }
     }
 
-    Map.put(acc, data["ID"], attr)
+    Map.put(acc, data["PARTICIPANT_ID"], attr)
   end
 
   @doc """
