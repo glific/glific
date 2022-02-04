@@ -363,11 +363,9 @@ defmodule Glific.Flows.Flow do
     if flow.definition["nodes"] == [] do
       [Flow: "Flow is empty"]
     else
-      errors = []
-
       flow.nodes
       |> Enum.reduce(
-        errors,
+        [],
         &Node.validate(&1, &2, flow)
       )
       |> dangling_nodes(flow)
