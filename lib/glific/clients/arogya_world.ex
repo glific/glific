@@ -35,7 +35,7 @@ defmodule Glific.Clients.ArogyaWorld do
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Questions.csv",
     "response_score_map" => "https://storage.googleapis.com/arogya-sheets/score_encoding.csv",
     "dynamic_message_schedule_week" =>
-      "https://storage.googleapis.com/participant-files/to_participants_week_"
+      "https://storage.googleapis.com/participant-files/uploads/to_participants_week_"
   }
 
   @doc """
