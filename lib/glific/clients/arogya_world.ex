@@ -340,9 +340,9 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, any()} | {:error, Ecto.Changeset.t()}
   def response_score_mapping(file_url) do
     add_data_from_csv("response_score_map", file_url, fn acc, data ->
-      Map.put(acc, data["1"], 1)
-      |> Map.put(data["2"], 2)
-      |> Map.put(data["3"], 3)
+      Map.put(acc, clean_string(data["1"]), 1)
+      |> Map.put(clean_string(data["2"]), 2)
+      |> Map.put(clean_string(data["3"]), 3)
     end)
   end
 
@@ -372,7 +372,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def cleanup_static_data(acc, data) do
     # check for 2nd day and update it to 4th
     check_second_day =
-      if data["Message No"] === "2",
+      if data["Message No"] === "2" and data["Week"] !== "1",
         do: "4",
         else: data["Message No"]
 
@@ -510,6 +510,11 @@ defmodule Glific.Clients.ArogyaWorld do
     |> List.last()
   end
 
+  @spec clean_string(String.t()) :: String.t()
+  defp clean_string(str) do
+    String.replace(str, " ", "")
+  end
+
   @doc """
   Return the response score based on the body
   """
@@ -520,6 +525,8 @@ defmodule Glific.Clients.ArogyaWorld do
         organization_id: org_id,
         key: "response_score_map"
       })
+
+    response = clean_string(response)
 
     response_score = organization_data.json
 
