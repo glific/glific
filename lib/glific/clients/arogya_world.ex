@@ -17,13 +17,8 @@ defmodule Glific.Clients.ArogyaWorld do
   }
 
   @pilot_hour_to_day %{
-    3 => 1,
-    4 => 2,
-    5 => 3,
-    6 => 4,
-    7 => 5,
-    8 => 6,
-    9 => 7
+    2 => 1,
+    10 => 4
   }
 
   @csv_url_key_map %{
@@ -133,7 +128,7 @@ defmodule Glific.Clients.ArogyaWorld do
         run_weekly_tasks(org_id)
 
       # upload the participat files around 7 pm
-      13 ->
+      14 ->
         current_week = get_current_week(org_id)
         upload_participant_responses(org_id, current_week)
     end
