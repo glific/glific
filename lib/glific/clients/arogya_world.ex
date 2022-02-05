@@ -545,13 +545,13 @@ defmodule Glific.Clients.ArogyaWorld do
           3
 
         true ->
-          response
+          0
       end
     else
       if response_score[response] !== nil do
         response_score[response]
       else
-        response
+        0
       end
     end
   end
