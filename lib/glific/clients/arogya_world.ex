@@ -405,7 +405,7 @@ defmodule Glific.Clients.ArogyaWorld do
           {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   def maybe_insert_data(key, data, org_id) do
     # check if the week key is already present in the database
-    case Repo.get_by(OrganizationData, %{key: key}) do
+    case Repo.get_by(OrganizationData, %{key: key, organization_id: org_id}) do
       nil ->
         attrs =
           %{}
