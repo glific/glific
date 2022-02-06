@@ -497,7 +497,7 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     # Creating a CSV file
-    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv") |> IO.inspect()
+    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv")
 
     file = temp_path |> File.open!([:write, :utf8])
 
