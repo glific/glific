@@ -16,9 +16,17 @@ defmodule Glific.Clients.ArogyaWorld do
     Triggers.Trigger
   }
 
+  @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
+
+  @first_question_day "1"
+
+  @second_question_day "4"
+
+  @response_file_name "participant_response.csv"
+
   @pilot_hour_to_day %{
-    2 => 1,
-    10 => 4
+    2 => String.to_integer(@first_question_day),
+    10 => String.to_integer(@second_question_day)
   }
 
   @csv_url_key_map %{
@@ -38,11 +46,12 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   @spec initial_load(non_neg_integer()) :: any()
   def initial_load(org_id) do
+    dynamic_week_start = 2
     static_message_schedule_map(@csv_url_key_map["static_message_schedule"], org_id)
     message_hsm_mapping(@csv_url_key_map["message_template_map"], org_id)
     question_hsm_mapping(@csv_url_key_map["question_template_map"], org_id)
     response_score_mapping(@csv_url_key_map["response_score_map"], org_id)
-    load_participant_file(org_id, 2)
+    load_participant_file(org_id, dynamic_week_start)
   end
 
   @spec webhook(String.t(), map) :: map()
@@ -364,11 +373,11 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec cleanup_week_data(map(), map()) :: map()
   def cleanup_week_data(acc, data) do
     attr = %{
-      "1" => %{
+      @first_question_day => %{
         "q_id" => data["Q1_ID"],
         "m_id" => data["M1_ID"]
       },
-      "4" => %{
+      @second_question_day => %{
         "q_id" => data["Q2_ID"],
         "m_id" => data["M2_ID"]
       }
@@ -385,7 +394,7 @@ defmodule Glific.Clients.ArogyaWorld do
     # check for 2nd day and update it to 4th
     check_second_day =
       if data["Message No"] === "2" and data["Week"] !== "1",
-        do: "4",
+        do: @second_question_day,
         else: data["Message No"]
 
     week =
@@ -446,36 +455,40 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
+  Get response message based on day and week
+  """
+  @spec get_messages_by_week(non_neg_integer(), non_neg_integer(), String.t()) :: any()
+  def get_messages_by_week(org_id, week, day) do
+    response_label_format = "Q#{week}_#{day}_"
+
+    get_messages_by_flow_label(org_id, response_label_format)
+    |> Enum.map(fn m ->
+      response_label =
+        String.split(m.flow_label, ",")
+        |> Enum.find(fn s -> String.starts_with?(s, response_label_format) end)
+
+      q_id = get_question_id(response_label)
+
+      %{
+        "ID" => m.contact_id,
+        "Q_ID" => q_id,
+        "Q_response" => get_response_score(m.body, q_id, org_id)
+      }
+    end)
+  end
+
+  @doc """
   Create a file in GCS bucket for candidate response
   """
   @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
   def upload_participant_responses(org_id, week) do
     key = get_dynamic_week_key(week)
     # Question 1 responses for current week
-    q1_responses =
-      get_messages_by_flow_label(org_id, "Q#{week}_1_")
-      |> Enum.map(fn m ->
-        q1_id = get_question_id(m.flow_label)
 
-        %{
-          "ID" => m.contact_id,
-          "Q_ID" => q1_id,
-          "Q_response" => get_response_score(m.body, q1_id, org_id)
-        }
-      end)
+    q1_responses = get_messages_by_week(org_id, week, @first_question_day)
 
     # Question 2 responses for current week
-    q2_responses =
-      get_messages_by_flow_label(org_id, "Q#{week}_4_")
-      |> Enum.map(fn m ->
-        q2_id = get_question_id(m.flow_label)
-
-        %{
-          "ID" => m.contact_id,
-          "Q_ID" => q2_id,
-          "Q_response" => get_response_score(m.body, q2_id, org_id)
-        }
-      end)
+    q2_responses = get_messages_by_week(org_id, week, @second_question_day)
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -489,20 +502,20 @@ defmodule Glific.Clients.ArogyaWorld do
       Enum.map(dynamic_message_schedule, fn {id, values} ->
         %{
           "ID" => id,
-          "Q1_ID" => values["1"]["q_id"],
+          "Q1_ID" => values[@first_question_day]["q_id"],
           "Q1_response" => get_response(q1_responses, id),
-          "Q2_ID" => values["4"]["q_id"],
+          "Q2_ID" => values[@second_question_day]["q_id"],
           "Q2_response" => get_response(q2_responses, id)
         }
       end)
 
     # Creating a CSV file
-    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv")
+    temp_path = System.tmp_dir!() |> Path.join(@response_file_name)
 
     file = temp_path |> File.open!([:write, :utf8])
 
     current_week_responses
-    |> CSV.encode(headers: ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"])
+    |> CSV.encode(headers: @response_sheet_headers)
     |> Enum.each(&IO.write(file, &1))
 
     # Upload the file to GCS
