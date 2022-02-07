@@ -23,8 +23,8 @@ defmodule Glific.Clients.ArogyaWorld do
   @second_question_day "4"
 
   @pilot_hour_to_day %{
-    2 => String.to_integer(@first_question_day),
-    10 => String.to_integer(@second_question_day)
+    2 => @first_question_day,
+    10 => @second_question_day
   }
 
   @csv_url_key_map %{
@@ -152,7 +152,8 @@ defmodule Glific.Clients.ArogyaWorld do
   defp get_week_day_number do
     ## For pilot phase, we will use the hour number.
     hour = Timex.now().hour
-    @pilot_hour_to_day[hour]
+
+    String.to_integer(@pilot_hour_to_day[hour])
 
     ## we will enable this when pilot phase is over.
     # Timex.weekday(Timex.today())
