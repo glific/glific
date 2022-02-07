@@ -22,8 +22,6 @@ defmodule Glific.Clients.ArogyaWorld do
 
   @second_question_day "4"
 
-  @response_file_name "participant_response.csv"
-
   @pilot_hour_to_day %{
     2 => String.to_integer(@first_question_day),
     10 => String.to_integer(@second_question_day)
@@ -457,8 +455,8 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Get response message based on day and week
   """
-  @spec get_messages_by_week(non_neg_integer(), non_neg_integer(), String.t()) :: any()
-  def get_messages_by_week(org_id, week, day) do
+  @spec get_responses_by_week_and_day(non_neg_integer(), non_neg_integer(), String.t()) :: any()
+  def get_responses_by_week_and_day(org_id, week, day) do
     response_label_format = "Q#{week}_#{day}_"
 
     get_messages_by_flow_label(org_id, response_label_format)
@@ -483,12 +481,12 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
   def upload_participant_responses(org_id, week) do
     key = get_dynamic_week_key(week)
-    # Question 1 responses for current week
 
-    q1_responses = get_messages_by_week(org_id, week, @first_question_day)
+    # Question 1 responses for current week
+    q1_responses = get_responses_by_week_and_day(org_id, week, @first_question_day)
 
     # Question 2 responses for current week
-    q2_responses = get_messages_by_week(org_id, week, @second_question_day)
+    q2_responses = get_responses_by_week_and_day(org_id, week, @second_question_day)
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -510,7 +508,7 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     # Creating a CSV file
-    temp_path = System.tmp_dir!() |> Path.join(@response_file_name)
+    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv")
 
     file = temp_path |> File.open!([:write, :utf8])
 
