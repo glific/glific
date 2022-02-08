@@ -201,6 +201,20 @@ defmodule Glific.BigQuery.Schema do
             mode: "REQUIRED"
           }
         ]
+      },
+
+      %{
+        description: "JSON object for storing the contact fields",
+        name: "raw_fields",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Label of all the groups that the contact belongs to",
+        name: "group_labels",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
