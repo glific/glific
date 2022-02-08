@@ -16,14 +16,15 @@ defmodule Glific.Clients.ArogyaWorld do
     Triggers.Trigger
   }
 
+  @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
+
+  @first_question_day "1"
+
+  @second_question_day "4"
+
   @pilot_hour_to_day %{
-    3 => 1,
-    4 => 2,
-    5 => 3,
-    6 => 4,
-    7 => 5,
-    8 => 6,
-    9 => 7
+    2 => @first_question_day,
+    10 => @second_question_day
   }
 
   @csv_url_key_map %{
@@ -43,11 +44,12 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   @spec initial_load(non_neg_integer()) :: any()
   def initial_load(org_id) do
-    static_message_schedule_map(@csv_url_key_map["static_message_schedule"])
-    message_hsm_mapping(@csv_url_key_map["message_template_map"])
-    question_hsm_mapping(@csv_url_key_map["question_template_map"])
-    response_score_mapping(@csv_url_key_map["response_score_map"])
-    load_participant_file(org_id, 1)
+    dynamic_week_start = 2
+    static_message_schedule_map(@csv_url_key_map["static_message_schedule"], org_id)
+    message_hsm_mapping(@csv_url_key_map["message_template_map"], org_id)
+    question_hsm_mapping(@csv_url_key_map["question_template_map"], org_id)
+    response_score_mapping(@csv_url_key_map["response_score_map"], org_id)
+    load_participant_file(org_id, dynamic_week_start)
   end
 
   @spec webhook(String.t(), map) :: map()
@@ -133,7 +135,7 @@ defmodule Glific.Clients.ArogyaWorld do
         run_weekly_tasks(org_id)
 
       # upload the participat files around 7 pm
-      13 ->
+      14 ->
         current_week = get_current_week(org_id)
         upload_participant_responses(org_id, current_week)
     end
@@ -150,7 +152,8 @@ defmodule Glific.Clients.ArogyaWorld do
   defp get_week_day_number do
     ## For pilot phase, we will use the hour number.
     hour = Timex.now().hour
-    @pilot_hour_to_day[hour]
+
+    String.to_integer(@pilot_hour_to_day[hour])
 
     ## we will enable this when pilot phase is over.
     # Timex.weekday(Timex.today())
@@ -251,10 +254,10 @@ defmodule Glific.Clients.ArogyaWorld do
 
   @doc false
   @spec load_participant_file(non_neg_integer(), non_neg_integer()) :: any()
-  def load_participant_file(_org_id, week_number) do
+  def load_participant_file(org_id, week_number) do
     key = get_dynamic_week_key(week_number)
     url = "#{@csv_url_key_map["dynamic_message_schedule_week"]}#{week_number}.csv"
-    add_weekly_dynamic_data(key, url)
+    add_weekly_dynamic_data(key, url, org_id)
   end
 
   @doc """
@@ -274,76 +277,93 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   adds the weekly dynamic data loaded from the sheet based on current week
   """
-  @spec add_weekly_dynamic_data(String.t(), String.t()) ::
+  @spec add_weekly_dynamic_data(String.t(), String.t(), non_neg_integer()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def add_weekly_dynamic_data(key, file_url) do
+  def add_weekly_dynamic_data(key, file_url, org_id) do
     add_data_from_csv(
       key,
       file_url,
-      &cleanup_week_data/2
+      &cleanup_week_data/2,
+      org_id
     )
   end
 
   @doc """
   creates the static data map that needs to be sent to users
   """
-  @spec static_message_schedule_map(String.t()) ::
+  @spec static_message_schedule_map(String.t(), non_neg_integer()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def static_message_schedule_map(file_url) do
+  def static_message_schedule_map(file_url, org_id) do
     add_data_from_csv(
       "static_message_schedule",
       file_url,
-      &cleanup_static_data/2
+      &cleanup_static_data/2,
+      org_id
     )
   end
 
   @doc """
   add data that needs to be sent to the database
   """
-  @spec add_data_from_csv(String.t(), String.t(), any(), map()) ::
+  @spec add_data_from_csv(String.t(), String.t(), any(), non_neg_integer()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def add_data_from_csv(key, file_url, cleanup_func, default_value \\ %{}) do
+  def add_data_from_csv(key, file_url, cleanup_func, org_id) do
     # how to validate if the data is in correct format
     ApiClient.get_csv_content(url: file_url)
-    |> Enum.reduce(default_value, fn {_, data}, acc ->
+    |> Enum.reduce(%{}, fn {_, data}, acc ->
       cleanup_func.(acc, data)
     end)
-    |> then(fn data -> maybe_insert_data(key, data) end)
+    |> then(fn data -> maybe_insert_data(key, data, org_id) end)
   end
 
   @doc """
   message mapping to HSM UUID
   """
-  @spec message_hsm_mapping(String.t()) ::
+  @spec message_hsm_mapping(String.t(), non_neg_integer()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def message_hsm_mapping(file_url) do
-    add_data_from_csv("message_template_map", file_url, fn acc, data ->
-      Map.put(acc, data["Message ID"], data["Glific Template UUID"])
-    end)
+  def message_hsm_mapping(file_url, org_id) do
+    add_data_from_csv(
+      "message_template_map",
+      file_url,
+      fn acc, data ->
+        Map.put(acc, data["Message ID"], data["Glific Template UUID"])
+      end,
+      org_id
+    )
   end
 
   @doc """
   question mapping to HSM UUID
   """
-  @spec question_hsm_mapping(String.t()) ::
+  @spec question_hsm_mapping(String.t(), non_neg_integer()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def question_hsm_mapping(file_url) do
-    add_data_from_csv("question_template_map", file_url, fn acc, data ->
-      Map.put(acc, data["Question ID"], data["Glific Template UUID"])
-    end)
+  def question_hsm_mapping(file_url, org_id) do
+    add_data_from_csv(
+      "question_template_map",
+      file_url,
+      fn acc, data ->
+        Map.put(acc, data["Question ID"], data["Glific Template UUID"])
+      end,
+      org_id
+    )
   end
 
   @doc """
   response to score mapping
   """
-  @spec response_score_mapping(String.t()) ::
+  @spec response_score_mapping(String.t(), non_neg_integer()) ::
           {:ok, any()} | {:error, Ecto.Changeset.t()}
-  def response_score_mapping(file_url) do
-    add_data_from_csv("response_score_map", file_url, fn acc, data ->
-      Map.put(acc, data["1"], 1)
-      |> Map.put(data["2"], 2)
-      |> Map.put(data["3"], 3)
-    end)
+  def response_score_mapping(file_url, org_id) do
+    add_data_from_csv(
+      "response_score_map",
+      file_url,
+      fn acc, data ->
+        Map.put(acc, clean_string(data["1"]), 1)
+        |> Map.put(clean_string(data["2"]), 2)
+        |> Map.put(clean_string(data["3"]), 3)
+      end,
+      org_id
+    )
   end
 
   @doc """
@@ -352,11 +372,11 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec cleanup_week_data(map(), map()) :: map()
   def cleanup_week_data(acc, data) do
     attr = %{
-      "1" => %{
+      @first_question_day => %{
         "q_id" => data["Q1_ID"],
         "m_id" => data["M1_ID"]
       },
-      "4" => %{
+      @second_question_day => %{
         "q_id" => data["Q2_ID"],
         "m_id" => data["M2_ID"]
       }
@@ -372,8 +392,8 @@ defmodule Glific.Clients.ArogyaWorld do
   def cleanup_static_data(acc, data) do
     # check for 2nd day and update it to 4th
     check_second_day =
-      if data["Message No"] === "2",
-        do: "4",
+      if data["Message No"] === "2" and data["Week"] !== "1",
+        do: @second_question_day,
         else: data["Message No"]
 
     week =
@@ -389,17 +409,17 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Insert or update data if key present for OrganizationData table.
   """
-  @spec maybe_insert_data(String.t(), map()) ::
+  @spec maybe_insert_data(String.t(), map(), non_neg_integer()) ::
           {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_insert_data(key, data) do
+  def maybe_insert_data(key, data, org_id) do
     # check if the week key is already present in the database
-    case Repo.get_by(OrganizationData, %{key: key}) do
+    case Repo.get_by(OrganizationData, %{key: key, organization_id: org_id}) do
       nil ->
         attrs =
           %{}
           |> Map.put(:key, key)
           |> Map.put(:json, data)
-          |> Map.put(:organization_id, Repo.get_organization_id())
+          |> Map.put(:organization_id, org_id)
 
         %OrganizationData{}
         |> OrganizationData.changeset(attrs)
@@ -434,63 +454,67 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
+  Get response message based on day and week
+  """
+  @spec get_responses_by_week_and_day(non_neg_integer(), non_neg_integer(), String.t()) :: any()
+  def get_responses_by_week_and_day(org_id, week, day) do
+    response_label_format = "Q#{week}_#{day}_"
+
+    get_messages_by_flow_label(org_id, response_label_format)
+    |> Enum.map(fn m ->
+      response_label =
+        String.split(m.flow_label, ",")
+        |> Enum.find(fn s -> String.starts_with?(s, response_label_format) end)
+
+      q_id = get_question_id(response_label)
+
+      %{
+        "ID" => m.contact_id,
+        "Q_ID" => q_id,
+        "Q_response" => get_response_score(m.body, q_id, org_id)
+      }
+    end)
+  end
+
+  @doc """
   Create a file in GCS bucket for candidate response
   """
   @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
   def upload_participant_responses(org_id, week) do
-    # Question 1 responses for current week
-    q1_responses =
-      get_messages_by_flow_label(org_id, "Q#{week}_1_")
-      |> Enum.map(fn m ->
-        q1_id = get_question_id(m.flow_label)
+    key = get_dynamic_week_key(week)
 
-        %{
-          "ID" => m.contact_id,
-          "Q1_ID" => q1_id,
-          "Q1_response" => get_response_score(m.body, q1_id, org_id)
-        }
-      end)
+    # Question 1 responses for current week
+    q1_responses = get_responses_by_week_and_day(org_id, week, @first_question_day)
 
     # Question 2 responses for current week
-    q2_responses =
-      get_messages_by_flow_label(org_id, "Q#{week}_4_")
-      |> Enum.map(fn m ->
-        q2_id = get_question_id(m.flow_label)
+    q2_responses = get_responses_by_week_and_day(org_id, week, @second_question_day)
 
-        %{
-          "ID" => m.contact_id,
-          "Q2_ID" => q2_id,
-          "Q2_response" => get_response_score(m.body, q2_id, org_id)
-        }
-      end)
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: key
+      })
 
-    # merging response
+    dynamic_message_schedule = organization_data.json
+
     current_week_responses =
-      q1_responses
-      |> Enum.map(fn q1 ->
-        q2 =
-          Enum.find(q2_responses, nil, fn x ->
-            x["ID"] === q1["ID"]
-          end)
-
+      Enum.map(dynamic_message_schedule, fn {id, values} ->
         %{
-          "ID" => q1["ID"],
-          "Q1_ID" => q1["Q1_ID"],
-          "Q1_response" => q1["Q1_response"],
-          "Q2_ID" => q2["Q2_ID"],
-          "Q2_response" => q2["Q2_response"]
+          "ID" => id,
+          "Q1_ID" => values[@first_question_day]["q_id"],
+          "Q1_response" => get_response(q1_responses, id),
+          "Q2_ID" => values[@second_question_day]["q_id"],
+          "Q2_response" => get_response(q2_responses, id)
         }
       end)
 
     # Creating a CSV file
-    temp_path =
-      System.tmp_dir!()
-      |> Path.join("participant_response.csv")
+    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv")
 
     file = temp_path |> File.open!([:write, :utf8])
 
     current_week_responses
-    |> CSV.encode(headers: ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"])
+    |> CSV.encode(headers: @response_sheet_headers)
     |> Enum.each(&IO.write(file, &1))
 
     # Upload the file to GCS
@@ -502,12 +526,31 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
+  Return the response of the question for a contact
+  """
+  @spec get_response(list(), String.t()) :: String.t() | nil
+  def get_response(list, contact_id) do
+    contact =
+      list
+      |> Enum.find(nil, fn contact ->
+        Integer.to_string(contact["ID"]) === contact_id
+      end)
+
+    contact["Q_response"]
+  end
+
+  @doc """
   Return the question id based on the label
   """
   @spec get_question_id(String.t()) :: any()
   def get_question_id(label) do
     String.split(label, "_", trim: true)
     |> List.last()
+  end
+
+  @spec clean_string(String.t()) :: String.t()
+  defp clean_string(str) do
+    String.replace(str, " ", "")
   end
 
   @doc """
@@ -520,6 +563,8 @@ defmodule Glific.Clients.ArogyaWorld do
         organization_id: org_id,
         key: "response_score_map"
       })
+
+    response = clean_string(response)
 
     response_score = organization_data.json
 
@@ -538,13 +583,13 @@ defmodule Glific.Clients.ArogyaWorld do
           3
 
         true ->
-          response
+          0
       end
     else
       if response_score[response] !== nil do
         response_score[response]
       else
-        response
+        0
       end
     end
   end
