@@ -19,7 +19,6 @@ defmodule Glific.GCS.GcsWorker do
 
   alias Glific.{
     Jobs,
-    Messages,
     Messages.Message,
     Messages.MessageMedia,
     Partners,
@@ -60,7 +59,7 @@ defmodule Glific.GCS.GcsWorker do
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> order_by([m], asc: m.id)
-      |> limit(10)
+      |> limit(5)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
@@ -197,11 +196,7 @@ defmodule Glific.GCS.GcsWorker do
 
         # We will disabling GCS when billing account is disabled
         if error["reason"] == "accountDisabled" do
-          Partners.disable_credential(
-            org_id,
-            "google_cloud_storage",
-            "Billing account is disabled"
-          )
+          Partners.disable_credential(org_id, "google_cloud_storage", "Billing account is disabled")
         end
 
         "Error while uploading file to GCS #{inspect(error)}"
@@ -277,9 +272,8 @@ defmodule Glific.GCS.GcsWorker do
       |> MessageMedia.changeset(%{gcs_url: gcs_url})
       |> Repo.update()
 
-    ## updating message timestamp so that we can update gcs url in that on bigquery
-    {:ok, message} = Repo.fetch_by(Message, %{media_id: id})
-    Messages.update_message(message, %{updated_at: Timex.shift(Timex.now(), minutes: 2)})
+    message_media.organization_id
+    |> Jobs.update_bigquery_job("messages", %{last_updated_at: Timex.shift(Timex.now(), minutes: -1)})
 
     {:ok, message_media}
   end
