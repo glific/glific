@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @moduledoc """
-  Http API client to interact with Gupshup
+  Http API client to interact with Gupshup Enterprise
   """
   alias Glific.Partners
   alias Plug.Conn.Query
@@ -13,7 +13,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
 
   use Tesla
-  # you can add , log_level: :debug to the below if you want debugging info
   plug(Tesla.Middleware.Logger)
 
   plug(Tesla.Middleware.FormUrlencoded,
@@ -82,11 +81,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @spec optin_contact(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def optin_contact(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      gupshup_post(
-        @gupshup_enterprise_url,
-        Map.merge(@default_optin_params, payload),
-        credentials
-      )
+      payload
+      |> Map.merge(@common_message_params)
+      |> Map.merge(@default_optin_params)
+      |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
     end
   end
 end
