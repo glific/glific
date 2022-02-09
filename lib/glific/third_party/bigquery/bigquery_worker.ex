@@ -234,7 +234,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
                 Enum.map(row.groups, fn group ->
                   %{label: group.label, description: group.description}
                 end),
-              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end)
+              tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
+              raw_fields: BigQuery.format_json(row.fields),
+              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label)),
             }
             |> BigQuery.format_data_for_bigquery("contacts")
             | acc

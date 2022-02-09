@@ -259,7 +259,9 @@ defmodule Glific.Flows.ContactAction do
   defp process_labels(context, %{labels: labels} = action) do
     flow_label =
       labels
-      |> Enum.map_join(", ", fn label -> label["name"] end)
+      |> Enum.map_join(", ", fn label ->
+        FlowContext.parse_context_string(context, label["name"])
+      end)
 
     {context, Map.put(action, :labels, flow_label)}
   end
@@ -272,6 +274,7 @@ defmodule Glific.Flows.ContactAction do
       Node.infinite_loop(context, body)
     else
       # :loop_detected
+      FlowContext.notification(context, "Infinite loop detected, body: #{body}. Aborting flow.")
       exit_loop(context, messages)
     end
   end

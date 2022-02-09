@@ -80,45 +80,45 @@ defmodule Glific.Flows.Action do
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-    field :name, :string
-    field :text, :string
-    field :value, :string
+    field(:uuid, Ecto.UUID)
+    field(:name, :string)
+    field(:text, :string)
+    field(:value, :string)
 
     # various fields for webhooks
-    field :url, :string
-    field :headers, :map
-    field :method, :string
-    field :result_name, :string
-    field :body, :string
+    field(:url, :string)
+    field(:headers, :map)
+    field(:method, :string)
+    field(:result_name, :string)
+    field(:body, :string)
 
     # fields for certain actions: set_contact_field, set_contact_language
-    field :field, :map
-    field :language, :string
+    field(:field, :map)
+    field(:language, :string)
 
-    field :type, :string
+    field(:type, :string)
 
-    field :quick_replies, {:array, :string}, default: []
+    field(:quick_replies, {:array, :string}, default: [])
 
-    field :attachments, :map
+    field(:attachments, :map)
 
-    field :labels, :map
-    field :groups, :map
-    field :contacts, :map
+    field(:labels, :map)
+    field(:groups, :map)
+    field(:contacts, :map)
 
-    field :wait_time, :integer
-    field :interactive_template_id, :integer
+    field(:wait_time, :integer)
+    field(:interactive_template_id, :integer)
 
-    field :node_uuid, Ecto.UUID
-    embeds_one :node, Node
+    field(:node_uuid, Ecto.UUID)
+    embeds_one(:node, Node)
 
-    embeds_one :templating, Templating
+    embeds_one(:templating, Templating)
 
-    field :enter_flow_uuid, Ecto.UUID
-    field :enter_flow_name, :string
-    field :enter_flow_expression, :string
+    field(:enter_flow_uuid, Ecto.UUID)
+    field(:enter_flow_name, :string)
+    field(:enter_flow_expression, :string)
 
-    embeds_one :enter_flow, Flow
+    embeds_one(:enter_flow, Flow)
   end
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
@@ -200,7 +200,7 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
-    process(json, uuid_map, node, %{labels: json["labels"]})
+    process(json, uuid_map, node, %{labels: process_lebels(json["labels"])})
   end
 
   def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
@@ -272,7 +272,7 @@ defmodule Glific.Flows.Action do
     attrs = %{
       name: json["name"],
       text: json["text"],
-      labels: json["labels"],
+      labels: process_lebels(json["labels"]),
       quick_replies: json["quick_replies"],
       attachments: process_attachments(json["attachments"])
     }
@@ -384,6 +384,21 @@ defmodule Glific.Flows.Action do
     _ -> :unknown
   end
 
+  ## Label formatter so that we can apply the dynamic label to the message
+  @spec process_lebels(list() | nil) :: list() | nil
+  defp process_lebels(labels) when is_list(labels) do
+    Enum.map(
+      labels,
+      fn label ->
+        if is_nil(label["name_match"]),
+          do: label,
+          else: Map.put_new(label, "name", label["name_match"])
+      end
+    )
+  end
+
+  defp process_lebels(labels), do: labels
+
   @doc """
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
@@ -452,7 +467,7 @@ defmodule Glific.Flows.Action do
 
     # check if we've seen this flow in this execution
     if Map.has_key?(context.uuids_seen, flow_uuid) do
-      FlowContext.log_error("Repeated loop, hence finished the flow")
+      FlowContext.log_error("Repeated loop, hence finished the flow", false)
     else
       # check if we are looping with the same flow, if so reset
       # and start from scratch, since we really dont want to have too deep a stack
@@ -503,7 +518,9 @@ defmodule Glific.Flows.Action do
     ## We will soon figure out how we will manage the UUID with tags
     flow_label =
       action.labels
-      |> Enum.map_join(", ", fn label -> label["name"] end)
+      |> Enum.map_join(", ", fn label ->
+        FlowContext.parse_context_string(context, label["name"])
+      end)
 
     add_flow_label(context, flow_label)
 
@@ -612,7 +629,7 @@ defmodule Glific.Flows.Action do
   def execute(%{type: type} = _action, context, [msg])
       when type in @wait_for do
     if msg.body != "No Response",
-      do: FlowContext.log_error("Unexpected message #{msg.body} received"),
+      do: FlowContext.log_error("Unexpected message #{msg.body} received", false),
       else: {:ok, context, []}
   end
 

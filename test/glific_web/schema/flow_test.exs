@@ -132,6 +132,40 @@ defmodule GlificWeb.Schema.FlowTest do
     assert Enum.any?(data["flows"], fn flow -> flow["definition"]["name"] == name end)
   end
 
+  test "export flow and the import flow with template when published returns no error",
+       %{manager: user} = _attrs do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "Import Workflow"}})
+
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    data =
+      get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> Jason.decode!()
+
+    # Deleting all existing flows as importing same flow
+    Flows.list_flows(%{})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    assert length(data["flows"]) > 0
+    import_flow = data |> Jason.encode!()
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+    assert true = get_in(query_data, [:data, "importFlow", "success"])
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Import Workflow", organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
+    assert get_in(query_data, [:data, "publishFlow", "success"]) == true
+  end
+
   test "export flow and the import flow", %{staff: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
 
@@ -154,7 +188,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     # Deleting all existing collections as importing New Contact Flow creates collections
     Groups.list_groups(%{})
-    |> Enum.each(fn flow -> Groups.delete_group(flow) end)
+    |> Enum.each(fn group -> Groups.delete_group(group) end)
 
     import_flow = data |> Jason.encode!()
     result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
@@ -207,7 +241,7 @@ defmodule GlificWeb.Schema.FlowTest do
              "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
-  test "update a flow and test possible scenarios and errors", %{manager: user} do
+  test "update a flow and test possible scenarios and errorss", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 

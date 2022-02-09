@@ -13,7 +13,8 @@ defmodule Glific.Flows do
     Groups,
     Groups.Group,
     Partners,
-    Repo
+    Repo,
+    Templates.SessionTemplate
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -471,6 +472,7 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
+
     errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
     do_publish_flow(flow)
 
@@ -742,7 +744,7 @@ defmodule Glific.Flows do
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: flow_revision["definition"],
+                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
@@ -756,6 +758,41 @@ defmodule Glific.Flows do
       end)
 
     !Enum.member?(import_flow_list, false)
+  end
+
+  @spec clean_flow_with_hsm_template(map()) :: map()
+  defp clean_flow_with_hsm_template(definition) do
+    # checking if the imported template is present in database
+    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+
+    nodes =
+      definition
+      |> Map.get("nodes", [])
+      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_hsm_template(&1, template_uuid_list)))
+
+    put_in(definition, ["nodes"], nodes)
+  end
+
+  @spec do_clean_flow_with_hsm_template(map(), list()) :: list()
+  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, _template_uuid_list)
+       when actions == [],
+       do: [node]
+
+  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, template_uuid_list) do
+    action = actions |> hd
+    template_uuid = get_in(action, ["templating", "template", "uuid"])
+
+    with "send_msg" <- action["type"],
+         true <- Map.has_key?(action, "templating"),
+         false <- template_uuid in template_uuid_list do
+      # update the node if template uuid in the node is not present in DB
+      action = action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+
+      node = put_in(node, ["actions"], [action])
+      [node]
+    else
+      _ -> [node]
+    end
   end
 
   defp import_contact_field(import_flow, organization_id) do
