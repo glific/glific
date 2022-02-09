@@ -348,8 +348,6 @@ defmodule GlificWeb.Schema.FlowTest do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
-    IO.inspect(flow)
-
     [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
 
     result =
