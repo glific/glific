@@ -272,9 +272,6 @@ defmodule Glific.GCS.GcsWorker do
       |> MessageMedia.changeset(%{gcs_url: gcs_url})
       |> Repo.update()
 
-    message_media.organization_id
-    |> Jobs.update_bigquery_job("messages", %{last_updated_at: Timex.shift(Timex.now(), minutes: -2)})
-
     {:ok, message_media}
   end
 
