@@ -469,16 +469,28 @@ defmodule Glific.BigQuery.BigQueryWorker do
         user_name: if(!is_nil(row.user), do: row.user.name),
         tags_label: Enum.map_join(row.tags, ", ", fn tag -> tag.label end),
         flow_label: row.flow_label,
-        media_url: if(!is_nil(row.media), do: row.media.url),
-        media_id: if(!is_nil(row.media), do: row.media.id),
         flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
         flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
-        gcs_url: if(!is_nil(row.media), do: row.media.gcs_url),
         flow_broadcast_id: row.flow_broadcast_id
       }
+      |> Map.merge(message_media_info(row.media))
       |> Map.merge(message_template_info(row))
+
+  @spec message_media_info(any()) :: map()
+  defp message_media_info(nil),
+  do: %{
+    media_id: nil,
+    media_url: nil,
+    gcs_url: nil
+  }
+  defp message_media_info(media),
+  do: %{
+    media_id: media.id,
+    media_url: media.url,
+    gcs_url: media.gcs_url
+  }
 
   ## have to right this function since the above one is too long and credo is giving a warning
 

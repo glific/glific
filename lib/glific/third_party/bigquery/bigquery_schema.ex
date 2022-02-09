@@ -428,9 +428,9 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
-  Schema for messages table
+  Schema for messages media table
   """
-  @spec message_schema :: list()
+  @spec messages_media_schema :: list()
   def messages_media_schema do
     [
       %{
