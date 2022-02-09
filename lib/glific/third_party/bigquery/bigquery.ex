@@ -37,7 +37,7 @@ defmodule Glific.BigQuery do
     "flow_results" => :flow_result_schema,
     "stats" => :stats_schema,
     "flow_counts" => :flow_count_schema,
-    "messages_media" => :messages_media_schema,
+    "messages_media" => :messages_media_schema
   }
 
   defp bigquery_tables(organization_id) do

@@ -202,14 +202,12 @@ defmodule Glific.BigQuery.Schema do
           }
         ]
       },
-
       %{
         description: "JSON object for storing the contact fields",
         name: "raw_fields",
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         description: "Label of all the groups that the contact belongs to",
         name: "group_labels",
@@ -420,7 +418,6 @@ defmodule Glific.BigQuery.Schema do
         type: "INTEGER",
         mode: "NULLABLE"
       },
-
       %{
         description: "ID of the message media table refrence to the message media table",
         name: "media_id",
@@ -448,42 +445,36 @@ defmodule Glific.BigQuery.Schema do
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         description: "caption we received with the message",
         name: "caption",
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         description: "URL of media file stored in provider",
         name: "url",
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         description: "URL of media file stored in provider",
         name: "source_url",
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         description: "URL of media file stored in GCS",
         name: "gcs_url",
         type: "STRING",
         mode: "NULLABLE"
       },
-
       %{
         description: "Time when the record entry was first made",
         name: "inserted_at",
         type: "DATETIME",
         mode: "NULLABLE"
       },
-
       %{
         description: "Time when the record entry was last updated",
         name: "updated_at",

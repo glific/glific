@@ -132,6 +132,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec insert_new_records(binary, non_neg_integer, non_neg_integer) :: :ok
   defp insert_new_records(table, table_id, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
+
     if max_id > table_id,
       do:
         queue_table_data(table, organization_id, %{
@@ -237,7 +238,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
                 end),
               tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
               raw_fields: BigQuery.format_json(row.fields),
-              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label)),
+              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
             }
             |> BigQuery.format_data_for_bigquery("contacts")
             | acc
@@ -364,21 +365,21 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> Enum.reduce(
       [],
       fn row, acc ->
-          [
-            # We are sending nil, as setting is a record type and need to structure the data first(like field)
-            %{
-              id: row.id,
-              bq_uuid: Ecto.UUID.generate(),
-              caption: row.caption,
-              url: row.url,
-              source_url: row.source_url,
-              gcs_url: row.gcs_url,
-              inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-              updated_at: format_date_with_milisecond(row.updated_at, organization_id),
-            }
-            |> BigQuery.format_data_for_bigquery("messages_media")
-            | acc
-          ]
+        [
+          # We are sending nil, as setting is a record type and need to structure the data first(like field)
+          %{
+            id: row.id,
+            bq_uuid: Ecto.UUID.generate(),
+            caption: row.caption,
+            url: row.url,
+            source_url: row.source_url,
+            gcs_url: row.gcs_url,
+            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_milisecond(row.updated_at, organization_id)
+          }
+          |> BigQuery.format_data_for_bigquery("messages_media")
+          | acc
+        ]
       end
     )
     |> Enum.chunk_every(100)
@@ -611,12 +612,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> preload([:flow])
 
   defp get_query("messages_media", organization_id, attrs),
-      do:
-        MessageMedia
-        |> where([f], f.organization_id == ^organization_id)
-        |> apply_action_clause(attrs)
-        |> order_by([f], [f.inserted_at, f.id])
-        |> preload([:organization])
+    do:
+      MessageMedia
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:organization])
 
   defp get_query("stats", organization_id, attrs),
     do:
@@ -631,7 +632,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
-
 
   @impl Oban.Worker
   @doc """
