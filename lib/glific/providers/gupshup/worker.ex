@@ -14,7 +14,8 @@ defmodule Glific.Providers.Gupshup.Worker do
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
-    Providers.ResponseHandler
+    Providers.ResponseHandler,
+    Providers.Worker
   }
 
   @doc """
@@ -26,11 +27,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     organization = Partners.organization(message["organization_id"])
 
     if is_nil(organization.services["bsp"]) do
-      ResponseHandler.handle_fake_response(
-        message,
-        "{\"message\": \"API Key does not exist\"}",
-        401
-      )
+      Worker.handle_credential_error(message)
     else
       perform(job, organization)
     end
@@ -52,30 +49,14 @@ defmodule Glific.Providers.Gupshup.Worker do
          ) do
       {:ok, _} ->
         if Contacts.is_simulator_contact?(payload["destination"]) do
-          process_simulator(payload["destination"], message)
+          Worker.handle_credential_error(message)
         else
           process_gupshup(organization.id, payload, message, attrs)
         end
 
       _ ->
-        # lets sleep real briefly, so that we are not firing off many
-        # jobs to the BSP after exceeding the rate limit for this second
-        # so we are artifically slowing down the send rate
-        Process.sleep(50)
-        # we also want this job scheduled as soon as possible
-        {:snooze, 1}
+        Worker.default_send_rate_handler()
     end
-  end
-
-  @spec process_simulator(String.t(), Message.t()) :: :ok | {:error, String.t()}
-  defp process_simulator(_destination, message) do
-    message_id = Faker.String.base64(36)
-
-    ResponseHandler.handle_fake_response(
-      message,
-      "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
-      200
-    )
   end
 
   @spec process_gupshup(
