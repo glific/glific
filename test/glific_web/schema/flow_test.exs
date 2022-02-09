@@ -34,6 +34,12 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:flow_get, GlificWeb.Schema, "assets/gql/flows/flow_get.gql")
   load_gql(:flow_rel, GlificWeb.Schema, "assets/gql/flows/flow_release.gql")
 
+  load_gql(
+    :terminate_contact_flows,
+    GlificWeb.Schema,
+    "assets/gql/flows/terminate_contact_flows.gql"
+  )
+
   test "flows field returns list of flows", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
@@ -336,6 +342,24 @@ defmodule GlificWeb.Schema.FlowTest do
     # will add test for success with integration tests
     # need to start the flow, setup the context, toggle the DB field
     # and then resume the flow
+  end
+
+  test "Terminate all flows for a contact", %{staff: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    IO.inspect(flow)
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    result =
+      auth_query_gql_by(:terminate_contact_flows, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id}
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "terminateContactFlows", "success"]) == true
   end
 
   test "Start flow for contacts of a group", %{staff: user} do
