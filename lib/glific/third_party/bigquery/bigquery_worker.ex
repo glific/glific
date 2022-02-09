@@ -26,6 +26,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
+    Messages.MessageMedia,
     Partners,
     Repo,
     Stats.Stat
@@ -65,6 +66,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("messages", organization_id)
       make_job_to_remove_duplicate("flow_results", organization_id)
       make_job_to_remove_duplicate("flow_counts", organization_id)
+      make_job_to_remove_duplicate("messages_media", organization_id)
     end
 
     :ok
@@ -130,7 +132,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec insert_new_records(binary, non_neg_integer, non_neg_integer) :: :ok
   defp insert_new_records(table, table_id, organization_id) do
     max_id = insert_max_id(table, table_id, organization_id)
-
     if max_id > table_id,
       do:
         queue_table_data(table, organization_id, %{
@@ -353,6 +354,39 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("messages_media", organization_id, attrs) do
+    Logger.info(
+      "fetching data for messages_media to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("messages_media", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+          [
+            # We are sending nil, as setting is a record type and need to structure the data first(like field)
+            %{
+              id: row.id,
+              bq_uuid: Ecto.UUID.generate(),
+              caption: row.caption,
+              url: row.url,
+              source_url: row.source_url,
+              gcs_url: row.gcs_url,
+              inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+            }
+            |> BigQuery.format_data_for_bigquery("messages_media")
+            | acc
+          ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching data for #{stat} to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
@@ -435,6 +469,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         tags_label: Enum.map_join(row.tags, ", ", fn tag -> tag.label end),
         flow_label: row.flow_label,
         media_url: if(!is_nil(row.media), do: row.media.url),
+        media_id: if(!is_nil(row.media), do: row.media.id),
         flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
         flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
         longitude: if(!is_nil(row.location), do: row.location.longitude),
@@ -575,6 +610,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow])
 
+  defp get_query("messages_media", organization_id, attrs),
+      do:
+        MessageMedia
+        |> where([f], f.organization_id == ^organization_id)
+        |> apply_action_clause(attrs)
+        |> order_by([f], [f.inserted_at, f.id])
+        |> preload([:organization])
+
   defp get_query("stats", organization_id, attrs),
     do:
       Stat
@@ -588,6 +631,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
+
 
   @impl Oban.Worker
   @doc """

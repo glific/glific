@@ -419,6 +419,76 @@ defmodule Glific.BigQuery.Schema do
         name: "flow_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
+      },
+
+      %{
+        description: "ID of the message media table refrence to the message media table",
+        name: "media_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for messages table
+  """
+  @spec message_schema :: list()
+  def messages_media_schema do
+    [
+      %{
+        description: "Unique ID generated for each message",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "caption we received with the message",
+        name: "caption",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "URL of media file stored in provider",
+        name: "url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "URL of media file stored in provider",
+        name: "source_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "URL of media file stored in GCS",
+        name: "gcs_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
