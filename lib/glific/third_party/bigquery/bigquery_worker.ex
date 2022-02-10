@@ -480,17 +480,18 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec message_media_info(any()) :: map()
   defp message_media_info(nil),
-  do: %{
-    media_id: nil,
-    media_url: nil,
-    gcs_url: nil
-  }
+    do: %{
+      media_id: nil,
+      media_url: nil,
+      gcs_url: nil
+    }
+
   defp message_media_info(media),
-  do: %{
-    media_id: media.id,
-    media_url: media.url,
-    gcs_url: media.gcs_url
-  }
+    do: %{
+      media_id: media.id,
+      media_url: media.url,
+      gcs_url: media.gcs_url
+    }
 
   ## have to right this function since the above one is too long and credo is giving a warning
 
