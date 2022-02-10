@@ -39,8 +39,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
          %Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}},
          organization
        ) do
-    # ensure that we are under the rate limit, all rate limits are in requests/minutes
-    # Refactoring because of credo warning
     case ExRated.check_rate(
            organization.shortcode,
            # the bsp limit is per organization per shortcode
