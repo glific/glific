@@ -6,10 +6,8 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
   use Publicist
 
   alias Glific.{
-    BSPContacts,
     Contacts.Contact,
-    Partners,
-    Providers,
+    Providers.Contacts,
     Providers.Gupshup.Enterprise.ApiClient
   }
 
@@ -26,7 +24,7 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
     ApiClient.optin_contact(organization_id, %{"phone_number" => attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-        Providers.Contacts.create_or_update_contact(attrs, organization_id)
+        Contacts.create_or_update_contact(attrs, organization_id)
 
       _ ->
         {:error, ["gupshup_enterprise", "couldn't connect"]}

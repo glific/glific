@@ -8,7 +8,6 @@ defmodule Glific.Providers.GupshupContacts do
   import GlificWeb.Gettext
 
   alias Glific.{
-    BSPContacts,
     Contacts,
     Contacts.Contact,
     Partners,
