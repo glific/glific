@@ -3,6 +3,7 @@ defmodule Glific.Providers.Contacts do
   A common provider contacts module to handle opted in contacts irrespective of BSP
   """
   alias Glific.{
+    Contacts.Contact,
     BSPContacts,
     Partners
   }
