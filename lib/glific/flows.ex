@@ -738,13 +738,17 @@ defmodule Glific.Flows do
         with {:ok, flow} <-
                create_flow(%{
                  name: flow_revision["definition"]["name"],
-                 uuid: flow_revision["definition"]["uuid"],
+                 # lets create a new UUID, we cannot reuse existing UUIDs
+                 uuid: Ecto.UUID.generate(),
                  keywords: flow_revision["keywords"],
                  organization_id: organization_id
                }),
              {:ok, _flow_revision} <-
                FlowRevision.create_flow_revision(%{
-                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
+                 definition:
+                   flow_revision["definition"]
+                   |> clean_flow_with_hsm_template()
+                   |> Map.put("uuid", flow.uuid),
                  flow_id: flow.id,
                  organization_id: flow.organization_id
                }) do
