@@ -7,6 +7,11 @@ defmodule Glific.Providers.Contacts do
     Partners
   }
 
+  @doc """
+  Create or update contact as opted in when successfully marked as opted in user
+  """
+  @spec create_or_update_contact(map(), pos_integer()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def create_or_update_contact(attrs, organization_id) do
     %{
       name: attrs[:name],
