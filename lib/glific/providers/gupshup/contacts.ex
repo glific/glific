@@ -11,8 +11,8 @@ defmodule Glific.Providers.GupshupContacts do
     Contacts,
     Contacts.Contact,
     Partners,
-    Providers,
     Partners.Organization,
+    Providers,
     Providers.Gupshup.ApiClient
   }
 
