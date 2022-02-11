@@ -92,6 +92,9 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       end)
     end
 
+    field :is_suspended, :boolean
+    field :suspended_until, :datetime
+
     field :inserted_at, :datetime
 
     field :updated_at, :datetime
