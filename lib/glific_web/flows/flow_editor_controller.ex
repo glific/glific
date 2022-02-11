@@ -481,6 +481,29 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
+  @spec recents(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def recents(conn, params) do
+    [_exit_uuid, _destination_uuid] = params["vars"]
+
+    retults = %{
+      data: [
+        %{
+          contact: %{uuid: "uuid_1", name: "Glific user 1"},
+          operand: "operand for uuid_1",
+          time: "2022-02-09T21:42:44.125057Z"
+        },
+        %{
+          contact: %{uuid: "uuid_2", name: "Glific user 2"},
+          operand: "operand for uuid_2",
+          time: "2022-02-09T21:42:44.125057Z"
+        }
+      ]
+    }
+
+    json(conn, %{params: retults})
+  end
+
+  @doc false
   @spec generate_uuid() :: String.t()
   defp generate_uuid do
     Ecto.UUID.generate()
