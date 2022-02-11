@@ -15,6 +15,7 @@ defmodule Glific.BigQuery do
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
+    Messages.MessageMedia,
     Partners,
     Partners.Saas,
     Repo,
@@ -35,7 +36,8 @@ defmodule Glific.BigQuery do
     "flows" => :flow_schema,
     "flow_results" => :flow_result_schema,
     "stats" => :stats_schema,
-    "flow_counts" => :flow_count_schema
+    "flow_counts" => :flow_count_schema,
+    "messages_media" => :messages_media_schema
   }
 
   defp bigquery_tables(organization_id) do
@@ -107,7 +109,8 @@ defmodule Glific.BigQuery do
     "flows" => FlowRevision,
     "stats" => Stat,
     "stats_all" => Stat,
-    "flow_counts" => FlowCount
+    "flow_counts" => FlowCount,
+    "messages_media" => MessageMedia
   }
 
   # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
