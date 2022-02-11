@@ -149,6 +149,8 @@ defmodule GlificWeb.Router do
 
     get "/revisions/*vars", FlowEditorController, :revisions
 
+    get "/recents/*vars", FlowEditorController, :recents
+
     post "/revisions/*vars", FlowEditorController, :save_revisions
 
     get "/globals", FlowEditorController, :globals
