@@ -196,7 +196,11 @@ defmodule Glific.GCS.GcsWorker do
 
         # We will disabling GCS when billing account is disabled
         if error["reason"] == "accountDisabled" do
-          Partners.disable_credential(org_id, "google_cloud_storage", "Billing account is disabled")
+          Partners.disable_credential(
+            org_id,
+            "google_cloud_storage",
+            "Billing account is disabled"
+          )
         end
 
         "Error while uploading file to GCS #{inspect(error)}"
@@ -273,7 +277,9 @@ defmodule Glific.GCS.GcsWorker do
       |> Repo.update()
 
     message_media.organization_id
-    |> Jobs.update_bigquery_job("messages", %{last_updated_at: Timex.shift(Timex.now(), minutes: -2)})
+    |> Jobs.update_bigquery_job("messages", %{
+      last_updated_at: Timex.shift(Timex.now(), minutes: -2)
+    })
 
     {:ok, message_media}
   end
