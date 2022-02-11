@@ -2,6 +2,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
   use GlificWeb.ConnCase
 
   alias Glific.{
+    Contacts,
     Messages,
     Seeds.SeedsDev
   }
@@ -61,15 +62,6 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :enqueued
 
-      # when message failed
-      message_params = put_in(setup_config.message_params, ["payload", "type"], "failed")
-      failed_conn = post(conn, "/gupshup", message_params)
-      json_response(failed_conn, 200)
-      message = Messages.get_message!(setup_config.message.id)
-      assert message.bsp_status == :error
-      assert message.errors != nil
-      assert message.errors != %{}
-
       # when message sent
       message_params = put_in(setup_config.message_params, ["payload", "type"], "sent")
       sent_conn = post(conn, "/gupshup", message_params)
@@ -90,6 +82,32 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageEventControllerTest do
       json_response(delivered_conn, 200)
       message = Messages.get_message!(setup_config.message.id)
       assert message.bsp_status == :delivered
+
+      # when message failed with no code
+      message_params = put_in(setup_config.message_params, ["payload", "type"], "failed")
+      failed_conn = post(conn, "/gupshup", message_params)
+      json_response(failed_conn, 200)
+      message = Messages.get_message!(setup_config.message.id)
+      assert message.bsp_status == :error
+      assert message.errors != nil
+      assert message.errors != %{}
+
+      # when message failed with code 1002 (bad phone number)
+      message_params =
+        setup_config.message_params
+        |> put_in(["payload", "type"], "failed")
+        |> put_in(["payload", "payload"], %{"ts" => "1592311836", "code" => 1002})
+
+      failed_conn = post(conn, "/gupshup", message_params)
+      json_response(failed_conn, 200)
+      message = Messages.get_message!(setup_config.message.id)
+      assert message.bsp_status == :error
+      assert message.errors != nil
+      assert message.errors != %{}
+
+      contact = Contacts.get_contact!(message.contact_id)
+      assert contact.status == :invalid
+      assert contact.optout_method == "Number does not exist"
     end
   end
 end
