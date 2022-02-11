@@ -165,7 +165,10 @@ defmodule Glific.Communications.Message do
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
 
-    fetch_and_publish_message_status(bsp_message_id)
+    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
+    publish_message_status(message)
+
+    process_errors(message, errors, errors["payload"]["payload"]["code"])
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params) do
@@ -328,7 +331,7 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
-  @spec process_message(Message.t() | nil) :: :ok
+  @spec process_message(Message.t() | nil) :: any
   defp process_message(nil), do: :ok
 
   defp process_message(message) do
@@ -356,7 +359,14 @@ defmodule Glific.Communications.Message do
         end
       )
     end)
-
-    :ok
   end
+
+  @spec process_errors(Message.t(), map(), integer | nil) :: any
+  defp process_errors(message, _errors, 1002) do
+    # Issue #2047 - Number does not exist in WhatsApp
+    # Lets disable this contact and make it inactive
+    Contacts.number_does_not_exist(message.contact_id, "Number does not exist")
+  end
+
+  defp process_errors(_message, _errors, _code), do: nil
 end
