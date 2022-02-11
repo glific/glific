@@ -149,13 +149,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
     table_last_updated_at = table_last_updated_at || DateTime.utc_now()
     last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-    if Timex.compare(last_updated_at, table_last_updated_at) > 0,
-      do:
-        queue_table_data(table, organization_id, %{
-          action: :update,
-          max_id: nil,
-          last_updated_at: last_updated_at
-        })
+    queue_table_data(table, organization_id, %{
+      action: :update,
+      max_id: nil,
+      last_updated_at: last_updated_at
+    })
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
@@ -473,6 +471,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
+        errors: BigQuery.format_json(row.errors),
         flow_broadcast_id: row.flow_broadcast_id
       }
       |> Map.merge(message_media_info(row.media))
@@ -480,17 +479,18 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   @spec message_media_info(any()) :: map()
   defp message_media_info(nil),
-  do: %{
-    media_id: nil,
-    media_url: nil,
-    gcs_url: nil
-  }
+    do: %{
+      media_id: nil,
+      media_url: nil,
+      gcs_url: nil
+    }
+
   defp message_media_info(media),
-  do: %{
-    media_id: media.id,
-    media_url: media.url,
-    gcs_url: media.gcs_url
-  }
+    do: %{
+      media_id: media.id,
+      media_url: media.url,
+      gcs_url: media.gcs_url
+    }
 
   ## have to right this function since the above one is too long and credo is giving a warning
 
