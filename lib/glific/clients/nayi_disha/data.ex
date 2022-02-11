@@ -5,8 +5,8 @@ defmodule Glific.Clients.NayiDisha.Data do
 
   @parent_hsm_uuid_advise_eng "2f9c4fb1-2bcb-4f8d-b9a0-80e366e1e43d"
   @parent_hsm_uuid_advise_hn "1ae7a7b2-a89d-409b-b5c4-750ee232c98c"
-  @parent_hsm_uuid_poster_eng "136087be-7f68-4699-b9d4-13a1510684d6"
-  @parent_hsm_uuid_poster_hn "b493cb48-1322-4291-9037-4b979d3f9222"
+  @parent_hsm_uuid_poster_eng "f9c9facc-4f78-4351-807c-193f491471e3"
+  @parent_hsm_uuid_poster_hn "b57e52fc-380a-4fb1-9d20-ccf16c5384af"
 
   @hsm %{
     1 => %{
@@ -211,68 +211,44 @@ defmodule Glific.Clients.NayiDisha.Data do
       }
     },
     11 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: [
-        "*UDID Process* *1)* Visit Swavlamban website at www.swavlambancard.gov.in.(This Is A Government Website and all data provided here is completely secure.) *2)* Click on the link www.swavlambancard.gov.in to apply for Disability Certificate and UDID Card. (You can see the link on the right side of the homepage screen) *3)* Fill in all the details on the form:Personal,Disability, Employment and IdentityDetails. *4)* Upload All Necessary Documents Required (OriginalDisability Certificate, Original Aadhaar Card, Passport Size Picture and Signature or Thumb Impressions *5)* Click on ‘submit details’ to complete the registration. *6)* Once The Registration Completed, you will receive enrollment number on the email ID and contact number provided by in the form above.(Please Download and save the receipt.The receipt will contain the child’s UDID enrollment number and the names of the government hospitals available in nearby areas to which you can take your child for assessment). *7)* You can visit www.swavlambancard.gov.in and access the video available on the home page to understand the step by step procedure for the registration of the UDID. *8)* Once the assessment and Verification is done, your UDID card will be sent for printing. *9)* Once the UDID card is generated you can download your e-Disability Card and e-UDID Card."
-      ],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: [
-            "*यू.डी.आई.डी की प्रक्रिया* *1)* स्वावलंबन वेबसाइट पर जाएं। यह एक सरकारी वेबसाइट है और यहां प्रदान किया गया सभी डेटा पूरी तरह से सुरक्षित है।इस लिंक पर क्लिक करें-  www.swavlambancard.gov.in. *2)* विकलांगता प्रमाण पत्र और यूडीआईडी ​​कार्ड के लिए आवेदन करने के लिए लिंक www.swavlambancard.gov.in पर क्लिक करें। *3)* फॉर्म में सभी विवरण भरें: व्यक्तिगत, विकलांगता, रोजगार और पहचान विवरण। *4)* आवश्यक सभी दस्तावेज अपलोड करें (मूल विकलांगता प्रमाण पत्र, मूल आधार कार्ड, पासपोर्ट साइज का फोटो और हस्ताक्षर या अंगूठे के निशान)। *5)* पंजीकरण पूरा करने के लिए 'सबमिट डिटेल्स' पर क्लिक करें। *6)* एक बार पंजीकरण पूरा हो जाने के बाद, आपको अपने ईमेल आई.डी. और फ़ोन नंबर पर एक नामांकन संख्या प्राप्त होगी। (कृपया रसीद को डाउनलोड करके सेव करे। रसीद में बच्चे की यू डी.आई.डी. ​​नामांकन संख्या होगी और आस-पास के क्षेत्र में उपलब्ध सरकारी अस्पताल जहाँ आप अपने बच्चे को मूल्यांकन के लिए ले जा सकते है के नाम भी वर्णित होंगे।) *7)* आप www.swavlambancard.gov.in पर उपलब्ध वीडियो से यू.डी.आई.डी ​​​​के पंजीकरण के लिए चरण दर चरण प्रक्रिया को समझ  सकते हैं। *8)* एक बार आकलन और सत्यापन हो जाने के बाद, आपका यूडीआईडी ​​कार्ड छपाई के लिए भेजा जाएगा।आप अपने यू.डी.आई.डी. कार्ड का स्टेटस को स्वावलंबन कार्ड वेबसाइट पर ट्रैक कर सकते हैं। *9)* आप अपने यू.डी.आई.डी. कार्ड की स्थिति को स्वावलंबन कार्ड वेबसाइट पर ट्रैक कर सकते हैं।आप अपना ई-विकलांगता कार्ड और ई-यूडीआईडी ​​कार्ड डाउनलोड कर सकते हैं।"
-          ]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: ["@contact.name"],
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: [
-            "*UDID Process* *1)* Visit Swavlamban website at www.swavlambancard.gov.in.(This Is A Government Website and all data provided here is completely secure.) *2)* Click on the link www.swavlambancard.gov.in to apply for Disability Certificate and UDID Card. (You can see the link on the right side of the homepage screen) *3)* Fill in all the details on the form:Personal,Disability, Employment and IdentityDetails. *4)* Upload All Necessary Documents Required (OriginalDisability Certificate, Original Aadhaar Card, Passport Size Picture and Signature or Thumb Impressions *5)* Click on ‘submit details’ to complete the registration. *6)* Once The Registration Completed, you will receive enrollment number on the email ID and contact number provided by in the form above.(Please Download and save the receipt.The receipt will contain the child’s UDID enrollment number and the names of the government hospitals available in nearby areas to which you can take your child for assessment). *7)*  You can visit www.swavlambancard.gov.in and access the video available on the home page to understand the step by step procedure for the registration of the UDID. *8)* Once the assessment and Verification is done, your UDID card will be sent for printing. *9)* Once the UDID card is generated you can download your e-Disability Card and e-UDID Card."
-          ]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: ["@contact.name"],
         }
       }
     },
     12 => %{
-      hsm_uuid: @parent_hsm_uuid_advise_eng,
-      variables: [
-        "*Concessions under UDID* *1)* Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges *2)* Income Tax- 40-80% Disability- Deduction upto Rs. 75000 *3)* Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability *4)* Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class *5)* ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000) *6)* Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)"
-      ],
+      hsm_uuid: @parent_hsm_uuid_poster_eng,
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_hn,
-          variables: [
-            "*यूडीआईडी ​​के तहत रियायतें* *1.* शिक्षा-किसी भी पड़ोस के स्कूल में 6 से 18 वर्ष की आयु के बच्चों को निःशुल्क और अनिवार्य शिक्षा और सार्वजनिक वित्त पोषित कॉलेजों में 5% आरक्षित सीटें *2.* यात्रा-सभी विकलांग लोग कोच वर्ग के आधार पर बस/ट्रेन के किराए में 50-75% की छूट के हकदार हैं *3.* आयकर- 40-80% विकलांगता- Rs. 75000 तक की कटौती *4.* ऐ.डी.आई.पी स्कीम-विकलांग व्यक्ति को वित्तीय सहायता (जिनकी आय 20000 से अधिक नहीं) *5.* लीगल गार्डियनशिप-विकलांग व्यक्ति को अभिभावक नियुक्त करने की कानूनी प्रक्रिया(जो 18 वर्ष से अधिक आयु का है) *6.* निर्माया- स्वास्थ्य बीमा योजना जो सीपी, आईडी, एएसडी और बहु ​​विकलांगता के लिए 1 लाख रुपये तक कवर करती है"
-          ]
+          hsm_uuid: @parent_hsm_uuid_poster_hn,
+          variables: ["@contact.name"],
         },
         "en" => %{
-          hsm_uuid: @parent_hsm_uuid_advise_eng,
-          variables: [
-            "*Concessions under UDID* *1)* Education- Free and Compulsory education in any neighbourhood school for 6 to 18 years old children and 5% reserved seats in publicly funded colleges *2)* Income Tax- 40-80% Disability- Deduction upto Rs. 75000 *3)* Nirmaya- Health Insurance Scheme that covers upto Rs 1 Lakh for CP, ID, ASD and multiple disability *4)* Travel- all people with disability are entitled to 50-75 % concession on bus/train fares depending on the coach class *5)* ADIP Scheme-Financial aid to person with disability (with income not exceeding Rs. 20000) *6)* Legal Guardianship- Legal process of appointing guardians to person with disability (who is above the age of 18)"
-          ]
+          hsm_uuid: @parent_hsm_uuid_poster_eng,
+          variables: ["@contact.name"],
         }
       }
     },
     13 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: [
-        "@contact.name",
-        "program",
-        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-      ],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         }
       }
     },
@@ -358,27 +334,15 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     18 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: [
-        "@contact.name",
-        "program",
-        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-      ],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         }
       }
     },
@@ -484,53 +448,29 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     24 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: [
-        "@contact.name",
-        "program",
-        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-      ],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         }
       }
     },
     25 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: [
-        "@contact.name",
-        "program",
-        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-      ],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         }
       }
     },
@@ -616,27 +556,15 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     30 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: [
-        "@contact.name",
-        "program",
-        "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-      ],
+      variables: ["@contact.name"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: [
-            "@contact.name",
-            "program",
-            "https://www.nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
-          ]
+          variables: ["@contact.name"],
         }
       }
     },
