@@ -368,5 +368,11 @@ defmodule Glific.Communications.Message do
     Contacts.number_does_not_exist(message.contact_id)
   end
 
+  defp process_errors(message, _errors, 471) do
+    # Issue #2049 - Organization has hit rate limit and
+    # WABA is now rejecting messages
+    Partners.suspend_organization(message.organization_id)
+  end
+
   defp process_errors(_message, _errors, _code), do: nil
 end

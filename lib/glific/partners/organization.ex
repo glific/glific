@@ -131,7 +131,7 @@ defmodule Glific.Partners.Organization do
     field :fields, :map, default: %{}
 
     # lets add support for suspending orgs briefly
-    field :is_suspended, :boolean
+    field :is_suspended, :boolean, default: false
     field :suspended_until, :utc_datetime
 
     timestamps(type: :utc_datetime)

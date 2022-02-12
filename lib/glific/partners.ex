@@ -173,11 +173,12 @@ defmodule Glific.Partners do
   @doc """
   List of organizations that are active within the system
   """
-  @spec active_organizations(list()) :: map()
-  def active_organizations(orgs) do
+  @spec active_organizations(list(), boolean) :: map()
+  def active_organizations(orgs, suspended \\ false) do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name, q.last_communication_at])
+    |> where([q], q.is_suspended == ^suspended)
     |> restrict_orgs(orgs)
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
@@ -527,6 +528,67 @@ defmodule Glific.Partners do
 
     organization
     |> Map.put(:services, services_map)
+  end
+
+  @doc """
+  Suspend an organization till the start of the next day for the organization
+  (we still need to figure out if this is the right WABA interpretation)
+  """
+  @spec suspend_organization(non_neg_integer()) :: any()
+  def suspend_organization(organization_id) do
+    organization_id
+    |> organization()
+    |> then(fn org ->
+      # get the start of the next day in orgs timezone and then convert that to UTC since
+      # we only store UTC time in our DB
+      time =
+        org.timezone
+        |> DateTime.now!()
+        |> Timex.beginning_of_day()
+        |> Timex.shift(days: 1)
+        |> Timex.to_datetime("Etc/UTC")
+
+      {:ok, _} =
+        update_organization(
+          org,
+          %{
+            is_suspended: true,
+            suspended_until: time
+          }
+        )
+    end)
+  end
+
+  @spec unsuspend_org_list(DateTime.t()) :: list()
+  defp unsuspend_org_list(time \\ DateTime.utc_now()) do
+    Organization
+    |> where([q], q.is_active == true)
+    |> select([q], q.id)
+    |> where([q], q.is_suspended == true)
+    |> where([q], q.suspended_until < ^time)
+    |> Repo.all(skip_organization_id: true)
+  end
+
+  @spec unsuspend_organization(non_neg_integer()) :: any()
+  defp unsuspend_organization(org_id) do
+    {:ok, _} =
+      update_organization(
+        organization(org_id),
+        %{
+          is_suspended: false,
+          suspended_until: nil
+        }
+      )
+  end
+
+  @doc """
+  Resume all organization that are suspended if we are past the suspended time, we check this on an hourly basis for all organizations
+  that are in a suspended state via a cron job
+  """
+  @spec unsuspend_organizations :: any()
+  def unsuspend_organizations do
+    unsuspend_org_list()
+    |> Enum.each(&unsuspend_organization(&1))
   end
 
   @doc """
