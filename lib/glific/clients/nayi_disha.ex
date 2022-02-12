@@ -22,7 +22,7 @@ defmodule Glific.Clients.NayiDisha do
     11 => "https://storage.googleapis.com/ndrc_support_bucket/UDIDhin1.png",
     12 => "https://storage.googleapis.com/ndrc_support_bucket/UDIDhin2.png",
     13 => "https://storage.googleapis.com/ndrc_support_bucket/SelfCarePosterhin%201.png",
-    18 => "https://storage.googleapis.com/ndrc_support_bucket/LegalGuardianshipProcedurePoster4.png",
+    18 => "https://storage.googleapis.com/ndrc_support_bucket/LegalGuardianshipProcedureDay18.png",
     24 => "https://storage.googleapis.com/ndrc_support_bucket/Financial%20Planning_Understanding_DocumentsHindiDay24.png",
     25 => "https://storage.googleapis.com/ndrc_support_bucket/Distribution_of_affairs_optionsHindiDay25.png",
     30 => "https://storage.googleapis.com/ndrc_support_bucket/SelfCarePosterhin3.png"
