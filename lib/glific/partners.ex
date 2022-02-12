@@ -593,7 +593,7 @@ defmodule Glific.Partners do
 
   @doc """
   Execute a function across all active organizations. This function is typically called
-  by a cron job worker process
+  by a micron job worker process
 
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
