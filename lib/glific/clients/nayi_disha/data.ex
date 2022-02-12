@@ -212,43 +212,43 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     11 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about UUID"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["यूयूआईडी के बारे में "],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about UUID"],
         }
       }
     },
     12 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about more information related to UUID"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["यूआईडी से संबंधित अधिक जानकारी के बारे में है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about more information related to UUID"],
         }
       }
     },
     13 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about self-care"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["खुद की देखभाल के बारे में है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about self-care"],
         }
       }
     },
@@ -334,15 +334,15 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     18 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about legal guardianship"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["कानूनी संरक्षकता के बारे में है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about legal guardianship"],
         }
       }
     },
@@ -448,29 +448,29 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     24 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about understanding the role of individuals in your legal documents"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["आपके कानूनी दस्तावेजों में व्यक्तियों की भूमिका को समझने के बारे में है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about understanding the role of individuals in your legal documents"],
         }
       }
     },
     25 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about understanding distribution of financial affairs for child's care"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["बच्चे की देखभाल के लिए वित्तीय मामलों के वितरण को समझने के बारे में है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about understanding distribution of financial affairs for child's care"],
         }
       }
     },
@@ -556,15 +556,15 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     30 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["@contact.name"],
+      variables: ["is about keep trying something new"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["@contact.name"],
+          variables: ["कुछ नया करने की कोशिश करते रहने के बारे में है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["@contact.name"],
+          variables: ["is about keep trying something new"],
         }
       }
     },
