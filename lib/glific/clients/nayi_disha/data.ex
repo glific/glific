@@ -93,19 +93,19 @@ defmodule Glific.Clients.NayiDisha.Data do
     5 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "Today's message for parents and caregivers👉 Remember the lessons this pandemic taught us and plan your child's future accordingly. The 6 documents/processes mentioned below are vital for your child's secure future. ⚪ Disability Certificate 🟠 UDID 🔵 Legal Guardianship Certificate 🔴 Letter of Intent 🟡  Will 🟢 Financial Planning *All our resources are free to use. Sign-in so we can track resource usage to serve you better!*"
+        "Remember the lessons this pandemic taught us and plan your child's future accordingly. The 6 documents/processes mentioned below are vital for your child's secure future. ⚪ Disability Certificate 🟠 UDID 🔵 Legal Guardianship Certificate 🔴 Letter of Intent 🟡  Will 🟢 Financial Planning *All our resources are free to use. Sign-in so we can track resource usage to serve you better!*"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "माता-पिता एवं केयरगिवर के लिए आज का संदेश 👉 कोरोना महामारी को न भूले और उसके परिणाम से सीखे। अपने बच्चे के भविष्य की योजनाओं में निवेश करे ताकि कल के आपात स्तिथि में आप तैयार हो। अपने बच्चे के कानूनी और वित्तीय भविष्य को सुरक्षित रखने के लिए इन ६ दस्तावेज़ो का प्रबन्द ज़रूर करे। ⚪ डिसेबिलिटी सर्टिफिकेट (विकलांगता प्रमाण पत्र) 🟠 यू.डी.आई.डी 🔵 लीगल गार्डियनशिप सर्टिफिकेट (विधिक संरक्षकता प्रमाण पत्र)🔴 लेटर ऑफ़ इंटेंट (विशिष्ट उद्देश्य पत्र)🟡 वसीयत 🟢 वित्तीय योजना *हमारे सभी संसाधन उपयोग करने के लिए फ्री हैं। साइन-इन करें ताकि हम आपको बेहतर सेवा देने के लिए संसाधन उपयोग को ट्रैक कर सकें!*"
+            "कोरोना महामारी को न भूले और उसके परिणाम से सीखे। अपने बच्चे के भविष्य की योजनाओं में निवेश करे ताकि कल के आपात स्तिथि में आप तैयार हो। अपने बच्चे के कानूनी और वित्तीय भविष्य को सुरक्षित रखने के लिए इन ६ दस्तावेज़ो का प्रबन्द ज़रूर करे। ⚪ डिसेबिलिटी सर्टिफिकेट (विकलांगता प्रमाण पत्र) 🟠 यू.डी.आई.डी 🔵 लीगल गार्डियनशिप सर्टिफिकेट (विधिक संरक्षकता प्रमाण पत्र)🔴 लेटर ऑफ़ इंटेंट (विशिष्ट उद्देश्य पत्र)🟡 वसीयत 🟢 वित्तीय योजना *हमारे सभी संसाधन उपयोग करने के लिए फ्री हैं। साइन-इन करें ताकि हम आपको बेहतर सेवा देने के लिए संसाधन उपयोग को ट्रैक कर सकें!*"
           ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "Today's message for parents and caregivers👉 Remember the lessons this pandemic taught us and plan your child's future accordingly. The 6 documents/processes mentioned below are vital for your child's secure future. ⚪ Disability Certificate 🟠 UDID 🔵 Legal Guardianship Certificate 🔴 Letter of Intent 🟡  Will 🟢 Financial Planning *All our resources are free to use. Sign-in so we can track resource usage to serve you better!*"
+            "Remember the lessons this pandemic taught us and plan your child's future accordingly. The 6 documents/processes mentioned below are vital for your child's secure future. ⚪ Disability Certificate 🟠 UDID 🔵 Legal Guardianship Certificate 🔴 Letter of Intent 🟡  Will 🟢 Financial Planning *All our resources are free to use. Sign-in so we can track resource usage to serve you better!*"
           ]
         }
       }
@@ -133,7 +133,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     7 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Disability Certificate*-Important documents for the application process. *1* 2 passport size photographs *2* Copy of Government I.D. like Aadhar card of the PwD *3* Copy of Government I.D. like Aadhar of parents *4* Copy of all medical and psychological reports of the individual"
+        "*Disability Certificate* - Important documents for the application process. *~* 2 passport size photographs *~* Copy of Government I.D. like Aadhar card of the PwD *~* Copy of Government I.D. like Aadhar of parents *~* Copy of all medical and psychological reports of the individual"
       ],
       translations: %{
         "hi" => %{
@@ -145,7 +145,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Disability Certificate*-Important documents for the application process. *1* 2 passport size photographs *2* Copy of Government I.D. like Aadhar card of the PwD *3* Copy of Government I.D. like Aadhar of parents *4* Copy of all medical and psychological reports of the individual"
+            "*Disability Certificate* - Important documents for the application process. *~* 2 passport size photographs *~* Copy of Government I.D. like Aadhar card of the PwD *~* Copy of Government I.D. like Aadhar of parents *~* Copy of all medical and psychological reports of the individual"
           ]
         }
       }
@@ -153,7 +153,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     8 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Disability Certificate*- Evaluation Every individual with a disability will be evaluated in three areas – *1)* Clinical- General analysis by a medical doctor and/or physiotherapist/OT *2)* Behavioral- Psychological evaluation by psychologist *3)* Intellectual Functioning- Learning & communication abilities are assessed by a special educator & speech language pathologist"
+        "*Disability Certificate*- Evaluation: Every individual with a disability will be evaluated in three areas – *1)* Clinical- General analysis by a medical doctor and/or physiotherapist/OT *2)* Behavioral- Psychological evaluation by psychologist *3)* Intellectual Functioning- Learning & communication abilities are assessed by a special educator & speech language pathologist"
       ],
       translations: %{
         "hi" => %{
@@ -165,7 +165,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Disability Certificate*- Evaluation Every individual with a disability will be evaluated in three areas – *1)* Clinical- General analysis by a medical doctor and/or physiotherapist/OT *2)* Behavioral- Psychological evaluation by psychologist *3)* Intellectual Functioning- Learning & communication abilities are assessed by a special educator & speech language pathologist"
+            "*Disability Certificate*- Evaluation: Every individual with a disability will be evaluated in three areas – *1)* Clinical- General analysis by a medical doctor and/or physiotherapist/OT *2)* Behavioral- Psychological evaluation by psychologist *3)* Intellectual Functioning- Learning & communication abilities are assessed by a special educator & speech language pathologist"
           ]
         }
       }
@@ -255,7 +255,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     14 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . It is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://www.nayi-👉 disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+        "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . It is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child/"
       ],
       translations: %{
         "hi" => %{
@@ -267,7 +267,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . It is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://www.nayi-👉 disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child"
+            "*Legal Guardianship* - The Guardian needs to be a blood relative. Discuss and seek written consent from your candidates for the Guardianship📝 . It is better to keep the Guardian and Trustee separate as the Guardian also manages the personal affairs👩‍👧, whereas a Trustee will handle proceedings of the Trust deed i.e. the financial affairs of the child. A Guardian has NO say over what you have specified in the Will for your child📜. If the guardian is not taking good care of the child, the court may overturn the parent appointed legal guardian. For more information, please click on this link- https://nayi-disha.org/article/choosing-guardian-my-child-financial-planning-my-special-child/"
           ]
         }
       }
