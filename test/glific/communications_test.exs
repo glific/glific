@@ -367,8 +367,8 @@ defmodule Glific.CommunicationsTest do
 
     alias Glific.{
       Fixtures,
+      Mails.BalanceAlertMail,
       Mails.CriticalNotificationMail,
-      Mails.LowBalanceAlertMail,
       Mails.MailLog,
       Mails.NewPartnerOnboardedMail,
       Partners
@@ -418,12 +418,12 @@ defmodule Glific.CommunicationsTest do
              }) == 1
     end
 
-    test "LowBalanceAlertMail mail struct sends the low balance mail", attrs do
+    test "BalanceAlertMail mail struct sends the low balance mail", attrs do
       mail_attrs = %{category: "low_bsp_balance", organization_id: attrs.organization_id}
 
       low_balance_email =
         Partners.organization(attrs.organization_id)
-        |> LowBalanceAlertMail.new_mail(2.5)
+        |> BalanceAlertMail.low_balance_alert(2.5)
 
       assert {:ok, _} = Communications.Mailer.send(low_balance_email, mail_attrs)
 

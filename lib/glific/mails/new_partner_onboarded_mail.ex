@@ -2,10 +2,13 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   @moduledoc """
   NewPartnerOnboardedMail will have the content for formatting for the new partner onboarded email.
   """
-  alias Glific.Communications.Mailer
-  alias Glific.Partners.Saas
+  alias Glific.{
+    Communications.Mailer,
+    Partners.Organization,
+    Partners.Saas
+  }
 
-  @spec new_mail(map()) :: Swoosh.Email.t()
+  @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
     subject = """
     Glific: Congratulations! We onboarded a new NGO.

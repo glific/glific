@@ -2,12 +2,12 @@ defmodule Glific.Mails.CriticalNotificationMail do
   @moduledoc """
   CriticalNotificationMail is a mail that is sent to the org admin when a critical error occurs.
   """
-  alias Glific.Communications.Mailer
+  alias Glific.{Communications.Mailer, Partners.Organization}
 
   @doc """
   Sends a critical notification mail to the org admin.
   """
-  @spec new_mail(map(), String.t()) :: Swoosh.Email.t()
+  @spec new_mail(Organization.t(), String.t()) :: Swoosh.Email.t()
   def new_mail(org, message) do
     subject = "Glific CRITICAL Issue: Needs your immediate attention."
 

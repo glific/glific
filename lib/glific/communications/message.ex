@@ -9,6 +9,7 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
+    Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
     Partners,
@@ -376,9 +377,14 @@ defmodule Glific.Communications.Message do
     Partners.suspend_organization(organization)
 
     # We should send a message to ops and also email the org and glific support
-    Glific.log_error(
-      "#{organization.name} account has been suspended since it hit the rate limit."
-    )
+    body = """
+    #{organization.name} account has been suspended since it hit the WhatsApp rate limit.
+
+    Your services will resume automatically at the start of the next day. Please be patient :)
+    """
+
+    Glific.log_error(body)
+    BalanceAlertMail.rate_exceeded(organization, body)
   end
 
   defp process_errors(message, _errors, 1003) do
@@ -389,9 +395,14 @@ defmodule Glific.Communications.Message do
     Partners.suspend_organization(organization, 3)
 
     # We should send a message to ops and also email the org and glific support
-    Glific.log_error(
-      "#{organization.name} account has been suspended since its BSP balance is insufficient."
-    )
+    body = """
+    #{organization.name} account has been suspended since its BSP balance is insufficient.
+
+    Please refill your account immediately so Glific can send and receive messages on your behalf.
+    """
+
+    Glific.log_error(body)
+    BalanceAlertMail.no_balance(organization, body)
   end
 
   defp process_errors(_message, _errors, _code), do: nil
