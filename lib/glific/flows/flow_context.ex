@@ -183,7 +183,7 @@ defmodule Glific.Flows.FlowContext do
   @spec reset_all_contexts(FlowContext.t(), String.t()) :: FlowContext.t() | nil
   def reset_all_contexts(context, message) do
     # lets skip logging and notifications for things that occur quite often
-    if !ignore_error?(message) do
+    if !Glific.ignore_error?(message) do
       Logger.info(message)
       notification(context, message)
     end
@@ -612,32 +612,6 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
-  @spec ignore_error?(String.t()) :: boolean
-  defp ignore_error?(error) do
-    # These errors are ok, and need not be reported to appsignal
-    # to a large extent, its more a completion exit rather than an
-    # error exit
-    String.contains?(error, "Exit Loop") ||
-      String.contains?(error, "finished the flow")
-  end
-
-  @doc """
-  Log the error and also send it over to our friends at appsignal
-  """
-  @spec log_error(String.t(), boolean) :: {:error, String.t()}
-  def log_error(error, send_appsignal? \\ true) do
-    Logger.error(error)
-
-    # disable sending exit loop and finished flow errors, since
-    # these are beneficiary errors
-    if !ignore_error?(error) && send_appsignal? do
-      {_, stacktrace} = Process.info(self(), :current_stacktrace)
-      Appsignal.send_error(:error, error, stacktrace)
-    end
-
-    {:error, error}
-  end
-
   @doc """
   Given an input string, consume the input and advance the state of the context
   """
@@ -651,7 +625,7 @@ defmodule Glific.Flows.FlowContext do
         {:ok, context}
 
       {:error, error} ->
-        log_error(error)
+        Glific.log_error(error)
     end
   end
 

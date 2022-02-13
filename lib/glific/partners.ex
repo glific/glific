@@ -9,6 +9,8 @@ defmodule Glific.Partners do
   import GlificWeb.Gettext
   require Logger
 
+  alias __MODULE__
+
   alias Glific.{
     BigQuery,
     Caches,
@@ -530,33 +532,39 @@ defmodule Glific.Partners do
     |> Map.put(:services, services_map)
   end
 
+  @spec suspend_offset(Organization.t(), non_neg_integer()) :: DateTime.t()
+  defp suspend_offset(org, 0), do: start_of_next_day(org)
+
+  defp suspend_offset(_org, hours), do: Timex.shift(DateTime.utc_now(), hours: hours)
+
+  # get the start of the next day in orgs timezone and then convert that to UTC since
+  # we only store UTC time in our DB
+  @spec start_of_next_day(Organization.t()) :: DateTime.t()
+  defp start_of_next_day(org),
+    do:
+      org.timezone
+      |> DateTime.now!()
+      |> Timex.beginning_of_day()
+      |> Timex.shift(days: 1)
+      |> Timex.to_datetime("Etc/UTC")
+
   @doc """
   Suspend an organization till the start of the next day for the organization
   (we still need to figure out if this is the right WABA interpretation)
   """
-  @spec suspend_organization(non_neg_integer()) :: any()
-  def suspend_organization(organization_id) do
-    organization_id
-    |> organization()
-    |> then(fn org ->
-      # get the start of the next day in orgs timezone and then convert that to UTC since
-      # we only store UTC time in our DB
-      time =
-        org.timezone
-        |> DateTime.now!()
-        |> Timex.beginning_of_day()
-        |> Timex.shift(days: 1)
-        |> Timex.to_datetime("Etc/UTC")
-
-      {:ok, _} =
-        update_organization(
+  @spec suspend_organization(Organization.t(), non_neg_integer()) :: any()
+  def suspend_organization(organization, hours \\ 0) do
+    {:ok, _} =
+      organization
+      |> then(fn org ->
+        Partners.update_organization(
           org,
           %{
             is_suspended: true,
-            suspended_until: time
+            suspended_until: suspend_offset(org, hours)
           }
         )
-    end)
+      end)
   end
 
   @spec unsuspend_org_list(DateTime.t()) :: list()

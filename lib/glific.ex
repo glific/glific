@@ -256,4 +256,34 @@ defmodule Glific do
     |> Map.put(:organization_id, value)
     |> Map.delete(key)
   end
+
+  @doc """
+  A hack to suppress error messages when running lots of flows. These are expected
+  and we want to improve signal <-> noise ratio
+  """
+  @spec ignore_error?(String.t()) :: boolean
+  def ignore_error?(error) do
+    # These errors are ok, and need not be reported to appsignal
+    # to a large extent, its more a completion exit rather than an
+    # error exit
+    String.contains?(error, "Exit Loop") ||
+      String.contains?(error, "finished the flow")
+  end
+
+  @doc """
+  Log the error and also send it over to our friends at appsignal
+  """
+  @spec log_error(String.t(), boolean) :: {:error, String.t()}
+  def log_error(error, send_appsignal? \\ true) do
+    Logger.error(error)
+
+    # disable sending exit loop and finished flow errors, since
+    # these are beneficiary errors
+    if !ignore_error?(error) && send_appsignal? do
+      {_, stacktrace} = Process.info(self(), :current_stacktrace)
+      Appsignal.send_error(:error, error, stacktrace)
+    end
+
+    {:error, error}
+  end
 end
