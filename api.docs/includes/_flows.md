@@ -1031,3 +1031,45 @@ Filtering options for flows
 </tr>
 </tbody>
 </table>
+
+## Terminate flows for a contact
+
+Terminate all active flows for a contact.
+
+```graphql
+mutation terminateContactFlows($contactId: ID!) {
+  terminateContactFlows(contactId: $contactId) {
+    errors {
+      key
+      value
+    }
+    success
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "success": true,
+  "errors": null
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+ID  | <a href="#id">ID</a> | nil | Contact ID|
+
+
+
+### Return Parameters
+
+| Field | Type | Description |
+| ---- | ---- | ----------- |
+errors | [<a href="#inputerror">InputError</a>]| |
+success| <a href="#boolean">Boolean</a>| |
+
+

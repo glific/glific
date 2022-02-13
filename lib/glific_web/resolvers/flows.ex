@@ -173,6 +173,22 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc """
+  Terminate all flows for a contact
+  """
+  @spec terminate_contact_flows(
+          Absinthe.Resolution.t(),
+          %{contact_id: integer},
+          map()
+        ) ::
+          {:ok, any} | {:error, any}
+  def terminate_contact_flows(_, %{contact_id: contact_id}, _context) do
+    with {:ok, contact_id} <- Glific.parse_maybe_integer(contact_id),
+         :ok <- Flows.terminate_contact_flows?(contact_id) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
   Start a flow for all contacts of a group
   """
   @spec start_group_flow(Absinthe.Resolution.t(), %{flow_id: integer, group_id: integer}, %{

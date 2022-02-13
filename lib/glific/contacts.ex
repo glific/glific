@@ -467,6 +467,25 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Opt out a contact if the provider returns an error code about Number not
+  exisiting or not on whatsapp
+  """
+  @spec number_does_not_exist(non_neg_integer(), String.t()) :: any()
+  def number_does_not_exist(contact_id, method \\ "Number does not exist") do
+    contact = get_contact!(contact_id)
+
+    update_contact(
+      contact,
+      opted_out_attrs(
+        contact.phone,
+        contact.organization_id,
+        DateTime.utc_now(),
+        method
+      )
+    )
+  end
+
+  @doc """
   Check if we can send a message to the contact
   """
   @spec can_send_message_to?(Contact.t()) :: {:ok | :error, String.t() | nil}
@@ -701,7 +720,8 @@ defmodule Glific.Contacts do
           {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
   def capture_history(contact_id, event_type, attrs) when is_integer(contact_id),
     do:
-      get_contact!(contact_id)
+      contact_id
+      |> get_contact!()
       |> capture_history(event_type, attrs)
 
   def capture_history(%Contact{} = contact, event_type, attrs) do
