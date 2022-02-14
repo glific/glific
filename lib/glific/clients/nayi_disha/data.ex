@@ -211,7 +211,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     11 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about UUID"],
+      variables: ["is about UDID"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -219,13 +219,13 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about UUID"],
+          variables: ["is about UDID"],
         }
       }
     },
     12 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about more information related to UUID"],
+      variables: ["is about more information related to UDID"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -233,7 +233,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about more information related to UUID"],
+          variables: ["is about more information related to UDID"],
         }
       }
     },
