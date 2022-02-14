@@ -936,4 +936,13 @@ defmodule Glific.Flows do
   @spec is_media_type?(atom()) :: boolean()
   def is_media_type?(type),
     do: type in [:audio, :document, :image, :video]
+
+  @doc """
+   Terminate all flows for a contact
+  """
+  @spec terminate_contact_flows?(non_neg_integer) :: :ok
+  def terminate_contact_flows?(contact_id) do
+    FlowContext.mark_flows_complete(contact_id, false)
+    :ok
+  end
 end
