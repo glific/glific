@@ -111,8 +111,8 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       bsp_message_id: "",
       context_id: context_id(message_payload),
       caption: message_payload["caption"],
-      url: message_payload["url"],
-      source_url: message_payload["url"],
+      url: message_payload["url"] <> message_payload["signature"],
+      source_url: message_payload["url"] <> message_payload["signature"],
       sender: %{
         phone: params["mobile"],
         name: params["name"]
