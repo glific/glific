@@ -8,9 +8,7 @@ defmodule Glific.Clients.Sol do
   alias Glific.{
     Contacts,
     Sheets.ApiClient,
-    Partners,
-    Partners.OrganizationData,
-    Repo
+    Partners
   }
 
   @doc """
@@ -39,14 +37,25 @@ defmodule Glific.Clients.Sol do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("load_activity", fields) do
-    load_activity_schedule()
+  def webhook("load_schedule", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    load_activity_schedule(organization_id)
   end
 
-  def load_activity_schedule() do
-    key = "sol_activity_schedule"
-    url = "https://storage.googleapis.com/sheet-automation/sol_activity_schedule.csv"
-    org_id = 1
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("load_language_activities", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    organization = Partners.organization(organization_id)
+
+    Enum.each(organization.languages, fn language ->
+      language.label
+      |> String.downcase()
+      |> load_language_activities(organization_id)
+    end)
+  end
+
+  def load_activity_schedule(org_id) do
+    {key, url} = form_key_and_url("activity_schedule")
 
     ApiClient.get_csv_content(url: url)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
@@ -59,9 +68,8 @@ defmodule Glific.Clients.Sol do
     end)
   end
 
-  def load_activities(language_label, org_id, file_url) do
-    key = "sol_activities_#{language_label}"
-    url = "https://storage.googleapis.com/sheet-automation/#{key}.csv"
+  def load_language_activities(language_label, org_id) do
+    {key, url} = form_key_and_url("activities_#{language_label}")
 
     ApiClient.get_csv_content(url: url)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
@@ -69,8 +77,14 @@ defmodule Glific.Clients.Sol do
       row = Map.put(row, "activity_slug", activity_slug)
       Map.put(acc, activity_slug, row)
     end)
-    |> then(fn activity_schedule ->
-      Partners.maybe_insert_organization_data(key, activity_schedule, org_id)
+    |> then(fn activity_data ->
+      Partners.maybe_insert_organization_data(key, activity_data, org_id)
     end)
+  end
+
+  defp form_key_and_url(key) do
+    key = "sol_#{key}"
+    url = "https://storage.googleapis.com/sheet-automation/#{key}.csv"
+    {key, url}
   end
 end
