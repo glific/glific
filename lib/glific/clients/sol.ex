@@ -43,7 +43,8 @@ defmodule Glific.Clients.Sol do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     language_label = fields["language_label"]
     activity_date = fields["activity_date"]
-    activity = get_activity_by_date(organization_id, activity_date)
+    city = fields["city"]
+    activity = get_activity_by_date(organization_id, activity_date, city)
     activity_data = get_activity_content(activity, language_label, organization_id)
 
     if is_map(activity_data),
@@ -79,7 +80,12 @@ defmodule Glific.Clients.Sol do
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       activity_slug = Glific.string_clean(row["Activity name in English"])
       row = Map.put(row, "activity_slug", activity_slug)
-      Map.put(acc, row["Date"], row)
+      date = row["Date"]
+      city = row["City"]
+
+      if Map.has_key?(acc, date),
+        do: Map.put(acc, date, Map.put(acc[date], city, row)),
+        else: Map.put(acc, date, Map.put(%{}, city, row))
     end)
     |> then(fn activity_schedule ->
       Partners.maybe_insert_organization_data(key, activity_schedule, org_id)
@@ -109,8 +115,8 @@ defmodule Glific.Clients.Sol do
     {key, url}
   end
 
-  @spec get_activity_by_date(non_neg_integer(), String.t()) :: map()
-  defp get_activity_by_date(organization_id, date) do
+  @spec get_activity_by_date(non_neg_integer(), String.t(), String.t()) :: map()
+  defp get_activity_by_date(organization_id, date, city) do
     {key, _url} = form_key_and_url("activity_schedule")
 
     {:ok, org_data} =
@@ -119,7 +125,7 @@ defmodule Glific.Clients.Sol do
         key: key
       })
 
-    Map.get(org_data.json, date)
+    get_in(org_data.json, [date, city])
   end
 
   @spec get_activity_content(map(), String.t(), non_neg_integer()) :: map()
