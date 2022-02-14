@@ -103,6 +103,48 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> then(&create_oban_job(message, &1, attrs))
   end
 
+  @spec receive_media(map()) :: map()
+  def receive_media(params) do
+    message_payload = get_message_payload(params["type"], params)
+
+    %{
+      bsp_message_id: "",
+      context_id: context_id(message_payload),
+      caption: message_payload["caption"],
+      url: message_payload["url"],
+      source_url: message_payload["url"],
+      sender: %{
+        phone: params["mobile"],
+        name: params["name"]
+      }
+    }
+  end
+
+  @spec receive_location(map()) :: map()
+  def receive_location(params) do
+    location = Jason.decode!(params["location"])
+
+    %{
+      bsp_message_id: params["messageId"],
+      context_id: "",
+      longitude: location["longitude"],
+      latitude: location["latitude"],
+      sender: %{
+        phone: params["mobile"],
+        name: params["name"]
+      }
+    }
+  end
+
+  defp get_message_payload("image", params), do: Jason.decode!(params["image"])
+  defp get_message_payload("video", params), do: Jason.decode!(params["video"])
+  defp get_message_payload("audio", params), do: Jason.decode!(params["audio"])
+  defp get_message_payload("document", params), do: Jason.decode!(params["document"])
+
+  @spec context_id(map()) :: String.t() | nil
+  defp context_id(payload),
+    do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
+
   @doc false
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do
