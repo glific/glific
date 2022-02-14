@@ -129,22 +129,22 @@ defmodule Glific.Clients.NayiDisha.Data do
         }
       }
     },
-    7 => %{
+    7 => %{*~*
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Disability Certificate* - Important documents for the application process. *~* 2 passport size photographs *~* Copy of Government I.D. like Aadhar card of the PwD *~* Copy of Government I.D. like Aadhar of parents *~* Copy of all medical and psychological reports of the individual"
+        "*Disability Certificate* - Important documents for the application process. 2 passport size photographs , Copy of Government I.D. like Aadhar card of the PwD , Copy of Government I.D. like Aadhar of parents , Copy of all medical and psychological reports of the individual"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- ज़रूरी दस्तावेज़ *~* 2 पासपोर्ट आकार की फोटो *~* सरकारी पहचान पत्र की प्रति (आवेदन करने वाले व्यक्ति का आधार कार्ड/पासपोर्ट/ड्राइविंग लाइसेंस) *~* आवेदन करने वाले व्यक्ति के अभिभावकों के सरकारी पहचान पत्र प्रति *~* आवेदक की सभी प्रकार की चिकित्सकीय व मानसिक रिपोर्ट की प्रतियाँ"
+            "विक्लांग्ता प्रमाण पत्र (डिसेबिलिटी सर्टिफिकेट)- ज़रूरी दस्तावेज़  2 पासपोर्ट आकार की फोटो , सरकारी पहचान पत्र की प्रति (आवेदन करने वाले व्यक्ति का आधार कार्ड/पासपोर्ट/ड्राइविंग लाइसेंस) , आवेदन करने वाले व्यक्ति के अभिभावकों के सरकारी पहचान पत्र प्रति , आवेदक की सभी प्रकार की चिकित्सकीय व मानसिक रिपोर्ट की प्रतियाँ"
           ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Disability Certificate* - Important documents for the application process. *~* 2 passport size photographs *~* Copy of Government I.D. like Aadhar card of the PwD *~* Copy of Government I.D. like Aadhar of parents *~* Copy of all medical and psychological reports of the individual"
+            "*Disability Certificate* - Important documents for the application process. 2 passport size photographs , Copy of Government I.D. like Aadhar card of the PwD , Copy of Government I.D. like Aadhar of parents , Copy of all medical and psychological reports of the individual"
           ]
         }
       }
