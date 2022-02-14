@@ -42,7 +42,8 @@ defmodule Glific.Clients.Sol do
   def webhook("fetch_activity", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     language_label = fields["language_label"]
-    activity = get_activity_by_date(organization_id, "2022-01-13")
+    activity_date = fields["activity_date"]
+    activity = get_activity_by_date(organization_id, activity_date)
     activity_data = get_activity_content(activity, language_label, organization_id)
 
     if is_map(activity_data),
