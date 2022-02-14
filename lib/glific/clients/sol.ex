@@ -8,7 +8,9 @@ defmodule Glific.Clients.Sol do
   alias Glific.{
     Contacts,
     Sheets.ApiClient,
-    Partners
+    Partners,
+    Partners.OrganizationData,
+    Repo
   }
 
   @doc """
@@ -37,9 +39,18 @@ defmodule Glific.Clients.Sol do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
+  def webhook("fetch_activity", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    language_label = fields["language_label"]
+    activity = get_activity_by_date(organization_id, "2022-01-13")
+    activity_data = get_activity_content(activity, language_label, organization_id)
+    %{completed: true}
+  end
+
   def webhook("load_schedule", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     load_activity_schedule(organization_id)
+    %{completed: true}
   end
 
   @spec webhook(String.t(), map()) :: map()
@@ -52,9 +63,11 @@ defmodule Glific.Clients.Sol do
       |> String.downcase()
       |> load_language_activities(organization_id)
     end)
+
+    %{completed: true}
   end
 
-  def load_activity_schedule(org_id) do
+  defp load_activity_schedule(org_id) do
     {key, url} = form_key_and_url("activity_schedule")
 
     ApiClient.get_csv_content(url: url)
@@ -68,7 +81,7 @@ defmodule Glific.Clients.Sol do
     end)
   end
 
-  def load_language_activities(language_label, org_id) do
+  defp load_language_activities(language_label, org_id) do
     {key, url} = form_key_and_url("activities_#{language_label}")
 
     ApiClient.get_csv_content(url: url)
@@ -86,5 +99,38 @@ defmodule Glific.Clients.Sol do
     key = "sol_#{key}"
     url = "https://storage.googleapis.com/sheet-automation/#{key}.csv"
     {key, url}
+  end
+
+  def get_activity_by_date(organization_id, date) do
+    {key, _url} = form_key_and_url("activity_schedule")
+
+    {:ok, org_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: key
+      })
+
+    Map.get(org_data.json, date)
+  end
+
+  def get_activity_content(activity, language_label, organization_id) do
+    language_label = String.downcase(language_label)
+    {key, _url} = form_key_and_url("activities_#{language_label}")
+
+    {:ok, org_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: key
+      })
+
+    activity_content = Map.get(org_data.json, activity["activity_slug"])
+
+    %{
+      name: activity_content["Name of the Activity"],
+      artform: activity_content["Type of Activity"],
+      content: activity_content["Content of the Activty"],
+      poster_attachment: activity_content["Poster GCS Link"],
+      audio_attachment: activity_content["Audio Recording GCS Link"]
+    }
   end
 end
