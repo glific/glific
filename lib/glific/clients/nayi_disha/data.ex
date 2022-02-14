@@ -129,7 +129,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         }
       }
     },
-    7 => %{*~*
+    7 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
         "*Disability Certificate* - Important documents for the application process. 2 passport size photographs , Copy of Government I.D. like Aadhar card of the PwD , Copy of Government I.D. like Aadhar of parents , Copy of all medical and psychological reports of the individual"
