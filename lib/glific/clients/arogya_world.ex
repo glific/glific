@@ -313,7 +313,7 @@ defmodule Glific.Clients.ArogyaWorld do
     |> Enum.reduce(%{}, fn {_, data}, acc ->
       cleanup_func.(acc, data)
     end)
-    |> then(fn data -> maybe_insert_data(key, data, org_id) end)
+    |> then(fn data -> Partners.maybe_insert_organization_data(key, data, org_id) end)
   end
 
   @doc """
@@ -404,32 +404,6 @@ defmodule Glific.Clients.ArogyaWorld do
       end
 
     Map.put(acc, data["Week"], week)
-  end
-
-  @doc """
-  Insert or update data if key present for OrganizationData table.
-  """
-  @spec maybe_insert_data(String.t(), map(), non_neg_integer()) ::
-          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_insert_data(key, data, org_id) do
-    # check if the week key is already present in the database
-    case Repo.get_by(OrganizationData, %{key: key, organization_id: org_id}) do
-      nil ->
-        attrs =
-          %{}
-          |> Map.put(:key, key)
-          |> Map.put(:json, data)
-          |> Map.put(:organization_id, org_id)
-
-        %OrganizationData{}
-        |> OrganizationData.changeset(attrs)
-        |> Repo.insert()
-
-      organization_data ->
-        organization_data
-        |> OrganizationData.changeset(%{json: data})
-        |> Repo.update()
-    end
   end
 
   @doc """

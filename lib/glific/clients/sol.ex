@@ -7,10 +7,10 @@ defmodule Glific.Clients.Sol do
 
   alias Glific.{
     Contacts,
-    Sheets.ApiClient,
     Partners,
     Partners.OrganizationData,
-    Repo
+    Repo,
+    Sheets.ApiClient
   }
 
   @doc """
@@ -44,7 +44,10 @@ defmodule Glific.Clients.Sol do
     language_label = fields["language_label"]
     activity = get_activity_by_date(organization_id, "2022-01-13")
     activity_data = get_activity_content(activity, language_label, organization_id)
-    %{completed: true}
+
+    if is_map(activity_data),
+      do: Map.put(activity_data, :error, false),
+      else: %{error: "Something went worng."}
   end
 
   def webhook("load_schedule", fields) do
@@ -53,7 +56,6 @@ defmodule Glific.Clients.Sol do
     %{completed: true}
   end
 
-  @spec webhook(String.t(), map()) :: map()
   def webhook("load_language_activities", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     organization = Partners.organization(organization_id)
@@ -67,6 +69,8 @@ defmodule Glific.Clients.Sol do
     %{completed: true}
   end
 
+  @spec load_activity_schedule(non_neg_integer()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   defp load_activity_schedule(org_id) do
     {key, url} = form_key_and_url("activity_schedule")
 
@@ -81,6 +85,8 @@ defmodule Glific.Clients.Sol do
     end)
   end
 
+  @spec load_language_activities(String.t(), non_neg_integer()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   defp load_language_activities(language_label, org_id) do
     {key, url} = form_key_and_url("activities_#{language_label}")
 
@@ -95,13 +101,15 @@ defmodule Glific.Clients.Sol do
     end)
   end
 
+  @spec form_key_and_url(String.t()) :: {String.t(), String.t()}
   defp form_key_and_url(key) do
     key = "sol_#{key}"
     url = "https://storage.googleapis.com/sheet-automation/#{key}.csv"
     {key, url}
   end
 
-  def get_activity_by_date(organization_id, date) do
+  @spec get_activity_by_date(non_neg_integer(), String.t()) :: map()
+  defp get_activity_by_date(organization_id, date) do
     {key, _url} = form_key_and_url("activity_schedule")
 
     {:ok, org_data} =
@@ -113,7 +121,8 @@ defmodule Glific.Clients.Sol do
     Map.get(org_data.json, date)
   end
 
-  def get_activity_content(activity, language_label, organization_id) do
+  @spec get_activity_content(map(), String.t(), non_neg_integer()) :: map()
+  defp get_activity_content(activity, language_label, organization_id) do
     language_label = String.downcase(language_label)
     {key, _url} = form_key_and_url("activities_#{language_label}")
 
