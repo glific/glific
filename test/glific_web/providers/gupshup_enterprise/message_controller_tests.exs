@@ -10,9 +10,9 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
   }
 
   @message_request_params %{
-    "mobile" => "918979120220",
-    "name" => "Akki",
-    "text" => "Hello to enterpeise",
+    "mobile" => "919917443994",
+    "name" => "Smit",
+    "text" => "Hello to enterprise",
     "timestamp" => "1644911629000",
     "type" => "text",
     "replyId" => Faker.String.base64(36),
