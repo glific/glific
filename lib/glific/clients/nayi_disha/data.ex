@@ -211,7 +211,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     11 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about UDID"],
+      variables: ["UDID is an important document and helps in securing your child’s future"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -219,13 +219,13 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about UDID"],
+          variables: ["UDID is an important document and helps in securing your child’s future"],
         }
       }
     },
     12 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about more information related to UDID"],
+      variables: ["UDID is an important document and helps in securing your child’s future"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -233,13 +233,13 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about more information related to UDID"],
+          variables: ["UDID is an important document and helps in securing your child’s future"],
         }
       }
     },
     13 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about self-care"],
+      variables: ["Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -247,7 +247,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about self-care"],
+          variables: ["Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"],
         }
       }
     },
@@ -447,7 +447,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     24 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about understanding the role of individuals in your legal documents"],
+      variables: ["Understanding Legal Terms & Documents"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -455,13 +455,13 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about understanding the role of individuals in your legal documents"],
+          variables: ["Understanding Legal Terms & Documents"],
         }
       }
     },
     25 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about understanding distribution of financial affairs for child's care"],
+      variables: ["Understanding Distribution of Personal and Financial Affairs for your child's care"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -469,7 +469,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about understanding distribution of financial affairs for child's care"],
+          variables: ["Understanding Distribution of Personal and Financial Affairs for your child's care"],
         }
       }
     },
@@ -555,7 +555,7 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     30 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about keep trying something new"],
+      variables: ["Caregiving is a challenging role. Look after yourself, try something new every week"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
@@ -563,7 +563,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about keep trying something new"],
+          variables: ["Caregiving is a challenging role. Look after yourself, try something new every week"],
         }
       }
     },
