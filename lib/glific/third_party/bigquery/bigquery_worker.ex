@@ -152,7 +152,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     queue_table_data(table, organization_id, %{
       action: :update,
       max_id: nil,
-      last_updated_at: last_updated_at
+      last_updated_at: last_updated_at,
+      table_last_updated_at: table_last_updated_at
     })
   end
 
@@ -560,14 +561,24 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = _attrs),
     do: query |> where([m], m.id >= ^min_id and m.id <= ^max_id)
 
-  defp apply_action_clause(query, %{action: :update, last_updated_at: last_updated_at} = _attrs),
-    do:
-      query
-      |> where([tb], tb.updated_at >= ^last_updated_at)
-      |> where(
-        [tb],
-        fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
-      )
+  defp apply_action_clause(
+         query,
+         %{
+           action: :update,
+           last_updated_at: last_updated_at,
+           table_last_updated_at: table_last_updated_at
+         } = _attrs
+       ),
+       do:
+         query
+         |> where(
+           [tb],
+           tb.updated_at > ^table_last_updated_at and tb.updated_at <= ^last_updated_at
+         )
+         |> where(
+           [tb],
+           fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
+         )
 
   defp apply_action_clause(query, _attrs), do: query
 
