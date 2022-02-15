@@ -108,7 +108,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     message_payload = get_message_payload(params["type"], params)
 
     %{
-      bsp_message_id: "",
+      bsp_message_id: params["replyId"],
       context_id: context_id(message_payload),
       caption: message_payload["caption"],
       url: message_payload["url"] <> message_payload["signature"],
@@ -125,7 +125,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     location = Jason.decode!(params["location"])
 
     %{
-      bsp_message_id: params["messageId"],
+      bsp_message_id: params["replyId"],
       context_id: "",
       longitude: location["longitude"],
       latitude: location["latitude"],
