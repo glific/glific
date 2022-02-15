@@ -215,7 +215,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["यूयूआईडी के बारे में "],
+          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
@@ -229,7 +229,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["यूआईडी से संबंधित अधिक जानकारी के बारे में है"],
+          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
@@ -243,7 +243,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["खुद की देखभाल के बारे में है"],
+          variables: ["देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपने प्रति दयालु बनें, कुछ समय निकालें और अपने आस-पास दिखाई देने वाली चीज़ों की सराहना करें"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
@@ -451,7 +451,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["आपके कानूनी दस्तावेजों में व्यक्तियों की भूमिका को समझने के बारे में है"],
+          variables: ["कानूनी शर्तों और दस्तावेजों को समझना"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
@@ -465,7 +465,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["बच्चे की देखभाल के लिए वित्तीय मामलों के वितरण को समझने के बारे में है"],
+          variables: ["अपने बच्चे की देखभाल के लिए व्यक्तिगत और वित्तीय मामलों के वितरण को समझना"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
@@ -559,7 +559,7 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कुछ नया करने की कोशिश करते रहने के बारे में है"],
+          variables: ["देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपना ख्याल रखें, हर हफ्ते कुछ नया करने की कोशिश करें"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
