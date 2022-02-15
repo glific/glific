@@ -28,6 +28,7 @@ defmodule Glific.Clients do
     id: 1,
     name: "Slam Out Loud",
     gcs_file_name: Glific.Clients.Sol
+    webhook: Glific.Clients.Sol,
   }
 
   @avanti %{
