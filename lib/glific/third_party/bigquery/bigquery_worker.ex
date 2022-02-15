@@ -26,6 +26,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
+    Messages.MessageMedia,
     Partners,
     Repo,
     Stats.Stat
@@ -65,6 +66,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("messages", organization_id)
       make_job_to_remove_duplicate("flow_results", organization_id)
       make_job_to_remove_duplicate("flow_counts", organization_id)
+      make_job_to_remove_duplicate("messages_media", organization_id)
     end
 
     :ok
@@ -147,13 +149,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
     table_last_updated_at = table_last_updated_at || DateTime.utc_now()
     last_updated_at = insert_last_updated(table, table_last_updated_at, organization_id)
 
-    if Timex.compare(last_updated_at, table_last_updated_at) > 0,
-      do:
-        queue_table_data(table, organization_id, %{
-          action: :update,
-          max_id: nil,
-          last_updated_at: last_updated_at
-        })
+    queue_table_data(table, organization_id, %{
+      action: :update,
+      max_id: nil,
+      last_updated_at: last_updated_at,
+      table_last_updated_at: table_last_updated_at
+    })
   end
 
   @spec add_organization_id(Ecto.Query.t(), String.t(), non_neg_integer) :: Ecto.Query.t()
@@ -236,7 +237,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
                 end),
               tags: Enum.map(row.tags, fn tag -> %{label: tag.label} end),
               raw_fields: BigQuery.format_json(row.fields),
-              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label)),
+              group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
             }
             |> BigQuery.format_data_for_bigquery("contacts")
             | acc
@@ -353,6 +354,39 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("messages_media", organization_id, attrs) do
+    Logger.info(
+      "fetching data for messages_media to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("messages_media", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          # We are sending nil, as setting is a record type and need to structure the data first(like field)
+          %{
+            id: row.id,
+            bq_uuid: Ecto.UUID.generate(),
+            caption: row.caption,
+            url: row.url,
+            source_url: row.source_url,
+            gcs_url: row.gcs_url,
+            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_milisecond(row.updated_at, organization_id)
+          }
+          |> BigQuery.format_data_for_bigquery("messages_media")
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data(stat, organization_id, attrs) when stat in ["stats", "stats_all"] do
     Logger.info(
       "fetching data for #{stat} to send on bigquery attrs: #{inspect(attrs)}, org_id: #{organization_id}"
@@ -434,15 +468,30 @@ defmodule Glific.BigQuery.BigQueryWorker do
         user_name: if(!is_nil(row.user), do: row.user.name),
         tags_label: Enum.map_join(row.tags, ", ", fn tag -> tag.label end),
         flow_label: row.flow_label,
-        media_url: if(!is_nil(row.media), do: row.media.url),
         flow_uuid: if(!is_nil(row.flow_object), do: row.flow_object.uuid),
         flow_name: if(!is_nil(row.flow_object), do: row.flow_object.name),
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
-        gcs_url: if(!is_nil(row.media), do: row.media.gcs_url),
+        errors: BigQuery.format_json(row.errors),
         flow_broadcast_id: row.flow_broadcast_id
       }
+      |> Map.merge(message_media_info(row.media))
       |> Map.merge(message_template_info(row))
+
+  @spec message_media_info(any()) :: map()
+  defp message_media_info(nil),
+    do: %{
+      media_id: nil,
+      media_url: nil,
+      gcs_url: nil
+    }
+
+  defp message_media_info(media),
+    do: %{
+      media_id: media.id,
+      media_url: media.url,
+      gcs_url: media.gcs_url
+    }
 
   ## have to right this function since the above one is too long and credo is giving a warning
 
@@ -512,14 +561,24 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp apply_action_clause(query, %{action: :insert, max_id: max_id, min_id: min_id} = _attrs),
     do: query |> where([m], m.id >= ^min_id and m.id <= ^max_id)
 
-  defp apply_action_clause(query, %{action: :update, last_updated_at: last_updated_at} = _attrs),
-    do:
-      query
-      |> where([tb], tb.updated_at >= ^last_updated_at)
-      |> where(
-        [tb],
-        fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
-      )
+  defp apply_action_clause(
+         query,
+         %{
+           action: :update,
+           last_updated_at: last_updated_at,
+           table_last_updated_at: table_last_updated_at
+         } = _attrs
+       ),
+       do:
+         query
+         |> where(
+           [tb],
+           tb.updated_at > ^table_last_updated_at and tb.updated_at <= ^last_updated_at
+         )
+         |> where(
+           [tb],
+           fragment("DATE_PART('seconds', age(?, ?))::integer", tb.updated_at, tb.inserted_at) > 0
+         )
 
   defp apply_action_clause(query, _attrs), do: query
 
@@ -574,6 +633,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:flow])
+
+  defp get_query("messages_media", organization_id, attrs),
+    do:
+      MessageMedia
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:organization])
 
   defp get_query("stats", organization_id, attrs),
     do:

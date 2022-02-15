@@ -71,22 +71,22 @@ defmodule Glific.Erase do
   @spec perform_weekly() :: any
   def perform_weekly do
     [
-      "vacuum (FULL, ANALYZE) webhook_logs",
-      "vacuum (FULL, ANALYZE) organizations",
-      "vacuum (FULL, ANALYZE) messages_tags",
-      "vacuum (FULL, ANALYZE) notifications",
-      "vacuum (FULL, ANALYZE) flow_counts",
-      "vacuum (FULL, ANALYZE) bigquery_jobs",
-      "vacuum (FULL, ANALYZE) global.oban_producers",
-      "reindex table global.oban_jobs",
-      "vacuum (FULL, ANALYZE) contacts_groups",
-      "vacuum (FULL, ANALYZE) flow_results",
-      "vacuum (FULL, ANALYZE) contacts",
-      "vacuum (ANALYZE) messages"
+      "VACUUM (FULL, ANALYZE) webhook_logs",
+      "VACUUM (FULL, ANALYZE) organizations",
+      "VACUUM (FULL, ANALYZE) messages_tags",
+      "VACUUM (FULL, ANALYZE) notifications",
+      "VACUUM (FULL, ANALYZE) flow_counts",
+      "VACUUM (FULL, ANALYZE) bigquery_jobs",
+      "VACUUM (FULL, ANALYZE) global.oban_producers",
+      "REINDEX TABLE global.oban_jobs",
+      "VACUUM (FULL, ANALYZE) contacts_groups",
+      "VACUUM (FULL, ANALYZE) flow_results",
+      "VACUUM (FULL, ANALYZE) contacts",
+      "VACUUM (ANALYZE) messages"
     ]
     |> Enum.each(
       # need such a large timeout specifically to vacuum the messages
-      &Repo.query!(&1, timeout: 300_000, skip_organization_id: true)
+      &Repo.query!(&1, [], timeout: 300_000, skip_organization_id: true)
     )
   end
 end
