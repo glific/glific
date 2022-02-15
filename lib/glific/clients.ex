@@ -27,8 +27,8 @@ defmodule Glific.Clients do
   @sol %{
     id: 1,
     name: "Slam Out Loud",
-    gcs_file_name: Glific.Clients.Sol
-    webhook: Glific.Clients.Sol,
+    gcs_file_name: Glific.Clients.Sol,
+    webhook: Glific.Clients.Sol
   }
 
   @avanti %{
