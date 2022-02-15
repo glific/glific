@@ -47,9 +47,9 @@ defmodule Glific.Clients.Sol do
     activity = get_activity_by_date(organization_id, activity_date, city)
     activity_data = get_activity_content(activity, language_label, organization_id)
 
-    if activity_data[:content] not in [nil, ""],
-      do: Map.put(activity_data, :error, false),
-      else: %{error: "Something went worng."}
+    if activity_data[:content] in [nil, ""],
+      do: %{error: "Something went worng."},
+      else: Map.put(activity_data, :error, false)
   end
 
   def webhook("load_schedule", fields) do
