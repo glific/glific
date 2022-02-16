@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.ArogyaWorld,
+    webhook: Glific.Clients.Sol,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -27,7 +27,8 @@ defmodule Glific.Clients do
   @sol %{
     id: 1,
     name: "Slam Out Loud",
-    gcs_file_name: Glific.Clients.Sol
+    gcs_file_name: Glific.Clients.Sol,
+    webhook: Glific.Clients.Sol
   }
 
   @avanti %{
