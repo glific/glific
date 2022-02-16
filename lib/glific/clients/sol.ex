@@ -54,8 +54,8 @@ defmodule Glific.Clients.Sol do
         %{
           city: city,
           activity_date: activity_date,
-          artform_lable: "atrform_#{activity_data[:artform]}",
-          activity_name_label: "activity_name_#{activity_data[:name]}"
+          artform_lable: "artform_start_#{activity_data[:artform]}_artform_ended",
+          activity_name_label: "activity_name_start_#{activity_data[:name]}_activity_name_ended"
         }
       )
 

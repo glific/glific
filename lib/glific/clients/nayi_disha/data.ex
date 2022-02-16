@@ -78,7 +78,7 @@ defmodule Glific.Clients.NayiDisha.Data do
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "अगर आप या परिवार का कोई सदस्य कोविद-१९ से संक्रमित होता है तो इन चीजों को ध्यान में रखें :-*~* ऐसे आपात परिस्थितियों के लिए २ या अधिक व्यक्तियों को विकलांग व्यक्ति की देखभाल के लिए पहले से नियुक्त करके रखे । *~* यदि आपको देखभाल कर्ता के तौर पर अकेले (सेल्फ क्वॉरेंटाइन) रहने की आवश्यकता हो तो उसकी योजना भी पहले से ही बना ले। *~* यह सुनिश्चित करें कि घर में एक या दो व्यक्तियों का विकलांग व्यक्ति के साथ मेलजोल बना रहे।यदि यह संभव नहीं है तो बच्चे को अच्छी तरह से जानने वाले उसके टीचर या थेरेपिस्ट से संपर्क बनाए रखें। *~* आपको भेजे गए 'देखभाल करने वाले मार्गदर्शन जांच सूची' में अपने बच्चे से सम्बंधित जानकारी भरे और याद से नियुक्त देखभाल कर्ता को सौपें। विस्तृत निर्देश देने के लिए उनको 'चार्ट' के हर पहलू समझाएं । *हमारे सभी संसाधन उपयोग करने के लिए फ्री हैं। साइन-इन करें ताकि हम आपको बेहतर सेवा देने के लिए संसाधन उपयोग को ट्रैक कर सकें!*"
+            "अगर आप या परिवार का कोई सदस्य कोविद-१९ से संक्रमित होता है तो इन चीजों को ध्यान में रखें :-*॰* ऐसे आपात परिस्थितियों के लिए २ या अधिक व्यक्तियों को विकलांग व्यक्ति की देखभाल के लिए पहले से नियुक्त करके रखे । *॰* यदि आपको देखभाल कर्ता के तौर पर अकेले (सेल्फ क्वॉरेंटाइन) रहने की आवश्यकता हो तो उसकी योजना भी पहले से ही बना ले। *॰* यह सुनिश्चित करें कि घर में एक या दो व्यक्तियों का विकलांग व्यक्ति के साथ मेलजोल बना रहे।यदि यह संभव नहीं है तो बच्चे को अच्छी तरह से जानने वाले उसके टीचर या थेरेपिस्ट से संपर्क बनाए रखें। *॰* आपको भेजे गए 'देखभाल करने वाले मार्गदर्शन जांच सूची' में अपने बच्चे से सम्बंधित जानकारी भरे और याद से नियुक्त देखभाल कर्ता को सौपें। विस्तृत निर्देश देने के लिए उनको 'चार्ट' के हर पहलू समझाएं । *हमारे सभी संसाधन उपयोग करने के लिए फ्री हैं। साइन-इन करें ताकि हम आपको बेहतर सेवा देने के लिए संसाधन उपयोग को ट्रैक कर सकें!*"
           ]
         },
         "en" => %{
@@ -211,43 +211,49 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     11 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about UDID"],
+      variables: ["UDID is an important document and helps in securing your child’s future"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["यूयूआईडी के बारे में "]
+          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about UDID"]
+          variables: ["UDID is an important document and helps in securing your child’s future"]
         }
       }
     },
     12 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about more information related to UDID"],
+      variables: ["UDID is an important document and helps in securing your child’s future"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["यूआईडी से संबंधित अधिक जानकारी के बारे में है"]
+          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about more information related to UDID"]
+          variables: ["UDID is an important document and helps in securing your child’s future"]
         }
       }
     },
     13 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about self-care"],
+      variables: [
+        "Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["खुद की देखभाल के बारे में है"]
+          variables: [
+            "देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपने प्रति दयालु बनें, कुछ समय निकालें और अपने आस-पास दिखाई देने वाली चीज़ों की सराहना करें"
+          ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about self-care"]
+          variables: [
+            "Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"
+          ]
         }
       }
     },
@@ -294,19 +300,19 @@ defmodule Glific.Clients.NayiDisha.Data do
     16 => %{
       hsm_uuid: @parent_hsm_uuid_advise_eng,
       variables: [
-        "*Legal Guardianship* Who is a Legal Guardian? Legal Guardianship is the legal process of appointing a legal guardian to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests. Who are the key players in a legal guardianship process? *~* 👨‍👩‍👧 Biological Parents of the PwD *~* 👱👶Person with Disability (PwD) *~* 👨‍👩‍👧‍👦Family Members- Blood-related family members may be designated guardians in lieu of the inability or absence of biological parents to become Guardians themselves. *~* Registered Organisation-In absence of relatives, LLC may direct a Registered Organization(RO) to become the guardian instead. *~* Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district For more information please click on this link 👉  https://nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child/"
+        "*Legal Guardianship* Who is a Legal Guardian? Legal Guardianship is the legal process of appointing a legal guardian to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests. Who are the key players in a legal guardianship process? *॰* 👨‍👩‍👧 Biological Parents of the PwD *॰* 👱👶Person with Disability (PwD) *॰* 👨‍👩‍👧‍👦Family Members- Blood-related family members may be designated guardians in lieu of the inability or absence of biological parents to become Guardians themselves. *॰* Registered Organisation-In absence of relatives, LLC may direct a Registered Organization(RO) to become the guardian instead. *॰* Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district For more information please click on this link 👉  https://nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child/"
       ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_advise_hn,
           variables: [
-            "*१)* लीगल गार्डियन कौन होता है? *१)* गार्डियनशिप एक कानूनी प्रक्रिया होती है जिससे आप अपने बच्चे के देख रेख के लिए एक व्यक्ति (लीगल गार्डियन) को नियुक्त कर सकते है। बच्चे के व्यक्तिगत मामलो के साथ साथ गार्डियन को बच्चे के हित के लिए उनके तरफ से कानूनी कर्त्तव्य भी निभाने पढ़ते है। *२)* लीगल गार्डियनशिप की प्रक्रिया में कौन कौन शामिल होता है? *२)* *~* 👨‍👩‍👧 बच्चे के जैविक माता पिता *~* 👱👶विकलांग बच्चा *~* 👨‍👩‍👧‍👦परिवार जन- रक्त सम्बन्धी परिवार जन जो जैविक माता पिता के अनुपस्थिति में नामित गार्डियन बन सके *~* पंजीकृत संगठन- रक्त सम्बन्धियों के अनुपस्थिति में एल.एल.सी एक पंजीकृत संगठन को गार्डियन की भूमिका निभाने को कह सकता है। *~* लोकल लेवल कमीटी (एल.एल.सी)- यह जिला के स्तर की समिति होती है जो लीगल गार्डियन को मंज़ूरी, नियुक्ति और निगरानी रखती है। समिति में एक डिस्ट्रिक्ट मजिस्ट्रेट (डी.एम्.), डिप्टी कमिश्नर या उस पद का कोई और अधिकारी ज़रूर होना चाहिए। अधिक् जानकारी के लिए यह लिंक दबाएं - https://nayi-disha.org/hi/article/how-do-you-apply-legal-guardianship-special-child/"
+            "*१)* लीगल गार्डियन कौन होता है? *१)* गार्डियनशिप एक कानूनी प्रक्रिया होती है जिससे आप अपने बच्चे के देख रेख के लिए एक व्यक्ति (लीगल गार्डियन) को नियुक्त कर सकते है। बच्चे के व्यक्तिगत मामलो के साथ साथ गार्डियन को बच्चे के हित के लिए उनके तरफ से कानूनी कर्त्तव्य भी निभाने पढ़ते है। *२)* लीगल गार्डियनशिप की प्रक्रिया में कौन कौन शामिल होता है? *२)* *॰* 👨‍👩‍👧 बच्चे के जैविक माता पिता *॰* 👱👶विकलांग बच्चा *॰* 👨‍👩‍👧‍👦परिवार जन- रक्त सम्बन्धी परिवार जन जो जैविक माता पिता के अनुपस्थिति में नामित गार्डियन बन सके *॰* पंजीकृत संगठन- रक्त सम्बन्धियों के अनुपस्थिति में एल.एल.सी एक पंजीकृत संगठन को गार्डियन की भूमिका निभाने को कह सकता है। *॰* लोकल लेवल कमीटी (एल.एल.सी)- यह जिला के स्तर की समिति होती है जो लीगल गार्डियन को मंज़ूरी, नियुक्ति और निगरानी रखती है। समिति में एक डिस्ट्रिक्ट मजिस्ट्रेट (डी.एम्.), डिप्टी कमिश्नर या उस पद का कोई और अधिकारी ज़रूर होना चाहिए। अधिक् जानकारी के लिए यह लिंक दबाएं - https://nayi-disha.org/hi/article/how-do-you-apply-legal-guardianship-special-child/"
           ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_advise_eng,
           variables: [
-            "*Legal Guardianship* Who is a Legal Guardian? Legal Guardianship is the legal process of appointing a legal guardian to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests. Who are the key players in a legal guardianship process? *~* 👨‍👩‍👧 Biological Parents of the PwD *~* 👱👶Person with Disability (PwD) *~* 👨‍👩‍👧‍👦Family Members- Blood-related family members may be designated guardians in lieu of the inability or absence of biological parents to become Guardians themselves. *~* Registered Organisation-In absence of relatives, LLC may direct a Registered Organization(RO) to become the guardian instead. *~* Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district For more information please click on this link 👉  https://nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child/"
+            "*Legal Guardianship* Who is a Legal Guardian? Legal Guardianship is the legal process of appointing a legal guardian to the PwD, who has the authority to make decisions on all personal matters (in some cases financial too) on behalf of the PwD, to suit his/her best interests. Who are the key players in a legal guardianship process? *॰* 👨‍👩‍👧 Biological Parents of the PwD *॰* 👱👶Person with Disability (PwD) *॰* 👨‍👩‍👧‍👦Family Members- Blood-related family members may be designated guardians in lieu of the inability or absence of biological parents to become Guardians themselves. *॰* Registered Organisation-In absence of relatives, LLC may direct a Registered Organization(RO) to become the guardian instead. *॰* Local Level Committee (LLC)-A district level committee who approves, appoints and monitors the legal guardian of a PwD. The committee must have an officer of the rank of District Magistrate or Deputy Commissioner of the district For more information please click on this link 👉  https://nayi-disha.org/article/how-do-you-apply-legal-guardianship-special-child/"
           ]
         }
       }
@@ -333,15 +339,15 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     18 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about legal guardianship"],
+      variables: ["Understanding Legal Guardianship Procedure"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कानूनी संरक्षकता के बारे में है"]
+          variables: ["कानूनी संरक्षकता प्रक्रिया को समझना"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about legal guardianship"]
+          variables: ["Understanding Legal Guardianship Procedure"]
         }
       }
     },
@@ -447,29 +453,33 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     24 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about understanding the role of individuals in your legal documents"],
+      variables: ["Understanding Legal Terms & Documents"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["आपके कानूनी दस्तावेजों में व्यक्तियों की भूमिका को समझने के बारे में है"]
+          variables: ["कानूनी शर्तों और दस्तावेजों को समझना"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about understanding the role of individuals in your legal documents"]
+          variables: ["Understanding Legal Terms & Documents"]
         }
       }
     },
     25 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about understanding distribution of financial affairs for child's care"],
+      variables: [
+        "Understanding Distribution of Personal and Financial Affairs for your child's care"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["बच्चे की देखभाल के लिए वित्तीय मामलों के वितरण को समझने के बारे में है"]
+          variables: ["अपने बच्चे की देखभाल के लिए व्यक्तिगत और वित्तीय मामलों के वितरण को समझना"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about understanding distribution of financial affairs for child's care"]
+          variables: [
+            "Understanding Distribution of Personal and Financial Affairs for your child's care"
+          ]
         }
       }
     },
@@ -555,15 +565,19 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     30 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about keep trying something new"],
+      variables: [
+        "Caregiving is a challenging role. Look after yourself, try something new every week"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कुछ नया करने की कोशिश करते रहने के बारे में है"]
+          variables: ["देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपना ख्याल रखें, हर हफ्ते कुछ नया करने की कोशिश करें"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about keep trying something new"]
+          variables: [
+            "Caregiving is a challenging role. Look after yourself, try something new every week"
+          ]
         }
       }
     },

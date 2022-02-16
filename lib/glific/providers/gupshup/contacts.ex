@@ -8,11 +8,11 @@ defmodule Glific.Providers.GupshupContacts do
   import GlificWeb.Gettext
 
   alias Glific.{
-    BSPContacts,
     Contacts,
     Contacts.Contact,
     Partners,
     Partners.Organization,
+    Providers,
     Providers.Gupshup.ApiClient
   }
 
@@ -30,18 +30,7 @@ defmodule Glific.Providers.GupshupContacts do
     ApiClient.optin_contact(organization_id, %{user: attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-        %{
-          name: attrs[:name],
-          phone: attrs.phone,
-          organization_id: organization_id,
-          optin_time: Map.get(attrs, :optin_time, DateTime.utc_now()),
-          optin_status: true,
-          optin_method: Map.get(attrs, :method, "BSP"),
-          language_id:
-            Map.get(attrs, :language_id, Partners.organization_language_id(organization_id)),
-          bsp_status: :hsm
-        }
-        |> BSPContacts.Contact.create_or_update_contact()
+        Providers.Contacts.create_or_update_contact(attrs, organization_id)
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
