@@ -738,6 +738,8 @@ defmodule Glific.Flows do
         with {:ok, flow} <-
                create_flow(%{
                  name: flow_revision["definition"]["name"],
+                 # we are reusing existing UUIDs against the spirit of UUIDs
+                 # however this allows us to support subflows
                  uuid: flow_revision["definition"]["uuid"],
                  keywords: flow_revision["keywords"],
                  organization_id: organization_id
