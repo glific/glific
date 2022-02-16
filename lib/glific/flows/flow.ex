@@ -112,7 +112,7 @@ defmodule Glific.Flows.Flow do
       |> unique_constraint([:name, :organization_id],
         message: "Sorry, the flow name already exists."
       )
-      |> unique_constraint(:uuid)
+      |> unique_constraint([:uuid, :organization_id])
       |> update_change(:keywords, &update_keywords(&1))
 
     validate_keywords(changeset, get_change(changeset, :keywords))

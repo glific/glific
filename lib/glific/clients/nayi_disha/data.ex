@@ -215,11 +215,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["यूयूआईडी के बारे में "],
+          variables: ["यूयूआईडी के बारे में "]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about UDID"],
+          variables: ["is about UDID"]
         }
       }
     },
@@ -229,11 +229,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["यूआईडी से संबंधित अधिक जानकारी के बारे में है"],
+          variables: ["यूआईडी से संबंधित अधिक जानकारी के बारे में है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about more information related to UDID"],
+          variables: ["is about more information related to UDID"]
         }
       }
     },
@@ -243,11 +243,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["खुद की देखभाल के बारे में है"],
+          variables: ["खुद की देखभाल के बारे में है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about self-care"],
+          variables: ["is about self-care"]
         }
       }
     },
@@ -337,11 +337,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कानूनी संरक्षकता के बारे में है"],
+          variables: ["कानूनी संरक्षकता के बारे में है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about legal guardianship"],
+          variables: ["is about legal guardianship"]
         }
       }
     },
@@ -451,11 +451,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["आपके कानूनी दस्तावेजों में व्यक्तियों की भूमिका को समझने के बारे में है"],
+          variables: ["आपके कानूनी दस्तावेजों में व्यक्तियों की भूमिका को समझने के बारे में है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about understanding the role of individuals in your legal documents"],
+          variables: ["is about understanding the role of individuals in your legal documents"]
         }
       }
     },
@@ -465,11 +465,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["बच्चे की देखभाल के लिए वित्तीय मामलों के वितरण को समझने के बारे में है"],
+          variables: ["बच्चे की देखभाल के लिए वित्तीय मामलों के वितरण को समझने के बारे में है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about understanding distribution of financial affairs for child's care"],
+          variables: ["is about understanding distribution of financial affairs for child's care"]
         }
       }
     },
@@ -559,11 +559,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कुछ नया करने की कोशिश करते रहने के बारे में है"],
+          variables: ["कुछ नया करने की कोशिश करते रहने के बारे में है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about keep trying something new"],
+          variables: ["is about keep trying something new"]
         }
       }
     },
