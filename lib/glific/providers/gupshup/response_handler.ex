@@ -1,4 +1,4 @@
-defmodule Glific.Providers.ResponseHandler do
+defmodule Glific.Providers.Gupshup.ResponseHandler do
   @moduledoc """
   Module for handling response from Provider end
   or Handle response for simulators
@@ -25,19 +25,5 @@ defmodule Glific.Providers.ResponseHandler do
       _ ->
         Communications.Message.handle_error_response(response, message)
     end
-  end
-
-  @spec handle_fake_response(Message.t(), String.t(), non_neg_integer) ::
-          :ok | {:error, String.t()}
-  def handle_fake_response(message, body, status) do
-    {:ok,
-     %Tesla.Env{
-       __client__: %Tesla.Client{adapter: nil, fun: nil, post: [], pre: []},
-       __module__: Glific.Providers.Gupshup.ApiClient,
-       body: body,
-       method: :post,
-       status: status
-     }}
-    |> handle_response(message)
   end
 end

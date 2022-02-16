@@ -10,11 +10,11 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
 
   alias Glific.{
     Contacts,
-    Messages.Message,
     Partners,
     Partners.Organization,
     Providers.Gupshup.Enterprise.ApiClient,
-    Providers.ResponseHandler
+    Providers.Gupshup.Enterprise.ResponseHandler,
+    Providers.Worker
   }
 
   @doc """
@@ -26,11 +26,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
     organization = Partners.organization(message["organization_id"])
 
     if is_nil(organization.services["bsp"]) do
-      ResponseHandler.handle_fake_response(
-        message,
-        "{\"message\": \"BSP credentials does not exist\"}",
-        401
-      )
+      Worker.handle_credential_error(message)
     else
       perform(job, organization)
     end
@@ -42,8 +38,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
          %Oban.Job{args: %{"message" => message, "payload" => payload, "attrs" => attrs}},
          organization
        ) do
-    # ensure that we are under the rate limit, all rate limits are in requests/minutes
-    # Refactoring because of credo warning
     case ExRated.check_rate(
            organization.shortcode,
            # the bsp limit is per organization per shortcode
@@ -52,30 +46,14 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
          ) do
       {:ok, _} ->
         if Contacts.is_simulator_contact?(payload["send_to"]) do
-          process_simulator(payload["send_to"], message)
+          Worker.process_simulator(message)
         else
           process_gupshup(organization.id, payload, message, attrs)
         end
 
       _ ->
-        # lets sleep real briefly, so that we are not firing off many
-        # jobs to the BSP after exceeding the rate limit for this second
-        # so we are artifically slowing down the send rate
-        Process.sleep(50)
-        # we also want this job scheduled as soon as possible
-        {:snooze, 1}
+        Worker.default_send_rate_handler()
     end
-  end
-
-  @spec process_simulator(String.t(), Message.t()) :: :ok | {:error, String.t()}
-  defp process_simulator(_destination, message) do
-    message_id = Faker.String.base64(36)
-
-    ResponseHandler.handle_fake_response(
-      message,
-      "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
-      200
-    )
   end
 
   defp process_gupshup(org_id, payload, message, _attrs) do
