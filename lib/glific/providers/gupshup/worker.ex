@@ -14,7 +14,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
-    Providers.ResponseHandler,
+    Providers.Gupshup.ResponseHandler,
     Providers.Worker
   }
 

@@ -13,7 +13,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
     Partners,
     Partners.Organization,
     Providers.Gupshup.Enterprise.ApiClient,
-    Providers.ResponseHandler,
+    Providers.Gupshup.Enterprise.ResponseHandler,
     Providers.Worker
   }
 
