@@ -42,13 +42,25 @@ defmodule Glific.Clients.Sol do
   def webhook("fetch_activity", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     language_label = fields["language_label"]
-    activity_date = fields["activity_date"]
     city = fields["city"]
+    ## y-m-d
+    activity_date = Timex.today() |> Timex.format!("{YYYY}-{0M}-{D}")
     activity = get_activity_by_date(organization_id, activity_date, city)
     activity_data = get_activity_content(activity, language_label, organization_id)
 
+    activity_data =
+      Map.merge(
+        activity_data,
+        %{
+          city: city,
+          activity_date: activity_date,
+          artform_lable: "atrform_#{activity_data[:artform]}",
+          activity_name_label: "activity_name_#{activity_data[:name]}"
+        }
+      )
+
     if activity_data[:content] in [nil, ""],
-      do: %{error: "Something went worng."},
+      do: Map.put(activity_data, :error, "Something went worng."),
       else: Map.put(activity_data, :error, false)
   end
 
@@ -73,7 +85,7 @@ defmodule Glific.Clients.Sol do
 
   @spec load_activity_schedule(non_neg_integer()) ::
           {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
-  defp load_activity_schedule(org_id) do
+  def load_activity_schedule(org_id) do
     {key, url} = form_key_and_url("activity_schedule")
 
     ApiClient.get_csv_content(url: url)
@@ -146,7 +158,9 @@ defmodule Glific.Clients.Sol do
       artform: activity_content["Type of Activity"],
       content: activity_content["Content of the Activty"],
       poster_attachment: activity_content["Poster GCS Link"],
-      audio_attachment: activity_content["Audio Recording GCS Link"]
+      audio_attachment: activity_content["Audio Recording GCS Link"],
+      activity_meta: activity,
+      activity_slug: activity["activity_slug"]
     }
   end
 end
