@@ -333,15 +333,15 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     18 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["is about legal guardianship"],
+      variables: ["Understanding Legal Guardianship Procedure"],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कानूनी संरक्षकता के बारे में है"],
+          variables: ["कानूनी संरक्षकता प्रक्रिया को समझना"],
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["is about legal guardianship"],
+          variables: ["Understanding Legal Guardianship Procedure"],
         }
       }
     },
