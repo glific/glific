@@ -23,6 +23,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   """
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def text(conn, params) do
+    IO.inspect(params)
     %{
       "payload" => %{
         "id" => params["replyId"],
