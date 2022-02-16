@@ -103,6 +103,74 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> then(&create_oban_job(message, &1, attrs))
   end
 
+  @spec receive_text(payload :: map()) :: map()
+  def receive_text(params) do
+    # lets ensure that we have a phone number
+    # sometime the gupshup payload has a blank payload
+    # or maybe a simulator or some test code
+    if is_nil(params["mobile"]) ||
+         String.trim(params["mobile"]) == "" do
+      error = "Phone number is blank, #{inspect(params)}"
+      Logger.error(error)
+
+      stacktrace =
+        self()
+        |> Process.info(:current_stacktrace)
+        |> elem(1)
+
+      Appsignal.send_error(:error, error, stacktrace)
+      raise(RuntimeError, message: error)
+    end
+
+    %{
+      bsp_message_id: params["replyId"],
+      context_id: params["messageId"],
+      body: params["text"],
+      sender: %{
+        phone: params["mobile"],
+        name: params["name"]
+      }
+    }
+  end
+
+  @spec receive_media(map()) :: map()
+  def receive_media(params) do
+    message_payload = get_message_payload(params["type"], params)
+
+    %{
+      bsp_message_id: params["replyId"],
+      context_id: params["messageId"],
+      caption: message_payload["caption"],
+      url: message_payload["url"] <> message_payload["signature"],
+      source_url: message_payload["url"] <> message_payload["signature"],
+      sender: %{
+        phone: params["mobile"],
+        name: params["name"]
+      }
+    }
+  end
+
+  defp get_message_payload("image", params), do: Jason.decode!(params["image"])
+  defp get_message_payload("video", params), do: Jason.decode!(params["video"])
+  defp get_message_payload("audio", params), do: Jason.decode!(params["audio"])
+  defp get_message_payload("document", params), do: Jason.decode!(params["document"])
+
+  @spec receive_location(map()) :: map()
+  def receive_location(params) do
+    location = Jason.decode!(params["location"])
+
+    %{
+      bsp_message_id: params["replyId"],
+      context_id: params["messageId"],
+      longitude: location["longitude"],
+      latitude: location["latitude"],
+      sender: %{
+        phone: params["mobile"],
+        name: params["name"]
+      }
+    }
+  end
+
   @doc false
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do
