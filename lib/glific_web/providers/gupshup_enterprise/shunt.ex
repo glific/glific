@@ -27,6 +27,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def call(%Conn{params: %{"type" => payload_type}} = conn, opts) do
     organization = build_context(conn)
+
     path =
       ["gupshup"] ++
         if Glific.safe_string_to_atom(organization.status) == :active,
