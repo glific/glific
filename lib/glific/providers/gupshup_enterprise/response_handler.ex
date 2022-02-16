@@ -57,7 +57,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
     |> then(&Map.put(response, :body, Jason.encode!(&1)))
   end
 
-  @spec add_success_payload(Tesla.Env.t()) :: String.t()
+  @spec check_message_status(Tesla.Env.t()) :: String.t()
   defp check_message_status(%{body: body} = _response) do
     %{"response" => response} = Jason.decode!(body)
     response["status"]
