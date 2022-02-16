@@ -19,18 +19,25 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
           |> add_error_payload
           |> Communications.Message.handle_error_response(message)
         else
-          Communications.Message.handle_success_response(response, message)
+          response
+          |> add_success_payload
+          |> Communications.Message.handle_success_response(message)
         end
 
         :ok
 
       # Not authorized, Job succeeded, we should return an ok, so we dont retry
       %Tesla.Env{status: status} when status in 400..499 ->
-        Communications.Message.handle_error_response(response, message)
+        response
+        |> add_error_payload
+        |> Communications.Message.handle_error_response(message)
+
         :ok
 
       _ ->
-        Communications.Message.handle_error_response(response, message)
+        response
+        |> add_error_payload
+        |> Communications.Message.handle_error_response(message)
     end
   end
 
@@ -39,6 +46,13 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
 
     %{"payload" => %{"payload" => %{"reason" => error["details"]}}}
     |> then(&Map.put(response, :body, &1))
+  end
+
+  defp add_success_payload(response) do
+    %{"response" => success_response} = Jason.decode!(response.body)
+
+    %{"messageId" => success_response["id"]}
+    |> then(&Map.put(response, :body, Jason.encode!(&1)))
   end
 
   defp check_message_status(%{body: body} = _response) do
