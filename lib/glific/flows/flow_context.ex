@@ -310,8 +310,25 @@ defmodule Glific.Flows.FlowContext do
 
     # since we are storing in DB and want to avoid hassle of atom <-> string conversion
     # we'll always use strings as keys
+
+    ## we will remove the message and date key when we
+    ## have some more clearity on the floweditor activty payload.
+    ## For now keeping it here for backword compatibilty
+
     messages =
-      [%{"message" => body, "date" => now} | Map.get(context, type)]
+      [
+        %{
+          "contact" => %{
+            uuid: context.contact_id,
+            name: context.contact.name
+          },
+          "message" => body,
+          "operand" => body,
+          "date" => now,
+          "time" => now
+        }
+        | Map.get(context, type)
+      ]
       |> Enum.slice(0..@max_message_len)
 
     # since we have recd a message, we also ensure that we are not going to be woken
