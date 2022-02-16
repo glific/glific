@@ -613,10 +613,10 @@ defmodule Glific.Partners do
   list == [] (empty list) - the action should be performed for all organizations
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: :ok
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: any
   def perform_all(handler, handler_args, list, only_recent \\ false)
 
-  def perform_all(_handler, _handler_args, nil, _only_recent), do: :ok
+  def perform_all(_handler, _handler_args, nil, _only_recent), do: nil
 
   def perform_all(handler, handler_args, list, only_recent) do
     # We need to do this for all the active organizations
@@ -638,10 +638,10 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      Logger.error("Error occured while executing handler for organizations.
-         Error: #{err}, handler: #{handler}, handler_args: #{handler_args}")
-
-      :ok
+      Logger.error(
+        "Error occured while executing handler for organizations.
+         Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      )
   end
 
   @active_minutes 60
