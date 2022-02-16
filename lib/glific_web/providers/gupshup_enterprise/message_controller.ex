@@ -23,21 +23,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   """
   @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def text(conn, params) do
-    IO.inspect(params)
-    %{
-      "payload" => %{
-        "id" => params["replyId"],
-        "payload" => %{"text" => params["text"]},
-        "sender" => %{
-          "phone" => params["mobile"]
-        },
-        "source" => params["waNumber"],
-        "type" => params["type"]
-      },
-      "timestamp" => params["timestamp"],
-      "type" => "message"
-    }
-    |> Gupshup.Message.receive_text()
+    params
+    |> Gupshup.Enterprise.Message.receive_text()
     |> Map.put(:organization_id, conn.assigns[:organization_id])
     |> Communications.Message.receive_message()
 

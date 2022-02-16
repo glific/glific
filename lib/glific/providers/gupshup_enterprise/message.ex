@@ -103,16 +103,29 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> then(&create_oban_job(message, &1, attrs))
   end
 
-  @spec receive_media(map()) :: map()
-  def receive_media(params) do
-    message_payload = get_message_payload(params["type"], params)
+  @spec receive_text(payload :: map()) :: map()
+  def receive_text(params) do
+    # lets ensure that we have a phone number
+    # sometime the gupshup payload has a blank payload
+    # or maybe a simulator or some test code
+    if is_nil(params["mobile"]) ||
+         String.trim(params["mobile"]) == "" do
+      error = "Phone number is blank, #{inspect(params)}"
+      Logger.error(error)
+
+      stacktrace =
+        self()
+        |> Process.info(:current_stacktrace)
+        |> elem(1)
+
+      Appsignal.send_error(:error, error, stacktrace)
+      raise(RuntimeError, message: error)
+    end
 
     %{
       bsp_message_id: params["replyId"],
-      context_id: context_id(message_payload),
-      caption: message_payload["caption"],
-      url: message_payload["url"] <> message_payload["signature"],
-      source_url: message_payload["url"] <> message_payload["signature"],
+      context_id: params["messageId"],
+      body: params["text"],
       sender: %{
         phone: params["mobile"],
         name: params["name"]
@@ -120,15 +133,16 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     }
   end
 
-  @spec receive_location(map()) :: map()
-  def receive_location(params) do
-    location = Jason.decode!(params["location"])
+  @spec receive_media(map()) :: map()
+  def receive_media(params) do
+    message_payload = get_message_payload(params["type"], params)
 
     %{
       bsp_message_id: params["replyId"],
-      context_id: "",
-      longitude: location["longitude"],
-      latitude: location["latitude"],
+      context_id: params["messageId"],
+      caption: message_payload["caption"],
+      url: message_payload["url"] <> message_payload["signature"],
+      source_url: message_payload["url"] <> message_payload["signature"],
       sender: %{
         phone: params["mobile"],
         name: params["name"]
@@ -141,9 +155,21 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   defp get_message_payload("audio", params), do: Jason.decode!(params["audio"])
   defp get_message_payload("document", params), do: Jason.decode!(params["document"])
 
-  @spec context_id(map()) :: String.t() | nil
-  defp context_id(payload),
-    do: get_in(payload, ["context", "gsId"]) || get_in(payload, ["context", "id"])
+  @spec receive_location(map()) :: map()
+  def receive_location(params) do
+    location = Jason.decode!(params["location"])
+
+    %{
+      bsp_message_id: params["replyId"],
+      context_id: params["messageId"],
+      longitude: location["longitude"],
+      latitude: location["latitude"],
+      sender: %{
+        phone: params["mobile"],
+        name: params["name"]
+      }
+    }
+  end
 
   @doc false
   @spec to_minimal_map(map()) :: map()
