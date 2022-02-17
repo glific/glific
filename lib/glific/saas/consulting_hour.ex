@@ -109,6 +109,23 @@ defmodule Glific.Saas.ConsultingHour do
         skip_organization_id: true
       )
 
+  @beginning_of_day ~T[00:00:00.000]
+
+  @doc """
+  Return the count of consulting hours, using the same filter as list_consulting_hours
+  """
+  @spec fetch_consulting_hours(map()) :: [ConsultingHour.t()]
+  def fetch_consulting_hours(args) do
+    start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
+    end_time = DateTime.new!(args.filter.end_date, @beginning_of_day, "Etc/UTC")
+
+    ConsultingHour
+    |> where([m], m.organization_id >= ^args.filter.client_id)
+    |> where([m], m.when >= ^start_time)
+    |> where([m], m.when <= ^end_time)
+    |> Repo.all(skip_organization_id: true)
+  end
+
   @doc """
   Return the count of consulting hours, using the same filter as list_consulting_hours
   """

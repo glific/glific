@@ -46,6 +46,12 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
     field :is_billable, :boolean
   end
 
+  input_object :fetch_consulting_hours do
+    field :client_id, non_null(:id)
+    field :start_date, :date
+    field :end_date, :date
+  end
+
   @desc "Filtering options for consulting hours"
   input_object :consulting_hour_filter do
     @desc "Match the organization name"
@@ -82,6 +88,13 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
       arg(:filter, :consulting_hour_filter)
       middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.count_consulting_hours/3)
+    end
+
+    @desc "Fetches consulting hours between start_date and end_date"
+    field :fetch_consulting_hours, list_of(:consulting_hour) do
+      arg(:filter, :fetch_consulting_hours)
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.ConsultingHours.fetch_consulting_hours/3)
     end
   end
 

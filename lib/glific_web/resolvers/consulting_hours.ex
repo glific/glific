@@ -35,6 +35,15 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   end
 
   @doc """
+  GFetches consulting hours between start_date and end_date
+  """
+  @spec fetch_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, [ConsultingHour]}
+  def fetch_consulting_hours(_, args, _) do
+    {:ok, ConsultingHour.fetch_consulting_hours(args)}
+  end
+
+  @doc """
   Create consulting hour
   """
   @spec create_consulting_hour(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
