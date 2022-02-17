@@ -210,6 +210,81 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 | ---------------------------------------------------------- | ---------------------------------- |
 | <a href="#consulting_hour_result">ConsultingHourResult</a> | The created consulting hour object |
 
+
+## Fetch Consulting Hours
+
+```graphql
+mutation fetchConsultingHours($input: FetchConsultingHours!) {
+  fetchConsultingHours(input: $input) {
+    consultingHour {
+      duration
+      content
+      isBillable
+      insertedAt
+      organizationId
+      organizationName
+      participants
+      staff
+      updatedAt
+      when
+    }
+    errors {
+        message
+        key
+    }
+  }
+}
+
+{
+  "input": {
+    "clientId": 1,
+    "endDate": "2021-05-03",
+    "startDate": "2021-05-10"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "consultingHours": [
+      {
+        "content": "GCS issue",
+        "id": 2,
+        "duration": 10,
+        "insertedAt": "2021-05-04T11:18:20Z",
+        "isBillable": true,
+        "organizationName": "Glific",
+        "participants": "Adam",
+        "staff": "Adelle Cavin",
+        "updatedAt": "2021-05-04T11:18:20Z",
+        "when": "2021-03-08T08:22:51Z"
+      },
+      {
+        "content": "Bigquery issue",
+        "duration": 10,
+        "insertedAt": "2021-05-04T16:18:20Z",
+        "isBillable": true,
+        "organizationName": "Glific",
+        "participants": "Kevin",
+        "staff": "Adelle Cavin",
+        "updatedAt": "2021-05-04T11:18:20Z",
+        "when": "2021-03-08T08:22:51Z"
+      }
+    ]
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default  | Description |
+| --------- | -------------------------------------------------------- | -------- | ----------- |
+| input     | <a href="#fetch_consulting_hours">FetchConsultingHours</a> | required |             |
+
+
 ## Count all Consulting Hours
 
 ```graphql
