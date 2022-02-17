@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/consulting_hour/delete.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/consulting_hour/list.gql")
   load_gql(:count, GlificWeb.Schema, "assets/gql/consulting_hour/count.gql")
+  load_gql(:fetch, GlificWeb.Schema, "assets/gql/consulting_hour/fetch.gql")
 
   test "create a consulting hour entry", %{user: user} = attrs do
     result =
@@ -61,6 +62,37 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
       auth_query_gql_by(:count, user, variables: %{"filter" => %{"staff" => "Ken Cavin"}})
 
     assert get_in(query_data, [:data, "countConsultingHours"]) == 1
+  end
+
+  test "fetch consulting hours field returns list of consulting hours", %{user: user} = attrs do
+    _consulting_hour_1 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Jon Cavin",
+        participants: "John Doe"
+      })
+
+    _consulting_hour_2 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "Ken Cavin",
+        is_billable: false
+      })
+
+    result =
+      auth_query_gql_by(:fetch, user,
+        variables: %{
+          "filter" => %{
+            "client_id" => attrs.organization_id,
+            "end_date" => Date.utc_today() |> Date.to_string(),
+            "start_date" => Date.utc_today() |> Timex.shift(days: -11) |> Date.to_string()
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    consulting_hours = get_in(query_data, [:data, "fetchConsultingHours"])
+    assert length(consulting_hours) == 2
   end
 
   test "consulting hours field returns list of consulting hours", %{user: user} = attrs do
