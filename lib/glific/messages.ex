@@ -1152,37 +1152,44 @@ defmodule Glific.Messages do
     do: %{is_valid: false, message: "Please provide a media URL"}
 
   def validate_media(url, type) do
-    # We can cache this across all organizations
-    # We set a timeout of 60 minutes for this cache entry
-    case Caches.get_global({:validate_media, url, type}) do
-      {:ok, nil} ->
-        do_validate_media(url, type)
+    # ensure that this is approximately a url before we send to downstream functions
+    if Glific.URI.cast(url) == :ok do
+      # We can cache this across all organizations
+      # We set a timeout of 60 minutes for this cache entry
+      case Caches.get_global({:validate_media, url, type}) do
+        {:ok, nil} ->
+          do_validate_media(url, type)
 
-      {:ok, value} ->
-        value
+        {:ok, value} ->
+          value
+      end
+    else
+      %{is_valid: false, message: "This media URL is invalid"}
     end
   end
 
+  @size_limit %{
+    "image" => 5120,
+    "video" => 16_384,
+    "audio" => 16_384,
+    "document" => 102_400,
+    "sticker" => 100
+  }
+
   @spec do_validate_media(String.t(), String.t()) :: map()
   defp do_validate_media(url, type) do
-    size_limit = %{
-      "image" => 5120,
-      "video" => 16_384,
-      "audio" => 16_384,
-      "document" => 102_400,
-      "sticker" => 100
-    }
-
     # we first decode the string since we have no idea if it was encoded or not
     # if the string was not encoded, decode should not really matter
     # once decoded we encode the string
-    case Tesla.get(url |> URI.decode() |> URI.encode(), opts: [adapter: [recv_timeout: 10_000]]) do
+    url = url |> URI.decode() |> URI.encode()
+
+    case Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]]) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
         headers
         |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
         |> Map.put_new("content-type", "")
         |> Map.put_new("content-length", 0)
-        |> do_validate_media(type, url, size_limit[type])
+        |> do_validate_media(type, url, @size_limit[type])
 
       _ ->
         %{is_valid: false, message: "This media URL is invalid"}

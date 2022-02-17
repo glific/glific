@@ -39,7 +39,9 @@ defmodule Glific.Partners.Organization do
     :signature_phrase,
     :last_communication_at,
     :fields,
-    :newcontact_flow_id
+    :newcontact_flow_id,
+    :is_suspended,
+    :suspended_until
   ]
 
   @type t() :: %__MODULE__{
@@ -72,7 +74,9 @@ defmodule Glific.Partners.Organization do
           last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          fields: map() | nil
+          fields: map() | nil,
+          is_suspended: boolean() | false,
+          suspended_until: DateTime.t() | nil
         }
 
   schema "organizations" do
@@ -125,6 +129,10 @@ defmodule Glific.Partners.Organization do
     field :last_communication_at, :utc_datetime
 
     field :fields, :map, default: %{}
+
+    # lets add support for suspending orgs briefly
+    field :is_suspended, :boolean, default: false
+    field :suspended_until, :utc_datetime
 
     timestamps(type: :utc_datetime)
   end
