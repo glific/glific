@@ -2,20 +2,27 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
   @moduledoc """
   NewPartnerOnboardedMail will have the content for formatting for the new partner onboarded email.
   """
+  alias Glific.{
+    Communications.Mailer,
+    Partners.Organization,
+    Partners.Saas
+  }
 
-  import Swoosh.Email
-  alias Glific.Communications.Mailer
-  alias Glific.Partners.Saas
-
-  @spec new_mail(map()) :: Swoosh.Email.t()
+  @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
-    new()
-    |> from(Mailer.sender())
-    |> to({"", Saas.primary_email()})
-    |> cc(Mailer.glific_support())
-    |> subject("Congratulations! We onboarded new NGO.")
-    |> text_body(
-      "Hello Team\nA new organization is onboarded on Tides.\n\n Name: #{org.name}\n Email: #{org.email}"
-    )
+    subject = """
+    Glific: Congratulations! We onboarded a new NGO.
+    """
+
+    body = """
+    Hello Glific Team
+
+    A new organization is onboarded on Tides.
+
+    Name: #{org.name}
+    Email: #{org.email}
+    """
+
+    Mailer.common_send(org, subject, body, {"", Saas.primary_email()})
   end
 end
