@@ -505,7 +505,17 @@ defmodule Glific.Contacts do
         {:error, dgettext("errors", "Cannot send hsm message to contact, not opted in.")}
 
       true ->
-        {:ok, nil}
+        # ensure that the organization is not in suspended state
+        organization = Partners.organization(contact.organization_id)
+
+        if organization.is_suspended,
+          do:
+            {:error,
+             dgettext(
+               "errors",
+               "Cannot send hsm message to contact, organization is in suspended state"
+             )},
+          else: {:ok, nil}
     end
   end
 

@@ -1,7 +1,11 @@
 defmodule Glific.Communications.Mailer do
   use Swoosh.Mailer, otp_app: :glific
+  import Swoosh.Email
 
-  alias Glific.Mails.MailLog
+  alias Glific.{
+    Mails.MailLog,
+    Partners.Organization
+  }
 
   require Logger
 
@@ -42,6 +46,26 @@ defmodule Glific.Communications.Mailer do
   @spec glific_support() :: tuple()
   def glific_support do
     {"Glific support", "mohit@coloredcow.in"}
+  end
+
+  @doc """
+  All notification differ only in subject and content,
+  Lets write a common function and centralize notification
+  code
+  """
+  @spec common_send(Organization.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
+  def common_send(org, subject, body, send_to \\ nil) do
+    send_to =
+      if is_nil(send_to),
+        do: {org.name, org.email},
+        else: send_to
+
+    new()
+    |> to(send_to)
+    |> from(sender())
+    |> cc(glific_support())
+    |> subject(subject)
+    |> text_body(body)
   end
 
   defp capture_log(
