@@ -451,6 +451,8 @@ defmodule GlificWeb.Flows.FlowEditorController do
   """
   @spec validate_media(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def validate_media(conn, params) do
+    IO.inspect(params)
+    IO.inspect("params1")
     json(conn, Glific.Messages.validate_media(params["url"], params["type"]))
   end
 
@@ -483,10 +485,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @doc false
   @spec recents(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def recents(conn, params) do
-    ## we need to get the flow uuid from the params
-    flow_uuid = "f1d9f8f0-c8f9-4f7b-b8c6-b8f8f8f8f8f8"
-
-    [exit_uuid, destination_uuid] = params["vars"]
+    [exit_uuid, destination_uuid, flow_uuid] = params["vars"]
 
     {:ok, flow_count} =
       Repo.fetch_by(FlowCount, %{
@@ -500,26 +499,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
       Enum.reduce(flow_count.recent_messages, [], fn recent_message, acc ->
         [
           %{
-            contact: recent_message["contact"]
+            contact: recent_message["contact"],
             operand: recent_message["message"],
             time: recent_message["date"]
           }
           | acc
         ]
       end)
-
-    # results = [
-    #   %{
-    #     contact: %{uuid: "uuid_1", name: "Glific user 1"},
-    #     operand: "operand for uuid_1",
-    #     time: "2022-02-09T21:42:44.125057Z"
-    #   },
-    #   %{
-    #     contact: %{uuid: "uuid_2", name: "Glific user 2"},
-    #     operand: "operand for uuid_2",
-    #     time: "2022-02-09T21:42:44.125057Z"
-    #   }
-    # ]
 
     json(conn, results)
   end
