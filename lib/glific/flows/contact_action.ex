@@ -358,6 +358,8 @@ defmodule Glific.Flows.ContactAction do
 
     {_cid, message_vars} = resolve_cid(context, cid)
 
+    %{is_valid: true, message: _message} = Messages.validate_media(url, type)
+
     {:ok, message_media} =
       %{
         type: type,
