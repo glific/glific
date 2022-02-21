@@ -224,17 +224,8 @@ defmodule Glific.Flows.MessageVarParserTest do
       "type" => "akr issues tracker",
       "updateOrWrite" => "write",
       "fields" => %{
-        "timestamp" => "@contact.fields.current_time",
-        "name" => "@contact.fields.preferred_name",
         "sender" => "@contact.phone",
         "category" => "@results.ar_issue_category.category",
-        "issue_subcategory_entitlements" => "@contact.fields.issue_subcategory",
-        "issue_subcategory_civic" => "@contact.fields.issue_subcategory",
-        "issue_subcategory_others" => "@contact.fields.issue_subcategory",
-        "latitude" => "@contact.fields.lat",
-        "longitude" => "@contact.fields.lng",
-        "address" => "@contact.fields.formatted_address",
-        "pincode" => "@contact.fields.postal_code",
         "photo" => "@results.ar_issue_media",
         "othersnumber" => "@results.ar_ir_otherphone",
         "status" => "@results.ar_issues_exitmenu"
