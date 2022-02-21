@@ -238,9 +238,14 @@ defmodule Glific.Flows.ContactActionTest do
       variables: ["var_1", "var_2", "var_3"]
     }
 
+    url = "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+    type = "image"
+
     attachments = %{
-      "image" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+      type => url
     }
+
+    Glific.Fixtures.mock_validate_media(type)
 
     action = %Action{templating: templating, attachments: attachments}
 
