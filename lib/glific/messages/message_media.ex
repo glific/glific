@@ -8,11 +8,10 @@ defmodule Glific.Messages.MessageMedia do
   alias __MODULE__
 
   alias Glific.{
+    Enums.MediaType,
     Messages,
     Partners.Organization
   }
-
-  alias Glific.Enums.{MediaType}
 
   # define all the required fields for message media
   @required_fields [
