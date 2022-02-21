@@ -3,6 +3,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   use Wormwood.GQLCase
 
   alias Glific.{
+    Fixtures,
     Messages.MessageMedia,
     Repo,
     Seeds.SeedsDev
@@ -100,6 +101,11 @@ defmodule GlificWeb.Schema.MessageMediaTest do
   end
 
   test "create a message media and test possible scenarios and errors", %{staff: user} do
+    url = "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+    media_type = "IMAGE"
+
+    Fixtures.mock_validate_media(url, String.downcase(media_type))
+
     result =
       auth_query_gql_by(:create, user,
         variables: %{
@@ -109,7 +115,8 @@ defmodule GlificWeb.Schema.MessageMediaTest do
               "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg",
             "thumbnail" =>
               "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg",
-            "url" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+            "url" => url,
+            "media_type" => "IMAGE"
           }
         }
       )

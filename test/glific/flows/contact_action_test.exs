@@ -4,6 +4,7 @@ defmodule Glific.Flows.ContactActionTest do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Fixtures,
     Flows.Action,
     Flows.ContactAction,
     Flows.FlowContext,
@@ -238,9 +239,12 @@ defmodule Glific.Flows.ContactActionTest do
       variables: ["var_1", "var_2", "var_3"]
     }
 
-    attachments = %{
-      "image" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
-    }
+    type = "image"
+    url = "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+
+    Fixtures.mock_validate_media(url, type)
+
+    attachments = %{type => url}
 
     action = %Action{templating: templating, attachments: attachments}
 

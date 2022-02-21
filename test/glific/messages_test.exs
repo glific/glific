@@ -373,16 +373,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "clear_messages/1 deletes all the messages of a contact", attrs do
-      {:ok, message_media} =
-        Messages.create_message_media(%{
-          caption: "some caption",
-          source_url: "some source_url",
-          thumbnail: "some thumbnail",
-          url: "some url",
-          provider_media_id: "some provider_media_id",
-          organization_id: attrs.organization_id
-        })
-
+      message_media = Fixtures.message_media_fixture(attrs)
       message = message_fixture(attrs |> Map.merge(%{media_id: message_media.id}))
       message = message |> Repo.preload(:contact)
       assert :ok = Messages.clear_messages(message.contact)
@@ -670,7 +661,7 @@ defmodule Glific.MessagesTest do
       enable_gupshup_enterprise(attrs)
 
       message_media =
-        message_media_fixture(%{
+        Fixtures.message_media_fixture(%{
           caption: "image caption",
           organization_id: attrs.organization_id
         })
@@ -693,7 +684,7 @@ defmodule Glific.MessagesTest do
       enable_gupshup_enterprise(attrs)
 
       message_media =
-        message_media_fixture(%{
+        Fixtures.message_media_fixture(%{
           caption: "video caption",
           organization_id: attrs.organization_id
         })
@@ -716,7 +707,7 @@ defmodule Glific.MessagesTest do
       enable_gupshup_enterprise(attrs)
 
       message_media =
-        message_media_fixture(%{
+        Fixtures.message_media_fixture(%{
           caption: "file name",
           organization_id: attrs.organization_id
         })
@@ -739,7 +730,7 @@ defmodule Glific.MessagesTest do
       enable_gupshup_enterprise(attrs)
 
       message_media =
-        message_media_fixture(%{
+        Fixtures.message_media_fixture(%{
           organization_id: attrs.organization_id
         })
 
@@ -774,6 +765,7 @@ defmodule Glific.MessagesTest do
       }
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      Fixtures.mock_validate_media()
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "body text"
@@ -832,6 +824,7 @@ defmodule Glific.MessagesTest do
       }
 
       message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      Fixtures.mock_validate_media("pdf")
       {:ok, message} = Messages.create_and_send_message(message_attrs)
       message = Messages.get_message!(message.id)
       assert message.body == "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
@@ -1133,16 +1126,16 @@ defmodule Glific.MessagesTest do
   describe "message_media" do
     @valid_attrs %{
       caption: "some caption",
-      source_url: "some source_url",
-      thumbnail: "some thumbnail",
-      url: "some url",
+      url: Faker.Avatar.image_url(),
+      source_url: Faker.Avatar.image_url(),
+      thumbnail: Faker.Avatar.image_url(),
+      media_type: "image",
       provider_media_id: "some provider_media_id"
     }
     @update_attrs %{
       caption: "some updated caption",
       source_url: "some updated source_url",
       thumbnail: "some updated thumbnail",
-      url: "some updated url",
       provider_media_id: "some updated provider_media_id"
     }
     @invalid_attrs %{
@@ -1153,42 +1146,35 @@ defmodule Glific.MessagesTest do
       provider_media_id: nil
     }
 
-    def message_media_fixture(attrs \\ %{}) do
-      {:ok, message_media} =
-        attrs
-        |> Enum.into(@valid_attrs)
-        |> Messages.create_message_media()
-
-      message_media
-    end
-
     test "list_messages_media/0 returns all message_media", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
       assert Messages.list_messages_media() == [message_media]
     end
 
     test "count_messages_media/0 returns count of all message media", attrs do
-      _ = message_media_fixture(%{organization_id: attrs.organization_id})
+      _ = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
       assert Messages.count_messages_media() == 1
     end
 
     test "get_message_media!/1 returns the message_media with given id", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
       assert Messages.get_message_media!(message_media.id) == message_media
     end
 
     test "create_message_media/1 with valid data creates a message_media", attrs do
+      Fixtures.mock_validate_media("image")
+
       assert {:ok, %MessageMedia{} = message_media} =
                Messages.create_message_media(
                  @valid_attrs
                  |> Map.merge(%{organization_id: attrs.organization_id})
                )
 
-      assert message_media.caption == "some caption"
-      assert message_media.source_url == "some source_url"
-      assert message_media.thumbnail == "some thumbnail"
-      assert message_media.url == "some url"
-      assert message_media.provider_media_id == "some provider_media_id"
+      assert message_media.caption == @valid_attrs[:caption]
+      assert message_media.source_url == @valid_attrs[:source_url]
+      assert message_media.thumbnail == @valid_attrs[:thumbnail]
+      assert message_media.url == @valid_attrs[:url]
+      assert message_media.provider_media_id == @valid_attrs[:provider_media_id]
     end
 
     test "create_message_media/1 with invalid data returns error changeset" do
@@ -1196,20 +1182,19 @@ defmodule Glific.MessagesTest do
     end
 
     test "update_message_media/2 with valid data updates the message_media", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
 
       assert {:ok, %MessageMedia{} = message_media} =
                Messages.update_message_media(message_media, @update_attrs)
 
-      assert message_media.caption == "some updated caption"
-      assert message_media.source_url == "some updated source_url"
-      assert message_media.thumbnail == "some updated thumbnail"
-      assert message_media.url == "some updated url"
-      assert message_media.provider_media_id == "some updated provider_media_id"
+      assert message_media.caption == @update_attrs[:caption]
+      assert message_media.source_url == @update_attrs[:source_url]
+      assert message_media.thumbnail == @update_attrs[:thumbnail]
+      assert message_media.provider_media_id == @update_attrs[:provider_media_id]
     end
 
     test "update_message_media/2 with invalid data returns error changeset", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
 
       assert {:error, %Ecto.Changeset{}} =
                Messages.update_message_media(message_media, @invalid_attrs)
@@ -1218,7 +1203,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "delete_message_media/1 deletes the message_media", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
       assert {:ok, %MessageMedia{}} = Messages.delete_message_media(message_media)
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
     end
@@ -1443,7 +1428,7 @@ defmodule Glific.MessagesTest do
     end
 
     test "change_message_media/1 returns a message_media changeset", attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
       assert %Ecto.Changeset{} = Messages.change_message_media(message_media)
     end
   end

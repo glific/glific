@@ -205,6 +205,7 @@ defmodule Glific.Communications.Message do
 
     metadata = %{
       type: type,
+      media_type: type,
       sender_id: contact.id,
       receiver_id: Partners.organization_contact_id(organization_id),
       organization_id: contact.organization_id

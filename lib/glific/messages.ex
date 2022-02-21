@@ -1151,6 +1151,10 @@ defmodule Glific.Messages do
   def validate_media(url, _type) when url in ["", nil],
     do: %{is_valid: false, message: "Please provide a media URL"}
 
+  @spec validate_media(String.t(), String.t()) :: map()
+  def validate_media(_url, type) when type in ["", nil],
+    do: %{is_valid: false, message: "Please provide a media type"}
+
   def validate_media(url, type) do
     # ensure that this is approximately a url before we send to downstream functions
     if Glific.URI.cast(url) == :ok do

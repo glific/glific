@@ -360,7 +360,7 @@ defmodule Glific.Flows.ContactAction do
 
     {:ok, message_media} =
       %{
-        type: type,
+        media_type: type,
         url: url,
         source_url: url,
         thumbnail: url,

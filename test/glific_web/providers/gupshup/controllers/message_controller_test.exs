@@ -35,6 +35,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     SeedsDev.seed_tag()
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    Glific.Fixtures.mock_validate_media()
     {:ok, %{organization_id: organization.id}}
   end
 
@@ -180,6 +181,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         |> put_in(["payload", "type"], "audio")
         |> put_in(["payload", "payload", "caption"], nil)
 
+      Glific.Fixtures.mock_validate_media("audio")
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
@@ -210,6 +212,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         setup_config.message_params
         |> put_in(["payload", "type"], "video")
 
+      Glific.Fixtures.mock_validate_media("video")
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
@@ -239,6 +242,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
         setup_config.message_params
         |> put_in(["payload", "type"], "file")
 
+      Glific.Fixtures.mock_validate_media("pdf")
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
       bsp_message_id = get_in(message_params, ["payload", "id"])
@@ -265,9 +269,14 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
 
     test "Incoming sticker message should be stored in the database",
          setup_config = %{conn: conn} do
+      url = "http://example.com/sticker.webp"
+
       message_params =
         setup_config.message_params
         |> put_in(["payload", "type"], "sticker")
+        |> put_in(["payload", "payload", "url"], url)
+
+      Glific.Fixtures.mock_validate_media("image")
 
       conn = post(conn, "/gupshup", message_params)
       assert conn.halted
@@ -285,8 +294,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
       assert_receive :received_message_to_process
 
       # test media fields
-      assert message.media.url == setup_config.image_payload["url"]
-      assert message.media.source_url == setup_config.image_payload["url"]
+      assert message.media.url == url
+      assert message.media.source_url == url
 
       # Sender should be stored into the db
       assert message.sender.phone ==

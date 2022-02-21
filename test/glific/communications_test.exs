@@ -59,14 +59,6 @@ defmodule Glific.CommunicationsTest do
       type: :text
     }
 
-    @valid_media_attrs %{
-      caption: "some caption",
-      source_url: "some source_url",
-      thumbnail: "some thumbnail",
-      url: "some url",
-      provider_media_id: "some provider_media_id"
-    }
-
     defp foreign_key_constraint(attrs) do
       {:ok, sender} = Contacts.create_contact(Map.merge(attrs, @sender_attrs))
       {:ok, receiver} = Contacts.create_contact(Map.merge(attrs, @receiver_attrs))
@@ -91,15 +83,6 @@ defmodule Glific.CommunicationsTest do
 
       message
       |> Repo.preload([:receiver, :sender, :media])
-    end
-
-    def message_media_fixture(attrs \\ %{}) do
-      {:ok, message_media} =
-        attrs
-        |> Enum.into(@valid_media_attrs)
-        |> Messages.create_message_media()
-
-      message_media
     end
 
     test "send message should update the provider message id",
@@ -129,7 +112,7 @@ defmodule Glific.CommunicationsTest do
     test "send message should return error when characters limit is reached when sending media message",
          attrs do
       message_media =
-        message_media_fixture(%{
+        Fixtures.message_media_fixture(%{
           caption: Faker.Lorem.sentence(4097),
           organization_id: attrs.organization_id
         })
@@ -192,14 +175,14 @@ defmodule Glific.CommunicationsTest do
 
     test "send media message should update the provider message id",
          %{global_schema: global_schema} = attrs do
-      message_media = message_media_fixture(%{organization_id: attrs.organization_id})
+      message_media = Fixtures.message_media_fixture(%{organization_id: attrs.organization_id})
 
       # image message
       message =
         message_fixture(
           Map.merge(
             attrs,
-            %{type: :image, media_id: message_media.id}
+            %{type: message_media.media_type, media_id: message_media.id}
           )
         )
 

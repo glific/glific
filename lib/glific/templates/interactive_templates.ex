@@ -197,8 +197,15 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec get_media(map(), String.t(), non_neg_integer()) :: non_neg_integer() | nil
   def get_media(%{"content" => content}, type, organization_id)
       when type in ["image", "file", "video"] do
+    # we should found a better solution for this
+    type =
+      if type == "file",
+        do: :document,
+        else: Glific.safe_string_to_atom(type)
+
     {:ok, media} =
       %{
+        media_type: type,
         caption: content["caption"],
         organization_id: organization_id,
         source_url: content["url"],

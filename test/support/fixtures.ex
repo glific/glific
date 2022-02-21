@@ -570,19 +570,45 @@ defmodule Glific.Fixtures do
   @doc false
   @spec message_media_fixture(map()) :: MessageMedia.t()
   def message_media_fixture(attrs) do
-    {:ok, message_media} =
+    vars =
       %{
         url: Faker.Avatar.image_url(),
         source_url: Faker.Avatar.image_url(),
         thumbnail: Faker.Avatar.image_url(),
+        media_type: "image",
         caption: Faker.String.base64(10),
         provider_media_id: Faker.String.base64(10),
         organization_id: attrs.organization_id
       }
       |> Map.merge(attrs)
-      |> Messages.create_message_media()
+
+    mock_validate_media(vars.url, vars.media_type)
+    {:ok, message_media} = Messages.create_message_media(vars)
 
     message_media
+  end
+
+  @ttl_limit 1
+  @doc """
+  let's put the media url to cache so we don't need to mock the http calls every time
+  """
+  @spec mock_validate_media(String.t(), String.t()) :: map()
+  def mock_validate_media(url, type) do
+    value = %{is_valid: true, message: "success"}
+    Glific.Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
+  end
+
+  def mock_validate_media(type \\ "image") do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          headers: %{
+            "content-type" => "#{type}",
+            "content-length" => "111"
+          }
+        }
+    end)
   end
 
   @doc false

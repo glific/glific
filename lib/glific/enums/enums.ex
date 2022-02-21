@@ -82,6 +82,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.MessageType.__enum_map__()
   Glific.Enums.message_type_const()
 
+  iex> Glific.Enums.MediaType.__enum_map__()
+  Glific.Enums.media_type_const()
+
   iex> Glific.Enums.QuestionType.__enum_map__()
   Glific.Enums.question_type_const()
 
@@ -140,6 +143,9 @@ defmodule Glific.Enums do
 
   defmacro message_type_const,
     do: Macro.expand(@message_type_const, __CALLER__)
+
+  defmacro media_type_const,
+    do: Macro.expand(@media_type_const, __CALLER__)
 
   defmacro question_type_const,
     do: Macro.expand(@question_type_const, __CALLER__)
