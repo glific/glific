@@ -218,4 +218,94 @@ defmodule Glific.Flows.MessageVarParserTest do
 
     assert hd(output["searchCriteria"])["criteria"] == "Margadarshi"
   end
+
+  test "test not standard results while passing", _attrs do
+    action_body_map = %{
+      "type" => "akr issues tracker",
+      "updateOrWrite" => "write",
+      "fields" => %{
+        "timestamp" => "@contact.fields.current_time",
+        "name" => "@contact.fields.preferred_name",
+        "sender" => "@contact.phone",
+        "category" => "@results.ar_issue_category.category",
+        "issue_subcategory_entitlements" => "@contact.fields.issue_subcategory",
+        "issue_subcategory_civic" => "@contact.fields.issue_subcategory",
+        "issue_subcategory_others" => "@contact.fields.issue_subcategory",
+        "latitude" => "@contact.fields.lat",
+        "longitude" => "@contact.fields.lng",
+        "address" => "@contact.fields.formatted_address",
+        "pincode" => "@contact.fields.postal_code",
+        "photo" => "@results.ar_issue_media",
+        "othersnumber" => "@results.ar_ir_otherphone",
+        "status" => "@results.ar_issues_exitmenu"
+      }
+    }
+
+    fields = %{
+      "contact" => %{
+        bsp_status: :session_and_hsm,
+        fields: %{language: %{label: "English"}},
+        in_groups: ["Restricted Group", "Default Group"],
+        inserted_at: ~U[2021-11-08 11:38:39.219209Z],
+        language: %Glific.Settings.Language{
+          description: nil,
+          id: 1,
+          inserted_at: ~U[2021-11-08 11:38:38Z],
+          is_active: true,
+          label: "English",
+          label_locale: "English",
+          locale: "en",
+          localized: true,
+          updated_at: ~U[2021-11-08 11:38:38Z]
+        },
+        name: "Glific Simulator One",
+        optin_time: ~U[2021-11-08 11:38:39Z],
+        phone: "9876543210_1",
+        status: :valid
+      },
+      "flow" => %{id: 14, name: "New Query Test "},
+      "results" => %{
+        "ar_issue_civic_subcategory" => %{
+          "intent" => nil,
+          "category" => "Waste",
+          "inserted_at" => "2022-02-21T13:07:17.313524Z",
+          "input" => "1"
+        },
+        "ar_issue_media" => %{
+          "id" => 887_419,
+          "caption" => nil,
+          "category" => "media",
+          "inserted_at" => "2022-02-21T13:07:40.078723Z",
+          "url" =>
+            "https://filemanager.gupshup.io/fm/wamedia/RBGlificAPI/057dd9d5-2c61-4381-aa7a-fc0a1e3167af?fileName=",
+          "source_url" =>
+            "https://filemanager.gupshup.io/fm/wamedia/RBGlificAPI/057dd9d5-2c61-4381-aa7a-fc0a1e3167af?fileName=",
+          "input" =>
+            "https://filemanager.gupshup.io/fm/wamedia/RBGlificAPI/057dd9d5-2c61-4381-aa7a-fc0a1e3167af?fileName="
+        },
+        "three" => "3",
+        "arch_menu" => %{
+          "intent" => nil,
+          "category" => "reportissue",
+          "inserted_at" => "2022-02-21T13:07:06.804975Z",
+          "input" => "2"
+        },
+        "two" => "2",
+        "one" => "1",
+        "location_link" => %{
+          "inserted_at" => "2022-02-21T13:07:18.459747Z",
+          "short_link" => "show-map/919917443994?flow_id=1231",
+          "link" => "https://locate.solveninja.org/show-map/919917443994?flow_id=1231"
+        },
+        "ar_issue_category" => %{
+          "intent" => nil,
+          "category" => "Civic ",
+          "inserted_at" => "2022-02-21T13:07:11.722277Z",
+          "input" => "2"
+        }
+      }
+    }
+
+    assert true = MessageVarParser.parse_map(action_body_map, fields) |> is_map()
+  end
 end
