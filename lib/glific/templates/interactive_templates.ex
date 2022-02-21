@@ -198,7 +198,7 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec get_media(map(), String.t(), non_neg_integer()) :: non_neg_integer() | nil
   def get_media(%{"content" => content}, type, organization_id)
       when type in ["image", "file", "video"] do
-    if type == "file", do: "document", else: type
+    type = if type == "file", do: "document", else: type
 
     %{is_valid: true, message: _message} = Messages.validate_media(content["url"], type)
 
