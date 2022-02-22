@@ -9,6 +9,7 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
+    Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
     Partners,
@@ -365,7 +366,43 @@ defmodule Glific.Communications.Message do
   defp process_errors(message, _errors, 1002) do
     # Issue #2047 - Number does not exist in WhatsApp
     # Lets disable this contact and make it inactive
+    # This is relatively common, so we dont send an email or log this error
     Contacts.number_does_not_exist(message.contact_id)
+  end
+
+  defp process_errors(message, _errors, 471) do
+    # Issue #2049 - Organization has hit rate limit and
+    # WABA is now rejecting messages
+    organization = Partners.organization(message.organization_id)
+    Partners.suspend_organization(organization)
+
+    # We should send a message to ops and also email the org and glific support
+    body = """
+    #{organization.name} account has been suspended since it hit the WhatsApp rate limit.
+
+    Your services will resume automatically at the start of the next day. Please be patient :)
+    """
+
+    Glific.log_error(body)
+    BalanceAlertMail.rate_exceeded(organization, body)
+  end
+
+  defp process_errors(message, _errors, 1003) do
+    # Issue #2049 - Organization has insufficient balance
+    # Gupshup is now rejecting messages
+    # We should send a message to ops and also email the org and glific support
+    organization = Partners.organization(message.organization_id)
+    Partners.suspend_organization(organization, 3)
+
+    # We should send a message to ops and also email the org and glific support
+    body = """
+    #{organization.name} account has been suspended since its BSP balance is insufficient.
+
+    Please refill your account immediately so Glific can send and receive messages on your behalf.
+    """
+
+    Glific.log_error(body)
+    BalanceAlertMail.no_balance(organization, body)
   end
 
   defp process_errors(_message, _errors, _code), do: nil

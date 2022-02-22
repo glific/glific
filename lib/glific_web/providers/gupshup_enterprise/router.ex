@@ -10,6 +10,11 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Router do
   scope "/gupshup", Controllers do
     scope "/message" do
       post("/text", MessageController, :text)
+      post("/image", MessageController, :image)
+      post("/video", MessageController, :video)
+      post("/audio", MessageController, :audio)
+      post("/document", MessageController, :document)
+      post("/location", MessageController, :location)
     end
   end
 end

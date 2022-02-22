@@ -215,11 +215,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"],
+          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["UDID is an important document and helps in securing your child’s future"],
+          variables: ["UDID is an important document and helps in securing your child’s future"]
         }
       }
     },
@@ -229,25 +229,31 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"],
+          variables: ["युडीआईडी एक महत्वपूर्ण दस्तावेज है और आपके बच्चे के भविष्य को सुरक्षित करने में मदद करता है"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["UDID is an important document and helps in securing your child’s future"],
+          variables: ["UDID is an important document and helps in securing your child’s future"]
         }
       }
     },
     13 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"],
+      variables: [
+        "Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपने प्रति दयालु बनें, कुछ समय निकालें और अपने आस-पास दिखाई देने वाली चीज़ों की सराहना करें"],
+          variables: [
+            "देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपने प्रति दयालु बनें, कुछ समय निकालें और अपने आस-पास दिखाई देने वाली चीज़ों की सराहना करें"
+          ]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"],
+          variables: [
+            "Caregiving is a challenging role. Be kind to yourself, take sometime and appreciate the things you see around you"
+          ]
         }
       }
     },
@@ -337,11 +343,11 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कानूनी संरक्षकता प्रक्रिया को समझना"],
+          variables: ["कानूनी संरक्षकता प्रक्रिया को समझना"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["Understanding Legal Guardianship Procedure"],
+          variables: ["Understanding Legal Guardianship Procedure"]
         }
       }
     },
@@ -451,25 +457,29 @@ defmodule Glific.Clients.NayiDisha.Data do
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["कानूनी शर्तों और दस्तावेजों को समझना"],
+          variables: ["कानूनी शर्तों और दस्तावेजों को समझना"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["Understanding Legal Terms & Documents"],
+          variables: ["Understanding Legal Terms & Documents"]
         }
       }
     },
     25 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["Understanding Distribution of Personal and Financial Affairs for your child's care"],
+      variables: [
+        "Understanding Distribution of Personal and Financial Affairs for your child's care"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["अपने बच्चे की देखभाल के लिए व्यक्तिगत और वित्तीय मामलों के वितरण को समझना"],
+          variables: ["अपने बच्चे की देखभाल के लिए व्यक्तिगत और वित्तीय मामलों के वितरण को समझना"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["Understanding Distribution of Personal and Financial Affairs for your child's care"],
+          variables: [
+            "Understanding Distribution of Personal and Financial Affairs for your child's care"
+          ]
         }
       }
     },
@@ -555,15 +565,19 @@ defmodule Glific.Clients.NayiDisha.Data do
     },
     30 => %{
       hsm_uuid: @parent_hsm_uuid_poster_eng,
-      variables: ["Caregiving is a challenging role. Look after yourself, try something new every week"],
+      variables: [
+        "Caregiving is a challenging role. Look after yourself, try something new every week"
+      ],
       translations: %{
         "hi" => %{
           hsm_uuid: @parent_hsm_uuid_poster_hn,
-          variables: ["देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपना ख्याल रखें, हर हफ्ते कुछ नया करने की कोशिश करें"],
+          variables: ["देखभाल करना एक चुनौतीपूर्ण भूमिका है। अपना ख्याल रखें, हर हफ्ते कुछ नया करने की कोशिश करें"]
         },
         "en" => %{
           hsm_uuid: @parent_hsm_uuid_poster_eng,
-          variables: ["Caregiving is a challenging role. Look after yourself, try something new every week"],
+          variables: [
+            "Caregiving is a challenging role. Look after yourself, try something new every week"
+          ]
         }
       }
     },

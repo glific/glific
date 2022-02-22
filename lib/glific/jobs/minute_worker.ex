@@ -103,6 +103,7 @@ defmodule Glific.Jobs.MinuteWorker do
         FlowContext.delete_old_flow_contexts()
 
       "hourly_tasks" ->
+        Partners.unsuspend_organizations()
         Partners.perform_all(&BSPBalanceWorker.perform_periodic/1, nil, [], true)
         Partners.perform_all(&BigQueryWorker.periodic_updates/1, nil, services["bigquery"], true)
         Partners.perform_all(&Glific.Clients.hourly_tasks/1, nil, [])

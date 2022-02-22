@@ -125,7 +125,7 @@ defmodule Glific.Flows.MessageVarParser do
           {key, value}, acc ->
             key = String.downcase(key)
 
-            if Map.has_key?(value, "input") and !is_map(value["input"]) do
+            if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
               value = to_string(value["input"])
               String.replace(acc, replace_prefix <> key, value)
             else

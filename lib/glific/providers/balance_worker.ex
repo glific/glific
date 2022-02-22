@@ -6,7 +6,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
   alias Glific.{
     Communications,
     Communications.Mailer,
-    Mails.LowBalanceAlertMail,
+    Mails.BalanceAlertMail,
     Mails.MailLog,
     Partners
   }
@@ -52,7 +52,7 @@ defmodule Glific.Jobs.BSPBalanceWorker do
     if MailLog.mail_sent_in_past_time?(category, time, organization_id) == false do
       {:ok, _} =
         Partners.organization(organization_id)
-        |> LowBalanceAlertMail.new_mail(bsp_balance)
+        |> BalanceAlertMail.low_balance_alert(bsp_balance)
         |> Mailer.send(%{
           category: category,
           organization_id: organization_id

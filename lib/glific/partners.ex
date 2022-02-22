@@ -9,6 +9,8 @@ defmodule Glific.Partners do
   import GlificWeb.Gettext
   require Logger
 
+  alias __MODULE__
+
   alias Glific.{
     BigQuery,
     Caches,
@@ -173,11 +175,12 @@ defmodule Glific.Partners do
   @doc """
   List of organizations that are active within the system
   """
-  @spec active_organizations(list()) :: map()
-  def active_organizations(orgs) do
+  @spec active_organizations(list(), boolean) :: map()
+  def active_organizations(orgs, suspended \\ false) do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name, q.last_communication_at])
+    |> where([q], q.is_suspended == ^suspended)
     |> restrict_orgs(orgs)
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
@@ -529,9 +532,76 @@ defmodule Glific.Partners do
     |> Map.put(:services, services_map)
   end
 
+  @spec suspend_offset(Organization.t(), non_neg_integer()) :: DateTime.t()
+  defp suspend_offset(org, 0), do: start_of_next_day(org)
+
+  defp suspend_offset(_org, hours), do: Timex.shift(DateTime.utc_now(), hours: hours)
+
+  # get the start of the next day in orgs timezone and then convert that to UTC since
+  # we only store UTC time in our DB
+  @spec start_of_next_day(Organization.t()) :: DateTime.t()
+  defp start_of_next_day(org),
+    do:
+      org.timezone
+      |> DateTime.now!()
+      |> Timex.beginning_of_day()
+      |> Timex.shift(days: 1)
+      |> Timex.to_datetime("Etc/UTC")
+
+  @doc """
+  Suspend an organization till the start of the next day for the organization
+  (we still need to figure out if this is the right WABA interpretation)
+  """
+  @spec suspend_organization(Organization.t(), non_neg_integer()) :: any()
+  def suspend_organization(organization, hours \\ 0) do
+    {:ok, _} =
+      organization
+      |> then(fn org ->
+        Partners.update_organization(
+          org,
+          %{
+            is_suspended: true,
+            suspended_until: suspend_offset(org, hours)
+          }
+        )
+      end)
+  end
+
+  @spec unsuspend_org_list(DateTime.t()) :: list()
+  defp unsuspend_org_list(time \\ DateTime.utc_now()) do
+    Organization
+    |> where([q], q.is_active == true)
+    |> select([q], q.id)
+    |> where([q], q.is_suspended == true)
+    |> where([q], q.suspended_until < ^time)
+    |> Repo.all(skip_organization_id: true)
+  end
+
+  @spec unsuspend_organization(non_neg_integer()) :: any()
+  defp unsuspend_organization(org_id) do
+    {:ok, _} =
+      update_organization(
+        organization(org_id),
+        %{
+          is_suspended: false,
+          suspended_until: nil
+        }
+      )
+  end
+
+  @doc """
+  Resume all organization that are suspended if we are past the suspended time, we check this on an hourly basis for all organizations
+  that are in a suspended state via a cron job
+  """
+  @spec unsuspend_organizations :: any()
+  def unsuspend_organizations do
+    unsuspend_org_list()
+    |> Enum.each(&unsuspend_organization(&1))
+  end
+
   @doc """
   Execute a function across all active organizations. This function is typically called
-  by a cron job worker process
+  by a micron job worker process
 
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
@@ -543,10 +613,10 @@ defmodule Glific.Partners do
   list == [] (empty list) - the action should be performed for all organizations
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: :ok
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: any
   def perform_all(handler, handler_args, list, only_recent \\ false)
 
-  def perform_all(_handler, _handler_args, nil, _only_recent), do: :ok
+  def perform_all(_handler, _handler_args, nil, _only_recent), do: nil
 
   def perform_all(handler, handler_args, list, only_recent) do
     # We need to do this for all the active organizations
@@ -568,10 +638,8 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      Logger.error("Error occured while executing handler for organizations.
-         Error: #{err}, handler: #{handler}, handler_args: #{handler_args}")
-
-      :ok
+      "Error occured while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      |> Glific.log_error()
   end
 
   @active_minutes 60
