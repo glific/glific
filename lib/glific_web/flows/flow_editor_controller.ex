@@ -481,6 +481,34 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
+  @spec recents(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def recents(conn, params) do
+    [exit_uuid, destination_uuid, flow_uuid] = params["vars"]
+
+    {:ok, flow_count} =
+      Repo.fetch_by(FlowCount, %{
+        uuid: exit_uuid,
+        destination_uuid: destination_uuid,
+        flow_uuid: flow_uuid,
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    results =
+      Enum.reduce(flow_count.recent_messages, [], fn recent_message, acc ->
+        [
+          %{
+            contact: recent_message["contact"],
+            operand: recent_message["message"],
+            time: recent_message["date"]
+          }
+          | acc
+        ]
+      end)
+
+    json(conn, results)
+  end
+
+  @doc false
   @spec generate_uuid() :: String.t()
   defp generate_uuid do
     Ecto.UUID.generate()

@@ -760,6 +760,8 @@ defmodule Glific.MessagesTest do
          %{organization_id: organization_id} = attrs do
       label = "Quick Reply Image"
 
+      Glific.Fixtures.mock_validate_media()
+
       {:ok, interactive_template} =
         Repo.fetch_by(
           InteractiveTemplate,
@@ -817,6 +819,7 @@ defmodule Glific.MessagesTest do
     test "create and send message interactive quick reply message with document should have message body as ",
          %{organization_id: organization_id} = attrs do
       label = "Quick Reply Document"
+      Glific.Fixtures.mock_validate_media("pdf")
 
       {:ok, interactive_template} =
         Repo.fetch_by(

@@ -638,10 +638,8 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      Logger.error(
-        "Error occured while executing handler for organizations.
-         Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
-      )
+      "Error occured while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      |> Glific.log_error()
   end
 
   @active_minutes 60
