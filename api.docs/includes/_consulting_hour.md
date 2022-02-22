@@ -216,23 +216,6 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 ```graphql
 mutation fetchConsultingHours($input: FetchConsultingHours!) {
   fetchConsultingHours(input: $input) {
-    consultingHour {
-      duration
-      content
-      isBillable
-      insertedAt
-      organizationId
-      organizationName
-      participants
-      staff
-      updatedAt
-      when
-    }
-    errors {
-        message
-        key
-    }
-  }
 }
 
 {
@@ -249,31 +232,7 @@ mutation fetchConsultingHours($input: FetchConsultingHours!) {
 ```json
 {
   "data": {
-    "consultingHours": [
-      {
-        "content": "GCS issue",
-        "id": 2,
-        "duration": 10,
-        "insertedAt": "2021-05-04T11:18:20Z",
-        "isBillable": true,
-        "organizationName": "Glific",
-        "participants": "Adam",
-        "staff": "Adelle Cavin",
-        "updatedAt": "2021-05-04T11:18:20Z",
-        "when": "2021-03-08T08:22:51Z"
-      },
-      {
-        "content": "Bigquery issue",
-        "duration": 10,
-        "insertedAt": "2021-05-04T16:18:20Z",
-        "isBillable": true,
-        "organizationName": "Glific",
-        "participants": "Kevin",
-        "staff": "Adelle Cavin",
-        "updatedAt": "2021-05-04T11:18:20Z",
-        "when": "2021-03-08T08:22:51Z"
-      }
-    ]
+    "fetchConsultingHours": "content,duration,inserted_at,is_billable,organization_name,participants,staff,when\n GCS issue,10,2022-02-22,true,Glific,John Doe,Jon Cavin,2022-02-15\nGCS issue,10,2022-02-22,false,Glific,Adam,Ken Cavin,2022-02-13\n"
   }
 }
 ```
