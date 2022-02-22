@@ -214,7 +214,7 @@ mutation createConsultingHour($input:ConsultingHourInput!) {
 ## Fetch Consulting Hours
 
 ```graphql
-mutation fetchConsultingHours($input: FetchConsultingHours!) {
+query fetchConsultingHours($input: FetchConsultingHours!) {
   fetchConsultingHours(input: $input) {
 }
 
