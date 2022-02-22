@@ -717,6 +717,13 @@ defmodule Glific.Flows.FlowContext do
 
   def resume_contact_flow(_contact, context, result, message) do
     # first update the flow context with the result
+    ## if user don't send any valid map results/params, we will set the result to nil
+
+    result =
+      if result in [[], nil],
+        do: %{},
+        else: result
+
     context = update_results(context, result)
 
     # and then proceed as if we are waking the flow up
