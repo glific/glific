@@ -1,12 +1,3 @@
 query fetchConsultingHours($filter: FetchConsultingHours) {
-  fetchConsultingHours(filter: $filter) {
-    id
-    participants
-    organizationName
-    staff
-    content
-    when
-    duration
-    isBillable
-  }
+  fetchConsultingHours(filter: $filter)
 }

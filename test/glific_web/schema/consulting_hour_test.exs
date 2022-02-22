@@ -92,7 +92,7 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
 
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "fetchConsultingHours"])
-    assert length(consulting_hours) == 2
+    assert is_binary(consulting_hours) == true
   end
 
   test "consulting hours field returns list of consulting hours", %{user: user} = attrs do

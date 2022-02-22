@@ -91,7 +91,7 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
     end
 
     @desc "Fetches consulting hours between start_date and end_date"
-    field :fetch_consulting_hours, list_of(:consulting_hour) do
+    field :fetch_consulting_hours, :string do
       arg(:filter, :fetch_consulting_hours)
       middleware(Authorize, :admin)
       resolve(&Resolvers.ConsultingHours.fetch_consulting_hours/3)
