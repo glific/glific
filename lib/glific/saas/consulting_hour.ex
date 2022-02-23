@@ -128,7 +128,7 @@ defmodule Glific.Saas.ConsultingHour do
     |> convert_to_csv_string()
   end
 
-  @default_headers "content,duration,inserted_at,is_billable,organization_name,participants,staff,when\n "
+  @default_headers "content,duration,inserted_at,is_billable,organization_name,participants,staff,when\n"
   @minimal_map [
     :content,
     :duration,
