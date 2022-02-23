@@ -65,6 +65,12 @@ defmodule GlificWeb.Schema.ConsultingHourTypes do
 
     @desc "Match the billable flag"
     field :is_billable, :boolean
+
+    @desc "Match the start date"
+    field :start_date, :date
+
+    @desc "Match the end date"
+    field :end_date, :date
   end
 
   object :consulting_hours_queries do

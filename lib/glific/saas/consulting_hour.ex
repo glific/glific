@@ -110,6 +110,7 @@ defmodule Glific.Saas.ConsultingHour do
       )
 
   @beginning_of_day ~T[00:00:00.000]
+  @end_of_day ~T[23:59:59.000]
 
   @doc """
   Return the count of consulting hours, using the same filter as list_consulting_hours
@@ -117,7 +118,7 @@ defmodule Glific.Saas.ConsultingHour do
   @spec fetch_consulting_hours(map()) :: String.t()
   def fetch_consulting_hours(args) do
     start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
-    end_time = DateTime.new!(args.filter.end_date, @beginning_of_day, "Etc/UTC")
+    end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
 
     ConsultingHour
     |> where([m], m.organization_id == ^args.filter.client_id)
@@ -187,6 +188,14 @@ defmodule Glific.Saas.ConsultingHour do
 
       {:participants, participants}, query ->
         from q in query, where: ilike(q.participants, ^"%#{participants}%")
+
+      {:start_date, start_date}, query ->
+        start_time = DateTime.new!(start_date, @beginning_of_day, "Etc/UTC")
+        from q in query, where: q.when >= ^start_time
+
+      {:end_date, end_date}, query ->
+        end_time = DateTime.new!(end_date, @end_of_day, "Etc/UTC")
+        from q in query, where: q.when <= ^end_time
 
       _, query ->
         query
