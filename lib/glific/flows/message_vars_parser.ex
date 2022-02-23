@@ -41,7 +41,7 @@ defmodule Glific.Flows.MessageVarParser do
 
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
-    language = get_in(binding, ["contact", "fields", "language"])
+    language = safe_get_in(binding, ["contact", "fields", "language"])
     language["label"]
   end
 
@@ -50,14 +50,14 @@ defmodule Glific.Flows.MessageVarParser do
 
   # since this is a list we need to convert that into a string.
   defp bound("@contact.in_groups", binding) do
-    "#{inspect(get_in(binding, ["contact", "in_groups"]))}"
+    "#{inspect(safe_get_in(binding, ["contact", "in_groups"]))}"
   end
 
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     var = String.replace_trailing(var, ".", "")
 
     substitution =
-      get_in(binding, String.split(var, "."))
+      safe_get_in(binding, String.split(var, "."), var)
       |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
@@ -99,6 +99,12 @@ defmodule Glific.Flows.MessageVarParser do
   defp stringify_keys(list) when is_list(list), do: Enum.map(list, &stringify_keys(&1))
 
   defp stringify_keys(value), do: value
+
+  defp safe_get_in(bindings, keys, defualt \\ nil) do
+    if is_map(bindings),
+      do: get_in(bindings, keys),
+      else: defualt
+  end
 
   @doc """
   Interpolates the values from results into the message body.

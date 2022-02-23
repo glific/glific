@@ -401,6 +401,15 @@ defmodule Glific.Contacts do
     |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
     |> elem(1)
     |> set_session_status(:hsm)
+    |> then(fn {:ok, contact} ->
+      capture_history(contact.id, :contact_opted_in, %{
+        event_label: "contact opted in, via #{attrs.optin_method}",
+        event_meta: %{
+          method: attrs[:optin_method],
+          utc_time: utc_time
+        }
+      })
+    end)
   end
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
@@ -456,6 +465,14 @@ defmodule Glific.Contacts do
           :error
 
         contact ->
+          capture_history(contact.id, :contact_opted_out, %{
+            event_label: "contact opted out, via #{method}",
+            event_meta: %{
+              method: method,
+              utc_time: utc_time
+            }
+          })
+
           update_contact(
             contact,
             opted_out_attrs(phone, organization_id, utc_time, method)
