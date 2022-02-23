@@ -165,9 +165,7 @@ defmodule Glific.Saas.ConsultingHour do
   def parse_delimiter(data, key) do
     data
     |> Map.get(key)
-    |> String.split(",", trim: true)
-    |> Enum.reduce("", &(&2 <> " #{&1}"))
-    |> then(&put_in(data[key], "'#{&1}'"))
+    |> then(&put_in(data[key], "\"#{&1}\""))
   end
 
   @spec convert_time(map()) :: map()
