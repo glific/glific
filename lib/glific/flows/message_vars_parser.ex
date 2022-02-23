@@ -18,6 +18,8 @@ defmodule Glific.Flows.MessageVarParser do
 
   def parse(input, binding) when binding in [nil, %{}], do: input
 
+  def parse(input, binding) when is_map(binding) == false, do: input
+
   def parse(input, binding) do
     binding =
       binding
@@ -57,11 +59,8 @@ defmodule Glific.Flows.MessageVarParser do
     var = String.replace_trailing(var, ".", "")
 
     substitution =
-      if is_map(binding),
-        do:
-          get_in(binding, String.split(var, "."))
-          |> bound(),
-        else: nil
+      get_in(binding, String.split(var, "."))
+      |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
   end
