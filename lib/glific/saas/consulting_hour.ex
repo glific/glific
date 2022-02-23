@@ -152,10 +152,22 @@ defmodule Glific.Saas.ConsultingHour do
     consulting_hour
     |> Map.take(@minimal_map)
     |> convert_time()
+    |> parse_delimiter(:staff)
+    |> parse_delimiter(:participants)
+    |> parse_delimiter(:content)
     |> Map.values()
     |> Enum.reduce("", fn key, acc ->
       acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
     end)
+  end
+
+  @spec parse_delimiter(map(), atom()) :: map()
+  def parse_delimiter(data, key) do
+    data
+    |> Map.get(key)
+    |> String.split(",", trim: true)
+    |> Enum.reduce("", &(&2 <> " #{&1}"))
+    |> then(&put_in(data[key], "'#{&1}'"))
   end
 
   @spec convert_time(map()) :: map()
