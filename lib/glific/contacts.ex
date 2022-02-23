@@ -406,7 +406,8 @@ defmodule Glific.Contacts do
         event_label: "contact opted in, via #{attrs.optin_method}",
         event_meta: %{
           method: attrs[:optin_method],
-          utc_time: utc_time
+          utc_time: utc_time,
+          optin_message_id: attrs[:optin_message_id]
         }
       })
     end)

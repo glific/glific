@@ -770,10 +770,24 @@ defmodule Glific.ContactsTest do
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message",
-         %{organization_id: organization_id} do
+         %{organization_id: organization_id} = attrs do
       contact = contact_fixture(%{organization_id: organization_id, status: :invalid})
 
-      Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
+      optin_time = DateTime.utc_now()
+      message_id = Ecto.UUID.generate()
+
+      Contacts.contact_opted_in(contact.phone, organization_id, optin_time,
+        method: "Testing",
+        message_id: message_id
+      )
+
+      [history | _tail] =
+        Contacts.list_contact_history(
+          Map.merge(attrs, %{filter: %{contact_id: contact.id, event_type: "contact_opted_in"}})
+        )
+
+      assert history.event_meta["method"] == "Testing"
+      assert history.event_meta["optin_message_id"] == message_id
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -799,10 +813,15 @@ defmodule Glific.ContactsTest do
     end
 
     test "contact_opted_out/2 will setup the contact as valid contact for message",
-         %{organization_id: organization_id} do
+         %{organization_id: organization_id} = attrs do
       contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
-      Contacts.contact_opted_out(contact.phone, organization_id, DateTime.utc_now())
+      Contacts.contact_opted_out(
+        contact.phone,
+        organization_id,
+        DateTime.utc_now(),
+        "OptedoutTesting"
+      )
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -812,6 +831,13 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
+
+      [history | _tail] =
+        Contacts.list_contact_history(
+          Map.merge(attrs, %{filter: %{contact_id: contact.id, event_type: "contact_opted_out"}})
+        )
+
+      assert history.event_meta["method"] == "OptedoutTesting"
 
       assert Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now()) ==
                :error
