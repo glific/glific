@@ -18,6 +18,8 @@ defmodule Glific.Flows.MessageVarParser do
 
   def parse(input, binding) when binding in [nil, %{}], do: input
 
+  def parse(input, binding) when is_map(binding) == false, do: input
+
   def parse(input, binding) do
     binding =
       binding
