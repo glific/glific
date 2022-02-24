@@ -68,14 +68,17 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  @doc """
-  get the week based on current batch
-  """
   def webhook("batch_current_week", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
 
-    current_week = get_current_week(organization_id, contact_id)
+    get_current_week(organization_id, contact_id)
+  end
+
+  def webhook("current_batch", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+
+    get_current_week(organization_id)
   end
 
   @doc """
