@@ -5,7 +5,6 @@ defmodule Glific.Contacts.Import do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    BSPContacts,
     Contacts,
     Contacts.Contact,
     Groups,
@@ -98,7 +97,7 @@ defmodule Glific.Contacts.Import do
   end
 
   ## later we can have one more column to say that force optin
-  @spec should_optin_contact(Contact.t(), map()) :: boolean()
+  @spec should_optin_contact?(Contact.t(), map()) :: boolean()
   defp should_optin_contact?(contact, attrs) do
     cond do
       attrs.optin_time == nil ->

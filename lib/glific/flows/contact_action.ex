@@ -390,12 +390,9 @@ defmodule Glific.Flows.ContactAction do
   @spec optin(FlowContext.t(), Keyword.t()) :: FlowContext.t()
   def optin(context, opts \\ []) do
     # We need to update the contact with optout_time and status
-    Contacts.contact_opted_in(
-      context.contact.phone,
-      context.contact.organization_id,
-      DateTime.utc_now(),
-      Keyword.put(opts, :optin_on_bsp, true)
-    )
+    context.contact
+    |> Map.from_struct()
+    |> Contacts.optin_contact()
 
     context
   end
