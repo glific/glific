@@ -109,6 +109,72 @@ defmodule Glific.Saas.ConsultingHour do
         skip_organization_id: true
       )
 
+  @beginning_of_day ~T[00:00:00.000]
+  @end_of_day ~T[23:59:59.000]
+
+  @doc """
+  Return the count of consulting hours, using the same filter as list_consulting_hours
+  """
+  @spec fetch_consulting_hours(map()) :: String.t()
+  def fetch_consulting_hours(args) do
+    start_time = DateTime.new!(args.filter.start_date, @beginning_of_day, "Etc/UTC")
+    end_time = DateTime.new!(args.filter.end_date, @end_of_day, "Etc/UTC")
+
+    ConsultingHour
+    |> where([m], m.organization_id == ^args.filter.client_id)
+    |> where([m], m.when >= ^start_time)
+    |> where([m], m.when <= ^end_time)
+    |> Repo.all(skip_organization_id: true)
+    |> convert_to_csv_string()
+  end
+
+  @default_headers "content,duration,inserted_at,is_billable,organization_name,participants,staff,when\n"
+  @minimal_map [
+    :content,
+    :duration,
+    :inserted_at,
+    :is_billable,
+    :organization_name,
+    :participants,
+    :staff,
+    :when
+  ]
+  @spec convert_to_csv_string([ConsultingHour.t()]) :: String.t()
+  def convert_to_csv_string(consulting_hours) do
+    consulting_hours
+    |> Enum.reduce(@default_headers, fn consulting_hour, acc ->
+      acc <> minimal_map(consulting_hour) <> "\n"
+    end)
+  end
+
+  @spec minimal_map(ConsultingHour.t()) :: String.t()
+  defp minimal_map(consulting_hour) do
+    consulting_hour
+    |> Map.take(@minimal_map)
+    |> convert_time()
+    |> parse_delimiter(:staff)
+    |> parse_delimiter(:participants)
+    |> parse_delimiter(:content)
+    |> Map.values()
+    |> Enum.reduce("", fn key, acc ->
+      acc <> if is_binary(key), do: "#{key},", else: "#{inspect(key)},"
+    end)
+  end
+
+  @spec parse_delimiter(map(), atom()) :: map()
+  def parse_delimiter(data, key) do
+    data
+    |> Map.get(key)
+    |> then(&put_in(data[key], "\"#{&1}\""))
+  end
+
+  @spec convert_time(map()) :: map()
+  defp convert_time(consulting_hour) do
+    consulting_hour
+    |> Map.put(:inserted_at, Timex.format!(consulting_hour.inserted_at, "{YYYY}-{0M}-{0D}"))
+    |> Map.put(:when, Timex.format!(consulting_hour.when, "{YYYY}-{0M}-{0D}"))
+  end
+
   @doc """
   Return the count of consulting hours, using the same filter as list_consulting_hours
   """
@@ -132,6 +198,14 @@ defmodule Glific.Saas.ConsultingHour do
 
       {:participants, participants}, query ->
         from q in query, where: ilike(q.participants, ^"%#{participants}%")
+
+      {:start_date, start_date}, query ->
+        start_time = DateTime.new!(start_date, @beginning_of_day, "Etc/UTC")
+        from q in query, where: q.when >= ^start_time
+
+      {:end_date, end_date}, query ->
+        end_time = DateTime.new!(end_date, @end_of_day, "Etc/UTC")
+        from q in query, where: q.when <= ^end_time
 
       _, query ->
         query

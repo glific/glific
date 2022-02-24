@@ -740,7 +740,7 @@ defmodule Glific.Fixtures do
       organization_name: "Glific",
       staff: "Adelle Cavin",
       content: "GCS issue",
-      when: DateTime.backward(10),
+      when: DateTime.backward(2),
       duration: 10,
       is_billable: true
     }
