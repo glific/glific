@@ -110,6 +110,15 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
         is_billable: false
       })
 
+    _consulting_hour_3 =
+      Fixtures.consulting_hour_fixture(%{
+        organization_id: attrs.organization_id,
+        staff: "John Doe",
+        content: "Datastudio Reports",
+        is_billable: false,
+        when: Timex.shift(DateTime.utc_now(), days: -10)
+      })
+
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "ASC"}})
 
     assert {:ok, query_data} = result
@@ -144,6 +153,28 @@ defmodule GlificWeb.Schema.ConsultingHourTest do
     assert {:ok, query_data} = result
     consulting_hours = get_in(query_data, [:data, "consultingHours"])
     assert length(consulting_hours) == 1
+
+    # Using startDate and endDate to filter consulting hours
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{
+          "filter" => %{
+            "startDate" =>
+              DateTime.utc_now()
+              |> Timex.shift(days: -11)
+              |> Timex.format!("{YYYY}-{0M}-{0D}"),
+            "endDate" =>
+              DateTime.utc_now()
+              |> Timex.shift(days: -5)
+              |> Timex.format!("{YYYY}-{0M}-{0D}")
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [consulting_hour | _consulting_hours] = get_in(query_data, [:data, "consultingHours"])
+    assert consulting_hour["staff"] == "John Doe"
+    assert consulting_hour["content"] == "Datastudio Reports"
   end
 
   @valid_org_attrs %{
