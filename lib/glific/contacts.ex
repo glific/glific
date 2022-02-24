@@ -388,7 +388,8 @@ defmodule Glific.Contacts do
       updated_at: DateTime.utc_now()
     }
 
-    case Repo.get_by(Contact, %{phone: phone}) do
+    Repo.get_by(Contact, %{phone: phone})
+    |> case do
       nil ->
         create_contact(attrs)
 
@@ -398,17 +399,24 @@ defmodule Glific.Contacts do
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
-    |> set_session_status(:hsm)
-    |> then(fn {:ok, contact} ->
-      capture_history(contact.id, :contact_opted_in, %{
-        event_label: "contact opted in, via #{attrs.optin_method}",
-        event_meta: %{
-          method: attrs[:optin_method],
-          utc_time: utc_time,
-          optin_message_id: attrs[:optin_message_id]
-        }
-      })
-    end)
+    |> case do
+      {:ok, contact} ->
+        set_session_status(contact, :hsm)
+
+        capture_history(contact.id, :contact_opted_in, %{
+          event_label: "contact opted in, via #{attrs.optin_method}",
+          event_meta: %{
+            method: attrs[:optin_method],
+            utc_time: utc_time,
+            optin_message_id: attrs[:optin_message_id]
+          }
+        })
+
+        {:ok, contact}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()

@@ -392,6 +392,7 @@ defmodule Glific.Flows.ContactAction do
     # We need to update the contact with optout_time and status
     context.contact
     |> Map.from_struct()
+    |> Map.merge(Enum.into(opts, %{}))
     |> Contacts.optin_contact()
 
     context

@@ -18,7 +18,7 @@ defmodule Glific.Providers.GupshupEnterpriseContacts do
   @impl Glific.Providers.ContactBehaviour
 
   @spec optin_contact(map()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
+          {:ok, Contacts.Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, list()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
     ApiClient.optin_contact(organization_id, %{"phone_number" => attrs.phone})
     |> case do

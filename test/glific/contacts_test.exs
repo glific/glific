@@ -211,17 +211,6 @@ defmodule Glific.ContactsTest do
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
     end
 
-    # this is actually in the gupshup provider contact
-    test "create_or_update_contact/1 with valid data creates a new contact when contact does not exist",
-         attrs do
-      attrs = Map.merge(attrs, @valid_attrs)
-      contacts_count = Contacts.count_contacts(%{filter: attrs})
-
-      assert contacts_count == 0
-
-      assert {:ok, %Contact{}} = BSPContacts.Contact.create_or_update_contact(attrs)
-    end
-
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
         Import.import_contacts(999, "foo", file_path: "file_path", url: "")
