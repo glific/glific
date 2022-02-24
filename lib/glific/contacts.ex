@@ -373,9 +373,9 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in and ignore if it's blocked
   """
-  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t(), Keyword.t()) ::
+  @spec contact_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(phone, organization_id, utc_time, opts \\ []) do
+  def contact_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts \\ []) do
     attrs = %{
       phone: phone,
       optin_time: utc_time,
@@ -387,6 +387,8 @@ defmodule Glific.Contacts do
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     }
+
+    attrs = Map.merge(contact_attrs, attrs)
 
     Repo.get_by(Contact, %{phone: phone})
     |> case do
@@ -401,7 +403,7 @@ defmodule Glific.Contacts do
     end
     |> case do
       {:ok, contact} ->
-        set_session_status(contact, :hsm)
+        {:ok, contact} = set_session_status(contact, :hsm)
 
         capture_history(contact.id, :contact_opted_in, %{
           event_label: "contact opted in, via #{attrs.optin_method}",

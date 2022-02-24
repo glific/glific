@@ -30,7 +30,7 @@ defmodule Glific.Providers.GupshupContacts do
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
         Contacts.contact_opted_in(
-          attrs.phone,
+          attrs,
           organization_id,
           attrs[:optin_time] || DateTime.utc_now(),
           method: attrs[:method] || "BSP"

@@ -139,17 +139,16 @@ defmodule Glific.Contacts.Import do
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
       case errors do
-        [] -> {:ok, %{status: "All contacts added"}}
-        _ -> {:error, %{status: "All contacts could not be added", errors: errors}}
+        [] -> {:ok, %{message: "All contacts added"}}
+        _ -> {:error, %{message: "All contacts could not be added", details: errors}}
       end
     else
       {:error, error} ->
         {:error,
          %{
-           status: "All contacts could not be added",
-           errors: [
+           message: "All contacts could not be added",
+           details:
              "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
-           ]
          }}
     end
   end
@@ -176,7 +175,7 @@ defmodule Glific.Contacts.Import do
     }
     |> GroupContacts.update_group_contacts()
 
-    {:ok, %{status: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
+    {:ok, %{message: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
   end
 
   @spec clean_contact_for_group(map(), non_neg_integer()) :: map()
