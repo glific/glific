@@ -355,9 +355,11 @@ defmodule Glific.CommunicationsTest do
       {:ok, simulator} = Repo.fetch_by(Contacts.Contact, %{phone: simulator_phone})
 
       message = Fixtures.message_fixture(%{receiver_id: simulator.id})
-      Communications.Message.send_message(message)
+      {:ok, msg} = Communications.Message.send_message(message)
       assert_enqueued(worker: Worker, prefix: global_schema)
       Oban.drain_queue(queue: :gupshup)
+      sent_msg = Messages.get_message!(msg.id)
+      assert sent_msg.errors == %{}
     end
   end
 
