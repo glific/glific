@@ -9,7 +9,7 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
   }
 
   @doc false
-  @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
+  @spec handle_response({:ok, Tesla.Env.t()}, Message.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
   def handle_response({:ok, response}, message) do
     case response do
@@ -25,5 +25,18 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
       _ ->
         Communications.Message.handle_error_response(response, message)
     end
+  end
+
+  @default_tesla_error %{
+    "payload" => %{
+      "payload" => %{
+        "reason" => "Error sending message due to network issues or Gupshup Outage"
+      }
+    }
+  }
+  # Sending default error when API Client call fails for some reason
+  def handle_response(_error, message) do
+    Communications.Message.handle_error_response(%{body: @default_tesla_error}, message)
+    :ok
   end
 end
