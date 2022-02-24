@@ -532,6 +532,75 @@ mutation  deleteConsultingHour($id: ID!) {
 </tbody>
 </table>
 
+### ConsultingHourFilter ###
+
+Filtering options for consulting hours
+
+<table>
+<thead>
+<tr>
+<th colspan="2" align="left">Field</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>organizationName</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the organization name
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>participants</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the participants
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>staff</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match the staff
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isBillable</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>
+
+Match the is billable flag
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>startDate</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match lower limit of when in consulting hours
+
+</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>endDate</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>
+
+Match upper limit of when in consulting hours
+
+</tbody>
+</table>
+
+
 ### ConsultingHourResult
 
 <table>
