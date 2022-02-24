@@ -7,6 +7,7 @@ defmodule Glific.Clients.ArogyaWorld do
   import Ecto.Query
 
   alias Glific.{
+    Contacts.Contact,
     GCS.GcsWorker,
     Messages.Message,
     Partners,
@@ -21,11 +22,6 @@ defmodule Glific.Clients.ArogyaWorld do
   @first_question_day "1"
 
   @second_question_day "4"
-
-  @pilot_hour_to_day %{
-    2 => @first_question_day,
-    10 => @second_question_day
-  }
 
   @csv_url_key_map %{
     "static_message_schedule" =>
@@ -55,7 +51,10 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    current_week = get_current_week(organization_id)
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    current_week = get_current_week(organization_id, contact_id)
+
     current_week_day = get_week_day_number()
     message_id = get_message_id(organization_id, current_week, current_week_day)
     template_id = get_message_template_id(organization_id, message_id)
@@ -70,10 +69,21 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
+  get the week based on current batch
+  """
+  def webhook("batch_current_week", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    current_week = get_current_week(organization_id, contact_id)
+  end
+
+  @doc """
   Send the response data back to arogya team in a CSV file
   """
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+
     current_week = get_current_week(organization_id)
     upload_participant_responses(organization_id, current_week)
   end
@@ -149,14 +159,17 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_data.text
   end
 
+  defp get_current_week(organization_id, contact_id) do
+    current_week = get_current_week(organization_id)
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
+
+    # get the batch from contact fields and subtract from current week
+    IO.inspect(contact)
+  end
+
   defp get_week_day_number do
-    ## For pilot phase, we will use the hour number.
-    hour = Timex.now().hour
-
-    String.to_integer(@pilot_hour_to_day[hour])
-
     ## we will enable this when pilot phase is over.
-    # Timex.weekday(Timex.today())
+    Timex.weekday(Timex.today())
   end
 
   defp get_dynamic_week_key(current_week),
