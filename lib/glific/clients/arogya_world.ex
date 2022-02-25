@@ -162,12 +162,20 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_data.text
   end
 
-  defp get_current_week(organization_id, contact_id) do
+  def get_current_week(organization_id, contact_id) do
     current_week = get_current_week(organization_id)
     {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
 
     # get the batch from contact fields and subtract from current week
-    IO.inspect(contact)
+    batch_number = get_in(contact.fields, ["batch", "value"])
+
+    case batch_number do
+      nil ->
+        current_week
+
+      _ ->
+        Glific.parse_maybe_integer!(current_week) - Glific.parse_maybe_integer!(batch_number) + 1
+    end
   end
 
   defp get_week_day_number do
