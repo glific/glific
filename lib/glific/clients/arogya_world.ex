@@ -118,8 +118,6 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   def webhook(_, fields), do: fields
-  @spec weekly_tasks(non_neg_integer()) :: any()
-  def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
 
   defp run_weekly_tasks(org_id) do
     {_current_week, next_week} = update_week_number(org_id)
@@ -134,19 +132,14 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     Logger.info("Ran daily tasks for organization #{org_id}")
-  end
 
-  @spec hourly_tasks(non_neg_integer()) :: any()
-  def hourly_tasks(org_id) do
-    ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-
-    case Timex.now().hour do
-      ## update week number and load participant files
+    case get_week_day_number() do
+      ## update the week and load file on monday
       1 ->
         run_weekly_tasks(org_id)
 
-      # upload the participat files around 7 pm
-      14 ->
+      # upload the participant files on sunday
+      7 ->
         current_week = get_current_week(org_id)
         upload_participant_responses(org_id, current_week)
     end
@@ -160,7 +153,8 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_data.text
   end
 
-  def get_current_week(organization_id, contact_id) do
+  @spec get_current_week(non_neg_integer(), non_neg_integer()) :: String.t()
+  defp get_current_week(organization_id, contact_id) do
     current_week = get_current_week(organization_id)
     {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
 
