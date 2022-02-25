@@ -72,13 +72,11 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
 
-    get_current_week(organization_id, contact_id)
-  end
+    current_week = get_current_week(organization_id, contact_id)
 
-  def webhook("current_batch", fields) do
-    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
-
-    get_current_week(organization_id)
+    %{
+      batch_current_week: current_week
+    }
   end
 
   @doc """
@@ -174,7 +172,8 @@ defmodule Glific.Clients.ArogyaWorld do
         current_week
 
       _ ->
-        Glific.parse_maybe_integer!(current_week) - Glific.parse_maybe_integer!(batch_number) + 1
+        (Glific.parse_maybe_integer!(current_week) - Glific.parse_maybe_integer!(batch_number) + 1)
+        |> to_string()
     end
   end
 
