@@ -52,7 +52,7 @@ defmodule Glific.Search.Full do
     |> Enum.reduce(query, fn flow_label, query ->
       where(query, [m: m], ilike(m.flow_label, ^"%#{flow_label}%"))
     end)
-    |> or_where([m: m], ilike(m.flow_label, ^"%#{flow_labels}%"))
+    |> or_where([m: m], m.flow_label in ^flow_labels)
   end
 
   defp run_include_labels(query, _args), do: query
