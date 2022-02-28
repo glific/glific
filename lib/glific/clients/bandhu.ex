@@ -15,7 +15,7 @@ defmodule Glific.Clients.Bandhu do
     profiles = random_profiles(profile_count)
 
     %{
-      profile_count: 0,
+      profile_count: profile_count,
       profiles: profiles
     }
   end
