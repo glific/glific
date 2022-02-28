@@ -52,6 +52,9 @@ defmodule Glific.Clients.ArogyaWorld do
     load_participant_file(org_id, dynamic_week_start)
   end
 
+  @doc """
+  Send the response data back to arogya team in a CSV file
+  """
   @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
@@ -69,9 +72,6 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  @doc """
-  Send the response data back to arogya team in a CSV file
-  """
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     current_week = get_current_week(organization_id)
@@ -107,6 +107,8 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   def webhook(_, fields), do: fields
+
+  @doc false
   @spec weekly_tasks(non_neg_integer()) :: any()
   def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
 
@@ -120,11 +122,13 @@ defmodule Glific.Clients.ArogyaWorld do
     load_participant_file(org_id, next_week)
   end
 
+  @doc false
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     Logger.info("Ran daily tasks for organization #{org_id}")
   end
 
+  @doc false
   @spec hourly_tasks(non_neg_integer()) :: any()
   def hourly_tasks(org_id) do
     ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.

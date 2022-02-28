@@ -8,6 +8,7 @@ defmodule Glific.Mails.NewPartnerOnboardedMail do
     Partners.Saas
   }
 
+  @doc false
   @spec new_mail(Organization.t()) :: Swoosh.Email.t()
   def new_mail(org) do
     subject = """

@@ -92,6 +92,7 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
+  @doc false
   @spec submit_opt_template_for_org(any) ::
           {:error, Ecto.Changeset.t()} | {:ok, Templates.SessionTemplate.t()}
   def submit_opt_template_for_org(org_id) do
@@ -111,6 +112,7 @@ defmodule Glific.Seeds.SeedsMigration do
     |> Templates.create_session_template()
   end
 
+  @doc false
   @spec set_newcontact_flow_id(non_neg_integer()) ::
           {:error, Ecto.Changeset.t()} | {:ok, Organization.t()}
   def set_newcontact_flow_id(org_id) do
@@ -343,7 +345,7 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @doc """
-    sync all the hsm from BSP to Glific DB
+  sync all the hsm from BSP to Glific DB
   """
   @spec sync_hsm_templates(list) :: :ok
   def sync_hsm_templates(org_id_list) do

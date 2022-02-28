@@ -5,6 +5,8 @@ defmodule Glific.URI do
 
   The ownership, author and license (MIT) remains with the original owner of that repository
   """
+
+  @doc false
   @spec type :: :string
   def type, do: :string
 

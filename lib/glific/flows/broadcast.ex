@@ -83,7 +83,7 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @doc """
-    mark all the proceesed  flow broadcast as completed
+  Mark all the proceesed  flow broadcast as completed
   """
   @spec mark_flow_broadcast_completed(non_neg_integer()) :: :ok
   def mark_flow_broadcast_completed(org_id) do
@@ -276,6 +276,7 @@ defmodule Glific.Flows.Broadcast do
     """
   end
 
+  @doc false
   @spec broadcast_stats(non_neg_integer()) :: {:ok, map()}
   def broadcast_stats(flow_broadcast_id) do
     results =
@@ -288,7 +289,7 @@ defmodule Glific.Flows.Broadcast do
           opted_out: 0
         }
       }
-      |> count_successfull_deliveries(flow_broadcast_id)
+      |> count_successful_deliveries(flow_broadcast_id)
       |> count_failed_deliveries(flow_broadcast_id)
       |> count_pending_deliveries(flow_broadcast_id)
       |> count_failed_deliveries_by_category(flow_broadcast_id)
@@ -296,7 +297,7 @@ defmodule Glific.Flows.Broadcast do
     {:ok, results}
   end
 
-  defp count_successfull_deliveries(map, flow_broadcast_id) do
+  defp count_successful_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
       |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
