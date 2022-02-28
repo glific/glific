@@ -418,6 +418,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             flow_broadcast_id: row.flow_broadcast_id,
             is_background_flow: row.is_background_flow,
             is_await_result: row.is_await_result,
+            is_killed: row.is_killed,
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
