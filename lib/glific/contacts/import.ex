@@ -7,6 +7,7 @@ defmodule Glific.Contacts.Import do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Flows.ContactField,
     Groups,
     Groups.ContactGroup,
     Groups.GroupContacts,
@@ -65,6 +66,8 @@ defmodule Glific.Contacts.Import do
       |> Contacts.optin_contact()
       |> case do
         {:ok, contact} ->
+          # if we successfully optin the contact, we should update the contact name in the fields.
+          update_contact_name_to_field(contact, contact_attrs[:name])
           contact
 
         {:error, error} ->
@@ -109,6 +112,14 @@ defmodule Glific.Contacts.Import do
       true ->
         true
     end
+  end
+
+  ## later we can have one more column to say that force optin
+  @spec update_contact_name_to_field(Contact.t(), map()) :: boolean()
+  defp update_contact_name_to_field(contact, name) do
+    if is_nil(name),
+      do: contact,
+      else: ContactField.do_add_contact_field(contact, "name", "name", name)
   end
 
   @doc """
