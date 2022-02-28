@@ -586,6 +586,21 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec mock_validate_media(String.t()) :: any()
+  def mock_validate_media(type \\ "image") do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          headers: %{
+            "content-type" => "#{type}",
+            "content-length" => "111"
+          }
+        }
+    end)
+  end
+
+  @doc false
   @spec group_messages_fixture(map()) :: nil
   def group_messages_fixture(attrs) do
     [cg1, _cg2, cg3] = group_contacts_fixture(attrs)
@@ -725,7 +740,7 @@ defmodule Glific.Fixtures do
       organization_name: "Glific",
       staff: "Adelle Cavin",
       content: "GCS issue",
-      when: DateTime.backward(10),
+      when: DateTime.backward(2),
       duration: 10,
       is_billable: true
     }

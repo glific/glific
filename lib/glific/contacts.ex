@@ -401,6 +401,16 @@ defmodule Glific.Contacts do
     |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
     |> elem(1)
     |> set_session_status(:hsm)
+    |> then(fn {:ok, contact} ->
+      capture_history(contact.id, :contact_opted_in, %{
+        event_label: "contact opted in, via #{attrs.optin_method}",
+        event_meta: %{
+          method: attrs[:optin_method],
+          utc_time: utc_time,
+          optin_message_id: attrs[:optin_message_id]
+        }
+      })
+    end)
   end
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
@@ -456,6 +466,14 @@ defmodule Glific.Contacts do
           :error
 
         contact ->
+          capture_history(contact.id, :contact_opted_out, %{
+            event_label: "contact opted out, via #{method}",
+            event_meta: %{
+              method: method,
+              utc_time: utc_time
+            }
+          })
+
           update_contact(
             contact,
             opted_out_attrs(phone, organization_id, utc_time, method)
@@ -603,13 +621,14 @@ defmodule Glific.Contacts do
   """
   @spec update_contact_status(non_neg_integer, map()) :: :ok
   def update_contact_status(organization_id, _args) do
-    t = Glific.go_back_time(24)
+    t = Glific.go_back_time(24 * 60 - 1, DateTime.utc_now(), :minute)
 
     Contact
-    |> where([c], c.last_message_at <= ^t)
     |> where([c], c.organization_id == ^organization_id)
+    |> where([c], c.last_message_at <= ^t)
+    |> where([c], c.bsp_status in [:session, :session_and_hsm])
     |> select([c], c.id)
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> set_session_status(:none)
   end
 
