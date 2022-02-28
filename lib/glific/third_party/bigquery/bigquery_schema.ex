@@ -542,6 +542,129 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for flow context schema
+  """
+  @spec flow_context_schema :: list()
+  def flow_context_schema do
+    [
+      %{
+        description: "Flow Context ID; key",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Name of the current node uuid flow",
+        name: "node_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow",
+        name: "flow_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "flow_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "contact_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "contact_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "results",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "recent_inbound",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "recent_outbound",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "parent_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "group_message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "flow_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status if the message was an HSM",
+        name: "is_background_flow",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status if the message was an HSM",
+        name: "is_await_result",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow was first created",
+        name: "wakeup_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow was first created",
+        name: "completed_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the flow was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
   Schema for flow results table
   """
   @spec flow_result_schema :: list()
