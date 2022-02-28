@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:google_cloud_storage, :boolean)
     field(:dialogflow, :boolean)
     field(:fun_with_flags, :boolean)
+    field(:flow_uuid_display, :boolean)
     field(:errors, list_of(:input_error))
   end
 
