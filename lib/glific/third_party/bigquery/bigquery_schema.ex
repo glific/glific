@@ -497,6 +497,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Name of the created flow",
         name: "name",
         type: "STRING",
@@ -552,6 +558,12 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         description: "Name of the current node uuid flow",
@@ -610,12 +622,6 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Unique ID generated for each flow in the glific db",
         name: "parent_id",
-        type: "INTEGER",
-        mode: "NULLABLE"
-      },
-      %{
-        description: "Unique ID generated for each flow in the glific db",
-        name: "group_message_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },

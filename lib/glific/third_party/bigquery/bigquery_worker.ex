@@ -265,6 +265,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
+            bq_uuid: Ecto.UUID.generate(),
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
@@ -414,7 +415,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
             recent_outbound: BigQuery.format_json(row.recent_outbound),
             status: row.status,
             parent_id: row.parent_id,
-            group_message_id: row.group_message_id,
             flow_broadcast_id: row.flow_broadcast_id,
             is_background_flow: row.is_background_flow,
             is_await_result: row.is_await_result,
