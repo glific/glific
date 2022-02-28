@@ -115,7 +115,7 @@ defmodule Glific.Contacts.Import do
   end
 
   ## later we can have one more column to say that force optin
-  @spec update_contact_name_to_field(Contact.t(), map()) :: boolean()
+  @spec update_contact_name_to_field(Contact.t(), map()) :: Contact.t()
   defp update_contact_name_to_field(contact, name) do
     if is_nil(name),
       do: contact,
