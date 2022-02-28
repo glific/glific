@@ -498,7 +498,7 @@ defmodule Glific.Partners do
     |> Map.put(:languages, languages)
   end
 
-  @spec set_flow_uuid_display(map()) :: boolean
+  @spec get_flow_uuid_display(map()) :: boolean
   defp get_flow_uuid_display(organization) do
     cond do
       Application.get_env(:glific, :environment) == :prod && organization.id == 2 -> true
