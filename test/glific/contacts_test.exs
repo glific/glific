@@ -437,6 +437,10 @@ defmodule Glific.ContactsTest do
         Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
+        [contact | _tail] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
+
+        assert get_in(contact.fields, ["name", "value"]) == "updated"
+
         assert count == 1
         assert_not_called(Contacts.optin_contact())
       end

@@ -60,14 +60,15 @@ defmodule Glific.Contacts.Import do
       add_contact_to_group(contact, group_id)
     end
 
+    if contact_attrs[:name] not in [nil, ""],
+      do: ContactField.do_add_contact_field(contact, "name", "name", contact_attrs[:name])
+
     if should_optin_contact?(contact, contact_attrs) do
       contact_attrs
       |> Map.put(:method, "Import")
       |> Contacts.optin_contact()
       |> case do
         {:ok, contact} ->
-          # if we successfully optin the contact, we should update the contact name in the fields.
-          update_contact_name_to_field(contact, contact_attrs[:name])
           contact
 
         {:error, error} ->
@@ -112,14 +113,6 @@ defmodule Glific.Contacts.Import do
       true ->
         true
     end
-  end
-
-  ## later we can have one more column to say that force optin
-  @spec update_contact_name_to_field(Contact.t(), map()) :: Contact.t()
-  defp update_contact_name_to_field(contact, name) do
-    if is_nil(name),
-      do: contact,
-      else: ContactField.do_add_contact_field(contact, "name", "name", name)
   end
 
   @doc """
