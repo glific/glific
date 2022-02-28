@@ -354,7 +354,7 @@ defmodule Glific.Flows.ContactAction do
 
     {type, url} = handle_attachment_expression(context, type, url)
 
-    %{is_valid: true, message: _message} = Messages.validate_media(url, type)
+    %{is_valid: true, message: _message} = Messages.validate_media(url, to_string(type))
 
     type = Glific.safe_string_to_atom(type)
 
