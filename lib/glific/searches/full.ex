@@ -6,7 +6,9 @@ defmodule Glific.Search.Full do
   import Ecto.Query
 
   alias Glific.{
-    Groups.ContactGroup
+    Flows.FlowLabel,
+    Groups.ContactGroup,
+    Repo
   }
 
   @doc """
@@ -38,6 +40,23 @@ defmodule Glific.Search.Full do
 
   defp run_include_groups(query, _args), do: query
 
+  @spec run_include_labels(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
+  defp run_include_labels(query, label_ids) when is_list(label_ids) and label_ids != [] do
+    flow_labels =
+      FlowLabel
+      |> where([f], f.id in ^label_ids)
+      |> select([f], f.name)
+      |> Repo.all()
+
+    flow_labels
+    |> Enum.reduce(query, fn flow_label, query ->
+      where(query, [m: m], ilike(m.flow_label, ^"%#{flow_label}%"))
+    end)
+    |> or_where([m: m], ilike(m.flow_label, ^"%#{flow_labels}%"))
+  end
+
+  defp run_include_labels(query, _args), do: query
+
   @spec run_helper(Ecto.Queryable.t(), String.t(), map()) :: Ecto.Queryable.t()
   defp run_helper(query, term, args) when term != nil and term != "" do
     query
@@ -58,6 +77,9 @@ defmodule Glific.Search.Full do
     Enum.reduce(filter, query, fn
       {:include_groups, group_ids}, query ->
         query |> run_include_groups(group_ids)
+
+      {:include_labels, label_ids}, query ->
+        query |> run_include_labels(label_ids)
 
       {:date_range, dates}, query ->
         query |> run_date_range(dates[:from], dates[:to])
