@@ -371,6 +371,7 @@ defmodule Glific.Partners do
       |> set_bsp_info()
       |> set_out_of_office_values()
       |> set_languages()
+      |> set_flow_uuid_display()
 
     Caches.set(
       @global_organization_id,
@@ -495,6 +496,24 @@ defmodule Glific.Partners do
 
     organization
     |> Map.put(:languages, languages)
+  end
+
+  @spec set_flow_uuid_display(map()) :: boolean
+  defp get_flow_uuid_display(organization) do
+    cond do
+      Application.get_env(:glific, :environment) == :prod && organization.id == 2 -> true
+      Application.get_env(:glific, :environment) != :prod && organization.id == 1 -> true
+      true -> false
+    end
+  end
+
+  @spec set_flow_uuid_display(map()) :: map()
+  defp set_flow_uuid_display(organization) do
+    Map.put(
+      organization,
+      :is_flow_uuid_display,
+      get_flow_uuid_display(organization)
+    )
   end
 
   # Lets cache all bsp provider specific info in the organization entity since

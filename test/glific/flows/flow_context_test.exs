@@ -208,7 +208,6 @@ defmodule Glific.Flows.FlowContextTest do
     # check for the context
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert is_nil(flow_context.node)
-    assert is_nil(flow_context.node_uuid)
     assert not is_nil(flow_context.completed_at)
   end
 
