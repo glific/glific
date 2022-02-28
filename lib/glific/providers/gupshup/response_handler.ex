@@ -8,6 +8,8 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
     Messages.Message
   }
 
+  require Logger
+
   @doc false
   @spec handle_response({:ok, Tesla.Env.t()}, Message.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
@@ -35,7 +37,12 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
     }
   }
   # Sending default error when API Client call fails for some reason
-  def handle_response(_error, message) do
+  def handle_response(error, message) do
+    # Adding log when API Client fails
+    Logger.info(
+      "Error calling API Client for org_id: #{message.organization_id} error: #{inspect(error)}"
+    )
+
     Communications.Message.handle_error_response(%{body: @default_tesla_error}, message)
     :ok
   end
