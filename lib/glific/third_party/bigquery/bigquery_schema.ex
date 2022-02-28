@@ -584,73 +584,80 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "contact id refrences to the contact table",
         name: "contact_id",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "contact phone refrences to the contact table",
         name: "contact_phone",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "local result of a perticular flow context",
         name: "results",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "Few latest messages received by the contact",
         name: "recent_inbound",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "Few latest messages sent to the contact",
         name: "recent_outbound",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "Status of the flow context is it for draft or published only",
         name: "status",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "Parent flow context id refrences to the flow context table",
         name: "parent_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "Unique ID generated for each flow in the glific db",
+        description: "flow_broadcast_id refrences to the flow broadcast table",
         name: "flow_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "Status if the message was an HSM",
+        description: "Check to see if the flow context is for a background or foreground flow",
         name: "is_background_flow",
         type: "BOOLEAN",
         mode: "NULLABLE"
       },
       %{
-        description: "Status if the message was an HSM",
+        description:
+          "Check in case we killed the flow for a contact. Not when contact finished the flow",
+        name: "is_killed",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check for a flow results node",
         name: "is_await_result",
         type: "BOOLEAN",
         mode: "NULLABLE"
       },
       %{
-        description: "Time when the flow was first created",
+        description: "Check if the flow is waiting for a action or time to resume.",
         name: "wakeup_at",
         type: "DATETIME",
         mode: "NULLABLE"
       },
       %{
-        description: "Time when the flow was first created",
+        description: "Time when the flow was killed or completed",
         name: "completed_at",
         type: "DATETIME",
         mode: "NULLABLE"
