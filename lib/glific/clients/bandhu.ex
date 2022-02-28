@@ -15,7 +15,7 @@ defmodule Glific.Clients.Bandhu do
     profiles = random_profiles(profile_count)
 
     %{
-      profile_count: profile_count,
+      profile_count: 0,
       profiles: profiles
     }
   end
@@ -45,6 +45,12 @@ defmodule Glific.Clients.Bandhu do
       %{profile: %{}, is_valid: false}
     end
   end
+
+  def webhook("test", _fields),
+    do: %{
+      "media_url" =>
+        "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png"
+    }
 
   def webhook(_, _fields), do: %{}
 
