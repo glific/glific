@@ -499,11 +499,23 @@ defmodule Glific.Partners do
   end
 
   @spec get_flow_uuid_display(map()) :: boolean
-  defp get_flow_uuid_display(organization) do
+  def get_flow_uuid_display(organization) do
+    id = organization.id
+
     cond do
-      Application.get_env(:glific, :environment) == :prod && organization.id == 2 -> true
-      Application.get_env(:glific, :environment) != :prod && organization.id == 1 -> true
-      true -> false
+      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
+        true
+
+      # the below 2 conds are just for testing and prototyping purposes
+      # we'll get rid of them when we start using this actively
+      Application.get_env(:glific, :environment) == :prod && id == 2 ->
+        true
+
+      Application.get_env(:glific, :environment) != :prod && id == 1 ->
+        true
+
+      true ->
+        false
     end
   end
 
