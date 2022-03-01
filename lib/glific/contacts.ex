@@ -373,9 +373,9 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in and ignore if it's blocked
   """
-  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t(), Keyword.t()) ::
+  @spec contact_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(phone, organization_id, utc_time, opts \\ []) do
+  def contact_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts \\ []) do
     attrs = %{
       phone: phone,
       optin_time: utc_time,
@@ -388,7 +388,10 @@ defmodule Glific.Contacts do
       updated_at: DateTime.utc_now()
     }
 
-    case Repo.get_by(Contact, %{phone: phone}) do
+    attrs = Map.merge(contact_attrs, attrs)
+
+    Repo.get_by(Contact, %{phone: phone})
+    |> case do
       nil ->
         create_contact(attrs)
 
@@ -398,19 +401,24 @@ defmodule Glific.Contacts do
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
-    |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
-    |> elem(1)
-    |> set_session_status(:hsm)
-    |> then(fn {:ok, contact} ->
-      capture_history(contact.id, :contact_opted_in, %{
-        event_label: "contact opted in, via #{attrs.optin_method}",
-        event_meta: %{
-          method: attrs[:optin_method],
-          utc_time: utc_time,
-          optin_message_id: attrs[:optin_message_id]
-        }
-      })
-    end)
+    |> case do
+      {:ok, contact} ->
+        {:ok, contact} = set_session_status(contact, :hsm)
+
+        capture_history(contact.id, :contact_opted_in, %{
+          event_label: "contact opted in, via #{attrs.optin_method}",
+          event_meta: %{
+            method: attrs[:optin_method],
+            utc_time: utc_time,
+            optin_message_id: attrs[:optin_message_id]
+          }
+        })
+
+        {:ok, contact}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
@@ -423,18 +431,6 @@ defmodule Glific.Contacts do
       true -> false
     end
   end
-
-  @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp optin_on_bsp({:ok, contact}, true) do
-    contact
-    |> Map.from_struct()
-    |> optin_contact()
-
-    {:ok, contact}
-  end
-
-  defp optin_on_bsp(res, _), do: res
 
   @spec opted_out_attrs(String.t(), non_neg_integer, DateTime.t(), String.t()) :: map()
   defp opted_out_attrs(phone, organization_id, utc_time, method),
