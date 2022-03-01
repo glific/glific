@@ -51,12 +51,12 @@ defmodule Glific.ClientsTest do
 
     # ensure sol works
     contact = Fixtures.contact_fixture()
-    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+    directory = Sol.gcs_file_name(%{"contact_id" => contact.id, "organization_id" => 1})
     assert String.contains?(directory, "/")
     assert String.contains?(directory, contact.phone)
 
     contact = Fixtures.contact_fixture(%{name: ""})
-    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+    directory = Sol.gcs_file_name(%{"contact_id" => contact.id, "organization_id" => 1})
     assert String.contains?(directory, "/")
 
     # also test reap_benefit separately

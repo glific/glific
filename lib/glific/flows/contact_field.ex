@@ -26,11 +26,11 @@ defmodule Glific.Flows.ContactField do
   end
 
   @doc """
-  Add contact field taking contact as parameter
+  Add contact field taking contact as parameter. We should change the name of this function for the consistency
   """
   @spec do_add_contact_field(Contact.t(), String.t(), String.t(), any(), String.t()) ::
           Contact.t()
-  def do_add_contact_field(contact, field, label, value, type) do
+  def do_add_contact_field(contact, field, label, value, type \\ "string") do
     contact_fields =
       if is_nil(contact.fields),
         do: %{},

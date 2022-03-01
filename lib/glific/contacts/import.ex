@@ -5,9 +5,9 @@ defmodule Glific.Contacts.Import do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    BSPContacts,
     Contacts,
     Contacts.Contact,
+    Flows.ContactField,
     Groups,
     Groups.ContactGroup,
     Groups.GroupContacts,
@@ -53,20 +53,29 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  defp process_data(contact, group_id) do
-    result =
-      case contact.optin_time do
-        nil -> BSPContacts.Contact.create_or_update_contact(Map.put(contact, :method, "Import"))
-        _ -> Contacts.optin_contact(Map.put(contact, :method, "Import"))
+  defp process_data(contact_attrs, group_id) do
+    {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+
+    if group_id do
+      add_contact_to_group(contact, group_id)
+    end
+
+    if contact_attrs[:name] not in [nil, ""],
+      do: ContactField.do_add_contact_field(contact, "name", "name", contact_attrs[:name])
+
+    if should_optin_contact?(contact, contact_attrs) do
+      contact_attrs
+      |> Map.put(:method, "Import")
+      |> Contacts.optin_contact()
+      |> case do
+        {:ok, contact} ->
+          contact
+
+        {:error, error} ->
+          %{phone: contact.phone, error: error}
       end
-
-    case result do
-      {:ok, contact} ->
-        add_contact_to_group(contact, group_id)
-        contact
-
-      {:error, error} ->
-        %{phone: contact.phone, error: error}
+    else
+      %{phone: contact.phone, error: "Could not import. Invalid or opted out contact"}
     end
   end
 
@@ -88,6 +97,21 @@ defmodule Glific.Contacts.Import do
       data != nil ->
         {:ok, stream} = StringIO.open(data)
         stream |> IO.binstream(:line)
+    end
+  end
+
+  ## later we can have one more column to say that force optin
+  @spec should_optin_contact?(Contact.t(), map()) :: boolean()
+  defp should_optin_contact?(contact, attrs) do
+    cond do
+      attrs.optin_time == nil ->
+        false
+
+      contact.optout_time != nil ->
+        false
+
+      true ->
+        true
     end
   end
 
@@ -119,26 +143,25 @@ defmodule Glific.Contacts.Import do
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
       case errors do
-        [] -> {:ok, %{status: "All contacts added"}}
-        _ -> {:error, %{status: "All contacts could not be added", errors: errors}}
+        [] -> {:ok, %{message: "All contacts added"}}
+        _ -> {:error, %{message: "All contacts could not be added", details: errors}}
       end
     else
       {:error, error} ->
         {:error,
          %{
-           status: "All contacts could not be added",
-           errors: [
+           message: "All contacts could not be added",
+           details:
              "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
-           ]
          }}
     end
   end
 
   @doc """
-    Import the existing contacts to a group.
+    Move the existing contacts to a group.
   """
-  @spec import_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts_to_group(organization_id, group_label, opts \\ []) do
+  @spec add_contacts_to_group(integer, String.t(), [{atom(), String.t()}]) :: tuple()
+  def add_contacts_to_group(organization_id, group_label, opts \\ []) do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
     {:ok, group} = Groups.get_or_create_group_by_label(group_label, organization_id)
 
@@ -156,7 +179,7 @@ defmodule Glific.Contacts.Import do
     }
     |> GroupContacts.update_group_contacts()
 
-    {:ok, %{status: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
+    {:ok, %{message: "#{length(contact_id_list)} contacts added to group #{group_label}"}}
   end
 
   @spec clean_contact_for_group(map(), non_neg_integer()) :: map()

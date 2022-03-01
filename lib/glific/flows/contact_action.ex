@@ -354,7 +354,7 @@ defmodule Glific.Flows.ContactAction do
 
     {type, url} = handle_attachment_expression(context, type, url)
 
-    %{is_valid: true, message: _message} = Messages.validate_media(url, type)
+    %{is_valid: true, message: _message} = Messages.validate_media(url, to_string(type))
 
     type = Glific.safe_string_to_atom(type)
 
@@ -390,12 +390,10 @@ defmodule Glific.Flows.ContactAction do
   @spec optin(FlowContext.t(), Keyword.t()) :: FlowContext.t()
   def optin(context, opts \\ []) do
     # We need to update the contact with optout_time and status
-    Contacts.contact_opted_in(
-      context.contact.phone,
-      context.contact.organization_id,
-      DateTime.utc_now(),
-      Keyword.put(opts, :optin_on_bsp, true)
-    )
+    context.contact
+    |> Map.from_struct()
+    |> Map.merge(Enum.into(opts, %{}))
+    |> Contacts.optin_contact()
 
     context
   end

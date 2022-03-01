@@ -397,13 +397,13 @@ defmodule Glific.FLowsTest do
 
       Broadcast.execute_group_broadcasts(attrs.organization_id)
 
-      assert {:ok, flow_boradcast} =
+      assert {:ok, flow_broadcast} =
                Repo.fetch_by(FlowBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_boradcast.completed_at != nil
+      assert flow_broadcast.completed_at != nil
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do

@@ -134,6 +134,11 @@ defmodule Glific.Partners.Organization do
     field :is_suspended, :boolean, default: false
     field :suspended_until, :utc_datetime
 
+    # 2085
+    # Lets create a virtual field for now to conditionally enable
+    # the display of node uuids. We need an NGO friendly way to do this globally
+    field :is_flow_uuid_display, :boolean, default: false, virtual: true
+
     timestamps(type: :utc_datetime)
   end
 
