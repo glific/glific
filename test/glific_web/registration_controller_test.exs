@@ -135,7 +135,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
     test "send otp", %{conn: conn} do
       receiver = Fixtures.contact_fixture()
 
-      Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
+      Contacts.contact_opted_in(
+        %{phone: receiver.phone},
+        receiver.organization_id,
+        DateTime.utc_now()
+      )
 
       valid_params = %{"user" => %{"phone" => receiver.phone}}
 
@@ -184,7 +188,11 @@ defmodule GlificWeb.API.V1.RegistrationControllerTest do
       # create a user for a contact
       receiver = Fixtures.contact_fixture()
 
-      Contacts.contact_opted_in(receiver.phone, receiver.organization_id, DateTime.utc_now())
+      Contacts.contact_opted_in(
+        %{phone: receiver.phone},
+        receiver.organization_id,
+        DateTime.utc_now()
+      )
 
       {:ok, user} =
         %{
