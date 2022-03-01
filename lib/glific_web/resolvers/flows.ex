@@ -118,8 +118,8 @@ defmodule GlificWeb.Resolvers.Flows do
       {:error, errors} ->
         {:ok, %{success: true, errors: %{key: hd(errors), message: hd(tl(errors))}}}
 
-      _ ->
-        {:error, dgettext("errors", "Something went wrong.")}
+      errors ->
+        {:error, dgettext("errors", "Something went wrong. Errors: #{inspect(errors)}")}
     end
   end
 
