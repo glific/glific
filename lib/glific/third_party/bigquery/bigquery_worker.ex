@@ -21,6 +21,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     BigQuery,
     Contacts,
     Contacts.Contact,
+    Flows,
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
@@ -67,6 +68,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("flow_results", organization_id)
       make_job_to_remove_duplicate("flow_counts", organization_id)
       make_job_to_remove_duplicate("messages_media", organization_id)
+      make_job_to_remove_duplicate("flow_contexts", organization_id)
     end
 
     :ok
@@ -263,6 +265,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
+            bq_uuid: Ecto.UUID.generate(),
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
@@ -383,6 +386,51 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :messages_media, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("flow_contexts", organization_id, attrs) do
+    Logger.info(
+      "fetching data for flow_contexts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("flow_contexts", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          # We are sending nil, as setting is a record type and need to structure the data first(like field)
+          %{
+            id: row.id,
+            bq_uuid: Ecto.UUID.generate(),
+            node_uuid: row.node_uuid,
+            flow_uuid: row.flow.uuid,
+            flow_id: row.flow.id,
+            contact_id: row.contact.id,
+            contact_phone: row.contact.phone,
+            results: BigQuery.format_json(row.results),
+            recent_inbound: BigQuery.format_json(row.recent_inbound),
+            recent_outbound: BigQuery.format_json(row.recent_outbound),
+            status: row.status,
+            parent_id: row.parent_id,
+            flow_broadcast_id: row.flow_broadcast_id,
+            is_background_flow: row.is_background_flow,
+            is_await_result: row.is_await_result,
+            is_killed: row.is_killed,
+            wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
+            completed_at: BigQuery.format_date(row.completed_at, organization_id),
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
+          }
+          |> BigQuery.format_data_for_bigquery("flow_contexts")
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :flow_contexts, organization_id, attrs))
 
     :ok
   end
@@ -641,6 +689,14 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
       |> preload([:organization])
+
+  defp get_query("flow_contexts", organization_id, attrs),
+    do:
+      Flows.FlowContext
+      |> where([f], f.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([f], [f.inserted_at, f.id])
+      |> preload([:flow, :contact])
 
   defp get_query("stats", organization_id, attrs),
     do:

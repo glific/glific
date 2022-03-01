@@ -36,6 +36,7 @@ defmodule Glific.Flows.FlowContext do
     :wakeup_at,
     :is_background_flow,
     :is_await_result,
+    :is_killed,
     :completed_at,
     :delay,
     :uuids_seen,
@@ -74,6 +75,7 @@ defmodule Glific.Flows.FlowContext do
           wakeup_at: :utc_datetime | nil,
           is_background_flow: boolean,
           is_await_result: boolean,
+          is_killed: boolean,
           completed_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
@@ -95,6 +97,7 @@ defmodule Glific.Flows.FlowContext do
 
     field(:is_background_flow, :boolean, default: false)
     field(:is_await_result, :boolean, default: false)
+    field(:is_killed, :boolean, default: false)
 
     field(:delay, :integer, default: 0, virtual: true)
 
@@ -193,22 +196,21 @@ defmodule Glific.Flows.FlowContext do
       do: mark_flows_complete(context.contact_id, false)
 
     # lets reset the current context and return the resetted context
-    reset_one_context(context)
+    reset_one_context(context, true)
   end
 
   @doc """
   Reset this context, but dont follow parent context tail. This is used
   for tail call optimization
   """
-  @spec reset_one_context(FlowContext.t()) :: FlowContext.t()
-  def reset_one_context(context) do
+  @spec reset_one_context(FlowContext.t(), boolean) :: FlowContext.t()
+  def reset_one_context(context, is_killed \\ false) do
     {:ok, context} =
       FlowContext.update_flow_context(
         context,
         %{
           completed_at: DateTime.utc_now(),
-          node: nil,
-          node_uuid: nil
+          is_killed: is_killed
         }
       )
 
@@ -460,7 +462,7 @@ defmodule Glific.Flows.FlowContext do
     |> add_date_clause(after_insert_date)
     # lets not touch the contexts which are waiting to be woken up at a specific time
     |> where([fc], fc.is_background_flow == false)
-    |> Repo.update_all(set: [completed_at: now, node_uuid: nil, updated_at: now])
+    |> Repo.update_all(set: [completed_at: now, updated_at: now, is_killed: true])
 
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
