@@ -7,6 +7,7 @@ defmodule Glific.Clients.ArogyaWorld do
   import Ecto.Query
 
   alias Glific.{
+    Contacts.Contact,
     GCS.GcsWorker,
     Messages.Message,
     Partners,
@@ -21,11 +22,6 @@ defmodule Glific.Clients.ArogyaWorld do
   @first_question_day "1"
 
   @second_question_day "4"
-
-  @pilot_hour_to_day %{
-    2 => @first_question_day,
-    10 => @second_question_day
-  }
 
   @csv_url_key_map %{
     "static_message_schedule" =>
@@ -55,7 +51,10 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    current_week = get_current_week(organization_id)
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    current_week = get_current_week(organization_id, contact_id)
+
     current_week_day = get_week_day_number()
     message_id = get_message_id(organization_id, current_week, current_week_day)
     template_id = get_message_template_id(organization_id, message_id)
@@ -69,11 +68,23 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
+  def webhook("batch_current_week", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    current_week = get_current_week(organization_id, contact_id)
+
+    %{
+      batch_current_week: current_week
+    }
+  end
+
   @doc """
   Send the response data back to arogya team in a CSV file
   """
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+
     current_week = get_current_week(organization_id)
     upload_participant_responses(organization_id, current_week)
   end
@@ -107,8 +118,6 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   def webhook(_, fields), do: fields
-  @spec weekly_tasks(non_neg_integer()) :: any()
-  def weekly_tasks(org_id), do: run_weekly_tasks(org_id)
 
   defp run_weekly_tasks(org_id) do
     {_current_week, next_week} = update_week_number(org_id)
@@ -123,19 +132,14 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     Logger.info("Ran daily tasks for organization #{org_id}")
-  end
 
-  @spec hourly_tasks(non_neg_integer()) :: any()
-  def hourly_tasks(org_id) do
-    ## This is just for pilot phase. Will be removed later. We will update the day on a hourly basis.
-
-    case Timex.now().hour do
-      ## update week number and load participant files
+    case get_week_day_number() do
+      ## update the week and load file on monday
       1 ->
         run_weekly_tasks(org_id)
 
-      # upload the participat files around 7 pm
-      14 ->
+      # upload the participant files on sunday
+      7 ->
         current_week = get_current_week(org_id)
         upload_participant_responses(org_id, current_week)
     end
@@ -149,14 +153,27 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_data.text
   end
 
+  @spec get_current_week(non_neg_integer(), non_neg_integer()) :: String.t()
+  defp get_current_week(organization_id, contact_id) do
+    current_week = get_current_week(organization_id)
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: organization_id})
+
+    # get the batch from contact fields and subtract from current week
+    batch_number = get_in(contact.fields, ["batch", "value"])
+
+    case batch_number do
+      nil ->
+        current_week
+
+      _ ->
+        (Glific.parse_maybe_integer!(current_week) - Glific.parse_maybe_integer!(batch_number) + 1)
+        |> to_string()
+    end
+  end
+
   defp get_week_day_number do
-    ## For pilot phase, we will use the hour number.
-    hour = Timex.now().hour
-
-    String.to_integer(@pilot_hour_to_day[hour])
-
     ## we will enable this when pilot phase is over.
-    # Timex.weekday(Timex.today())
+    Timex.weekday(Timex.today())
   end
 
   defp get_dynamic_week_key(current_week),
