@@ -23,6 +23,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
         description: "User name",
         name: "name",
         type: "STRING",
@@ -236,6 +242,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Uniquely generated message UUID, primarily needed for the flow editor",
         name: "uuid",
         type: "STRING",
@@ -446,6 +458,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
         description: "caption we received with the message",
         name: "caption",
         type: "STRING",
@@ -500,6 +518,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Unique UUID for the row (allows us to delete duplicates)",
         name: "bq_uuid",
         type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
         mode: "NULLABLE"
       },
       %{
@@ -563,6 +587,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Unique UUID for the row (allows us to delete duplicates)",
         name: "bq_uuid",
         type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
         mode: "NULLABLE"
       },
       %{
@@ -696,6 +726,12 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
         description: "Name of the workflow",
         name: "name",
         type: "STRING",
@@ -769,6 +805,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Unique UUID for the row (allows us to delete duplicates)",
         name: "bq_uuid",
         type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
         mode: "NULLABLE"
       },
       %{

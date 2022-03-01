@@ -183,6 +183,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       [
         row
         |> get_message_row(organization_id)
+        |> Map.merge(bq_fields(organization_id))
         |> BigQuery.format_data_for_bigquery("messages")
         | acc
       ]
@@ -209,7 +210,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
             # We are sending nil, as setting is a record type and need to structure the data first(like field)
             %{
               id: row.id,
-              bq_uuid: Ecto.UUID.generate(),
               name: row.name,
               phone: row.phone,
               provider_status: row.bsp_status,
@@ -241,6 +241,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               raw_fields: BigQuery.format_json(row.fields),
               group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
             }
+            |> Map.merge(bq_fields(organization_id))
             |> BigQuery.format_data_for_bigquery("contacts")
             | acc
           ]
@@ -265,7 +266,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            bq_uuid: Ecto.UUID.generate(),
             name: row.flow.name,
             uuid: row.flow.uuid,
             inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
@@ -274,6 +274,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             status: row.status,
             revision: BigQuery.format_json(row.definition)
           }
+          |> Map.merge(bq_fields(organization_id))
           |> BigQuery.format_data_for_bigquery("flows")
           | acc
         ]
@@ -300,7 +301,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
           else: [
             %{
               id: row.id,
-              bq_uuid: Ecto.UUID.generate(),
               name: row.flow.name,
               uuid: row.flow.uuid,
               inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
@@ -311,6 +311,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               flow_version: row.flow_version,
               flow_context_id: row.flow_context_id
             }
+            |> Map.merge(bq_fields(organization_id))
             |> BigQuery.format_data_for_bigquery("flow_results")
             | acc
           ]
@@ -335,7 +336,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            bq_uuid: Ecto.UUID.generate(),
             source_uuid: row.uuid,
             destination_uuid: row.destination_uuid,
             flow_name: row.flow.name,
@@ -346,6 +346,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
             updated_at: format_date_with_milisecond(row.updated_at, organization_id)
           }
+          |> Map.merge(bq_fields(organization_id))
           |> BigQuery.format_data_for_bigquery("flow_counts")
           | acc
         ]
@@ -371,7 +372,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
           # We are sending nil, as setting is a record type and need to structure the data first(like field)
           %{
             id: row.id,
-            bq_uuid: Ecto.UUID.generate(),
             caption: row.caption,
             url: row.url,
             source_url: row.source_url,
@@ -379,6 +379,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
             updated_at: format_date_with_milisecond(row.updated_at, organization_id)
           }
+          |> Map.merge(bq_fields(organization_id))
           |> BigQuery.format_data_for_bigquery("messages_media")
           | acc
         ]
@@ -404,7 +405,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
           # We are sending nil, as setting is a record type and need to structure the data first(like field)
           %{
             id: row.id,
-            bq_uuid: Ecto.UUID.generate(),
             node_uuid: row.node_uuid,
             flow_uuid: row.flow.uuid,
             flow_id: row.flow.id,
@@ -424,6 +424,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
+          |> Map.merge(bq_fields(organization_id))
           |> BigQuery.format_data_for_bigquery("flow_contexts")
           | acc
         ]
@@ -494,12 +495,19 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp queue_table_data(_, _, _), do: :ok
 
+  @spec bq_fields(non_neg_integer) :: map()
+  defp bq_fields(org_id) do
+    %{
+      bq_uuid: Ecto.UUID.generate(),
+      bq_inserted_at: format_date_with_milisecond(DateTime.utc_now(), org_id)
+    }
+  end
+
   @spec get_message_row(atom | map(), non_neg_integer) :: map()
   defp get_message_row(row, organization_id),
     do:
       %{
         id: row.id,
-        bq_uuid: Ecto.UUID.generate(),
         body: row.body,
         type: row.type,
         flow: row.flow,
