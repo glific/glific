@@ -12,7 +12,6 @@ defmodule Glific.Providers.GupshupContacts do
     Contacts.Contact,
     Partners,
     Partners.Organization,
-    Providers,
     Providers.Gupshup.ApiClient
   }
 
@@ -30,7 +29,12 @@ defmodule Glific.Providers.GupshupContacts do
     ApiClient.optin_contact(organization_id, %{user: attrs.phone})
     |> case do
       {:ok, %Tesla.Env{status: status}} when status in 200..299 ->
-        Providers.Contacts.create_or_update_contact(attrs, organization_id)
+        Contacts.contact_opted_in(
+          attrs,
+          organization_id,
+          attrs[:optin_time] || DateTime.utc_now(),
+          method: attrs[:method] || "BSP"
+        )
 
       _ ->
         {:error, ["gupshup", "couldn't connect"]}
