@@ -49,7 +49,7 @@ defmodule Glific.Clients.Sol do
     language_label = fields["language_label"]
     city = fields["city"]
     ## y-m-d
-    activity_date = Timex.today() |> Timex.format!("{YYYY}-{0M}-{D}")
+    activity_date = Timex.today() |> Timex.format!("{YYYY}-{0M}-{0D}")
     activity = get_activity_by_date(organization_id, activity_date, city)
     activity_data = get_activity_content(activity, language_label, organization_id)
 
