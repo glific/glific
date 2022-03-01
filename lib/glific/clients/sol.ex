@@ -20,7 +20,12 @@ defmodule Glific.Clients.Sol do
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
-    contact = Contacts.get_contact!(media["contact_id"])
+    {:ok, contact} =
+      Repo.fetch_by(Contacts.Contact, %{
+        id: media["contact_id"],
+        organization_id: media["organization_id"]
+      })
+
     city = get_in(contact.fields, ["city", "value"]) || "unknown_city"
     school_name = get_in(contact.fields, ["school_name", "value"]) || "unknown_school_name"
     student_name = get_in(contact.fields, ["contact_name", "value"]) || "unknown_student_name"
