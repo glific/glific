@@ -20,11 +20,7 @@ defmodule Glific.Clients.MukkaMaar do
   @nudge_category %{
     "category_1" => 20,
     "category_2" => 2,
-    "category_3" => 3,
-    "category_4" => 7,
-    "category_5" => 14,
-    "category_6" => 21,
-    "category_7" => 28
+    "category_3" => 3
   }
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -76,38 +72,41 @@ defmodule Glific.Clients.MukkaMaar do
         do: time_in_hours,
         else: Timex.diff(DateTime.utc_now(), contact.last_message_at, :days)
 
-    updated_contact =
+    {updated_contact, time_since_last_msg} =
       set_contact_nudge_category(contact, time_since_last_msg) |> Map.take([:fields])
 
-    %{nudge_category: get_in(updated_contact, [:fields, "nudge_category", :value])}
+    %{nudge_category: get_in(updated_contact, [:fields, "nudge_category", :value]), time: time_since_last_msg}
   end
+
+  defp set_contact_nudge_category(contact, 7),
+    do: {update_contact_field(contact, "nudge_category", "category 4"), 7}
+
+  defp set_contact_nudge_category(contact, 14),
+    do: {update_contact_field(contact, "nudge_category", "category 5"), 14}
+
+  defp set_contact_nudge_category(contact, 21),
+    do: {update_contact_field(contact, "nudge_category", "category 6"), 21}
+
+  defp set_contact_nudge_category(contact, 28),
+    do: {update_contact_field(contact, "nudge_category", "category 7"), 28}
 
   defp set_contact_nudge_category(contact, time_since_last_msg) do
     cond do
       time_since_last_msg < @nudge_category["category_1"] ->
-        update_contact_field(contact, "nudge_category", "category 1")
+        {update_contact_field(contact, "nudge_category", "category 1"), time_since_last_msg}
 
       time_since_last_msg >= 1 and time_since_last_msg < @nudge_category["category_2"] ->
-        update_contact_field(contact, "nudge_category", "category 2")
+        {update_contact_field(contact, "nudge_category", "category 2"), time_since_last_msg}
 
       time_since_last_msg >= @nudge_category["category_2"] and
           time_since_last_msg < @nudge_category["category_3"] ->
-        update_contact_field(contact, "nudge_category", "category 3")
-
-      time_since_last_msg == @nudge_category["category_4"] ->
-        update_contact_field(contact, "nudge_category", "category 4")
-
-      time_since_last_msg == @nudge_category["category_5"] ->
-        update_contact_field(contact, "nudge_category", "category 5")
-
-      time_since_last_msg == @nudge_category["category_6"] ->
-        update_contact_field(contact, "nudge_category", "category 6")
+        {update_contact_field(contact, "nudge_category", "category 3"), time_since_last_msg}
 
       time_since_last_msg == @nudge_category["category_7"] ->
-        update_contact_field(contact, "nudge_category", "category 7")
+        {update_contact_field(contact, "nudge_category", "category 7"), time_since_last_msg}
 
       true ->
-        update_contact_field(contact, "nudge_category", "none")
+        {update_contact_field(contact, "nudge_category", "none"), "in between"}
     end
   end
 
