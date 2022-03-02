@@ -31,17 +31,18 @@ defmodule Glific.Clients.MukkaMaar do
   def webhook("update_contact_categories", fields) do
     phone = String.trim(fields["phone"])
 
-    with contact <- Repo.get_by(Contact, %{phone: phone}) do
-      list =
-        FlowContext
-        |> where([fc], fc.contact_id == ^contact.id and is_nil(fc.completed_at))
-        |> order_by([fc], desc: fc.id)
-        # putting limit 2 as one active context will be of the current background flow
-        |> limit(2)
-        |> select([fc], %{id: fc.id, flow_id: fc.flow_id})
-        |> Repo.all()
+    case Repo.get_by(Contact, %{phone: phone}) do
+      contact ->
+        list =
+          FlowContext
+          |> where([fc], fc.contact_id == ^contact.id and is_nil(fc.completed_at))
+          |> order_by([fc], desc: fc.id)
+          # putting limit 2 as one active context will be of the current background flow
+          |> limit(2)
+          |> select([fc], %{id: fc.id, flow_id: fc.flow_id})
+          |> Repo.all()
 
-      set_message_category(contact, list, length(list))
+        set_message_category(contact, list, length(list))
     end
   end
 
@@ -75,7 +76,10 @@ defmodule Glific.Clients.MukkaMaar do
     {updated_contact, time_since_last_msg} =
       set_contact_nudge_category(contact, time_since_last_msg) |> Map.take([:fields])
 
-    %{nudge_category: get_in(updated_contact, [:fields, "nudge_category", :value]), time: time_since_last_msg}
+    %{
+      nudge_category: get_in(updated_contact, [:fields, "nudge_category", :value]),
+      time: time_since_last_msg
+    }
   end
 
   defp set_contact_nudge_category(contact, 7),
