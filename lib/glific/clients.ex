@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.Sol,
+    webhook: Glific.Clients.Bandhu,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -94,6 +94,12 @@ defmodule Glific.Clients do
     trigger_condition: Glific.Clients.ArogyaWorld
   }
 
+  @bandhu %{
+    id: 28,
+    name: "Bandhu",
+    webhook: Glific.Clients.Bandhu
+  }
+
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
@@ -104,7 +110,8 @@ defmodule Glific.Clients do
     @balajanaagraha[:id] => @balajanaagraha,
     @digital_green[:id] => @digital_green,
     @nayi_disha[:id] => @nayi_disha,
-    @arogyaworld[:id] => @arogyaworld
+    @arogyaworld[:id] => @arogyaworld,
+    @bandhu[:id] => @bandhu
   }
 
   @spec env(atom() | nil) :: atom()

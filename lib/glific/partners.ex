@@ -371,6 +371,7 @@ defmodule Glific.Partners do
       |> set_bsp_info()
       |> set_out_of_office_values()
       |> set_languages()
+      |> set_flow_uuid_display()
 
     Caches.set(
       @global_organization_id,
@@ -495,6 +496,36 @@ defmodule Glific.Partners do
 
     organization
     |> Map.put(:languages, languages)
+  end
+
+  @spec get_flow_uuid_display(map()) :: boolean
+  def get_flow_uuid_display(organization) do
+    id = organization.id
+
+    cond do
+      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
+        true
+
+      # the below 2 conds are just for testing and prototyping purposes
+      # we'll get rid of them when we start using this actively
+      Application.get_env(:glific, :environment) == :prod && id == 2 ->
+        true
+
+      Application.get_env(:glific, :environment) != :prod && id == 1 ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @spec set_flow_uuid_display(map()) :: map()
+  defp set_flow_uuid_display(organization) do
+    Map.put(
+      organization,
+      :is_flow_uuid_display,
+      get_flow_uuid_display(organization)
+    )
   end
 
   # Lets cache all bsp provider specific info in the organization entity since
@@ -1012,7 +1043,8 @@ defmodule Glific.Partners do
         ),
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
-      "dialogflow" => organization.services["dialogflow"] != nil
+      "dialogflow" => organization.services["dialogflow"] != nil,
+      "flow_uuid_display" => get_flow_uuid_display(organization)
     }
 
     Map.put(services, organization_id, service)

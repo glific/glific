@@ -8,8 +8,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
     Messages.Message
   }
 
+  require Logger
+
   @doc false
-  @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
+  @spec handle_response({:ok, Tesla.Env.t()}, Message.t() | {:error, any()}) ::
           :ok | {:error, String.t()}
   def handle_response({:ok, response}, message) do
     case response do
@@ -41,7 +43,21 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
     end
   end
 
-  @spec add_error_payload(Tesla.Env.t()) :: Tesla.Env.t()
+  # Sending default error when API Client call fails for some reason
+  def handle_response(error, message) do
+    # Adding log when API Client fails
+    Logger.info(
+      "Error calling API Client for org_id: #{message.organization_id} error: #{inspect(error)}"
+    )
+
+    %{body: "{\"details\":\"Error sending message due to network issues or Gupshup Outage\"}"}
+    |> add_error_payload
+    |> Communications.Message.handle_error_response(message)
+
+    :ok
+  end
+
+  @spec add_error_payload(Tesla.Env.t() | map()) :: Tesla.Env.t()
   defp add_error_payload(response) do
     %{"response" => error} = Jason.decode!(response.body)
 

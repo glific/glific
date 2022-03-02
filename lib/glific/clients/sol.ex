@@ -20,7 +20,12 @@ defmodule Glific.Clients.Sol do
   """
   @spec gcs_file_name(map()) :: String.t()
   def gcs_file_name(media) do
-    contact = Contacts.get_contact!(media["contact_id"])
+    {:ok, contact} =
+      Repo.fetch_by(Contacts.Contact, %{
+        id: media["contact_id"],
+        organization_id: media["organization_id"]
+      })
+
     city = get_in(contact.fields, ["city", "value"]) || "unknown_city"
     school_name = get_in(contact.fields, ["school_name", "value"]) || "unknown_school_name"
     student_name = get_in(contact.fields, ["contact_name", "value"]) || "unknown_student_name"
@@ -44,7 +49,7 @@ defmodule Glific.Clients.Sol do
     language_label = fields["language_label"]
     city = fields["city"]
     ## y-m-d
-    activity_date = Timex.today() |> Timex.format!("{YYYY}-{0M}-{D}")
+    activity_date = Timex.today() |> Timex.format!("{YYYY}-{0M}-{0D}")
     activity = get_activity_by_date(organization_id, activity_date, city)
     activity_data = get_activity_content(activity, language_label, organization_id)
 

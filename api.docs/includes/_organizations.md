@@ -164,6 +164,8 @@ query organizationServices() {
   bigquery
   dialogflow
   googleCloudStorage
+  funWithFlags
+  flowUuidDisplay
   errors {
     key
     message
@@ -178,7 +180,9 @@ query organizationServices() {
   "data": {
     "organizationServices": {
       "bigquery": true,
+      "dialogflow": false,
       "funWithFlags": true,
+      "flowUuidDisplay": false,
       "googleCloudStorage": true
     }
   }
@@ -771,6 +775,11 @@ subscription organization_subscriptions {
 <tr>
 <td colspan="2" valign="top"><strong>suspendedUntil</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isFlowUuidDisplay</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
 <tr>
