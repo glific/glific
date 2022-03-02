@@ -29,7 +29,8 @@ defmodule Glific.Clients.Bandhu do
 
         %{
           profile_count: decoded_response["data"]["profile_count"],
-          profiles: decoded_response["data"]["profiles"]
+          profiles: decoded_response["data"]["profiles"],
+          x_api_key: "nothing"
         }
 
       _ ->
@@ -53,7 +54,8 @@ defmodule Glific.Clients.Bandhu do
     %{
       profile_selection_message: Enum.join(message_list, "\n"),
       index_map: Jason.encode!(index_map),
-      profile_count: profile_count
+      profile_count: profile_count,
+      x_api_key: "nothing"
     }
   end
 
