@@ -256,11 +256,7 @@ defmodule Glific.Flows.Webhook do
       ) do
     Repo.put_process_state(organization_id)
 
-    headers =
-      Keyword.new(
-        headers,
-        fn {k, v} -> {Glific.safe_string_to_atom(k), v} end
-      )
+    headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
     result =
       case do_action(method, url, body, headers) do
