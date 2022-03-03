@@ -28,8 +28,7 @@ defmodule Glific.Clients.MukkaMaar do
   def webhook("update_contact_categories", fields) do
     phone = String.trim(fields["phone"])
 
-    with contact <- Repo.get_by(Contact, %{phone: phone}),
-         false <- is_nil(contact) do
+    with {:ok, contact} <- Repo.fetch_by(Contact, %{phone: phone}) do
       list =
         FlowContext
         |> where([fc], fc.contact_id == ^contact.id and is_nil(fc.completed_at))
@@ -39,18 +38,20 @@ defmodule Glific.Clients.MukkaMaar do
         |> select([fc], %{id: fc.id, flow_id: fc.flow_id})
         |> Repo.all()
 
-      set_message_category(contact, list, length(list))
+      contact
+      |> Map.take([:last_message_at])
+      |> set_message_category(list, length(list))
     end
   end
 
   def webhook(_, _fields),
     do: %{}
 
+  @spec set_message_category(map(), list(), non_neg_integer()) :: map()
   defp set_message_category(contact, _list, 1) do
     check_nudge_category(contact, "type 3")
   end
 
-  @spec set_message_category(Contact.t(), list(), non_neg_integer()) :: map()
   defp set_message_category(contact, [_current_flow, flow_stucked_on], 2) do
     msg_context_category =
       if flow_stucked_on.flow_id == @registration_flow_id, do: "type 1", else: "type 2"
@@ -58,7 +59,7 @@ defmodule Glific.Clients.MukkaMaar do
     check_nudge_category(contact, msg_context_category)
   end
 
-  @spec check_nudge_category(Contact.t(), String.t()) :: map()
+  @spec check_nudge_category(map(), String.t()) :: map()
   defp check_nudge_category(contact, msg_context_category) do
     time_in_hours = Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours)
 
