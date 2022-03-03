@@ -61,6 +61,10 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec get_interactive_template!(integer) :: InteractiveTemplate.t()
   def get_interactive_template!(id), do: Repo.get!(InteractiveTemplate, id)
 
+  @spec get_interactive_template!(integer, non_neg_integer()) :: InteractiveTemplate.t()
+  def get_interactive_template!(id, org_id),
+    do: Repo.get_by(InteractiveTemplate, %{id: id, organization_id: org_id})
+
   @doc """
   Creates an interactive template
 

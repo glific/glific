@@ -227,6 +227,37 @@ defmodule GlificWeb.Flows.FlowEditorController do
   end
 
   @doc false
+  @spec interactive_template(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def interactive_template(conn, params) do
+    [id] = params["vars"]
+
+    {:ok, id} = Glific.parse_maybe_integer(id)
+
+    results = InteractiveTemplates.get_interactive_template!(id, conn.assigns[:organization_id])
+
+    final =
+      case results do
+        nil ->
+          %{
+            error: "Interactive message not found"
+          }
+
+        _ ->
+          %{
+            id: results.id,
+            name: results.label,
+            type: results.type,
+            interactive_content: results.interactive_content,
+            created_on: results.inserted_at,
+            modified_on: results.updated_at,
+            translations: results.translations
+          }
+      end
+
+    json(conn, final)
+  end
+
+  @doc false
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
     results =
