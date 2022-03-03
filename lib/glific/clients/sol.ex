@@ -29,21 +29,20 @@ defmodule Glific.Clients.Sol do
     message_media = Glific.Messages.get_message_media!(media["id"])
 
     city = get_in(contact.fields, ["city", "value"]) || "unknown_city"
-    school_name = get_in(contact.fields, ["school_name", "value"]) || "unknown_school_name"
+    _school_name = get_in(contact.fields, ["school_name", "value"]) || "unknown_school_name"
     student_name = get_in(contact.fields, ["contact_name", "value"]) || "unknown_student_name"
     caption = message_media.caption || ""
 
-    organization_name =
+    _organization_name =
       get_in(contact.fields, ["organization_name", "value"]) || "unknown_organization_name"
 
     current_time = :os.system_time(:millisecond)
 
-    folder = "#{city}/#{school_name}/#{student_name}"
+    folder = "#{city}/#{contact.phone}/#{student_name}"
 
     extension = get_extension(media["type"])
 
-    file_name =
-      "#{contact.phone}_#{city}_#{organization_name}_#{student_name}_#{caption}_#{current_time}.#{extension}"
+    file_name = "#{contact.phone}_#{city}_#{student_name}_#{caption}_#{current_time}.#{extension}"
 
     "#{folder}/#{file_name}"
   end
