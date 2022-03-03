@@ -26,9 +26,12 @@ defmodule Glific.Clients.Sol do
         organization_id: media["organization_id"]
       })
 
+    message_media = Glific.Messages.get_message_media!(media["id"])
+
     city = get_in(contact.fields, ["city", "value"]) || "unknown_city"
     school_name = get_in(contact.fields, ["school_name", "value"]) || "unknown_school_name"
     student_name = get_in(contact.fields, ["contact_name", "value"]) || "unknown_student_name"
+    caption = message_media.caption || ""
 
     organization_name =
       get_in(contact.fields, ["organization_name", "value"]) || "unknown_organization_name"
@@ -37,8 +40,10 @@ defmodule Glific.Clients.Sol do
 
     folder = "#{city}/#{school_name}/#{student_name}"
 
+    extension = get_extension(media["type"])
+
     file_name =
-      "#{contact.phone}_#{city}_#{organization_name}_#{student_name}_#{current_time}.png"
+      "#{contact.phone}_#{city}_#{organization_name}_#{student_name}_#{caption}_#{current_time}.#{extension}"
 
     "#{folder}/#{file_name}"
   end
@@ -171,5 +176,15 @@ defmodule Glific.Clients.Sol do
       activity_meta: activity,
       activity_slug: activity["activity_slug"]
     }
+  end
+
+  defp get_extension(type) do
+    cond do
+      type in ["audio"] -> "mp3"
+      type in ["video"] -> "mp4"
+      type in ["image"] -> "png"
+      type in ["document"] -> "pfg"
+      true -> "png"
+    end
   end
 end
