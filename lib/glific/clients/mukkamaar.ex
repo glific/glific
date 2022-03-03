@@ -55,12 +55,12 @@ defmodule Glific.Clients.MukkaMaar do
     is_registered?(contact, flow_stucked_on)
 
     msg_context_category =
-      if is_registered?(contact, flow_stucked_on), do: "type 2", else: "type 1"
+      if is_registered?(contact, flow_stucked_on.flow_id), do: "type 2", else: "type 1"
 
     check_nudge_category(contact, msg_context_category)
   end
 
-  @spec is_registered?(map(), non_neg_integer()) :: boolean()
+  @spec is_registered?(map(), pos_integer()) :: boolean()
   defp is_registered?(_contact, @registration_flow_id), do: false
 
   defp is_registered?(contact, _flow_stucked_on) do
