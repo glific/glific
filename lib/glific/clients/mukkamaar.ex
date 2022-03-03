@@ -52,7 +52,6 @@ defmodule Glific.Clients.MukkaMaar do
   end
 
   defp set_message_category(contact, [_current_flow, flow_stucked_on], 2) do
-    # if flow_stucked_on.flow_id == @registration_flow_id, do: "type 1", else: "type 2"
     msg_context_category =
       if check_if_registered?(contact, flow_stucked_on), do: "type 1", else: "type 2"
 
