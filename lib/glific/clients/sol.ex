@@ -33,8 +33,12 @@ defmodule Glific.Clients.Sol do
     organization_name =
       get_in(contact.fields, ["organization_name", "value"]) || "unknown_organization_name"
 
+    current_time = :os.system_time(:millisecond)
+
     folder = "#{city}/#{school_name}/#{student_name}"
-    file_name = "#{contact.phone}_#{city}_#{organization_name}_#{student_name}.png"
+
+    file_name =
+      "#{contact.phone}_#{city}_#{organization_name}_#{student_name}_#{current_time}.png"
 
     "#{folder}/#{file_name}"
   end
