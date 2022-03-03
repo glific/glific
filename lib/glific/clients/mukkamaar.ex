@@ -107,9 +107,6 @@ defmodule Glific.Clients.MukkaMaar do
           time_since_last_msg < @nudge_category["category_3"] ->
         "category 3"
 
-      time_since_last_msg == @nudge_category["category_7"] ->
-        "category 7"
-
       true ->
         "none"
     end
