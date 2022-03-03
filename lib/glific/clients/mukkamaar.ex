@@ -51,12 +51,8 @@ defmodule Glific.Clients.MukkaMaar do
     check_nudge_category(contact, "type 3")
   end
 
-  defp set_message_category(contact, [_current_flow, flow_stucked_on], 2) do
-    is_registered?(contact, flow_stucked_on)
-
-    msg_context_category =
-      if is_registered?(contact, flow_stucked_on.flow_id), do: "type 2", else: "type 1"
-
+  defp set_message_category(contact, [_current_flow, %{flow_id: flow_id} = _flow_stucked_on], 2) do
+    msg_context_category = if is_registered?(contact, flow_id), do: "type 2", else: "type 1"
     check_nudge_category(contact, msg_context_category)
   end
 
