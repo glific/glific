@@ -230,13 +230,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
   @spec interactive_template(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def interactive_template(conn, params) do
     [id] = params["vars"]
-
     {:ok, id} = Glific.parse_maybe_integer(id)
 
-    results = InteractiveTemplates.get_interactive_template!(id, conn.assigns[:organization_id])
+    interactive_template =
+      InteractiveTemplates.get_interactive_template!(id, conn.assigns[:organization_id])
 
-    final =
-      case results do
+    results =
+      case interactive_template do
         nil ->
           %{
             error: "Interactive message not found"
@@ -244,17 +244,17 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
         _ ->
           %{
-            id: results.id,
-            name: results.label,
-            type: results.type,
-            interactive_content: results.interactive_content,
-            created_on: results.inserted_at,
-            modified_on: results.updated_at,
-            translations: results.translations
+            id: interactive_template.id,
+            name: interactive_template.label,
+            type: interactive_template.type,
+            interactive_content: interactive_template.interactive_content,
+            created_on: interactive_template.inserted_at,
+            modified_on: interactive_template.updated_at,
+            translations: interactive_template.translations
           }
       end
 
-    json(conn, final)
+    json(conn, results)
   end
 
   @doc false
