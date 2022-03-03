@@ -23,7 +23,6 @@ defmodule Glific.Clients.MukkaMaar do
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
-
   @spec webhook(String.t(), map()) :: map()
   def webhook("update_contact_categories", fields) do
     phone = String.trim(fields["phone"])
@@ -63,12 +62,12 @@ defmodule Glific.Clients.MukkaMaar do
   defp check_nudge_category(contact, msg_context_category) do
     time_in_hours = Timex.diff(DateTime.utc_now(), contact.last_message_at, :hours)
 
-    time_since_last_msg =
+    {time_since_last_msg, measure} =
       if time_in_hours < 24,
-        do: time_in_hours,
-        else: Timex.diff(DateTime.utc_now(), contact.last_message_at, :days)
+        do: {time_in_hours, :hours},
+        else: {Timex.diff(DateTime.utc_now(), contact.last_message_at, :days), :days}
 
-    nudge_category = set_contact_nudge_category(time_since_last_msg)
+    nudge_category = set_contact_nudge_category(time_since_last_msg, measure)
 
     %{
       nudge_category: nudge_category,
@@ -77,18 +76,18 @@ defmodule Glific.Clients.MukkaMaar do
     }
   end
 
-  @spec set_contact_nudge_category(non_neg_integer()) :: String.t()
-  defp set_contact_nudge_category(7), do: "category 4"
+  @spec set_contact_nudge_category(non_neg_integer(), atom()) :: String.t()
+  defp set_contact_nudge_category(7, :days), do: "category 4"
 
-  defp set_contact_nudge_category(14), do: "category 5"
+  defp set_contact_nudge_category(14, :days), do: "category 5"
 
-  defp set_contact_nudge_category(21), do: "category 6"
+  defp set_contact_nudge_category(21, :days), do: "category 6"
 
-  defp set_contact_nudge_category(28), do: "category 7"
+  defp set_contact_nudge_category(28, :days), do: "category 7"
 
-  defp set_contact_nudge_category(time_since_last_msg) do
+  defp set_contact_nudge_category(time_since_last_msg, measure) do
     cond do
-      time_since_last_msg < @nudge_category["category_1"] ->
+      time_since_last_msg < @nudge_category["category_1"] and measure == :hours ->
         "category 1"
 
       time_since_last_msg >= 1 and time_since_last_msg < @nudge_category["category_2"] ->
