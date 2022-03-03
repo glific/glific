@@ -232,29 +232,32 @@ defmodule GlificWeb.Flows.FlowEditorController do
     [id] = params["vars"]
     {:ok, id} = Glific.parse_maybe_integer(id)
 
-    interactive_template =
-      InteractiveTemplates.get_interactive_template!(id, conn.assigns[:organization_id])
+    try do
+      interactive_template = InteractiveTemplates.get_interactive_template!(id)
 
-    results =
-      case interactive_template do
-        nil ->
-          %{
-            error: "Interactive message not found"
-          }
+      results =
+        case interactive_template do
+          _ ->
+            %{
+              id: interactive_template.id,
+              name: interactive_template.label,
+              type: interactive_template.type,
+              interactive_content: interactive_template.interactive_content,
+              created_on: interactive_template.inserted_at,
+              modified_on: interactive_template.updated_at,
+              translations: interactive_template.translations
+            }
+        end
 
-        _ ->
-          %{
-            id: interactive_template.id,
-            name: interactive_template.label,
-            type: interactive_template.type,
-            interactive_content: interactive_template.interactive_content,
-            created_on: interactive_template.inserted_at,
-            modified_on: interactive_template.updated_at,
-            translations: interactive_template.translations
-          }
-      end
+      json(conn, results)
+    rescue
+      _ ->
+        results = %{
+          error: "Interactive message not found"
+        }
 
-    json(conn, results)
+        json(conn, results)
+    end
   end
 
   @doc false
