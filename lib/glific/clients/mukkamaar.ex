@@ -63,8 +63,8 @@ defmodule Glific.Clients.MukkaMaar do
 
   defp check_if_registered?(contact, _flow_stucked_on) do
     sex = get_in(contact, [:fields, "sex", "value"])
-    firstname = get_in(contact, [:fields, "firstname", "value"])
-    lastname = get_in(contact, [:fields, "lastname", "value"])
+    firstname = get_in(contact, [:fields, "first_name", "value"])
+    lastname = get_in(contact, [:fields, "last_name", "value"])
     if is_nil(sex) and is_nil(firstname) and is_nil(lastname), do: false, else: true
   end
 
