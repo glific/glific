@@ -52,20 +52,22 @@ defmodule Glific.Clients.MukkaMaar do
   end
 
   defp set_message_category(contact, [_current_flow, flow_stucked_on], 2) do
+    is_registered?(contact, flow_stucked_on)
+
     msg_context_category =
-      if check_if_registered?(contact, flow_stucked_on), do: "type 1", else: "type 2"
+      if is_registered?(contact, flow_stucked_on), do: "type 2", else: "type 1"
 
     check_nudge_category(contact, msg_context_category)
   end
 
-  @spec check_if_registered?(map(), non_neg_integer()) :: boolean()
-  defp check_if_registered?(_contact, @registration_flow_id), do: false
+  @spec is_registered?(map(), non_neg_integer()) :: boolean()
+  defp is_registered?(_contact, @registration_flow_id), do: false
 
-  defp check_if_registered?(contact, _flow_stucked_on) do
+  defp is_registered?(contact, _flow_stucked_on) do
     sex = get_in(contact, [:fields, "sex", "value"])
     firstname = get_in(contact, [:fields, "first_name", "value"])
     lastname = get_in(contact, [:fields, "last_name", "value"])
-    if is_nil(sex) and is_nil(firstname) and is_nil(lastname), do: false, else: true
+    if !is_nil(sex) and !is_nil(firstname) and !is_nil(lastname), do: true, else: false
   end
 
   @spec check_nudge_category(map(), String.t()) :: map()
