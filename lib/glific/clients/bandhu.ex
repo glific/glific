@@ -11,42 +11,19 @@ defmodule Glific.Clients.Bandhu do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("mock_bandhu_for_profile_check", _fields) do
-    Tesla.post(
-      "https://techapicall.bandhu.work/api/get_user_by_mobile",
-      Jason.encode!(%{
-        "mobile_no" => "8097731363"
-      }),
-      headers: [
-        {"x-api-key",
-         "WFIgqXp8Qyr0AF3wIVGglSKLN7qgw7EtPu5V7mWUbIaoSMGIUppTgaCKqaWh7Gb5Lyrf8L2A177"},
-        {"Content-Type", "application/json"},
-        {"Accept", "application/json"}
-      ]
-    )
-    |> case do
-      {:ok, response} ->
-        decoded_response = Jason.decode!(response.body)
-
-        %{
-          profile_count: decoded_response["data"]["profile_count"],
-          profiles: decoded_response["data"]["profiles"],
-          x_api_key: "nothing"
-        }
-
-      _ ->
-        %{
-          profile_count: 0,
-          profiles: []
-        }
-    end
+    %{
+      profile_count: 0,
+      profiles: []
+    }
   end
 
   def webhook("fetch_user_profiles", fields) do
     profile_count =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "profile_count"]) || 3
+      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profile_count"]) ||
+        3
 
     profiles =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "profiles"]) ||
+      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profiles"]) ||
         random_profiles(profile_count)
 
     {index_map, message_list} = format_profile_message(profiles)
