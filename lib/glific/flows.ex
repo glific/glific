@@ -482,7 +482,7 @@ defmodule Glific.Flows do
       # we had an error saving to the DB
       elem(result, 0) == :error -> result
       # We had an error validating the flow
-      true -> {:error, format_flow_errors(errors)}
+      true -> {:errors, format_flow_errors(errors)}
     end
   end
 
