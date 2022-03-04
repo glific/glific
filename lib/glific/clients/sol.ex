@@ -182,7 +182,7 @@ defmodule Glific.Clients.Sol do
       type in ["audio"] -> "mp3"
       type in ["video"] -> "mp4"
       type in ["image"] -> "png"
-      type in ["document"] -> "pfg"
+      type in ["document"] -> "pdf"
       true -> "png"
     end
   end
