@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.Bandhu,
+    webhook: Glific.Clients.MukkaMaar,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -56,13 +56,18 @@ defmodule Glific.Clients do
     name: "Lend A Hand India",
     webhook: Glific.Clients.Lahi,
     gcs_file_name: Glific.Clients.Lahi
-    # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
   @reap_benefit %{
     id: 15,
     name: "Reap Benefit"
     # gcs_file_name: Glific.Clients.ReapBenefit
+  }
+
+  @mukkamaar %{
+    id: 18,
+    name: "MukkaMaar",
+    webhook: Glific.Clients.MukkaMaar
   }
 
   @balajanaagraha %{
@@ -105,6 +110,7 @@ defmodule Glific.Clients do
     @avanti[:id] => @avanti,
     @lahilms[:id] => @lahilms,
     @reap_benefit[:id] => @reap_benefit,
+    @mukkamaar[:id] => @mukkamaar,
     @stir[:id] => @stir,
     @tap[:id] => @tap,
     @balajanaagraha[:id] => @balajanaagraha,
