@@ -59,17 +59,15 @@ defmodule Glific.Flows.MessageVarParser do
     var = String.replace_trailing(var, ".", "")
 
     substitution =
-      cond do
-        is_map(binding) ->
-          get_in(binding, String.split(var, "."))
-          |> bound()
+      if is_map(binding) do
+        get_in(binding, String.split(var, "."))
+        |> bound()
+      else
+        Logger.error(
+          "Error while replacing the variable. binding: #(inspect(binding)) AND var: #{inspect(var)}"
+        )
 
-        true ->
-          Logger.error(
-            "Error while replacing the variable. binding: #(inspect(binding)) AND var: #{inspect(var)}"
-          )
-
-          nil
+        nil
       end
 
     if substitution == nil, do: "@#{var}", else: substitution
