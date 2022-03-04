@@ -39,7 +39,7 @@ defmodule Glific.Flows.MessageVarParser do
   @spec bound(String.t(), map()) :: String.t()
   defp bound(nil, _binding), do: ""
 
-  defp bound(str, nil), do: str
+  defp bound(str, binding) when binding in [nil, %{}, []], do: str
 
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
@@ -59,16 +59,8 @@ defmodule Glific.Flows.MessageVarParser do
     var = String.replace_trailing(var, ".", "")
 
     substitution =
-      if is_map(binding) do
-        get_in(binding, String.split(var, "."))
-        |> bound()
-      else
-        Logger.error(
-          "Error while replacing the variable. binding: #(inspect(binding)) AND var: #{inspect(var)}"
-        )
-
-        nil
-      end
+      get_in(binding, String.split(var, "."))
+      |> bound()
 
     if substitution == nil, do: "@#{var}", else: substitution
   end
