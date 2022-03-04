@@ -239,20 +239,20 @@ defmodule GlificWeb.Flows.FlowEditorController do
     [id] = params["vars"]
     {:ok, id} = Glific.parse_maybe_integer(id)
 
-    with {:ok, interactive_template} <-
-           Repo.fetch_by(InteractiveTemplate, %{id: id}) do
-      %{
-        id: interactive_template.id,
-        name: interactive_template.label,
-        type: interactive_template.type,
-        interactive_content: interactive_template.interactive_content,
-        created_on: interactive_template.inserted_at,
-        modified_on: interactive_template.updated_at,
-        translations: interactive_template.translations
-      }
-      |> then(&json(conn, &1))
-    else
-      _ ->
+    case Repo.fetch_by(InteractiveTemplate, %{id: id}) do
+      {:ok, interactive_template} ->
+        %{
+          id: interactive_template.id,
+          name: interactive_template.label,
+          type: interactive_template.type,
+          interactive_content: interactive_template.interactive_content,
+          created_on: interactive_template.inserted_at,
+          modified_on: interactive_template.updated_at,
+          translations: interactive_template.translations
+        }
+        |> then(&json(conn, &1))
+
+      {:error, _} ->
         json(conn, %{error: "Interactive message not found"})
     end
   end
