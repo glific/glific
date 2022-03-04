@@ -17,6 +17,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Partners,
     Repo,
     Settings,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Users.User
   }
@@ -202,7 +203,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, resthooks)
   end
 
-  @doc false
+  @doc """
+  A list of all the interactive templates in format that is understood by flow editor
+  """
   @spec interactive_templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def interactive_templates(conn, _params) do
     results =
@@ -226,37 +229,31 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, %{results: results})
   end
 
-  @doc false
+  @doc """
+  Fetching single interactive template and returning in format that is understood by flow editor
+  or
+  Return error Interactive message not found
+  """
   @spec interactive_template(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def interactive_template(conn, params) do
     [id] = params["vars"]
     {:ok, id} = Glific.parse_maybe_integer(id)
 
-    try do
-      interactive_template = InteractiveTemplates.get_interactive_template!(id)
-
-      results =
-        case interactive_template do
-          _ ->
-            %{
-              id: interactive_template.id,
-              name: interactive_template.label,
-              type: interactive_template.type,
-              interactive_content: interactive_template.interactive_content,
-              created_on: interactive_template.inserted_at,
-              modified_on: interactive_template.updated_at,
-              translations: interactive_template.translations
-            }
-        end
-
-      json(conn, results)
-    rescue
+    with {:ok, interactive_template} <-
+           Repo.fetch_by(InteractiveTemplate, %{id: id}) do
+      %{
+        id: interactive_template.id,
+        name: interactive_template.label,
+        type: interactive_template.type,
+        interactive_content: interactive_template.interactive_content,
+        created_on: interactive_template.inserted_at,
+        modified_on: interactive_template.updated_at,
+        translations: interactive_template.translations
+      }
+      |> then(&json(conn, &1))
+    else
       _ ->
-        results = %{
-          error: "Interactive message not found"
-        }
-
-        json(conn, results)
+        json(conn, %{error: "Interactive message not found"})
     end
   end
 
