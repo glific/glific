@@ -39,7 +39,7 @@ defmodule Glific.Flows.MessageVarParser do
   @spec bound(String.t(), map()) :: String.t()
   defp bound(nil, _binding), do: ""
 
-  defp bound(str, binding) when binding in [nil, %{}, []], do: str
+  defp bound(str, nil), do: str
 
   # We need to figure out a way to replace these kind of variables
   defp bound("@contact.language", binding) do
