@@ -724,7 +724,7 @@ defmodule Glific.Contacts do
         fn g, list -> [g.label | list] end
       )
     )
-    ## We change the name of the contact whenever we receive  a message form the contact.
+    ## We change the name of the contact whenever we receive  a message from the contact.
     ## so the contact name will always be the name contact added in the whatsApp app.
     ## This is just so that organizations can use the custom name or the name they collected from the
     ## various surveys in glific flows.
