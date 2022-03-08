@@ -17,6 +17,22 @@ defmodule Glific.Flows.MessageVarParserTest do
                "organization" => %{"name" => "Glific"}
              })
 
+    assert "admin" ==
+             MessageVarParser.parse(
+               "@results.set_contact_profile.profile.user_roles.role_type",
+               %{
+                 "results" => %{
+                   "set_contact_profile" => %{
+                     "profile" => %{
+                       "user_roles" => %{
+                         "role_type" => "admin"
+                       }
+                     }
+                   }
+                 }
+               }
+             )
+
     assert "hello @organization.name" == MessageVarParser.parse("hello @organization.name", [])
 
     results = %{
