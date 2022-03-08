@@ -11,45 +11,25 @@ defmodule Glific.Clients.Bandhu do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("mock_bandhu_for_profile_check", _fields) do
-    Tesla.post(
-      "https://techapicall.bandhu.work/api/get_user_by_mobile",
-      Jason.encode!(%{
-        "mobile_no" => "8097731363"
-      }),
-      headers: [
-        {"x-api-key",
-         "WFIgqXp8Qyr0AF3wIVGglSKLN7qgw7EtPu5V7mWUbIaoSMGIUppTgaCKqaWh7Gb5Lyrf8L2A177"},
-        {"Content-Type", "application/json"},
-        {"Accept", "application/json"}
-      ]
-    )
-    |> case do
-      {:ok, response} ->
-        decoded_response = Jason.decode!(response.body)
-
-        %{
-          profile_count: decoded_response["data"]["profile_count"],
-          profiles: decoded_response["data"]["profiles"],
-          x_api_key: "nothing"
-        }
-
-      _ ->
-        %{
-          profile_count: 0,
-          profiles: []
-        }
-    end
+    %{
+      profile_count: 0,
+      profiles: []
+    }
   end
 
   def webhook("fetch_user_profiles", fields) do
     profile_count =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "profile_count"]) || 3
+      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profile_count"]) ||
+        0
 
     profiles =
-      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "profiles"]) ||
-        random_profiles(profile_count)
+      get_in(fields, ["results", "parent", "bandhu_profile_check_mock", "data", "profiles"]) ||
+        nil
 
-    {index_map, message_list} = format_profile_message(profiles)
+    {index_map, message_list} =
+      if is_nil(profiles),
+        do: {%{}, ["No profiles found"]},
+        else: format_profile_message(profiles)
 
     %{
       profile_selection_message: Enum.join(message_list, "\n"),
@@ -84,7 +64,7 @@ defmodule Glific.Clients.Bandhu do
     |> Enum.with_index(1)
     |> Enum.reduce({%{}, []}, fn {profile, index}, {index_map, message_list} ->
       profile_name = profile["name"]
-      user_roles = profile["user_roles"]
+      user_roles = profile["user_roles"]["role_type"]
 
       {
         Map.put(index_map, index, profile),
@@ -93,18 +73,18 @@ defmodule Glific.Clients.Bandhu do
     end)
   end
 
-  defp random_profiles(profile_count) do
-    1..profile_count
-    |> Enum.into([])
-    |> Enum.reduce([], fn number, acc ->
-      acc ++
-        [
-          %{
-            "name" => "Profile #{number}",
-            "profile_id" => "profile_#{number}",
-            "id" => "profile_#{number}"
-          }
-        ]
-    end)
-  end
+  # defp random_profiles(profile_count) do
+  #   1..profile_count
+  #   |> Enum.into([])
+  #   |> Enum.reduce([], fn number, acc ->
+  #     acc ++
+  #       [
+  #         %{
+  #           "name" => "Profile #{number}",
+  #           "profile_id" => "profile_#{number}",
+  #           "id" => "profile_#{number}"
+  #         }
+  #       ]
+  #   end)
+  # end
 end
