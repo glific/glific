@@ -283,11 +283,20 @@ defmodule Glific.Clients.ArogyaWorld do
   get template form EEx
   """
   @spec template(integer(), String.t()) :: binary
-  def template(template_uuid, name) do
+  def template(template_uuid, variables) do
     %{
       uuid: template_uuid,
-      name: name,
-      variables: ["@contact.name"],
+      name: "Template",
+      variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  def template(template_uuid) do
+    %{
+      uuid: template_uuid,
+      name: "Template",
       expression: nil
     }
     |> Jason.encode!()
@@ -441,8 +450,10 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec get_messages_by_flow_label(non_neg_integer(), String.t()) :: any()
   def get_messages_by_flow_label(org_id, label) do
     Message
+    |> join(:inner, [m], mc in Message, on: m.id == mc.context_message_id)
     |> where([m], like(m.flow_label, ^"#{label}%"))
     |> where([m], m.organization_id == ^org_id)
+    |> select([m, mc], {mc.body, mc.contact_id,})
     |> Repo.all()
   end
 
