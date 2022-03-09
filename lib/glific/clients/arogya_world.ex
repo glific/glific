@@ -17,7 +17,7 @@ defmodule Glific.Clients.ArogyaWorld do
     Triggers.Trigger
   }
 
-  @week_start :saturday
+  @week_start :friday
 
   @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
 
