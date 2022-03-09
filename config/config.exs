@@ -60,7 +60,7 @@ oban_plugins = [
   # Prune jobs after 60 mins, gives us some time to go investigate if needed
   {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 60 * 60}, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
-  Oban.Pro.Plugins.Lifeline,
+  Oban.Pro.Plugins.DynamicLifeline,
   Oban.Web.Plugins.Stats,
   Oban.Plugins.Gossip
 ]
