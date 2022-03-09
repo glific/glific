@@ -7,6 +7,7 @@ defmodule Glific.Providers.Worker do
     Messages.Message
   }
 
+  @doc false
   @spec handle_credential_error(Message.t()) :: :ok | {:error, String.t()}
   def handle_credential_error(message) do
     handle_fake_response(
@@ -16,6 +17,7 @@ defmodule Glific.Providers.Worker do
     )
   end
 
+  @doc false
   @spec process_simulator(Message.t()) :: :ok | {:error, String.t()}
   def process_simulator(message) do
     message_id = Faker.String.base64(36)
@@ -61,6 +63,7 @@ defmodule Glific.Providers.Worker do
     end
   end
 
+  @doc false
   @spec default_send_rate_handler() :: {:snooze, pos_integer()}
   def default_send_rate_handler do
     # lets sleep real briefly, so that we are not firing off many
