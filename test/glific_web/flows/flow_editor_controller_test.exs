@@ -216,6 +216,23 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
                length(interactives)
     end
 
+    test "fetching single interactive template", %{conn: conn, access_token: token} do
+      [interactive_template | _] =
+        InteractiveTemplates.list_interactives(%{
+          filter: %{organization_id: conn.assigns[:organization_id]}
+        })
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/interactive-templates/#{interactive_template.id}", %{})
+
+      db_interactive_template =
+        InteractiveTemplates.get_interactive_template!(interactive_template.id)
+
+      assert json_response(conn, 200)["interactive_content"] ==
+               db_interactive_template.interactive_content
+    end
+
     def language_fixture(attrs \\ %{}) do
       {:ok, language} =
         attrs

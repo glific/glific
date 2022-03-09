@@ -17,6 +17,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Partners,
     Repo,
     Settings,
+    Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Users.User
   }
@@ -202,7 +203,9 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, resthooks)
   end
 
-  @doc false
+  @doc """
+  A list of all the interactive templates in format that is understood by flow editor
+  """
   @spec interactive_templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def interactive_templates(conn, _params) do
     results =
@@ -224,6 +227,34 @@ defmodule GlificWeb.Flows.FlowEditorController do
       end)
 
     json(conn, %{results: results})
+  end
+
+  @doc """
+  Fetching single interactive template and returning in format that is understood by flow editor
+  or
+  Return error Interactive message not found
+  """
+  @spec interactive_template(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def interactive_template(conn, params) do
+    [id] = params["vars"]
+    {:ok, id} = Glific.parse_maybe_integer(id)
+
+    case Repo.fetch_by(InteractiveTemplate, %{id: id}) do
+      {:ok, interactive_template} ->
+        %{
+          id: interactive_template.id,
+          name: interactive_template.label,
+          type: interactive_template.type,
+          interactive_content: interactive_template.interactive_content,
+          created_on: interactive_template.inserted_at,
+          modified_on: interactive_template.updated_at,
+          translations: interactive_template.translations
+        }
+        |> then(&json(conn, &1))
+
+      {:error, _} ->
+        json(conn, %{error: "Interactive message not found"})
+    end
   end
 
   @doc false

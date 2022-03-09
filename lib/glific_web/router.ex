@@ -137,6 +137,8 @@ defmodule GlificWeb.Router do
 
     get "/interactive-templates", FlowEditorController, :interactive_templates
 
+    get "/interactive-templates/*vars", FlowEditorController, :interactive_template
+
     get "/languages", FlowEditorController, :languages
 
     get "/environment", FlowEditorController, :environment
