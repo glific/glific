@@ -724,6 +724,20 @@ defmodule Glific.Contacts do
         fn g, list -> [g.label | list] end
       )
     )
+    ## We change the name of the contact whenever we receive  a message from the contact.
+    ## so the contact name will always be the name contact added in the whatsApp app.
+    ## This is just so that organizations can use the custom name or the name they collected from the
+    ## various surveys in glific flows.
+    |> put_in(
+      [:fields, "name"],
+      contact.fields["name"] ||
+        %{
+          "type" => "string",
+          "label" => "Name",
+          "inserted_at" => DateTime.utc_now(),
+          "value" => contact.name
+        }
+    )
   end
 
   @simulator_phone_prefix "9876543210"
