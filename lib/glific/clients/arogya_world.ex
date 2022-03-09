@@ -17,11 +17,13 @@ defmodule Glific.Clients.ArogyaWorld do
     Triggers.Trigger
   }
 
+  @week_start :friday
+
   @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
 
   @first_question_day "1"
 
-  @second_question_day "4"
+  @second_question_day "5"
 
   @csv_url_key_map %{
     "static_message_schedule" =>
@@ -173,7 +175,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
   defp get_week_day_number do
     ## we will enable this when pilot phase is over.
-    Timex.weekday(Timex.today())
+    Timex.weekday(Timex.today(), @week_start)
   end
 
   defp get_dynamic_week_key(current_week),
