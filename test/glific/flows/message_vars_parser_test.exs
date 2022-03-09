@@ -246,7 +246,8 @@ defmodule Glific.Flows.MessageVarParserTest do
         "category" => "@results.ar_issue_category.category",
         "photo" => "@results.ar_issue_media",
         "othersnumber" => "@results.ar_ir_otherphone",
-        "status" => "@results.ar_issues_exitmenu"
+        "status" => "@results.ar_issues_exitmenu",
+        "storedanswer" => "@results.storedanswer.DetectedResponse"
       }
     }
 
@@ -311,6 +312,11 @@ defmodule Glific.Flows.MessageVarParserTest do
           "category" => "Civic ",
           "inserted_at" => "2022-02-21T13:07:11.722277Z",
           "input" => "2"
+        },
+        "storedanswer" => %{
+          "DetectedResponse" => "",
+          "OperationStatus" => "CONTINUED_ASSESSMENT",
+          "QuestionResponseID" => 1_083_000_000_113_341
         }
       }
     }
