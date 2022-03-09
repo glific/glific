@@ -17,7 +17,7 @@ defmodule Glific.Clients.ArogyaWorld do
     Triggers.Trigger
   }
 
-  @week_start :friday
+  @week_start :saturday
 
   @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
 
@@ -87,7 +87,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
-    current_week = get_current_week(organization_id)
+    current_week = Glific.parse_maybe_integer!(get_current_week(organization_id))
     upload_participant_responses(organization_id, current_week)
   end
 
@@ -447,13 +447,15 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Get the messages based on flow label
   """
-  @spec get_messages_by_flow_label(non_neg_integer(), String.t()) :: any()
-  def get_messages_by_flow_label(org_id, label) do
+  @spec get_messages_by_flow_label(String.t()) :: any()
+  def get_messages_by_flow_label(label) do
+    # get only last weeks data because we have same labels for pilot
+    week_before = DateTime.utc_now() |> Timex.shift(days: -8)
+
     Message
     |> join(:inner, [m], mc in Message, on: m.id == mc.context_message_id)
-    |> where([m], like(m.flow_label, ^"#{label}%"))
-    |> where([m], m.organization_id == ^org_id)
-    |> select([m, mc], {mc.body, mc.contact_id,})
+    |> where([m], like(m.flow_label, ^"#{label}%") and m.inserted_at > ^week_before)
+    |> select([m, mc], %{body: mc.body, contact_id: mc.contact_id, flow_label: m.flow_label})
     |> Repo.all()
   end
 
@@ -464,7 +466,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def get_responses_by_week_and_day(org_id, week, day) do
     response_label_format = "Q#{week}_#{day}_"
 
-    get_messages_by_flow_label(org_id, response_label_format)
+    get_messages_by_flow_label(response_label_format)
     |> Enum.map(fn m ->
       response_label =
         String.split(m.flow_label, ",")
@@ -513,7 +515,9 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     # Creating a CSV file
-    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv")
+    temp_path =
+      System.tmp_dir!()
+      |> Path.join("participant_response.csv")
 
     file = temp_path |> File.open!([:write, :utf8])
 
