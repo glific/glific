@@ -498,6 +498,9 @@ defmodule Glific.Partners do
     |> Map.put(:languages, languages)
   end
 
+  @doc """
+  Determine if we need to show uuid on the nodes.
+  """
   @spec get_flow_uuid_display(map()) :: boolean
   def get_flow_uuid_display(organization) do
     id = organization.id
@@ -1101,7 +1104,6 @@ defmodule Glific.Partners do
   @doc """
   Delete Client Data struct
   """
-
   @spec delete_organization_data(OrganizationData.t()) ::
           {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
   def delete_organization_data(%OrganizationData{} = organization_data) do
