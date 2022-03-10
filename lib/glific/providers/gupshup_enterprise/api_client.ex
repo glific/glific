@@ -58,7 +58,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def send_template(org_id, attrs) do
     with {:ok, credentials} <- get_credentials(org_id) do
       attrs
-      |> Map.merge(%{"send_to" => attrs["send_to"], "msg" => attrs["body"], "msg_type" => "HSM", "method" => "SendMessage"})
+      |> Map.merge(%{"send_to" => attrs["send_to"], "msg" => attrs["msg"], "msg_type" => "HSM", "method" => "SendMessage"})
       |> Map.merge(@common_message_params)
       |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
     end
