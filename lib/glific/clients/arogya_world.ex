@@ -48,6 +48,9 @@ defmodule Glific.Clients.ArogyaWorld do
     load_participant_file(org_id, dynamic_week_start)
   end
 
+  @doc """
+  Webhook functions for the ArogyaWorld
+  """
   @spec webhook(String.t(), map) :: map()
   def webhook("static_message", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
@@ -79,9 +82,7 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  @doc """
-  Send the response data back to arogya team in a CSV file
-  """
+  # Send the response data back to arogya team in a CSV file
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
@@ -119,16 +120,9 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def webhook(_, fields), do: fields
 
-  defp run_weekly_tasks(org_id) do
-    {_current_week, next_week} = update_week_number(org_id)
-
-    Logger.info(
-      "Ran daily tasks for update_week_number for org id: #{org_id}, next week: #{next_week}"
-    )
-
-    load_participant_file(org_id, next_week)
-  end
-
+  @doc """
+  Daily task jobs for the ArogyaWorld
+  """
   @spec daily_tasks(non_neg_integer()) :: any()
   def daily_tasks(org_id) do
     Logger.info("Ran daily tasks for organization #{org_id}")
@@ -143,6 +137,16 @@ defmodule Glific.Clients.ArogyaWorld do
         current_week = get_current_week(org_id)
         upload_participant_responses(org_id, current_week)
     end
+  end
+
+  defp run_weekly_tasks(org_id) do
+    {_current_week, next_week} = update_week_number(org_id)
+
+    Logger.info(
+      "Ran daily tasks for update_week_number for org id: #{org_id}, next week: #{next_week}"
+    )
+
+    load_participant_file(org_id, next_week)
   end
 
   defp get_current_week(organization_id) do
@@ -539,11 +543,6 @@ defmodule Glific.Clients.ArogyaWorld do
     |> List.last()
   end
 
-  @spec clean_string(String.t()) :: String.t()
-  defp clean_string(str) do
-    String.replace(str, " ", "")
-  end
-
   @doc """
   Return the response score based on the body
   """
@@ -583,5 +582,10 @@ defmodule Glific.Clients.ArogyaWorld do
         0
       end
     end
+  end
+
+  @spec clean_string(String.t()) :: String.t()
+  defp clean_string(str) do
+    String.replace(str, " ", "")
   end
 end

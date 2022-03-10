@@ -1,11 +1,10 @@
 name: Continuous Integration
 
-
 on:
   push:
-    branches: [ master, v1.0 ]
+    branches: [master, v1.0]
   pull_request:
-    branches: [ master, v1.0 ]
+    branches: [master, v1.0]
 
 jobs:
   test:
@@ -19,7 +18,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: glific_test
         ports:
-        - 5432:5432
+          - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     env:
@@ -27,9 +26,9 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     strategy:
-      matrix:  # build matrix for the job
-        elixir: [1.12.3]
-        otp: [24.0.5]
+      matrix: # build matrix for the job
+        elixir: [1.13.3]
+        otp: [24.2.2]
 
     steps:
       - name: Checkout the code
