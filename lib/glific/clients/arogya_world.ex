@@ -85,6 +85,10 @@ defmodule Glific.Clients.ArogyaWorld do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
     run_weekly_tasks(organization_id)
+
+    %{
+      success: true
+    }
   end
 
   @doc """
