@@ -23,7 +23,11 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   Making Tesla post call and adding user_id and password from credentials
   """
   @spec gupshup_post(String.t(), any(), map()) :: Tesla.Env.result()
-  def gupshup_post(url, payload, credentials), do: post(url, Map.merge(payload, credentials))
+  def gupshup_post(url, payload, credentials) do
+    IO.inspect("debug001")
+    IO.inspect(Map.merge(payload, credentials))
+    post(url, Map.merge(payload, credentials))
+  end
 
   @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   defp get_credentials(org_id) do
@@ -44,6 +48,19 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
           {:error,
            "Please check your credential settings and ensure you have added the user ID and password also"}
       end
+    end
+  end
+
+  @doc """
+  Sending HSM template to contact
+  """
+  @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
+  def send_template(org_id, attrs) do
+    with {:ok, credentials} <- get_credentials(org_id) do
+      attrs
+      |> Map.merge(%{"send_to" => attrs["send_to"], "msg" => attrs["body"], "msg_type" => "HSM", "method" => "SendMessage"})
+      |> Map.merge(@common_message_params)
+      |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
     end
   end
 

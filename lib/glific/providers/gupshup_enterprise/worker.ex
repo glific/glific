@@ -56,6 +56,32 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
     end
   end
 
+  @spec process_gupshup(
+          non_neg_integer(),
+          map(),
+          Message.t(),
+          map()
+        ) ::
+          {:ok, Message.t()} | {:error, String.t()}
+  defp process_gupshup(
+         org_id,
+         payload,
+         %{
+           "is_hsm" => true,
+           "body" => body
+         } = message,
+         _attrs
+       ) do
+    ApiClient.send_template(
+      org_id,
+      %{
+        "msg" => body,
+        "send_to" => payload["send_to"]
+      }
+    )
+    |> ResponseHandler.handle_response(message)
+  end
+
   defp process_gupshup(org_id, payload, message, _attrs) do
     ApiClient.send_message(
       org_id,
