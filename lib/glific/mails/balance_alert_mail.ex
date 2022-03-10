@@ -4,6 +4,7 @@ defmodule Glific.Mails.BalanceAlertMail do
   """
   alias Glific.{Communications.Mailer, Partners.Organization}
 
+  @doc false
   @spec low_balance_alert(Organization.t(), integer()) :: Swoosh.Email.t()
   def low_balance_alert(org, bsp_balance) do
     subject = """
@@ -19,6 +20,7 @@ defmodule Glific.Mails.BalanceAlertMail do
     Mailer.common_send(org, subject, body)
   end
 
+  @doc false
   @spec no_balance(Organization.t(), String.t()) :: Swoosh.Email.t()
   def no_balance(org, body) do
     subject = """
@@ -28,6 +30,7 @@ defmodule Glific.Mails.BalanceAlertMail do
     Mailer.common_send(org, subject, body)
   end
 
+  @doc false
   @spec rate_exceeded(Organization.t(), String.t()) :: Swoosh.Email.t()
   def rate_exceeded(org, body) do
     subject = """

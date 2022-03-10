@@ -127,17 +127,14 @@ defmodule Glific.Templates do
     end
   end
 
-  def create_session_template(attrs) do
-    do_create_session_template(attrs)
-  end
+  def create_session_template(attrs),
+    do: do_create_session_template(attrs)
 
   @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
   defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
-    if String.match?(shortcode, ~r/^[a-z0-9_]*$/) do
-      :ok
-    else
-      {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]}
-    end
+    if String.match?(shortcode, ~r/^[a-z0-9_]*$/),
+      do: :ok,
+      else: {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]}
   end
 
   defp validate_hsm(_) do
@@ -527,6 +524,7 @@ defmodule Glific.Templates do
     |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
   end
 
+  @doc false
   @spec parse_buttons(map(), boolean(), boolean()) :: map()
   def parse_buttons(session_template, false, true) do
     # parsing buttons only when template is not already translated, else buttons are part of body

@@ -168,6 +168,7 @@ defmodule Glific.Partners.Invoice do
        }),
        do: true
 
+  @doc false
   @spec update_billing_subscription(Invoice.t(), Billing.t(), boolean()) :: Invoice.t() | nil
   def update_billing_subscription(invoice, _billing, false), do: invoice
 

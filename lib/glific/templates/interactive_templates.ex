@@ -175,7 +175,9 @@ defmodule Glific.Templates.InteractiveTemplates do
   @spec clean_string(String.t()) :: String.t()
   defp clean_string(str), do: String.replace(str, ~r/[\p{P}\p{S}\p{C}]+/u, "")
 
-  #  Cleaning interactive template title as per WhatsApp policy
+  @doc """
+  Cleaning interactive template title as per WhatsApp policy
+  """
   @spec clean_template_title(map() | nil) :: map() | nil
   def clean_template_title(nil), do: nil
 

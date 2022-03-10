@@ -139,6 +139,8 @@ defmodule Glific.Saas.ConsultingHour do
     :staff,
     :when
   ]
+
+  @doc false
   @spec convert_to_csv_string([ConsultingHour.t()]) :: String.t()
   def convert_to_csv_string(consulting_hours) do
     consulting_hours
@@ -161,6 +163,7 @@ defmodule Glific.Saas.ConsultingHour do
     end)
   end
 
+  @doc false
   @spec parse_delimiter(map(), atom()) :: map()
   def parse_delimiter(data, key) do
     data

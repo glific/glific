@@ -67,13 +67,12 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> send_message(message, attrs)
   end
 
-  @doc false
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""
   defp caption(caption), do: caption
 
   @max_size 4096
-  @doc false
+
   @spec check_size(map()) :: map()
   defp check_size(%{msg: text} = attrs) do
     if String.length(text) < @max_size,
@@ -87,7 +86,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
       else: attrs |> Map.merge(%{error: "Message size greater than #{@max_size} characters"})
   end
 
-  @doc false
   @spec send_message(map(), Message.t(), map()) ::
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
@@ -103,6 +101,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> then(&create_oban_job(message, &1, attrs))
   end
 
+  @doc false
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
     # lets ensure that we have a phone number
@@ -133,6 +132,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     }
   end
 
+  @doc false
   @spec receive_media(map()) :: map()
   def receive_media(params) do
     message_payload = get_message_payload(params["type"], params)
@@ -155,6 +155,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   defp get_message_payload("audio", params), do: Jason.decode!(params["audio"])
   defp get_message_payload("document", params), do: Jason.decode!(params["document"])
 
+  @doc false
   @spec receive_location(map()) :: map()
   def receive_location(params) do
     location = Jason.decode!(params["location"])
@@ -171,7 +172,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     }
   end
 
-  @doc false
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do
     Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm, :template_type])
