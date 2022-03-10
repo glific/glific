@@ -359,7 +359,7 @@ defmodule Glific.Searches do
         true ->
           search_query(args.filter[:term], args)
       end
-      |> Repo.all()
+      |> Repo.all(timeout: 60_000)
       |> get_contact_ids(is_status?)
 
     # if we dont have any contact ids at this stage
