@@ -164,13 +164,17 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_week_day_number do
-    ## we will enable this when pilot phase is over.
-    Timex.weekday(Timex.today(), @week_start)
+    try do
+      Timex.weekday(Timex.today(), @week_start)
+    rescue
+      _e in RuntimeError -> 0
+    end
   end
 
   defp get_dynamic_week_key(current_week),
     do: "dynamic_message_schedule_week_#{current_week}"
 
+  @spec get_message_id(non_neg_integer(), String.t(), non_neg_integer()) :: String.t()
   defp get_message_id(organization_id, current_week, current_week_day) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
