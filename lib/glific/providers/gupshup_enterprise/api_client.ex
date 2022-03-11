@@ -7,8 +7,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   import GlificWeb.Gettext
 
   @gupshup_enterprise_url "https://media.smsgupshup.com/GatewayAPI/rest"
-  @common_message_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
+  @common_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
   @default_optin_params %{"method" => "OPT_IN", "channel" => "WHATSAPP"}
+  @default_send_template_params %{"msg_type" => "HSM", "method" => "SendMessage"}
   @default_send_message_params %{"method" => "SendMessage"}
   @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
 
@@ -23,11 +24,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   Making Tesla post call and adding user_id and password from credentials
   """
   @spec gupshup_post(String.t(), any(), map()) :: Tesla.Env.result()
-  def gupshup_post(url, payload, credentials) do
-    IO.inspect("debug001")
-    IO.inspect(Map.merge(payload, credentials))
-    post(url, Map.merge(payload, credentials))
-  end
+  def gupshup_post(url, payload, credentials), do: post(url, Map.merge(payload, credentials))
 
   @spec get_credentials(non_neg_integer()) :: {:error, String.t()} | {:ok, map()}
   defp get_credentials(org_id) do
@@ -58,8 +55,12 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def send_template(org_id, attrs) do
     with {:ok, credentials} <- get_credentials(org_id) do
       attrs
-      |> Map.merge(%{"send_to" => attrs["send_to"], "msg" => attrs["msg"], "msg_type" => "HSM", "method" => "SendMessage"})
-      |> Map.merge(@common_message_params)
+      |> Map.merge(%{
+        "send_to" => attrs["send_to"],
+        "msg" => attrs["msg"]
+      })
+      |> Map.merge(@common_params)
+      |> Map.merge(@default_send_template_params)
       |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
     end
   end
@@ -73,7 +74,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
          {:ok, payload} <- Jason.decode(attrs["message"]) do
       payload
       |> Map.put("send_to", attrs["send_to"])
-      |> Map.merge(@common_message_params)
+      |> Map.merge(@common_params)
       |> do_send_message(credentials)
     end
   end
@@ -99,7 +100,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def optin_contact(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
       payload
-      |> Map.merge(@common_message_params)
+      |> Map.merge(@common_params)
       |> Map.merge(@default_optin_params)
       |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
     end
