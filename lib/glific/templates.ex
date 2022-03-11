@@ -14,6 +14,7 @@ defmodule Glific.Templates do
     Providers.Gupshup.Template,
     Repo,
     Settings,
+    Settings.Language,
     Tags.Tag,
     Tags.TemplateTag,
     Templates.SessionTemplate
@@ -547,4 +548,64 @@ defmodule Glific.Templates do
     do: button["text"] <> ", " <> button["phone_number"]
 
   defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
+
+  @doc """
+  Import pre approved templates when BSP is GupshupEnterprise
+  Glific.Templates.import_enterprise_templates(1, data)
+  """
+  @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
+  def import_enterprise_templates(organization_id, data) do
+    {:ok, stream} = StringIO.open(data)
+
+    result =
+      stream
+      |> IO.binstream(:line)
+      |> CSV.decode(headers: true, strip_fields: true)
+      |> Enum.map(fn {_, data} -> import_approved_templates(organization_id, data) end)
+
+    errors = result |> Enum.filter(fn template -> Map.has_key?(template, :error) end)
+
+    case errors do
+      [] -> {:ok, %{message: "All templates have been added"}}
+      _ -> {:error, %{message: "All contacts could not be added", details: errors}}
+    end
+  end
+
+  defp import_approved_templates(organization_id, template) do
+    %{
+      body: template["Body"],
+      example: get_example_body(template["Body"]),
+      is_hsm: true,
+      is_active: true,
+      category: "ALERT_UPDATE",
+      label: template["Template Name"],
+      shortcode: template["Template Name"],
+      language_id: get_language(template["Language"]),
+      organization_id: organization_id,
+      type: get_type(template["Type"]),
+      status: get_status(template["Status"])
+    }
+    |> then(&Map.put(&1, :number_parameters, template_parameters_count(&1)))
+    |> do_create_session_template()
+  end
+
+  defp get_language(label_locale) do
+    with {:ok, language} <- Repo.fetch_by(Language, %{label_locale: label_locale}) do
+      language.id
+    else
+      true -> 1
+    end
+  end
+
+  defp get_type(_type), do: :text
+
+  defp get_status("Enabled"), do: "APPROVED"
+  defp get_status("Rejected"), do: "REJECTED"
+  defp get_status(_status), do: "PENDING"
+
+  defp get_example_body(body) do
+    body
+    |> String.replace("{{", "sample text ")
+    |> String.replace("}}", "")
+  end
 end
