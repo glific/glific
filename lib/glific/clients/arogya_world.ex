@@ -94,9 +94,6 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  @doc """
-  Send the response data back to arogya team in a CSV file
-  """
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
@@ -135,21 +132,23 @@ defmodule Glific.Clients.ArogyaWorld do
   def webhook(_, fields), do: fields
 
   @doc """
-  Daily task jobs for the ArogyaWorld
+  Hourly task jobs for the ArogyaWorld
   """
-  @spec daily_tasks(non_neg_integer()) :: any()
-  def daily_tasks(org_id) do
-    Logger.info("Ran daily tasks for organization #{org_id}")
+  @spec hourly_tasks(non_neg_integer()) :: any()
+  def hourly_tasks(org_id) do
+    Logger.info("Ran hourly tasks for organization #{org_id}")
 
     case get_week_day_number() do
-      ## update the week and load file on monday
-      1 ->
-        run_weekly_tasks(org_id)
+      # upload the participant files on wednesday 7 pm
+      6 ->
+        if Timex.now().hour === 13 do
+          current_week = get_current_week(org_id)
+          upload_participant_responses(org_id, current_week)
+        end
 
-      # upload the participant files on sunday
+      ## update the week and load file on wednesday 7 pm
       7 ->
-        current_week = get_current_week(org_id)
-        upload_participant_responses(org_id, current_week)
+        if Timex.now().hour === 13, do: run_weekly_tasks(org_id)
     end
   end
 
