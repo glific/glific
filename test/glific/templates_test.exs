@@ -994,6 +994,33 @@ defmodule Glific.TemplatesTest do
       assert hsm2.is_active == false
     end
 
+    test "import_enterprise_templates/1 should import templates", attrs do
+      data =
+        "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
+
+      Templates.import_enterprise_templates(attrs.organization_id, data)
+
+      assert {:ok, %SessionTemplate{} = imported_template} =
+               Repo.fetch_by(SessionTemplate, %{enterprise_template_id: "6122571"})
+
+      assert imported_template.status == "APPROVED"
+      assert imported_template.shortcode == "2meq_payment_link"
+      assert imported_template.language_id == 1
+      assert imported_template.category == "ALERT_UPDATE"
+
+      assert imported_template.example ==
+               "Your OTP for [sample text 1] is [sample text 2]. This is valid for [sample text 3]."
+
+      assert {:ok, %SessionTemplate{} = imported_template2} =
+               Repo.fetch_by(SessionTemplate, %{enterprise_template_id: "6122572"})
+
+      assert imported_template2.status == "REJECTED"
+      assert imported_template2.shortcode == "meq_payment_link2"
+
+      assert imported_template2.example ==
+               "You are one step away! Please click the link below to make your payment for the Future Perfect program."
+    end
+
     test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do
       l1 = Glific.Settings.get_language!(1)
       l2 = Glific.Settings.get_language!(2)
