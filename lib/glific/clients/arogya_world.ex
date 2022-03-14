@@ -17,8 +17,6 @@ defmodule Glific.Clients.ArogyaWorld do
     Triggers.Trigger
   }
 
-  @week_start :friday
-
   @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
 
   @first_question_day "1"
@@ -189,11 +187,8 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_week_day_number do
-    try do
-      Timex.weekday(Timex.today(), @week_start)
-    rescue
-      _e in RuntimeError -> 0
-    end
+    # week starts from friday
+    rem(Timex.weekday(Timex.today()) + 2, 7) + 1
   end
 
   defp get_dynamic_week_key(current_week),
