@@ -285,7 +285,9 @@ defmodule Glific.Clients.ArogyaWorld do
     {current_week, next_week}
   end
 
-  @doc false
+  @doc """
+  load participant files from gcs
+  """
   @spec load_participant_file(non_neg_integer(), non_neg_integer()) :: any()
   def load_participant_file(org_id, week_number) do
     key = get_dynamic_week_key(week_number)
@@ -294,7 +296,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  get template form EEx
+  get template form EEx based on varibales
   """
   @spec template(integer(), String.t()) :: binary
   def template(template_uuid, variables) do
@@ -307,6 +309,10 @@ defmodule Glific.Clients.ArogyaWorld do
     |> Jason.encode!()
   end
 
+  @doc """
+  get template form EEx without variables
+  """
+  @spec template(integer()) :: binary
   def template(template_uuid) do
     %{
       uuid: template_uuid,
