@@ -183,8 +183,7 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     end
 
     field :import_templates, :import_templates_result do
-      arg(:id, non_null(:id))
-      arg(:data, non_null(:string))
+      arg(:data, :string)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.import_enterprise_templates/3)
     end
