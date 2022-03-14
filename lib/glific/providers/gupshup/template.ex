@@ -86,7 +86,7 @@ defmodule Glific.Providers.Gupshup.Template do
            ApiClient.get_templates(organization_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      Templates.do_update_hsms(response_data["templates"], organization)
+      Templates.do_update_hsms(response_data["templates"], organization, :gupshup)
       :ok
     else
       _ ->
