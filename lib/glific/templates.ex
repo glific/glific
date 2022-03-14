@@ -263,8 +263,10 @@ defmodule Glific.Templates do
   end
 
   @doc false
-  @spec do_update_hsms(map(), Organization.t()) :: :ok
-  def do_update_hsms(templates, organization) do
+  @spec do_update_hsms(list(), Organization.t(), atom()) :: :ok
+  def do_update_hsms(templates, organization, phase \\ :gupshup)
+
+  def do_update_hsms(templates, organization, :gupshup) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
@@ -281,7 +283,9 @@ defmodule Glific.Templates do
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
         Map.has_key?(db_templates, template["id"]) ->
-          update_hsm(template, organization, languages)
+          # get updated db templates to handle multiple approved translations
+          parse_templates(db_templates, template, :gupshup)
+          |> update_hsm(db_templates[template["id"]], template, organization, languages)
 
         true ->
           true
@@ -289,19 +293,53 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec update_hsm(map(), Organization.t(), map()) ::
+  def do_update_hsms(templates, organization, :gupshup_enterprise) do
+    languages =
+      Settings.list_languages()
+      |> Enum.map(fn language -> {language.locale, language.id} end)
+      |> Map.new()
+
+    db_templates = hsm_template_uuid_map(:gupshup_enterprise)
+
+    Enum.each(templates, fn template ->
+      cond do
+        !Map.has_key?(db_templates, template["enterprise_id"]) ->
+          insert_hsm(template, organization, languages)
+
+        Map.has_key?(db_templates, template["enterprise_id"]) ->
+          parse_templates(db_templates, template, :gupshup_enterprise)
+          |> update_hsm(
+            db_templates[template["enterprise_id"]],
+            template,
+            organization,
+            languages
+          )
+
+        true ->
+          true
+      end
+    end)
+  end
+
+  defp parse_templates(db_templates, template, phase) do
+    db_templates
+    |> Map.values()
+    |> Enum.filter(fn db_template ->
+      db_template.shortcode == template["elementName"] and
+        check_existing_template_id?(db_template, template, phase)
+    end)
+  end
+
+  @spec check_existing_template_id?(map(), map(), atom()) :: boolean()
+  defp check_existing_template_id?(db_template, template, :gupshup),
+    do: db_template.uuid != template["id"]
+
+  defp check_existing_template_id?(db_template, template, :gupshup_enterprise),
+    do: db_template.enterprise_template_id != template["enterprise_id"]
+
+  @spec update_hsm(list(), map(), map(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp update_hsm(template, organization, languages) do
-    # get updated db templates to handle multiple approved translations
-    db_templates = hsm_template_uuid_map()
-
-    db_template_translations =
-      db_templates
-      |> Map.values()
-      |> Enum.filter(fn db_template ->
-        db_template.shortcode == template["elementName"] and db_template.uuid != template["id"]
-      end)
-
+  defp update_hsm(db_template_translations, current_template, template, organization, languages) do
     approved_db_templates =
       db_template_translations
       |> Enum.filter(fn db_template -> db_template.status == "APPROVED" end)
@@ -315,7 +353,7 @@ defmodule Glific.Templates do
       end)
     end
 
-    do_update_hsm(template, db_templates)
+    do_update_hsm(template, current_template)
   end
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
@@ -367,7 +405,8 @@ defmodule Glific.Templates do
         is_hsm: true,
         status: template["status"],
         is_active: is_active,
-        number_parameters: number_of_parameter
+        number_parameters: number_of_parameter,
+        enterprise_template_id: template["enterprise_id"] || ""
       }
       |> check_for_button_template()
 
@@ -430,8 +469,7 @@ defmodule Glific.Templates do
   defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
   @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update_hsm(template, db_templates) do
-    current_template = db_templates[template["id"]]
+  defp do_update_hsm(template, current_template) do
     update_attrs = %{status: template["status"]}
 
     update_attrs =
@@ -444,10 +482,9 @@ defmodule Glific.Templates do
           ),
         else: update_attrs
 
-    {:ok, _} =
-      db_templates[template["id"]]
-      |> SessionTemplate.changeset(update_attrs)
-      |> Repo.update()
+    current_template
+    |> SessionTemplate.changeset(update_attrs)
+    |> Repo.update()
   end
 
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
@@ -519,10 +556,19 @@ defmodule Glific.Templates do
   end
 
   # A map where keys are hsm uuid and value will be template struct
-  @spec hsm_template_uuid_map() :: map()
-  defp hsm_template_uuid_map do
+  @spec hsm_template_uuid_map(atom()) :: map()
+  defp hsm_template_uuid_map(phase \\ :gupshup)
+
+  defp hsm_template_uuid_map(:gupshup) do
     list_session_templates(%{filter: %{is_hsm: true}})
     |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+  end
+
+  defp hsm_template_uuid_map(:gupshup_enterprise) do
+    list_session_templates(%{filter: %{is_hsm: true}})
+    |> Map.new(fn %{enterprise_template_id: enterprise_template_id} = template ->
+      {enterprise_template_id, template}
+    end)
   end
 
   @doc false
@@ -556,56 +602,47 @@ defmodule Glific.Templates do
   @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def import_enterprise_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
+    organization = Partners.organization(organization_id)
 
-    result =
-      stream
-      |> IO.binstream(:line)
-      |> CSV.decode(headers: true, strip_fields: true)
-      |> Enum.map(fn {_, data} -> import_approved_templates(organization_id, data) end)
+    stream
+    |> IO.binstream(:line)
+    |> CSV.decode(headers: true, strip_fields: true)
+    |> Enum.map(fn {_, data} -> import_approved_templates(data) end)
+    |> do_update_hsms(organization, :gupshup_enterprise)
 
-    errors = result |> Enum.filter(fn template -> Map.has_key?(template, :error) end)
-
-    case errors do
-      [] -> {:ok, %{message: "All templates have been added"}}
-      _ -> {:error, %{message: "All contacts could not be added", details: errors}}
-    end
+    {:ok, %{message: "All templates have been added"}}
   end
 
-  defp import_approved_templates(organization_id, template) do
-    %{
-      body: template["Body"],
-      example: get_example_body(template["Body"]),
-      is_hsm: true,
-      is_active: true,
-      category: "ALERT_UPDATE",
-      label: template["Template Name"],
-      shortcode: template["Template Name"],
-      language_id: get_language(template["Language"]),
-      organization_id: organization_id,
-      type: get_type(template["Type"]),
-      status: get_status(template["Status"])
+  defp import_approved_templates(template),
+    do: %{
+      "id" => Ecto.UUID.generate(),
+      "data" => template["Body"],
+      "meta" => get_example_body(template["Body"]),
+      "category" => "ALERT_UPDATE",
+      "elementName" => template["Template Name"],
+      "languageCode" => get_language(template["Language"]),
+      "templateType" => template["Type"],
+      "status" => get_status(template["Status"]),
+      "enterprise_id" => template["Template Id"]
     }
-    |> then(&Map.put(&1, :number_parameters, template_parameters_count(&1)))
-    |> do_create_session_template()
-  end
 
+  @spec get_language(String.t()) :: String.t()
   defp get_language(label_locale) do
-    with {:ok, language} <- Repo.fetch_by(Language, %{label_locale: label_locale}) do
-      language.id
-    else
-      true -> 1
-    end
+    {:ok, language} = Repo.fetch_by(Language, %{label_locale: label_locale})
+    language.locale
   end
 
-  defp get_type(_type), do: :text
-
+  @spec get_status(String.t()) :: String.t()
   defp get_status("Enabled"), do: "APPROVED"
   defp get_status("Rejected"), do: "REJECTED"
   defp get_status(_status), do: "PENDING"
 
+  @spec get_example_body(String.t()) :: String.t()
   defp get_example_body(body) do
     body
-    |> String.replace("{{", "sample text ")
-    |> String.replace("}}", "")
+    |> String.replace("{{", "[sample text ")
+    |> String.replace("}}", "]")
+    |> then(&Map.put(%{}, :example, &1))
+    |> Jason.encode!()
   end
 end
