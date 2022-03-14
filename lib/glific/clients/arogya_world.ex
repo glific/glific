@@ -136,17 +136,19 @@ defmodule Glific.Clients.ArogyaWorld do
   def hourly_tasks(org_id) do
     Logger.info("Ran hourly tasks for organization #{org_id}")
 
+    sharing_file_time = Timex.now().hour === 13
+
     case get_week_day_number() do
       # upload the participant files on wednesday 7 pm
       6 ->
-        if Timex.now().hour === 13 do
+        if sharing_file_time do
           current_week = get_current_week(org_id)
           upload_participant_responses(org_id, current_week)
         end
 
-      ## update the week and load file on wednesday 7 pm
+      ## update the week and load file on thursday 7 pm
       7 ->
-        if Timex.now().hour === 13, do: run_weekly_tasks(org_id)
+        if sharing_file_time, do: run_weekly_tasks(org_id)
     end
   end
 
@@ -296,7 +298,7 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  get template form EEx based on varibales
+  get template form EEx based on variables
   """
   @spec template(integer(), String.t()) :: binary
   def template(template_uuid, variables) do
