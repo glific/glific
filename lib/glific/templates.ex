@@ -263,7 +263,7 @@ defmodule Glific.Templates do
   end
 
   @doc false
-  @spec do_update_hsms(map(), Organization.t()) :: :ok
+  @spec do_update_hsms(map(), Organization.t(), atom()) :: :ok
   def do_update_hsms(templates, organization, phase \\ :gupshup) do
     languages =
       Settings.list_languages()
@@ -289,6 +289,7 @@ defmodule Glific.Templates do
     end)
   end
 
+  @spec get_template_key(map(), atom()) :: String.t()
   defp get_template_key(template, :gupshup), do: template["id"]
   defp get_template_key(template, :gupshup_enterprise), do: template["enterprise_id"]
 
@@ -345,6 +346,7 @@ defmodule Glific.Templates do
       else: :ok
   end
 
+  @spec do_insert_hsm(map(), Organization.t(), map(), String.t()) :: :ok
   defp do_insert_hsm(template, organization, languages, example) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -593,7 +595,7 @@ defmodule Glific.Templates do
   Import pre approved templates when BSP is GupshupEnterprise
   Glific.Templates.import_enterprise_templates(1, data)
   """
-  @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
+  @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def import_enterprise_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
     organization = Partners.organization(organization_id)
@@ -607,6 +609,7 @@ defmodule Glific.Templates do
     {:ok, %{message: "All templates have been added"}}
   end
 
+  @spec import_approved_templates(map()) :: map()
   defp import_approved_templates(template),
     do: %{
       "id" => Ecto.UUID.generate(),
