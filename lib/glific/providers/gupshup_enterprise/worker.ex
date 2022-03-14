@@ -10,6 +10,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
 
   alias Glific.{
     Contacts,
+    Messages.Message,
     Partners,
     Partners.Organization,
     Providers.Gupshup.Enterprise.ApiClient,
