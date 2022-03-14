@@ -263,7 +263,7 @@ defmodule Glific.Templates do
   end
 
   @doc false
-  @spec do_update_hsms(map(), Organization.t(), atom()) :: :ok
+  @spec do_update_hsms(list(), Organization.t(), atom()) :: :ok
   def do_update_hsms(templates, organization, phase \\ :gupshup) do
     languages =
       Settings.list_languages()
