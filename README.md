@@ -26,9 +26,8 @@ and use the latest versions of each platform as soon as feasible (i.e. once the 
 of packages we used have upgraded). We do not have the bandwidth to support earlier versions
 of the packages.
 
-- erlang : 24.0.5
-- elixir : 1.12.4-otp-24
-- nodejs : 14.16.0
+- erlang : 24.2.2
+- elixir : 1.13.3-otp-24
 - postgres : v13.x
 
 ## Download code
