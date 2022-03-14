@@ -264,26 +264,24 @@ defmodule Glific.Templates do
 
   @doc false
   @spec do_update_hsms(map(), Organization.t()) :: :ok
-  def do_update_hsms(templates, organization, phase \\ :gupshup)
-
-  def do_update_hsms(templates, organization, :gupshup) do
+  def do_update_hsms(templates, organization, phase \\ :gupshup) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
 
-    db_templates = hsm_template_uuid_map(:gupshup)
+    db_templates = hsm_template_uuid_map(phase)
 
     Enum.each(templates, fn template ->
       cond do
-        !Map.has_key?(db_templates, template["id"]) ->
+        !Map.has_key?(db_templates, get_template_key(template, phase)) ->
           insert_hsm(template, organization, languages)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
-        Map.has_key?(db_templates, template["id"]) ->
-          update_hsm(template, organization, languages, :gupshup)
+        Map.has_key?(db_templates, get_template_key(template, phase)) ->
+          update_hsm(template, organization, languages, phase)
 
         true ->
           true
@@ -291,30 +289,8 @@ defmodule Glific.Templates do
     end)
   end
 
-  def do_update_hsms(templates, organization, :gupshup_enterprise) do
-    languages =
-      Settings.list_languages()
-      |> Enum.map(fn language -> {language.locale, language.id} end)
-      |> Map.new()
-
-    db_templates = hsm_template_uuid_map(:gupshup_enterprise)
-
-    Enum.each(templates, fn template ->
-      cond do
-        !Map.has_key?(db_templates, template["enterprise_id"]) ->
-          insert_hsm(template, organization, languages)
-
-        # this check is required,
-        # as is_active field can be updated by graphql API,
-        # and should not be reverted back
-        Map.has_key?(db_templates, template["enterprise_id"]) ->
-          update_hsm(template, organization, languages, :gupshup_enterprise)
-
-        true ->
-          true
-      end
-    end)
-  end
+  defp get_template_key(template, :gupshup), do: template["id"]
+  defp get_template_key(template, :gupshup_enterprise), do: template["enterprise_id"]
 
   @spec update_hsm(map(), Organization.t(), map(), atom()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
