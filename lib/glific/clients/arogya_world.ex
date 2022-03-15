@@ -134,7 +134,6 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Hourly task jobs for the ArogyaWorld
   """
-
   @spec hourly_tasks(non_neg_integer()) :: any()
   def hourly_tasks(org_id) do
     Logger.info("Ran hourly tasks for organization #{org_id}")
@@ -142,26 +141,19 @@ defmodule Glific.Clients.ArogyaWorld do
     sharing_file_time = Timex.now().hour === 13
     current_week = get_current_week(org_id)
 
-    case get_week_day_number() do
-      # upload the participant files on wednesday 7 pm
-      1 ->
-        if sharing_file_time do
-          upload_participant_responses(org_id, current_week)
-        end
-
-      # load file on thursday 7 pm
-      2 ->
-        if sharing_file_time do
-          load_participant_file(org_id, current_week)
-        end
-
-      # update week number on tuesday 7pm
-      7 ->
-        if sharing_file_time do
-          update_week_number(org_id)
-        end
-    end
+    get_week_day_number()
+    |> do_hourly_tasks(sharing_file_time, org_id, current_week)
   end
+
+  @spec do_hourly_tasks(non_neg_integer(), boolean(), non_neg_integer(), non_neg_integer()) :: any()
+  defp do_hourly_tasks(1, sharing_file_time, org_id, current_week), do:
+    if sharing_file_time, do: upload_participant_responses(org_id, current_week)
+
+  defp do_hourly_tasks(2, sharing_file_time, org_id, current_week), do:
+    if sharing_file_time, do: load_participant_file(org_id, current_week)
+
+  defp do_hourly_tasks(7, sharing_file_time, org_id, _current_week), do:
+    if sharing_file_time, do: update_week_number(org_id)
 
   defp get_current_week(organization_id) do
     ## For pilot phase, it will be the day number.
@@ -452,6 +444,7 @@ defmodule Glific.Clients.ArogyaWorld do
     Map.put(acc, data["Week"], week)
   end
 
+  @spec do_cleanup_static_data(String.t(), map()) :: String.t()
   defp do_cleanup_static_data("1", data),
     do: if(data["Week"] !== "1", do: @first_question_day, else: data["Message No"])
 
