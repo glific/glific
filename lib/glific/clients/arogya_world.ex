@@ -511,7 +511,7 @@ defmodule Glific.Clients.ArogyaWorld do
       %{
         "ID" => m.contact_id,
         "Q_ID" => q_id,
-        "Q_response" => get_response_score(m.body, q_id, org_id)
+        "Q_response" => get_response_score(m.body, org_id)
       }
     end)
   end
@@ -593,8 +593,8 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Return the response score based on the body
   """
-  @spec get_response_score(String.t(), String.t(), non_neg_integer()) :: any()
-  def get_response_score(response, q_id, org_id) do
+  @spec get_response_score(String.t(), non_neg_integer()) :: any()
+  def get_response_score(response, org_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: org_id,
@@ -605,29 +605,10 @@ defmodule Glific.Clients.ArogyaWorld do
 
     response_score = organization_data.json
 
-    # Need to add type of question and check from that instead of id
-    if q_id == "27" do
-      count = String.split(response, ",") |> length()
-
-      cond do
-        count === 1 ->
-          1
-
-        count > 1 and count < 4 ->
-          2
-
-        count === 4 ->
-          3
-
-        true ->
-          0
-      end
+    if response_score[response] !== nil do
+      response_score[response]
     else
-      if response_score[response] !== nil do
-        response_score[response]
-      else
-        0
-      end
+      0
     end
   end
 
