@@ -95,8 +95,10 @@ defmodule Glific.Clients.ArogyaWorld do
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
-    current_week = Glific.parse_maybe_integer!(get_current_week(organization_id))
-    upload_participant_responses(organization_id, current_week)
+    organization_id
+    |> get_current_week
+    |> Glific.parse_maybe_integer!()
+    |> then(&upload_participant_responses(organization_id, &1))
   end
 
   def webhook("dynamic_message", fields) do
@@ -129,39 +131,37 @@ defmodule Glific.Clients.ArogyaWorld do
 
   def webhook(_, fields), do: fields
 
-  # will be needing this after one week
+  @doc """
+  Hourly task jobs for the ArogyaWorld
+  """
 
-  # @doc """
-  # Hourly task jobs for the ArogyaWorld
-  # """
+  @spec hourly_tasks(non_neg_integer()) :: any()
+  def hourly_tasks(org_id) do
+    Logger.info("Ran hourly tasks for organization #{org_id}")
 
-  # @spec hourly_tasks(non_neg_integer()) :: any()
-  # def hourly_tasks(org_id) do
-  #   Logger.info("Ran hourly tasks for organization #{org_id}")
+    sharing_file_time = Timex.now().hour === 13
+    current_week = get_current_week(org_id)
 
-  #   sharing_file_time = Timex.now().hour === 13
-  #   current_week = get_current_week(org_id)
+    case get_week_day_number() do
+      # upload the participant files on wednesday 7 pm
+      1 ->
+        if sharing_file_time do
+          upload_participant_responses(org_id, current_week)
+        end
 
-  #   case get_week_day_number() do
-  #     # upload the participant files on wednesday 7 pm
-  #     1 ->
-  #       if sharing_file_time do
-  #         upload_participant_responses(org_id, current_week)
-  #       end
+      # load file on thursday 7 pm
+      2 ->
+        if sharing_file_time do
+          load_participant_file(org_id, current_week)
+        end
 
-  #     # load file on thursday 7 pm
-  #     2 ->
-  #       if sharing_file_time do
-  #         load_participant_file(org_id, current_week)
-  #       end
-
-  #     # update week number on tuesday 7pm
-  #     7 ->
-  #       if sharing_file_time do
-  #         update_week_number(org_id)
-  #       end
-  #   end
-  # end
+      # update week number on tuesday 7pm
+      7 ->
+        if sharing_file_time do
+          update_week_number(org_id)
+        end
+    end
+  end
 
   defp get_current_week(organization_id) do
     ## For pilot phase, it will be the day number.
