@@ -445,8 +445,8 @@ defmodule Glific.Templates do
 
   @spec do_update_hsm(map(), map(), atom()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update_hsm(template, db_templates, :gupshup) do
-    current_template = db_templates[template["id"]]
+  defp do_update_hsm(template, db_templates, bsp) do
+    current_template = db_templates[get_template_key(template, bsp)]
     update_attrs = %{status: template["status"]}
 
     update_attrs =
@@ -460,27 +460,7 @@ defmodule Glific.Templates do
         else: update_attrs
 
     {:ok, _} =
-      db_templates[template["id"]]
-      |> SessionTemplate.changeset(update_attrs)
-      |> Repo.update()
-  end
-
-  defp do_update_hsm(template, db_templates, :gupshup_enterprise) do
-    current_template = db_templates[template["enterprise_id"]]
-    update_attrs = %{status: template["status"]}
-
-    update_attrs =
-      if current_template.status != template["status"],
-        do:
-          Map.put(
-            update_attrs,
-            :is_active,
-            template["status"] in ["APPROVED"]
-          ),
-        else: update_attrs
-
-    {:ok, _} =
-      db_templates[template["enterprise_id"]]
+      db_templates[get_template_key(template, bsp)]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
   end
