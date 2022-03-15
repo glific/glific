@@ -593,7 +593,6 @@ defmodule Glific.Templates do
 
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
-  Glific.Templates.import_enterprise_templates(1, data)
   """
   @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any}
   def import_enterprise_templates(organization_id, data) do
