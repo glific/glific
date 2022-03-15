@@ -19,9 +19,9 @@ defmodule Glific.Clients.ArogyaWorld do
 
   @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
 
-  @first_question_day "1"
+  @first_question_day "3"
 
-  @second_question_day "4"
+  @second_question_day "7"
 
   @csv_url_key_map %{
     "static_message_schedule" =>
@@ -82,12 +82,23 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
-  # Send the response data back to arogya team in a CSV file
+  def webhook("weekly_task", fields) do
+    organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    {_current_week, next_week} = update_week_number(organization_id)
+    load_participant_file(organization_id, next_week)
+
+    %{
+      success: true
+    }
+  end
+
   def webhook("send_participant_responses", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
 
-    current_week = get_current_week(organization_id)
-    upload_participant_responses(organization_id, current_week)
+    organization_id
+    |> get_current_week
+    |> Glific.parse_maybe_integer!()
+    |> then(&upload_participant_responses(organization_id, &1))
   end
 
   def webhook("dynamic_message", fields) do
@@ -121,33 +132,28 @@ defmodule Glific.Clients.ArogyaWorld do
   def webhook(_, fields), do: fields
 
   @doc """
-  Daily task jobs for the ArogyaWorld
+  Hourly task jobs for the ArogyaWorld
   """
-  @spec daily_tasks(non_neg_integer()) :: any()
-  def daily_tasks(org_id) do
-    Logger.info("Ran daily tasks for organization #{org_id}")
+  @spec hourly_tasks(non_neg_integer()) :: any()
+  def hourly_tasks(org_id) do
+    Logger.info("Ran hourly tasks for organization #{org_id}")
 
-    case get_week_day_number() do
-      ## update the week and load file on monday
-      1 ->
-        run_weekly_tasks(org_id)
+    sharing_file_time = Timex.now().hour === 13
+    current_week = get_current_week(org_id)
 
-      # upload the participant files on sunday
-      7 ->
-        current_week = get_current_week(org_id)
-        upload_participant_responses(org_id, current_week)
-    end
+    get_week_day_number()
+    |> do_hourly_tasks(sharing_file_time, org_id, current_week)
   end
 
-  defp run_weekly_tasks(org_id) do
-    {_current_week, next_week} = update_week_number(org_id)
+  @spec do_hourly_tasks(non_neg_integer(), boolean(), non_neg_integer(), non_neg_integer()) :: any()
+  defp do_hourly_tasks(1, sharing_file_time, org_id, current_week), do:
+    if sharing_file_time, do: upload_participant_responses(org_id, current_week)
 
-    Logger.info(
-      "Ran daily tasks for update_week_number for org id: #{org_id}, next week: #{next_week}"
-    )
+  defp do_hourly_tasks(2, sharing_file_time, org_id, current_week), do:
+    if sharing_file_time, do: load_participant_file(org_id, current_week)
 
-    load_participant_file(org_id, next_week)
-  end
+  defp do_hourly_tasks(7, sharing_file_time, org_id, _current_week), do:
+    if sharing_file_time, do: update_week_number(org_id)
 
   defp get_current_week(organization_id) do
     ## For pilot phase, it will be the day number.
@@ -176,13 +182,14 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_week_day_number do
-    ## we will enable this when pilot phase is over.
-    Timex.weekday(Timex.today())
+    # week starts from wednesday
+    rem(Timex.weekday(Timex.today()) + 4, 7) + 1
   end
 
   defp get_dynamic_week_key(current_week),
     do: "dynamic_message_schedule_week_#{current_week}"
 
+  @spec get_message_id(non_neg_integer(), String.t(), non_neg_integer()) :: String.t()
   defp get_message_id(organization_id, current_week, current_week_day) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -273,7 +280,9 @@ defmodule Glific.Clients.ArogyaWorld do
     {current_week, next_week}
   end
 
-  @doc false
+  @doc """
+  load participant files from gcs
+  """
   @spec load_participant_file(non_neg_integer(), non_neg_integer()) :: any()
   def load_participant_file(org_id, week_number) do
     key = get_dynamic_week_key(week_number)
@@ -282,14 +291,27 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   @doc """
-  get template form EEx
+  get template form EEx based on variables
   """
   @spec template(integer(), String.t()) :: binary
-  def template(template_uuid, name) do
+  def template(template_uuid, variables) do
     %{
       uuid: template_uuid,
-      name: name,
-      variables: ["@contact.name"],
+      name: "Template",
+      variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  @doc """
+  get template form EEx without variables
+  """
+  @spec template(integer()) :: binary
+  def template(template_uuid) do
+    %{
+      uuid: template_uuid,
+      name: "Template",
       expression: nil
     }
     |> Jason.encode!()
@@ -412,20 +434,24 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec cleanup_static_data(map(), map()) :: map()
   def cleanup_static_data(acc, data) do
     # check for 2nd day and update it to 4th
-    check_second_day =
-      if data["Message No"] === "2" and data["Week"] !== "1",
-        do: @second_question_day,
-        else: data["Message No"]
+    check_day = do_cleanup_static_data(data["Message No"], data)
 
     week =
-      if Map.has_key?(acc, data["Week"]) do
-        Map.put(acc[data["Week"]], check_second_day, data["Message ID"])
-      else
-        %{check_second_day => data["Message ID"]}
-      end
+      if Map.has_key?(acc, data["Week"]),
+        do: Map.put(acc[data["Week"]], check_day, data["Message ID"]),
+        else: %{check_day => data["Message ID"]}
 
     Map.put(acc, data["Week"], week)
   end
+
+  @spec do_cleanup_static_data(String.t(), map()) :: String.t()
+  defp do_cleanup_static_data("1", data),
+    do: if(data["Week"] !== "1", do: @first_question_day, else: data["Message No"])
+
+  defp do_cleanup_static_data("2", data),
+    do: if(data["Week"] !== "1", do: @second_question_day, else: data["Message No"])
+
+  defp do_cleanup_static_data(_message_no, data), do: data["Message No"]
 
   @doc """
   Conditionally execute the trigger based on: ID, Week, Day.
@@ -440,11 +466,15 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Get the messages based on flow label
   """
-  @spec get_messages_by_flow_label(non_neg_integer(), String.t()) :: any()
-  def get_messages_by_flow_label(org_id, label) do
+  @spec get_messages_by_flow_label(String.t()) :: any()
+  def get_messages_by_flow_label(label) do
+    # get only last weeks data because we have same labels for pilot
+    week_before = DateTime.utc_now() |> Timex.shift(days: -8)
+
     Message
-    |> where([m], like(m.flow_label, ^"#{label}%"))
-    |> where([m], m.organization_id == ^org_id)
+    |> join(:inner, [m], mc in Message, on: m.id == mc.context_message_id)
+    |> where([m], like(m.flow_label, ^"#{label}%") and m.inserted_at > ^week_before)
+    |> select([m, mc], %{body: mc.body, contact_id: mc.contact_id, flow_label: m.flow_label})
     |> Repo.all()
   end
 
@@ -455,7 +485,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def get_responses_by_week_and_day(org_id, week, day) do
     response_label_format = "Q#{week}_#{day}_"
 
-    get_messages_by_flow_label(org_id, response_label_format)
+    get_messages_by_flow_label(response_label_format)
     |> Enum.map(fn m ->
       response_label =
         String.split(m.flow_label, ",")
@@ -466,7 +496,7 @@ defmodule Glific.Clients.ArogyaWorld do
       %{
         "ID" => m.contact_id,
         "Q_ID" => q_id,
-        "Q_response" => get_response_score(m.body, q_id, org_id)
+        "Q_response" => get_response_score(m.body, org_id)
       }
     end)
   end
@@ -504,7 +534,9 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     # Creating a CSV file
-    temp_path = System.tmp_dir!() |> Path.join("participant_response.csv")
+    temp_path =
+      System.tmp_dir!()
+      |> Path.join("participant_response.csv")
 
     file = temp_path |> File.open!([:write, :utf8])
 
@@ -546,8 +578,8 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Return the response score based on the body
   """
-  @spec get_response_score(String.t(), String.t(), non_neg_integer()) :: any()
-  def get_response_score(response, q_id, org_id) do
+  @spec get_response_score(String.t(), non_neg_integer()) :: any()
+  def get_response_score(response, org_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: org_id,
@@ -558,29 +590,10 @@ defmodule Glific.Clients.ArogyaWorld do
 
     response_score = organization_data.json
 
-    # Need to add type of question and check from that instead of id
-    if q_id == "27" do
-      count = String.split(response, ",") |> length()
-
-      cond do
-        count === 1 ->
-          1
-
-        count > 1 and count < 4 ->
-          2
-
-        count === 4 ->
-          3
-
-        true ->
-          0
-      end
+    if response_score[response] !== nil do
+      response_score[response]
     else
-      if response_score[response] !== nil do
-        response_score[response]
-      else
-        0
-      end
+      0
     end
   end
 
