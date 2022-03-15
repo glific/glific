@@ -264,24 +264,24 @@ defmodule Glific.Templates do
 
   @doc false
   @spec do_update_hsms(list(), Organization.t(), atom()) :: :ok
-  def do_update_hsms(templates, organization, phase \\ :gupshup) do
+  def do_update_hsms(templates, organization, bsp \\ :gupshup) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
 
-    db_templates = hsm_template_uuid_map(phase)
+    db_templates = hsm_template_uuid_map(bsp)
 
     Enum.each(templates, fn template ->
       cond do
-        !Map.has_key?(db_templates, get_template_key(template, phase)) ->
+        !Map.has_key?(db_templates, get_template_key(template, bsp)) ->
           insert_hsm(template, organization, languages)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
-        Map.has_key?(db_templates, get_template_key(template, phase)) ->
-          update_hsm(template, organization, languages, phase)
+        Map.has_key?(db_templates, get_template_key(template, bsp)) ->
+          update_hsm(template, organization, languages, bsp)
 
         true ->
           true
@@ -295,16 +295,16 @@ defmodule Glific.Templates do
 
   @spec update_hsm(map(), Organization.t(), map(), atom()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp update_hsm(template, organization, languages, phase) do
+  defp update_hsm(template, organization, languages, bsp) do
     # get updated db templates to handle multiple approved translations
-    db_templates = hsm_template_uuid_map(phase)
+    db_templates = hsm_template_uuid_map(bsp)
 
     db_template_translations =
       db_templates
       |> Map.values()
       |> Enum.filter(fn db_template ->
         db_template.shortcode == template["elementName"] and
-          check_existing_template_id?(db_template, template, phase)
+          is_existing_template?(db_template, template, bsp)
       end)
 
     approved_db_templates =
@@ -320,14 +320,14 @@ defmodule Glific.Templates do
       end)
     end
 
-    do_update_hsm(template, db_templates, phase)
+    do_update_hsm(template, db_templates, bsp)
   end
 
-  @spec check_existing_template_id?(map(), map(), atom()) :: boolean()
-  defp check_existing_template_id?(db_template, template, :gupshup),
+  @spec is_existing_template?(map(), map(), atom()) :: boolean()
+  defp is_existing_template?(db_template, template, :gupshup),
     do: db_template.uuid != template["id"]
 
-  defp check_existing_template_id?(db_template, template, :gupshup_enterprise),
+  defp is_existing_template?(db_template, template, :gupshup_enterprise),
     do: db_template.enterprise_template_id != template["enterprise_id"]
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
