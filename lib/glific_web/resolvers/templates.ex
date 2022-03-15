@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Templates do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Providers.GupshupEnterprise.Template, Templates, Templates.SessionTemplate}
+  alias Glific.{Providers.GupshupEnterprise.Template, Repo, Templates, Templates.SessionTemplate}
 
   @doc """
   Get a specific session template by id
