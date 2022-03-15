@@ -442,31 +442,23 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec cleanup_static_data(map(), map()) :: map()
   def cleanup_static_data(acc, data) do
     # check for 2nd day and update it to 4th
-    check_day =
-      case data["Message No"] do
-        "1" ->
-          if data["Week"] !== "1",
-            do: @first_question_day,
-            else: data["Message No"]
-
-        "2" ->
-          if data["Week"] !== "1",
-            do: @second_question_day,
-            else: data["Message No"]
-
-        _ ->
-          data["Message No"]
-      end
+    check_day = do_cleanup_static_data(data["Message No"], data)
 
     week =
-      if Map.has_key?(acc, data["Week"]) do
-        Map.put(acc[data["Week"]], check_day, data["Message ID"])
-      else
-        %{check_day => data["Message ID"]}
-      end
+      if Map.has_key?(acc, data["Week"]),
+        do: Map.put(acc[data["Week"]], check_day, data["Message ID"]),
+        else: %{check_day => data["Message ID"]}
 
     Map.put(acc, data["Week"], week)
   end
+
+  defp do_cleanup_static_data("1", data),
+    do: if(data["Week"] !== "1", do: @first_question_day, else: data["Message No"])
+
+  defp do_cleanup_static_data("2", data),
+    do: if(data["Week"] !== "1", do: @second_question_day, else: data["Message No"])
+
+  defp do_cleanup_static_data(_message_no, data), do: data["Message No"]
 
   @doc """
   Conditionally execute the trigger based on: ID, Week, Day.
