@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Templates do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Repo, Templates, Templates.SessionTemplate}
+  alias Glific.{Repo, Providers.GupshupEnterprise.Template, Templates, Templates.SessionTemplate}
 
   @doc """
   Get a specific session template by id
@@ -90,5 +90,5 @@ defmodule GlificWeb.Resolvers.Templates do
         }) ::
           {:ok, any} | {:error, any}
   def import_enterprise_templates(_, %{data: data}, %{context: %{current_user: user}}),
-    do: Templates.import_enterprise_templates(user.organization_id, data)
+    do: Template.import_enterprise_templates(user.organization_id, data)
 end

@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Template do
   @moduledoc """
-  Message API layer between application and Gupshup
+  Module for handling template operations specific to Gupshup
   """
 
   alias Glific.{
