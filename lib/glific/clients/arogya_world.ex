@@ -19,9 +19,9 @@ defmodule Glific.Clients.ArogyaWorld do
 
   @response_sheet_headers ["ID", "Q1_ID", "Q1_response", "Q2_ID", "Q2_response"]
 
-  @first_question_day "1"
+  @first_question_day "3"
 
-  @second_question_day "5"
+  @second_question_day "7"
 
   @csv_url_key_map %{
     "static_message_schedule" =>
@@ -189,8 +189,8 @@ defmodule Glific.Clients.ArogyaWorld do
   end
 
   defp get_week_day_number do
-    # week starts from friday
-    rem(Timex.weekday(Timex.today()) + 2, 7) + 1
+    # week starts from wednesday
+    rem(Timex.weekday(Timex.today()) + 4, 7) + 1
   end
 
   defp get_dynamic_week_key(current_week),
@@ -441,16 +441,27 @@ defmodule Glific.Clients.ArogyaWorld do
   @spec cleanup_static_data(map(), map()) :: map()
   def cleanup_static_data(acc, data) do
     # check for 2nd day and update it to 4th
-    check_second_day =
-      if data["Message No"] === "2" and data["Week"] !== "1",
-        do: @second_question_day,
-        else: data["Message No"]
+    check_day =
+      case data["Message No"] do
+        "1" ->
+          if data["Week"] !== "1",
+            do: @first_question_day,
+            else: data["Message No"]
+
+        "2" ->
+          if data["Week"] !== "1",
+            do: @second_question_day,
+            else: data["Message No"]
+
+        _ ->
+          data["Message No"]
+      end
 
     week =
       if Map.has_key?(acc, data["Week"]) do
-        Map.put(acc[data["Week"]], check_second_day, data["Message ID"])
+        Map.put(acc[data["Week"]], check_day, data["Message ID"])
       else
-        %{check_second_day => data["Message ID"]}
+        %{check_day => data["Message ID"]}
       end
 
     Map.put(acc, data["Week"], week)
