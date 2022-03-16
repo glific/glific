@@ -145,15 +145,16 @@ defmodule Glific.Clients.ArogyaWorld do
     |> do_hourly_tasks(sharing_file_time, org_id, current_week)
   end
 
-  @spec do_hourly_tasks(non_neg_integer(), boolean(), non_neg_integer(), non_neg_integer()) :: any()
-  defp do_hourly_tasks(1, sharing_file_time, org_id, current_week), do:
-    if sharing_file_time, do: upload_participant_responses(org_id, current_week)
+  @spec do_hourly_tasks(non_neg_integer(), boolean(), non_neg_integer(), non_neg_integer()) ::
+          any()
+  defp do_hourly_tasks(1, sharing_file_time, org_id, current_week),
+    do: if(sharing_file_time, do: upload_participant_responses(org_id, current_week))
 
-  defp do_hourly_tasks(2, sharing_file_time, org_id, current_week), do:
-    if sharing_file_time, do: load_participant_file(org_id, current_week)
+  defp do_hourly_tasks(2, sharing_file_time, org_id, current_week),
+    do: if(sharing_file_time, do: load_participant_file(org_id, current_week))
 
-  defp do_hourly_tasks(7, sharing_file_time, org_id, _current_week), do:
-    if sharing_file_time, do: update_week_number(org_id)
+  defp do_hourly_tasks(7, sharing_file_time, org_id, _current_week),
+    do: if(sharing_file_time, do: update_week_number(org_id))
 
   defp get_current_week(organization_id) do
     ## For pilot phase, it will be the day number.

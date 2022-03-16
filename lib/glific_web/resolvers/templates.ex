@@ -4,7 +4,7 @@ defmodule GlificWeb.Resolvers.Templates do
   one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.{Providers.GupshupEnterprise.Template, Repo, Templates, Templates.SessionTemplate}
+  alias Glific.{Repo, Templates, Templates.SessionTemplate}
 
   @doc """
   Get a specific session template by id
@@ -83,12 +83,11 @@ defmodule GlificWeb.Resolvers.Templates do
   end
 
   @doc """
-  Import pre approved templates when BSP is Gupshup Enterprise
+  Import pre approved templates
   """
-  @spec import_enterprise_templates(Absinthe.Resolution.t(), %{data: String.t()}, %{
+  @spec import_templates(Absinthe.Resolution.t(), %{data: String.t()}, %{
           context: map()
-        }) ::
-          {:ok, any} | {:error, any}
-  def import_enterprise_templates(_, %{data: data}, %{context: %{current_user: user}}),
-    do: Template.import_enterprise_templates(user.organization_id, data)
+        }) :: {:ok, any} | {:error, any}
+  def import_templates(_, %{data: data}, %{context: %{current_user: user}}),
+    do: Templates.import_templates(user.organization_id, data)
 end

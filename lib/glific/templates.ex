@@ -11,7 +11,8 @@ defmodule Glific.Templates do
   alias Glific.{
     Partners,
     Partners.Organization,
-    Providers.Gupshup.Template,
+    Providers.Gupshup,
+    Providers.GupshupEnterprise,
     Repo,
     Settings,
     Tags.Tag,
@@ -172,7 +173,18 @@ defmodule Glific.Templates do
 
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Template.submit_for_approval(attrs)
+      "gupshup" -> Gupshup.Template.submit_for_approval(attrs)
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
+    end
+  end
+
+  @spec import_templates(non_neg_integer(), String.t()) :: {:error, String.t()} | any()
+  def import_templates(org_id, data) do
+    organization = Partners.organization(org_id)
+
+    organization.bsp.shortcode
+    |> case do
+      "gupshup_enterprise" -> GupshupEnterprise.Template.import_enterprise_templates(org_id, data)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
@@ -256,7 +268,7 @@ defmodule Glific.Templates do
 
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Template.update_hsm_templates(organization_id)
+      "gupshup" -> Gupshup.Template.update_hsm_templates(organization_id)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
