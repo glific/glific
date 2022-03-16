@@ -10,7 +10,7 @@ defmodule Glific.Clients.MukkaMaar do
     Repo
   }
 
-  @registration_flow_id 2801
+  @registration_flow_id [822, 2801]
   @nudge_category %{
     # category_1 in nudge_category is in hours while rest are in days
     "category_1" => 20,
@@ -57,7 +57,8 @@ defmodule Glific.Clients.MukkaMaar do
   end
 
   @spec is_registered?(map(), pos_integer()) :: boolean()
-  defp is_registered?(_contact, @registration_flow_id), do: false
+  defp is_registered?(_contact, flow_stucked_on) when flow_stucked_on in @registration_flow_id,
+    do: false
 
   defp is_registered?(contact, _flow_stucked_on) do
     sex = get_in(contact, [:fields, "sex", "value"])
