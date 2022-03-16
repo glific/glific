@@ -2,12 +2,12 @@ defmodule Glific.Repo.Migrations.AddEnterpriseTemplateIdToSessionTemplates do
   use Ecto.Migration
 
   def change do
-    enterprise_template_id()
+    bsp_id()
   end
 
-  defp enterprise_template_id do
+  defp bsp_id do
     alter table(:session_templates) do
-      add :enterprise_template_id, :string
+      add :bsp_id, :string
     end
   end
 end

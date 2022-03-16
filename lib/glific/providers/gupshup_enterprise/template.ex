@@ -38,7 +38,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
       "languageCode" => get_language(template["Language"]),
       "templateType" => template["Type"],
       "status" => get_status(template["Status"]),
-      "enterprise_id" => template["Template Id"]
+      "bsp_id" => template["Template Id"]
     }
 
   @spec get_language(String.t()) :: String.t()

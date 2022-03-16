@@ -1002,7 +1002,7 @@ defmodule Glific.TemplatesTest do
       Template.import_enterprise_templates(attrs.organization_id, data)
 
       assert {:ok, %SessionTemplate{} = imported_template} =
-               Repo.fetch_by(SessionTemplate, %{enterprise_template_id: "6122571"})
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6122571"})
 
       assert imported_template.status == "APPROVED"
       assert imported_template.shortcode == "2meq_payment_link"
@@ -1013,7 +1013,7 @@ defmodule Glific.TemplatesTest do
                "Your OTP for [sample text 1] is [sample text 2]. This is valid for [sample text 3]."
 
       assert {:ok, %SessionTemplate{} = imported_template2} =
-               Repo.fetch_by(SessionTemplate, %{enterprise_template_id: "6122572"})
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6122572"})
 
       assert imported_template2.status == "REJECTED"
       assert imported_template2.shortcode == "meq_payment_link2"

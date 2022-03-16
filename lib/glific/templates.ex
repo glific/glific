@@ -302,7 +302,7 @@ defmodule Glific.Templates do
 
   @spec get_template_key(map(), atom()) :: String.t()
   defp get_template_key(template, :gupshup), do: template["id"]
-  defp get_template_key(template, :gupshup_enterprise), do: template["enterprise_id"]
+  defp get_template_key(template, :gupshup_enterprise), do: template["bsp_id"]
 
   @spec update_hsm(map(), Organization.t(), map(), atom()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
@@ -339,7 +339,7 @@ defmodule Glific.Templates do
     do: db_template.uuid != template["id"]
 
   defp is_existing_template?(db_template, template, :gupshup_enterprise),
-    do: db_template.enterprise_template_id != template["enterprise_id"]
+    do: db_template.bsp_id != template["bsp_id"]
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
@@ -392,7 +392,7 @@ defmodule Glific.Templates do
         status: template["status"],
         is_active: is_active,
         number_parameters: number_of_parameter,
-        enterprise_template_id: template["enterprise_id"] || ""
+        bsp_id: template["bsp_id"] || template["id"]
       }
       |> check_for_button_template()
 
@@ -553,8 +553,8 @@ defmodule Glific.Templates do
 
   defp hsm_template_uuid_map(:gupshup_enterprise) do
     list_session_templates(%{filter: %{is_hsm: true}})
-    |> Map.new(fn %{enterprise_template_id: enterprise_template_id} = template ->
-      {enterprise_template_id, template}
+    |> Map.new(fn %{bsp_id: bsp_id} = template ->
+      {bsp_id, template}
     end)
   end
 

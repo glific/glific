@@ -43,7 +43,7 @@ defmodule Glific.Templates.SessionTemplate do
           has_buttons: boolean(),
           button_type: String.t() | nil,
           buttons: [map()] | [],
-          enterprise_template_id: String.t() | nil
+          bsp_id: String.t() | nil
         }
 
   @required_fields [
@@ -70,7 +70,7 @@ defmodule Glific.Templates.SessionTemplate do
     :has_buttons,
     :button_type,
     :buttons,
-    :enterprise_template_id
+    :bsp_id
   ]
 
   schema "session_templates" do
@@ -94,7 +94,7 @@ defmodule Glific.Templates.SessionTemplate do
     field :has_buttons, :boolean, default: false
     field :button_type, TemplateButtonType
     field :buttons, {:array, :map}, default: []
-    field :enterprise_template_id, :string
+    field :bsp_id, :string
 
     belongs_to :language, Language
     belongs_to :organization, Organization
