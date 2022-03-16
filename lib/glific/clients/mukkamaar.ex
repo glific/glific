@@ -10,7 +10,7 @@ defmodule Glific.Clients.MukkaMaar do
     Repo
   }
 
-  @registration_flow_id 822
+  @registration_flow_id 2801
   @nudge_category %{
     # category_1 in nudge_category is in hours while rest are in days
     "category_1" => 20,
