@@ -262,8 +262,8 @@ defmodule Glific.Templates do
   @doc """
   get and update list of hsm of an organization
   """
-  @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
-  def update_hsms(organization_id) do
+  @spec sync_hsms_from_bsp(non_neg_integer()) :: :ok | {:error, String.t()}
+  def sync_hsms_from_bsp(organization_id) do
     organization = Partners.organization(organization_id)
 
     organization.bsp.shortcode
@@ -274,8 +274,8 @@ defmodule Glific.Templates do
   end
 
   @doc false
-  @spec do_update_hsms(list(), Organization.t(), atom()) :: :ok
-  def do_update_hsms(templates, organization, bsp \\ :gupshup) do
+  @spec update_hsms(list(), Organization.t(), atom()) :: :ok
+  def update_hsms(templates, organization, bsp \\ :gupshup) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)

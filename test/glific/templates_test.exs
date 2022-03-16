@@ -623,7 +623,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "16e84186-97fa-454e-ac3b-8c9b94e53b4b"})
@@ -663,7 +663,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "2f826c4a-cacd-42b6-9536-ece4c459ffea"})
@@ -712,7 +712,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "eb939119-097d-414d-844d-1fce3adec486"})
@@ -740,7 +740,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      assert {:error, _message} = Templates.update_hsms(attrs.organization_id)
+      assert {:error, _message} = Templates.sync_hsms_from_bsp(attrs.organization_id)
     end
 
     test "update_hsms/1 should update status of already existing HSM", attrs do
@@ -769,7 +769,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = updated_hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
@@ -797,7 +797,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "APPROVED"
@@ -831,7 +831,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "REJECTED"
@@ -893,7 +893,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -929,7 +929,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -980,7 +980,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -1063,7 +1063,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
