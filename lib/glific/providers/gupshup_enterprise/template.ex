@@ -10,6 +10,10 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     Templates
   }
 
+  @template_status %{
+    "Enabled" => "APPROVED",
+    "Rejected" => "REJECTED"
+  }
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
   """
@@ -37,7 +41,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
       "elementName" => template["Template Name"],
       "languageCode" => get_language(template["Language"]),
       "templateType" => template["Type"],
-      "status" => get_status(template["Status"]),
+      "status" => Map.get(@template_status, template["Status"], "PENDING"),
       "bsp_id" => template["Template Id"]
     }
 
@@ -46,11 +50,6 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     {:ok, language} = Repo.fetch_by(Language, %{label_locale: label_locale})
     language.locale
   end
-
-  @spec get_status(String.t()) :: String.t()
-  defp get_status("Enabled"), do: "APPROVED"
-  defp get_status("Rejected"), do: "REJECTED"
-  defp get_status(_status), do: "PENDING"
 
   @spec get_example_body(String.t()) :: String.t()
   defp get_example_body(body) do
