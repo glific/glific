@@ -178,6 +178,9 @@ defmodule Glific.Templates do
     end
   end
 
+  @doc """
+  Imports pre approved templates from bsp
+  """
   @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def import_templates(org_id, data) do
     organization = Partners.organization(org_id)
