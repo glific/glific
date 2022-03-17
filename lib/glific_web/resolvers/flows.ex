@@ -56,7 +56,7 @@ defmodule GlificWeb.Resolvers.Flows do
   @spec update_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    do_op_flow(id, params, user, &Flows.update_flow/2)
+    do_copy_flow(id, params, user, &Flows.update_flow/2)
   end
 
   @doc false
@@ -215,17 +215,17 @@ defmodule GlificWeb.Resolvers.Flows do
   def copy_flow(_, %{id: id, input: params}, %{
         context: %{current_user: user}
       }) do
-    do_op_flow(id, params, user, &Flows.copy_flow/2)
+    do_copy_flow(id, params, user, &Flows.copy_flow/2)
   end
 
-  @spec do_op_flow(
+  @spec do_copy_flow(
           non_neg_integer,
           map(),
           User.t(),
           (Flow.t(), map() -> {:ok, Flow.t()} | {:error, String.t()})
         ) ::
           {:ok, any} | {:error, any}
-  defp do_op_flow(id, params, user, fun) do
+  defp do_copy_flow(id, params, user, fun) do
     with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
          {:ok, flow} <- fun.(flow, params) do
       {:ok, %{flow: flow}}
