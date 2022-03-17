@@ -6,7 +6,8 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   alias Glific.{
     Repo,
     Templates.InteractiveTemplate,
-    Templates.InteractiveTemplates
+    Templates.InteractiveTemplates,
+    Users.User
   }
 
   @doc """
