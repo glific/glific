@@ -70,4 +70,37 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
       InteractiveTemplates.delete_interactive_template(interactive_template)
     end
   end
+
+  @doc """
+  Make a copy of interactive template
+  """
+  @spec copy_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def copy_interactive_template(_, %{id: id, input: params}, %{
+        context: %{current_user: user}
+      }) do
+    do_copy_interactive_template(
+      id,
+      params,
+      user,
+      &InteractiveTemplates.copy_interactive_template/2
+    )
+  end
+
+  @spec do_copy_interactive_template(
+          non_neg_integer,
+          map(),
+          User.t(),
+          (InteractiveTemplate.t(), map() ->
+             {:ok, InteractiveTemplate.t()} | {:error, String.t()})
+        ) :: {:ok, any} | {:error, any}
+  defp do_copy_interactive_template(id, params, user, fun) do
+    with {:ok, interactive_template} <-
+           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
+         {:ok, interactive_template} <- fun.(interactive_template, params) do
+      {:ok, %{interactive_template: interactive_template}}
+    end
+  end
 end

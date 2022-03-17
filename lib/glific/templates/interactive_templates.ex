@@ -122,6 +122,29 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   @doc """
+  Make a copy of a interactive_template
+  """
+  @spec copy_interactive_template(InteractiveTemplate.t(), map()) ::
+          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+  def copy_interactive_template(interactive_template, attrs) do
+    attrs =
+      %{
+        interactive_content: interactive_template.interactive_content,
+        send_with_title: interactive_template.send_with_title,
+        type: interactive_template.type,
+        translations: interactive_template.translations
+      }
+      |> Map.merge(attrs)
+
+    with {:ok, interactive_template_copy} <-
+           %InteractiveTemplate{}
+           |> InteractiveTemplate.changeset(attrs)
+           |> Repo.insert() do
+      {:ok, interactive_template_copy}
+    end
+  end
+
+  @doc """
   get interactive body from the interactive content
   """
   @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
