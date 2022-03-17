@@ -136,12 +136,9 @@ defmodule Glific.Templates.InteractiveTemplates do
       }
       |> Map.merge(attrs)
 
-    with {:ok, interactive_template_copy} <-
-           %InteractiveTemplate{}
-           |> InteractiveTemplate.changeset(attrs)
-           |> Repo.insert() do
-      {:ok, interactive_template_copy}
-    end
+    %InteractiveTemplate{}
+    |> InteractiveTemplate.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """
