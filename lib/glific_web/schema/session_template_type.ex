@@ -16,6 +16,11 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :import_templates_result do
+    field :status, :string
+    field :errors, list_of(:input_error)
+  end
+
   object :session_template do
     field :id, :id
     field :label, :string
@@ -175,6 +180,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:input, :message_to_template_input)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.create_template_from_message/3)
+    end
+
+    field :import_templates, :import_templates_result do
+      arg(:data, :string)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.import_templates/3)
     end
   end
 end

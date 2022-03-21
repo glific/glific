@@ -665,6 +665,35 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
+    test "create and send message should send template message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      shortcode = "otp"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: attrs.organization_id}
+        )
+
+      valid_attrs = %{
+        body: hsm_template.example,
+        flow: :outbound,
+        is_hsm: true,
+        params: ["adding Anil as a payee", "1234", "15 minutes"],
+        template_id: hsm_template.id,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+
+      assert message.body ==
+               "Your OTP for adding Anil as a payee is 1234. This is valid for 15 minutes."
+    end
+
     test "create and send message should send image message to contact through gupshup enterprise",
          attrs do
       enable_gupshup_enterprise(attrs)
