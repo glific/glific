@@ -165,15 +165,15 @@ defmodule Glific.Flows do
   ## Examples
 
       iex> fetch_interactive_template(123, 1)
-        {:ok, %InteractiveTemplate{}}
+        {:ok, %Flow{}}
 
       iex> fetch_interactive_template(456, 1)
         {:error, ["Elixir.Glific.Flows.Flow", "Resource not found"]}
 
   """
-  @spec fetch_flow(integer, non_neg_integer()) :: {:ok, any} | {:error, any}
-  def fetch_flow(id, organization_id),
-    do: Repo.fetch_by(Flow, %{id: id, organization_id: organization_id})
+  @spec fetch_flow(integer) :: {:ok, any} | {:error, any}
+  def fetch_flow(id),
+    do: Repo.fetch_by(Flow, %{id: id})
 
   @doc """
   Creates a flow.

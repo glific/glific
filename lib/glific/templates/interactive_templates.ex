@@ -75,9 +75,9 @@ defmodule Glific.Templates.InteractiveTemplates do
         {:error, ["Elixir.Glific.Templates.InteractiveTemplate", "Resource not found"]}
 
   """
-  @spec fetch_interactive_template(integer, non_neg_integer()) :: {:ok, any} | {:error, any}
-  def fetch_interactive_template(id, organization_id),
-    do: Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: organization_id})
+  @spec fetch_interactive_template(integer) :: {:ok, any} | {:error, any}
+  def fetch_interactive_template(id),
+    do: Repo.fetch_by(InteractiveTemplate, %{id: id})
 
   @doc """
   Creates an interactive template
