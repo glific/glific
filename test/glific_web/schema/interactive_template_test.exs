@@ -21,6 +21,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/interactives/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/interactives/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/interactives/delete.gql")
+  load_gql(:copy, GlificWeb.Schema, "assets/gql/interactives/copy.gql")
 
   test "session templates field returns list of interactives", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -215,5 +216,29 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
       get_in(query_data, [:data, "deleteInteractiveTemplate", "errors", Access.at(0), "message"])
 
     assert message == "Resource not found"
+  end
+
+  test "copy a interactive template and test possible scenarios and errors", %{manager: user} do
+    {:ok, interactive_template} =
+      Repo.fetch_by(InteractiveTemplate, %{
+        label: "Quick Reply Text",
+        organization_id: user.organization_id
+      })
+
+    result =
+      auth_query_gql_by(:copy, user,
+        variables: %{
+          "id" => interactive_template.id,
+          "input" => %{
+            "label" => "Copy of Quick Reply Text",
+            "languageId" => interactive_template.language_id
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert "Copy of Quick Reply Text" ==
+             get_in(query_data, [:data, "copyInteractiveTemplate", "interactiveTemplate", "label"])
   end
 end

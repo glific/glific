@@ -62,6 +62,24 @@ defmodule Glific.Templates.InteractiveTemplates do
   def get_interactive_template!(id), do: Repo.get!(InteractiveTemplate, id)
 
   @doc """
+  Fetches a single interactive template
+
+  Returns `Resource not found` if the Interactive Template does not exist.
+
+  ## Examples
+
+      iex> fetch_interactive_template(123, 1)
+        {:ok, %InteractiveTemplate{}}
+
+      iex> fetch_interactive_template(456, 1)
+        {:error, ["Elixir.Glific.Templates.InteractiveTemplate", "Resource not found"]}
+
+  """
+  @spec fetch_interactive_template(integer) :: {:ok, any} | {:error, any}
+  def fetch_interactive_template(id),
+    do: Repo.fetch_by(InteractiveTemplate, %{id: id})
+
+  @doc """
   Creates an interactive template
 
   ## Examples
@@ -119,6 +137,26 @@ defmodule Glific.Templates.InteractiveTemplates do
     interactive
     |> InteractiveTemplate.changeset(%{})
     |> Repo.delete()
+  end
+
+  @doc """
+  Make a copy of a interactive_template
+  """
+  @spec copy_interactive_template(InteractiveTemplate.t(), map()) ::
+          {:ok, InteractiveTemplate.t()} | {:error, String.t()}
+  def copy_interactive_template(interactive_template, attrs) do
+    attrs =
+      %{
+        interactive_content: interactive_template.interactive_content,
+        send_with_title: interactive_template.send_with_title,
+        type: interactive_template.type,
+        translations: interactive_template.translations
+      }
+      |> Map.merge(attrs)
+
+    %InteractiveTemplate{}
+    |> InteractiveTemplate.changeset(attrs)
+    |> Repo.insert()
   end
 
   @doc """

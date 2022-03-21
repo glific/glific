@@ -4,7 +4,6 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   one or more calls to resolve the incoming queries.
   """
   alias Glific.{
-    Repo,
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates
   }
@@ -14,9 +13,9 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   """
   @spec interactive_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
+  def interactive_template(_, %{id: id}, _) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
+           InteractiveTemplates.fetch_interactive_template(id),
          do: {:ok, %{interactive_template: interactive_template}}
   end
 
@@ -52,9 +51,9 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_interactive_template(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+  def update_interactive_template(_, %{id: id, input: params}, _) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
+           InteractiveTemplates.fetch_interactive_template(id),
          {:ok, interactive_template} <-
            InteractiveTemplates.update_interactive_template(interactive_template, params) do
       {:ok, %{interactive_template: interactive_template}}
@@ -64,10 +63,39 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
   @doc false
   @spec delete_interactive_template(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def delete_interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
+  def delete_interactive_template(_, %{id: id}, _) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}) do
+           InteractiveTemplates.fetch_interactive_template(id) do
       InteractiveTemplates.delete_interactive_template(interactive_template)
+    end
+  end
+
+  @doc """
+  Make a copy of interactive template
+  """
+  @spec copy_interactive_template(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+          context: map()
+        }) ::
+          {:ok, any} | {:error, any}
+  def copy_interactive_template(_, %{id: id, input: params}, _) do
+    do_copy_interactive_template(
+      id,
+      params,
+      &InteractiveTemplates.copy_interactive_template/2
+    )
+  end
+
+  @spec do_copy_interactive_template(
+          non_neg_integer,
+          map(),
+          (InteractiveTemplate.t(), map() ->
+             {:ok, InteractiveTemplate.t()} | {:error, String.t()})
+        ) :: {:ok, any} | {:error, any}
+  defp do_copy_interactive_template(id, params, fun) do
+    with {:ok, interactive_template} <-
+           InteractiveTemplates.fetch_interactive_template(id),
+         {:ok, interactive_template} <- fun.(interactive_template, params) do
+      {:ok, %{interactive_template: interactive_template}}
     end
   end
 end

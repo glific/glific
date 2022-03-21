@@ -87,6 +87,20 @@ defmodule Glific.InteractiveTemplatesTest do
       assert InteractiveTemplates.get_interactive_template!(interactive.id) == interactive
     end
 
+    test "fetch_interactive_template/1 returns the interactive_template with given id or returns {:ok, interactive_template} or {:error, any}",
+         %{organization_id: organization_id} do
+      interactive_template = Fixtures.interactive_fixture(%{organization_id: organization_id})
+
+      {:ok, fetched_interactive_template} =
+        InteractiveTemplates.fetch_interactive_template(interactive_template.id)
+
+      assert fetched_interactive_template.label == interactive_template.label
+      assert fetched_interactive_template.type == interactive_template.type
+
+      assert fetched_interactive_template.interactive_content ==
+               interactive_template.interactive_content
+    end
+
     test "create_interactive_template/1 with valid data creates an interactive message", %{
       organization_id: organization_id
     } do
