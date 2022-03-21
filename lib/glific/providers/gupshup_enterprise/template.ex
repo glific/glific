@@ -26,7 +26,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     |> IO.binstream(:line)
     |> CSV.decode(headers: true, strip_fields: true)
     |> Enum.map(fn {_, data} -> import_approved_templates(data) end)
-    |> Templates.update_hsms(organization, :gupshup_enterprise)
+    |> Templates.update_hsms(organization)
 
     {:ok, %{message: "All templates have been added"}}
   end

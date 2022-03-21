@@ -277,25 +277,25 @@ defmodule Glific.Templates do
   end
 
   @doc false
-  @spec update_hsms(list(), Organization.t(), atom()) :: :ok
-  def update_hsms(templates, organization, bsp \\ :gupshup) do
+  @spec update_hsms(list(), Organization.t()) :: :ok
+  def update_hsms(templates, organization) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
 
-    db_templates = hsm_template_uuid_map(bsp)
+    db_templates = hsm_template_uuid_map()
 
     Enum.each(templates, fn template ->
       cond do
-        !Map.has_key?(db_templates, get_template_key(template, bsp)) ->
+        !Map.has_key?(db_templates, template["bsp_id"]) ->
           insert_hsm(template, organization, languages)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
-        Map.has_key?(db_templates, get_template_key(template, bsp)) ->
-          update_hsm(template, organization, languages, bsp)
+        Map.has_key?(db_templates, template["bsp_id"]) ->
+          update_hsm(template, organization, languages)
 
         true ->
           true
@@ -303,22 +303,18 @@ defmodule Glific.Templates do
     end)
   end
 
-  @spec get_template_key(map(), atom()) :: String.t()
-  defp get_template_key(template, :gupshup), do: template["id"]
-  defp get_template_key(template, :gupshup_enterprise), do: template["bsp_id"]
-
-  @spec update_hsm(map(), Organization.t(), map(), atom()) ::
+  @spec update_hsm(map(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp update_hsm(template, organization, languages, bsp) do
+  defp update_hsm(template, organization, languages) do
     # get updated db templates to handle multiple approved translations
-    db_templates = hsm_template_uuid_map(bsp)
+    db_templates = hsm_template_uuid_map()
 
     db_template_translations =
       db_templates
       |> Map.values()
       |> Enum.filter(fn db_template ->
         db_template.shortcode == template["elementName"] and
-          is_existing_template?(db_template, template, bsp)
+          db_template.bsp_id != template["bsp_id"]
       end)
 
     approved_db_templates =
@@ -334,15 +330,8 @@ defmodule Glific.Templates do
       end)
     end
 
-    do_update_hsm(template, db_templates, bsp)
+    do_update_hsm(template, db_templates)
   end
-
-  @spec is_existing_template?(map(), map(), atom()) :: boolean()
-  defp is_existing_template?(db_template, template, :gupshup),
-    do: db_template.uuid != template["id"]
-
-  defp is_existing_template?(db_template, template, :gupshup_enterprise),
-    do: db_template.bsp_id != template["bsp_id"]
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
@@ -457,10 +446,10 @@ defmodule Glific.Templates do
 
   defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
-  @spec do_update_hsm(map(), map(), atom()) ::
+  @spec do_update_hsm(map(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update_hsm(template, db_templates, bsp) do
-    current_template = db_templates[get_template_key(template, bsp)]
+  defp do_update_hsm(template, db_templates) do
+    current_template = db_templates[template["bsp_id"]]
     update_attrs = %{status: template["status"]}
 
     update_attrs =
@@ -474,7 +463,7 @@ defmodule Glific.Templates do
         else: update_attrs
 
     {:ok, _} =
-      db_templates[get_template_key(template, bsp)]
+      db_templates[template["bsp_id"]]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
   end
@@ -547,14 +536,8 @@ defmodule Glific.Templates do
     |> Enum.count()
   end
 
-  # A map where keys are hsm uuid and value will be template struct
-  @spec hsm_template_uuid_map(atom()) :: map()
-  defp hsm_template_uuid_map(:gupshup) do
-    list_session_templates(%{filter: %{is_hsm: true}})
-    |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
-  end
-
-  defp hsm_template_uuid_map(:gupshup_enterprise) do
+  @spec hsm_template_uuid_map() :: map()
+  defp hsm_template_uuid_map() do
     list_session_templates(%{filter: %{is_hsm: true}})
     |> Map.new(fn %{bsp_id: bsp_id} = template ->
       {bsp_id, template}
