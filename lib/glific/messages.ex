@@ -228,15 +228,22 @@ defmodule Glific.Messages do
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    attrs = Map.put(attrs, :receiver, contact)
 
-    attrs =
-      Map.put(attrs, :receiver, contact)
-      |> check_for_interactive(contact.language_id)
+    ## we need to clean this bit more.
+    attrs = check_for_interactive(attrs, contact.language_id)
 
     check_for_hsm_message(attrs, contact)
   end
 
   @spec check_for_interactive(map(), non_neg_integer()) :: map()
+  defp check_for_interactive(
+         %{flow_id: flow_id, interactive_template_id: _interactive_template_id} = attrs,
+         _language_id
+       )
+       when flow_id not in [nil, ""],
+       do: attrs
+
   defp check_for_interactive(
          %{interactive_template_id: interactive_template_id} = attrs,
          language_id
@@ -247,23 +254,9 @@ defmodule Glific.Messages do
              interactive_template_id
            ),
          interactive_content <-
-           InteractiveTemplates.get_translations(interactive_template, language_id)
-           |> InteractiveTemplates.get_clean_interactive_content(
-             interactive_template.send_with_title,
-             interactive_template.type
-           ),
-         body <-
-           InteractiveTemplates.get_interactive_body(
-             interactive_content,
-             interactive_content["type"],
-             interactive_content["content"]["type"]
-           ),
-         media_id <-
-           interactive_template.interactive_content
-           |> InteractiveTemplates.get_media(
-             interactive_content["content"]["type"],
-             attrs.organization_id
-           ) do
+           InteractiveTemplates.translated_content(interactive_template, language_id),
+         body <- InteractiveTemplates.get_interactive_body(interactive_content),
+         media_id <- InteractiveTemplates.get_media(interactive_content, attrs.organization_id) do
       Map.merge(attrs, %{
         body: body,
         interactive_content: interactive_content,

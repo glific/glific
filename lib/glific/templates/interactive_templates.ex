@@ -4,7 +4,6 @@ defmodule Glific.Templates.InteractiveTemplates do
   """
 
   alias Glific.{
-    Messages,
     Repo,
     Templates.InteractiveTemplate
   }
@@ -124,21 +123,30 @@ defmodule Glific.Templates.InteractiveTemplates do
   @doc """
   get interactive body from the interactive content
   """
-  @spec get_interactive_body(map(), String.t(), String.t()) :: String.t()
-  def get_interactive_body(interactive_content, "quick_reply", type)
-      when type in ["image", "video"],
-      do: interactive_content["content"]["text"]
+  @spec get_interactive_body(map()) :: String.t()
+  def get_interactive_body(interactive_content),
+    do:
+      do_get_interactive_body(
+        interactive_content,
+        interactive_content["type"],
+        interactive_content["content"]["type"]
+      )
 
-  def get_interactive_body(interactive_content, "quick_reply", "file"),
+  @spec do_get_interactive_body(map(), String.t(), String.t()) :: String.t()
+  defp do_get_interactive_body(interactive_content, "quick_reply", type)
+       when type in ["image", "video"],
+       do: interactive_content["content"]["text"]
+
+  defp do_get_interactive_body(interactive_content, "quick_reply", "file"),
     do: interactive_content["content"]["url"]
 
-  def get_interactive_body(interactive_content, "quick_reply", "text"),
+  defp do_get_interactive_body(interactive_content, "quick_reply", "text"),
     do: interactive_content["content"]["text"]
 
-  def get_interactive_body(interactive_content, "list", _),
+  defp do_get_interactive_body(interactive_content, "list", _) when is_map(interactive_content),
     do: interactive_content["body"]
 
-  def get_interactive_body(_, _, _), do: ""
+  defp do_get_interactive_body(_, _, _), do: ""
 
   @doc """
   Fetch for translation of interactive message
@@ -195,15 +203,30 @@ defmodule Glific.Templates.InteractiveTemplates do
   def clean_template_title(interactive_content), do: interactive_content
 
   @doc """
+   Get translated interative template content
+  """
+  @spec translated_content(InteractiveTemplate.t(), non_neg_integer()) :: map() | nil
+  def translated_content(interactive_template, language_id) do
+    interactive_template
+    |> get_translations(language_id)
+    |> get_clean_interactive_content(
+      interactive_template.send_with_title,
+      interactive_template.type
+    )
+  end
+
+  @doc """
   Create a message media from interactive content and return id
   """
-  @spec get_media(map(), String.t(), non_neg_integer()) :: non_neg_integer() | nil
-  def get_media(%{"content" => content}, type, organization_id)
-      when type in ["image", "file", "video"] do
-    type = if type == "file", do: "document", else: type
+  @spec get_media(map(), non_neg_integer()) :: non_neg_integer() | nil
+  def get_media(interactive_content, organization_id),
+    do:
+      interactive_content
+      |> do_get_media(interactive_content["content"]["type"], organization_id)
 
-    %{is_valid: true, message: _message} = Messages.validate_media(content["url"], type)
-
+  @spec do_get_media(map(), String.t(), non_neg_integer()) :: non_neg_integer() | nil
+  defp do_get_media(%{"content" => content}, type, organization_id)
+       when type in ["image", "file", "video"] do
     {:ok, media} =
       %{
         caption: content["caption"],
@@ -216,5 +239,5 @@ defmodule Glific.Templates.InteractiveTemplates do
     media.id
   end
 
-  def get_media(_interactive_content, _type, _organization_id), do: nil
+  defp do_get_media(_interactive_content, _type, _organization_id), do: nil
 end
