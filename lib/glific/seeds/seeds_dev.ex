@@ -963,6 +963,8 @@ if Code.ensure_loaded?(Faker) do
         }
       }
 
+      uuid = Ecto.UUID.generate()
+
       Repo.insert!(%SessionTemplate{
         label: "Missed Message Apology",
         type: :text,
@@ -978,7 +980,8 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         status: "PENDING",
         category: "ALERT_UPDATE",
-        uuid: Ecto.UUID.generate()
+        uuid: uuid,
+        bsp_id: uuid
       })
 
       translations = %{
@@ -995,6 +998,8 @@ if Code.ensure_loaded?(Faker) do
         }
       }
 
+      uuid = Ecto.UUID.generate()
+
       Repo.insert!(%SessionTemplate{
         label: "OTP Message",
         type: :text,
@@ -1009,7 +1014,8 @@ if Code.ensure_loaded?(Faker) do
         body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
-        uuid: Ecto.UUID.generate()
+        uuid: uuid,
+        bsp_id: uuid
       })
 
       translations = %{
@@ -1020,6 +1026,8 @@ if Code.ensure_loaded?(Faker) do
           number_parameters: 0
         }
       }
+
+      uuid = Ecto.UUID.generate()
 
       Repo.insert!(%SessionTemplate{
         label: "User Registration",
@@ -1040,7 +1048,8 @@ if Code.ensure_loaded?(Faker) do
         category: "ALERT_UPDATE",
         organization_id: organization.id,
         number_parameters: 0,
-        uuid: Ecto.UUID.generate()
+        uuid: uuid,
+        bsp_id: uuid
       })
     end
 

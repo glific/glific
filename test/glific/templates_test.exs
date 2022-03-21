@@ -749,7 +749,7 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      # shouldn update irrespective of the last modified time on BSP
+      # should update irrespective of the last modified time on BSP
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -840,6 +840,7 @@ defmodule Glific.TemplatesTest do
 
     def otp_hsm_fixture(language_id, status) do
       uuid = Ecto.UUID.generate()
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
