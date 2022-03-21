@@ -226,7 +226,7 @@ defmodule GlificWeb.Resolvers.Flows do
         ) ::
           {:ok, any} | {:error, any}
   defp do_copy_flow(id, params, user, fun) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
+    with {:ok, flow} <- Flows.fetch_flow(id, user.organization_id),
          {:ok, flow} <- fun.(flow, params) do
       {:ok, %{flow: flow}}
     end

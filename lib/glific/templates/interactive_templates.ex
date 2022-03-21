@@ -62,6 +62,24 @@ defmodule Glific.Templates.InteractiveTemplates do
   def get_interactive_template!(id), do: Repo.get!(InteractiveTemplate, id)
 
   @doc """
+  Fetches a single interactive template
+
+  Returns `Resource not found` if the Interactive Template does not exist.
+
+  ## Examples
+
+      iex> fetch_interactive_template(123, 1)
+        {:ok, %InteractiveTemplate{}}
+
+      iex> fetch_interactive_template(456, 1)
+        {:error, ["Elixir.Glific.Templates.InteractiveTemplate", "Resource not found"]}
+
+  """
+  @spec fetch_interactive_template(integer, non_neg_integer()) :: {:ok, any} | {:error, any}
+  def fetch_interactive_template(id, organization_id),
+    do: Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: organization_id})
+
+  @doc """
   Creates an interactive template
 
   ## Examples

@@ -17,7 +17,7 @@ defmodule GlificWeb.Resolvers.InteractiveTemplates do
           {:ok, any} | {:error, any}
   def interactive_template(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, interactive_template} <-
-           Repo.fetch_by(InteractiveTemplate, %{id: id, organization_id: user.organization_id}),
+           InteractiveTemplates.fetch_interactive_template(id, user.organization_id),
          do: {:ok, %{interactive_template: interactive_template}}
   end
 
