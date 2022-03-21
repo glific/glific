@@ -297,7 +297,6 @@ defmodule Glific.Fixtures do
   @spec session_template_fixture(map()) :: SessionTemplate.t()
   def session_template_fixture(attrs \\ %{}) do
     language = language_fixture()
-    uuid = Ecto.UUID.generate()
 
     valid_attrs = %{
       label: "Default Template Label",
@@ -305,8 +304,6 @@ defmodule Glific.Fixtures do
       body: "Default Template",
       type: :text,
       language_id: language.id,
-      uuid: uuid,
-      bsp_id: uuid,
       organization_id: get_org_id()
     }
 

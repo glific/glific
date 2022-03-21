@@ -839,6 +839,7 @@ defmodule Glific.TemplatesTest do
     end
 
     def otp_hsm_fixture(language_id, status) do
+      uuid = Ecto.UUID.generate()
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -848,7 +849,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "template" => %{
                   "elementName" => "common_otp",
-                  "id" => Ecto.UUID.generate(),
+                  "id" => uuid,
                   "languageCode" => "en",
                   "status" => status
                 }
@@ -863,7 +864,9 @@ defmodule Glific.TemplatesTest do
         category: "ALERT_UPDATE",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
-        language_id: language_id
+        language_id: language_id,
+        uuid: uuid,
+        bsp_id: uuid
       })
     end
 
