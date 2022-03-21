@@ -973,8 +973,11 @@ defmodule Glific.Messages do
       {:include_tags, tag_ids}, query ->
         include_tag_filter(query, tag_ids)
 
-      {:include_labels, label_ids}, query ->
-        include_label_filter(query, label_ids)
+      # commenting this out since we search for the labels in full.ex
+      # and hence want to include the contacts even if the most recent messages
+      # dont fit into the search criteria
+      # {:include_labels, label_ids}, query ->
+      #   include_label_filter(query, label_ids)
 
       {:include_users, user_ids}, query ->
         include_user_filter(query, user_ids)
@@ -984,11 +987,13 @@ defmodule Glific.Messages do
     end)
   end
 
+  # delete code in a few weeks, if re-inserting back, make function private
   # apply filter for message labels
-  @spec include_label_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
-  defp include_label_filter(query, []), do: query
+  @doc false
+  @spec _include_label_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  def _include_label_filter(query, []), do: query
 
-  defp include_label_filter(query, label_ids) do
+  def _include_label_filter(query, label_ids) do
     flow_labels =
       Glific.Flows.FlowLabel
       |> where([f], f.id in ^label_ids)
@@ -999,7 +1004,6 @@ defmodule Glific.Messages do
     |> Enum.reduce(query, fn flow_label, query ->
       where(query, [c], ilike(c.flow_label, ^"%#{flow_label}%"))
     end)
-    |> or_where([m], m.flow_label in ^flow_labels)
   end
 
   # apply filter for message tags
