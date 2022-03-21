@@ -297,6 +297,7 @@ defmodule Glific.Fixtures do
   @spec session_template_fixture(map()) :: SessionTemplate.t()
   def session_template_fixture(attrs \\ %{}) do
     language = language_fixture()
+    uuid = Ecto.UUID.generate()
 
     valid_attrs = %{
       label: "Default Template Label",
@@ -304,7 +305,8 @@ defmodule Glific.Fixtures do
       body: "Default Template",
       type: :text,
       language_id: language.id,
-      uuid: Ecto.UUID.generate(),
+      uuid: uuid,
+      bsp_id: uuid,
       organization_id: get_org_id()
     }
 
@@ -313,6 +315,8 @@ defmodule Glific.Fixtures do
       |> Enum.into(valid_attrs)
       |> Templates.create_session_template()
 
+    uuid = Ecto.UUID.generate()
+
     valid_attrs_2 = %{
       label: "Another Template Label",
       shortcode: "another template",
@@ -320,7 +324,8 @@ defmodule Glific.Fixtures do
       type: :text,
       language_id: language.id,
       parent_id: session_template.id,
-      uuid: Ecto.UUID.generate(),
+      uuid: uuid,
+      bsp_id: uuid,
       organization_id: get_org_id()
     }
 

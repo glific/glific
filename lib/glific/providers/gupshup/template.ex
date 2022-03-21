@@ -1,4 +1,4 @@
-defmodule Glific.Providers.Gupshup.Template do
+test/glific/templates_test.exs:901defmodule Glific.Providers.Gupshup.Template do
   @moduledoc """
   Module for handling template operations specific to Gupshup
   """
@@ -86,7 +86,10 @@ defmodule Glific.Providers.Gupshup.Template do
            ApiClient.get_templates(organization_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      Templates.update_hsms(response_data["templates"], organization)
+      response_data["templates"]
+      |> Enum.reduce([], &(&2 ++ [Map.put(&1, "bsp_id", &1["id"])]))
+      |> Templates.update_hsms(organization)
+
       :ok
     else
       _ ->
