@@ -101,5 +101,12 @@ defmodule GlificWeb.Schema.InteractiveTemplateTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.InteractiveTemplates.delete_interactive_template/3)
     end
+
+    field :copy_interactive_template, :interactive_template_result do
+      arg(:id, non_null(:id))
+      arg(:input, :interactive_template_input)
+      middleware(Authorize, :manager)
+      resolve(&Resolvers.InteractiveTemplates.copy_interactive_template/3)
+    end
   end
 end

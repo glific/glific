@@ -13,8 +13,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.FlowContext,
     Groups.Group,
     Repo,
-    State,
-    Users.User
+    State
   }
 
   @doc """
@@ -55,8 +54,8 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec update_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    do_op_flow(id, params, user, &Flows.update_flow/2)
+  def update_flow(_, %{id: id, input: params}, _) do
+    do_copy_flow(id, params, &Flows.update_flow/2)
   end
 
   @doc false
@@ -198,8 +197,7 @@ defmodule GlificWeb.Resolvers.Flows do
   def start_group_flow(_, %{flow_id: flow_id, group_id: group_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
+    with {:ok, flow} <- Flows.fetch_flow(flow_id),
          {:ok, group} <-
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
          {:ok, _flow} <- Flows.start_group_flow(flow, group) do
@@ -212,21 +210,18 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec copy_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def copy_flow(_, %{id: id, input: params}, %{
-        context: %{current_user: user}
-      }) do
-    do_op_flow(id, params, user, &Flows.copy_flow/2)
+  def copy_flow(_, %{id: id, input: params}, _) do
+    do_copy_flow(id, params, &Flows.copy_flow/2)
   end
 
-  @spec do_op_flow(
+  @spec do_copy_flow(
           non_neg_integer,
           map(),
-          User.t(),
           (Flow.t(), map() -> {:ok, Flow.t()} | {:error, String.t()})
         ) ::
           {:ok, any} | {:error, any}
-  defp do_op_flow(id, params, user, fun) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
+  defp do_copy_flow(id, params, fun) do
+    with {:ok, flow} <- Flows.fetch_flow(id),
          {:ok, flow} <- fun.(flow, params) do
       {:ok, %{flow: flow}}
     end

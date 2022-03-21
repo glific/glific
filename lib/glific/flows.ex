@@ -158,6 +158,24 @@ defmodule Glific.Flows do
   end
 
   @doc """
+  Fetches a single flow
+
+  Returns `Resource not found` if the Interactive Template does not exist.
+
+  ## Examples
+
+      iex> fetch_interactive_template(123, 1)
+        {:ok, %Flow{}}
+
+      iex> fetch_interactive_template(456, 1)
+        {:error, ["Elixir.Glific.Flows.Flow", "Resource not found"]}
+
+  """
+  @spec fetch_flow(integer) :: {:ok, any} | {:error, any}
+  def fetch_flow(id),
+    do: Repo.fetch_by(Flow, %{id: id})
+
+  @doc """
   Creates a flow.
 
   ## Examples
