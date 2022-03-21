@@ -537,7 +537,7 @@ defmodule Glific.Templates do
   end
 
   @spec hsm_template_uuid_map() :: map()
-  defp hsm_template_uuid_map() do
+  defp hsm_template_uuid_map do
     list_session_templates(%{filter: %{is_hsm: true}})
     |> Map.new(fn %{bsp_id: bsp_id} = template ->
       {bsp_id, template}
