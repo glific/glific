@@ -1,4 +1,4 @@
-test/glific/templates_test.exs:901defmodule Glific.Providers.Gupshup.Template do
+defmodule Glific.Providers.Gupshup.Template do
   @moduledoc """
   Module for handling template operations specific to Gupshup
   """
