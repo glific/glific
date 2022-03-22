@@ -335,8 +335,10 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               bsp_limit: 40
             },
             secrets: %{
-              user_id: "user id",
-              password: "password"
+              hsm_user_id: "HSM account user id",
+              hsm_password: "HSM account password",
+              two_way_user_id: "two way account user id",
+              two_way_password: "two way account password"
             },
             is_active: false
           })

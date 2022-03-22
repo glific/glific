@@ -772,8 +772,10 @@ defmodule Glific.Partners do
       "gupshup_enterprise" ->
         credential.provider.group == "bsp" &&
           non_nil_string(credential.keys["api_end_point"]) &&
-          non_nil_string(credential.secrets["user_id"]) &&
-          non_nil_string(credential.secrets["password"])
+          non_nil_string(credential.secrets["hsm_user_id"]) &&
+          non_nil_string(credential.secrets["hsm_password"]) &&
+          non_nil_string(credential.secrets["two_way_user_id"]) &&
+          non_nil_string(credential.secrets["two_way_password"])
     end
   end
 

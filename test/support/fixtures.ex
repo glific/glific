@@ -191,8 +191,10 @@ defmodule Glific.Fixtures do
         bsp_limit: 60
       },
       secrets: %{
-        user_id: "Please enter your user id here",
-        password: "Please enter your password here"
+        hsm_user_id: "Please enter your HSM account user id here",
+        hsm_password: "Please enter your HSM account password here",
+        two_way_user_id: "Please enter your two way account user id here",
+        two_way_password: "Please enter your two way account password here"
       },
       is_active: false
     })
