@@ -337,8 +337,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             secrets: %{
               hsm_user_id: "HSM account user id",
               hsm_password: "HSM account password",
-              two_way_user_id: "two way account user id",
-              two_way_password: "two way account password"
+              two_way_user_id: "Two-Way account user id",
+              two_way_password: "Two-Way account password"
             },
             is_active: false
           })
