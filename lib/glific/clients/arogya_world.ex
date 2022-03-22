@@ -83,6 +83,24 @@ defmodule Glific.Clients.ArogyaWorld do
     }
   end
 
+  def webhook("is_valid_response", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    question_id = get_in(fields, ["results", "webhook", "question_id"])
+    response = get_in(fields, ["results", "question_response"])
+
+    case get_response_score(response, question_id, org_id) do
+      0 ->
+        %{
+          is_valid: false
+        }
+
+      _ ->
+        %{
+          is_valid: true
+        }
+    end
+  end
+
   def webhook("weekly_task", fields) do
     organization_id = Glific.parse_maybe_integer!(fields["organization_id"])
     {_current_week, next_week} = update_week_number(organization_id)
