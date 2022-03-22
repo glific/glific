@@ -777,6 +777,7 @@ defmodule Glific.Partners do
 
   defp valid_bsp?(_credential), do: false
 
+  @spec validate_secrets?(map(), String.t()) :: boolean()
   defp validate_secrets?(secrets, "gupshup"),
     do:
       non_nil_string(secrets["app_name"]) &&
