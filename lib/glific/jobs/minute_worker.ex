@@ -113,7 +113,7 @@ defmodule Glific.Jobs.MinuteWorker do
         CollectionCount.collection_stats()
 
       "update_hsms" ->
-        Partners.perform_all(&Templates.update_hsms/1, nil, [])
+        Partners.perform_all(&Templates.sync_hsms_from_bsp/1, nil, [])
 
       _ ->
         raise ArgumentError, message: "This job is not handled"

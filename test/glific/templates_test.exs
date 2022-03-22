@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
+    Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
     Templates,
@@ -622,7 +623,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "16e84186-97fa-454e-ac3b-8c9b94e53b4b"})
@@ -662,7 +663,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "2f826c4a-cacd-42b6-9536-ece4c459ffea"})
@@ -711,7 +712,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "eb939119-097d-414d-844d-1fce3adec486"})
@@ -739,7 +740,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      assert {:error, _message} = Templates.update_hsms(attrs.organization_id)
+      assert {:error, _message} = Templates.sync_hsms_from_bsp(attrs.organization_id)
     end
 
     test "update_hsms/1 should update status of already existing HSM", attrs do
@@ -748,7 +749,7 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      # shouldn update irrespective of the last modified time on BSP
+      # should update irrespective of the last modified time on BSP
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -768,7 +769,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = updated_hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
@@ -796,7 +797,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "APPROVED"
@@ -830,7 +831,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "REJECTED"
@@ -838,6 +839,8 @@ defmodule Glific.TemplatesTest do
     end
 
     def otp_hsm_fixture(language_id, status) do
+      uuid = Ecto.UUID.generate()
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -847,7 +850,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "template" => %{
                   "elementName" => "common_otp",
-                  "id" => Ecto.UUID.generate(),
+                  "id" => uuid,
                   "languageCode" => "en",
                   "status" => status
                 }
@@ -862,7 +865,9 @@ defmodule Glific.TemplatesTest do
         category: "ALERT_UPDATE",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
-        language_id: language_id
+        language_id: language_id,
+        uuid: uuid,
+        bsp_id: uuid
       })
     end
 
@@ -892,7 +897,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -928,7 +933,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -979,7 +984,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -992,6 +997,33 @@ defmodule Glific.TemplatesTest do
 
       assert hsm2.status == "REJECTED"
       assert hsm2.is_active == false
+    end
+
+    test "import_enterprise_templates/1 should import templates", attrs do
+      data =
+        "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
+
+      Template.import_enterprise_templates(attrs.organization_id, data)
+
+      assert {:ok, %SessionTemplate{} = imported_template} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6122571"})
+
+      assert imported_template.status == "APPROVED"
+      assert imported_template.shortcode == "2meq_payment_link"
+      assert imported_template.language_id == 1
+      assert imported_template.category == "ALERT_UPDATE"
+
+      assert imported_template.example ==
+               "Your OTP for [sample text 1] is [sample text 2]. This is valid for [sample text 3]."
+
+      assert {:ok, %SessionTemplate{} = imported_template2} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6122572"})
+
+      assert imported_template2.status == "REJECTED"
+      assert imported_template2.shortcode == "meq_payment_link2"
+
+      assert imported_template2.example ==
+               "You are one step away! Please click the link below to make your payment for the Future Perfect program."
     end
 
     test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do
@@ -1035,7 +1067,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})

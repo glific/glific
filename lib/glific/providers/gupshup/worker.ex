@@ -59,12 +59,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     end
   end
 
-  @spec process_gupshup(
-          non_neg_integer(),
-          map(),
-          Message.t(),
-          map()
-        ) ::
+  @spec process_gupshup(non_neg_integer(), map(), Message.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
   defp process_gupshup(
          org_id,
