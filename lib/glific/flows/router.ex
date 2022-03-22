@@ -293,8 +293,7 @@ defmodule Glific.Flows.Router do
   end
 
   defp update_context_results(context, key, msg, {category, is_checkbox}) do
-
-    default_results  = %{
+    default_results = %{
       "input" => msg.body,
       "category" => category.name,
       "inserted_at" => DateTime.utc_now()
@@ -322,17 +321,19 @@ defmodule Glific.Flows.Router do
           %{key => json}
 
         msg.type in [:quick_reply, :list] ->
-            json =
-              default_results
-              |> Map.merge(msg.extra)
-              |> Map.put("interactive_content", msg.interactive_content)
-            %{key => json}
+          json =
+            default_results
+            |> Map.merge(msg.extra)
+            |> Map.put("interactive_content", msg.interactive_content)
+
+          %{key => json}
 
         is_checkbox ->
           %{
-            key => Map.merge(default_results, %{
-              "selected" => msg.body |> Glific.make_set() |> MapSet.to_list(),
-            })
+            key =>
+              Map.merge(default_results, %{
+                "selected" => msg.body |> Glific.make_set() |> MapSet.to_list()
+              })
           }
 
         # this also handles msg.type in [:text]
