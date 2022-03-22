@@ -178,12 +178,13 @@ defmodule Glific.Processor.ConsumerFlow do
     |> FlowContext.step_forward(
       Messages.create_temp_message(
         message.organization_id,
-        get_message_body(message),
+        message.body,
         type: message.type,
         id: message.id,
         media: message.media,
         media_id: message.media_id,
-        location: message.location
+        location: message.location,
+        interactive_content: message.interactive_content
       )
     )
 
@@ -223,17 +224,4 @@ defmodule Glific.Processor.ConsumerFlow do
 
     {message, state}
   end
-
-  ## If message is replied to a interative message and reply content has a valid id
-  ## and then we treat the message body as id
-  @spec get_message_body(Message.t()) :: String.t() | nil
-  defp get_message_body(message) when is_map(message.interactive_content) do
-    id = message.interactive_content["id"]
-
-    if Map.has_key?(message.interactive_content, "id") && id not in [nil, ""],
-      do: id,
-      else: message.body
-  end
-
-  defp get_message_body(message), do: message.body
 end
