@@ -47,8 +47,12 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
 
   @spec get_language(String.t()) :: String.t()
   defp get_language(label_locale) do
-    {:ok, language} = Repo.fetch_by(Language, %{label_locale: label_locale})
-    language.locale
+    Repo.fetch_by(Language, %{label_locale: label_locale})
+    |> case do
+      {:ok, language} -> language.locale
+      # Setting en as default locale
+      {:error, _language} -> "en"
+    end
   end
 
   @spec get_example_body(String.t()) :: String.t()
