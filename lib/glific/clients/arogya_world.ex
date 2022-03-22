@@ -30,7 +30,8 @@ defmodule Glific.Clients.ArogyaWorld do
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Messages.csv",
     "question_template_map" =>
       "https://storage.googleapis.com/arogya-sheets/Arogya%20message%20HSM%20id's%20-%20Questions.csv",
-    "response_score_map" => "https://storage.googleapis.com/arogya-sheets/score_encoding.csv",
+    "response_score_map" =>
+      "https://storage.googleapis.com/arogya-sheets/mDiabetes%20Content-Google%20AI%20Project.xlsx%20-%20%20mDiabetes%20Questions-AI(Kannada%20Final).csv",
     "dynamic_message_schedule_week" =>
       "https://storage.googleapis.com/participant-files/uploads/to_participants_week_"
   }
@@ -401,13 +402,19 @@ defmodule Glific.Clients.ArogyaWorld do
     add_data_from_csv(
       "response_score_map",
       file_url,
-      fn acc, data ->
-        Map.put(acc, clean_string(data["1"]), 1)
-        |> Map.put(clean_string(data["2"]), 2)
-        |> Map.put(clean_string(data["3"]), 3)
-      end,
+      &format_response_score_mapping/2,
       org_id
     )
+  end
+
+  @spec format_response_score_mapping(map(), map()) :: map()
+  defp format_response_score_mapping(acc, data) do
+    score_map =
+      Map.put(%{}, clean_string(data["1(Kannada)"]), 1)
+      |> Map.put(clean_string(data["2(Kannada)"]), 2)
+      |> Map.put(clean_string(data["3(Kannada)"]), 3)
+
+    Map.put(acc, data["ID"], score_map)
   end
 
   @doc """
@@ -497,7 +504,7 @@ defmodule Glific.Clients.ArogyaWorld do
       %{
         "ID" => m.contact_id,
         "Q_ID" => q_id,
-        "Q_response" => get_response_score(m.body, org_id)
+        "Q_response" => get_response_score(m.body, q_id, org_id)
       }
     end)
   end
@@ -579,8 +586,8 @@ defmodule Glific.Clients.ArogyaWorld do
   @doc """
   Return the response score based on the body
   """
-  @spec get_response_score(String.t(), non_neg_integer()) :: any()
-  def get_response_score(response, org_id) do
+  @spec get_response_score(String.t(), String.t(), non_neg_integer()) :: any()
+  def get_response_score(response, q_id, org_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: org_id,
@@ -591,8 +598,8 @@ defmodule Glific.Clients.ArogyaWorld do
 
     response_score = organization_data.json
 
-    if response_score[response] !== nil do
-      response_score[response]
+    if response_score[q_id][response] !== nil do
+      response_score[q_id][response]
     else
       0
     end
