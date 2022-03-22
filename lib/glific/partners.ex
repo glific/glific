@@ -766,24 +766,36 @@ defmodule Glific.Partners do
       "gupshup" ->
         credential.provider.group == "bsp" &&
           non_nil_string(credential.keys["api_end_point"]) &&
-          non_nil_string(credential.secrets["app_name"]) &&
-          non_nil_string(credential.secrets["api_key"])
+          validate_secrets?(credential.secrets, "gupshup")
 
       "gupshup_enterprise" ->
         credential.provider.group == "bsp" &&
           non_nil_string(credential.keys["api_end_point"]) &&
-          non_nil_string(credential.secrets["hsm_user_id"]) &&
-          non_nil_string(credential.secrets["hsm_password"]) &&
-          non_nil_string(credential.secrets["two_way_user_id"]) &&
-          non_nil_string(credential.secrets["two_way_password"])
+          validate_secrets?(credential.secrets, "gupshup_enterprise")
     end
   end
 
   defp valid_bsp?(_credential), do: false
 
+  defp validate_secrets?(secrets, "gupshup"),
+    do:
+      non_nil_string(secrets["app_name"]) &&
+        non_nil_string(secrets["api_key"])
+
+  defp validate_secrets?(secrets, "gupshup_enterprise"),
+    do:
+      non_nil_string(secrets["hsm_user_id"]) &&
+        non_nil_string(secrets["hsm_password"]) &&
+        non_nil_string(secrets["two_way_user_id"]) &&
+        non_nil_string(secrets["two_way_password"])
+
+  defp validate_secrets?(_secrets, _bsp),
+    do: false
+
   @doc """
   Updates an organization's credential
   """
+
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
