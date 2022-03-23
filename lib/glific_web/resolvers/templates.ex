@@ -81,4 +81,13 @@ defmodule GlificWeb.Resolvers.Templates do
       {:ok, %{session_template: session_template}}
     end
   end
+
+  @doc """
+  Import pre approved templates
+  """
+  @spec import_templates(Absinthe.Resolution.t(), %{data: String.t()}, %{
+          context: map()
+        }) :: {:ok, any} | {:error, any}
+  def import_templates(_, %{data: data}, %{context: %{current_user: user}}),
+    do: Templates.import_templates(user.organization_id, data)
 end

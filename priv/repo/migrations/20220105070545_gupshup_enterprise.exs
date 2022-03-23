@@ -49,15 +49,27 @@ defmodule Glific.Repo.Migrations.GupshupEnterprise do
             }
           },
           secrets: %{
-            user_id: %{
+            hsm_user_id: %{
               type: :string,
-              label: "User ID",
+              label: "HSM User ID",
               default: nil,
               view_only: false
             },
-            password: %{
+            hsm_password: %{
               type: :string,
-              label: "Password",
+              label: "HSM Password",
+              default: nil,
+              view_only: false
+            },
+            two_way_user_id: %{
+              type: :string,
+              label: "Two way User ID",
+              default: nil,
+              view_only: false
+            },
+            two_way_password: %{
+              type: :string,
+              label: "Two way Password",
               default: nil,
               view_only: false
             }

@@ -92,19 +92,21 @@ query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {
   }
 }
 ```
+
 This returns all the session templates filtered by the input <a href="#sessiontemplatefilter">SessionTemplateFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                                       | Default | Description                         |
+| --------- | ---------------------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                                   | nil     | limit / offset / sort order options |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#sessiontemplate">SessionTemplate</a>] | List of session templates
+
+| Type                                             | Description               |
+| ------------------------------------------------ | ------------------------- |
+| [<a href="#sessiontemplate">SessionTemplate</a>] | List of session templates |
 
 ## Get a specific SessionTemplate by ID
 
@@ -156,14 +158,15 @@ query sessionTemplate($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil | filter the list
+| Parameter | Type                                                       | Default | Description     |
+| --------- | ---------------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil     | filter the list |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#sessiontemplateresult">SessionTemplateResult</a> | Queried SessionTemplate
+
+| Type                                                       | Description             |
+| ---------------------------------------------------------- | ----------------------- |
+| <a href="#sessiontemplateresult">SessionTemplateResult</a> | Queried SessionTemplate |
 
 ## Count all Session Templates
 
@@ -191,16 +194,18 @@ query countSessionTemplates($filter: SessionTemplateFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil | filter the list
+| Parameter | Type                                                       | Default | Description     |
+| --------- | ---------------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#sessiontemplatefilter">SessionTemplateFilter</a> | nil     | filter the list |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#int">Int</a> | Count of filtered session templates
+
+| Type                   | Description                         |
+| ---------------------- | ----------------------------------- |
+| <a href="#int">Int</a> | Count of filtered session templates |
 
 ## Get List of Whatsapp HSM categories
+
 ```graphql
 query {
   whatsappHsmCategories
@@ -210,7 +215,6 @@ query {
 > The above query returns JSON structured like this:
 
 ```json
-
 {
   "data": {
     "whatsappHsmCategories": [
@@ -229,12 +233,14 @@ query {
   }
 }
 ```
+
 This returns list of whatsapp HSM categories
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#string">String</a>] | List of categories
+
+| Type                           | Description        |
+| ------------------------------ | ------------------ |
+| [<a href="#string">String</a>] | List of categories |
 
 ## Create a Session Template
 
@@ -288,14 +294,58 @@ mutation createSessionTemplate($input:SessionTemplateInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#sessiontemplateinput">SessionTemplateInput</a> | required ||
+| Parameter | Type                                                     | Default  | Description |
+| --------- | -------------------------------------------------------- | -------- | ----------- |
+| input     | <a href="#sessiontemplateinput">SessionTemplateInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#sessiontemplateresult">SessionTemplateResult</a> | The created session template object
+
+| Type                                                       | Description                         |
+| ---------------------------------------------------------- | ----------------------------------- |
+| <a href="#sessiontemplateresult">SessionTemplateResult</a> | The created session template object |
+
+## Import Session Templates
+
+```graphql
+mutation RootMutationType($data: String!, $importTemplatesId: ID!) {
+  importTemplates(data: $data, id: $importTemplatesId) {
+    errors {
+      key
+      message
+    }
+    status
+  }
+}
+
+{
+  "data": "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,APPROVED,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "importTemplates": {
+      "errors": null,
+      "success": false
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                       | Default  | Description |
+| --------- | -------------------------- | -------- | ----------- |
+| input     | <a href="#string">Data</a> | required |             |
+
+### Return Parameters
+
+| Type                                                       | Description                           |
+| ---------------------------------------------------------- | ------------------------------------- |
+| <a href="#importTemplatesResult">importTemplatesResult</a> | The imported templates success status |
 
 ## Update a SessionTemplate
 
@@ -347,16 +397,16 @@ mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#sessiontemplateinput">SessionTemplateInput</a> | required ||
+| Parameter | Type                                                     | Default  | Description |
+| --------- | -------------------------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                                    | required |             |
+| input     | <a href="#sessiontemplateinput">SessionTemplateInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#sessiontemplateresult">SessionTemplateResult</a> | The updated session template object
 
+| Type                                                       | Description                         |
+| ---------------------------------------------------------- | ----------------------------------- |
+| <a href="#sessiontemplateresult">SessionTemplateResult</a> | The updated session template object |
 
 ## Delete a SessionTemplate
 
@@ -406,14 +456,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#sessiontemplateresult">SessionTemplateResult</a> | An error object or empty
+
+| Type                                                       | Description              |
+| ---------------------------------------------------------- | ------------------------ |
+| <a href="#sessiontemplateresult">SessionTemplateResult</a> | An error object or empty |
 
 ## Session Template Objects
 
@@ -552,8 +603,7 @@ Type | Description
 </tbody>
 </table>
 
-
-## Session Template Inputs ##
+## Session Template Inputs
 
 ### SessionTemplateFilter
 

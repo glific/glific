@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation copyInteractiveTemplate($id: ID!, $input: InteractiveTemplateInput!) {
+  copyInteractiveTemplate(id: $id, input: $input) {
+    ...InteractiveTemplateFields
+
+    ...ErrorFields
+  }
+}

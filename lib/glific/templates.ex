@@ -11,7 +11,8 @@ defmodule Glific.Templates do
   alias Glific.{
     Partners,
     Partners.Organization,
-    Providers.Gupshup.Template,
+    Providers.Gupshup,
+    Providers.GupshupEnterprise,
     Repo,
     Settings,
     Tags.Tag,
@@ -172,7 +173,21 @@ defmodule Glific.Templates do
 
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Template.submit_for_approval(attrs)
+      "gupshup" -> Gupshup.Template.submit_for_approval(attrs)
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
+    end
+  end
+
+  @doc """
+  Imports pre approved templates from bsp
+  """
+  @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
+  def import_templates(org_id, data) do
+    organization = Partners.organization(org_id)
+
+    organization.bsp.shortcode
+    |> case do
+      "gupshup_enterprise" -> GupshupEnterprise.Template.import_enterprise_templates(org_id, data)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
@@ -250,20 +265,20 @@ defmodule Glific.Templates do
   @doc """
   get and update list of hsm of an organization
   """
-  @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
-  def update_hsms(organization_id) do
+  @spec sync_hsms_from_bsp(non_neg_integer()) :: :ok | {:error, String.t()}
+  def sync_hsms_from_bsp(organization_id) do
     organization = Partners.organization(organization_id)
 
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Template.update_hsm_templates(organization_id)
+      "gupshup" -> Gupshup.Template.update_hsm_templates(organization_id)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
   @doc false
-  @spec do_update_hsms(map(), Organization.t()) :: :ok
-  def do_update_hsms(templates, organization) do
+  @spec update_hsms(list(), Organization.t()) :: :ok
+  def update_hsms(templates, organization) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
@@ -273,13 +288,13 @@ defmodule Glific.Templates do
 
     Enum.each(templates, fn template ->
       cond do
-        !Map.has_key?(db_templates, template["id"]) ->
+        !Map.has_key?(db_templates, template["bsp_id"]) ->
           insert_hsm(template, organization, languages)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
-        Map.has_key?(db_templates, template["id"]) ->
+        Map.has_key?(db_templates, template["bsp_id"]) ->
           update_hsm(template, organization, languages)
 
         true ->
@@ -298,7 +313,8 @@ defmodule Glific.Templates do
       db_templates
       |> Map.values()
       |> Enum.filter(fn db_template ->
-        db_template.shortcode == template["elementName"] and db_template.uuid != template["id"]
+        db_template.shortcode == template["elementName"] and
+          db_template.bsp_id != template["bsp_id"]
       end)
 
     approved_db_templates =
@@ -333,6 +349,7 @@ defmodule Glific.Templates do
       else: :ok
   end
 
+  @spec do_insert_hsm(map(), Organization.t(), map(), String.t()) :: :ok
   defp do_insert_hsm(template, organization, languages, example) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
@@ -366,7 +383,8 @@ defmodule Glific.Templates do
         is_hsm: true,
         status: template["status"],
         is_active: is_active,
-        number_parameters: number_of_parameter
+        number_parameters: number_of_parameter,
+        bsp_id: template["bsp_id"] || template["id"]
       }
       |> check_for_button_template()
 
@@ -428,9 +446,10 @@ defmodule Glific.Templates do
 
   defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
 
-  @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  @spec do_update_hsm(map(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
-    current_template = db_templates[template["id"]]
+    current_template = db_templates[template["bsp_id"]]
     update_attrs = %{status: template["status"]}
 
     update_attrs =
@@ -444,7 +463,7 @@ defmodule Glific.Templates do
         else: update_attrs
 
     {:ok, _} =
-      db_templates[template["id"]]
+      db_templates[template["bsp_id"]]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
   end
@@ -517,11 +536,12 @@ defmodule Glific.Templates do
     |> Enum.count()
   end
 
-  # A map where keys are hsm uuid and value will be template struct
   @spec hsm_template_uuid_map() :: map()
   defp hsm_template_uuid_map do
     list_session_templates(%{filter: %{is_hsm: true}})
-    |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+    |> Map.new(fn %{bsp_id: bsp_id} = template ->
+      {bsp_id, template}
+    end)
   end
 
   @doc false

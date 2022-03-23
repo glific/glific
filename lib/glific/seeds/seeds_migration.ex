@@ -351,7 +351,7 @@ defmodule Glific.Seeds.SeedsMigration do
   def sync_hsm_templates(org_id_list) do
     Enum.each(org_id_list, fn org_id ->
       Repo.put_process_state(org_id)
-      Glific.Templates.update_hsms(org_id)
+      Glific.Templates.sync_hsms_from_bsp(org_id)
     end)
 
     :ok

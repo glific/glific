@@ -102,6 +102,14 @@ defmodule Glific.FLowsTest do
       assert Flows.get_flow!(flow.id) == flow
     end
 
+    test "fetch_flow/1 returns the flow with given id or returns {:ok, flow} or {:error, any}" do
+      flow = flow_fixture()
+      {:ok, fetched_flow} = Flows.fetch_flow(flow.id)
+      assert fetched_flow.name == flow.name
+      assert fetched_flow.status == flow.status
+      assert fetched_flow.keywords == flow.keywords
+    end
+
     test "create_flow/1 with valid data creates a flow", attrs do
       [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
 

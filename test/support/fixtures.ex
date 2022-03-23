@@ -191,8 +191,10 @@ defmodule Glific.Fixtures do
         bsp_limit: 60
       },
       secrets: %{
-        user_id: "Please enter your user id here",
-        password: "Please enter your password here"
+        hsm_user_id: "Please enter your HSM account user id here",
+        hsm_password: "Please enter your HSM account password here",
+        two_way_user_id: "Please enter your two way account user id here",
+        two_way_password: "Please enter your two way account password here"
       },
       is_active: false
     })
@@ -304,7 +306,6 @@ defmodule Glific.Fixtures do
       body: "Default Template",
       type: :text,
       language_id: language.id,
-      uuid: Ecto.UUID.generate(),
       organization_id: get_org_id()
     }
 
@@ -313,6 +314,8 @@ defmodule Glific.Fixtures do
       |> Enum.into(valid_attrs)
       |> Templates.create_session_template()
 
+    uuid = Ecto.UUID.generate()
+
     valid_attrs_2 = %{
       label: "Another Template Label",
       shortcode: "another template",
@@ -320,7 +323,8 @@ defmodule Glific.Fixtures do
       type: :text,
       language_id: language.id,
       parent_id: session_template.id,
-      uuid: Ecto.UUID.generate(),
+      uuid: uuid,
+      bsp_id: uuid,
       organization_id: get_org_id()
     }
 

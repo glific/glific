@@ -76,7 +76,7 @@ You will need to do the following:
   corner of your gupshup dashboard
 - Enter your APP name
 - Start the backend server in iex session: `iex -S mix`
-- Update HSM templates: `Glific.Templates.update_hsms(1)`
+- Update HSM templates: `Glific.Templates.sync_hsms_from_bsp(1)`
 - Install [ngrok](https://ngrok.com/download)
 - Start ngrok to proxy port 4000:
   - Start the backend server: `mix phx.server`

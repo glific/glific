@@ -334,6 +334,55 @@ In case of errors, all the above functions return an error object like the below
 | ------------------------------------------------------------------ | ------------------------ |
 | <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | An error object or empty |
 
+## Copy a Interactive Template
+
+```graphql
+mutation copyInteractiveTemplate(
+  $copyInteractiveTemplateId: ID!
+  $input: InteractiveTemplateInput
+) {
+  copyInteractiveTemplate(id: $copyInteractiveTemplateId, input: $input) {
+    errors {
+      key
+      message
+    }
+    interactiveTemplate {
+      id
+      insertedAt
+      interactiveContent
+      label
+      type
+      updatedAt
+    }
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "copyInteractiveTemplateId": "1",
+  "input": {
+    "label": "copied interactive template",
+    "languageId": "1"
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                             | Default  | Description |
+| --------- | ---------------------------------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                                            | required |             |
+| input     | <a href="#interactiveTemplateinput">interactiveTemplateInput</a> | required |             |
+
+### Return Parameters
+
+| Type                                                               | Description                    |
+| ------------------------------------------------------------------ | ------------------------------ |
+| <a href="#interactiveTemplateresult">interactiveTemplateResult</a> | The created Interactive object |
+
 ## InteractiveTemplate Objects
 
 ### interactiveTemplate

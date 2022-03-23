@@ -7,8 +7,9 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   import GlificWeb.Gettext
 
   @gupshup_enterprise_url "https://media.smsgupshup.com/GatewayAPI/rest"
-  @common_message_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
+  @common_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
   @default_optin_params %{"method" => "OPT_IN", "channel" => "WHATSAPP"}
+  @default_send_template_params %{"msg_type" => "HSM", "method" => "SendMessage"}
   @default_send_message_params %{"method" => "SendMessage"}
   @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
 
@@ -34,16 +35,51 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
     else
       bsp_credentials = organization.services["bsp"]
 
-      with false <- is_nil(bsp_credentials.secrets["user_id"]),
-           false <- is_nil(bsp_credentials.secrets["password"]) do
-        user_id = bsp_credentials.secrets["user_id"]
-        password = bsp_credentials.secrets["password"]
-        {:ok, %{"userid" => user_id, "password" => password}}
+      with false <-
+             is_nil(bsp_credentials.secrets["hsm_user_id"]) &&
+               is_nil(bsp_credentials.secrets["hsm_password"]),
+           false <-
+             is_nil(bsp_credentials.secrets["two_way_user_id"]) &&
+               is_nil(bsp_credentials.secrets["two_way_password"]) do
+        hsm_user_id = bsp_credentials.secrets["hsm_user_id"]
+        hsm_password = bsp_credentials.secrets["hsm_password"]
+        two_way_user_id = bsp_credentials.secrets["two_way_user_id"]
+        two_way_password = bsp_credentials.secrets["two_way_password"]
+
+        {:ok,
+         %{
+           hsm_user_id: hsm_user_id,
+           hsm_password: hsm_password,
+           two_way_user_id: two_way_user_id,
+           two_way_password: two_way_password
+         }}
       else
         _ ->
           {:error,
            "Please check your credential settings and ensure you have added the user ID and password also"}
       end
+    end
+  end
+
+  @doc """
+  Sending HSM template to contact
+  """
+  @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
+  def send_template(org_id, attrs) do
+    with {:ok, credentials} <- get_credentials(org_id) do
+      attrs
+      |> Map.merge(%{
+        "send_to" => attrs["send_to"],
+        "msg" => attrs["msg"]
+      })
+      |> Map.merge(@common_params)
+      |> Map.merge(@default_send_template_params)
+      |> then(
+        &gupshup_post(@gupshup_enterprise_url, &1, %{
+          "userid" => credentials.hsm_user_id,
+          "password" => credentials.hsm_password
+        })
+      )
     end
   end
 
@@ -56,7 +92,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
          {:ok, payload} <- Jason.decode(attrs["message"]) do
       payload
       |> Map.put("send_to", attrs["send_to"])
-      |> Map.merge(@common_message_params)
+      |> Map.merge(@common_params)
       |> do_send_message(credentials)
     end
   end
@@ -65,14 +101,24 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   defp do_send_message(%{"msg_type" => "DATA_TEXT"} = payload, credentials) do
     payload
     |> Map.merge(@default_send_message_params)
-    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
+    |> then(
+      &gupshup_post(@gupshup_enterprise_url, &1, %{
+        "userid" => credentials.two_way_user_id,
+        "password" => credentials.two_way_password
+      })
+    )
   end
 
   defp do_send_message(%{"msg_type" => msg_type} = payload, credentials)
        when msg_type in ["DOCUMENT", "VIDEO", "AUDIO", "IMAGE"] do
     payload
     |> Map.merge(@default_send_media_message_params)
-    |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
+    |> then(
+      &gupshup_post(@gupshup_enterprise_url, &1, %{
+        "userid" => credentials.two_way_user_id,
+        "password" => credentials.two_way_password
+      })
+    )
   end
 
   @doc """
@@ -82,9 +128,14 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def optin_contact(org_id, payload) do
     with {:ok, credentials} <- get_credentials(org_id) do
       payload
-      |> Map.merge(@common_message_params)
+      |> Map.merge(@common_params)
       |> Map.merge(@default_optin_params)
-      |> then(&gupshup_post(@gupshup_enterprise_url, &1, credentials))
+      |> then(
+        &gupshup_post(@gupshup_enterprise_url, &1, %{
+          "userid" => credentials.two_way_user_id,
+          "password" => credentials.two_way_password
+        })
+      )
     end
   end
 end
