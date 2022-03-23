@@ -89,15 +89,8 @@ defmodule Glific.Clients.ArogyaWorld do
     response = get_in(fields, ["results", "question_response", "input"])
 
     case get_response_score(response, question_id, org_id) do
-      0 ->
-        %{
-          is_valid: false
-        }
-
-      _ ->
-        %{
-          is_valid: true
-        }
+      0 -> %{is_valid: false}
+      _ -> %{is_valid: true}
     end
   end
 
@@ -106,9 +99,7 @@ defmodule Glific.Clients.ArogyaWorld do
     {_current_week, next_week} = update_week_number(organization_id)
     load_participant_file(organization_id, next_week)
 
-    %{
-      success: true
-    }
+    %{success: true}
   end
 
   def webhook("send_participant_responses", fields) do
@@ -616,11 +607,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
     response_score = organization_data.json
 
-    if response_score[q_id][response] !== nil do
-      response_score[q_id][response]
-    else
-      0
-    end
+    get_in(response_score, q_id, response) || 0
   end
 
   @spec clean_string(String.t()) :: String.t()
