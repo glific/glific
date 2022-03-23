@@ -86,7 +86,7 @@ defmodule Glific.Clients.ArogyaWorld do
   def webhook("is_valid_response", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     question_id = get_in(fields, ["results", "webhook", "question_id"])
-    response = get_in(fields, ["results", "question_response"])
+    response = get_in(fields, ["results", "question_response", "input"])
 
     case get_response_score(response, question_id, org_id) do
       0 ->
