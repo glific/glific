@@ -527,7 +527,8 @@ defmodule Glific.Messages do
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
       flow_label: Map.get(attrs, :flow_label, ""),
-      flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil)
+      flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil),
+      user_id: Map.get(attrs, :user_id, nil)
     }
   end
 
