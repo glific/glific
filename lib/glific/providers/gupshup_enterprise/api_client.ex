@@ -10,6 +10,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @common_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
   @default_optin_params %{"method" => "OPT_IN", "channel" => "WHATSAPP"}
   @default_send_template_params %{"msg_type" => "HSM", "method" => "SendMessage"}
+  @button_template_params %{"isTemplate" => "true"}
   @default_send_message_params %{"method" => "SendMessage"}
   @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
 
@@ -74,6 +75,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       })
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_template_params)
+      |> is_button_template(attrs["has_buttons"])
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.hsm_user_id,
@@ -82,6 +84,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       )
     end
   end
+
+  @spec is_button_template(map(), boolean()) :: map()
+  defp is_button_template(attrs, false), do: attrs
+  defp is_button_template(attrs, true), do: Map.merge(attrs, @button_template_params)
 
   @doc """
   Sending message to contact
