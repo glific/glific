@@ -174,7 +174,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
   @spec to_minimal_map(map()) :: map()
   defp to_minimal_map(attrs) do
-    Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm, :template_type])
+    Map.take(attrs, [:params, :template_id, :template_uuid, :is_hsm, :template_type, :has_buttons])
   end
 
   @spec create_oban_job(Message.t(), map(), map()) ::
