@@ -88,10 +88,7 @@ defmodule Glific.Clients.ArogyaWorld do
     question_id = get_in(fields, ["results", "webhook", "question_id"])
     response = get_in(fields, ["results", "question_response", "input"])
 
-    case get_response_score(response, question_id, org_id) do
-      0 -> %{is_valid: false}
-      _ -> %{is_valid: true}
-    end
+    %{is_valid: get_response_score(response, question_id, org_id) > 0}
   end
 
   def webhook("weekly_task", fields) do
