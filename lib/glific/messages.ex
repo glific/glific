@@ -528,7 +528,8 @@ defmodule Glific.Messages do
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
       flow_label: Map.get(attrs, :flow_label, ""),
       flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil),
-      user_id: Map.get(attrs, :user_id, nil)
+      user_id: Map.get(attrs, :user_id, nil),
+      flow_id: Map.get(attrs, :flow_id, nil)
     }
   end
 
@@ -548,10 +549,7 @@ defmodule Glific.Messages do
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       # Passing uuid to save db call when sending template via provider
-      message_params =
-        session_template
-        |> hsm_message_params(attrs, is_translated)
-        |> check_flow_id(attrs)
+      message_params = hsm_message_params(session_template, attrs, is_translated)
 
       receiver_id
       |> Glific.Contacts.get_contact!()
