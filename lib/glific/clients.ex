@@ -95,9 +95,8 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.ArogyaWorld,
     daily_tasks: Glific.Clients.ArogyaWorld,
     weekly_tasks: Glific.Clients.ArogyaWorld,
-    trigger_condition: Glific.Clients.ArogyaWorld
-    # will be needing this from next week
-    # hourly_tasks: Glific.Clients.ArogyaWorld,
+    trigger_condition: Glific.Clients.ArogyaWorld,
+    hourly_tasks: Glific.Clients.ArogyaWorld
   }
 
   @bandhu %{
