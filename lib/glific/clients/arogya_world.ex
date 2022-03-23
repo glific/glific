@@ -604,7 +604,7 @@ defmodule Glific.Clients.ArogyaWorld do
 
     response_score = organization_data.json
 
-    get_in(response_score, q_id, response) || 0
+    get_in(response_score, [q_id, response]) || 0
   end
 
   @spec clean_string(String.t()) :: String.t()
