@@ -62,19 +62,12 @@ defmodule Glific.Flows.ContactAction do
 
     interactive_content =
       interactive_template
-      |> InteractiveTemplates.get_translations(context.contact.language_id)
+      |> InteractiveTemplates.translated_content(context.contact.language_id)
       |> MessageVarParser.parse_map(message_vars)
-      |> InteractiveTemplates.get_clean_interactive_content(
-        interactive_template.send_with_title,
-        interactive_template.type
-      )
 
-    body =
-      InteractiveTemplates.get_interactive_body(
-        interactive_content,
-        interactive_content["type"],
-        interactive_content["content"]["type"]
-      )
+    body = InteractiveTemplates.get_interactive_body(interactive_content)
+
+    media_id = InteractiveTemplates.get_media(interactive_content, context.organization_id)
 
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{
@@ -88,7 +81,9 @@ defmodule Glific.Flows.ContactAction do
         flow_broadcast_id: context.flow_broadcast_id,
         send_at: DateTime.add(DateTime.utc_now(), context.delay),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
-        interactive_template_id: action.interactive_template_id
+        interactive_template_id: action.interactive_template_id,
+        interactive_content: interactive_content,
+        media_id: media_id
       }
 
       attrs
