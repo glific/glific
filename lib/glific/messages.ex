@@ -565,13 +565,6 @@ defmodule Glific.Messages do
     end
   end
 
-  @spec check_flow_id(map(), map()) :: map()
-  defp check_flow_id(message_params, attrs) do
-    if Map.has_key?(attrs, :flow_id),
-      do: Map.put(message_params, :flow_id, attrs.flow_id),
-      else: message_params
-  end
-
   @doc false
   @spec parse_template_vars(SessionTemplate.t(), [String.t()]) :: SessionTemplate.t()
   def parse_template_vars(%{number_parameters: np} = session_template, _parameters)
