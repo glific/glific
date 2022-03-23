@@ -496,11 +496,17 @@ defmodule Glific.Flows do
 
     cond do
       # if validate and published both worked
-      errors == [] && elem(result, 0) == :ok -> {:ok, flow}
+      errors == [] && elem(result, 0) == :ok ->
+        {:ok, flow}
+
       # we had an error saving to the DB
-      elem(result, 0) == :error -> result
+      elem(result, 0) == :error ->
+        Logger.info("error while publishing the flow. #{inspect(result)}")
+        result
+
       # We had an error validating the flow
-      true -> {:errors, format_flow_errors(errors)}
+      true ->
+        {:errors, format_flow_errors(errors)}
     end
   end
 
