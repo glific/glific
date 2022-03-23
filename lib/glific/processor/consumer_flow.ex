@@ -183,7 +183,8 @@ defmodule Glific.Processor.ConsumerFlow do
         id: message.id,
         media: message.media,
         media_id: message.media_id,
-        location: message.location
+        location: message.location,
+        interactive_content: message.interactive_content
       )
     )
 
