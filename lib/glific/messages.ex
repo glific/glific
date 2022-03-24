@@ -529,8 +529,9 @@ defmodule Glific.Messages do
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
       flow_label: Map.get(attrs, :flow_label, ""),
       flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil),
-      user_id: Map.get(attrs, :user_id, nil),
-      flow_id: Map.get(attrs, :flow_id, nil)
+      user_id: attrs[:user_id],
+      flow_id: attrs[:flow_id],
+      send_at: attrs[:send_at]
     }
   end
 
