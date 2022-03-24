@@ -73,12 +73,19 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   @spec button(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def button(conn, params) do
     params
+    |> parse_button_text()
     |> Gupshup.Enterprise.Message.receive_text()
     |> Map.put(:organization_id, conn.assigns[:organization_id])
     |> Communications.Message.receive_message()
 
     handler(conn, params, "text handler")
   end
+
+  defp parse_button_text(params),
+    do:
+      params["button"]
+      |> Jason.decode!()
+      |> then(&Map.put(params, "text", &1["text"]))
 
   @doc false
   # Handle Gupshup media message and convert them into Glific Message struct

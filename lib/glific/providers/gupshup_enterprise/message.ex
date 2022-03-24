@@ -104,8 +104,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @doc false
   @spec receive_text(payload :: map()) :: map()
   def receive_text(params) do
-    IO.inspect("debug001receive_text")
-    IO.inspect(params)
     # lets ensure that we have a phone number
     # sometime the gupshup payload has a blank payload
     # or maybe a simulator or some test code
