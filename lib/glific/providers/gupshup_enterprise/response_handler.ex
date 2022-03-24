@@ -70,6 +70,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
     %{"response" => success_response} = Jason.decode!(response.body)
     IO.inspect("debug002add_success_payload")
     IO.inspect(success_response)
+    IO.inspect(response)
 
     %{"messageId" => success_response["id"]}
     |> then(&Map.put(response, :body, Jason.encode!(&1)))
