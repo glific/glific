@@ -72,10 +72,12 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   """
   @spec button(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def button(conn, params) do
-    IO.inspect("debug001conn")
-    IO.inspect(conn)
-    IO.inspect("debug001params")
-    IO.inspect(params)
+    params
+    |> Gupshup.Enterprise.Message.receive_text()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message()
+
+    handler(conn, params, "text handler")
   end
 
   @doc false
