@@ -26,10 +26,6 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
   @doc false
   @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def call(%Conn{params: %{"type" => payload_type}} = conn, opts) do
-    IO.inspect("debug001webhookevent")
-    IO.inspect(opts)
-    IO.inspect(conn)
-    IO.inspect(payload_type)
     organization = build_context(conn)
 
     path =

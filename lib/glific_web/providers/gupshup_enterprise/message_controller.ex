@@ -67,6 +67,17 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
     handler(conn, params, "location handler")
   end
 
+  @doc """
+  Parse button message payload and convert that into Glific message struct
+  """
+  @spec button(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def button(conn, params) do
+    IO.inspect("debug001conn")
+    IO.inspect(conn)
+    IO.inspect("debug001params")
+    IO.inspect(params)
+  end
+
   @doc false
   # Handle Gupshup media message and convert them into Glific Message struct
   @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
