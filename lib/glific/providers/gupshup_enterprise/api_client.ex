@@ -13,8 +13,6 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @default_send_interactive_template_params %{
     "msg_type" => "text",
     "isTemplate" => "true",
-    "interactive_type" => "list",
-    "msg" => "hello",
     "method" => "SendMessage"
   }
   @button_template_params %{"isTemplate" => "true"}
@@ -76,9 +74,18 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
           Tesla.Env.result() | {:error, String.t()}
   def send_interactive_template(org_id, attrs) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      %{"action" => attrs["message"], "send_to" => attrs["send_to"]}
+      IO.inspect("debug001send_interactive_template")
+      IO.inspect(attrs)
+
+      message = attrs["message"] |> Jason.decode!()
+      action = message["interactive_content"] |> Jason.encode!()
+      msg = message["msg"]
+      IO.inspect(message)
+
+      %{"action" => action, "send_to" => attrs["send_to"], "msg" => msg, "interactive_type" => message["interactive_type"]}
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_interactive_template_params)
+      |> IO.inspect()
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
           "userid" => credentials.two_way_user_id,

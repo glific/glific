@@ -75,32 +75,35 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     IO.inspect(attrs)
 
     interactive_content = %{
-      "button" => "Menu_name",
-      "sections" => [
-        %{
-          "title" => "Section_1_name",
-          "rows" => [
-            %{
-              "id" => "Row_1_id",
-              "title" => "Row_1_title",
-              "description" => "Row_1_Description"
-            }
-          ]
-        },
-        %{
-          "title" => "Section_2_name",
-          "rows" => [
-            %{
-              "id" => "Row_3_id",
-              "title" => "Row_3_title",
-              "description" => "Row_3_Description"
-            }
-          ]
-        }
-      ]
+      interactive_content: %{
+        "button" => "Menu_name",
+        "sections" => [
+          %{
+            "title" => "Section_1_name",
+            "rows" => [
+              %{
+                "id" => "Row_1_id",
+                "title" => "Row_1_title",
+                "description" => "Row_1_Description"
+              }
+            ]
+          },
+          %{
+            "title" => "Section_2_name",
+            "rows" => [
+              %{
+                "id" => "Row_3_id",
+                "title" => "Row_3_title",
+                "description" => "Row_3_Description"
+              }
+            ]
+          }
+        ]
+      }
     }
 
     interactive_content
+    |> Map.merge(%{msg: message.body, interactive_type: message.type})
     |> send_message(message, attrs)
   end
 
