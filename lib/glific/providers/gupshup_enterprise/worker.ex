@@ -68,6 +68,19 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
     |> ResponseHandler.handle_response(message)
   end
 
+  defp process_gupshup(
+         org_id,
+         payload,
+         %{"interactive_template_id" => _interactive_template_id} = message,
+         _attrs
+       ) do
+    ApiClient.send_interactive_template(
+      org_id,
+      payload
+    )
+    |> ResponseHandler.handle_response(message)
+  end
+
   defp process_gupshup(org_id, payload, message, _attrs) do
     ApiClient.send_message(
       org_id,

@@ -67,6 +67,43 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> send_message(message, attrs)
   end
 
+  @doc false
+  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs \\ %{}) do
+    IO.inspect("debug001send_interactive")
+    IO.inspect(message)
+    IO.inspect(attrs)
+
+    interactive_content = %{
+      "button" => "Menu_name",
+      "sections" => [
+        %{
+          "title" => "Section_1_name",
+          "rows" => [
+            %{
+              "id" => "Row_1_id",
+              "title" => "Row_1_title",
+              "description" => "Row_1_Description"
+            }
+          ]
+        },
+        %{
+          "title" => "Section_2_name",
+          "rows" => [
+            %{
+              "id" => "Row_3_id",
+              "title" => "Row_3_title",
+              "description" => "Row_3_Description"
+            }
+          ]
+        }
+      ]
+    }
+
+    interactive_content
+    |> send_message(message, attrs)
+  end
+
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""
   defp caption(caption), do: caption
