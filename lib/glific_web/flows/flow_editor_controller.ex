@@ -229,6 +229,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, %{results: results})
   end
 
+  @spec get_language_map :: map()
+  defp get_language_map,
+    do:
+      Map.new(Settings.locale_id_map(), fn {locale, language_id} ->
+        {to_string(language_id), locale}
+      end)
+
   @doc """
   Fetching single interactive template and returning in format that is understood by flow editor
   or
@@ -248,13 +255,24 @@ defmodule GlificWeb.Flows.FlowEditorController do
           interactive_content: interactive_template.interactive_content,
           created_on: interactive_template.inserted_at,
           modified_on: interactive_template.updated_at,
-          translations: interactive_template.translations
+          translations: get_interactive_translations(interactive_template.translations)
         }
         |> then(&json(conn, &1))
 
       {:error, _} ->
         json(conn, %{error: "Interactive message not found"})
     end
+  end
+
+  @spec get_interactive_translations(nil | map) :: map()
+  defp get_interactive_translations(nil), do: %{}
+
+  defp get_interactive_translations(interactive_translations) do
+    language_map = get_language_map()
+
+    interactive_translations
+    |> Enum.map(fn {k, v} -> %{language_map[k] => v} end)
+    |> Enum.reduce(%{}, fn x, acc -> Map.merge(acc, x) end)
   end
 
   @doc false
@@ -299,10 +317,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   defp get_template_translations(nil), do: []
 
   defp get_template_translations(template_translations) do
-    language_map =
-      Map.new(Settings.locale_id_map(), fn {locale, language_id} ->
-        {to_string(language_id), locale}
-      end)
+    language_map = get_language_map()
 
     template_translations
     |> Enum.reduce([], fn {language_id, translation}, acc ->
