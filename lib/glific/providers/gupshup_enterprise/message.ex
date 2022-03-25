@@ -70,41 +70,46 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   @doc false
   @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
   def send_interactive(message, attrs \\ %{}) do
-    IO.inspect("debug001send_interactive")
-    IO.inspect(message)
-    IO.inspect(attrs)
+    interactive_content = parse_interactive_message(attrs.interactive_content)
 
-    interactive_content = %{
-      interactive_content: %{
-        "button" => "Menu_name",
-        "sections" => [
+    %{
+      interactive_content: interactive_content,
+      msg: message.body,
+      interactive_type: message.type
+    }
+    |> send_message(message, attrs)
+  end
+
+  def parse_interactive_message(interactive_content) do
+    %{
+      "button" => interactive_content["globalButtons"] |> List.first() |> Map.get("title"),
+      "sections" => parse_section(interactive_content["items"])
+    }
+  end
+
+  def parse_section(items),
+    do: Enum.reduce(items, [], fn item, acc -> acc ++ do_parse_section(item) end)
+
+  defp do_parse_section(item) do
+    [
+      %{
+        "title" => item["title"],
+        "rows" => parse_rows(item["options"])
+      }
+    ]
+  end
+
+  defp parse_rows(rows) do
+    Enum.reduce(rows, [], fn row, acc ->
+      acc ++
+        [
           %{
-            "title" => "Section_1_name",
-            "rows" => [
-              %{
-                "id" => "Row_1_id",
-                "title" => "Row_1_title",
-                "description" => "Row_1_Description"
-              }
-            ]
-          },
-          %{
-            "title" => "Section_2_name",
-            "rows" => [
-              %{
-                "id" => "Row_3_id",
-                "title" => "Row_3_title",
-                "description" => "Row_3_Description"
-              }
-            ]
+            "id" => row["title"],
+            "title" => row["title"],
+            "description" => row["description"]
           }
         ]
-      }
-    }
-
-    interactive_content
-    |> Map.merge(%{msg: message.body, interactive_type: message.type})
-    |> send_message(message, attrs)
+    end)
   end
 
   @spec caption(nil | String.t()) :: String.t()
