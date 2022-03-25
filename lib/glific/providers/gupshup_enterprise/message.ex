@@ -89,7 +89,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @spec parse_interactive_message(list()) :: list()
-  def parse_section(items),
+  defp parse_section(items),
     do: Enum.reduce(items, [], fn item, acc -> acc ++ do_parse_section(item) end)
 
   @spec do_parse_section(list()) :: list()
