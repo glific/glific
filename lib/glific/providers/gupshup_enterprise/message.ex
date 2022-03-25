@@ -69,7 +69,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
   @doc false
   @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
-  def send_interactive(message, attrs \\ %{}) do
+  def send_interactive(message, attrs) do
     interactive_content = parse_interactive_message(attrs.interactive_content)
 
     %{
@@ -80,30 +80,29 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> send_message(message, attrs)
   end
 
-  def parse_interactive_message(interactive_content) do
+  @spec parse_interactive_message(map()) :: map()
+  defp parse_interactive_message(interactive_content) do
     %{
       "button" => interactive_content["globalButtons"] |> List.first() |> Map.get("title"),
       "sections" => parse_section(interactive_content["items"])
     }
   end
 
+  @spec parse_interactive_message(list()) :: list()
   def parse_section(items),
     do: Enum.reduce(items, [], fn item, acc -> acc ++ do_parse_section(item) end)
 
-  defp do_parse_section(item) do
-    [
-      %{
-        "title" => item["title"],
-        "rows" => parse_rows(item["options"])
-      }
-    ]
-  end
+  @spec do_parse_section(list()) :: list()
+  defp do_parse_section(item),
+    do: [%{"title" => item["title"], "rows" => parse_rows(item["options"])}]
 
+  @spec parse_rows(list()) :: list()
   defp parse_rows(rows) do
     Enum.reduce(rows, [], fn row, acc ->
       acc ++
         [
           %{
+            # repeating row["title"] as we dont actually store id in Glific
             "id" => row["title"],
             "title" => row["title"],
             "description" => row["description"]
