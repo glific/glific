@@ -118,27 +118,34 @@ defmodule Glific.Flows.MessageVarParser do
 
   def parse_results(body, _), do: body
 
-  @spec do_parse_results(String.t(), String.t(), map()) :: String.t()
-  defp do_parse_results(body, replace_prefix, results) when is_map(results) do
-    if String.contains?(body, replace_prefix) do
-      Enum.reduce(
-        results,
-        body,
-        fn
-          {key, value}, acc ->
-            key = String.downcase(key)
+  @spec do_parse_one(String.t(), String.t(), map(), String.t()) :: String.t()
+  defp do_parse_one(body, replace_prefix, results, key) do
+    value = results[key]
+    key = String.downcase(key)
 
-            if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
-              value = to_string(value["input"])
-              String.replace(acc, replace_prefix <> key, value)
-            else
-              acc
-            end
-        end
-      )
+    if is_map(value) && Map.has_key?(value, "input") && !is_map(value["input"]) do
+      value = to_string(value["input"])
+      String.replace(body, replace_prefix <> key, value)
     else
       body
     end
+  end
+
+  @spec do_parse_results(String.t(), String.t(), map()) :: String.t()
+  defp do_parse_results(body, replace_prefix, results) when is_map(results) do
+    if String.contains?(body, replace_prefix),
+      do:
+        results
+        |> Map.keys()
+        # Sort the keys so we process the larger keys first. this ensures that
+        # we handle a key like 'greeting_details' before 'greeting'
+        # Issue #1862
+        |> Enum.sort(&(byte_size(&1) >= byte_size(&2)))
+        |> Enum.reduce(
+          body,
+          &do_parse_one(&2, replace_prefix, results, &1)
+        ),
+      else: body
   end
 
   defp do_parse_results(body, _replace_prefix, _results), do: body
