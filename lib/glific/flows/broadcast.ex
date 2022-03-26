@@ -140,13 +140,13 @@ defmodule Glific.Flows.Broadcast do
   @unprocessed_contact_limit 150
 
   defp unprocessed_contacts(flow_broadcast) do
-    boradcast_contacts_query(flow_broadcast)
+    broadcast_contacts_query(flow_broadcast)
     |> limit(@unprocessed_contact_limit)
     |> order_by([c, _fbc], asc: c.id)
     |> Repo.all()
   end
 
-  defp boradcast_contacts_query(flow_broadcast) do
+  defp broadcast_contacts_query(flow_broadcast) do
     Contact
     |> join(:inner, [c], fbc in FlowBroadcastContact,
       as: :fbc,
@@ -234,9 +234,9 @@ defmodule Glific.Flows.Broadcast do
   @spec mark_flow_broadcast_contact_proceesed(integer() | nil, integer(), String.t()) :: :ok
   defp mark_flow_broadcast_contact_proceesed(nil, _, _status), do: :ok
 
-  defp mark_flow_broadcast_contact_proceesed(flow_boradcast_id, contact_id, status) do
+  defp mark_flow_broadcast_contact_proceesed(flow_broadcast_id, contact_id, status) do
     FlowBroadcastContact
-    |> where(flow_broadcast_id: ^flow_boradcast_id, contact_id: ^contact_id)
+    |> where(flow_broadcast_id: ^flow_broadcast_id, contact_id: ^contact_id)
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
