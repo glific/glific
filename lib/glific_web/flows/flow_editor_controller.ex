@@ -264,15 +264,13 @@ defmodule GlificWeb.Flows.FlowEditorController do
     end
   end
 
-  @spec get_interactive_translations(nil | map) :: map()
-  defp get_interactive_translations(nil), do: %{}
-
+  @spec get_interactive_translations(map) :: map()
   defp get_interactive_translations(interactive_translations) do
     language_map = get_language_map()
 
     interactive_translations
     |> Enum.map(fn {k, v} -> %{language_map[k] => v} end)
-    |> Enum.reduce(%{}, fn x, acc -> Map.merge(acc, x) end)
+    |> Enum.reduce(%{}, fn translation, acc -> Map.merge(acc, translation) end)
   end
 
   @doc false
