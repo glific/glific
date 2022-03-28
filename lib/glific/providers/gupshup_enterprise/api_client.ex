@@ -74,14 +74,12 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
           Tesla.Env.result() | {:error, String.t()}
   def send_interactive_template(org_id, attrs) do
     with {:ok, credentials} <- get_credentials(org_id) do
-      message = attrs["message"] |> Jason.decode!()
-      action = message["interactive_content"] |> Jason.encode!()
-      msg = message["msg"]
+      message = Jason.decode!(attrs["message"])
 
       %{
-        "action" => action,
+        "action" => Jason.encode!(message["interactive_content"]),
         "send_to" => attrs["send_to"],
-        "msg" => msg,
+        "msg" => message["msg"],
         "interactive_type" => message["interactive_type"]
       }
       |> Map.merge(@common_params)
