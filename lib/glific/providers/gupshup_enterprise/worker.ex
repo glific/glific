@@ -71,9 +71,10 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
   defp process_gupshup(
          org_id,
          payload,
-         %{"interactive_template_id" => _interactive_template_id} = message,
+         %{"interactive_template_id" => interactive_template_id} = message,
          _attrs
-       ) do
+       )
+       when is_nil(interactive_template_id) == false do
     ApiClient.send_interactive_template(
       org_id,
       payload
