@@ -92,7 +92,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @spec parse_buttons(list()) :: list()
-  def parse_buttons(interactive_content) do
+  defp parse_buttons(interactive_content) do
     Enum.reduce(interactive_content, [], fn button, acc ->
       acc ++
         [%{"type" => "reply", "reply" => %{"id" => button["title"], "title" => button["title"]}}]
