@@ -86,9 +86,9 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   """
   @spec list(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def list(conn, params) do
-    params
-    |> IO.inspect()
+    IO.inspect(params)
 
+    IO.inspect(conn)
     # |> parse_button_text()
     # |> Gupshup.Enterprise.Message.receive_text()
     # |> Map.put(:organization_id, conn.assigns[:organization_id])
