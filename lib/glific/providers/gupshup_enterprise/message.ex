@@ -146,7 +146,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @doc false
-  @spec receive_text(payload :: map()) :: map()
+  @spec receive_text(map()) :: map()
   def receive_text(params) do
     # lets ensure that we have a phone number
     # sometime the gupshup payload has a blank payload
@@ -167,13 +167,23 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
     %{
       bsp_message_id: params["replyId"],
-      context_id: params["replyId"] <> "-" <> params["messageId"],
+      context_id: parse_context_id(params),
       body: params["text"],
       sender: %{
         phone: params["mobile"],
         name: params["name"]
       }
     }
+  end
+
+  @spec parse_context_id(map()) :: String.t()
+  defp parse_context_id(params) do
+    reply_id = Map.get(params, "replyId")
+    message_id = Map.get(params, "messageId")
+
+    if is_nil(reply_id) && is_nil(message_id),
+      do: "",
+      else: reply_id <> "-" <> message_id
   end
 
   @doc false
