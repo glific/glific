@@ -94,6 +94,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   @spec interactive(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def interactive(conn, params) do
     params
+    |> IO.inspect()
     |> parse_interactive_list()
     |> Gupshup.Enterprise.Message.receive_text()
     |> Map.put(:organization_id, conn.assigns[:organization_id])
