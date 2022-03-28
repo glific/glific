@@ -82,12 +82,13 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   end
 
   @doc """
-  Parse list message payload and convert that into Glific message struct
+  Parse interactive list message payload and convert that into Glific message struct
   """
-  @spec list(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def list(conn, params) do
+  @spec interactive(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def interactive(conn, params) do
+    IO.inspect("debug002params")
     IO.inspect(params)
-
+    IO.inspect("debug002conn")
     IO.inspect(conn)
     # |> parse_button_text()
     # |> Gupshup.Enterprise.Message.receive_text()
