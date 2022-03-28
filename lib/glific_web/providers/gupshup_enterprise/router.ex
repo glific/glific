@@ -16,6 +16,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Router do
       post("/document", MessageController, :document)
       post("/location", MessageController, :location)
       post("/button", MessageController, :button)
+      post("/interactive", MessageController, :interactive)
     end
   end
 end

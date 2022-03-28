@@ -67,6 +67,50 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
     |> send_message(message, attrs)
   end
 
+  @doc false
+  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs) do
+    interactive_content = parse_interactive_message(attrs.interactive_content)
+
+    %{
+      interactive_content: interactive_content,
+      msg: message.body,
+      interactive_type: message.type
+    }
+    |> send_message(message, attrs)
+  end
+
+  @spec parse_interactive_message(map()) :: map()
+  defp parse_interactive_message(interactive_content) do
+    %{
+      "button" => interactive_content["globalButtons"] |> List.first() |> Map.get("title"),
+      "sections" => parse_section(interactive_content["items"])
+    }
+  end
+
+  @spec parse_interactive_message(list()) :: list()
+  defp parse_section(items),
+    do: Enum.reduce(items, [], fn item, acc -> acc ++ do_parse_section(item) end)
+
+  @spec do_parse_section(list()) :: list()
+  defp do_parse_section(item),
+    do: [%{"title" => item["title"], "rows" => parse_rows(item["options"])}]
+
+  @spec parse_rows(list()) :: list()
+  defp parse_rows(rows) do
+    Enum.reduce(rows, [], fn row, acc ->
+      acc ++
+        [
+          %{
+            # repeating row["title"] as we dont actually store id in Glific
+            "id" => row["title"],
+            "title" => row["title"],
+            "description" => row["description"]
+          }
+        ]
+    end)
+  end
+
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""
   defp caption(caption), do: caption
@@ -102,7 +146,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   end
 
   @doc false
-  @spec receive_text(payload :: map()) :: map()
+  @spec receive_text(map()) :: map()
   def receive_text(params) do
     # lets ensure that we have a phone number
     # sometime the gupshup payload has a blank payload
@@ -123,13 +167,23 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
     %{
       bsp_message_id: params["replyId"],
-      context_id: params["replyId"] <> "-" <> params["messageId"],
+      context_id: parse_context_id(params),
       body: params["text"],
       sender: %{
         phone: params["mobile"],
         name: params["name"]
       }
     }
+  end
+
+  @spec parse_context_id(map()) :: String.t()
+  defp parse_context_id(params) do
+    reply_id = Map.get(params, "replyId")
+    message_id = Map.get(params, "messageId")
+
+    if is_nil(reply_id) && is_nil(message_id),
+      do: "",
+      else: reply_id <> "-" <> message_id
   end
 
   @doc false
