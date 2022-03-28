@@ -74,7 +74,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Worker do
          %{"interactive_template_id" => interactive_template_id} = message,
          _attrs
        )
-       when is_nil(interactive_template_id) == false do
+       when is_nil(interactive_template_id) != true do
     ApiClient.send_interactive_template(
       org_id,
       payload
