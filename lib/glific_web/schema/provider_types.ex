@@ -26,6 +26,12 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :updated_at, :datetime
   end
 
+  object :provider_tier_result do
+    field :current_limit, :string
+    field :previous_limit, :string
+    field :event, :string
+  end
+
   @desc "Filtering options for providers"
   input_object :provider_filter do
     @desc "Match the name"
@@ -71,6 +77,12 @@ defmodule GlificWeb.Schema.ProviderTypes do
       arg(:filter, :provider_filter)
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.count_providers/3)
+    end
+
+    @desc "Get provider tier details"
+    field :provider_tier, :provider_tier_result do
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.provider_tier/3)
     end
   end
 

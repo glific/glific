@@ -175,6 +175,18 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get the tier providers details of Provider
+  """
+  @spec provider_tier(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def provider_tier(_, _, %{context: %{current_user: user}}) do
+    Partners.get_provider_tier(user.organization_id)
+    |> case do
+      {:ok, data} -> {:ok, data}
+      _ -> {:error, dgettext("errors", "Error while fetching the BSP balance")}
+    end
+  end
+
+  @doc """
   Get a specific bsp balance by organization id
   """
   @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

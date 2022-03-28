@@ -24,6 +24,7 @@ defmodule Glific.Partners do
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.GupshupContacts,
+    Providers.Tier,
     Repo,
     Settings.Language,
     Users.User
@@ -55,6 +56,13 @@ defmodule Glific.Partners do
   """
   @spec count_providers(map()) :: integer
   def count_providers(args \\ %{}),
+    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
+
+  @doc """
+  Return the count of providers, using the same filter as list_providers
+  """
+  @spec provider_tier(map()) :: integer
+  def provider_tier(args \\ %{}),
     do: Repo.count_filter(args, Provider, &filter_provider_with/2)
 
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -349,6 +357,25 @@ defmodule Glific.Partners do
 
       case organization.bsp.shortcode do
         "gupshup" -> GupshupWallet.balance(api_key)
+        _ -> {:error, dgettext("errors", "Invalid BSP provider")}
+      end
+    end
+  end
+
+  @doc """
+  Returns tier information
+  """
+  def get_provider_tier(organization_id) do
+    organization = Glific.Partners.organization(organization_id)
+
+    if is_nil(organization.services["bsp"]) do
+      {:error, dgettext("errors", "No active BSP available")}
+    else
+      credentials = organization.services["bsp"]
+      api_key = credentials.secrets["api_key"]
+
+      case organization.bsp.shortcode do
+        "gupshup" -> Tier.gupshup(organization)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
