@@ -123,7 +123,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
     %{
       bsp_message_id: params["replyId"],
-      context_id: params["messageId"],
+      context_id: params["replyId"] <> "-" <> params["messageId"],
       body: params["text"],
       sender: %{
         phone: params["mobile"],
