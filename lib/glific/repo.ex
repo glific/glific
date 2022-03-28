@@ -259,7 +259,7 @@ defmodule Glific.Repo do
         make_like(query, :body, body)
 
       {:shortcode, shortcode}, query ->
-        make_like(query, :shortcode, shortcode)
+        from q in query, where: q.shortcode == ^shortcode
 
       {:language, language}, query ->
         from q in query,

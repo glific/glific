@@ -166,6 +166,16 @@ defmodule Glific.Settings do
   end
 
   @doc """
+  Get map of ids to locale for translation lookup
+  """
+  @spec get_language_id_local_map() :: map()
+  def get_language_id_local_map,
+    do:
+      Map.new(locale_id_map(), fn {locale, language_id} ->
+        {to_string(language_id), locale}
+      end)
+
+  @doc """
   Get language from label or shortcode
   """
   @spec get_language_by_label_or_locale(String.t()) :: list()
