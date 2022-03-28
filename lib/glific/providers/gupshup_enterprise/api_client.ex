@@ -75,12 +75,13 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def send_interactive_template(org_id, attrs) do
     with {:ok, credentials} <- get_credentials(org_id) do
       message = Jason.decode!(attrs["message"])
+      interactive_type = if message["interactive_type"] == "list", do: "list", else: "dr_button"
 
       %{
         "action" => Jason.encode!(message["interactive_content"]),
         "send_to" => attrs["send_to"],
         "msg" => message["msg"],
-        "interactive_type" => message["interactive_type"]
+        "interactive_type" => interactive_type
       }
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_interactive_template_params)
