@@ -269,7 +269,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
     language_map = get_language_map()
 
     interactive_translations
-    |> Enum.map(fn {k, v} -> %{language_map[k] => v} end)
+    |> Enum.map(fn {language_id, value} -> %{language_map[language_id] => value} end)
     |> Enum.reduce(%{}, fn translation, acc -> Map.merge(acc, translation) end)
   end
 
