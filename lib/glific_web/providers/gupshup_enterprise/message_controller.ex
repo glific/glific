@@ -81,6 +81,22 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
     handler(conn, params, "text handler")
   end
 
+  @doc """
+  Parse list message payload and convert that into Glific message struct
+  """
+  @spec list(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def list(conn, params) do
+    params
+    |> IO.inspect()
+
+    # |> parse_button_text()
+    # |> Gupshup.Enterprise.Message.receive_text()
+    # |> Map.put(:organization_id, conn.assigns[:organization_id])
+    # |> Communications.Message.receive_message()
+
+    handler(conn, params, "text handler")
+  end
+
   defp parse_button_text(params),
     do:
       params["button"]
