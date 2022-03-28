@@ -10,11 +10,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @common_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
   @default_optin_params %{"method" => "OPT_IN", "channel" => "WHATSAPP"}
   @default_send_template_params %{"msg_type" => "HSM", "method" => "SendMessage"}
-  @default_send_interactive_template_params %{
-    "msg_type" => "text",
-    "isTemplate" => "true",
-    "method" => "SendMessage"
-  }
+  @default_send_interactive_template_params %{"isTemplate" => "true", "method" => "SendMessage"}
   @button_template_params %{"isTemplate" => "true"}
   @default_send_message_params %{"method" => "SendMessage"}
   @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
