@@ -103,11 +103,18 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController d
   end
 
   @spec parse_interactive_list(map()) :: map()
-  defp parse_interactive_list(params),
-    do:
-      params["interactive"]
-      |> Jason.decode!()
-      |> then(&Map.put(params, "text", &1["list_reply"]["title"]))
+  defp parse_interactive_list(params) do
+    params["interactive"]
+    |> Jason.decode!()
+    |> then(&do_parse_interactive_list(params, &1, &1["type"]))
+  end
+
+  @spec do_parse_interactive_list(map(), map(), String.t()) :: map()
+  defp do_parse_interactive_list(params, reply, "button_reply"),
+    do: Map.put(params, "text", reply["button_reply"]["title"])
+
+  defp do_parse_interactive_list(params, reply, "list_reply"),
+    do: Map.put(params, "text", reply["list_reply"]["title"])
 
   @doc false
   # Handle Gupshup media message and convert them into Glific Message struct

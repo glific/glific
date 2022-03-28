@@ -10,11 +10,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   @common_params %{"format" => "json", "v" => "1.1", "auth_scheme" => "plain"}
   @default_optin_params %{"method" => "OPT_IN", "channel" => "WHATSAPP"}
   @default_send_template_params %{"msg_type" => "HSM", "method" => "SendMessage"}
-  @default_send_interactive_template_params %{
-    "msg_type" => "text",
-    "isTemplate" => "true",
-    "method" => "SendMessage"
-  }
+  @default_send_interactive_template_params %{"isTemplate" => "true", "method" => "SendMessage"}
   @button_template_params %{"isTemplate" => "true"}
   @default_send_message_params %{"method" => "SendMessage"}
   @default_send_media_message_params %{"method" => "SendMediaMessage", "isHSM" => "false"}
@@ -75,12 +71,13 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   def send_interactive_template(org_id, attrs) do
     with {:ok, credentials} <- get_credentials(org_id) do
       message = Jason.decode!(attrs["message"])
+      interactive_type = if message["interactive_type"] == "list", do: "list", else: "dr_button"
 
       %{
         "action" => Jason.encode!(message["interactive_content"]),
         "send_to" => attrs["send_to"],
         "msg" => message["msg"],
-        "interactive_type" => message["interactive_type"]
+        "interactive_type" => interactive_type
       }
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_interactive_template_params)
