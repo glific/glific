@@ -172,7 +172,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :reset_flow_count, :common_flow_result do
       arg(:flow_id, non_null(:id))
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Flows.terminate_contact_flows/3)
+      resolve(&Resolvers.Flows.reset_flow_count/3)
     end
 
     field :terminate_contact_flows, :common_flow_result do
