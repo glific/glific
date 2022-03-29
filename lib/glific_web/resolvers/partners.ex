@@ -175,15 +175,15 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Get the tier providers details of Provider
+  Get the quality rating details of provider
   """
-  @spec provider_tier(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec quality_rating(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, map()} | {:error, any()}
-  def provider_tier(_, _, %{context: %{current_user: user}}) do
-    Partners.get_provider_tier(user.organization_id)
+  def quality_rating(_, _, %{context: %{current_user: user}}) do
+    Partners.get_quality_rating(user.organization_id)
     |> case do
       {:ok, data} -> {:ok, data}
-      _ -> {:error, dgettext("errors", "Error while fetching Tier details")}
+      _ -> {:error, dgettext("errors", "Error while fetching Quality Rating details")}
     end
   end
 

@@ -1,15 +1,16 @@
 defmodule Glific.Providers.Gupshup.Tier do
   @moduledoc """
-  A common worker to handle send message processes irrespective of BSP
-  Glific.Providers.Gupshup.Tier.get_app_token
+  A module to handle fetching tier related information like quality rating and app rating
   """
+
   alias Plug.Conn.Query
 
   use Tesla
-  plug Tesla.Middleware.Logger
+  plug(Tesla.Middleware.Logger)
 
-  plug Tesla.Middleware.FormUrlencoded,
+  plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
+  )
 
   @partner_url "https://partner.gupshup.io/partner/account/login"
   @app_url "https://partner.gupshup.io/partner/app/"
@@ -52,8 +53,8 @@ defmodule Glific.Providers.Gupshup.Tier do
   @doc """
   Fetches Partner token and App Access token to get tier information for an organization with input app id
   """
-  @spec get_tier_info(String.t(), String.t()) :: {:error, any} | {:ok, map()}
-  def get_tier_info(app_id, phone) do
+  @spec get_quality_rating_info(String.t(), String.t()) :: {:error, any} | {:ok, map()}
+  def get_quality_rating_info(app_id, phone) do
     with {:ok, %{app_token: app_token}} <- get_app_token(app_id) do
       url = @app_url <> app_id <> "/ratings"
       param = %{"phone" => phone, "isBlocked" => "true"}

@@ -79,10 +79,10 @@ defmodule GlificWeb.Schema.ProviderTypes do
       resolve(&Resolvers.Partners.count_providers/3)
     end
 
-    @desc "Get provider tier details"
-    field :provider_tier, :provider_tier_result do
+    @desc "Get quality rating details"
+    field :quality_rating, :quality_rating_result do
       middleware(Authorize, :admin)
-      resolve(&Resolvers.Partners.provider_tier/3)
+      resolve(&Resolvers.Partners.quality_rating/3)
     end
   end
 

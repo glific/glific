@@ -363,10 +363,10 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Returns tier information for an organization
+  Returns quality rating information for an organization provider
   """
-  @spec get_provider_tier(pos_integer()) :: {:ok, any()} | {:error, String.t()}
-  def get_provider_tier(organization_id) do
+  @spec get_quality_rating(pos_integer()) :: {:ok, any()} | {:error, String.t()}
+  def get_quality_rating(organization_id) do
     organization = organization(organization_id)
 
     if is_nil(organization.services["bsp"]) do
@@ -376,7 +376,7 @@ defmodule Glific.Partners do
       app_id = credentials.secrets["app_id"]
 
       case organization.bsp.shortcode do
-        "gupshup" -> Tier.get_tier_info(app_id, organization.contact.phone)
+        "gupshup" -> Tier.get_quality_rating_info(app_id, organization.contact.phone)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
