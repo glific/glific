@@ -35,7 +35,7 @@ defmodule Glific.Providers.Gupshup.Tier do
 
   # fetches app id from phone using partner API
   @spec get_apps_details(String.t()) :: {:ok, String.t()} | {:error, any}
-  def get_apps_details(phone) do
+  defp get_apps_details(phone) do
     url = @partner_url <> "/api/partnerApps"
 
     with {:ok, %{partner_token: partner_token}} <- get_partner_token(),
