@@ -54,19 +54,21 @@ query providers($filter: ProviderFilter, $opts: Opts) {
       }
     ]
 ```
+
 This returns all the providers filtered by the input <a href="#providerfilter">ProviderFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#providerfilter">ProviderFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                         | Default | Description                         |
+| --------- | -------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#providerfilter">ProviderFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                     | nil     | limit / offset / sort order options |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#provider">Provider</a>] | List of providers
+
+| Type                               | Description       |
+| ---------------------------------- | ----------------- |
+| [<a href="#provider">Provider</a>] | List of providers |
 
 ## Get a specific Provider by ID
 
@@ -112,14 +114,48 @@ query provider($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#providerfilter">ProviderFilter</a> | nil | filter the list
+| Parameter | Type                                         | Default | Description     |
+| --------- | -------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#providerfilter">ProviderFilter</a> | nil     | filter the list |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#providerresult">ProviderResult</a> | Queried Provider
+
+| Type                                         | Description      |
+| -------------------------------------------- | ---------------- |
+| <a href="#providerresult">ProviderResult</a> | Queried Provider |
+
+## Get Quality Rating details
+
+```graphql
+query qualityRating() {
+  qualityRating {
+    currentLimit
+    event
+    previousLimit
+  }
+}
+
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "qualityRating": {
+      "currentLimit": "TIER_1K",
+      "event": "Not Available",
+      "previousLimit": "Not Available"
+    }
+  }
+}
+```
+
+### Return Parameters
+
+| Type                                                   | Description           |
+| ------------------------------------------------------ | --------------------- |
+| <a href="#qualityRatingResult">qualityRatingResult</a> | Queried QualityRating |
 
 ## Count all Providers
 
@@ -146,14 +182,15 @@ query countProviders($filter: ProviderFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#providerfilter">ProviderFilter</a> | nil | filter the list
+| Parameter | Type                                         | Default | Description     |
+| --------- | -------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#providerfilter">ProviderFilter</a> | nil     | filter the list |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#int">Int</a> | Count of filtered providers
+
+| Type                   | Description                 |
+| ---------------------- | --------------------------- |
+| <a href="#int">Int</a> | Count of filtered providers |
 
 ## Get BSP balance for an organization
 
@@ -161,7 +198,6 @@ Type | Description
 query provider_queries {
   bspbalance
 }
-
 ```
 
 > The above query returns JSON structured like this:
@@ -175,9 +211,10 @@ query provider_queries {
 ```
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#json">JSON with "balance" as name and the amount of remaining balance as value</a> |
+
+| Type                                                                                         | Description |
+| -------------------------------------------------------------------------------------------- | ----------- |
+| <a href="#json">JSON with "balance" as name and the amount of remaining balance as value</a> |
 
 ## Create a Provider
 
@@ -211,7 +248,7 @@ mutation createProvider($input:ProviderInput!) {
       "errors": null,
       "provider": {
         "id": "4",
-        "name": "new_provider",
+        "name": "new_provider"
       }
     }
   }
@@ -220,14 +257,15 @@ mutation createProvider($input:ProviderInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#providerinput">ProviderInput</a> | required ||
+| Parameter | Type                                       | Default  | Description |
+| --------- | ------------------------------------------ | -------- | ----------- |
+| input     | <a href="#providerinput">ProviderInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#providerresult">ProviderResult</a> | The created provider object
+
+| Type                                         | Description                 |
+| -------------------------------------------- | --------------------------- |
+| <a href="#providerresult">ProviderResult</a> | The created provider object |
 
 ## Update a Provider
 
@@ -262,7 +300,7 @@ mutation updateProvider($id: ID!, $input:ProviderInput!) {
       "errors": null,
       "provider": {
         "id": "1",
-        "name": "Updated Provider",
+        "name": "Updated Provider"
       }
     }
   }
@@ -271,16 +309,16 @@ mutation updateProvider($id: ID!, $input:ProviderInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#providerinput">ProviderInput</a> | required ||
+| Parameter | Type                                       | Default  | Description |
+| --------- | ------------------------------------------ | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                      | required |             |
+| input     | <a href="#providerinput">ProviderInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#providerresult">ProviderResult</a> | The updated provider object
 
+| Type                                         | Description                 |
+| -------------------------------------------- | --------------------------- |
+| <a href="#providerresult">ProviderResult</a> | The updated provider object |
 
 ## Delete a Provider
 
@@ -335,14 +373,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#providerresult">ProviderResult</a> | An error object or empty
+
+| Type                                         | Description              |
+| -------------------------------------------- | ------------------------ |
+| <a href="#providerresult">ProviderResult</a> | An error object or empty |
 
 ## Provider Objects
 
@@ -456,8 +495,7 @@ Type | Description
 </tbody>
 </table>
 
-
-## Provider Inputs ##
+## Provider Inputs
 
 ### ProviderFilter
 
