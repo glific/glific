@@ -14,8 +14,9 @@ defmodule Glific.Providers.Gupshup.Tier do
   @partner_url "https://partner.gupshup.io/partner/account/login"
   @app_url "https://partner.gupshup.io/partner/app/"
 
+  # fetches partner token
   @spec get_partner_token :: {:ok, map()} | {:error, any}
-  def get_partner_token() do
+  defp get_partner_token do
     email = Application.fetch_env!(:glific, :gupshup_partner_email)
     password = Application.fetch_env!(:glific, :gupshup_partner_password)
 
@@ -30,10 +31,11 @@ defmodule Glific.Providers.Gupshup.Tier do
     end
   end
 
-  @spec get_app_token :: {:ok, map()} | {:error, any}
-  def get_app_token() do
+  # fetches partner token first to get app access token
+  @spec get_app_token(String.t()) :: {:ok, map()} | {:error, any}
+  defp get_app_token(app_id) do
     with {:ok, %{partner_token: partner_token}} <- get_partner_token() do
-      url = @app_url <> "59e80ba8-1d57-4cb9-8598-7f767e37c6cc" <> "/token"
+      url = @app_url <> app_id <> "/token"
 
       get(url, headers: [{"token", partner_token}])
       |> case do
@@ -47,9 +49,12 @@ defmodule Glific.Providers.Gupshup.Tier do
     end
   end
 
+  @doc """
+  Fetches Partner token and App Access token to get tier information for an organization with input app id
+  """
   @spec get_tier_info(String.t(), String.t()) :: {:error, any} | {:ok, map()}
   def get_tier_info(app_id, phone) do
-    with {:ok, %{app_token: app_token}} <- get_app_token() do
+    with {:ok, %{app_token: app_token}} <- get_app_token(app_id) do
       url = @app_url <> app_id <> "/ratings"
       param = %{"phone" => phone, "isBlocked" => "true"}
 

@@ -23,8 +23,8 @@ defmodule Glific.Partners do
     Partners.OrganizationData,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
-    Providers.GupshupContacts,
     Providers.Gupshup.Tier,
+    Providers.GupshupContacts,
     Repo,
     Settings.Language,
     Users.User
@@ -347,7 +347,7 @@ defmodule Glific.Partners do
   """
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
-    organization = Glific.Partners.organization(organization_id)
+    organization = organization(organization_id)
 
     if is_nil(organization.services["bsp"]) do
       {:error, dgettext("errors", "No active BSP available")}
@@ -363,10 +363,11 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Returns tier information
+  Returns tier information for an organization
   """
+  @spec get_provider_tier(pos_integer()) :: {:ok, any()} | {:error, String.t()}
   def get_provider_tier(organization_id) do
-    organization = Glific.Partners.organization(organization_id)
+    organization = organization(organization_id)
 
     if is_nil(organization.services["bsp"]) do
       {:error, dgettext("errors", "No active BSP available")}
