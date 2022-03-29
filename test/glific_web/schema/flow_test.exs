@@ -40,6 +40,12 @@ defmodule GlificWeb.Schema.FlowTest do
     "assets/gql/flows/terminate_contact_flows.gql"
   )
 
+  load_gql(
+    :reset_flow_count,
+    GlificWeb.Schema,
+    "assets/gql/flows/reset_flow_count.gql"
+  )
+
   test "flows field returns list of flows", %{staff: user} do
     result = auth_query_gql_by(:list, user)
     assert {:ok, query_data} = result
@@ -358,6 +364,17 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
 
     assert get_in(query_data, [:data, "terminateContactFlows", "success"]) == true
+  end
+
+  test "Reset all the counts for a flows", %{staff: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:reset_flow_count, user, variables: %{"flowId" => flow.id})
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "resetFlowCount", "success"]) == true
   end
 
   test "Start flow for contacts of a group", %{staff: user} do
