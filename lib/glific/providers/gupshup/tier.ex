@@ -12,7 +12,7 @@ defmodule Glific.Providers.Gupshup.Tier do
     encode: &Query.encode/1
   )
 
-  @partner_url "https://partner.gupshup.io/partner/account/login"
+  @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
 
   # fetches partner token
@@ -20,8 +20,9 @@ defmodule Glific.Providers.Gupshup.Tier do
   defp get_partner_token do
     email = Application.fetch_env!(:glific, :gupshup_partner_email)
     password = Application.fetch_env!(:glific, :gupshup_partner_password)
+    url = @partner_url <> "/login"
 
-    post(@partner_url, %{"email" => email, "password" => password}, headers: [])
+    post(url, %{"email" => email, "password" => password}, headers: [])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
@@ -29,6 +30,25 @@ defmodule Glific.Providers.Gupshup.Tier do
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
+    end
+  end
+
+  # fetches app id from phone using partner API
+  @spec get_apps_details(String.t()) :: {:ok, String.t()} | {:error, any}
+  def get_apps_details(phone) do
+    url = @partner_url <> "/api/partnerApps"
+
+    with {:ok, %{partner_token: partner_token}} <- get_partner_token(),
+         {:ok, %Tesla.Env{status: 200, body: body}} = _response <-
+           get(url, headers: [{"token", partner_token}]) do
+      app_list =
+        body
+        |> Jason.decode!()
+        |> Map.get("partnerAppsList")
+
+      app = Enum.find(app_list, fn app -> app["phone"] == phone end)
+
+      if app, do: {:ok, app["id"]}, else: {:error, "App not found"}
     end
   end
 
@@ -53,9 +73,10 @@ defmodule Glific.Providers.Gupshup.Tier do
   @doc """
   Fetches Partner token and App Access token to get tier information for an organization with input app id
   """
-  @spec get_quality_rating_info(String.t(), String.t()) :: {:error, any} | {:ok, map()}
-  def get_quality_rating_info(app_id, phone) do
-    with {:ok, %{app_token: app_token}} <- get_app_token(app_id) do
+  @spec get_quality_rating(String.t()) :: {:error, any} | {:ok, map()}
+  def get_quality_rating(phone) do
+    with {:ok, app_id} <- get_apps_details(phone),
+         {:ok, %{app_token: app_token}} <- get_app_token(app_id) do
       url = @app_url <> app_id <> "/ratings"
       param = %{"phone" => phone, "isBlocked" => "true"}
 

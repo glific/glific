@@ -26,7 +26,7 @@ defmodule GlificWeb.Schema.ProviderTypes do
     field :updated_at, :datetime
   end
 
-  object :provider_tier_result do
+  object :quality_rating_result do
     field :current_limit, :string
     field :previous_limit, :string
     field :event, :string

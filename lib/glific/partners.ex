@@ -372,11 +372,8 @@ defmodule Glific.Partners do
     if is_nil(organization.services["bsp"]) do
       {:error, dgettext("errors", "No active BSP available")}
     else
-      credentials = organization.services["bsp"]
-      app_id = credentials.secrets["app_id"]
-
       case organization.bsp.shortcode do
-        "gupshup" -> Tier.get_quality_rating_info(app_id, organization.contact.phone)
+        "gupshup" -> Tier.get_quality_rating(organization.contact.phone)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
