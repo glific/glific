@@ -1,6 +1,6 @@
-defmodule Glific.Providers.Gupshup.Tier do
+defmodule Glific.Providers.Gupshup.PartnerAPI do
   @moduledoc """
-  A module to handle fetching tier related information like quality rating and app rating
+  A module to handle fetching tier related information like quality rating and app rating using partner API
   """
 
   alias Plug.Conn.Query

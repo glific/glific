@@ -23,7 +23,7 @@ defmodule Glific.Partners do
     Partners.OrganizationData,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
-    Providers.Gupshup.Tier,
+    Providers.Gupshup.PartnerAPI,
     Providers.GupshupContacts,
     Repo,
     Settings.Language,
@@ -366,7 +366,7 @@ defmodule Glific.Partners do
       {:error, dgettext("errors", "No active BSP available")}
     else
       case organization.bsp.shortcode do
-        "gupshup" -> Tier.get_quality_rating(organization.contact.phone)
+        "gupshup" -> PartnerAPI.get_quality_rating(organization.contact.phone)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
