@@ -1,0 +1,9 @@
+mutation resetFlowCount($flowId: ID!) {
+  resetFlowCount(flowId: $flowId) {
+	success
+	errors {
+		key
+		message
+  	}
+  }
+}

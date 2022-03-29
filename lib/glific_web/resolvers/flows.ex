@@ -11,6 +11,7 @@ defmodule GlificWeb.Resolvers.Flows do
     Flows.Broadcast,
     Flows.Flow,
     Flows.FlowContext,
+    Flows.FlowCount,
     Groups.Group,
     Repo,
     State
@@ -232,6 +233,16 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec broadcast_stats(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def broadcast_stats(_, %{flow_boradcast_id: flow_boradcast_id}, _),
-    do: Broadcast.broadcast_stats(flow_boradcast_id)
+  def broadcast_stats(_, %{flow_broadcast_id: flow_broadcast_id}, _),
+    do: Broadcast.broadcast_stats(flow_broadcast_id)
+
+  @doc """
+  Reset the flow counts for a specific flow
+  """
+  @spec reset_flow_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def reset_flow_count(_, %{flow_id: flow_id}, _) do
+    FlowCount.reset_flow_count(flow_id)
+    {:ok, %{success: true}}
+  end
 end
