@@ -116,7 +116,12 @@ defmodule GlificWeb.Resolvers.Flows do
         {:ok, %{success: true, errors: errors}}
 
       {:error, errors} ->
-        {:ok, %{success: true, errors: %{key: hd(errors), message: hd(tl(errors))}}}
+        if is_list(errors) do
+          {:ok, %{success: true, errors: %{key: hd(errors), message: hd(tl(errors))}}}
+        else
+          # sometime we get a DB changeset error here, hence handling the non-list case
+          {:ok, %{success: true, errors: %{key: "Error", message: inspect(errors)}}}
+        end
 
       _ ->
         {:error, dgettext("errors", "Something went wrong.")}
