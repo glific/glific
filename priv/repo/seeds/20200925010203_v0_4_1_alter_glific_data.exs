@@ -69,6 +69,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               label: "App Name",
               default: nil,
               view_only: false
+            },
+            app_id: %{
+              type: :string,
+              label: "App Id",
+              default: nil,
+              view_only: false
             }
           }
         }
