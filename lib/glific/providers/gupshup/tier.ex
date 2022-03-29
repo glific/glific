@@ -14,8 +14,8 @@ defmodule Glific.Providers.Gupshup.Tier do
   @partner_url "https://partner.gupshup.io/partner/account/login"
   @app_url "https://partner.gupshup.io/partner/app/"
   def get_partner_token() do
-    email = "purchase@coloredcow.com"
-    password = "ITSGTDKK8B74"
+    email = Application.fetch_env!(:glific, :gupshup_partner_email)
+    password = Application.fetch_env!(:glific, :gupshup_partner_password)
 
     post(@partner_url, %{"email" => email, "password" => password}, headers: [])
     |> case do
