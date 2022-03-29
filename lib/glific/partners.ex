@@ -58,13 +58,6 @@ defmodule Glific.Partners do
   def count_providers(args \\ %{}),
     do: Repo.count_filter(args, Provider, &filter_provider_with/2)
 
-  @doc """
-  Return the count of providers, using the same filter as list_providers
-  """
-  @spec provider_tier(map()) :: integer
-  def provider_tier(args \\ %{}),
-    do: Repo.count_filter(args, Provider, &filter_provider_with/2)
-
   @spec filter_provider_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_provider_with(query, filter) do
     filter = Map.delete(filter, :organization_id)
