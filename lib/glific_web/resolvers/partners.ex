@@ -177,12 +177,13 @@ defmodule GlificWeb.Resolvers.Partners do
   @doc """
   Get the tier providers details of Provider
   """
-  @spec provider_tier(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  @spec provider_tier(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
   def provider_tier(_, _, %{context: %{current_user: user}}) do
     Partners.get_provider_tier(user.organization_id)
     |> case do
       {:ok, data} -> {:ok, data}
-      _ -> {:error, dgettext("errors", "Error while fetching the BSP balance")}
+      _ -> {:error, dgettext("errors", "Error while fetching Tier details")}
     end
   end
 

@@ -24,7 +24,7 @@ defmodule Glific.Partners do
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.GupshupContacts,
-    Providers.Tier,
+    Providers.Gupshup.Tier,
     Repo,
     Settings.Language,
     Users.User
@@ -372,10 +372,10 @@ defmodule Glific.Partners do
       {:error, dgettext("errors", "No active BSP available")}
     else
       credentials = organization.services["bsp"]
-      api_key = credentials.secrets["api_key"]
+      app_id = credentials.secrets["app_id"]
 
       case organization.bsp.shortcode do
-        "gupshup" -> Tier.gupshup(organization)
+        "gupshup" -> Tier.get_tier_info(app_id, organization.contact.phone)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
