@@ -112,4 +112,14 @@ defmodule Glific.Flows.FlowCount do
         create_flow_count(attrs)
     end
   end
+
+  @doc """
+  Resets the flow count for a given flow
+  """
+  @spec reset_flow_count(non_neg_integer) :: any
+  def reset_flow_count(flow_id) do
+    FlowCount
+    |> where([fc], fc.flow_id == ^flow_id)
+    |> Repo.delete_all()
+  end
 end

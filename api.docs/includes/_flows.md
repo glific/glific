@@ -1072,4 +1072,43 @@ ID  | <a href="#id">ID</a> | nil | Contact ID|
 errors | [<a href="#inputerror">InputError</a>]| |
 success| <a href="#boolean">Boolean</a>| |
 
+## Reset flow counts for a specific flow
+
+Reset all counts for a flow
+
+```graphql
+mutation resetFlowCount($flowId: ID!) {
+  resetFlowCount(flowId: $flowId) {
+    errors {
+      key
+      value
+    }
+    success
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "success": true,
+  "errors": null
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+ID  | <a href="#id">ID</a> | nil | Flow ID|
+
+
+
+### Return Parameters
+
+| Field | Type | Description |
+| ---- | ---- | ----------- |
+errors | [<a href="#inputerror">InputError</a>]| |
+success| <a href="#boolean">Boolean</a>| |
 

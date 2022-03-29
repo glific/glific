@@ -115,7 +115,7 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Get broadcast flow stats"
     field :broadcast_stats, :json do
-      arg(:flow_boradcast_id, non_null(:id))
+      arg(:flow_broadcast_id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.broadcast_stats/3)
     end
@@ -167,6 +167,12 @@ defmodule GlificWeb.Schema.FlowTypes do
       arg(:input, :flow_input)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Flows.copy_flow/3)
+    end
+
+    field :reset_flow_count, :common_flow_result do
+      arg(:flow_id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Flows.reset_flow_count/3)
     end
 
     field :terminate_contact_flows, :common_flow_result do
