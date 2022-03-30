@@ -157,7 +157,7 @@ defmodule Glific.Flows.ContactActionTest do
 
     [interactive_template | _] =
       Templates.InteractiveTemplates.list_interactives(%{
-        filter: Map.merge(attrs, %{label: "Quick Reply Multilingual"})
+        filter: Map.merge(attrs, %{label: "Are you excited for *Glific*?"})
       })
 
     action = %Action{interactive_template_id: interactive_template.id}

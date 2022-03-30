@@ -1132,7 +1132,7 @@ if Code.ensure_loaded?(Faker) do
         "type" => "quick_reply",
         "content" => %{
           "type" => "text",
-          "header" => "How excited are you for Glific?",
+          "header" => "Quick Reply Text",
           "text" => "Glific is a two way communication platform"
         },
         "options" => [
@@ -1148,7 +1148,7 @@ if Code.ensure_loaded?(Faker) do
       }
 
       Repo.insert!(%InteractiveTemplate{
-        label: "Quick Reply Text",
+        label: get_in(interactive_content, ["content", "header"]),
         type: :quick_reply,
         interactive_content: interactive_content,
         organization_id: organization.id,
@@ -1190,7 +1190,7 @@ if Code.ensure_loaded?(Faker) do
       }
 
       Repo.insert!(%InteractiveTemplate{
-        label: "Quick Reply Multilingual",
+        label: get_in(interactive_content_eng, ["content", "header"]),
         type: :quick_reply,
         interactive_content: interactive_content_eng,
         organization_id: organization.id,
@@ -1201,6 +1201,7 @@ if Code.ensure_loaded?(Faker) do
       interactive_content = %{
         "type" => "quick_reply",
         "content" => %{
+          "header" => "Quick Reply Image",
           "type" => "image",
           "url" => "https://picsum.photos/200/300",
           "text" => "body text"
@@ -1213,7 +1214,7 @@ if Code.ensure_loaded?(Faker) do
       }
 
       Repo.insert!(%InteractiveTemplate{
-        label: "Quick Reply Image",
+        label: get_in(interactive_content, ["content", "header"]),
         type: :quick_reply,
         interactive_content: interactive_content,
         organization_id: organization.id,
@@ -1226,6 +1227,7 @@ if Code.ensure_loaded?(Faker) do
       interactive_content = %{
         "type" => "quick_reply",
         "content" => %{
+          "header" => "Quick Reply Document",
           "type" => "file",
           "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
           "filename" => "Sample file"
@@ -1238,7 +1240,7 @@ if Code.ensure_loaded?(Faker) do
       }
 
       Repo.insert!(%InteractiveTemplate{
-        label: "Quick Reply Document",
+        label: get_in(interactive_content, ["content", "header"]),
         type: :quick_reply,
         interactive_content: interactive_content,
         organization_id: organization.id,
@@ -1251,6 +1253,7 @@ if Code.ensure_loaded?(Faker) do
       interactive_content = %{
         "type" => "quick_reply",
         "content" => %{
+          "header" => "Quick Reply Video",
           "type" => "video",
           "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
           "text" => "Sample video"
@@ -1263,7 +1266,7 @@ if Code.ensure_loaded?(Faker) do
       }
 
       Repo.insert!(%InteractiveTemplate{
-        label: "Quick Reply Video",
+        label: get_in(interactive_content, ["content", "header"]),
         type: :quick_reply,
         interactive_content: interactive_content,
         organization_id: organization.id,
@@ -1275,7 +1278,7 @@ if Code.ensure_loaded?(Faker) do
 
       interactive_content = %{
         "type" => "list",
-        "title" => "Glific",
+        "title" => "Interactive list",
         "body" => "Glific",
         "globalButtons" => [%{"type" => "text", "title" => "button text"}],
         "items" => [
@@ -1326,7 +1329,7 @@ if Code.ensure_loaded?(Faker) do
       }
 
       Repo.insert!(%InteractiveTemplate{
-        label: "Interactive list",
+        label: get_in(interactive_content, ["title"]),
         type: :list,
         interactive_content: interactive_content,
         organization_id: organization.id,
