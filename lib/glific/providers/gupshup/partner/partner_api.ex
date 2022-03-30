@@ -51,6 +51,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # fetches app id from phone using partner API
   @spec get_apps_details(String.t()) :: {:ok, String.t()} | {:error, any}
   defp get_apps_details(phone) do
+    with {:ok, app_list} <- Caches.get(@global_organization_id, "gupshup_apps"),
+         true <- app_list != false do
+      search_app(app_list, phone)
+    else
+      _ ->
+        do_get_apps_details(phone)
+    end
+  end
+
+  @spec do_get_apps_details(String.t()) :: {:ok, String.t()} | {:error, any}
+  defp do_get_apps_details(phone) do
     url = @partner_url <> "/api/partnerApps"
 
     with {:ok, %{partner_token: partner_token}} <- get_partner_token(),
@@ -61,10 +72,19 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         |> Jason.decode!()
         |> Map.get("partnerAppsList")
 
-      app = Enum.find(app_list, fn app -> app["phone"] == phone end)
+      # Adding app list to cache
+      Enum.reduce(app_list, [], &(&2 ++ [%{"id" => &1["id"], "phone" => &1["phone"]}]))
+      |> then(&Caches.set(0, "gupshup_apps", &1))
 
-      if app, do: {:ok, app["id"]}, else: {:error, "App not found"}
+      search_app(app_list, phone)
     end
+  end
+
+  @spec search_app(list(), String.t()) :: {:ok, String.t()} | {:error, any}
+  defp search_app(app_list, phone) do
+    app = Enum.find(app_list, fn app -> app["phone"] == phone end)
+
+    if app, do: {:ok, app["id"]}, else: {:error, "App not found"}
   end
 
   # fetches partner token first to get app access token
