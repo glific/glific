@@ -64,7 +64,7 @@ defmodule GlificWeb.Schema.InteractiveTemplateTest do
     assert length(interactives) > 0
 
     [interactive | _] = interactives
-    assert get_in(interactive, ["label"]) == "Interactive list"
+    assert get_in(interactive, ["label"]) == "Are you excited for *Glific*?"
   end
 
   test "interactives field returns list of interactives in desc order", %{staff: user} do
