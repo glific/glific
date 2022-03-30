@@ -881,18 +881,16 @@ defmodule Glific.Partners do
                 handle_token_error(organization_id, provider_shortcode, error)
             end
 
-          _ ->
+          error ->
             Logger.info(
-              "Error while fetching token for provder #{provider_shortcode} for org_id #{organization_id}"
+              "Error while fetching token for provder #{provider_shortcode} error: #{inspect(error)} for org_id #{organization_id}"
             )
 
             handle_token_error(
               organization_id,
               provider_shortcode,
-              "Could not decode service account"
+              "Could not decode service account. #{inspect(error)}"
             )
-
-            :error
         end
     end
   end
