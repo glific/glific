@@ -1132,7 +1132,7 @@ if Code.ensure_loaded?(Faker) do
         "type" => "quick_reply",
         "content" => %{
           "type" => "text",
-          "header" => "How excited are you for Glific?",
+          "header" => "Quick Reply Text",
           "text" => "Glific is a two way communication platform"
         },
         "options" => [
@@ -1278,7 +1278,7 @@ if Code.ensure_loaded?(Faker) do
 
       interactive_content = %{
         "type" => "list",
-        "title" => "Glific",
+        "title" => "Interactive list",
         "body" => "Glific",
         "globalButtons" => [%{"type" => "text", "title" => "button text"}],
         "items" => [

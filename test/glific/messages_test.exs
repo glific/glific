@@ -833,7 +833,7 @@ defmodule Glific.MessagesTest do
       message = Messages.get_message!(message.id)
       msg_interactive_content = message.interactive_content
       assert message.body == "Glific is a two way communication platform"
-      assert msg_interactive_content["content"]["header"] == "How excited are you for Glific"
+      assert msg_interactive_content["content"]["header"] == "Quick Reply Text"
       # send interactive quick reply message with send_with_title as false
       InteractiveTemplates.update_interactive_template(interactive_template, %{
         send_with_title: false
