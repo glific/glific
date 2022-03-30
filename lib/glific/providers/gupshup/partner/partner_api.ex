@@ -4,6 +4,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   """
 
   alias Plug.Conn.Query
+  alias Glific.Caches
 
   use Tesla
   plug(Tesla.Middleware.Logger)
@@ -14,19 +15,26 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
+  @global_organization_id 0
 
   # fetches partner token
   @spec get_partner_token :: {:ok, map()} | {:error, any}
-  defp get_partner_token do
+  def get_partner_token do
     email = Application.fetch_env!(:glific, :gupshup_partner_email)
     password = Application.fetch_env!(:glific, :gupshup_partner_password)
     url = @partner_url <> "/login"
 
+    {:ok, partner_token} = Cachex.get(:glific_cache, {0, "partner_token"})
+    if partner_token, do: {:ok, partner_token}, else: do_get_partner_token(email, password, url)
+  end
+
+  @spec do_get_partner_token(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, any}
+  defp do_get_partner_token(email, password, url) do
     post(url, %{"email" => email, "password" => password}, headers: [])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
-        |> then(&{:ok, %{partner_token: &1["token"]}})
+        |> then(&Caches.set(@global_organization_id, "partner_token", &1["token"]))
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
