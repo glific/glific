@@ -321,7 +321,8 @@ defmodule Glific.Flows.FlowContext do
             name: context.contact.name
           },
           "message" => body,
-          "date" => now
+          "date" => now,
+          "node_uuid" => context.node_uuid
         }
         | Map.get(context, type)
       ]
@@ -367,28 +368,33 @@ defmodule Glific.Flows.FlowContext do
     context
   end
 
+  @spec get_datetime(map()) :: DateTime.t()
+  defp get_datetime(item) do
+    # sometime we get this from memory, and its not retrived from DB
+    # in which case its already in a valid date format
+    if is_binary(item["date"]) do
+      {:ok, date, _} = DateTime.from_iso8601(item["date"])
+      date
+    else
+      item["date"]
+    end
+  end
+
   @doc """
   Count the number of times we have sent the same message in the recent past
   """
   @spec match_outbound(FlowContext.t(), String.t(), integer) :: integer
-  def match_outbound(context, body, go_back \\ 6) do
+  def match_outbound(context, _body, go_back \\ 6) do
     since = Glific.go_back_time(go_back)
 
     Enum.filter(
       context.recent_outbound,
       fn item ->
-        # sometime we get this from memory, and its not retrived from DB
-        # in which case its already in a valid date format
-        date =
-          if is_binary(item["date"]),
-            do:
-              (
-                {:ok, date, _} = DateTime.from_iso8601(item["date"])
-                date
-              ),
-            else: item["date"]
+        date = get_datetime(item)
 
-        item["message"] == body and DateTime.compare(date, since) in [:gt, :eq]
+        # comparing node uuids is a lot more powerful than comparing message body
+        item["node_uuid"] == context.node_uuid and
+          DateTime.compare(date, since) in [:gt, :eq]
       end
     )
     |> length()
