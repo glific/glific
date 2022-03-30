@@ -862,27 +862,37 @@ defmodule Glific.Partners do
         nil
 
       credentials ->
-        config =
-          case Jason.decode(credentials.secrets["service_account"]) do
-            {:ok, config} -> config
-            _ -> :error
-          end
+        case Jason.decode(credentials.secrets["service_account"]) do
+          {:ok, config} ->
+            Goth.Config.add_config(config)
 
-        Goth.Config.add_config(config)
+            Goth.Token.for_scope(
+              {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
+            )
+            |> case do
+              {:ok, token} ->
+                token
 
-        Goth.Token.for_scope(
-          {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-        )
-        |> case do
-          {:ok, token} ->
-            token
+              {:error, error} ->
+                Logger.info(
+                  "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{organization_id}"
+                )
 
-          {:error, error} ->
+                handle_token_error(organization_id, provider_shortcode, error)
+            end
+
+          _ ->
             Logger.info(
-              "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{organization_id}"
+              "Error while fetching token for provder #{provider_shortcode} for org_id #{organization_id}"
             )
 
-            handle_token_error(organization_id, provider_shortcode, error)
+            handle_token_error(
+              organization_id,
+              provider_shortcode,
+              "Could not decode service account"
+            )
+
+            :error
         end
     end
   end
