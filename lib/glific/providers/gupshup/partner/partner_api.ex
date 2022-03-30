@@ -24,8 +24,12 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     password = Application.fetch_env!(:glific, :gupshup_partner_password)
     url = @partner_url <> "/login"
 
-    {:ok, partner_token} = Cachex.get(:glific_cache, {0, "partner_token"})
-    if partner_token, do: {:ok, partner_token}, else: do_get_partner_token(email, password, url)
+    # Using Cachex.get instead of Caches.get as token expire after 24hrs and we dont want to refresh the cache
+    {:ok, partner_token} = Cachex.get(:glific_cache, {@global_organization_id, "partner_token"})
+
+    if partner_token,
+      do: {:ok, %{partner_token: partner_token}},
+      else: do_get_partner_token(email, password, url)
   end
 
   @spec do_get_partner_token(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, any}
@@ -33,8 +37,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     post(url, %{"email" => email, "password" => password}, headers: [])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
-        Jason.decode!(body)
-        |> then(&Caches.set(@global_organization_id, "partner_token", &1["token"]))
+        {:ok, partner_token} =
+          Jason.decode!(body)
+          |> then(&Caches.set(@global_organization_id, "partner_token", &1["token"]))
+
+        {:ok, %{partner_token: partner_token}}
 
       {_status, response} ->
         {:error, "invalid response #{inspect(response)}"}
@@ -66,15 +73,27 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     with {:ok, %{partner_token: partner_token}} <- get_partner_token() do
       url = @app_url <> app_id <> "/token"
 
-      get(url, headers: [{"token", partner_token}])
-      |> case do
-        {:ok, %Tesla.Env{status: 200, body: body}} ->
-          Jason.decode!(body)
-          |> then(&{:ok, %{app_token: &1["token"]["token"]}})
+      {:ok, app_token} = Caches.get(@global_organization_id, "app_token")
 
-        {_status, _response} ->
-          {:error, "invalid credentials or app id}"}
-      end
+      if app_token == false,
+        do: do_get_app_token(url, partner_token),
+        else: {:ok, %{app_token: app_token}}
+    end
+  end
+
+  @spec do_get_app_token(String.t(), String.t()) :: {:ok, map()} | {:error, any}
+  defp do_get_app_token(url, partner_token) do
+    get(url, headers: [{"token", partner_token}])
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        {:ok, app_token} =
+          Jason.decode!(body)
+          |> then(&Caches.set(@global_organization_id, "app_token", &1["token"]["token"]))
+
+        {:ok, %{app_token: app_token}}
+
+      {_status, _response} ->
+        {:error, "invalid credentials or app id}"}
     end
   end
 
