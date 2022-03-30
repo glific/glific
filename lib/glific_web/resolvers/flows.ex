@@ -113,10 +113,10 @@ defmodule GlificWeb.Resolvers.Flows do
       {:ok, %{success: true, errors: nil}}
     else
       {:errors, errors} ->
-        {:ok, %{success: true, errors: errors}}
+        {:ok, %{success: false, errors: errors}}
 
       {:error, errors} ->
-        {:ok, %{success: true, errors: make_error(errors)}}
+        {:ok, %{success: false, errors: make_error(errors)}}
 
       _ ->
         {:error, dgettext("errors", "Something went wrong.")}
