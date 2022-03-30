@@ -625,10 +625,10 @@ defmodule Glific.BigQuery do
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
           :ok
-  defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
+  defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id),
     do:
       Logger.info(
-        "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}. #{inspect(response)}"
+        "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}"
       )
 
   ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
