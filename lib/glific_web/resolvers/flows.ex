@@ -116,12 +116,19 @@ defmodule GlificWeb.Resolvers.Flows do
         {:ok, %{success: true, errors: errors}}
 
       {:error, errors} ->
-        {:ok, %{success: true, errors: %{key: "Database Error", message: inspect(errors)}}}
+        {:ok, %{success: true, errors: make_error(errors)}}
 
       _ ->
         {:error, dgettext("errors", "Something went wrong.")}
     end
   end
+
+  @spec make_error(any) :: map()
+  defp make_error(error) when is_list(error),
+    do: %{key: hd(error), message: hd(tl(error))}
+
+  defp make_error(error),
+    do: %{key: "Database Error", message: inspect(error)}
 
   @doc """
   Start a flow for a contact
