@@ -19,7 +19,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   # fetches partner token
   @spec get_partner_token :: {:ok, map()} | {:error, any}
-  def get_partner_token do
+  defp get_partner_token do
     email = Application.fetch_env!(:glific, :gupshup_partner_email)
     password = Application.fetch_env!(:glific, :gupshup_partner_password)
     url = @partner_url <> "/login"
