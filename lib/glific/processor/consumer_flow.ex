@@ -128,6 +128,7 @@ defmodule Glific.Processor.ConsumerFlow do
     )
     |> case do
       {:ok, flow} ->
+        opts = Keyword.put(opts, :flow_keyword, message.body)
         FlowContext.init_context(flow, message.contact, status, opts)
 
       {:error, _} ->
