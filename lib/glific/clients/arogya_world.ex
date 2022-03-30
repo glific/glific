@@ -520,6 +520,7 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
   def upload_participant_responses(org_id, week) do
+    week = week - 1
     key = get_dynamic_week_key(week)
 
     # Question 1 responses for current week
