@@ -3,7 +3,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   A module to handle fetching tier related information like quality rating and app rating using partner API
   """
 
-  alias Glific.Caches
+  alias Glific.{
+    Caches,
+    Partners.Saas
+  }
+
   alias Plug.Conn.Query
 
   use Tesla
@@ -17,11 +21,18 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @app_url "https://partner.gupshup.io/partner/app/"
   @global_organization_id 0
 
+  @doc """
+  Fetch the stripe tax rates
+  """
+  @spec gupshup_partner_api :: map()
+  def gupshup_partner_api,
+    do: Saas.gupshup_partner_api()
+
   # fetches partner token
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
-    email = Application.fetch_env!(:glific, :gupshup_partner_email)
-    password = Application.fetch_env!(:glific, :gupshup_partner_password)
+    credentials = gupshup_partner_api()
+
     url = @partner_url <> "/login"
 
     # Using Cachex.get instead of Caches.get as token expire after 24hrs and we dont want to refresh the cache
@@ -29,7 +40,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     if partner_token,
       do: {:ok, %{partner_token: partner_token}},
-      else: do_get_partner_token(email, password, url)
+      else: do_get_partner_token(credentials["email"], credentials["password"], url)
   end
 
   @spec do_get_partner_token(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, any}

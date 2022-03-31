@@ -19,7 +19,7 @@ defmodule Glific.Partners.Saas do
   ]
 
   # define all the optional fields for saas
-  @optional_fields [:email, :stripe_ids, :tax_rates]
+  @optional_fields [:email, :stripe_ids, :tax_rates, :json]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -30,7 +30,8 @@ defmodule Glific.Partners.Saas do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           phone: String.t() | nil,
           inserted_at: :utc_datetime | nil,
-          updated_at: :utc_datetime | nil
+          updated_at: :utc_datetime | nil,
+          json: map() | nil
         }
 
   schema "saas" do
@@ -40,6 +41,7 @@ defmodule Glific.Partners.Saas do
 
     field :stripe_ids, :map
     field :tax_rates, :map
+    field :json, :map, default: %{}
 
     belongs_to :organization, Organization
 
@@ -93,6 +95,13 @@ defmodule Glific.Partners.Saas do
   @spec tax_rates(String.t()) :: list()
   def tax_rates(name \\ "Tides"),
     do: saas_field(name, :tax_rates) |> Map.values()
+
+  @doc """
+  Partner API credentials for Guphsup
+  """
+  @spec gupshup_partner_api(String.t()) :: map()
+  def gupshup_partner_api(name \\ "Gupshup Partner API"),
+    do: saas_field(name, :json)
 
   @spec saas_field(String.t(), atom()) :: any()
   defp saas_field(name, field) do

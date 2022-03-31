@@ -168,6 +168,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
       }
     })
+
+    Repo.insert!(%Saas{
+      name: "Gupshup Partner API",
+      organization_id: organization.id,
+      phone: "91111222333",
+      json: %{email: "test_email", user: "test user"}
+    })
   end
 
   defp saas(_count, _organization), do: nil
