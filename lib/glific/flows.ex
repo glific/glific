@@ -867,11 +867,10 @@ defmodule Glific.Flows do
     else
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
 
+      # definition can be nil, hence assigning empty map if so
+      # Issue #2173
       definition =
-        flow_uuid
-        # definition can be nil, hence assigning empty map if so
-        # Issue #2173
-        |> (get_latest_definition() || %{})
+        (get_latest_definition(flow_uuid) || %{})
         |> Map.put("name", flow.name)
 
       results =
@@ -949,7 +948,7 @@ defmodule Glific.Flows do
 
   ## Get latest flow definition to export. There is one more function with the same name in
   ## Glific.Flows.flow but that gives us the definition without UI placesments.
-  @spec get_latest_definition(String.t()) :: map()
+  @spec get_latest_definition(String.t()) :: map() | nil
   defp get_latest_definition(flow_uuid) do
     json =
       FlowRevision
