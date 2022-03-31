@@ -869,6 +869,8 @@ defmodule Glific.Flows do
 
       definition =
         flow_uuid
+        # definition can be nil, hence assigning empty map if so
+        # Issue #2173
         |> (get_latest_definition() || %{})
         |> Map.put("name", flow.name)
 
