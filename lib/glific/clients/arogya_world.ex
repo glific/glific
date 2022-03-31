@@ -520,7 +520,8 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
   def upload_participant_responses(org_id, week) do
-    # the response files would be for the previous week since the week is updated on Tuesday and we send file on Wednesday
+    ## the response files would be for the previous week
+    ## since the week is updated on Tuesday and we send file on Wednesday
     previous_week = week - 1
     key = get_dynamic_week_key(previous_week)
 
