@@ -13,6 +13,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Router do
       post("/image", MessageController, :image)
       post("/video", MessageController, :video)
       post("/audio", MessageController, :audio)
+      post("/voice", MessageController, :audio)
       post("/document", MessageController, :document)
       post("/location", MessageController, :location)
       post("/button", MessageController, :button)
