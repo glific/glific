@@ -520,13 +520,15 @@ defmodule Glific.Clients.ArogyaWorld do
   """
   @spec upload_participant_responses(non_neg_integer(), non_neg_integer()) :: any()
   def upload_participant_responses(org_id, week) do
-    key = get_dynamic_week_key(week)
+    # the response files would be for the previous week since the week is updated on Tuesday and we send file on Wednesday
+    previous_week = week - 1
+    key = get_dynamic_week_key(previous_week)
 
-    # Question 1 responses for current week
-    q1_responses = get_responses_by_week_and_day(org_id, week, @first_question_day)
+    # Question 1 responses for previous week
+    q1_responses = get_responses_by_week_and_day(org_id, previous_week, @first_question_day)
 
-    # Question 2 responses for current week
-    q2_responses = get_responses_by_week_and_day(org_id, week, @second_question_day)
+    # Question 2 responses for previous week
+    q2_responses = get_responses_by_week_and_day(org_id, previous_week, @second_question_day)
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
