@@ -49,19 +49,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   # fetches app id from phone using partner API
-  @spec get_apps_details(String.t()) :: {:ok, String.t()} | {:error, any}
-  defp get_apps_details(phone) do
-    with {:ok, app_list} <- Caches.get(@global_organization_id, "gupshup_apps"),
-         true <- app_list != false do
-      search_app(app_list, phone)
-    else
-      _ ->
-        do_get_apps_details(phone)
-    end
+  @spec get_apps_details(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, any}
+  defp get_apps_details(organization_id, phone) do
+    {:ok, app_id} = Caches.get(organization_id, {:gupshup_apps, phone})
+
+    if app_id == false,
+      do: do_get_apps_details(organization_id, phone),
+      else: {:ok, app_id}
   end
 
-  @spec do_get_apps_details(String.t()) :: {:ok, String.t()} | {:error, any}
-  defp do_get_apps_details(phone) do
+  @spec do_get_apps_details(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, any}
+  defp do_get_apps_details(organization_id, phone) do
     url = @partner_url <> "/api/partnerApps"
 
     with {:ok, %{partner_token: partner_token}} <- get_partner_token(),
@@ -72,43 +70,37 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         |> Jason.decode!()
         |> Map.get("partnerAppsList")
 
-      # Adding app list to cache
-      Enum.reduce(app_list, [], &(&2 ++ [%{"id" => &1["id"], "phone" => &1["phone"]}]))
-      |> then(&Caches.set(@global_organization_id, "gupshup_apps", &1))
+      app = Enum.find(app_list, fn app -> app["phone"] == phone end)
 
-      search_app(app_list, phone)
+      if app,
+        do: Caches.set(organization_id, {:gupshup_apps, phone}, app["id"]),
+        else: {:error, "App not found"}
     end
   end
 
-  @spec search_app(list(), String.t()) :: {:ok, String.t()} | {:error, any}
-  defp search_app(app_list, phone) do
-    app = Enum.find(app_list, fn app -> app["phone"] == phone end)
-
-    if app, do: {:ok, app["id"]}, else: {:error, "App not found"}
-  end
-
   # fetches partner token first to get app access token
-  @spec get_app_token(String.t()) :: {:ok, map()} | {:error, any}
-  defp get_app_token(app_id) do
+  @spec get_app_token(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any}
+  defp get_app_token(organization_id, app_id) do
     with {:ok, %{partner_token: partner_token}} <- get_partner_token() do
-      url = @app_url <> app_id <> "/token"
-
-      {:ok, app_token} = Caches.get(@global_organization_id, "app_token")
+      {:ok, app_token} = Caches.get(organization_id, {:app_token, app_id})
 
       if app_token == false,
-        do: do_get_app_token(url, partner_token),
+        do: do_get_app_token(organization_id, partner_token, app_id),
         else: {:ok, %{app_token: app_token}}
     end
   end
 
-  @spec do_get_app_token(String.t(), String.t()) :: {:ok, map()} | {:error, any}
-  defp do_get_app_token(url, partner_token) do
+  @spec do_get_app_token(non_neg_integer(), String.t(), String.t()) ::
+          {:ok, map()} | {:error, any}
+  defp do_get_app_token(organization_id, partner_token, app_id) do
+    url = @app_url <> app_id <> "/token"
+
     get(url, headers: [{"token", partner_token}])
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         {:ok, app_token} =
           Jason.decode!(body)
-          |> then(&Caches.set(@global_organization_id, "app_token", &1["token"]["token"]))
+          |> then(&Caches.set(organization_id, {:app_token, app_id}, &1["token"]["token"]))
 
         {:ok, %{app_token: app_token}}
 
@@ -120,10 +112,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Fetches Partner token and App Access token to get tier information for an organization with input app id
   """
-  @spec get_quality_rating(String.t()) :: {:error, any} | {:ok, map()}
-  def get_quality_rating(phone) do
-    with {:ok, app_id} <- get_apps_details(phone),
-         {:ok, %{app_token: app_token}} <- get_app_token(app_id) do
+  @spec get_quality_rating(non_neg_integer(), String.t()) :: {:error, any} | {:ok, map()}
+  def get_quality_rating(organization_id, phone) do
+    with {:ok, app_id} <- get_apps_details(organization_id, phone),
+         {:ok, %{app_token: app_token}} <- get_app_token(organization_id, app_id) do
       url = @app_url <> app_id <> "/ratings"
       param = %{"phone" => phone, "isBlocked" => "true"}
 

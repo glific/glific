@@ -358,7 +358,7 @@ defmodule Glific.Partners do
   @doc """
   Returns quality rating information for an organization provider
   """
-  @spec get_quality_rating(pos_integer()) :: {:ok, any()} | {:error, String.t()}
+  @spec get_quality_rating(non_neg_integer()) :: {:ok, any()} | {:error, String.t()}
   def get_quality_rating(organization_id) do
     organization = organization(organization_id)
 
@@ -366,7 +366,7 @@ defmodule Glific.Partners do
       {:error, dgettext("errors", "No active BSP available")}
     else
       case organization.bsp.shortcode do
-        "gupshup" -> PartnerAPI.get_quality_rating(organization.contact.phone)
+        "gupshup" -> PartnerAPI.get_quality_rating(organization_id, organization.contact.phone)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
