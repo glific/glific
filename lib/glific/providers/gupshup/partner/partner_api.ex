@@ -51,7 +51,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # fetches app id from phone using partner API
   @spec get_apps_details(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, any}
   defp get_apps_details(organization_id, phone) do
-    {:ok, app_id} = Caches.get(organization_id, {:gupshup_apps, phone})
+    {:ok, app_id} = Caches.get(organization_id, {:app_id, phone})
 
     if app_id == false,
       do: do_get_apps_details(organization_id, phone),
@@ -73,7 +73,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
       app = Enum.find(app_list, fn app -> app["phone"] == phone end)
 
       if app,
-        do: Caches.set(organization_id, {:gupshup_apps, phone}, app["id"]),
+        do: Caches.set(organization_id, {:app_id, phone}, app["id"]),
         else: {:error, "App not found"}
     end
   end
