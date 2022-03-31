@@ -32,9 +32,7 @@ config :glific, GlificWeb.Endpoint,
 
 config :glific,
   auth_username: env!("AUTH_USERNAME", :string!),
-  auth_password: env!("AUTH_PASSWORD", :string!),
-  gupshup_partner_email: env!("GUPSHUP_PARTNER_EMAIL", :string!),
-  gupshup_partner_password: env!("GUPSHUP_PARTNER_PASSWORD", :string!)
+  auth_password: env!("AUTH_PASSWORD", :string!)
 
 config :glific, :max_rate_limit_request, env!("MAX_RATE_LIMIT_REQUEST", :integer, 180)
 
