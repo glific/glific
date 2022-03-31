@@ -867,6 +867,14 @@ defmodule Glific.Partners do
     )
   end
 
+  @spec config(map()) :: map() | :error
+  defp config(credentials) do
+    case Jason.decode(credentials.secrets["service_account"]) do
+      {:ok, config} -> config
+      _ -> :error
+    end
+  end
+
   @doc """
   Common function to get the goth config
   """
@@ -880,27 +888,29 @@ defmodule Glific.Partners do
         nil
 
       credentials ->
-        config =
-          case Jason.decode(credentials.secrets["service_account"]) do
-            {:ok, config} -> config
-            _ -> :error
-          end
+        config = config(credentials)
 
-        Goth.Config.add_config(config)
+        if config != :error do
+          Goth.Config.add_config(config)
 
-        Goth.Token.for_scope(
           {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-        )
-        |> case do
-          {:ok, token} ->
-            token
+          |> Goth.Token.for_scope()
+          |> case do
+            {:ok, token} ->
+              token
 
-          {:error, error} ->
-            Logger.info(
-              "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{organization_id}"
-            )
+            {:error, error} ->
+              Logger.info(
+                "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
+              )
 
-            handle_token_error(organization_id, provider_shortcode, error)
+              handle_token_error(organization_id, provider_shortcode, error)
+          end
+        else
+          error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"
+          Logger.info(error)
+
+          handle_token_error(organization_id, provider_shortcode, error)
         end
     end
   end
