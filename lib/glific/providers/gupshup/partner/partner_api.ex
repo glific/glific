@@ -74,7 +74,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       # Adding app list to cache
       Enum.reduce(app_list, [], &(&2 ++ [%{"id" => &1["id"], "phone" => &1["phone"]}]))
-      |> then(&Caches.set(0, "gupshup_apps", &1))
+      |> then(&Caches.set(@global_organization_id, "gupshup_apps", &1))
 
       search_app(app_list, phone)
     end
