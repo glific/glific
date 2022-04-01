@@ -19,6 +19,7 @@ defmodule Glific.Flows.ContactActionTest do
     SeedsDev.seed_contacts()
     SeedsDev.seed_session_templates()
     SeedsDev.hsm_templates(organization)
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -105,6 +106,74 @@ defmodule Glific.Flows.ContactActionTest do
     assert message.flow_id == context.flow_id
   end
 
+  test "send interactive message", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    # preload contact
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [interactive_template | _] =
+      Templates.InteractiveTemplates.list_interactives(%{
+        filter: Map.merge(attrs, %{label: "Quick Reply Text"})
+      })
+
+    action = %Action{interactive_template_id: interactive_template.id}
+
+    ContactAction.send_interactive_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == "Glific is a two way communication platform"
+    assert message.flow_id == context.flow_id
+  end
+
+  test "send interactive message with language changed", attrs do
+    [contact | _] =
+      Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
+
+    l2 = Glific.Settings.get_language!(2)
+    assert {:ok, %Contact{} = contact} = Contacts.update_contact(contact, %{language_id: l2.id})
+    # preload contact
+    context =
+      Repo.insert!(%FlowContext{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: contact.id,
+        organization_id: contact.organization_id
+      })
+      |> Repo.preload([:contact, :flow])
+
+    [interactive_template | _] =
+      Templates.InteractiveTemplates.list_interactives(%{
+        filter: Map.merge(attrs, %{label: "Are you excited for *Glific*?"})
+      })
+
+    action = %Action{interactive_template_id: interactive_template.id}
+
+    ContactAction.send_interactive_message(context, action, [])
+
+    message =
+      Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == "ग्लिफ़िक सभी नई सुविधाओं के साथ आता है"
+    assert message.flow_id == context.flow_id
+  end
+
   test "send message translated template", attrs do
     [contact | _] =
       Contacts.list_contacts(%{filter: Map.merge(attrs, %{name: "Default receiver"})})
@@ -169,9 +238,14 @@ defmodule Glific.Flows.ContactActionTest do
       variables: ["var_1", "var_2", "var_3"]
     }
 
+    url = "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+    type = "image"
+
     attachments = %{
-      "image" => "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg"
+      type => url
     }
+
+    Glific.Fixtures.mock_validate_media(type)
 
     action = %Action{templating: templating, attachments: attachments}
 

@@ -17,7 +17,6 @@ defmodule Glific.Searches do
     Groups.ContactGroup,
     Groups.UserGroup,
     Messages.Message,
-    Partners,
     Repo,
     Search.Full,
     Searches.SavedSearch,
@@ -245,18 +244,26 @@ defmodule Glific.Searches do
 
   @spec basic_query(map()) :: Ecto.Query.t()
   defp basic_query(args) do
-    organization_contact_id = Partners.organization_contact_id(args.filter.organization_id)
-
     query = from c in Contact, as: :c
 
     query
-    |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id)
-    |> where([c: c], c.id != ^organization_contact_id)
-    |> where([c: c], c.status != :blocked)
+    |> add_message_clause(args)
     |> order_by([c: c], desc: c.last_communication_at)
+    |> where([c: c], c.status != :blocked)
     |> group_by([c: c], c.id)
     |> Repo.add_permission(&Searches.add_permission/2)
   end
+
+  @spec add_message_clause(Ecto.Query.t(), map()) :: Ecto.Query.t()
+  defp add_message_clause(query, %{filter: filters} = _args)
+       when is_map(filters) do
+    if map_size(filters) > 1,
+      do: query |> join(:left, [c: c], m in Message, as: :m, on: c.id == m.contact_id),
+      else: query
+  end
+
+  defp add_message_clause(query, _args),
+    do: query
 
   # codebeat:enable[ABC]
 
@@ -352,7 +359,7 @@ defmodule Glific.Searches do
         true ->
           search_query(args.filter[:term], args)
       end
-      |> Repo.all()
+      |> Repo.all(timeout: 60_000)
       |> get_contact_ids(is_status?)
 
     # if we dont have any contact ids at this stage
@@ -388,7 +395,8 @@ defmodule Glific.Searches do
     contacts = get_filtered_contacts(term, args)
     messages = get_filtered_messages_with_term(term, args)
     tags = get_filtered_tagged_message(term, args)
-    Search.new(contacts, messages, tags)
+    labels = get_filtered_labled_message(term, args)
+    Search.new(contacts, messages, tags, labels)
   end
 
   @spec filtered_query(map()) :: Ecto.Query.t()
@@ -401,6 +409,7 @@ defmodule Glific.Searches do
 
     query
     |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
+    |> where([m, c: c], c.status != :blocked)
     |> Repo.add_permission(&Searches.add_permission/2)
     |> limit(^limit)
     |> offset(^offset)
@@ -426,6 +435,14 @@ defmodule Glific.Searches do
   defp get_filtered_messages_with_term(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.body, ^"%#{term}%"))
+    |> order_by([m: m], desc: m.inserted_at)
+    |> Repo.all()
+  end
+
+  @spec get_filtered_labled_message(String.t(), map()) :: list()
+  defp get_filtered_labled_message(term, args) do
+    filtered_query(args)
+    |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.inserted_at)
     |> Repo.all()
   end

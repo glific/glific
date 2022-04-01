@@ -6,6 +6,7 @@ if Code.ensure_loaded?(Faker) do
     alias Glific.{
       Contacts,
       Contacts.Contact,
+      Contacts.ContactHistory,
       Flows.Flow,
       Flows.FlowLabel,
       Flows.FlowResult,
@@ -24,6 +25,7 @@ if Code.ensure_loaded?(Faker) do
       Settings.Language,
       Stats.Stat,
       Tags.Tag,
+      Templates.InteractiveTemplate,
       Templates.SessionTemplate,
       Users
     }
@@ -523,6 +525,9 @@ if Code.ensure_loaded?(Faker) do
       }
     end
 
+    @template_id "32905118-9e03-4bf1-9edd-98323b4d3d38"
+    @translated_template_id "a1d810f4-b102-446c-968c-10ff2f5c129f"
+
     @doc false
     @spec seed_session_templates(Organization.t() | nil) :: nil
     def seed_session_templates(organization \\ nil) do
@@ -535,7 +540,12 @@ if Code.ensure_loaded?(Faker) do
           body:
             " अब आप नीचे दिए विकल्पों में से एक का चयन करके {{1}} के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]",
           language_id: hi.id,
-          number_parameters: 1
+          number_parameters: 1,
+          status: "APPROVED",
+          uuid: Ecto.UUID.generate(),
+          label: "Account Balance",
+          example:
+            " अब आप नीचे दिए विकल्पों में से एक का चयन करके [003] के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]"
         }
       }
 
@@ -568,8 +578,15 @@ if Code.ensure_loaded?(Faker) do
       translations = %{
         hi.id => %{
           body:
-            "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [वेबसाइट पर जाएं, https: //www.gupshup.io/developer/ {{2}}",
-          language_id: hi.id,
+            "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/{{2}}",
+          type: "text",
+          uuid: @translated_template_id,
+          label: "movie_ticket",
+          status: "APPROVED",
+          example:
+            "नीचे दिए गए लिंक से अपना [मुददा] टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/[issues-hin]",
+          category: "ALERT_UPDATE",
+          language_id: 2,
           number_parameters: 2
         }
       }
@@ -590,7 +607,25 @@ if Code.ensure_loaded?(Faker) do
           "Download your [message] ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/[message]]",
         body:
           "Download your {{1}} ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/{{2}}]",
-        uuid: Ecto.UUID.generate()
+        uuid: @template_id
+      })
+
+      Repo.insert!(%SessionTemplate{
+        label: "Translated Movie Ticket",
+        type: :text,
+        shortcode: "movie_ticket",
+        is_hsm: true,
+        is_active: true,
+        number_parameters: 2,
+        language_id: hi.id,
+        organization_id: organization.id,
+        status: "APPROVED",
+        category: "TICKET_UPDATE",
+        body:
+          "नीचे दिए गए लिंक से अपना {{1}} टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/{{2}}",
+        example:
+          "नीचे दिए गए लिंक से अपना [मुददा] टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/[issues-hin]",
+        uuid: @translated_template_id
       })
 
       translations = %{
@@ -666,6 +701,22 @@ if Code.ensure_loaded?(Faker) do
         example: "Hi [Anil],\nPlease find the attached bill.",
         uuid: Ecto.UUID.generate()
       })
+
+      Repo.insert!(%SessionTemplate{
+        label: "File Update",
+        type: :video,
+        shortcode: "file_update",
+        is_hsm: true,
+        number_parameters: 1,
+        translations: translations,
+        language_id: en.id,
+        organization_id: organization.id,
+        status: "APPROVED",
+        category: "ALERT_UPDATE",
+        body: "Hi {{1}},\n\nYour image file was updated today",
+        example: "Hi [Anil],\n\nYour image file was updated today",
+        uuid: Ecto.UUID.generate()
+      })
     end
 
     @doc false
@@ -719,6 +770,26 @@ if Code.ensure_loaded?(Faker) do
         status: "published",
         organization_id: organization.id
       })
+
+      import_flow =
+        Repo.insert!(%Flow{
+          name: "Import Workflow",
+          keywords: ["importtest"],
+          version_number: "13.1.0",
+          uuid: "63a9c563-a735-4b7d-9890-b9298a2de406",
+          organization_id: organization.id
+        })
+
+      definition =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> "import.json"))
+        |> Jason.decode!()
+
+      Repo.insert!(%FlowRevision{
+        definition: definition,
+        flow_id: import_flow.id,
+        status: "published",
+        organization_id: organization.id
+      })
     end
 
     @doc false
@@ -769,7 +840,8 @@ if Code.ensure_loaded?(Faker) do
         optout: "bc1622f8-64f8-4b3d-b767-bb6bbfb65104",
         survey: "8333fce2-63d3-4849-bfd9-3543eb8b0430",
         help: "3fa22108-f464-41e5-81d9-d8a298854429",
-        intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519"
+        intent: "56c4d7c4-4884-45e2-b4f9-82ddc4553519",
+        interactive: "b87dafcf-a316-4da6-b1f4-2714a199aab7"
       }
 
       data = [
@@ -777,7 +849,8 @@ if Code.ensure_loaded?(Faker) do
         {"Out of Office Workflow", ["outofoffice"], uuid_map.outofoffice, false,
          "out_of_office.json"},
         {"Survey Workflow", ["survey"], uuid_map.survey, false, "survey.json"},
-        {"Intent", ["intent"], uuid_map.intent, false, "intent.json"}
+        {"Intent", ["intent"], uuid_map.intent, false, "intent.json"},
+        {"Interactive", ["interactive"], uuid_map.interactive, false, "interactive.json"}
       ]
 
       SeedsFlows.add_flow(organization, data, uuid_map)
@@ -890,6 +963,8 @@ if Code.ensure_loaded?(Faker) do
         }
       }
 
+      uuid = Ecto.UUID.generate()
+
       Repo.insert!(%SessionTemplate{
         label: "Missed Message Apology",
         type: :text,
@@ -905,7 +980,8 @@ if Code.ensure_loaded?(Faker) do
         translations: translations,
         status: "PENDING",
         category: "ALERT_UPDATE",
-        uuid: Ecto.UUID.generate()
+        uuid: uuid,
+        bsp_id: uuid
       })
 
       translations = %{
@@ -922,6 +998,8 @@ if Code.ensure_loaded?(Faker) do
         }
       }
 
+      uuid = Ecto.UUID.generate()
+
       Repo.insert!(%SessionTemplate{
         label: "OTP Message",
         type: :text,
@@ -936,7 +1014,8 @@ if Code.ensure_loaded?(Faker) do
         body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
-        uuid: Ecto.UUID.generate()
+        uuid: uuid,
+        bsp_id: uuid
       })
 
       translations = %{
@@ -947,6 +1026,8 @@ if Code.ensure_loaded?(Faker) do
           number_parameters: 0
         }
       }
+
+      uuid = Ecto.UUID.generate()
 
       Repo.insert!(%SessionTemplate{
         label: "User Registration",
@@ -967,7 +1048,8 @@ if Code.ensure_loaded?(Faker) do
         category: "ALERT_UPDATE",
         organization_id: organization.id,
         number_parameters: 0,
-        uuid: Ecto.UUID.generate()
+        uuid: uuid,
+        bsp_id: uuid
       })
     end
 
@@ -1041,6 +1123,262 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_interactives(Organization.t()) :: nil
+    def seed_interactives(organization) do
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "text",
+          "header" => "Quick Reply Text",
+          "text" => "Glific is a two way communication platform"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Excited"
+          },
+          %{
+            "type" => "text",
+            "title" => "Very Excited"
+          }
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
+
+      interactive_content_eng = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "Are you excited for *Glific*?",
+          "type" => "text",
+          "text" => "Glific comes with all new features"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "yes"},
+          %{"type" => "text", "title" => "no"}
+        ]
+      }
+
+      interactive_content_hin = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "आप ग्लिफ़िक के लिए कितने उत्साहित हैं?",
+          "type" => "text",
+          "text" => "ग्लिफ़िक सभी नई सुविधाओं के साथ आता है"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "हाँ"},
+          %{"type" => "text", "title" => "ना"}
+        ]
+      }
+
+      translation = %{
+        "1" => interactive_content_eng,
+        "2" => interactive_content_hin
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content_eng, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content_eng,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: translation
+      })
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "Quick Reply Image",
+          "type" => "image",
+          "url" => "https://picsum.photos/200/300",
+          "text" => "body text"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "First"},
+          %{"type" => "text", "title" => "Second"},
+          %{"type" => "text", "title" => "Third"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "Quick Reply Document",
+          "type" => "file",
+          "url" => "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf",
+          "filename" => "Sample file"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "First"},
+          %{"type" => "text", "title" => "Second"},
+          %{"type" => "text", "title" => "Third"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "Quick Reply Video",
+          "type" => "video",
+          "url" => "http://clips.vorwaerts-gmbh.de/big_buck_bunny.mp4",
+          "text" => "Sample video"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "First"},
+          %{"type" => "text", "title" => "Second"},
+          %{"type" => "text", "title" => "Third"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
+
+      interactive_content = %{
+        "type" => "list",
+        "title" => "Interactive list",
+        "body" => "Glific",
+        "globalButtons" => [%{"type" => "text", "title" => "button text"}],
+        "items" => [
+          %{
+            "title" => "Glific Features",
+            "subtitle" => "first Subtitle",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "Custom Flows",
+                "description" => "Flow Editor for creating flows"
+              },
+              %{
+                "type" => "text",
+                "title" => "Analytic Reports",
+                "description" => "DataStudio for report generation"
+              },
+              %{
+                "type" => "text",
+                "title" => "ML/AI",
+                "description" => "Dialogflow for AI/ML"
+              }
+            ]
+          },
+          %{
+            "title" => "Glific Usecases",
+            "subtitle" => "some usecases of Glific",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "Educational programs",
+                "description" => "Sharing education content with school student"
+              }
+            ]
+          },
+          %{
+            "title" => "Onboarded NGOs",
+            "subtitle" => "List of NGOs onboarded",
+            "options" => [
+              %{
+                "type" => "text",
+                "title" => "SOL",
+                "description" => "Slam Out Loud is a non-profit with a vision to change lives."
+              }
+            ]
+          }
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["title"]),
+        type: :list,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
+    end
+
+    @doc false
+    @spec seed_contact_history(Organization.t()) :: nil
+    def seed_contact_history(organization) do
+      {:ok, contact} =
+        Repo.fetch_by(
+          Contact,
+          %{name: "Adelle Cavin", organization_id: organization.id}
+        )
+
+      {:ok, flow} =
+        Repo.fetch_by(
+          Flow,
+          %{name: "Survey Workflow", organization_id: organization.id}
+        )
+
+      Repo.insert!(%ContactHistory{
+        contact_id: contact.id,
+        event_label: "Flow Started",
+        event_type: "contact_flow_started",
+        event_meta: %{
+          context_id: 1,
+          flow: %{
+            id: flow.id,
+            uuid: flow.uuid,
+            name: flow.name
+          }
+        },
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%ContactHistory{
+        contact_id: contact.id,
+        event_label: "All contact flows are ended",
+        event_type: "contact_flow_ended_all",
+        event_meta: %{},
+        organization_id: organization.id
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1082,6 +1420,10 @@ if Code.ensure_loaded?(Faker) do
       hsm_templates(organization)
 
       seed_notification(organization)
+
+      seed_interactives(organization)
+
+      seed_contact_history(organization)
     end
   end
 end

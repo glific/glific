@@ -6,6 +6,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   import GlificWeb.Gettext
 
   alias Glific.{Repo, Triggers.Trigger}
+  require Logger
 
   @doc false
   @spec trigger(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -65,9 +66,12 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def delete_trigger(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
-           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         {:ok, trigger} <- Trigger.delete_trigger(trigger) do
-      {:ok, trigger}
+           Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}) do
+      Logger.info(
+        "Trigger for org_id: #{user.organization_id} has been deleted by #{user.name} phone: #{user.phone}"
+      )
+
+      Trigger.delete_trigger(trigger)
     end
   end
 end

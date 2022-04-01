@@ -26,6 +26,8 @@ defmodule Glific.Partners.Billing do
   alias Stripe.{
     BillingPortal,
     Request,
+    Subscription,
+    SubscriptionItem,
     SubscriptionItem.Usage
   }
 
@@ -48,7 +50,9 @@ defmodule Glific.Partners.Billing do
     :stripe_last_usage_recorded,
     :currency,
     :is_delinquent,
-    :is_active
+    :is_active,
+    :deduct_tds,
+    :tds_amount
   ]
 
   @type t() :: %__MODULE__{
@@ -67,6 +71,8 @@ defmodule Glific.Partners.Billing do
           currency: String.t() | nil,
           is_delinquent: boolean,
           is_active: boolean() | true,
+          deduct_tds: boolean() | false,
+          tds_amount: float() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -89,6 +95,10 @@ defmodule Glific.Partners.Billing do
 
     field :is_delinquent, :boolean, default: false
     field :is_active, :boolean, default: true
+
+    field :deduct_tds, :boolean, default: false
+
+    field :tds_amount, :float
 
     belongs_to :organization, Organization
 
@@ -128,7 +138,7 @@ defmodule Glific.Partners.Billing do
   Retrieve a billing record by clauses
   """
   @spec get_billing(map()) :: Billing.t() | nil
-  def get_billing(clauses), do: Repo.get_by(Billing, clauses)
+  def get_billing(clauses), do: Repo.get_by(Billing, clauses, skip_organization_id: true)
 
   @doc """
   Upate the billing record
@@ -138,7 +148,7 @@ defmodule Glific.Partners.Billing do
   def update_billing(%Billing{} = billing, attrs) do
     billing
     |> Billing.changeset(attrs)
-    |> Repo.update()
+    |> Repo.update(skip_organization_id: true)
   end
 
   @doc """
@@ -244,8 +254,6 @@ defmodule Glific.Partners.Billing do
 
   @spec subscription_params(Billing.t(), Organization.t()) :: map()
   defp subscription_params(billing, organization) do
-    prices = stripe_ids()
-
     # Temporary to make sure that the subscription starts from the beginning of next month
     anchor_timestamp =
       DateTime.utc_now()
@@ -254,16 +262,14 @@ defmodule Glific.Partners.Billing do
       |> Timex.beginning_of_day()
       |> DateTime.to_unix()
 
+    prices = stripe_ids()
+
     %{
       customer: billing.stripe_customer_id,
       # Temporary for existing customers.
       billing_cycle_anchor: anchor_timestamp,
       prorate: false,
       items: [
-        %{
-          price: prices["monthly"],
-          quantity: 1
-        },
         %{
           price: prices["users"]
         },
@@ -363,6 +369,9 @@ defmodule Glific.Partners.Billing do
 
   @spec setup(Billing.t(), Organization.t(), map()) :: Billing.t()
   defp setup(billing, organization, params) do
+    ## let's create an invocie items. We are not attaching this to the invoice
+    ## so it will be attached automatically to the next invoice create.
+
     {:ok, invoice_item} =
       Stripe.Invoiceitem.create(%{
         customer: billing.stripe_customer_id,
@@ -392,13 +401,46 @@ defmodule Glific.Partners.Billing do
   end
 
   @spec apply_coupon(String.t(), map()) :: nil | {:error, Stripe.Error.t()} | {:ok, any()}
-  defp apply_coupon(invoice_id, %{coupon_code: coupon_code}) do
-    make_stripe_request("invoiceitems/#{invoice_id}", :post, %{
+  defp apply_coupon(invoice_item_id, %{coupon_code: coupon_code}) do
+    make_stripe_request("invoiceitems/#{invoice_item_id}", :post, %{
       discounts: [%{coupon: coupon_code}]
     })
   end
 
   defp apply_coupon(_, _), do: nil
+
+  @doc """
+  Adding credit to customer in Stripe
+  """
+  @spec credit_customer(map()) :: any | non_neg_integer()
+  def credit_customer(transaction) do
+    with billing <-
+           get_billing(%{organization_id: transaction.organization_id}),
+         "draft" <- transaction.status,
+         true <- billing.deduct_tds do
+      credit = calculate_credit(billing, transaction)
+
+      # Add credit to customer
+      Stripe.CustomerBalanceTransaction.create(billing.stripe_customer_id, %{
+        amount: -credit,
+        currency: billing.currency
+      })
+
+      # Update invoice footer with message
+      Stripe.Invoice.update(transaction.invoice_id, %{
+        footer:
+          "TDS INR #{(credit / 100) |> trunc()} for Month of #{DateTime.utc_now().month |> Timex.month_name()} deducted above under Applied Balance section"
+      })
+
+      credit
+    end
+  end
+
+  # Calculate the amount to be credited to customer account
+  @spec calculate_credit(Billing.t(), map()) :: non_neg_integer()
+  defp calculate_credit(billing, transaction) do
+    (billing.tds_amount / 100 * transaction.amount_due) |> trunc()
+  end
 
   @doc """
   A common function for making Stripe API calls with params that are not supported withing Stripity Stripe
@@ -415,15 +457,16 @@ defmodule Glific.Partners.Billing do
   @spec subscription(Billing.t(), Organization.t()) ::
           {:ok, Stripe.Subscription.t()} | {:pending, map()} | {:error, String.t()}
   defp subscription(billing, organization) do
-    # now create and attach the subscriptions to this organization
-    params = subscription_params(billing, organization)
     opts = [expand: ["latest_invoice.payment_intent", "pending_setup_intent"]]
 
-    make_stripe_request("subscriptions", :post, params, opts)
+    billing
+    |> subscription_params(organization)
+    |> Subscription.create(opts)
     |> case do
       # subscription is active, we need to update the same information via the
       # webhook call 'invoice.paid' also, so might need to refactor this at
       # a later date
+
       {:ok, subscription} ->
         update_subscription_details(subscription, organization.id, billing)
         # if subscription requires client intervention (most likely for India, we need this)
@@ -455,11 +498,11 @@ defmodule Glific.Partners.Billing do
   Update organization subscription plan
   """
   @spec update_subscription(Billing.t(), Organization.t()) :: Organization.t()
-  def update_subscription(billing, organization) do
+  def update_subscription(billing, %{status: :suspended} = organization) do
     billing.stripe_subscription_items
     |> Map.values()
     |> Enum.each(fn subscription_item ->
-      Stripe.SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
+      SubscriptionItem.delete(subscription_item, %{clear_usage: false}, [])
     end)
 
     params = %{
@@ -477,7 +520,7 @@ defmodule Glific.Partners.Billing do
       }
     }
 
-    Stripe.SubscriptionItem.delete(
+    SubscriptionItem.delete(
       billing.stripe_subscription_items[stripe_ids()["monthly"]],
       %{},
       []
@@ -486,6 +529,17 @@ defmodule Glific.Partners.Billing do
     Stripe.Subscription.update(billing.stripe_subscription_id, params, [])
     organization
   end
+
+  def update_subscription(billing, %{status: status} = organization)
+      when status in [:inactive, :ready_to_delete] do
+    ## let's delete the subscription by end of that month and deactivate the
+    ## billing when we change the status to inactive and ready to delete.
+    Stripe.Subscription.delete(billing.stripe_customer_id, %{at_period_end: true})
+    update_billing(billing, %{is_active: false})
+    organization
+  end
+
+  def update_subscription(_billing, organization), do: organization
 
   # return a map which maps glific product ids to subscription item ids
   @spec subscription_details(Stripe.Subscription.t()) :: map()
@@ -502,22 +556,23 @@ defmodule Glific.Partners.Billing do
 
     %{
       stripe_current_period_start: period_start,
-      stripe_current_period_end: period_end,
-      stripe_last_usage_recorded: nil
+      stripe_current_period_end: period_end
     }
   end
 
   # return a map which maps glific product ids to subscription item ids
   @spec subscription_items(Stripe.Subscription.t()) :: map()
   defp subscription_items(%{items: items} = _subscription) do
-    items.data
-    |> Enum.reduce(
-      %{},
-      fn item, acc ->
-        Map.put(acc, item.price.id, item.id)
-      end
-    )
-    |> (fn v -> %{stripe_subscription_items: v} end).()
+    v =
+      items.data
+      |> Enum.reduce(
+        %{},
+        fn item, acc ->
+          Map.put(acc, item.price.id, item.id)
+        end
+      )
+
+    %{stripe_subscription_items: v}
   end
 
   # return a map which maps glific product ids to subscription item ids
@@ -537,10 +592,11 @@ defmodule Glific.Partners.Billing do
 
   # function to check if the subscription requires another authentcation i.e 3D
   @spec subscription_requires_auth?(Stripe.Subscription.t()) :: boolean()
-  defp subscription_requires_auth?(subscription),
-    do:
-      !is_nil(subscription.pending_setup_intent) &&
-        subscription.pending_setup_intent.status == "requires_action"
+  defp subscription_requires_auth?(%{pending_setup_intent: pending_setup_intent})
+       when is_map(pending_setup_intent),
+       do: Map.get(pending_setup_intent, :status, "") == "requires_action"
+
+  defp subscription_requires_auth?(_subscription), do: false
 
   @doc """
   Update subscription details. We will also use this method while updating the details form webhook.
@@ -558,9 +614,7 @@ defmodule Glific.Partners.Billing do
 
       _ ->
         Logger.info(
-          "Error while updating the subscription details for subscription #{subscription.id} and organization_id: #{
-            organization_id
-          }"
+          "Error while updating the subscription details for subscription #{subscription.id} and organization_id: #{organization_id}"
         )
 
         message = """
@@ -583,17 +637,43 @@ defmodule Glific.Partners.Billing do
     {:ok, subscription}
   end
 
+  @doc """
+    Stripe subscription created callback via webhooks.
+    We are using this to update the prorate data with monthly billing.
+  """
+  @spec subscription_created_callback(Stripe.Subscription.t(), non_neg_integer()) ::
+          :ok | {:error, Stripe.Error.t()}
+  def subscription_created_callback(subscription, org_id) do
+    ## we can not add prorate for 3d secure cards. That's why we are using the
+    ## subscription created callback to add the monthly subscription with prorate
+    ## data.
+
+    with billing <- get_billing(%{organization_id: org_id}),
+         false <- billing.stripe_subscription_items |> Map.has_key?(stripe_ids()["monthly"]) do
+      proration_date = DateTime.utc_now() |> DateTime.to_unix()
+
+      make_stripe_request("subscription_items", :post, %{
+        subscription: subscription.id,
+        prorate: true,
+        proration_date: proration_date,
+        price: stripe_ids()["monthly"],
+        quantity: 1
+      })
+    else
+      _ -> {:ok, subscription}
+    end
+  end
+
   # get dates and times in the right format for other functions
-  @spec format_dates(DateTime.t(), DateTime.t()) ::
-          {Date.t(), Date.t(), DateTime.t(), non_neg_integer}
+  @spec format_dates(DateTime.t(), DateTime.t()) :: map()
   defp format_dates(start_date, end_date) do
     end_date = end_date |> Timex.end_of_day()
 
-    {
-      start_date |> DateTime.to_date(),
-      end_date |> DateTime.to_date(),
-      end_date,
-      end_date |> DateTime.to_unix()
+    %{
+      start_usage_date: start_date |> DateTime.to_date(),
+      end_usage_date: end_date |> DateTime.to_date(),
+      end_usage_datetime: end_date,
+      time: end_date |> DateTime.to_unix()
     }
   end
 
@@ -613,21 +693,23 @@ defmodule Glific.Partners.Billing do
     :ok
   end
 
-  # daily usage and weekly usage are the same
+  @doc """
+  This is called on a regular schedule to update usage.
+  """
   @spec period_usage(DateTime.t()) :: :ok
-  defp period_usage(end_date) do
+  def period_usage(record_date) do
     Billing
     |> where([b], b.is_active == true)
-    |> Repo.all()
-    |> Enum.each(&update_period_usage(&1, end_date))
+    |> Repo.all(skip_organization_id: true)
+    |> Enum.each(&update_period_usage(&1, record_date))
   end
 
   @spec update_period_usage(Billing.t(), DateTime.t()) :: :ok
   defp update_period_usage(billing, end_date) do
     start_date =
       if is_nil(billing.stripe_last_usage_recorded),
-        # if we dont have last_usage, set it from the subscription period date
-        do: Timex.beginning_of_month(end_date),
+        # if we dont have last_usage, set it to start of the week as we update it on weekly basis
+        do: Timex.beginning_of_week(end_date),
         # We know the last time recorded usage, we bump the date
         # to the next day for this period
         else: billing.stripe_last_usage_recorded
@@ -639,67 +721,84 @@ defmodule Glific.Partners.Billing do
   Record the usage for a specific organization from start_date to end_date
   both dates inclusive
   """
-  @spec record_usage(non_neg_integer, DateTime.t(), DateTime.t()) :: :ok
+  @spec record_usage(non_neg_integer(), DateTime.t(), DateTime.t()) :: :ok
   def record_usage(organization_id, start_date, end_date) do
+    # putting organization id in process for fetching stat data
+    Repo.put_process_state(organization_id)
+
+    billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
+    subscription_items = billing.stripe_subscription_items
+
     # formatting dates
-    {start_usage_date, end_usage_date, end_usage_datetime, time} =
-      format_dates(start_date, end_date)
+    dates = format_dates(start_date, end_date)
 
-    case Stats.usage(organization_id, start_usage_date, end_usage_date) do
-      nil ->
-        :ok
+    organization_id
+    |> update_message_usage(dates, subscription_items)
+    |> update_consulting_hour(start_date, end_date, dates, subscription_items)
 
-      usage ->
-        billing = Repo.get_by!(Billing, %{organization_id: organization_id, is_active: true})
-        prices = stripe_ids()
-        subscription_items = billing.stripe_subscription_items
+    if Timex.days_in_month(end_date) - end_date.day == 0,
+      do: add_metered_users(organization_id, end_date, subscription_items)
 
-        record_subscription_item(
-          subscription_items[prices["messages"]],
-          # dividing the messages as every 10 message is 1 unit in stripe messages subscription item
-          div(usage.messages, 10),
-          time,
-          "messages: #{organization_id}, #{Date.to_string(start_usage_date)}"
-        )
-
-        with consulting_hours <-
-               calculate_consulting_hours(billing.organization_id, start_date, end_date).duration,
-             false <- is_nil(consulting_hours) do
-          record_subscription_item(
-            subscription_items[prices["consulting_hours"]],
-            # dividing the consulting hours as every 15 min is 1 unit in stripe consulting hour subscription item
-            div(consulting_hours, 15),
-            time,
-            "consulting: #{billing.organization_id}, #{Date.to_string(start_usage_date)}"
-          )
-        end
-
-        if Timex.days_in_month(end_date) - end_date.day == 0,
-          do: add_metered_users(organization_id, end_date, prices, subscription_items)
-
-        {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: end_usage_datetime})
-    end
-
+    {:ok, _} = update_billing(billing, %{stripe_last_usage_recorded: dates.end_usage_datetime})
     :ok
   end
 
-  defp add_metered_users(organization_id, end_date, prices, subscription_items) do
-    start_date = end_date |> Timex.beginning_of_month() |> Timex.beginning_of_day()
+  @spec update_message_usage(non_neg_integer(), map(), map()) :: non_neg_integer
+  defp update_message_usage(organization_id, dates, subscription_items) do
+    case Stats.usage(organization_id, dates.start_usage_date, dates.end_usage_date) do
+      nil ->
+        organization_id
 
-    {start_usage_date, end_usage_date, _end_usage_datetime, time} =
-      format_dates(start_date, end_date)
-
-    case Stats.usage(organization_id, start_usage_date, end_usage_date) do
       usage ->
         record_subscription_item(
-          subscription_items[prices["users"]],
-          usage.users,
-          time,
-          "users: #{organization_id}, #{Date.to_string(start_usage_date)}"
+          subscription_items[stripe_ids()["messages"]],
+          # dividing the messages as every 10 message is 1 unit in stripe messages subscription item
+          div(usage.messages, 10),
+          dates.time,
+          "messages: #{organization_id}, #{Date.to_string(dates.start_usage_date)}"
         )
     end
 
-    :ok
+    organization_id
+  end
+
+  @spec update_consulting_hour(non_neg_integer(), DateTime.t(), DateTime.t(), map(), map()) ::
+          true | {:error, Stripe.Error.t()} | {:ok, Stripe.SubscriptionItem.Usage.t()}
+  defp update_consulting_hour(organization_id, start_date, end_date, dates, subscription_items) do
+    with consulting_hours <-
+           calculate_consulting_hours(organization_id, start_date, end_date).duration,
+         false <- is_nil(consulting_hours) do
+      record_subscription_item(
+        subscription_items[stripe_ids()["consulting_hours"]],
+        # dividing the consulting hours as every 15 min is 1 unit in stripe consulting hour subscription item
+        div(consulting_hours, 15),
+        dates.time,
+        "consulting: #{organization_id}, #{Date.to_string(dates.start_usage_date)}"
+      )
+    end
+  end
+
+  @spec add_metered_users(non_neg_integer(), DateTime.t(), map()) :: :ok
+  defp add_metered_users(organization_id, end_date, subscription_items) do
+    start_date = end_date |> Timex.beginning_of_month() |> Timex.beginning_of_day()
+    dates = format_dates(start_date, end_date)
+
+    Logger.info(
+      "Updating metered user in billing for org_id: #{organization_id} between #{dates.start_usage_date} and #{dates.end_usage_date}"
+    )
+
+    case Stats.usage(organization_id, dates.start_usage_date, dates.end_usage_date) do
+      %{messages: _messages, users: users} ->
+        record_subscription_item(
+          subscription_items[stripe_ids()["users"]],
+          users,
+          dates.time,
+          "users: #{organization_id}, #{Date.to_string(dates.start_usage_date)}"
+        )
+
+      nil ->
+        :ok
+    end
   end
 
   # record the usage against a subscription item in stripe

@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query flowGet($id: ID!) {
+  flowGet(id: $id) {
+    ...FlowFields
+
+    ...ErrorFields
+  }
+}

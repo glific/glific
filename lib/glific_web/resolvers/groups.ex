@@ -37,6 +37,14 @@ defmodule GlificWeb.Resolvers.Groups do
   end
 
   @doc """
+  Get the list of organizations groups filtered by args
+  """
+  @spec organization_groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Group]}
+  def organization_groups(_, args, _) do
+    {:ok, Groups.list_organizations_groups(args)}
+  end
+
+  @doc """
   Get the count of groups filtered by args
   """
   @spec count_groups(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
@@ -73,9 +81,8 @@ defmodule GlificWeb.Resolvers.Groups do
   @spec delete_group(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_group(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}),
-         {:ok, group} <- Groups.delete_group(group) do
-      {:ok, group}
+    with {:ok, group} <- Repo.fetch_by(Group, %{id: id, organization_id: user.organization_id}) do
+      Groups.delete_group(group)
     end
   end
 

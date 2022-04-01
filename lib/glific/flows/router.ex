@@ -19,7 +19,7 @@ defmodule Glific.Flows.Router do
     Case,
     Category,
     FlowContext,
-    MessageVarParser,
+    Localization,
     Node,
     Wait
   }
@@ -71,6 +71,7 @@ defmodule Glific.Flows.Router do
     Flows.check_required_fields(json, @required_fields)
 
     router = %Router{
+      node: node,
       node_uuid: node.uuid,
       type: json["type"],
       operand: json["operand"],
@@ -175,14 +176,13 @@ defmodule Glific.Flows.Router do
   def execute(%{wait: wait} = _router, context, []) when wait != nil,
     do: Wait.execute(wait, context, [])
 
-  def execute(
-        %{type: type} = router,
-        context,
-        messages
-      )
-      when type == "switch" do
+  def execute(%{type: type} = router, context, messages) when type == "switch" do
+    Node.bump_count(router.node, context)
+
     {msg, rest} =
       if messages == [] do
+        ## split by group is also calling the same function.
+        ## currently we are differentiating based on operand
         split_by_expression(router, context)
       else
         [msg | rest] = messages
@@ -218,6 +218,12 @@ defmodule Glific.Flows.Router do
     # find the category object and send it over
     {:ok, {:category, category}} = Map.fetch(context.uuid_map, category_uuid)
 
+    translated_category_name = Localization.get_translated_category_name(context, category)
+
+    category = Map.put(category, :name, translated_category_name)
+
+    ## We need to change the category name for other translations.
+
     context =
       if is_nil(router.result_name),
         # if there is a result name, store it in the context table along with the category name first
@@ -227,40 +233,30 @@ defmodule Glific.Flows.Router do
     Category.execute(category, context, rest)
   end
 
+  ## We are using this operand for split contats by groups
   @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
-  defp split_by_expression(router, context) do
-    # get the value from the "input" version of the operand field
-    # this is the split by result flow
-    content =
-      router.operand
-      |> MessageVarParser.parse(%{
-        "contact" => Contacts.get_contact_field_map(context.contact_id),
-        "results" => context.results,
-        "flow" => %{name: context.flow.name, id: context.flow.id}
-      })
-      # Once we have the content, we send it over to EEx to execute
-      |> execute_eex()
+  defp split_by_expression(%{operand: "@contact.groups"} = _router, context) do
+    contact = Contacts.get_contact_field_map(context.contact_id)
 
-    msg = Messages.create_temp_message(context.organization_id, content)
+    msg =
+      context.organization_id
+      |> Messages.create_temp_message("#{inspect(contact.in_groups)}",
+        extra: %{contact_groups: contact.in_groups}
+      )
+
     {msg, []}
   end
 
-  @spec execute_eex(String.t()) :: String.t()
-  defp execute_eex(content) do
-    if Glific.suspicious_code(content) do
-      Logger.error("EEx suspicious code: #{content}")
-      "Invalid Code"
-    else
-      EEx.eval_string(content)
-    end
-  rescue
-    EEx.SyntaxError ->
-      Logger.error("EEx threw a SyntaxError: #{content}")
-      "Invalid Code"
+  defp split_by_expression(router, context) do
+    operand = format_operand(router.operand)
 
-    _ ->
-      Logger.error("EEx threw a Error: #{content}")
-      "Invalid Code"
+    content =
+      FlowContext.parse_context_string(context, operand)
+      # Once we have the content, we send it over to EEx to execute
+      |> Glific.execute_eex()
+
+    msg = Messages.create_temp_message(context.organization_id, content)
+    {msg, []}
   end
 
   # return the right category but also return if it is a "checkbox" related category
@@ -291,15 +287,27 @@ defmodule Glific.Flows.Router do
 
   @spec update_context_results(FlowContext.t(), String.t(), Message.t(), {Category.t(), boolean}) ::
           FlowContext.t()
+  defp update_context_results(context, key, _msg, _) when key in ["", nil] do
+    Logger.info("invalid results key for context: #{inspect(context)}")
+    context
+  end
+
   defp update_context_results(context, key, msg, {category, is_checkbox}) do
+    default_results = %{
+      "input" => msg.body,
+      "category" => category.name,
+      "inserted_at" => DateTime.utc_now()
+    }
+
     results =
       cond do
-        msg.type in [:image, :video, :audio] ->
+        Flows.is_media_type?(msg.type) ->
           json =
             msg.media
             |> Map.take([:id, :source_url, :url, :caption])
             |> Map.put(:category, "media")
             |> Map.put(:input, msg.media.url)
+            |> Map.put(:inserted_at, DateTime.utc_now())
 
           %{key => json}
 
@@ -308,16 +316,24 @@ defmodule Glific.Flows.Router do
             msg.location
             |> Map.take([:id, :longitude, :latitude])
             |> Map.put(:category, "location")
+            |> Map.put(:inserted_at, DateTime.utc_now())
+
+          %{key => json}
+
+        msg.type in [:quick_reply, :list] ->
+          json =
+            default_results
+            |> Map.merge(msg.extra)
+            |> Map.put("interactive_content", msg.interactive_content)
 
           %{key => json}
 
         is_checkbox ->
           %{
-            key => %{
-              "input" => msg.body,
-              "selected" => msg.body |> Glific.make_set() |> MapSet.to_list(),
-              "category" => category.name
-            }
+            key =>
+              Map.merge(default_results, %{
+                "selected" => msg.body |> Glific.make_set() |> MapSet.to_list()
+              })
           }
 
         # this also handles msg.type in [:text]
@@ -325,12 +341,21 @@ defmodule Glific.Flows.Router do
           %{
             key =>
               Map.merge(
-                %{"input" => msg.body, "category" => category.name},
+                default_results,
                 msg.extra
               )
           }
       end
 
     FlowContext.update_results(context, results)
+  end
+
+  ## Format operand and replcae @fields. to @contact.fields. so that system can parse it automatically.
+  ## for other router operand we are handling everything in a same way.
+  @spec format_operand(String.t()) :: String.t()
+  defp format_operand(operand) do
+    if String.starts_with?(operand, "@fields."),
+      do: String.replace(operand, "fields.", "contact.fields.", global: false),
+      else: operand
   end
 end

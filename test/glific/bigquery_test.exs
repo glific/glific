@@ -167,7 +167,7 @@ defmodule Glific.BigQueryTest do
   end
 
   test "handle_insert_query_response/3 should raise error", attrs do
-    assert_raise Protocol.UndefinedError, fn ->
+    assert_raise RuntimeError, fn ->
       BigQuery.handle_insert_query_response(
         {:error, %{body: "{\"error\":{\"code\":404,\"status\":\"UNKNOWN_ERROR\"}}"}},
         attrs.organization_id,
@@ -179,9 +179,9 @@ defmodule Glific.BigQueryTest do
 
   @delete_query """
   DELETE FROM `test_dataset.messages`
-  WHERE struct(id, updated_at) IN (
-    SELECT STRUCT(id, updated_at)  FROM (
-      SELECT id, updated_at, ROW_NUMBER() OVER (
+  WHERE struct(id, updated_at, bq_uuid) IN (
+    SELECT STRUCT(id, updated_at, bq_uuid)  FROM (
+      SELECT id, updated_at, bq_uuid, ROW_NUMBER() OVER (
         PARTITION BY delta.id ORDER BY delta.updated_at DESC
       ) AS rn
       FROM `test_dataset.messages` delta

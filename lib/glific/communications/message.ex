@@ -9,6 +9,7 @@ defmodule Glific.Communications.Message do
     Communications,
     Contacts,
     Contacts.Contact,
+    Mails.BalanceAlertMail,
     Messages,
     Messages.Message,
     Partners,
@@ -27,7 +28,9 @@ defmodule Glific.Communications.Message do
     audio: :send_audio,
     video: :send_video,
     document: :send_document,
-    sticker: :send_sticker
+    sticker: :send_sticker,
+    list: :send_interactive,
+    quick_reply: :send_interactive
   }
 
   @doc """
@@ -38,9 +41,7 @@ defmodule Glific.Communications.Message do
     message = Repo.preload(message, [:receiver, :sender, :media])
 
     Logger.info(
-      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{
-        message.id
-      }'"
+      "Sending message: type: '#{message.type}', contact_id: '#{message.receiver.id}', message_id: '#{message.id}'"
     )
 
     with {:ok, _} <-
@@ -48,8 +49,21 @@ defmodule Glific.Communications.Message do
              Communications.provider_handler(message.organization_id),
              @type_to_token[message.type],
              [message, attrs]
-           ),
-         do: publish_message(message)
+           ) do
+      :telemetry.execute(
+        [:glific, :message, :sent],
+        # currently we are not measuring latency
+        %{duration: 1},
+        %{
+          type: message.type,
+          sender_id: message.sender_id,
+          receiver_id: message.receiver_id,
+          organization_id: message.organization_id
+        }
+      )
+
+      publish_message(message)
+    end
   rescue
     # An exception is thrown if there is no provider handler and/or sending the message
     # via the provider fails
@@ -125,7 +139,7 @@ defmodule Glific.Communications.Message do
   @doc """
   Callback in case of any error while sending the message
   """
-  @spec handle_error_response(Tesla.Env.t(), Message.t()) :: {:error, String.t()}
+  @spec handle_error_response(Tesla.Env.t() | map(), Message.t()) :: {:error, String.t()}
   def handle_error_response(response, message) do
     {:ok, message} =
       message
@@ -152,7 +166,10 @@ defmodule Glific.Communications.Message do
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
 
-    fetch_and_publish_message_status(bsp_message_id)
+    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
+    publish_message_status(message)
+
+    process_errors(message, errors, errors["payload"]["payload"]["code"])
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params) do
@@ -169,9 +186,7 @@ defmodule Glific.Communications.Message do
   @spec receive_message(map(), atom()) :: :ok | {:error, String.t()}
   def receive_message(%{organization_id: organization_id} = message_params, type \\ :text) do
     Logger.info(
-      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{
-        message_params.bsp_message_id
-      }'"
+      "Received message: type: '#{type}', phone: '#{message_params.sender.phone}', id: '#{message_params.bsp_message_id}'"
     )
 
     {:ok, contact} =
@@ -188,20 +203,32 @@ defmodule Glific.Communications.Message do
   defp do_receive_message(contact, %{organization_id: organization_id} = message_params, type) do
     {:ok, contact} = Contacts.set_session_status(contact, :session)
 
+    metadata = %{
+      type: type,
+      sender_id: contact.id,
+      receiver_id: Partners.organization_contact_id(organization_id),
+      organization_id: contact.organization_id
+    }
+
     message_params =
       message_params
+      |> Map.merge(metadata)
       |> Map.merge(%{
-        type: type,
-        sender_id: contact.id,
-        receiver_id: Partners.organization_contact_id(organization_id),
         flow: :inbound,
         bsp_status: :delivered,
-        status: :received,
-        organization_id: contact.organization_id
+        status: :received
       })
 
+    # publish a telemetry event about the message being received
+    :telemetry.execute(
+      [:glific, :message, :received],
+      # currently we are not measuring latency
+      %{duration: 1},
+      metadata
+    )
+
     cond do
-      type == :text -> receive_text(message_params)
+      type in [:quick_reply, :list, :text] -> receive_text(message_params)
       type == :location -> receive_location(message_params)
       true -> receive_media(message_params)
     end
@@ -259,9 +286,34 @@ defmodule Glific.Communications.Message do
 
   defp publish_data(message, data_type) do
     message
-    |> Repo.preload([:context_message])
-    |> Communications.publish_data(data_type, message.organization_id)
+    |> Repo.preload([:context_message, :contact])
+    |> Communications.publish_data(
+      data_type,
+      message.organization_id
+    )
+    |> publish_simulator(data_type)
   end
+
+  # check if the contact is simulator and send another subscription only for it
+  @spec publish_simulator(Message.t() | nil, atom()) :: Message.t() | nil
+  defp publish_simulator(message, type) when type in [:sent_message, :received_message] do
+    if Contacts.is_simulator_contact?(message.contact.phone) do
+      message_type =
+        if type == :sent_message,
+          do: :sent_simulator_message,
+          else: :received_simulator_message
+
+      Communications.publish_data(
+        message,
+        message_type,
+        message.organization_id
+      )
+    end
+
+    message
+  end
+
+  defp publish_simulator(message, _type), do: message
 
   # lets have a default timeout of 3 seconds for each call
   @timeout 4000
@@ -280,7 +332,7 @@ defmodule Glific.Communications.Message do
     :ok
   end
 
-  @spec process_message(Message.t() | nil) :: :ok
+  @spec process_message(Message.t() | nil) :: any
   defp process_message(nil), do: :ok
 
   defp process_message(message) do
@@ -308,7 +360,50 @@ defmodule Glific.Communications.Message do
         end
       )
     end)
-
-    :ok
   end
+
+  @spec process_errors(Message.t(), map(), integer | nil) :: any
+  defp process_errors(message, _errors, 1002) do
+    # Issue #2047 - Number does not exist in WhatsApp
+    # Lets disable this contact and make it inactive
+    # This is relatively common, so we dont send an email or log this error
+    Contacts.number_does_not_exist(message.contact_id)
+  end
+
+  defp process_errors(message, _errors, 471) do
+    # Issue #2049 - Organization has hit rate limit and
+    # WABA is now rejecting messages
+    organization = Partners.organization(message.organization_id)
+    Partners.suspend_organization(organization)
+
+    # We should send a message to ops and also email the org and glific support
+    body = """
+    #{organization.name} account has been suspended since it hit the WhatsApp rate limit.
+
+    Your services will resume automatically at the start of the next day. Please be patient :)
+    """
+
+    Glific.log_error(body)
+    BalanceAlertMail.rate_exceeded(organization, body)
+  end
+
+  defp process_errors(message, _errors, 1003) do
+    # Issue #2049 - Organization has insufficient balance
+    # Gupshup is now rejecting messages
+    # We should send a message to ops and also email the org and glific support
+    organization = Partners.organization(message.organization_id)
+    Partners.suspend_organization(organization, 3)
+
+    # We should send a message to ops and also email the org and glific support
+    body = """
+    #{organization.name} account has been suspended since its BSP balance is insufficient.
+
+    Please refill your account immediately so Glific can send and receive messages on your behalf.
+    """
+
+    Glific.log_error(body)
+    BalanceAlertMail.no_balance(organization, body)
+  end
+
+  defp process_errors(_message, _errors, _code), do: nil
 end

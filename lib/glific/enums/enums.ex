@@ -42,7 +42,7 @@ defmodule Glific.Enums do
   [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out]
 
   iex> Glific.Enums.message_type_const()
-  [:audio, :contact, :document, :hsm, :image, :location, :text, :video, :sticker]
+  [:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker]
 
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
@@ -103,6 +103,12 @@ defmodule Glific.Enums do
   iex> Glific.Enums.OrganizationStatus.__enum_map__()
   Glific.Enums.organization_status_const()
 
+  iex> Glific.Enums.InteractiveMessageType.__enum_map__()
+  Glific.Enums.interactive_message_type_const()
+
+  iex> Glific.Enums.ImportContactsType.__enum_map__()
+  Glific.Enums.import_contacts_type_const()
+
   """
 
   defmacro api_status_const,
@@ -155,4 +161,10 @@ defmodule Glific.Enums do
 
   defmacro organization_status_const,
     do: Macro.expand(@organization_status_const, __CALLER__)
+
+  defmacro interactive_message_type_const,
+    do: Macro.expand(@interactive_message_type_const, __CALLER__)
+
+  defmacro import_contacts_type_const,
+    do: Macro.expand(@import_contacts_type_const, __CALLER__)
 end

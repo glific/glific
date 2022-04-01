@@ -34,30 +34,33 @@ oban_queues = [
   dialogflow: 5,
   gcs: 5,
   gupshup: 10,
-  webhook: 10
+  webhook: 10,
+  broadcast: 5
 ]
 
 oban_crontab = [
-  {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :contact_status}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :wakeup_flows}},
-  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
-  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :execute_triggers}},
   {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :gcs}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :bigquery}},
+  {"*/1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :triggers_and_broadcast}},
   {"0 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :stats}},
   {"1 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :hourly_tasks}},
   {"2 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :delete_tasks}},
   {"58 23 * * *", Glific.Jobs.MinuteWorker, args: %{job: :daily_tasks}},
   {"*/5 * * * *", Glific.Jobs.MinuteWorker, args: %{job: :five_minute_tasks}},
-  {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}}
+  {"0 0 * * *", Glific.Jobs.MinuteWorker, args: %{job: :update_hsms}},
+  # 21:00 Sat UTC is  02:30 Sun IST and hence low traffic
+  {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}}
 ]
 
 oban_engine = Oban.Pro.Queue.SmartEngine
 
 oban_plugins = [
   # Prune jobs after 5 mins, gives us some time to go investigate if needed
-  {Oban.Plugins.Pruner, max_age: 300},
+  {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 5 * 60}, limit: 25_000},
   {Oban.Plugins.Cron, crontab: oban_crontab},
-  Oban.Pro.Plugins.Lifeline,
+  Oban.Pro.Plugins.DynamicLifeline,
   Oban.Web.Plugins.Stats,
   Oban.Plugins.Gossip
 ]
@@ -115,6 +118,16 @@ config :fun_with_flags, :cache_bust_notifications,
 config :waffle,
   storage: Waffle.Storage.Google.CloudStorage,
   token_fetcher: Glific.GCS
+
+config :esbuild,
+  version: "0.14.0",
+  default: [
+    args: ~w(js/app.js --bundle --target=es2016 --outdir=../priv/static/assets),
+    cd: Path.expand("../assets", __DIR__),
+    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
+  ]
+
+config :glific, Glific.Communications.Mailer, adapter: Swoosh.Adapters.AmazonSES
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

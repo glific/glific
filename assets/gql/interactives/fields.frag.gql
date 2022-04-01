@@ -1,0 +1,14 @@
+fragment InteractiveTemplateFields on InteractiveTemplateResult {
+interactiveTemplate {
+    interactiveContent
+    label
+    type
+  }
+}
+
+fragment ErrorFields on InteractiveTemplateResult {
+  errors {
+    key
+    message
+  }
+}

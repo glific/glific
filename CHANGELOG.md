@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] -- 2021-06-22
+
+- Add/Edit Stripe customer and TDS support.
+- Added contact variables suggestion.
+- Added in-office flow in the form structure.
+- Added support for media-url in messages BigQuery
+- Added support for button templates
+- Export flows as a json file.
+- Template variable issue. Now we are parsing the parameter
+- consulting hours/TDS and many more enhancements on Stripe API
+
+### Added
+- SaaS deployments
+  * Billing
+  * Consulting Hours
+  * Code Extensions
+- Button template HSM messages in simulator
+- Floweditor improvements
+  * Split by Intent (integration with Dialogflow)
+  * Attachments support
+- Is Active field for Flows
+- Contact fields edit/update/delete
+- Propagating parent and child flow results in flows
+- Bugfixes in webhook calls (allowing 200..299) as valid response
+
+
 ## [1.6.x] -- 2021-06-01
 
 ### Added

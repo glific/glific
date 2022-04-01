@@ -9,12 +9,13 @@ defmodule Glific.Providers.Gupshup.Worker do
     priority: 0
 
   alias Glific.{
-    Communications,
     Contacts,
     Messages.Message,
     Partners,
     Partners.Organization,
-    Providers.Gupshup.ApiClient
+    Providers.Gupshup.ApiClient,
+    Providers.Gupshup.ResponseHandler,
+    Providers.Worker
   }
 
   @doc """
@@ -26,11 +27,7 @@ defmodule Glific.Providers.Gupshup.Worker do
     organization = Partners.organization(message["organization_id"])
 
     if is_nil(organization.services["bsp"]) do
-      handle_fake_response(
-        message,
-        "{\"message\": \"API Key does not exist\"}",
-        401
-      )
+      Worker.handle_credential_error(message)
     else
       perform(job, organization)
     end
@@ -52,52 +49,17 @@ defmodule Glific.Providers.Gupshup.Worker do
          ) do
       {:ok, _} ->
         if Contacts.is_simulator_contact?(payload["destination"]) do
-          process_simulator(payload["destination"], message)
+          Worker.process_simulator(message)
         else
           process_gupshup(organization.id, payload, message, attrs)
         end
 
       _ ->
-        # lets sleep real briefly, so that we are not firing off many
-        # jobs to the BSP after exceeding the rate limit for this second
-        # so we are artifically slowing down the send rate
-        Process.sleep(50)
-        # we also want this job scheduled as soon as possible
-        {:snooze, 1}
+        Worker.default_send_rate_handler()
     end
   end
 
-  @spec process_simulator(String.t(), Message.t()) :: :ok | {:error, String.t()}
-  defp process_simulator(_destination, message) do
-    message_id = Faker.String.base64(36)
-
-    handle_fake_response(
-      message,
-      "{\"status\":\"submitted\",\"messageId\":\"simu-#{message_id}\"}",
-      200
-    )
-  end
-
-  @spec handle_fake_response(Message.t(), String.t(), non_neg_integer) ::
-          :ok | {:error, String.t()}
-  defp handle_fake_response(message, body, status) do
-    {:ok,
-     %Tesla.Env{
-       __client__: %Tesla.Client{adapter: nil, fun: nil, post: [], pre: []},
-       __module__: Glific.Providers.Gupshup.ApiClient,
-       body: body,
-       method: :post,
-       status: status
-     }}
-    |> handle_response(message)
-  end
-
-  @spec process_gupshup(
-          non_neg_integer(),
-          map(),
-          Message.t(),
-          map()
-        ) ::
+  @spec process_gupshup(non_neg_integer(), map(), Message.t(), map()) ::
           {:ok, Message.t()} | {:error, String.t()}
   defp process_gupshup(
          org_id,
@@ -117,13 +79,13 @@ defmodule Glific.Providers.Gupshup.Worker do
         "template" => Jason.encode!(%{"id" => template_uuid, "params" => params}),
         "src.name" => payload["src.name"]
       }
-      |> check_media_template(template_type, message)
+      |> check_media_template(payload, template_type)
 
     ApiClient.send_template(
       org_id,
       template_payload
     )
-    |> handle_response(message)
+    |> ResponseHandler.handle_response(message)
   end
 
   defp process_gupshup(org_id, payload, message, _attrs) do
@@ -131,34 +93,29 @@ defmodule Glific.Providers.Gupshup.Worker do
       org_id,
       payload
     )
-    |> handle_response(message)
+    |> ResponseHandler.handle_response(message)
   end
 
-  defp check_media_template(template_payload, template_type, message)
+  @spec check_media_template(map(), map(), String.t()) :: map()
+  defp check_media_template(template_payload, payload, template_type)
        when template_type in ["image", "video", "document"] do
     template_payload
-    |> Map.merge(%{"message" => message})
+    |> Map.merge(%{
+      "message" =>
+        Jason.encode!(%{
+          "type" => template_type,
+          template_type => %{"link" => parse_media_url(payload, template_type)}
+        })
+    })
   end
 
-  defp check_media_template(template_payload, _template_type, _message), do: template_payload
+  defp check_media_template(template_payload, _payload, _template_type), do: template_payload
 
-  @doc false
-  @spec handle_response({:ok, Tesla.Env.t()}, Message.t()) ::
-          :ok | {:error, String.t()}
-  defp handle_response({:ok, response}, message) do
-    case response do
-      %Tesla.Env{status: 200} ->
-        Communications.Message.handle_success_response(response, message)
-        :ok
+  @spec parse_media_url(map(), String.t()) :: String.t()
+  defp parse_media_url(template_payload, template_type) when template_type in ["image"],
+    do: Jason.decode!(template_payload["message"])["originalUrl"]
 
-      # Not authorized, Job succeeded, we should return an ok, so we dont retry
-      %Tesla.Env{status: 401} ->
-        Communications.Message.handle_error_response(response, message)
-        :ok
-
-      # We dont know why this failed, so we should try again
-      _ ->
-        Communications.Message.handle_error_response(response, message)
-    end
-  end
+  defp parse_media_url(template_payload, template_type)
+       when template_type in ["video", "document"],
+       do: Jason.decode!(template_payload["message"])["url"]
 end

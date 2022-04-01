@@ -15,7 +15,8 @@ defmodule Glific.Saas.Queries do
     Partners.Organization,
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
-    Repo
+    Repo,
+    Users
   }
 
   alias Pow.Ecto.Schema.Changeset
@@ -84,8 +85,22 @@ defmodule Glific.Saas.Queries do
       organization_id: result.organization.id
     }
 
+    password = Ecto.UUID.generate()
+
     case Contacts.create_contact(attrs) do
       {:ok, contact} ->
+        Users.create_user(
+          Map.merge(attrs, %{
+            password: password,
+            confirm_password: password,
+            roles: ["admin"],
+            contact_id: contact.id,
+            last_login_at: DateTime.utc_now(),
+            last_login_from: "127.0.0.1",
+            organization_id: result.organization.id
+          })
+        )
+
         {:ok, organization} =
           Partners.update_organization(
             result.organization,

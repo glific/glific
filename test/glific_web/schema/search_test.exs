@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createSavedSearch", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a saved search and test possible scenarios and errors", %{manager: user} do
@@ -145,7 +145,7 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "updateSavedSearch", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a saved search", %{manager: user} do
@@ -229,8 +229,9 @@ defmodule GlificWeb.Schema.SearchTest do
     assert {:ok, query_data} = result
 
     # search excludes the org contact id since that is the sender of all messages
+    # this is no longer true, hence removing the -1
     assert length(get_in(query_data, [:data, "search"])) ==
-             get_contacts_count(user.organization_id) - 1
+             get_contacts_count(user.organization_id)
   end
 
   test "search for conversations group", %{staff: user} = attrs do
@@ -558,6 +559,33 @@ defmodule GlificWeb.Schema.SearchTest do
 
     assert {:ok, query_data} = result
     assert get_in(query_data, [:data, "search", Access.at(0), "contact", "id"]) == receiver_id
+  end
+
+  test "search contacts field obeys label filters", %{staff: user} do
+    flow_label = Fixtures.flow_label_fixture(%{organization_id: user.organization_id})
+
+    last_message =
+      Message
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    Repo.get(Message, last_message.id)
+    |> Message.changeset(%{flow_label: flow_label.name})
+    |> Repo.update()
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{"includeLabels" => ["#{flow_label.id}"]},
+          "contactOpts" => %{"limit" => 25},
+          "messageOpts" => %{"limit" => 25}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "search", Access.at(0), "messages", Access.at(0), "body"]) ==
+             last_message.body
   end
 
   test "search with the empty group filter will return the conversation", %{staff: user} do

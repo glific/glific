@@ -1,0 +1,9 @@
+mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: Json!) {
+  resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {
+    success
+    errors {
+      key
+      message
+    }
+  }
+}

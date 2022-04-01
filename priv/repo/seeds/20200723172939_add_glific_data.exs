@@ -7,6 +7,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactsField,
+    Flows.Flow,
     Flows.FlowLabel,
     BigQuery.BigQueryJob,
     Partners,
@@ -72,6 +73,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     contacts_field(organization)
 
     bigquery_jobs(organization)
+
+    set_newcontact_flow_id(organization)
   end
 
   def down(_repo) do
@@ -122,7 +125,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Punjabi", "ਪੰਜਾਬੀ", "pa"},
       {"Marathi", "मराठी", "mr"},
       {"Urdu", "اردو", "ur"},
-      {"Spanish", "Español", "es"}
+      {"Spanish", "Español", "es"},
+      {"Sign Language", "ISL", "isl"}
     ]
 
     utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -157,16 +161,9 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Repo.insert!(%Saas{
       name: "Tides",
       organization_id: organization.id,
+      email: "glific@glific.com",
       phone: "91111222333",
-      stripe_ids: %{
-        product: "prod_JG5ns5s9yPRiOq",
-        setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
-        monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
-        users: "price_1IdZehEMShkCsLFnyYhuDu6p",
-        messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
-        consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
-        inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
-      },
+      stripe_ids: Enum.into(get_stripe_ids(), %{}),
       tax_rates: %{
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
       }
@@ -174,6 +171,20 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   defp saas(_count, _organization), do: nil
+
+  defp get_stripe_ids(),
+    do: default_ids()
+
+  defp default_ids(),
+    do: [
+      product: "prod_JG5ns5s9yPRiOq",
+      setup: "price_1IdZeIEMShkCsLFn5OdWiuC4",
+      monthly: "price_1IdZbfEMShkCsLFn8TF0NLPO",
+      users: "price_1IdZehEMShkCsLFnyYhuDu6p",
+      messages: "price_1IdZdTEMShkCsLFnPAf9zzym",
+      consulting_hours: "price_1IdZe5EMShkCsLFncGatvTCk",
+      inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
+    ]
 
   def gtags(organization, en) do
     # seed tags
@@ -616,5 +627,17 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       inserted_at: utc_now,
       updated_at: utc_now
     })
+  end
+
+  @spec set_newcontact_flow_id(Organization.t()) :: Organization.t()
+  defp set_newcontact_flow_id(organization) do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{
+        name: "New Contact Workflow",
+        organization_id: organization.id
+      })
+
+    organization
+    |> Partners.update_organization(%{newcontact_flow_id: flow.id})
   end
 end

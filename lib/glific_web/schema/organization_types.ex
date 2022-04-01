@@ -11,38 +11,39 @@ defmodule GlificWeb.Schema.OrganizationTypes do
   alias GlificWeb.{Resolvers, Schema, Schema.Middleware.Authorize}
 
   object :organization_result do
-    field :organization, :organization
-    field :errors, list_of(:input_error)
+    field(:organization, :organization)
+    field(:errors, list_of(:input_error))
   end
 
   object :organization_services_result do
-    field :bigquery, :boolean
-    field :google_cloud_storage, :boolean
-    field :dialogflow, :boolean
-    field :fun_with_flags, :boolean
-    field :errors, list_of(:input_error)
+    field(:bigquery, :boolean)
+    field(:google_cloud_storage, :boolean)
+    field(:dialogflow, :boolean)
+    field(:fun_with_flags, :boolean)
+    field(:flow_uuid_display, :boolean)
+    field(:errors, list_of(:input_error))
   end
 
   object :enabled_day do
-    field :id, :integer
-    field :enabled, :boolean
+    field(:id, :integer)
+    field(:enabled, :boolean)
   end
 
   object :out_of_office do
-    field :enabled, :boolean
-    field :start_time, :time
-    field :end_time, :time
-    field :enabled_days, list_of(:enabled_day)
-    field :flow_id, :id
-    field :default_flow_id, :id
+    field(:enabled, :boolean)
+    field(:start_time, :time)
+    field(:end_time, :time)
+    field(:enabled_days, list_of(:enabled_day))
+    field(:flow_id, :id)
+    field(:default_flow_id, :id)
   end
 
   object :organization do
-    field :id, :id
-    field :name, :string
-    field :shortcode, :string
-    field :email, :string
-    field :fields, :json
+    field(:id, :id)
+    field(:name, :string)
+    field(:shortcode, :string)
+    field(:email, :string)
+    field(:fields, :json)
 
     field :bsp, :provider do
       resolve(dataloader(Repo))
@@ -56,19 +57,21 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       resolve(dataloader(Repo))
     end
 
-    field :out_of_office, :out_of_office
+    field(:out_of_office, :out_of_office)
 
-    field :is_active, :boolean
+    field(:newcontact_flow_id, :id)
 
-    field :is_approved, :boolean
+    field(:is_active, :boolean)
 
-    field :status, :organization_status_enum
+    field(:is_approved, :boolean)
 
-    field :timezone, :string
+    field(:status, :organization_status_enum)
 
-    field :session_limit, :integer
+    field(:timezone, :string)
 
-    field :last_communication_at, :datetime
+    field(:session_limit, :integer)
+
+    field(:last_communication_at, :datetime)
 
     field :active_languages, list_of(:language) do
       resolve(fn organization, _, _ ->
@@ -90,74 +93,80 @@ defmodule GlificWeb.Schema.OrganizationTypes do
       end)
     end
 
-    field :inserted_at, :datetime
+    field(:is_suspended, :boolean)
+    field(:suspended_until, :datetime)
 
-    field :updated_at, :datetime
+    field(:is_flow_uuid_display, :boolean)
+
+    field(:inserted_at, :datetime)
+
+    field(:updated_at, :datetime)
   end
 
   @desc "Filtering options for organizations"
   input_object :organization_filter do
     @desc "Match the shortcode"
-    field :shortcode, :string
+    field(:shortcode, :string)
 
     @desc "Match the display name"
-    field :name, :string
+    field(:name, :string)
 
     @desc "Match the email"
-    field :email, :string
+    field(:email, :string)
 
     @desc "Match the provider"
-    field :provider, :string
+    field(:provider, :string)
 
     @desc "Match the default language"
-    field :default_language, :string
+    field(:default_language, :string)
   end
 
   input_object :enabled_day_input do
-    field :id, non_null(:integer)
-    field :enabled, non_null(:boolean)
+    field(:id, non_null(:integer))
+    field(:enabled, non_null(:boolean))
   end
 
   input_object :out_of_office_input do
-    field :enabled, :boolean
-    field :start_time, :time
-    field :end_time, :time
-    field :enabled_days, list_of(:enabled_day_input)
-    field :flow_id, :id
-    field :default_flow_id, :id
+    field(:enabled, :boolean)
+    field(:start_time, :time)
+    field(:end_time, :time)
+    field(:enabled_days, list_of(:enabled_day_input))
+    field(:flow_id, :id)
+    field(:default_flow_id, :id)
   end
 
   input_object :delete_organization_input do
-    field :delete_organization_id, :id
-    field :is_confirmed, :boolean
+    field(:delete_organization_id, :id)
+    field(:is_confirmed, :boolean)
   end
 
   input_object :organization_input do
-    field :name, :string
-    field :shortcode, :string
-    field :email, :string
+    field(:name, :string)
+    field(:shortcode, :string)
+    field(:email, :string)
 
-    field :bsp_id, :id
-    field :contact_id, :id
-    field :default_language_id, :id
+    field(:bsp_id, :id)
+    field(:contact_id, :id)
+    field(:default_language_id, :id)
 
-    field :out_of_office, :out_of_office_input
+    field(:out_of_office, :out_of_office_input)
+    field(:newcontact_flow_id, :id)
 
-    field :is_active, :boolean
+    field(:is_active, :boolean)
 
-    field :status, :organization_status_enum
+    field(:status, :organization_status_enum)
 
-    field :timezone, :string
+    field(:timezone, :string)
 
-    field :session_limit, :integer
+    field(:session_limit, :integer)
 
-    field :active_language_ids, list_of(:id)
+    field(:active_language_ids, list_of(:id))
 
-    field :signature_phrase, :string
+    field(:signature_phrase, :string)
 
-    field :last_communication_at, :datetime
+    field(:last_communication_at, :datetime)
 
-    field :fields, :json
+    field(:fields, :json)
   end
 
   object :organization_queries do

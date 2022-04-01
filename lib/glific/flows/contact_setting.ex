@@ -23,6 +23,24 @@ defmodule Glific.Flows.ContactSetting do
     |> case do
       [language | _] ->
         {:ok, contact} = Contacts.update_contact(context.contact, %{language_id: language.id})
+
+        {:ok, _} =
+          Contacts.capture_history(contact, :contact_language_updated, %{
+            event_label: "Changed contact language to #{language.label}",
+            event_meta: %{
+              language: %{
+                id: language.id,
+                label: language.label,
+                old_language: context.contact.language_id
+              },
+              flow: %{
+                id: context.flow.id,
+                name: context.flow.name,
+                uuid: context.flow.uuid
+              }
+            }
+          })
+
         Map.put(context, :contact, contact)
 
       [] ->
@@ -40,6 +58,23 @@ defmodule Glific.Flows.ContactSetting do
   @spec set_contact_name(FlowContext.t(), String.t()) :: FlowContext.t()
   def set_contact_name(context, name) do
     {:ok, contact} = Contacts.update_contact(context.contact, %{name: name})
+
+    {:ok, _} =
+      Contacts.capture_history(contact, :contact_name_updated, %{
+        event_label: "contact name changed to #{name}",
+        event_meta: %{
+          flow: %{
+            id: context.flow.id,
+            name: context.flow.name,
+            uuid: context.flow.uuid
+          },
+          name: %{
+            old_name: context.contact.name,
+            new_name: name
+          }
+        }
+      })
+
     Map.put(context, :contact, contact)
   end
 

@@ -12,7 +12,7 @@ defmodule Glific.NotificationTest do
     @valid_attrs %{
       category: "Partner",
       message: "Disabling GCS. Billing account is disabled",
-      severity: "Warning ",
+      severity: "Warning",
       entity: %{
         id: 5,
         shortcode: "google_cloud_storage"
@@ -78,8 +78,7 @@ defmodule Glific.NotificationTest do
   test "create_notification/1 with valid data creates a extension", %{
     organization_id: organization_id
   } do
-    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id})
-
+    attrs = Map.merge(@valid_attrs, %{organization_id: organization_id, severity: "Critical"})
     assert {:ok, %Notification{} = notification} = Notifications.create_notification(attrs)
     assert notification.category == "Partner"
     assert notification.message == "Disabling GCS. Billing account is disabled"

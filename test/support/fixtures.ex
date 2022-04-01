@@ -14,8 +14,11 @@ defmodule Glific.Fixtures do
     Extensions.Extension,
     Flows,
     Flows.ContactField,
+    Flows.FlowContext,
+    Flows.FlowLabel,
     Flows.WebhookLog,
     Groups,
+    Mails.MailLog,
     Messages,
     Messages.MessageMedia,
     Notifications,
@@ -23,11 +26,14 @@ defmodule Glific.Fixtures do
     Partners,
     Partners.Billing,
     Partners.Organization,
+    Partners.Provider,
     Repo,
     Saas.ConsultingHour,
     Settings,
     Tags,
     Templates,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate,
     Triggers.Trigger,
     Users
@@ -124,6 +130,8 @@ defmodule Glific.Fixtures do
         do: Contacts.get_contact!(attrs.contact_id),
         else: contact_fixture()
 
+    {:ok, bsp} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
+
     valid_attrs = %{
       name: "Fixture Organization",
       is_active: true,
@@ -132,9 +140,7 @@ defmodule Glific.Fixtures do
       shortcode: "fixture_org_shortcode",
       email: "replace@idk.org",
       last_communication_at: DateTime.backward(0),
-      # lets just hope its there :)
-      bsp_id: 1,
-      # lets just hope its there :)
+      bsp_id: bsp.id,
       default_language_id: 1,
       contact_id: contact.id,
       active_language_ids: [1],
@@ -173,6 +179,25 @@ defmodule Glific.Fixtures do
       String.to_atom("provider_key_#{organization.id}"),
       "This is a fake key"
     )
+
+    Partners.create_credential(%{
+      organization_id: organization.id,
+      shortcode: "gupshup_enterprise",
+      keys: %{
+        url: "test_url",
+        api_end_point: "test_api_end_point",
+        handler: "Glific.Providers.Gupshup.Enterprise.Message",
+        worker: "Glific.Providers.Gupshup.Enterprise.Worker",
+        bsp_limit: 60
+      },
+      secrets: %{
+        hsm_user_id: "Please enter your HSM account user id here",
+        hsm_password: "Please enter your HSM account password here",
+        two_way_user_id: "Please enter your two way account user id here",
+        two_way_password: "Please enter your two way account password here"
+      },
+      is_active: false
+    })
 
     Partners.create_credential(%{
       organization_id: organization.id,
@@ -224,6 +249,18 @@ defmodule Glific.Fixtures do
   end
 
   @doc false
+  @spec flow_label_fixture(map()) :: FlowLabel.t()
+  def flow_label_fixture(attrs) do
+    attrs = Map.merge(%{name: "Test Flow label"}, attrs)
+
+    {:ok, flow_label} =
+      attrs
+      |> FlowLabel.create_flow_label()
+
+    flow_label
+  end
+
+  @doc false
   @spec message_tag_fixture(map()) :: Tags.MessageTag.t()
   def message_tag_fixture(attrs) do
     valid_attrs = %{
@@ -269,7 +306,6 @@ defmodule Glific.Fixtures do
       body: "Default Template",
       type: :text,
       language_id: language.id,
-      uuid: Ecto.UUID.generate(),
       organization_id: get_org_id()
     }
 
@@ -278,6 +314,8 @@ defmodule Glific.Fixtures do
       |> Enum.into(valid_attrs)
       |> Templates.create_session_template()
 
+    uuid = Ecto.UUID.generate()
+
     valid_attrs_2 = %{
       label: "Another Template Label",
       shortcode: "another template",
@@ -285,7 +323,8 @@ defmodule Glific.Fixtures do
       type: :text,
       language_id: language.id,
       parent_id: session_template.id,
-      uuid: Ecto.UUID.generate(),
+      uuid: uuid,
+      bsp_id: uuid,
       organization_id: get_org_id()
     }
 
@@ -544,9 +583,25 @@ defmodule Glific.Fixtures do
         provider_media_id: Faker.String.base64(10),
         organization_id: attrs.organization_id
       }
+      |> Map.merge(attrs)
       |> Messages.create_message_media()
 
     message_media
+  end
+
+  @doc false
+  @spec mock_validate_media(String.t()) :: any()
+  def mock_validate_media(type \\ "image") do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          headers: %{
+            "content-type" => "#{type}",
+            "content-length" => "111"
+          }
+        }
+    end)
   end
 
   @doc false
@@ -689,7 +744,7 @@ defmodule Glific.Fixtures do
       organization_name: "Glific",
       staff: "Adelle Cavin",
       content: "GCS issue",
-      when: DateTime.backward(10),
+      when: DateTime.backward(2),
       duration: 10,
       is_billable: true
     }
@@ -736,5 +791,120 @@ defmodule Glific.Fixtures do
       |> Extension.create_extension()
 
     extension
+  end
+
+  @doc false
+  @spec dg_contact_fixture(map()) :: Contacts.Contact.t()
+  def dg_contact_fixture(
+        %{
+          enrolled_day: enrolled_day,
+          next_flow_at: next_flow_at,
+          initial_crop_day: initial_crop_day
+        } = attrs
+      ) do
+    contact_fixture(attrs)
+    |> ContactField.do_add_contact_field("total_days", "total_days", "10", "string")
+    |> ContactField.do_add_contact_field(
+      "enrolled_day",
+      "enrolled_day",
+      enrolled_day,
+      "string"
+    )
+    |> ContactField.do_add_contact_field(
+      "initial_crop_day",
+      "initial_crop_day",
+      initial_crop_day,
+      "string"
+    )
+    |> ContactField.do_add_contact_field(
+      "next_flow",
+      "next_flow",
+      "adoption",
+      "string"
+    )
+    |> ContactField.do_add_contact_field(
+      "next_flow_at",
+      "next_flow_at",
+      next_flow_at,
+      "string"
+    )
+  end
+
+  @doc false
+  @spec flow_context_fixture(map()) :: FlowContext.t()
+  def flow_context_fixture(attrs \\ %{}) do
+    contact = contact_fixture()
+
+    valid_attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      uuid_map: %{},
+      node_uuid: Ecto.UUID.generate()
+    }
+
+    {:ok, flow_context} =
+      attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
+      |> Enum.into(valid_attrs)
+      |> FlowContext.create_flow_context()
+
+    flow_context
+    |> Repo.preload(:contact)
+    |> Repo.preload(:flow)
+  end
+
+  @doc false
+  @spec interactive_fixture(map()) :: InteractiveTemplate.t()
+  def interactive_fixture(attrs) do
+    language = language_fixture()
+
+    valid_attrs = %{
+      label: "Quick Reply Fixture",
+      type: :quick_reply,
+      interactive_content: %{
+        "type" => "quick_reply",
+        "content" => %{
+          "type" => "text",
+          "text" => "Test glific quick reply?"
+        },
+        "options" => [
+          %{
+            "type" => "text",
+            "title" => "Test 1"
+          },
+          %{
+            "type" => "text",
+            "title" => "Test 2"
+          }
+        ]
+      },
+      organization_id: attrs.organization_id,
+      language_id: language.id
+    }
+
+    {:ok, interactive} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> InteractiveTemplates.create_interactive_template()
+
+    interactive
+  end
+
+  @doc false
+  @spec mail_log_fixture(map()) :: MailLog.t()
+  def mail_log_fixture(attrs) do
+    valid_attrs = %{
+      category: Faker.Lorem.word(),
+      status: Faker.Lorem.word(),
+      content: %{}
+    }
+
+    {:ok, mail_log} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> MailLog.create_mail_log()
+
+    mail_log
   end
 end

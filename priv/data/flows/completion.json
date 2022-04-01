@@ -292,17 +292,7 @@
       "properties": [
         {
           "key": "__default__",
-          "help": "the value",
-          "type": "text"
-        },
-        {
-          "key": "name",
-          "help": "the name of the result",
-          "type": "text"
-        },
-        {
-          "key": "value",
-          "help": "the value of the result",
+          "help": "same as input",
           "type": "text"
         },
         {
@@ -311,27 +301,12 @@
           "type": "text"
         },
         {
-          "key": "category_localized",
-          "help": "the localized category of the result",
-          "type": "text"
-        },
-        {
           "key": "input",
           "help": "the input of the result",
           "type": "text"
         },
         {
-          "key": "extra",
-          "help": "the extra data of the result such as a webhook response",
-          "type": "any"
-        },
-        {
-          "key": "node_uuid",
-          "help": "the UUID of the node in the flow that generated the result",
-          "type": "text"
-        },
-        {
-          "key": "created_on",
+          "key": "inserted_at",
           "help": "the creation date of the result",
           "type": "datetime"
         }
@@ -401,7 +376,7 @@
   "root": [
     {
       "key": "flow",
-      "help": "the flow",
+      "help": "the flow (name and id)",
       "type": "flow"
     },
     {
@@ -410,49 +385,15 @@
       "type": "contact"
     },
     {
-      "key": "fields",
-      "help": "the custom field values of the contact",
-      "type": "fields"
-    },
-    {
-      "key": "urns",
-      "help": "the URN values of the contact",
-      "type": "urns"
-    },
-    {
       "key": "results",
       "help": "the current run results",
       "type": "results"
     },
+
     {
-      "key": "input",
-      "help": "the current input from the contact",
-      "type": "input"
-    },
-    {
-      "key": "run",
-      "help": "the current run",
-      "type": "run"
-    },
-    {
-      "key": "child",
-      "help": "the last child run",
-      "type": "related_run"
-    },
-    {
-      "key": "parent",
-      "help": "the parent of the run",
-      "type": "related_run"
-    },
-    {
-      "key": "webhook",
-      "help": "the parsed JSON response of the last webhook call",
-      "type": "any"
-    },
-    {
-      "key": "trigger",
-      "help": "the trigger that started this session",
-      "type": "trigger"
+      "key": "globals",
+      "help": "the global values of the organization. Connect with the team for this.",
+      "type": "globals"
     }
   ],
   "root_no_session": [

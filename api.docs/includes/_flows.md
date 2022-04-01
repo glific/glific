@@ -410,7 +410,7 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                               | Description                      |
 | -------------------------------------------------- | -------------------------------- |
-| <a href="#publishflowresult">PublishFlowResult</a> | An error object or response true |
+| <a href="#flowresult">FlowResult</a> | An error object or response true |
 
 ## Start flow for a contact
 
@@ -473,7 +473,72 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                           | Description                              |
 | ---------------------------------------------- | ---------------------------------------- |
-| <a href="#startflowresult">StartFlowResult</a> | An error object or success response true |
+| <a href="#flowresult">FlowResult</a> | An error object or success response true |
+
+## Resume flow for a contact
+
+```graphql
+mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: JSON!) {
+  resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {
+    success
+    errors {
+        key
+        message
+    }
+  }
+}
+
+{
+  "flowId": "1",
+  "contactId": "2"
+  "result": {"one": 1, "two": 2, "three": 3}
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": null,
+      "success": true
+    }
+  }
+}
+```
+
+In case of errors, all the above functions return an error object like the below
+
+```json
+{
+  "data": {
+    "startContactFlow": {
+      "errors": [
+        {
+          "key": "contact",
+          "message": "does not have any active flows awaiting results."
+        }
+      ],
+      "success": null
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| flowId    | <a href="#id">ID</a>! | required |             |
+| contactId | <a href="#id">ID</a>! | required |             |
+| result | <a href="#json">JSON</a>! | required |             |
+
+### Return Parameters
+
+| Type                                           | Description                              |
+| ---------------------------------------------- | ---------------------------------------- |
+| <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Start flow for a group contacts
 
@@ -536,7 +601,7 @@ In case of errors, all the above functions return an error object like the below
 
 | Type                                           | Description                              |
 | ---------------------------------------------- | ---------------------------------------- |
-| <a href="#startflowresult">StartFlowResult</a> | An error object or success response true |
+| <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Copy a Flow
 
@@ -593,7 +658,50 @@ mutation copyFlow($id: ID!, $input:FlowInput!) {
 | ------------------------------------ | ---------------------- |
 | <a href="#flowresult">FlowResult</a> | The copied flow object |
 
+## Import a Flow
 
+```graphql
+mutation ($flow: JSON!) {
+  importFlow(flow: $flow){
+    success
+    errors {
+      key
+      message
+    }
+  }
+}
+
+{
+  "input": {
+    "{\"flows\":[{\"keywords\":[\"hello\"],\"definition\":{\"vars\":[\"a941004f-adc8-43f2-b819-68eec8d1e912\"],\"uuid\":\"a941004f-adc8-43f2-b819-68eec8d1e912\",\"type\":\"messaging\",\"spec_version\":\"13.1.0\",\"revision\":1,\"nodes\":[{\"uuid\":\"59c67035-59ab-47fa-a1fd-a50978aa78c5\",\"exits\":[{\"uuid\":\"49d2775d-a658-4c74-be10-b7d605b4ea6f\",\"destination_uuid\":null}],\"actions\":[{\"uuid\":\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\",\"type\":\"send_msg\",\"text\":\"hehlo\",\"quick_replies\":[],\"attachments\":[]}]}],\"name\":\"hello\",\"localization\":{},\"language\":\"base\",\"expire_after_minutes\":10080,\"_ui\":{\"nodes\":{\"59c67035-59ab-47fa-a1fd-a50978aa78c5\":{\"type\":\"execute_actions\",\"position\":{\"top\":0,\"left\":0}}}}}}],\"contact_field\":[],\"collections\":[]}"
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "importFlow": {
+      "errors": null,
+      "success": false
+    }
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                     | Default  | Description |
+| --------- | ------------------------ | -------- | ----------- |
+| input     | <a href="#json">Json</a> | required |             |
+
+### Return Parameters
+
+| Type                                             | Description                      |
+| ------------------------------------------------ | -------------------------------- |
+| <a href="#flowresult">FlowResult</a> | The imported flow success status |
 
 ## Export a Flow
 
@@ -636,9 +744,87 @@ mutation exportFlow($id: ID!) {
 
 ### Return Parameters
 
-| Type                                               | Description                      |
-| -------------------------------------------------- | -------------------------------- |
+| Type                                        | Description                      |
+| ------------------------------------------- | -------------------------------- |
 | <a href="#exportFlow">ExportFlowResults</a> | An error object or response true |
+
+## Get a flow
+
+Gets a flow for the logged in user.
+
+```graphql
+query flowGet($id: ID!) {
+  flowGet(id: $id) {
+    id
+    name
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "flowGet": {
+      "id": "2",
+      "name": "Activity"
+    }
+  }
+}
+
+OR if no flow is available
+
+{
+  "data": {
+    "flowGet": null
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+
+### Return Parameters
+
+| Type                     | Description   |
+| ------------------------ | ------------- |
+| <a href="#flow">Flow</a> | A flow object |
+
+## Release a flow contact
+
+Releases a flow for the logged in user if one exists. The system also releases the flow
+when it has been idle for more than 10 minutes and there is a request for a flow
+
+```graphql
+query flowRelease {
+  flowRelease {
+    id
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "flowRelease": null
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+
+### Return Parameters
+
+| Type | Description |
+| ---- | ----------- |
 
 ## Flow Objects
 
@@ -701,6 +887,11 @@ mutation exportFlow($id: ID!) {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>isBackground</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -748,56 +939,6 @@ mutation exportFlow($id: ID!) {
 </tbody>
 </table>
 
-### PublishFlowResult
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>errors</strong></td>
-<td valign="top">[<a href="#inputerror">InputError</a>]</td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>success</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
-### StartFlowResult
-
-<table>
-<thead>
-<tr>
-<th align="left">Field</th>
-<th align="right">Argument</th>
-<th align="left">Type</th>
-<th align="left">Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td colspan="2" valign="top"><strong>errors</strong></td>
-<td valign="top">[<a href="#inputerror">InputError</a>]</td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>success</strong></td>
-<td valign="top"><a href="#boolean">Boolean</a></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-
 ## Flow Inputs
 
 ### FlowInput
@@ -828,6 +969,12 @@ mutation exportFlow($id: ID!) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>isActive</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isBackground</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
@@ -873,9 +1020,95 @@ Filtering options for flows
 <td>Match the isActive flag of flow</td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>isBackground</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Match the isBackground flag of flow</td>
+</tr>
+<tr>
   <td colspan="2" valign="top"><strong>status</strong></td>
   <td valign="top"><a href="#string">String</a></td>
   <td>Match the status of flow revision draft/archived/published</td>
 </tr>
 </tbody>
 </table>
+
+## Terminate flows for a contact
+
+Terminate all active flows for a contact.
+
+```graphql
+mutation terminateContactFlows($contactId: ID!) {
+  terminateContactFlows(contactId: $contactId) {
+    errors {
+      key
+      value
+    }
+    success
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "success": true,
+  "errors": null
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+ID  | <a href="#id">ID</a> | nil | Contact ID|
+
+
+
+### Return Parameters
+
+| Field | Type | Description |
+| ---- | ---- | ----------- |
+errors | [<a href="#inputerror">InputError</a>]| |
+success| <a href="#boolean">Boolean</a>| |
+
+## Reset flow counts for a specific flow
+
+Reset all counts for a flow
+
+```graphql
+mutation resetFlowCount($flowId: ID!) {
+  resetFlowCount(flowId: $flowId) {
+    errors {
+      key
+      value
+    }
+    success
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "success": true,
+  "errors": null
+}
+```
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
+ID  | <a href="#id">ID</a> | nil | Flow ID|
+
+
+
+### Return Parameters
+
+| Field | Type | Description |
+| ---- | ---- | ----------- |
+errors | [<a href="#inputerror">InputError</a>]| |
+success| <a href="#boolean">Boolean</a>| |
+

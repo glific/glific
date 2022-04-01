@@ -10,6 +10,8 @@ defmodule Glific.Partners.Invoice do
   alias Glific.{Partners.Billing, Partners.Organization, Repo}
   alias __MODULE__
 
+  require Logger
+
   @required_fields [
     :customer_id,
     :invoice_id,
@@ -129,7 +131,7 @@ defmodule Glific.Partners.Invoice do
     {invoice, setup}
   end
 
-  @spec finalize({Invoice.t(), boolean}) :: Invoice.t()
+  @spec finalize({Invoice.t(), boolean}) :: Invoice.t() | {:error, String.t()}
   defp finalize({invoice, setup}) do
     if setup do
       # Finalizing a draft invoice
@@ -143,20 +145,45 @@ defmodule Glific.Partners.Invoice do
              error: inspect(error)
            )}
       end
+    else
+      invoice
     end
-
-    invoice
   end
 
-  @spec finalize(Invoice.t()) :: Invoice.t() | nil
+  @spec update_prorations(Invoice.t()) :: Invoice.t() | nil
   defp update_prorations(invoice) do
-    billing = Billing.get_billing(%{organization_id: invoice.organization_id})
-    # our test record does not have a billing, need to clean that up
-    if billing != nil && billing.stripe_subscription_id != nil do
-      {:ok, _} = Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
-      invoice
-    else
-      nil
+    with billing <- Billing.get_billing(%{organization_id: invoice.organization_id}),
+         is_valid <- validate_billing?(billing) do
+      update_billing_subscription(invoice, billing, is_valid)
+    end
+  end
+
+  defp validate_billing?(nil), do: false
+  defp validate_billing?(%{stripe_subscription_id: nil}), do: false
+  defp validate_billing?(%{stripe_payment_method_id: nil}), do: false
+
+  defp validate_billing?(%{
+         stripe_subscription_id: _stripe_subscription_id,
+         stripe_payment_method_id: _stripe_payment_method_id
+       }),
+       do: true
+
+  @doc false
+  @spec update_billing_subscription(Invoice.t(), Billing.t(), boolean()) :: Invoice.t() | nil
+  def update_billing_subscription(invoice, _billing, false), do: invoice
+
+  def update_billing_subscription(invoice, billing, _is_valid) do
+    Stripe.Subscription.update(billing.stripe_subscription_id, %{prorate: true})
+    |> case do
+      {:ok, _} ->
+        invoice
+
+      {:error, subscription_error} ->
+        Logger.info(
+          "Error updating subscription: for org_id #{invoice.organization_id} with message: #{subscription_error.message}"
+        )
+
+        nil
     end
   end
 
@@ -202,13 +229,17 @@ defmodule Glific.Partners.Invoice do
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
 
-    Enum.reduce(filter, query, fn
-      {:status, status}, query ->
-        from q in query, where: q.status == ^status
+    Enum.reduce(
+      filter,
+      query,
+      fn
+        {:status, status}, query ->
+          from q in query, where: q.status == ^status
 
-      _, query ->
-        query
-    end)
+        _, query ->
+          query
+      end
+    )
   end
 
   @doc """
@@ -234,7 +265,9 @@ defmodule Glific.Partners.Invoice do
       })
 
     is_delinquent =
-      if invoice.status == "payment_failed" or unpaid_invoice_count != 0, do: true, else: false
+      if invoice.status == "payment_failed" || unpaid_invoice_count != 0,
+        do: true,
+        else: false
 
     Billing.update_billing(billing, %{is_delinquent: is_delinquent})
   end

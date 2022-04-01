@@ -24,12 +24,7 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   @doc false
-  @spec call(
-          %Plug.Conn{
-            params: %{String.t() => String.t(), String.t() => %{String.t() => String.t()}}
-          },
-          Plug.opts()
-        ) :: Plug.Conn.t()
+  @spec call(Plug.Conn.t(), Plug.opts()) :: Plug.Conn.t()
   def call(%Conn{params: %{"type" => type, "payload" => %{"type" => payload_type}}} = conn, opts) do
     organization = build_context(conn)
 

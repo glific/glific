@@ -110,3 +110,15 @@ defenum(
   :organization_status_enum,
   Glific.Enums.organization_status_const()
 )
+
+defenum(
+  Glific.Enums.InteractiveMessageType,
+  :interactive_message_type_enum,
+  Glific.Enums.interactive_message_type_const()
+)
+
+defenum(
+  Glific.Enums.ImportContactsType,
+  :import_contacts_type_enum,
+  Glific.Enums.import_contacts_type_const()
+)

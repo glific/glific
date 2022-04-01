@@ -33,6 +33,7 @@ defmodule Glific.Contacts.Contact do
     :optin_method,
     :optin_message_id,
     :optout_time,
+    :optout_method,
     :last_message_number,
     :last_message_at,
     :last_communication_at,
@@ -61,6 +62,7 @@ defmodule Glific.Contacts.Contact do
           optin_status: boolean() | nil,
           optin_message_id: String.t() | nil,
           optout_time: :utc_datetime | nil,
+          optout_method: String.t() | nil,
           last_message_number: integer,
           last_message_at: :utc_datetime | nil,
           last_communication_at: :utc_datetime | nil,
@@ -94,6 +96,8 @@ defmodule Glific.Contacts.Contact do
     field :last_message_number, :integer, default: 0
 
     field :optout_time, :utc_datetime
+    field :optout_method, :string
+
     field :last_message_at, :utc_datetime
     field :last_communication_at, :utc_datetime
 
@@ -128,7 +132,7 @@ defmodule Glific.Contacts.Contact do
   @doc """
   Populate virtual field of masked phone number
   """
-  @spec populate_masked_phone(%Contact{}) :: %Contact{}
+  @spec populate_masked_phone(Contact.t()) :: Contact.t()
   def populate_masked_phone(%Contact{phone: phone} = contact) do
     masked_phone =
       "#{elem(String.split_at(phone, 4), 0)}******#{elem(String.split_at(phone, -2), 1)}"

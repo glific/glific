@@ -12,7 +12,6 @@ defmodule Glific.ContactsTest do
     Partners,
     Partners.Organization,
     Partners.Saas,
-    Providers.GupshupContacts,
     Seeds.SeedsDev,
     Settings,
     Settings.Language
@@ -83,7 +82,7 @@ defmodule Glific.ContactsTest do
       optin_time: DateTime.utc_now(),
       optin_status: true,
       optout_time: nil,
-      phone: "phone",
+      phone: "919917443992",
       status: :invalid,
       bsp_status: :session_and_hsm,
       fields: %{}
@@ -211,17 +210,6 @@ defmodule Glific.ContactsTest do
       assert {:error, %Ecto.Changeset{}} = Contacts.create_contact(attrs)
     end
 
-    # this is actually in the gupshup provider contact
-    test "create_or_update_contact/1 with valid data creates a new contact when contact does not exist",
-         attrs do
-      attrs = Map.merge(attrs, @valid_attrs)
-      contacts_count = Contacts.count_contacts(%{filter: attrs})
-
-      assert contacts_count == 0
-
-      assert {:ok, %Contact{}} = GupshupContacts.create_or_update_contact(attrs)
-    end
-
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
         Import.import_contacts(999, "foo", file_path: "file_path", url: "")
@@ -238,7 +226,7 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
+      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -259,13 +247,13 @@ defmodule Glific.ContactsTest do
           }
       end)
 
-      data = "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09\n"
+      data = "name,phone,Language,opt_in\ncontact_test,9989329297,english,2021-03-09_12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
       Import.import_contacts(organization.id, group.label, data: data)
-      count = Contacts.count_contacts(%{filter: %{name: "test"}})
+      count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 1
     end
@@ -280,7 +268,7 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09\n"
+            body: "name,phone,Language,opt_in\ntest,9989329297,english,2021-03-09_12:34:25\n"
           }
       end)
 
@@ -305,7 +293,7 @@ defmodule Glific.ContactsTest do
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
-      [~w(name phone Language opt_in), ~w(updated #{contact.phone} english 2021-03-09)]
+      [~w(name phone Language opt_in), ~w(updated #{contact.phone} english 2021-03-09_12:34:25)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -328,7 +316,7 @@ defmodule Glific.ContactsTest do
       end)
 
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
-      data = "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09\n"
+      data = "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
@@ -352,7 +340,8 @@ defmodule Glific.ContactsTest do
         %{method: :get} ->
           %Tesla.Env{
             status: 200,
-            body: "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09\n"
+            body:
+              "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
           }
       end)
 
@@ -376,7 +365,10 @@ defmodule Glific.ContactsTest do
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
-      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09 1)]
+      [
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -401,7 +393,10 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       Contacts.delete_contact(contact)
 
-      [~w(name phone Language opt_in delete), ~w(updated #{contact.phone} english 2021-03-09 1)]
+      [
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+      ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -442,6 +437,10 @@ defmodule Glific.ContactsTest do
         Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
+        [contact | _tail] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
+
+        assert get_in(contact.fields, ["name", "value"]) == "updated"
+
         assert count == 1
         assert_not_called(Contacts.optin_contact())
       end
@@ -457,7 +456,7 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09)]
+      [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
@@ -478,30 +477,14 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
 
-      [~w(name phone Language opt_in), ~w(test phone english 2021-03-09)]
+      [~w(name phone Language opt_in), ~w(test phone english 2021-03-09_12:34:25)]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
-      {:error, %{status: message, errors: _}} =
+      {:error, %{message: message, details: _}} =
         Import.import_contacts(1, group.label, file_path: get_tmp_path())
 
       assert "All contacts could not be added" == message
-    end
-
-    test "create_or_update_contact/1 with valid data updates a contact when contact exists in the database",
-         attrs do
-      contact = contact_fixture(attrs)
-
-      assert {:ok, %Contact{} = contact} =
-               GupshupContacts.create_or_update_contact(
-                 Map.merge(@update_attrs, %{phone: contact.phone})
-               )
-
-      assert contact.name == "some updated name"
-      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
-      assert contact.optout_time == nil
-      assert contact.status == :invalid
-      assert contact.bsp_status == :hsm
     end
 
     test "update_contact/2 with valid data updates the contact",
@@ -763,10 +746,24 @@ defmodule Glific.ContactsTest do
     end
 
     test "contact_opted_in/2 will setup the contact as valid contact for message",
-         %{organization_id: organization_id} do
+         %{organization_id: organization_id} = attrs do
       contact = contact_fixture(%{organization_id: organization_id, status: :invalid})
 
-      Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
+      optin_time = DateTime.utc_now()
+      message_id = Ecto.UUID.generate()
+
+      Contacts.contact_opted_in(%{phone: contact.phone}, organization_id, optin_time,
+        method: "Testing",
+        message_id: message_id
+      )
+
+      [history | _tail] =
+        Contacts.list_contact_history(
+          Map.merge(attrs, %{filter: %{contact_id: contact.id, event_type: "contact_opted_in"}})
+        )
+
+      assert history.event_meta["method"] == "Testing"
+      assert history.event_meta["optin_message_id"] == message_id
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -780,7 +777,7 @@ defmodule Glific.ContactsTest do
 
       # if the contact is blocked he want be able to optin again
       Contacts.update_contact(contact, %{status: :blocked})
-      Contacts.contact_opted_in(contact.phone, organization_id, DateTime.utc_now())
+      Contacts.contact_opted_in(%{phone: contact.phone}, organization_id, DateTime.utc_now())
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -792,10 +789,15 @@ defmodule Glific.ContactsTest do
     end
 
     test "contact_opted_out/2 will setup the contact as valid contact for message",
-         %{organization_id: organization_id} do
+         %{organization_id: organization_id} = attrs do
       contact = contact_fixture(%{organization_id: organization_id, status: :valid})
 
-      Contacts.contact_opted_out(contact.phone, organization_id, DateTime.utc_now())
+      Contacts.contact_opted_out(
+        contact.phone,
+        organization_id,
+        DateTime.utc_now(),
+        "OptedoutTesting"
+      )
 
       {:ok, contact} =
         Repo.fetch_by(
@@ -805,6 +807,13 @@ defmodule Glific.ContactsTest do
 
       assert contact.status == :invalid
       assert contact.optout_time != nil
+
+      [history | _tail] =
+        Contacts.list_contact_history(
+          Map.merge(attrs, %{filter: %{contact_id: contact.id, event_type: "contact_opted_out"}})
+        )
+
+      assert history.event_meta["method"] == "OptedoutTesting"
 
       assert Contacts.contact_opted_out("8910928313", organization_id, DateTime.utc_now()) ==
                :error

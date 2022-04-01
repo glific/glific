@@ -116,10 +116,19 @@ defmodule Glific.Flows.WebhookLog do
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:url, url}, query ->
-        from q in query, where: ilike(q.url, ^"%#{url}%")
+        from q in query, or_where: ilike(q.url, ^"%#{url}%")
 
       {:status_code, status_code}, query ->
-        from q in query, where: q.status_code == ^status_code
+        from q in query, or_where: q.status_code == ^status_code
+
+      {:contact_phone, contact_phone}, query ->
+        sub_query =
+          Contact
+          |> where([c], ilike(c.phone, ^"%#{contact_phone}%"))
+          |> select([c], c.id)
+
+        query
+        |> or_where([q], q.contact_id in subquery(sub_query))
 
       _, query ->
         query

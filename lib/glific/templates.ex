@@ -2,17 +2,17 @@ defmodule Glific.Templates do
   @moduledoc """
   The Templates context.
   """
-  require Logger
   import Ecto.Query, warn: false
   import GlificWeb.Gettext
 
   use Tesla
-  plug Tesla.Middleware.FormUrlencoded
+  plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
     Partners,
     Partners.Organization,
-    Providers.Gupshup.Template,
+    Providers.Gupshup,
+    Providers.GupshupEnterprise,
     Repo,
     Settings,
     Tags.Tag,
@@ -49,13 +49,13 @@ defmodule Glific.Templates do
 
     Enum.reduce(filter, query, fn
       {:is_hsm, is_hsm}, query ->
-        from q in query, where: q.is_hsm == ^is_hsm
+        from(q in query, where: q.is_hsm == ^is_hsm)
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:status, status}, query ->
-        from q in query, where: q.status == ^status
+        from(q in query, where: q.status == ^status)
 
       {:term, term}, query ->
         query
@@ -117,8 +117,10 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def create_session_template(%{is_hsm: true} = attrs) do
     # validate HSM before calling the BSP's API
-    if Map.has_key?(attrs, :shortcode),
-      do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)})
+    attrs =
+      if Map.has_key?(attrs, :shortcode),
+        do: Map.merge(attrs, %{shortcode: String.downcase(attrs.shortcode)}),
+        else: attrs
 
     with :ok <- validate_hsm(attrs),
          :ok <- validate_button_template(Map.merge(%{has_buttons: false}, attrs)) do
@@ -126,17 +128,14 @@ defmodule Glific.Templates do
     end
   end
 
-  def create_session_template(attrs) do
-    do_create_session_template(attrs)
-  end
+  def create_session_template(attrs),
+    do: do_create_session_template(attrs)
 
   @spec validate_hsm(map()) :: :ok | {:error, [String.t()]}
   defp validate_hsm(%{shortcode: shortcode, category: _, example: _} = _attrs) do
-    if String.match?(shortcode, ~r/^[a-z0-9_]*$/) do
-      :ok
-    else
-      {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]}
-    end
+    if String.match?(shortcode, ~r/^[a-z0-9_]*$/),
+      do: :ok,
+      else: {:error, ["shortcode", "only '_' and alphanumeric characters are allowed"]}
   end
 
   defp validate_hsm(_) do
@@ -169,11 +168,26 @@ defmodule Glific.Templates do
 
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
+    Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
     organization = Partners.organization(attrs.organization_id)
 
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Template.submit_for_approval(attrs)
+      "gupshup" -> Gupshup.Template.submit_for_approval(attrs)
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
+    end
+  end
+
+  @doc """
+  Imports pre approved templates from bsp
+  """
+  @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
+  def import_templates(org_id, data) do
+    organization = Partners.organization(org_id)
+
+    organization.bsp.shortcode
+    |> case do
+      "gupshup_enterprise" -> GupshupEnterprise.Template.import_enterprise_templates(org_id, data)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
@@ -251,38 +265,36 @@ defmodule Glific.Templates do
   @doc """
   get and update list of hsm of an organization
   """
-  @spec update_hsms(non_neg_integer()) :: :ok | {:error, String.t()}
-  def update_hsms(organization_id) do
+  @spec sync_hsms_from_bsp(non_neg_integer()) :: :ok | {:error, String.t()}
+  def sync_hsms_from_bsp(organization_id) do
     organization = Partners.organization(organization_id)
 
     organization.bsp.shortcode
     |> case do
-      "gupshup" -> Template.update_hsm_templates(organization_id)
+      "gupshup" -> Gupshup.Template.update_hsm_templates(organization_id)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
 
   @doc false
-  @spec do_update_hsms(map(), Organization.t()) :: :ok
-  def do_update_hsms(templates, organization) do
+  @spec update_hsms(list(), Organization.t()) :: :ok
+  def update_hsms(templates, organization) do
     languages =
       Settings.list_languages()
       |> Enum.map(fn language -> {language.locale, language.id} end)
       |> Map.new()
 
-    db_templates =
-      list_session_templates(%{filter: %{is_hsm: true}})
-      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+    db_templates = hsm_template_uuid_map()
 
     Enum.each(templates, fn template ->
       cond do
-        !Map.has_key?(db_templates, template["id"]) ->
+        !Map.has_key?(db_templates, template["bsp_id"]) ->
           insert_hsm(template, organization, languages)
 
         # this check is required,
         # as is_active field can be updated by graphql API,
         # and should not be reverted back
-        Map.has_key?(db_templates, template["id"]) ->
+        Map.has_key?(db_templates, template["bsp_id"]) ->
           update_hsm(template, organization, languages)
 
         true ->
@@ -295,15 +307,14 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm(template, organization, languages) do
     # get updated db templates to handle multiple approved translations
-    db_templates =
-      list_session_templates(%{filter: %{is_hsm: true}})
-      |> Map.new(fn %{uuid: uuid} = template -> {uuid, template} end)
+    db_templates = hsm_template_uuid_map()
 
     db_template_translations =
       db_templates
       |> Map.values()
       |> Enum.filter(fn db_template ->
-        db_template.shortcode == template["elementName"] and db_template.uuid != template["id"]
+        db_template.shortcode == template["elementName"] and
+          db_template.bsp_id != template["bsp_id"]
       end)
 
     approved_db_templates =
@@ -324,6 +335,22 @@ defmodule Glific.Templates do
 
   @spec insert_hsm(map(), Organization.t(), map()) :: :ok
   defp insert_hsm(template, organization, languages) do
+    example =
+      case Jason.decode(template["meta"] || "{}") do
+        {:ok, meta} ->
+          meta["example"]
+
+        _ ->
+          nil
+      end
+
+    if example,
+      do: do_insert_hsm(template, organization, languages, example),
+      else: :ok
+  end
+
+  @spec do_insert_hsm(map(), Organization.t(), map(), String.t()) :: :ok
+  defp do_insert_hsm(template, organization, languages, example) do
     number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
 
     type =
@@ -342,56 +369,101 @@ defmodule Glific.Templates do
         do: true,
         else: false
 
-    example =
-      case Jason.decode(template["meta"]) do
-        {:ok, meta} ->
-          meta["example"]
-
-        _ ->
-          nil
-      end
-
-    attrs = %{
-      uuid: template["id"],
-      body: template["data"],
-      shortcode: template["elementName"],
-      label: template["elementName"],
-      category: template["category"],
-      example: example,
-      type: type,
-      language_id: language_id,
-      organization_id: organization.id,
-      is_hsm: true,
-      status: template["status"],
-      is_active: is_active,
-      number_parameters: number_of_parameter
-    }
+    attrs =
+      %{
+        uuid: template["id"],
+        body: template["data"],
+        shortcode: template["elementName"],
+        label: template["elementName"],
+        category: template["category"],
+        example: example,
+        type: type,
+        language_id: language_id,
+        organization_id: organization.id,
+        is_hsm: true,
+        status: template["status"],
+        is_active: is_active,
+        number_parameters: number_of_parameter,
+        bsp_id: template["bsp_id"] || template["id"]
+      }
+      |> check_for_button_template()
 
     %SessionTemplate{}
     |> SessionTemplate.changeset(attrs)
     |> Repo.insert()
     |> case do
-      {:ok, template} -> Logger.info("New Session Template Added with label: #{template.label}")
-      {:error, error} -> Logger.info("Error adding new Session Template: #{inspect(error)}")
+      {:ok, template} ->
+        Logger.info("New Session Template Added with label: #{template.label}")
+
+      {:error, error} ->
+        Logger.error(
+          "Error adding new Session Template: #{inspect(error)} and attrs #{inspect(attrs)}"
+        )
     end
 
     :ok
   end
 
-  @spec do_update_hsm(map(), map()) :: {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
-  defp do_update_hsm(template, db_templates) do
-    is_active =
-      if template["status"] in ["APPROVED", "SANDBOX_REQUESTED"],
-        do: true,
-        else: false
+  @spec check_for_button_template(map()) :: map()
+  defp check_for_button_template(%{body: template_body} = template) do
+    [body | buttons] = template_body |> String.split(["| ["])
 
-    update_attrs = %{
-      status: template["status"],
-      is_active: is_active
-    }
+    if body == template_body do
+      template
+    else
+      template
+      |> Map.put(:body, body)
+      |> Map.put(:has_buttons, true)
+      |> update_template_buttons(buttons)
+    end
+  end
+
+  @spec update_template_buttons(map(), list()) :: map()
+  defp update_template_buttons(template, buttons) do
+    parsed_buttons =
+      buttons
+      |> Enum.map(fn button ->
+        button_list = String.replace(button, "]", "") |> String.split(",")
+        parse_template_button(button_list, length(button_list))
+      end)
+
+    button_type =
+      if parsed_buttons |> Enum.any?(fn %{type: button_type} -> button_type == "QUICK_REPLY" end),
+        do: :quick_reply,
+        else: :call_to_action
+
+    template
+    |> Map.put(:buttons, parsed_buttons)
+    |> Map.put(:button_type, button_type)
+  end
+
+  @spec parse_template_button(list(), non_neg_integer()) :: map()
+  defp parse_template_button([text, content], 2) do
+    if String.contains?(content, "http"),
+      do: %{url: content, text: text, type: "URL"},
+      else: %{phone_number: content, text: text, type: "PHONE_NUMBER"}
+  end
+
+  defp parse_template_button([content], 1), do: %{text: content, type: "QUICK_REPLY"}
+
+  @spec do_update_hsm(map(), map()) ::
+          {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
+  defp do_update_hsm(template, db_templates) do
+    current_template = db_templates[template["bsp_id"]]
+    update_attrs = %{status: template["status"]}
+
+    update_attrs =
+      if current_template.status != template["status"],
+        do:
+          Map.put(
+            update_attrs,
+            :is_active,
+            template["status"] in ["APPROVED"]
+          ),
+        else: update_attrs
 
     {:ok, _} =
-      db_templates[template["id"]]
+      db_templates[template["bsp_id"]]
       |> SessionTemplate.changeset(update_attrs)
       |> Repo.update()
   end
@@ -399,7 +471,7 @@ defmodule Glific.Templates do
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp update_hsm_translation(template, approved_db_template, organization, languages) do
-    number_of_parameter = length(Regex.split(~r/{{.}}/, template["data"])) - 1
+    number_of_parameter = template_parameters_count(%{body: template["data"]})
 
     type =
       template["templateType"]
@@ -442,4 +514,57 @@ defmodule Glific.Templates do
     |> SessionTemplate.changeset(update_attrs)
     |> Repo.update()
   end
+
+  @doc """
+  Returns the count of variables in template
+  """
+  @spec template_parameters_count(map()) :: non_neg_integer()
+  def template_parameters_count(template) do
+    template = parse_buttons(template, false, Map.get(template, :has_buttons, false))
+
+    template.body
+    |> String.split()
+    |> Enum.reduce([], fn word, acc ->
+      with true <- String.match?(word, ~r/{{([1-9]|[1-9][0-9])}}/),
+           clean_word <- Glific.string_clean(word) do
+        acc ++ [clean_word]
+      else
+        _ -> acc
+      end
+    end)
+    |> Enum.uniq()
+    |> Enum.count()
+  end
+
+  @spec hsm_template_uuid_map() :: map()
+  defp hsm_template_uuid_map do
+    list_session_templates(%{filter: %{is_hsm: true}})
+    |> Map.new(fn %{bsp_id: bsp_id} = template ->
+      {bsp_id, template}
+    end)
+  end
+
+  @doc false
+  @spec parse_buttons(map(), boolean(), boolean()) :: map()
+  def parse_buttons(session_template, false, true) do
+    # parsing buttons only when template is not already translated, else buttons are part of body
+    updated_body =
+      session_template.buttons
+      |> Enum.reduce(session_template.body, fn button, acc ->
+        "#{acc}| [" <> do_parse_buttons(button["type"], button) <> "] "
+      end)
+
+    session_template
+    |> Map.merge(%{body: updated_body})
+  end
+
+  def parse_buttons(session_template, _is_translated, _has_buttons), do: session_template
+
+  @spec do_parse_buttons(String.t(), map()) :: String.t()
+  defp do_parse_buttons("URL", button), do: button["text"] <> ", " <> button["url"]
+
+  defp do_parse_buttons("PHONE_NUMBER", button),
+    do: button["text"] <> ", " <> button["phone_number"]
+
+  defp do_parse_buttons("QUICK_REPLY", button), do: button["text"]
 end

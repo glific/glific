@@ -134,8 +134,8 @@ defmodule GlificWeb.Schema.MessageMediaTest do
 
     assert {:ok, query_data} = result
 
-    assert "can't be blank" =
-             get_in(query_data, [:data, "createMessageMedia", "errors", Access.at(0), "message"])
+    assert get_in(query_data, [:data, "createMessageMedia", "errors", Access.at(0), "message"]) =~
+             "can't be blank"
   end
 
   test "update a message media and test possible scenarios and errors", %{staff: user} do
@@ -162,7 +162,7 @@ defmodule GlificWeb.Schema.MessageMediaTest do
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "updateMessageMedia", "errors", Access.at(0), "message"])
-    assert message == "can't be blank"
+    assert message =~ "can't be blank"
   end
 
   test "delete a message media", %{staff: user} do

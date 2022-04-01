@@ -198,14 +198,12 @@ defmodule Glific.Flows.Node do
   end
 
   @doc """
-  Execute a node, given a message stream.
-  Consume the message stream as processing occurs
+  Wrapper function to bump the count of the node using our
+  metrics subsystem
   """
-  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
-          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
-  def execute(node, context, messages) do
+  @spec bump_count(Node.t(), FlowContext.t()) :: any
+  def bump_count(node, context) do
     # update the flow count
-
     Metrics.bump(%{
       uuid: node.uuid,
       flow_id: node.flow_id,
@@ -213,18 +211,74 @@ defmodule Glific.Flows.Node do
       organization_id: context.organization_id,
       type: "node"
     })
+  end
 
+  @doc """
+  Wrapper function to abort and clean things up when we detect an infinite loop
+  """
+  @spec infinite_loop(FlowContext.t(), String.t()) ::
+          {:ok, map(), any()}
+  def infinite_loop(context, body) do
+    message = "Infinite loop detected, body: #{body}. Resetting flows"
+    context = FlowContext.reset_all_contexts(context, message)
+
+    # at some point soon, we should change action signatures to allow error
+    {:ok, context, []}
+  end
+
+  @node_map_key {__MODULE__, :node_map}
+  @node_max_count 5
+
+  @doc false
+  @spec reset_node_map() :: any()
+  def reset_node_map,
+    do: Process.put(@node_map_key, %{})
+
+  # stores a global map of how many times we process each node
+  # based on its uuid
+  @spec check_infinite_loop(Node.t(), FlowContext.t()) :: boolean()
+  defp check_infinite_loop(node, context) do
+    node_map = Process.get(@node_map_key, %{})
+    count = Map.get(node_map, {context.id, node.uuid}, 0)
+    Process.put(@node_map_key, Map.put(node_map, {context.id, node.uuid}, count + 1))
+
+    count > @node_max_count
+  end
+
+  @wait_for ["wait_for_time", "wait_for_result"]
+
+  @doc """
+  Execute a node, given a message stream.
+  Consume the message stream as processing occurs
+  """
+  @spec execute(atom() | Node.t(), atom() | FlowContext.t(), [Message.t()]) ::
+          {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
+  def execute(node, context, messages) do
     # if node has an action, execute the first action
+    :telemetry.execute(
+      [:glific, :flow, :node],
+      %{},
+      %{
+        id: node.id,
+        context_id: context.id,
+        flow_id: context.flow_id,
+        contact_id: context.contact_id
+      }
+    )
+
     cond do
+      # check if we are looping forever, if so abort early
+      check_infinite_loop(node, context) ->
+        infinite_loop(context, node.uuid)
+
       # we special case wait for time, since it has a router, which basically
       # is an empty shell and just exits along the normal path
-      !Enum.empty?(node.actions) && hd(node.actions).type == "wait_for_time" ->
+      !Enum.empty?(node.actions) && hd(node.actions).type in @wait_for ->
         execute_node_actions(node, context, messages)
 
       # if both are non-empty, it means that we have either a
       #   * sub-flow option
       #   * calling a web hook
-
       !Enum.empty?(node.actions) && !is_nil(node.router) ->
         execute_node_router(node, context, messages)
 
@@ -257,6 +311,8 @@ defmodule Glific.Flows.Node do
   @spec execute_node_actions(Node.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   defp execute_node_actions(node, context, messages) do
+    bump_count(node, context)
+
     # we need to execute all the actions (nodes can have multiple actions)
     result =
       Enum.reduce(

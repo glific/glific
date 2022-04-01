@@ -221,5 +221,10 @@ Filtering options for webhook_logs
 <td valign="top"><a href="#string">String</a></td>
 <td>Match the status code</td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactPhone</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td>Match the contact phone</td>
+</tr>
 </tbody>
 </table>

@@ -6,8 +6,10 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     Flows,
     Flows.FlowLabel,
     Groups,
+    Seeds.SeedsDev,
     Settings,
-    Templates
+    Templates,
+    Templates.InteractiveTemplates
   }
 
   alias GlificWeb.Flows.FlowEditorController
@@ -28,6 +30,12 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
     is_reserved: true,
     status: "APPROVED"
   }
+
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.seed_interactives(organization)
+    :ok
+  end
 
   defp get_auth_token(conn, token) do
     conn
@@ -186,11 +194,43 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       templates = json_response(conn, 200)["results"]
 
       assert length(
-               Glific.Templates.list_session_templates(%{
+               Templates.list_session_templates(%{
                  filter: %{organization_id: conn.assigns[:organization_id]}
                })
              ) ==
                length(templates)
+    end
+
+    test "interactives", %{conn: conn, access_token: token} do
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/interactive-templates", %{})
+
+      interactives = json_response(conn, 200)["results"]
+
+      assert length(
+               InteractiveTemplates.list_interactives(%{
+                 filter: %{organization_id: conn.assigns[:organization_id]}
+               })
+             ) ==
+               length(interactives)
+    end
+
+    test "fetching single interactive template", %{conn: conn, access_token: token} do
+      [interactive_template | _] =
+        InteractiveTemplates.list_interactives(%{
+          filter: %{organization_id: conn.assigns[:organization_id]}
+        })
+
+      conn =
+        get_auth_token(conn, token)
+        |> get("/flow-editor/interactive-templates/#{interactive_template.id}", %{})
+
+      db_interactive_template =
+        InteractiveTemplates.get_interactive_template!(interactive_template.id)
+
+      assert json_response(conn, 200)["interactive_content"] ==
+               db_interactive_template.interactive_content
     end
 
     def language_fixture(attrs \\ %{}) do
@@ -240,7 +280,11 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
         File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
         |> Jason.decode!()
 
-      assert json_response(conn, 200) == completion
+      functions =
+        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
+        |> Jason.decode!()
+
+      assert json_response(conn, 200) == %{"context" => completion, "functions" => functions}
     end
 
     test "activity", %{conn: conn, access_token: token} do
@@ -337,18 +381,6 @@ defmodule GlificWeb.Flows.FlowEditorControllerTest do
       revision_id = json_response(conn, 200)["revision"]
 
       assert Glific.Repo.get!(Flows.FlowRevision, revision_id) != nil
-    end
-
-    test "functions", %{conn: conn, access_token: token} do
-      functions =
-        File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
-        |> Jason.decode!()
-
-      conn =
-        get_auth_token(conn, token)
-        |> get("/flow-editor/functions", %{})
-
-      assert json_response(conn, 200) == functions
     end
   end
 end

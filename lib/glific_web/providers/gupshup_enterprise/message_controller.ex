@@ -1,0 +1,130 @@
+defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController do
+  @moduledoc """
+  Dedicated controller to handle different types of inbound message form Gupshup
+  """
+
+  use GlificWeb, :controller
+
+  alias Glific.{
+    Communications,
+    Providers.Gupshup
+  }
+
+  @doc false
+  @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
+  def handler(conn, _params, _msg) do
+    conn
+    |> Plug.Conn.send_resp(200, "")
+    |> Plug.Conn.halt()
+  end
+
+  @doc """
+  Parse text message payload and convert that into Glific message struct
+  """
+  @spec text(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def text(conn, params) do
+    params
+    |> Gupshup.Enterprise.Message.receive_text()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message()
+
+    handler(conn, params, "text handler")
+  end
+
+  @doc """
+  Callback for gupshup enterprise image
+  """
+  @spec image(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def image(conn, params), do: media(conn, params, :image)
+
+  @doc """
+  Callback for gupshup enterprise videos
+  """
+  @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def video(conn, params), do: media(conn, params, :video)
+
+  @doc """
+  Callback for gupshup enterprise audio
+  """
+  @spec audio(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def audio(conn, params), do: media(conn, params, :audio)
+
+  @doc """
+  Callback for gupshup enterprise document
+  """
+  @spec document(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def document(conn, params), do: media(conn, params, :document)
+
+  @doc false
+  # Handle Gupshup location message and convert them into Glific Message struct
+  @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def location(conn, params) do
+    params
+    |> Gupshup.Enterprise.Message.receive_location()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message(:location)
+
+    handler(conn, params, "location handler")
+  end
+
+  @doc """
+  Parse button message payload and convert that into Glific message struct
+  """
+  @spec button(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def button(conn, params) do
+    params
+    |> parse_button_text()
+    |> Gupshup.Enterprise.Message.receive_text()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message()
+
+    handler(conn, params, "text handler")
+  end
+
+  @spec parse_button_text(map()) :: map()
+  defp parse_button_text(params),
+    do:
+      params["button"]
+      |> Jason.decode!()
+      |> then(&Map.put(params, "text", &1["text"]))
+
+  @doc """
+  Parse interactive list message payload and convert that into Glific message struct
+  """
+  @spec interactive(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def interactive(conn, params) do
+    params
+    |> parse_interactive_list()
+    |> Gupshup.Enterprise.Message.receive_text()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message()
+
+    handler(conn, params, "text handler")
+  end
+
+  @spec parse_interactive_list(map()) :: map()
+  defp parse_interactive_list(params) do
+    params["interactive"]
+    |> Jason.decode!()
+    |> then(&do_parse_interactive_list(params, &1, &1["type"]))
+  end
+
+  @spec do_parse_interactive_list(map(), map(), String.t()) :: map()
+  defp do_parse_interactive_list(params, reply, "button_reply"),
+    do: Map.put(params, "text", reply["button_reply"]["title"])
+
+  defp do_parse_interactive_list(params, reply, "list_reply"),
+    do: Map.put(params, "text", reply["list_reply"]["title"])
+
+  @doc false
+  # Handle Gupshup media message and convert them into Glific Message struct
+  @spec media(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
+  defp media(conn, params, type) do
+    params
+    |> Gupshup.Enterprise.Message.receive_media()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message(type)
+
+    handler(conn, params, "media handler")
+  end
+end

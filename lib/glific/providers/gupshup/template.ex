@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Template do
   @moduledoc """
-  Message API layer between application and Gupshup
+  Module for handling template operations specific to Gupshup
   """
 
   alias Glific.{
@@ -10,6 +10,8 @@ defmodule Glific.Providers.Gupshup.Template do
     Templates,
     Templates.SessionTemplate
   }
+
+  require Logger
 
   @doc """
   Submitting HSM template for approval
@@ -28,8 +30,9 @@ defmodule Glific.Providers.Gupshup.Template do
 
       attrs
       |> Map.merge(%{
-        number_parameters: length(Regex.split(~r/{{.}}/, attrs.body)) - 1,
+        number_parameters: Templates.template_parameters_count(attrs),
         uuid: response_data["template"]["id"],
+        bsp_id: response_data["template"]["id"],
         status: response_data["template"]["status"],
         is_active:
           if(response_data["template"]["status"] == "APPROVED",
@@ -41,6 +44,10 @@ defmodule Glific.Providers.Gupshup.Template do
       |> Templates.do_create_session_template()
     else
       {status, response} ->
+        Logger.info(
+          "Error submitting Template for approval Status: #{inspect(status)} Response: #{inspect(response)} "
+        )
+
         # structure of response body can be different for different errors
         {:error, ["BSP response status: #{to_string(status)}", handle_error_response(response)]}
 
@@ -80,7 +87,10 @@ defmodule Glific.Providers.Gupshup.Template do
            ApiClient.get_templates(organization_id),
          {:ok, response_data} <- Jason.decode(response.body),
          false <- is_nil(response_data["templates"]) do
-      Templates.do_update_hsms(response_data["templates"], organization)
+      response_data["templates"]
+      |> Enum.reduce([], &(&2 ++ [Map.put(&1, "bsp_id", &1["id"])]))
+      |> Templates.update_hsms(organization)
+
       :ok
     else
       _ ->
@@ -112,7 +122,5 @@ defmodule Glific.Providers.Gupshup.Template do
     template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
   end
 
-  defp update_as_button_template(template_payload, _attrs) do
-    template_payload
-  end
+  defp update_as_button_template(template_payload, _attrs), do: template_payload
 end

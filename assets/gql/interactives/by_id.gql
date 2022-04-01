@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+query interactiveTemplate($id: ID!) {
+  interactiveTemplate(id: $id) {
+    ...InteractiveTemplateFields
+
+    ...ErrorFields
+  }
+}

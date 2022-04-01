@@ -49,16 +49,31 @@ defmodule Glific.ClientsTest do
 
     assert String.contains?(directory, "/")
 
-    # ensure sol works
+    # ensure Sol Works
     contact = Fixtures.contact_fixture()
-    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+
+    message_media = Fixtures.message_media_fixture(%{contact_id: contact.id, organization_id: 1})
+
+    directory =
+      Sol.gcs_file_name(%{
+        "contact_id" => contact.id,
+        "organization_id" => 1,
+        "id" => message_media.id
+      })
+
     assert String.contains?(directory, "/")
-    assert String.contains?(directory, contact.name)
+    assert String.contains?(directory, contact.phone)
 
     contact = Fixtures.contact_fixture(%{name: ""})
-    directory = Sol.gcs_file_name(%{"contact_id" => contact.id})
+
+    directory =
+      Sol.gcs_file_name(%{
+        "contact_id" => contact.id,
+        "organization_id" => 1,
+        "id" => message_media.id
+      })
+
     assert String.contains?(directory, "/")
-    assert String.contains?(directory, "NO NAME")
 
     # also test reap_benefit separately
     directory = ReapBenefit.gcs_file_name(%{"flow_id" => 1, "remote_name" => "foo"})
@@ -96,5 +111,13 @@ defmodule Glific.ClientsTest do
     {cg, ug} = Fixtures.contact_user_group_fixture(%{organization_id: 1})
     contact = Contacts.get_contact!(cg.contact_id)
     assert Clients.broadcast(nil, contact, -1) == ug.user.contact_id
+  end
+
+  test "check that webhook always returns a map" do
+    # a contact not in any group should return the same staff id
+    assert is_map(Clients.webhook("daily", %{fields: "some fields"}))
+
+    assert %{error: "Missing webhook function implementation"} ==
+             Clients.webhook("function", %{fields: "some fields"})
   end
 end

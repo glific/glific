@@ -9,6 +9,8 @@ query contacts($filter: ContactFilter, $opts: Opts) {
     name
     optinTime
     optoutTime
+    optinMethod
+    optoutMethod
     phone
     maskedPhone
     bspStatus
@@ -48,6 +50,8 @@ query contacts($filter: ContactFilter, $opts: Opts) {
         "name": "Default Receiver",
         "optinTime": null,
         "optoutTime": null,
+        "optinMethod": null,
+        "optoutMethod": null,
         "phone": "917834811231",
         "maskedPhone": "9178******31",
         "bspStatus": "SESSION_AND_HSM",
@@ -58,20 +62,21 @@ query contacts($filter: ContactFilter, $opts: Opts) {
   }
 }
 ```
+
 This returns all the contacts filtered by the input <a href="#contactfilter">ContactFilter</a>
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#contactfilter">ContactFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                       | Default | Description                         |
+| --------- | ------------------------------------------ | ------- | ----------------------------------- |
+| filter    | <a href="#contactfilter">ContactFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                   | nil     | limit / offset / sort order options |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#contact">Contact</a>] | List of contacts
 
+| Type                             | Description      |
+| -------------------------------- | ---------------- |
+| [<a href="#contact">Contact</a>] | List of contacts |
 
 ## Other filters on Contacts
 
@@ -146,11 +151,11 @@ query contacts($filter: ContactFilter, $opts: Opts) {
 }
 ```
 
-
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#contact">Contact</a>] | List of contacts
+
+| Type                             | Description      |
+| -------------------------------- | ---------------- |
+| [<a href="#contact">Contact</a>] | List of contacts |
 
 ## Get All Blocked Contacts
 
@@ -187,10 +192,10 @@ query contacts($filter: ContactFilter, $opts: Opts) {
 ```
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-[<a href="#contact">Contact</a>] | List of contacts
 
+| Type                             | Description      |
+| -------------------------------- | ---------------- |
+| [<a href="#contact">Contact</a>] | List of contacts |
 
 ## Get a specific Contact by ID
 
@@ -215,6 +220,11 @@ query contact($id: ID!) {
       }
       fields
       settings
+      history {
+        eventType
+        eventLabel
+        eventMeta
+      }
     }
   }
 }
@@ -244,7 +254,24 @@ query contact($id: ID!) {
         "bspStatus": "SESSION_AND_HSM",
         "settings": null,
         "status": "VALID",
-        "tags": []
+        "tags": [],
+        "history": [
+          {
+            "eventLabel": "All contact flows are ended.",
+            "eventMeta": "{}",
+            "eventType": "contact_flow_ended_all"
+          },
+          {
+            "eventLabel": "Flow (Contact History Flows) started for the contact",
+            "eventMeta": "{\"flow_name\":\"Contact History Flows\",\"flow_id\":14,\"context_id\":6}",
+            "eventType": "contact_flow_started"
+          },
+          {
+            "eventLabel": "Value for new_field is updated to Value 1",
+            "eventMeta": "{\"value\":\"Value 1\",\"old_value\":{\"value\":\"value 2\",\"type\":\"string\",\"label\":\"new_field\",\"inserted_at\":\"2021-12-02T09:12:12.007578Z\"},\"new_value\":\"Value 1\",\"label\":\"new_field\",\"field\":\"new_field\"}",
+            "eventType": "contact_fields_updated"
+          }
+        ]
       }
     }
   }
@@ -253,14 +280,15 @@ query contact($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-ID | <a href="#id">ID</a> | nil ||
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | Queried Contact
+
+| Type                                       | Description     |
+| ------------------------------------------ | --------------- |
+| <a href="#contactresult">ContactResult</a> | Queried Contact |
 
 ## Count all Contacts
 
@@ -288,14 +316,15 @@ query countContacts($filter: ContactFilter) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#contactfilter">ContactFilter</a> | nil | filter the list
+| Parameter | Type                                       | Default | Description     |
+| --------- | ------------------------------------------ | ------- | --------------- |
+| filter    | <a href="#contactfilter">ContactFilter</a> | nil     | filter the list |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#int">Int</a> | Count of filtered contacts
+
+| Type                   | Description                |
+| ---------------------- | -------------------------- |
+| <a href="#int">Int</a> | Count of filtered contacts |
 
 ## Create a Contact
 
@@ -354,14 +383,15 @@ mutation createContact($input:ContactInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#contactinput">ContactInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| input     | <a href="#contactinput">ContactInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | The created contact object
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#contactresult">ContactResult</a> | The created contact object |
 
 ## Update a Contact
 
@@ -421,16 +451,16 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
-input | <a href="#contactinput">ContactInput</a> | required ||
+| Parameter | Type                                     | Default  | Description |
+| --------- | ---------------------------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>!                    | required |             |
+| input     | <a href="#contactinput">ContactInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | The updated contact object
 
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#contactresult">ContactResult</a> | The updated contact object |
 
 ## Block a Contact
 
@@ -471,9 +501,10 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
 ```
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | The updated contact object
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#contactresult">ContactResult</a> | The updated contact object |
 
 ## UnBlock a Contact
 
@@ -514,9 +545,10 @@ mutation updateContact($id: ID!, $input:ContactInput!) {
 ```
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | The updated contact object
+
+| Type                                       | Description                |
+| ------------------------------------------ | -------------------------- |
+| <a href="#contactresult">ContactResult</a> | The updated contact object |
 
 ## Delete a Contact
 
@@ -566,14 +598,15 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>! | required ||
+| Parameter | Type                  | Default  | Description |
+| --------- | --------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a>! | required |             |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#contactresult">ContactResult</a> | An error object or empty
+
+| Type                                       | Description              |
+| ------------------------------------------ | ------------------------ |
+| <a href="#contactresult">ContactResult</a> | An error object or empty |
 
 ## Get contact's location
 
@@ -605,14 +638,15 @@ query contactLocation($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a>!
+| Parameter | Type                  | Default | Description |
+| --------- | --------------------- | ------- | ----------- |
+| id        | <a href="#id">ID</a>! |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#location">Location</a> | A location object
+
+| Type                             | Description       |
+| -------------------------------- | ----------------- |
+| <a href="#location">Location</a> | A location object |
 
 ## Optin a Contact
 
@@ -661,15 +695,17 @@ mutation optinContact($phone: String!, $name: String) {
 ```
 
 ### Query Parameters
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-phone | <a href="#string">String</a>! | required ||
-name | <a href="#string">String</a> |||
+
+| Parameter | Type                          | Default  | Description |
+| --------- | ----------------------------- | -------- | ----------- |
+| phone     | <a href="#string">String</a>! | required |             |
+| name      | <a href="#string">String</a>  |          |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#contactresult">ContactResult</a> | contact object
+
+| Type                                       | Description    |
+| ------------------------------------------ | -------------- |
+| <a href="#contactresult">ContactResult</a> | contact object |
 
 ## Get a simulator contact
 
@@ -709,14 +745,14 @@ OR if no simulator is available
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
-<a href="#contact">Contact</a> | A contact object
 
+| Type                           | Description      |
+| ------------------------------ | ---------------- |
+| <a href="#contact">Contact</a> | A contact object |
 
 ## Release a simulator contact
 
@@ -724,7 +760,6 @@ Releases a simulator contact for the logged in user if one exists. The system al
 when it has been idle for more than 10 minutes and there is a request for a simulator
 
 ```graphql
-
 query simulatorRelease {
   simulatorRelease {
     id
@@ -744,12 +779,119 @@ query simulatorRelease {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
+| Parameter | Type | Default | Description |
+| --------- | ---- | ------- | ----------- |
 
 ### Return Parameters
-Type | Description
---------- | ---- | ------- | -----------
+
+| Type | Description |
+| ---- | ----------- |
+
+## Get All Contact History
+
+```graphql
+query ContactHistory($filter: ContactsHistoryFilter, $opts: Opts) {
+    contactHistory(filter: $filter, opts: $opts) {
+      eventDatetime
+      eventLabel
+      eventMeta
+      eventType
+      id
+      insertedAt
+      updatedAt
+    }
+  }
+
+
+{
+  "opts": {
+    "order": "ASC",
+    "limit": 10,
+    "offset": 0
+  },
+  "filter": {
+    "contactId": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "contactHistory": [
+      {
+        "eventDatetime": "2021-12-07T12:12:50Z",
+        "eventLabel": "All contact flows are ended.",
+        "eventMeta": "{}",
+        "eventType": "contact_flow_ended_all",
+        "id": "106",
+        "insertedAt": "2021-12-07T12:12:51.000000Z",
+        "updatedAt": "2021-12-07T12:12:51.000000Z"
+      },
+      {
+        "eventDatetime": "2021-12-07T12:12:50Z",
+        "eventLabel": "Flow Started",
+        "eventMeta": "{\"flow\":{\"uuid\":\"3fa22108-f464-41e5-81d9-d8a298854429\",\"name\":\"Help Workflow\",\"id\":1},\"context_id\":70}",
+        "eventType": "contact_flow_started",
+        "id": "107",
+        "insertedAt": "2021-12-07T12:12:51.000000Z",
+        "updatedAt": "2021-12-07T12:12:51.000000Z"
+      },
+      {
+        "eventDatetime": "2021-12-07T12:12:50Z",
+        "eventLabel": "Flow Ended:",
+        "eventMeta": "{\"flow\":{\"uuid\":\"3fa22108-f464-41e5-81d9-d8a298854429\",\"name\":\"Help Workflow\",\"id\":1},\"context_id\":70}",
+        "eventType": "contact_flow_ended",
+        "id": "108",
+        "insertedAt": "2021-12-07T12:12:51.000000Z",
+        "updatedAt": "2021-12-07T12:12:51.000000Z"
+      }
+    ]
+  }
+}
+```
+
+This returns all the contact history for the contact filtered by the input <a href="#contactHistoryFilter">contactHistoryFilter</a>
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description                         |
+| --------- | -------------------------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>                                 | nil     | limit / offset / sort order options |
+
+## Count all ContactHistory
+
+```graphql
+query countContactHistory($filter: ContactsHistoryFilter) {
+  countContactHistory(filter: $filter)
+}
+
+
+{
+  "filter": {
+    "contact_id": 1
+  }
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "countContactHistory": 3
+  }
+}
+```
+
+### Query Parameters
+
+| Parameter | Type                                                     | Default | Description     |
+| --------- | -------------------------------------------------------- | ------- | --------------- |
+| filter    | <a href="#contactHistoryFilter">contactHistoryFilter</a> | nil     | filter the list |
 
 ## Contact Objects
 
@@ -783,6 +925,16 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>optoutTime</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>optinMethod</strong></td>
+<td valign="top"><a href="#datetime">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>optoutMethod</strong></td>
+<td valign="top"><a href="#datetime">String</a></td>
 <td></td>
 </tr>
 <tr>
@@ -870,6 +1022,91 @@ Type | Description
 <td valign="top">[<a href="#group">Group</a>]</td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>history</strong></td>
+<td valign="top"><a href="#history">History</a></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### History
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td colspan="2" valign="top"><strong>id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_type</strong></td>
+<td valign="top"><a href="#string">Event Type</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_label</strong></td>
+<td valign="top"><a href="#string">Event Label</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_meta</strong></td>
+<td valign="top"><a href="#json">Event Meta</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_datetime</strong></td>
+<td valign="top"><a href="#datetime">Event DateTime</a></td>
+<td></td>
+</tr>
+
+</tbody>
+</table>
+
+### contactHistoryFilter
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+
+<tr>
+<td colspan="2" valign="top"><strong>contact_id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_type</strong></td>
+<td valign="top"><a href="#string">Event Type</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>event_label</strong></td>
+<td valign="top"><a href="#string">Event Label</a></td>
+<td></td>
+</tr>
+
 </tbody>
 </table>
 
@@ -923,7 +1160,7 @@ Type | Description
 </tbody>
 </table>
 
-## Contact Inputs ##
+## Contact Inputs
 
 ### ContactFilter
 

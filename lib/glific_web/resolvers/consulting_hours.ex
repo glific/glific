@@ -35,6 +35,15 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
   end
 
   @doc """
+  Fetches consulting hours between start_date and end_date
+  """
+  @spec fetch_consulting_hours(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, String.t()}
+  def fetch_consulting_hours(_, args, _) do
+    {:ok, ConsultingHour.fetch_consulting_hours(args)}
+  end
+
+  @doc """
   Create consulting hour
   """
   @spec create_consulting_hour(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
@@ -58,7 +67,7 @@ defmodule GlificWeb.Resolvers.ConsultingHours do
     updated_params = Glific.substitute_organization_id(params, params.client_id, :client_id)
 
     with {:ok, consulting_hour} <-
-           Repo.fetch_by(ConsultingHour, %{id: id, organization_id: params.client_id}),
+           Repo.fetch_by(ConsultingHour, %{id: id}, skip_organization_id: true),
          {:ok, consulting_hour} <-
            ConsultingHour.update_consulting_hour(consulting_hour, updated_params) do
       {:ok, %{consulting_hour: consulting_hour}}

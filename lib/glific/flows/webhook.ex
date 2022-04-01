@@ -28,8 +28,9 @@ defmodule Glific.Flows.Webhook do
   @spec execute(Action.t(), FlowContext.t()) :: nil
   def execute(action, context) do
     case String.downcase(action.method) do
-      "get" -> get(action, context)
-      "post" -> post(action, context)
+      "get" -> method(action, context)
+      "post" -> method(action, context)
+      "function" -> method(action, context)
     end
 
     nil
@@ -58,10 +59,10 @@ defmodule Glific.Flows.Webhook do
     update_log(webhook_log, message)
   end
 
-  defp update_log(webhook_log, message) when is_map(message) do
+  defp update_log(webhook_log, %{body: body} = message) when is_map(message) and body != nil do
     # handle incorrect json body
     json_body =
-      case Jason.decode(message.body) do
+      case Jason.decode(body) do
         {:ok, json_body} ->
           json_body
 
@@ -72,6 +73,17 @@ defmodule Glific.Flows.Webhook do
     attrs = %{
       response_json: json_body,
       status_code: message.status
+    }
+
+    webhook_log
+    |> WebhookLog.update_webhook_log(attrs)
+  end
+
+  # this is when we are storing the return from an internal function call
+  defp update_log(webhook_log, result) when is_map(result) do
+    attrs = %{
+      response_json: result,
+      status_code: 200
     }
 
     webhook_log
@@ -111,6 +123,7 @@ defmodule Glific.Flows.Webhook do
   defp do_create_body(context, action_body_map) do
     default_payload = %{
       contact: %{
+        id: context.contact.id,
         name: context.contact.name,
         phone: context.contact.phone,
         fields: context.contact.fields
@@ -133,6 +146,7 @@ defmodule Glific.Flows.Webhook do
         {k, v} -> {k, v}
       end)
       |> Enum.into(%{})
+      |> Map.put("organization_id", context.organization_id)
 
     Jason.encode(action_body_map)
     |> case do
@@ -150,8 +164,10 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec post(Action.t(), FlowContext.t()) :: nil
-  defp post(action, context) do
+  # method can be either a get or a post. The do_oban function
+  # does the right thing based on if it is a get or post
+  @spec method(Action.t(), FlowContext.t()) :: nil
+  defp method(action, context) do
     case create_body(context, action.body) do
       {:error, message} ->
         action
@@ -165,7 +181,7 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: nil
+  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
     headers =
       if is_nil(action.headers),
@@ -175,19 +191,18 @@ defmodule Glific.Flows.Webhook do
     headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
 
-    __MODULE__.new(%{
-      method: String.downcase(action.method),
-      url: action.url,
-      result_name: action.result_name,
-      body: body,
-      headers: headers,
-      webhook_log_id: webhook_log.id,
-      context_id: context.id,
-      organization_id: context.organization_id
-    })
-    |> Oban.insert()
-
-    nil
+    {:ok, _} =
+      __MODULE__.new(%{
+        method: String.downcase(action.method),
+        url: action.url,
+        result_name: action.result_name,
+        body: body,
+        headers: headers,
+        webhook_log_id: webhook_log.id,
+        context_id: context.id,
+        organization_id: context.organization_id
+      })
+      |> Oban.insert()
   end
 
   defp do_action("post", url, body, headers),
@@ -196,9 +211,28 @@ defmodule Glific.Flows.Webhook do
   ## We need to figure out a way to send the data with urls.
   ## Currently we can not send the json map as a query string
   ## We will come back on this one in the future.
+  defp do_action("get", url, body, headers),
+    do:
+      Tesla.get(url,
+        headers: headers,
+        query: [data: body],
+        opts: [adapter: [recv_timeout: 10_000]]
+      )
 
-  defp do_action("get", url, body, headers) do
-    Tesla.get(url, headers: headers, query: [data: body])
+  defp do_action("function", function, body, _headers) do
+    {
+      :ok,
+      :function,
+      Glific.Clients.webhook(function, Jason.decode!(body))
+    }
+  rescue
+    error ->
+      error_message =
+        "Calling webhook function threw an exception, args: #{inspect(function)}, object: #{inspect(body)}, error: #{inspect(error)}"
+
+      Logger.error(error_message)
+      Appsignal.send_error(:error, error_message, __STACKTRACE__)
+      {:error, error_message}
   end
 
   @doc """
@@ -222,14 +256,14 @@ defmodule Glific.Flows.Webhook do
       ) do
     Repo.put_process_state(organization_id)
 
-    headers =
-      Keyword.new(
-        headers,
-        fn {k, v} -> {Glific.safe_string_to_atom(k), v} end
-      )
+    headers = Enum.reduce(headers, [], fn {k, v}, acc -> acc ++ [{k, v}] end)
 
     result =
       case do_action(method, url, body, headers) do
+        {:ok, :function, result} ->
+          update_log(webhook_log_id, result)
+          result
+
         {:ok, %Tesla.Env{status: status} = message} when status in 200..299 ->
           case Jason.decode(message.body) do
             {:ok, json_response} ->
@@ -269,26 +303,15 @@ defmodule Glific.Flows.Webhook do
       else
         # update the context with the results from webhook return values
         {
-          FlowContext.update_results(context, %{result_name => result}),
+          FlowContext.update_results(
+            context,
+            %{result_name => Map.put(result, :inserted_at, DateTime.utc_now())}
+          ),
           Messages.create_temp_message(context.organization_id, "Success")
         }
       end
 
     FlowContext.wakeup_one(context, message)
     :ok
-  end
-
-  # Send a get request, and if success, sned the json map back
-  @spec get(atom() | Action.t(), FlowContext.t()) :: nil
-  defp get(action, context) do
-    case create_body(context, action.body) do
-      {:error, message} ->
-        action
-        |> create_log(%{}, action.headers, context)
-        |> update_log(message)
-
-      {map, body} ->
-        do_oban(action, context, {map, body})
-    end
   end
 end

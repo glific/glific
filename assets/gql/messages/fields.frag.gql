@@ -2,7 +2,7 @@ fragment MessageFields on MessageResult {
   message {
     id
     body
-
+    sendBy
     sender {
       id
       name

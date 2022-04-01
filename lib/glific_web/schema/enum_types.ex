@@ -54,6 +54,12 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Organization Status enum"
   enum(:organization_status_enum, values: Glific.Enums.organization_status_const())
 
+  @desc "The Interactive Message Types enum"
+  enum(:interactive_message_type_enum, values: Glific.Enums.interactive_message_type_const())
+
+  @desc "The Import Contact Types enum"
+  enum(:import_contacts_type_enum, values: Glific.Enums.import_contacts_type_const())
+
   # doing this in a special way, since values: does not work
   # if we are using default values
   @desc "Enum for ordering results"

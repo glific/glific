@@ -11,16 +11,20 @@ defmodule Glific.Seeds.SeedsMigration do
     BigQuery,
     Contacts,
     Contacts.Contact,
+    Flows,
     Groups.Group,
     Partners,
     Partners.Organization,
     Partners.Saas,
+    Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
     Seeds.SeedsStats,
     Settings,
     Settings.Language,
+    Templates,
+    Templates.SessionTemplate,
     Users,
     Users.User
   }
@@ -62,8 +66,19 @@ defmodule Glific.Seeds.SeedsMigration do
     |> sync_schema_with_bigquery()
   end
 
+  defp do_migrate_data(:sync_hsm_templates, organizations),
+    do:
+      Enum.map(organizations, fn o -> o.id end)
+      |> sync_hsm_templates()
+
   defp do_migrate_data(:localized_language, _organizations), do: update_localized_language()
   defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
+
+  defp do_migrate_data(:submit_common_otp_template, organizations),
+    do: Enum.map(organizations, fn org -> submit_opt_template_for_org(org.id) end)
+
+  defp do_migrate_data(:set_newcontact_flow_id, organizations),
+    do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
 
   @doc false
   @spec add_simulators(list()) :: :ok
@@ -75,6 +90,41 @@ defmodule Glific.Seeds.SeedsMigration do
     |> seed_users(en)
 
     :ok
+  end
+
+  @doc false
+  @spec submit_opt_template_for_org(any) ::
+          {:error, Ecto.Changeset.t()} | {:ok, Templates.SessionTemplate.t()}
+  def submit_opt_template_for_org(org_id) do
+    %{
+      is_hsm: true,
+      shortcode: "common_otp",
+      label: "common_otp",
+      body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
+      type: :text,
+      category: "ALERT_UPDATE",
+      example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
+      is_active: true,
+      is_source: false,
+      language_id: 1,
+      organization_id: org_id
+    }
+    |> Templates.create_session_template()
+  end
+
+  @doc false
+  @spec set_newcontact_flow_id(non_neg_integer()) ::
+          {:error, Ecto.Changeset.t()} | {:ok, Organization.t()}
+  def set_newcontact_flow_id(org_id) do
+    flow_id =
+      org_id
+      |> Flows.flow_keywords_map()
+      |> Map.get("published")
+      |> Map.get("newcontact", nil)
+
+    org_id
+    |> Partners.get_organization!()
+    |> Partners.update_organization(%{newcontact_flow_id: flow_id})
   end
 
   @spec has_contact?(Organization.t(), String.t()) :: boolean
@@ -295,6 +345,19 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @doc """
+  sync all the hsm from BSP to Glific DB
+  """
+  @spec sync_hsm_templates(list) :: :ok
+  def sync_hsm_templates(org_id_list) do
+    Enum.each(org_id_list, fn org_id ->
+      Repo.put_process_state(org_id)
+      Glific.Templates.sync_hsms_from_bsp(org_id)
+    end)
+
+    :ok
+  end
+
+  @doc """
   Sync bigquery schema with local db changes.
   """
   @spec sync_schema_with_bigquery(list) :: :ok
@@ -401,17 +464,17 @@ defmodule Glific.Seeds.SeedsMigration do
 
   @spec bigquery_enabled_org_ids() :: list()
   defp bigquery_enabled_org_ids do
-    Glific.Partners.Credential
-    |> join(:left, [c], p in Glific.Partners.Provider, as: :p, on: c.provider_id == p.id)
+    Partners.Credential
+    |> join(:left, [c], p in Partners.Provider, as: :p, on: c.provider_id == p.id)
     |> where([_c, p], p.shortcode == ^"bigquery")
     |> where([c, _p], c.is_active)
     |> select([c, _p], c.organization_id)
-    |> Repo.all()
+    |> Repo.all(skip_organization_id: true)
   end
 
   @spec update_localized_language() :: :ok
   defp update_localized_language do
-    Glific.Settings.Language
+    Settings.Language
     |> where([l], l.locale in ["en", "hi"])
     |> update([l], set: [localized: true])
     |> Repo.update_all([])
@@ -424,5 +487,33 @@ defmodule Glific.Seeds.SeedsMigration do
     Glific.Users.User
     |> update([u], set: [language_id: ^en.id])
     |> Repo.update_all([], skip_organization_id: true)
+  end
+
+  @doc """
+    We need this functionality to cleanups all the Approved templates which are not active on Gupshup
+  """
+  @spec get_deleted_hsms(non_neg_integer()) :: tuple()
+  def get_deleted_hsms(org_id) do
+    ApiClient.get_templates(org_id)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, response_data} = Jason.decode(body)
+        hsms = response_data["templates"]
+        uuid_list = Enum.map(hsms, fn hsm -> hsm["id"] end)
+
+        corrupted_list =
+          from(template in SessionTemplate)
+          |> where([c], c.organization_id == ^org_id)
+          |> where([c], c.uuid not in ^uuid_list)
+          |> where([c], c.is_hsm == true)
+          |> where([c], c.status in ["APPROVED", "SANDBOX_REQUESTED"])
+          |> select([c], c.id)
+          |> Repo.delete_all(skip_organization_id: true)
+
+        {:ok, Enum.count(corrupted_list), corrupted_list}
+
+      _ ->
+        {:error, 0, "Could not fecth the data for org: #{org_id}"}
+    end
   end
 end

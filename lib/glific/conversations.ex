@@ -7,6 +7,7 @@ defmodule Glific.Conversations do
   """
 
   use Ecto.Schema
+  require Logger
 
   import Ecto.Query, warn: false
 
@@ -17,10 +18,13 @@ defmodule Glific.Conversations do
   """
   @spec list_conversations(map(), boolean) :: list() | integer
   def list_conversations(args, count \\ false) do
-    Messages.list_conversations(
-      Map.put(args, :ids, get_message_ids(args.contact_opts, args.message_opts, args)),
-      count
-    )
+    args
+    |> Map.put(:ids, get_message_ids(args.contact_opts, args.message_opts, args))
+    |> Messages.list_conversations(count)
+  rescue
+    ex ->
+      Logger.error("Search threw a Error: #{inspect(ex)}")
+      []
   end
 
   @spec get_message_ids(map(), map(), map() | nil) :: list()
@@ -39,7 +43,7 @@ defmodule Glific.Conversations do
     |> where([m: m], m.contact_id in ^ids and m.receiver_id != m.sender_id)
     |> add_special_offset(length(ids), message_limit, message_offset)
     |> select([m: m], m.id)
-    |> Repo.all()
+    |> Repo.all(timeout: 10_000)
   end
 
   @doc """

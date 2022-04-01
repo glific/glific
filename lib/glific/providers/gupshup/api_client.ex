@@ -1,13 +1,12 @@
 defmodule Glific.Providers.Gupshup.ApiClient do
   @moduledoc """
-  Http API client to intract with Gupshup
+  Https API client to interact with Gupshup
   """
   alias Glific.Partners
   alias Plug.Conn.Query
   import GlificWeb.Gettext
 
   @gupshup_url "https://api.gupshup.io/sm/api/v1"
-  # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
@@ -71,7 +70,9 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
     with {:ok, credentials} <- get_credentials(org_id) do
       template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
-      gupshup_post(template_url, payload, credentials.api_key)
+      opts = [headers: [{"apikey", credentials.api_key}], opts: [adapter: [recv_timeout: 10_000]]]
+      # Adding a delay of 30 seconds when applying for template
+      post(template_url, payload, opts)
     end
   end
 
@@ -93,8 +94,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec send_message(non_neg_integer(), map()) :: Tesla.Env.result() | any()
   def send_message(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       url = @gupshup_url <> "/msg"
       gupshup_post(url, payload, credentials.api_key)

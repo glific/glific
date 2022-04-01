@@ -169,26 +169,6 @@ defmodule Glific.Flows.FlowContextTest do
     assert {:ok, _map} = FlowContext.step_forward(flow_context, message)
   end
 
-  test "get_result_value/2 will return the result value for a key" do
-    flow_context = flow_context_fixture()
-    json = %{"uuid" => "UUID 1", "exit_uuid" => "UUID 2", "name" => "Default Category"}
-    {category, _uuid_map} = Category.process(json, %{})
-
-    FlowContext.update_results(flow_context, %{
-      "test_key" => %{"input" => "test_input", "category" => category.name}
-    })
-
-    flow_context = Repo.get!(FlowContext, flow_context.id)
-
-    # now results value will always return the input if there is a map.
-    assert FlowContext.get_result_value(flow_context, "@results.test_key") == "test_input"
-
-    assert FlowContext.get_result_value(flow_context, "@results.test_key.category") ==
-             "Default Category"
-
-    assert FlowContext.get_result_value(flow_context, "@results.test_key.input") == "test_input"
-  end
-
   test "delete_completed_flow_contexts will delete all contexts completed before two days" do
     flow_context =
       flow_context_fixture(%{
@@ -228,7 +208,6 @@ defmodule Glific.Flows.FlowContextTest do
     # check for the context
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert is_nil(flow_context.node)
-    assert is_nil(flow_context.node_uuid)
     assert not is_nil(flow_context.completed_at)
   end
 
@@ -244,7 +223,7 @@ defmodule Glific.Flows.FlowContextTest do
       flow_context_fixture(%{
         node_uuid: node.uuid,
         wakeup_at: wakeup_at,
-        wait_for_time: true,
+        is_background_flow: true,
         flow_uuid: flow.uuid,
         flow_id: flow.id
       })
@@ -253,6 +232,38 @@ defmodule Glific.Flows.FlowContextTest do
 
     flow_context = Repo.get!(FlowContext, flow_context.id)
     assert flow_context.wakeup_at == nil
-    assert flow_context.wait_for_time == false
+    assert flow_context.is_background_flow == false
+  end
+
+  test "resume_contact_flow/3 will process all the context for the contact",
+       %{organization_id: organization_id} = _attrs do
+    flow = Flow.get_loaded_flow(organization_id, "published", %{keyword: "help"})
+    [node | _tail] = flow.nodes
+
+    message = Messages.create_temp_message(organization_id, "1")
+    wakeup_at = Timex.shift(Timex.now(), minutes: +3)
+
+    flow_context =
+      flow_context_fixture(%{
+        node_uuid: node.uuid,
+        is_await_result: true,
+        wakeup_at: wakeup_at,
+        is_background_flow: true,
+        flow_uuid: flow.uuid,
+        flow_id: flow.id
+      })
+
+    assert {:ok, _context, []} =
+             FlowContext.resume_contact_flow(
+               %{id: flow_context.contact_id},
+               flow.id,
+               %{unit_test: %{first: 1, second: "two"}},
+               message
+             )
+
+    flow_context = Repo.get!(FlowContext, flow_context.id)
+    assert flow_context.wakeup_at == nil
+    assert flow_context.is_background_flow == false
+    assert flow_context.is_await_result == false
   end
 end

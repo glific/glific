@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   """
   import GlificWeb.Gettext
 
-  alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Contacts.Simulator, Repo}
+  alias Glific.{Contacts, Contacts.Contact, Contacts.Import, Repo, State}
 
   @doc false
   @spec contact(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
@@ -55,14 +55,23 @@ defmodule GlificWeb.Resolvers.Contacts do
   @doc """
   Import contacts to the database
   """
-  @spec import_contacts(Absinthe.Resolution.t(), %{group_label: String.t(), data: String.t()}, %{
-          context: map()
-        }) ::
+  @spec import_contacts(
+          Absinthe.Resolution.t(),
+          %{
+            group_label: String.t(),
+            data: String.t(),
+            id: integer,
+            type: :data | :file_path | :url
+          },
+          %{
+            context: map()
+          }
+        ) ::
           {:ok, any} | {:error, any}
-  def import_contacts(_, %{group_label: group_label, data: data}, %{
-        context: %{current_user: user}
-      }) do
-    Import.import_contacts(user.organization_id, group_label, data: data)
+  def import_contacts(_, %{id: id, type: type, group_label: group_label, data: data}, _) do
+    Glific.parse_maybe_integer(id)
+    |> elem(1)
+    |> Import.import_contacts(group_label, [{type, data}])
   end
 
   @doc false
@@ -70,9 +79,8 @@ defmodule GlificWeb.Resolvers.Contacts do
           {:ok, any} | {:error, any}
   def delete_contact(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         {:ok, contact} <- Contacts.delete_contact(contact) do
-      {:ok, contact}
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}) do
+      Contacts.delete_contact(contact)
     end
   end
 
@@ -83,9 +91,8 @@ defmodule GlificWeb.Resolvers.Contacts do
           {:ok, any} | {:error, any}
   def contact_location(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, contact} <-
-           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}),
-         {:ok, location} <- Contacts.contact_location(contact) do
-      {:ok, location}
+           Repo.fetch_by(Contact, %{id: id, organization_id: user.organization_id}) do
+      Contacts.contact_location(contact)
     end
   end
 
@@ -101,12 +108,30 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc """
+  Release a simulator contact or nil if possible for this user
+  """
+  @spec contact_history(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_history(_, args, _) do
+    {:ok, Contacts.list_contact_history(args)}
+  end
+
+  @doc """
+  Release a simulator contact or nil if possible for this user
+  """
+  @spec count_contact_history(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def count_contact_history(_, args, _) do
+    {:ok, Contacts.count_contact_history(args)}
+  end
+
+  @doc """
   Grab a simulator contact or nil if possible for this user
   """
   @spec simulator_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def simulator_get(_, _params, %{context: %{current_user: user}}) do
-    {:ok, Simulator.get(user)}
+    {:ok, State.get_simulator(user)}
   end
 
   @doc """
@@ -115,6 +140,6 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec simulator_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
   def simulator_release(_, _params, %{context: %{current_user: user}}) do
-    {:ok, Simulator.release(user)}
+    {:ok, State.release_simulator(user)}
   end
 end

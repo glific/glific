@@ -4,7 +4,9 @@ defmodule Glific.FLowsTest do
   alias Glific.{
     Fixtures,
     Flows,
+    Flows.Broadcast,
     Flows.Flow,
+    Flows.FlowBroadcast,
     Flows.FlowContext,
     Flows.FlowRevision,
     Groups,
@@ -100,6 +102,14 @@ defmodule Glific.FLowsTest do
       assert Flows.get_flow!(flow.id) == flow
     end
 
+    test "fetch_flow/1 returns the flow with given id or returns {:ok, flow} or {:error, any}" do
+      flow = flow_fixture()
+      {:ok, fetched_flow} = Flows.fetch_flow(flow.id)
+      assert fetched_flow.name == flow.name
+      assert fetched_flow.status == flow.status
+      assert fetched_flow.keywords == flow.keywords
+    end
+
     test "create_flow/1 with valid data creates a flow", attrs do
       [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
 
@@ -109,6 +119,23 @@ defmodule Glific.FLowsTest do
                |> Flows.create_flow()
 
       assert flow.name == @valid_attrs.name
+      assert flow.flow_type == @valid_attrs.flow_type
+      assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
+    end
+
+    test "create_flow/1 with valid data creates a background flow", attrs do
+      [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+      assert {:ok, %Flow{} = flow} =
+               @valid_attrs
+               |> Map.merge(%{
+                 organization_id: predefine_flow.organization_id,
+                 is_background: true
+               })
+               |> Flows.create_flow()
+
+      assert flow.name == @valid_attrs.name
+      assert flow.is_background == true
       assert flow.flow_type == @valid_attrs.flow_type
       assert flow.keywords == Enum.map(@valid_attrs.keywords, &Glific.string_clean(&1))
     end
@@ -318,6 +345,24 @@ defmodule Glific.FLowsTest do
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
     end
 
+    test "start_contact_flow/2 will setup the template flow for a contact", attrs do
+      SeedsDev.seed_session_templates()
+      [flow | _tail] = Flows.list_flows(%{filter: %{name: "Template Workflow"}})
+      contact = Fixtures.contact_fixture(attrs)
+      Flows.start_contact_flow(flow, contact)
+      assert {:ok, message} = Repo.fetch_by(Message, %{is_hsm: true, contact_id: contact.id})
+
+      assert message.body ==
+               "Download your issue regarding education ticket from the link given below. | [Visit Website,https://www.gupshup.io/developer/issues]"
+
+      contact = Fixtures.contact_fixture(%{language_id: 2})
+      Flows.start_contact_flow(flow, contact)
+      assert {:ok, message} = Repo.fetch_by(Message, %{is_hsm: true, contact_id: contact.id})
+
+      assert message.body ==
+               "नीचे दिए गए लिंक से अपना शिक्षा के संबंध में मुद्दा टिकट डाउनलोड करें। | [Visit Website, https://www.gupshup.io/developer/issues-hin"
+    end
+
     test "start_group_flow/2 will setup the flow for a group of contacts", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
       group = Fixtures.group_fixture()
@@ -337,6 +382,19 @@ defmodule Glific.FLowsTest do
       })
 
       {:ok, flow} = Flows.start_group_flow(flow, group)
+
+      assert {:ok, flow_broadcast} =
+               Repo.fetch_by(FlowBroadcast, %{
+                 group_id: group.id,
+                 flow_id: flow.id
+               })
+
+      assert flow_broadcast.completed_at == nil
+
+      # lets sleep for 3 seconds, to ensure that messages have been delivered
+      Broadcast.execute_group_broadcasts(attrs.organization_id)
+      Process.sleep(3_000)
+
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
@@ -344,6 +402,16 @@ defmodule Glific.FLowsTest do
 
       assert {:ok, _message} =
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact2.id})
+
+      Broadcast.execute_group_broadcasts(attrs.organization_id)
+
+      assert {:ok, flow_broadcast} =
+               Repo.fetch_by(FlowBroadcast, %{
+                 group_id: group.id,
+                 flow_id: flow.id
+               })
+
+      assert flow_broadcast.completed_at != nil
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do
@@ -496,5 +564,33 @@ defmodule Glific.FLowsTest do
 
     assert message_count < Repo.aggregate(Message, :count)
     assert context_count < Repo.aggregate(FlowContext, :count)
+  end
+
+  test "publishing multiple flow revision of a same flow throws and error",
+       %{organization_id: organization_id} = _attrs do
+    SeedsDev.seed_test_flows()
+
+    name = "Language Workflow"
+    {:ok, flow} = Repo.fetch_by(Flow, %{name: name, organization_id: organization_id})
+    flow = Repo.preload(flow, [:revisions])
+
+    # should set status of recent flow revision as "published"
+    assert {:ok, %Flow{}} = Flows.publish_flow(flow)
+
+    {:ok, revision} =
+      FlowRevision
+      |> Repo.fetch_by(%{flow_id: flow.id, revision_number: 0})
+
+    assert revision.status == "published"
+
+    [flow_revision | _tail] =
+      FlowRevision
+      |> where([fr], fr.flow_id == ^flow.id)
+      |> Repo.all()
+
+    assert {:error, %Ecto.Changeset{}} =
+             flow_revision
+             |> FlowRevision.changeset(%{status: "published", revision_number: 0})
+             |> Repo.update()
   end
 end

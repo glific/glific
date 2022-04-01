@@ -6,15 +6,15 @@ defmodule Glific.MixProject do
   @test_envs [:test, :test_full]
   @oban_envs [:prod, :dev] ++ @test_envs
   # comment above line
-  # if you dont have Oban pro license, this is your best hack
+  # ifyou dont have Oban pro license, this is your best hack
   # uncomment below line
   # @oban_envs [:prod]
 
   def project do
     [
       app: :glific,
-      version: "1.6.4",
-      elixir: "~> 1.11",
+      version: "4.3.0",
+      elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},
@@ -80,42 +80,44 @@ defmodule Glific.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.5"},
+      {:phoenix, "~> 1.6"},
       {:phoenix_ecto, "~> 4.1"},
-      {:ecto_sql, "~> 3.4"},
-      {:ecto_psql_extras, "~> 0.2"},
-      {:postgrex, ">= 0.0.0"},
-      {:floki, ">= 0.27.0", only: @test_envs},
-      {:phoenix_html, "~> 2.11"},
+      {:phoenix_html, "~> 3.0"},
       {:phoenix_live_reload, "~> 1.2", only: [:dev | @test_envs]},
       {:phoenix_pubsub, "~> 2.0"},
-      {:phoenix_live_view, "~> 0.15"},
-      {:phoenix_live_dashboard, "~> 0.4"},
-      {:telemetry_metrics, "~> 0.4"},
-      {:telemetry_poller, "~> 0.4"},
+      {:phoenix_live_view, "~> 0.17"},
+      {:phoenix_live_dashboard, "~> 0.5"},
+      {:telemetry, "~> 1.0"},
+      {:telemetry_metrics, "~> 0.6"},
+      {:telemetry_poller, "~> 1.0"},
+      {:ecto_sql, "~> 3.6"},
+      {:ecto_psql_extras, "~> 0.2"},
+      {:esbuild, "~> 0.2", runtime: Mix.env() == :dev},
+      {:postgrex, ">= 0.0.0"},
+      {:floki, ">= 0.27.0", only: @test_envs},
       {:gettext, "~> 0.18"},
-      {:decimal, "~> 1.8"},
+      {:decimal, "~> 2.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
-      {:pow, "~> 1.0.21"},
+      {:pow, "~> 1.0.24"},
       {:dialyxir, "~> 1.0", only: [:dev | @test_envs], runtime: false},
       {:credo, "~> 1.4", only: [:dev | @test_envs], runtime: false},
       {:ex_doc, "~> 0.22", only: [:dev | @test_envs], runtime: false},
       {:inch_ex, "~> 2.0", only: [:dev | @test_envs], runtime: false},
-      {:doctor, "~> 0.13"},
+      {:doctor, "~> 0.18"},
       {:httpoison, "~> 1.6"},
       {:poison, "~> 4.0"},
-      {:ex_rated, "~> 1.2"},
+      {:ex_rated, "~> 2.0"},
       {:absinthe, "~> 1.5"},
       {:absinthe_plug, "~> 1.5"},
       {:absinthe_phoenix, "~> 2.0"},
       {:dataloader, "~> 1.0"},
       {:hackney, "~> 1.17"},
       {:tesla, "~> 1.4"},
-      {:oban, "~> 2.6"},
-      {:oban_web, "~> 2.6", organization: "oban", only: @oban_envs},
-      {:oban_pro, "~> 0.7", organization: "oban", only: @oban_envs},
+      {:oban, "~> 2.11"},
+      {:oban_web, "~> 2.9", organization: "oban", only: @oban_envs},
+      {:oban_pro, "~> 0.10", organization: "oban", only: @oban_envs},
       {:faker, "~> 0.13"},
       {:mock, "~> 0.3", only: [:dev | @test_envs]},
       {:excoveralls, "~> 0.13", only: @test_envs},
@@ -134,9 +136,10 @@ defmodule Glific.MixProject do
       {:appsignal_phoenix, "~> 2.0"},
       {:poolboy, "~> 1.5"},
       {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
-      {:cloak_ecto, "~> 1.1"},
-      {:google_api_big_query, "~> 0.47.0"},
+      {:cloak_ecto, "~> 1.2"},
+      {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},
+      {:google_api_sheets, "~> 0.29"},
       {:waffle, "~> 1.1"},
       {:waffle_gcs, git: "https://github.com/glific/waffle_gcs"},
       {:waffle_ecto, "~> 0.0"},
@@ -145,11 +148,13 @@ defmodule Glific.MixProject do
       {:apiac_filter_ip_whitelist, "~> 1.0"},
       {:ex_phone_number, "~> 0.2"},
       {:tzdata, "~> 1.1"},
-      {:stripity_stripe, "~> 2.0"},
-      {:stripe_mock, "~> 0.1.0", only: @test_envs},
+      {:stripity_stripe, "~> 2.10"},
+      {:stripe_mock, "~> 0.1", only: @test_envs},
       {:remote_ip, "~> 1.0"},
-      {:exvcr, "~> 0.12.2", only: @test_envs},
-      {:dotenvy, "~> 0.1"}
+      {:exvcr, "~> 0.13", only: @test_envs},
+      {:dotenvy, "~> 0.1"},
+      {:phoenix_swoosh, "~> 1.0"},
+      {:gen_smtp, "~> 1.1"}
     ]
   end
 
@@ -162,7 +167,7 @@ defmodule Glific.MixProject do
   defp aliases do
     [
       setup: ["deps.get", "common"],
-      common: ["clean", "compile", "ecto.reset", "cmd npm install --prefix assets"],
+      common: ["clean", "compile", "ecto.reset", "assets.deploy"],
       "ecto.setup": [
         "ecto.create --quiet",
         "ecto.migrate",
@@ -186,7 +191,8 @@ defmodule Glific.MixProject do
         "phil_columns.seed --tenant glific",
         "test"
       ],
-      test: ["ecto.create --quiet", "ecto.migrate", "test"]
+      test: ["ecto.create --quiet", "ecto.migrate", "test"],
+      "assets.deploy": ["esbuild default --minify", "phx.digest"]
     ]
   end
 end

@@ -155,15 +155,13 @@ defmodule Glific.Flows.WebhookTest do
       webhook_log_2 = Fixtures.webhook_log_fixture(valid_attrs_2)
 
       assert [Map.merge(webhook_log_2, %{status: "Error"})] ==
-               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{status_code: 500}, attrs)})
+               WebhookLog.list_webhook_logs(%{filter: %{status_code: 500}})
 
       assert [Map.merge(webhook_log_1, %{status: "Success"})] ==
-               WebhookLog.list_webhook_logs(%{
-                 filter: Map.merge(%{status_code: 200, status: "Success"}, attrs)
-               })
+               WebhookLog.list_webhook_logs(%{filter: %{status_code: 200, status: "Success"}})
 
       assert [Map.merge(webhook_log_1, %{status: "Success"})] ==
-               WebhookLog.list_webhook_logs(%{filter: Map.merge(%{url: @valid_attrs.url}, attrs)})
+               WebhookLog.list_webhook_logs(%{filter: %{url: @valid_attrs.url}})
 
       #  order by inserted at
       assert [
@@ -171,6 +169,18 @@ defmodule Glific.Flows.WebhookTest do
                Map.merge(webhook_log_1, %{status: "Success"})
              ] ==
                WebhookLog.list_webhook_logs(%{opts: %{order: :desc}, filter: attrs})
+
+      #  filter by contact_phone
+
+      webhook_log = webhook_log_1 |> Repo.preload([:contact])
+      phone = webhook_log.contact.phone
+
+      assert [
+               Map.merge(webhook_log_1, %{status: "Success"})
+             ] ==
+               WebhookLog.list_webhook_logs(%{
+                 filter: %{contact_phone: phone}
+               })
     end
 
     test "count_webhook_logs/0 returns count of all webhook logs", attrs do

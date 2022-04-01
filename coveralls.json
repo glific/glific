@@ -3,7 +3,7 @@
         "lib/glific.ex",
         "lib/glific/application.ex",
         "lib/glific/appsignal.ex",
-        "lib/glific/clients/stir.ex",
+        "lib/glific/clients",
         "lib/glific/csv",
         "lib/glific/dialogflow",
         "lib/glific/dialogflow.ex",
@@ -34,7 +34,8 @@
         "lib/glific_web/templates",
         "lib/glific_web/uploaders",
         "lib/glific_web/views",
-        "test/support"
+        "test/support",
+        "lib/glific_web/templates/live/stats_live.ex"
     ],
     "coverage_options": {
         "treat_no_relevant_lines_as_covered": true,

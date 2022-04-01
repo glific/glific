@@ -26,6 +26,9 @@ defmodule Glific.Messages do
     Tags,
     Tags.MessageTag,
     Tags.Tag,
+    Templates,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate
   }
 
@@ -147,6 +150,7 @@ defmodule Glific.Messages do
     attrs =
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
+      |> parse_message_vars()
       |> put_contact_id()
       |> put_clean_body()
 
@@ -225,8 +229,44 @@ defmodule Glific.Messages do
   def create_and_send_message(attrs) do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
+
+    ## we need to clean this bit more.
+    attrs = check_for_interactive(attrs, contact.language_id)
+
     check_for_hsm_message(attrs, contact)
   end
+
+  @spec check_for_interactive(map(), non_neg_integer()) :: map()
+  defp check_for_interactive(
+         %{flow_id: flow_id, interactive_template_id: _interactive_template_id} = attrs,
+         _language_id
+       )
+       when flow_id not in [nil, ""],
+       do: attrs
+
+  defp check_for_interactive(
+         %{interactive_template_id: interactive_template_id} = attrs,
+         language_id
+       ) do
+    with {:ok, interactive_template} <-
+           Repo.fetch(
+             InteractiveTemplate,
+             interactive_template_id
+           ),
+         interactive_content <-
+           InteractiveTemplates.translated_content(interactive_template, language_id),
+         body <- InteractiveTemplates.get_interactive_body(interactive_content),
+         media_id <- InteractiveTemplates.get_media(interactive_content, attrs.organization_id) do
+      Map.merge(attrs, %{
+        body: body,
+        interactive_content: interactive_content,
+        type: interactive_content["type"],
+        media_id: media_id
+      })
+    end
+  end
+
+  defp check_for_interactive(attrs, _language_id), do: attrs
 
   @doc false
   @spec check_for_hsm_message(map(), Contact.t()) ::
@@ -259,7 +299,6 @@ defmodule Glific.Messages do
         sender_id: Partners.organization_contact_id(organization_id),
         flow: :outbound
       })
-      |> update_message_attrs()
       |> create_message()
 
     Communications.Message.send_message(message, attrs)
@@ -282,9 +321,7 @@ defmodule Glific.Messages do
         else: attrs.receiver
 
     Logger.error(
-      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{
-        reason
-      }"
+      "Could not send message: contact: #{contact.id}, message: '#{Map.get(attrs, :id)}', reason: #{reason}"
     )
 
     {:ok, _} =
@@ -309,26 +346,54 @@ defmodule Glific.Messages do
     nil
   end
 
-  @spec parse_message_body(map()) :: String.t() | nil
-  defp parse_message_body(attrs) do
-    message_vars = %{
-      "contact" => Contacts.get_contact_field_map(attrs.receiver_id)
-    }
+  @spec parse_message_vars(map()) :: map()
+  defp parse_message_vars(attrs) do
+    message_vars =
+      if is_integer(attrs[:receiver_id]) or is_binary(attrs[:receiver_id]),
+        do: %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)},
+        else: %{}
 
-    MessageVarParser.parse(attrs.body, message_vars)
+    parse_text_message_fields(attrs, message_vars)
+    |> parse_media_message_fields(message_vars)
+    |> parse_interactive_message_fields(message_vars)
   end
 
-  @spec update_message_attrs(map()) :: map()
-  defp update_message_attrs(%{body: nil} = attrs), do: attrs
+  @spec parse_text_message_fields(map(), map()) :: map()
+  defp parse_text_message_fields(attrs, message_vars) do
+    if is_binary(attrs[:body]) do
+      {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
 
-  defp update_message_attrs(attrs) do
-    {:ok, msg_uuid} = Ecto.UUID.cast(:crypto.hash(:md5, attrs.body))
+      attrs
+      |> Map.merge(%{
+        uuid: attrs[:uuid] || msg_uuid,
+        body: MessageVarParser.parse(attrs.body, message_vars)
+      })
+    else
+      attrs
+    end
+  end
+
+  @spec parse_media_message_fields(map(), map()) :: map()
+  defp parse_media_message_fields(attrs, message_vars) do
+    ## if message media is present change the variables in caption
+    if is_integer(attrs[:media_id]) or is_binary(attrs[:media_id]) do
+      message_media = get_message_media!(attrs.media_id)
+
+      message_media
+      |> update_message_media(%{
+        caption: MessageVarParser.parse(message_media.caption, message_vars)
+      })
+    end
 
     attrs
-    |> Map.merge(%{
-      uuid: attrs[:uuid] || msg_uuid,
-      body: parse_message_body(attrs)
-    })
+  end
+
+  @spec parse_interactive_message_fields(map(), map()) :: map()
+  defp parse_interactive_message_fields(attrs, message_vars) do
+    attrs[:interactive_content]
+    |> MessageVarParser.parse_map(message_vars)
+    |> InteractiveTemplates.clean_template_title()
+    |> then(&Map.merge(attrs, %{interactive_content: &1}))
   end
 
   @doc false
@@ -403,8 +468,10 @@ defmodule Glific.Messages do
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       flow_id: args[:flow_id],
+      flow_broadcast_id: args[:flow_broadcast_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
+      flow_label: args[:flow_label],
       organization_id: session_template.organization_id,
       params: args[:params]
     }
@@ -412,6 +479,7 @@ defmodule Glific.Messages do
     create_and_send_message(message_params)
   end
 
+  @spec fetch_language_specific_template(map(), integer()) :: tuple()
   defp fetch_language_specific_template(session_template, id) do
     contact = Contacts.get_contact!(id)
 
@@ -419,25 +487,31 @@ defmodule Glific.Messages do
          translation <- session_template.translations[Integer.to_string(contact.language_id)],
          false <- is_nil(translation),
          "APPROVED" <- translation["status"] do
-      session_template
-      |> Map.from_struct()
-      |> Map.put(:body, translation["body"])
-      |> Map.put(:uuid, translation["uuid"])
+      template =
+        session_template
+        |> Map.from_struct()
+        |> Map.put(:body, translation["body"])
+        |> Map.put(:uuid, translation["uuid"])
+
+      {true, template}
     else
-      _ -> session_template
+      _ -> {false, session_template}
     end
   end
 
+  @spec hsm_message_params(SessionTemplate.t(), map(), boolean()) :: map()
   defp hsm_message_params(
          session_template,
-         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
+         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs,
+         is_translated
        ) do
-    media_id = Map.get(attrs, :media_id, nil)
+    # sending default media when media type is not defined
+    media_id = Map.get(attrs, :media_id, session_template.message_media_id)
 
     updated_template =
       session_template
+      |> Templates.parse_buttons(is_translated, session_template.has_buttons)
       |> parse_template_vars(parameters)
-      |> parse_buttons(session_template.has_buttons)
 
     %{
       body: updated_template.body,
@@ -449,23 +523,17 @@ defmodule Glific.Messages do
       template_uuid: session_template.uuid,
       template_id: template_id,
       template_type: session_template.type,
+      has_buttons: session_template.has_buttons,
       params: parameters,
       media_id: media_id,
-      is_optin_flow: Map.get(attrs, :is_optin_flow, false)
+      is_optin_flow: Map.get(attrs, :is_optin_flow, false),
+      flow_label: Map.get(attrs, :flow_label, ""),
+      flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil),
+      user_id: attrs[:user_id],
+      flow_id: attrs[:flow_id],
+      send_at: attrs[:send_at]
     }
   end
-
-  @spec parse_buttons(SessionTemplate.t(), boolean()) :: SessionTemplate.t()
-  defp parse_buttons(session_template, true) do
-    updated_body =
-      session_template.buttons
-      |> Enum.reduce("", fn arc, acc -> "#{acc}| [" <> arc["text"] <> "] " end)
-
-    session_template
-    |> Map.merge(%{body: session_template.body <> updated_body})
-  end
-
-  defp parse_buttons(session_template, false), do: session_template
 
   @doc """
   Send a hsm template message to the specific contact.
@@ -478,15 +546,12 @@ defmodule Glific.Messages do
     media_id = Map.get(attrs, :media_id, nil)
     {:ok, template} = Repo.fetch(SessionTemplate, template_id)
 
-    session_template = fetch_language_specific_template(template, receiver_id)
+    {is_translated, session_template} = fetch_language_specific_template(template, receiver_id)
 
     with true <- session_template.number_parameters == length(parameters),
          {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
       # Passing uuid to save db call when sending template via provider
-      message_params =
-        session_template
-        |> hsm_message_params(attrs)
-        |> check_flow_id(attrs)
+      message_params = hsm_message_params(session_template, attrs, is_translated)
 
       receiver_id
       |> Glific.Contacts.get_contact!()
@@ -500,13 +565,6 @@ defmodule Glific.Messages do
       {"type", false} ->
         {:error, dgettext("errors", "Please provide media for media template.")}
     end
-  end
-
-  @spec check_flow_id(map(), map()) :: map()
-  defp check_flow_id(message_params, attrs) do
-    if Map.has_key?(attrs, :flow_id),
-      do: Map.put(message_params, :flow_id, attrs.flow_id),
-      else: message_params
   end
 
   @doc false
@@ -572,7 +630,6 @@ defmodule Glific.Messages do
       contact_id: sender_id,
       flow: :outbound
     })
-    |> update_message_attrs()
     |> create_message()
     |> case do
       {:ok, message} ->
@@ -600,7 +657,7 @@ defmodule Glific.Messages do
   def create_and_send_message_to_group(message_params, group, type) do
     contact_ids = Groups.contact_ids(group.id)
 
-    {:ok, _group_message} =
+    {:ok, group_message} =
       if type == :session,
         do: create_group_message(Map.put(message_params, :group_id, group.id)),
         else:
@@ -609,16 +666,19 @@ defmodule Glific.Messages do
             |> Map.put(:group_id, group.id)
             |> Map.put(
               :body,
-              "Sending HSM template #{message_params.template_id}, params: #{
-                message_params.parameters
-              }"
+              "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"
             )
             |> Map.put(:type, :text)
           )
 
-    create_and_send_message_to_contacts(
-      # supress publishing a subscription for group messages
-      Map.merge(message_params, %{publish?: false, group_id: group.id}),
+    message_params
+    # supress publishing a subscription for group messages
+    |> Map.merge(%{
+      publish?: false,
+      flow_broadcast_id: group_message.flow_broadcast_id,
+      group_id: group.id
+    })
+    |> create_and_send_message_to_contacts(
       contact_ids,
       type
     )
@@ -839,6 +899,9 @@ defmodule Glific.Messages do
   defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
     do: results
 
+  defp add_empty_conversations(results, %{filter: %{include_labels: _labels}}),
+    do: results
+
   defp add_empty_conversations(results, %{filter: %{include_users: _users}}),
     do: results
 
@@ -897,11 +960,36 @@ defmodule Glific.Messages do
       {:include_tags, tag_ids}, query ->
         include_tag_filter(query, tag_ids)
 
+      # commenting this out since we search for the labels in full.ex
+      # and hence want to include the contacts even if the most recent messages
+      # dont fit into the search criteria
+      # {:include_labels, label_ids}, query ->
+      #   include_label_filter(query, label_ids)
+
       {:include_users, user_ids}, query ->
         include_user_filter(query, user_ids)
 
       _filter, query ->
         query
+    end)
+  end
+
+  # delete code in a few weeks, if re-inserting back, make function private
+  # apply filter for message labels
+  @doc false
+  @spec _include_label_filter(Ecto.Queryable.t(), []) :: Ecto.Queryable.t()
+  def _include_label_filter(query, []), do: query
+
+  def _include_label_filter(query, label_ids) do
+    flow_labels =
+      Glific.Flows.FlowLabel
+      |> where([f], f.id in ^label_ids)
+      |> select([f], f.name)
+      |> Repo.all()
+
+    flow_labels
+    |> Enum.reduce(query, fn flow_label, query ->
+      where(query, [c], ilike(c.flow_label, ^"%#{flow_label}%"))
     end)
   end
 
@@ -982,7 +1070,7 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all(timeout: 900_000)
 
-    FlowContext.mark_flows_complete(contact.id)
+    FlowContext.mark_flows_complete(contact.id, false)
 
     Message
     |> where([m], m.contact_id == ^contact.id)
@@ -1008,7 +1096,15 @@ defmodule Glific.Messages do
 
     values =
       if simulator,
-        do: values |> Map.put(:fields, %{}),
+        ## if simulator let's clean all the fields and update reset the session window.
+        do:
+          values
+          |> Map.merge(%{
+            fields: %{},
+            last_communication_at: DateTime.utc_now(),
+            last_message_at: DateTime.utc_now(),
+            bsp_status: :session
+          }),
         else: values
 
     Contacts.update_contact(contact, values)
@@ -1047,39 +1143,44 @@ defmodule Glific.Messages do
     do: %{is_valid: false, message: "Please provide a media URL"}
 
   def validate_media(url, type) do
-    # We can cache this across all organizations
-    # We set a timeout of 60 minutes for this cache entry
-    case Caches.get_global({:validate_media, url, type}) do
-      {:ok, nil} ->
-        value = do_validate_media(url, type)
-        Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
-        value
+    # ensure that this is approximately a url before we send to downstream functions
+    if Glific.URI.cast(url) == :ok do
+      # We can cache this across all organizations
+      # We set a timeout of 60 minutes for this cache entry
+      case Caches.get_global({:validate_media, url, type}) do
+        {:ok, nil} ->
+          do_validate_media(url, type)
 
-      {:ok, value} ->
-        value
+        {:ok, value} ->
+          value
+      end
+    else
+      %{is_valid: false, message: "This media URL is invalid"}
     end
   end
 
+  @size_limit %{
+    "image" => 5120,
+    "video" => 16_384,
+    "audio" => 16_384,
+    "document" => 102_400,
+    "sticker" => 100
+  }
+
   @spec do_validate_media(String.t(), String.t()) :: map()
   defp do_validate_media(url, type) do
-    size_limit = %{
-      "image" => 5120,
-      "video" => 16_384,
-      "audio" => 16_384,
-      "document" => 102_400,
-      "sticker" => 100
-    }
-
     # we first decode the string since we have no idea if it was encoded or not
     # if the string was not encoded, decode should not really matter
     # once decoded we encode the string
-    case Tesla.get(url |> URI.decode() |> URI.encode()) do
+    url = url |> URI.decode() |> URI.encode()
+
+    case Tesla.get(url, opts: [adapter: [recv_timeout: 10_000]]) do
       {:ok, %Tesla.Env{status: status, headers: headers}} when status in 200..299 ->
         headers
         |> Enum.reduce(%{}, fn header, acc -> Map.put(acc, elem(header, 0), elem(header, 1)) end)
         |> Map.put_new("content-type", "")
         |> Map.put_new("content-length", 0)
-        |> do_validate_media(type, url, size_limit[type])
+        |> do_validate_media(type, url, @size_limit[type])
 
       _ ->
         %{is_valid: false, message: "This media URL is invalid"}
@@ -1099,16 +1200,20 @@ defmodule Glific.Messages do
         }
 
       true ->
-        %{is_valid: true, message: "success"}
+        value = %{is_valid: true, message: "success"}
+        Caches.put_global({:validate_media, url, type}, value, @ttl_limit)
+        value
     end
   end
 
   @spec do_validate_headers(map(), String.t(), String.t()) :: boolean
   defp do_validate_headers(headers, "document", _url),
-    do: String.contains?(headers["content-type"], "pdf")
+    do: String.contains?(headers["content-type"], ["pdf", "docx", "xlxs"])
 
-  defp do_validate_headers(headers, "sticker", _url),
-    do: String.contains?(headers["content-type"], "image")
+  ## sometimes webp files does not return any content type. We need to figure out another way to validate this
+  defp do_validate_headers(headers, "sticker", url),
+    do:
+      String.contains?(url, [".webp"]) && String.contains?(headers["content-type"], ["image", ""])
 
   defp do_validate_headers(headers, type, _url) when type in ["image", "video", "audio"],
     do: String.contains?(headers["content-type"], type)
@@ -1122,6 +1227,38 @@ defmodule Glific.Messages do
     {:ok, content_length} = Glific.parse_maybe_integer(content_length)
     content_length_in_kb = content_length / 1024
     size_limit >= content_length_in_kb
+  end
+
+  @doc """
+    Get Media type from a url. We will primary use it for when we receive the url from EEX call.
+  """
+  @spec get_media_type_from_url(String.t()) :: tuple()
+  def get_media_type_from_url(url) do
+    extension =
+      url
+      |> Path.extname()
+      |> String.downcase()
+      |> String.replace(".", "")
+
+    ## mime type
+    ## We need to figure out a better way to get the mime type. May be MIME::type(url)
+    mime_types = [
+      {:image, ["png", "jpg", "jpeg"]},
+      {:video, ["mp4", "3gp", "3gpp"]},
+      {:audio, ["mp3", "wav", "acc", "ogg"]},
+      {:document, ["pdf", "docx", "xlsx"]},
+      {:sticker, ["webp"]}
+    ]
+
+    Enum.find(mime_types, fn {_type, extension_list} -> extension in extension_list end)
+    |> case do
+      {type, _} ->
+        {type, url}
+
+      _ ->
+        Logger.info("Could not find media type for extension: #{extension}")
+        {:text, nil}
+    end
   end
 
   @doc """

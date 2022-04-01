@@ -71,8 +71,8 @@ defmodule Glific.OnboardTest do
     assert updated_organization.is_active == true
 
     # should update is_approved
-    # updated_organization = Onboard.status(organization.id, :approved)
-    # assert updated_organization.is_approved == true
+    updated_organization = Onboard.status(organization.id, :approved)
+    assert updated_organization.is_approved == true
   end
 
   test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",
@@ -97,6 +97,7 @@ defmodule Glific.OnboardTest do
 
   test "ensure that sending in valid parameters, delete inactive organization" do
     result = Onboard.setup(@valid_attrs)
+
     {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
     Onboard.delete(organization.id, true)
 

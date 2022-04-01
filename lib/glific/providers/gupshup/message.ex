@@ -1,6 +1,6 @@
 defmodule Glific.Providers.Gupshup.Message do
   @moduledoc """
-  Messgae API layer between application and Gupshup
+  Message API layer between application and Gupshup
   """
 
   @channel "whatsapp"
@@ -11,6 +11,8 @@ defmodule Glific.Providers.Gupshup.Message do
     Messages.Message,
     Partners
   }
+
+  require Logger
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
@@ -98,6 +100,15 @@ defmodule Glific.Providers.Gupshup.Message do
   end
 
   @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec send_interactive(Message.t(), map()) :: {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()}
+  def send_interactive(message, attrs \\ %{}) do
+    message.interactive_content
+    |> Map.merge(%{type: message.type})
+    |> send_message(message, attrs)
+  end
+
+  @doc false
   @spec caption(nil | String.t()) :: String.t()
   defp caption(nil), do: ""
   defp caption(caption), do: caption
@@ -112,6 +123,23 @@ defmodule Glific.Providers.Gupshup.Message do
   def receive_text(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
+
+    # lets ensure that we have a phone number
+    # sometime the gupshup payload has a blank payload
+    # or maybe a simulator or some test code
+    if is_nil(payload["sender"]["phone"]) ||
+         String.trim(payload["sender"]["phone"]) == "" do
+      error = "Phone number is blank, #{inspect(payload)}"
+      Logger.error(error)
+
+      stacktrace =
+        self()
+        |> Process.info(:current_stacktrace)
+        |> elem(1)
+
+      Appsignal.send_error(:error, error, stacktrace)
+      raise(RuntimeError, message: error)
+    end
 
     %{
       bsp_message_id: payload["id"],
@@ -156,6 +184,25 @@ defmodule Glific.Providers.Gupshup.Message do
       context_id: context_id(payload),
       longitude: message_payload["longitude"],
       latitude: message_payload["latitude"],
+      sender: %{
+        phone: payload["sender"]["phone"],
+        name: payload["sender"]["name"]
+      }
+    }
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec receive_interactive(map()) :: map()
+  def receive_interactive(params) do
+    payload = params["payload"]
+    message_payload = payload["payload"]
+
+    %{
+      bsp_message_id: payload["id"],
+      context_id: context_id(payload),
+      body: message_payload["title"],
+      interactive_content: message_payload,
       sender: %{
         phone: payload["sender"]["phone"],
         name: payload["sender"]["name"]
@@ -223,7 +270,7 @@ defmodule Glific.Providers.Gupshup.Message do
     worker_module = Communications.provider_worker(message.organization_id)
     worker_args = %{message: Message.to_minimal_map(message), payload: request_body, attrs: attrs}
 
-    apply(worker_module, :new, [worker_args, [scheduled_at: message.send_at]])
+    worker_module.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
   end
 end

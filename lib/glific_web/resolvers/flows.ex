@@ -8,10 +8,13 @@ defmodule GlificWeb.Resolvers.Flows do
   alias Glific.{
     Contacts.Contact,
     Flows,
+    Flows.Broadcast,
     Flows.Flow,
+    Flows.FlowContext,
+    Flows.FlowCount,
     Groups.Group,
     Repo,
-    Users.User
+    State
   }
 
   @doc """
@@ -52,8 +55,8 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec update_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    do_op_flow(id, params, user, &Flows.update_flow/2)
+  def update_flow(_, %{id: id, input: params}, _) do
+    do_copy_flow(id, params, &Flows.update_flow/2)
   end
 
   @doc false
@@ -64,13 +67,39 @@ defmodule GlificWeb.Resolvers.Flows do
   end
 
   @doc false
+  @spec import_flow(Absinthe.Resolution.t(), %{flow: map()}, %{context: map()}) ::
+          {:ok, %{success: boolean()}}
+  def import_flow(_, %{flow: flow}, %{context: %{current_user: user}}) do
+    {:ok, %{success: Flows.import_flow(flow, user.organization_id)}}
+  end
+
+  @doc false
   @spec delete_flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_flow(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
-         {:ok, flow} <- Flows.delete_flow(flow) do
-      {:ok, flow}
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}) do
+      Flows.delete_flow(flow)
     end
+  end
+
+  @doc """
+  Grab a flow or nil if possible for this user
+  """
+  @spec flow_get(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def flow_get(_, %{id: id}, %{context: %{current_user: user}}) do
+    with %Flow{} = flow <- State.get_flow(user, id) do
+      {:ok, %{flow: flow}}
+    end
+  end
+
+  @doc """
+  Release a flow or nil if possible for this user
+  """
+  @spec flow_release(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def flow_release(_, _params, %{context: %{current_user: user}}) do
+    {:ok, State.release_flow(user)}
   end
 
   @doc """
@@ -84,31 +113,84 @@ defmodule GlificWeb.Resolvers.Flows do
       {:ok, %{success: true, errors: nil}}
     else
       {:errors, errors} ->
-        {:ok, %{success: true, errors: errors}}
+        {:ok, %{success: false, errors: errors}}
 
       {:error, errors} ->
-        {:ok, %{success: true, errors: %{key: hd(errors), message: hd(tl(errors))}}}
+        {:ok, %{success: false, errors: make_error(errors)}}
 
       _ ->
         {:error, dgettext("errors", "Something went wrong.")}
     end
   end
 
+  @spec make_error(any) :: map()
+  defp make_error(error) when is_list(error),
+    do: %{key: hd(error), message: hd(tl(error))}
+
+  defp make_error(error),
+    do: %{key: "Database Error", message: inspect(error)}
+
   @doc """
   Start a flow for a contact
   """
-  @spec start_contact_flow(Absinthe.Resolution.t(), %{flow_id: integer, contact_id: integer}, %{
-          context: map()
-        }) ::
+  @spec start_contact_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer | String.t(), contact_id: integer},
+          %{
+            context: map()
+          }
+        ) ::
           {:ok, any} | {:error, any}
   def start_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
-         {:ok, contact} <-
+    with {:ok, contact} <-
            Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
-         {:ok, _flow} <- Flows.start_contact_flow(flow, contact) do
+         {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id),
+         {:ok, _flow} <- Flows.start_contact_flow(flow_id, contact) do
+      {:ok, %{success: true}}
+    end
+  end
+
+  @doc """
+  Resume a flow for a contact
+  """
+  @spec resume_contact_flow(
+          Absinthe.Resolution.t(),
+          %{flow_id: integer | String.t(), contact_id: integer, result: map()},
+          %{
+            context: map()
+          }
+        ) ::
+          {:ok, any} | {:error, any}
+  def resume_contact_flow(_, %{flow_id: flow_id, contact_id: contact_id, result: result}, %{
+        context: %{current_user: user}
+      }) do
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{id: contact_id, organization_id: user.organization_id}),
+         {:ok, flow_id} <- Glific.parse_maybe_integer(flow_id) do
+      case FlowContext.resume_contact_flow(contact, flow_id, result) do
+        {:ok, _flow_context, _messages} ->
+          {:ok, %{success: true}}
+
+        {:error, message} ->
+          {:ok, %{success: true, errors: %{key: "Flow", message: message}}}
+      end
+    end
+  end
+
+  @doc """
+  Terminate all flows for a contact
+  """
+  @spec terminate_contact_flows(
+          Absinthe.Resolution.t(),
+          %{contact_id: integer},
+          map()
+        ) ::
+          {:ok, any} | {:error, any}
+  def terminate_contact_flows(_, %{contact_id: contact_id}, _context) do
+    with {:ok, contact_id} <- Glific.parse_maybe_integer(contact_id),
+         :ok <- Flows.terminate_contact_flows?(contact_id) do
       {:ok, %{success: true}}
     end
   end
@@ -123,8 +205,7 @@ defmodule GlificWeb.Resolvers.Flows do
   def start_group_flow(_, %{flow_id: flow_id, group_id: group_id}, %{
         context: %{current_user: user}
       }) do
-    with {:ok, flow} <-
-           Repo.fetch_by(Flow, %{id: flow_id, organization_id: user.organization_id}),
+    with {:ok, flow} <- Flows.fetch_flow(flow_id),
          {:ok, group} <-
            Repo.fetch_by(Group, %{id: group_id, organization_id: user.organization_id}),
          {:ok, _flow} <- Flows.start_group_flow(flow, group) do
@@ -137,23 +218,38 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec copy_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def copy_flow(_, %{id: id, input: params}, %{
-        context: %{current_user: user}
-      }) do
-    do_op_flow(id, params, user, &Flows.copy_flow/2)
+  def copy_flow(_, %{id: id, input: params}, _) do
+    do_copy_flow(id, params, &Flows.copy_flow/2)
   end
 
-  @spec do_op_flow(
+  @spec do_copy_flow(
           non_neg_integer,
           map(),
-          User.t(),
           (Flow.t(), map() -> {:ok, Flow.t()} | {:error, String.t()})
         ) ::
           {:ok, any} | {:error, any}
-  defp do_op_flow(id, params, user, fun) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
+  defp do_copy_flow(id, params, fun) do
+    with {:ok, flow} <- Flows.fetch_flow(id),
          {:ok, flow} <- fun.(flow, params) do
       {:ok, %{flow: flow}}
     end
+  end
+
+  @doc """
+  Get broadcast stats for a flow
+  """
+  @spec broadcast_stats(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def broadcast_stats(_, %{flow_broadcast_id: flow_broadcast_id}, _),
+    do: Broadcast.broadcast_stats(flow_broadcast_id)
+
+  @doc """
+  Reset the flow counts for a specific flow
+  """
+  @spec reset_flow_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def reset_flow_count(_, %{flow_id: flow_id}, _) do
+    FlowCount.reset_flow_count(flow_id)
+    {:ok, %{success: true}}
   end
 end

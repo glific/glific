@@ -9,9 +9,12 @@ defmodule Glific.Flows do
   alias Glific.{
     Caches,
     Contacts.Contact,
+    Flows.ContactField,
+    Groups,
     Groups.Group,
     Partners,
-    Repo
+    Repo,
+    Templates.SessionTemplate
   }
 
   alias Glific.Flows.{Broadcast, Flow, FlowContext, FlowRevision}
@@ -113,6 +116,9 @@ defmodule Glific.Flows do
       {:is_active, is_active}, query ->
         from q in query, where: q.is_active == ^is_active
 
+      {:is_background, is_background}, query ->
+        from q in query, where: q.is_background == ^is_background
+
       {:name_or_keyword, name_or_keyword}, query ->
         query
         |> where([fr], ilike(fr.name, ^"%#{name_or_keyword}%"))
@@ -124,7 +130,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Return the count of tags, using the same filter as list_tags
+  Return the count of flows, using the same filter as list_flows
   """
   @spec count_flows(map()) :: integer
   def count_flows(args),
@@ -152,6 +158,24 @@ defmodule Glific.Flows do
   end
 
   @doc """
+  Fetches a single flow
+
+  Returns `Resource not found` if the Interactive Template does not exist.
+
+  ## Examples
+
+      iex> fetch_interactive_template(123, 1)
+        {:ok, %Flow{}}
+
+      iex> fetch_interactive_template(456, 1)
+        {:error, ["Elixir.Glific.Flows.Flow", "Resource not found"]}
+
+  """
+  @spec fetch_flow(integer) :: {:ok, any} | {:error, any}
+  def fetch_flow(id),
+    do: Repo.fetch_by(Flow, %{id: id})
+
+  @doc """
   Creates a flow.
 
   ## Examples
@@ -166,13 +190,8 @@ defmodule Glific.Flows do
   @spec create_flow(map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def create_flow(attrs) do
     attrs =
-      Map.merge(
-        attrs,
-        %{
-          uuid: Ecto.UUID.generate(),
-          keywords: sanitize_flow_keywords(attrs[:keywords])
-        }
-      )
+      Map.put(attrs, :keywords, sanitize_flow_keywords(attrs[:keywords]))
+      |> Map.put_new(:uuid, Ecto.UUID.generate())
 
     clean_cached_flow_keywords_map(attrs.organization_id)
 
@@ -368,7 +387,7 @@ defmodule Glific.Flows do
   which is an array of objects in the json file. Used for Node/Actions, Node/Exits,
   Router/Cases, and Router/Categories
   """
-  @spec build_flow_objects(map(), map(), (map(), map(), any -> {any, map()}), any) ::
+  @spec build_flow_objects(list(), map(), (map(), map(), any -> {any, map()}), any) ::
           {any, map()}
   def build_flow_objects(json, uuid_map, process_fn, object \\ nil) do
     {objects, uuid_map} =
@@ -471,30 +490,41 @@ defmodule Glific.Flows do
   @spec publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   def publish_flow(%Flow{} = flow) do
     Logger.info("Published Flow: flow_id: '#{flow.id}'")
-    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
-    do_publish_flow(flow)
 
-    if errors == [],
-      do: {:ok, flow},
-      else: {:errors, format_flow_errors(errors)}
+    errors = Flow.validate_flow(flow.organization_id, "draft", %{id: flow.id})
+    result = do_publish_flow(flow)
+
+    cond do
+      # if validate and published both worked
+      errors == [] && elem(result, 0) == :ok ->
+        {:ok, flow}
+
+      # we had an error saving to the DB
+      elem(result, 0) == :error ->
+        Logger.info("error while publishing the flow. #{inspect(result)}")
+        result
+
+      # We had an error validating the flow
+      true ->
+        {:errors, format_flow_errors(errors)}
+    end
   end
 
-  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()}
+  @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
     ## if invalid flow then return the {:error, array} otherwise move forword
-    with {:ok, latest_revision} <-
-           Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0}) do
-      {:ok, _} =
-        latest_revision
-        |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
-        |> Repo.update()
+    {:ok, latest_revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
 
-      # we need to fix this depending on where we are making the flow a beta or the published version
-      update_cached_flow(flow, "published")
-    end
+    result =
+      latest_revision
+      |> FlowRevision.changeset(%{status: "published", version: last_version + 1})
+      |> Repo.update()
 
-    {:ok, flow}
+    if elem(result, 0) == :ok,
+      do: update_cached_flow(flow, "published")
+
+    result
   end
 
   @spec format_flow_errors(list()) :: list()
@@ -543,11 +573,15 @@ defmodule Glific.Flows do
   @doc """
   Start flow for a contact
   """
-  @spec start_contact_flow(Flow.t(), Contact.t()) :: {:ok, Flow.t()} | {:error, String.t()}
-  def start_contact_flow(%Flow{} = flow, %Contact{} = contact) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow.id, @status})
+  @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
+          {:ok, Flow.t()} | {:error, String.t()}
+  def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
+    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status})
     process_contact_flow([contact], flow, @status)
   end
+
+  def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
+    do: start_contact_flow(flow.id, contact)
 
   @doc """
   Start flow for contacts of a group
@@ -577,6 +611,7 @@ defmodule Glific.Flows do
            %Flow{}
            |> Flow.changeset(attrs)
            |> Repo.insert() do
+      Glific.State.reset()
       copy_flow_revision(flow, flow_copy)
 
       {:ok, flow_copy}
@@ -669,10 +704,13 @@ defmodule Glific.Flows do
       |> where([f, fr], fr.status == "published" or fr.revision_number == 0)
       |> Repo.all(skip_organization_id: true)
       |> Enum.reduce(
-        %{},
+        # create empty arrays always, so all map operations works
+        # and wont throw an exception of "expected map, got nil"
+        %{"published" => %{}, "draft" => %{}},
         fn flow, acc -> add_flow_keyword_map(flow, acc) end
       )
       |> add_default_flows(organization.out_of_office)
+      |> Map.put("org_default_new_contact", organization.newcontact_flow_id)
 
     {:commit, keyword_map}
   end
@@ -697,8 +735,10 @@ defmodule Glific.Flows do
 
   @doc false
   @spec clean_cached_flow_keywords_map(non_neg_integer) :: list()
-  defp clean_cached_flow_keywords_map(organization_id),
-    do: Caches.remove(organization_id, ["flow_keywords_map"])
+  defp clean_cached_flow_keywords_map(organization_id) do
+    Glific.State.reset()
+    Caches.remove(organization_id, ["flow_keywords_map"])
+  end
 
   @spec sanitize_flow_keywords(list) :: list()
   defp sanitize_flow_keywords(keywords) when is_list(keywords),
@@ -717,18 +757,106 @@ defmodule Glific.Flows do
   def is_optin_flow?(flow), do: Enum.member?(flow.keywords, @optin_flow_keyword)
 
   @doc """
+  import a flow from json
+  """
+  @spec import_flow(map(), non_neg_integer()) :: boolean()
+  def import_flow(import_flow, organization_id) do
+    import_flow_list =
+      Enum.map(import_flow["flows"], fn flow_revision ->
+        with {:ok, flow} <-
+               create_flow(%{
+                 name: flow_revision["definition"]["name"],
+                 # we are reusing existing UUIDs against the spirit of UUIDs
+                 # however this allows us to support subflows
+                 uuid: flow_revision["definition"]["uuid"],
+                 keywords: flow_revision["keywords"],
+                 organization_id: organization_id
+               }),
+             {:ok, _flow_revision} <-
+               FlowRevision.create_flow_revision(%{
+                 definition: clean_flow_with_hsm_template(flow_revision["definition"]),
+                 flow_id: flow.id,
+                 organization_id: flow.organization_id
+               }) do
+          import_contact_field(import_flow, organization_id)
+          import_groups(import_flow, organization_id)
+
+          true
+        else
+          _ -> false
+        end
+      end)
+
+    !Enum.member?(import_flow_list, false)
+  end
+
+  @spec clean_flow_with_hsm_template(map()) :: map()
+  defp clean_flow_with_hsm_template(definition) do
+    # checking if the imported template is present in database
+    template_uuid_list = SessionTemplate |> select([st], st.uuid) |> Repo.all()
+
+    nodes =
+      definition
+      |> Map.get("nodes", [])
+      |> Enum.reduce([], &(&2 ++ do_clean_flow_with_hsm_template(&1, template_uuid_list)))
+
+    put_in(definition, ["nodes"], nodes)
+  end
+
+  @spec do_clean_flow_with_hsm_template(map(), list()) :: list()
+  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, _template_uuid_list)
+       when actions == [],
+       do: [node]
+
+  defp do_clean_flow_with_hsm_template(%{"actions" => actions} = node, template_uuid_list) do
+    action = actions |> hd
+    template_uuid = get_in(action, ["templating", "template", "uuid"])
+
+    with "send_msg" <- action["type"],
+         true <- Map.has_key?(action, "templating"),
+         false <- template_uuid in template_uuid_list do
+      # update the node if template uuid in the node is not present in DB
+      action = action |> Map.delete("templating") |> put_in(["text"], "Update this with template")
+
+      node = put_in(node, ["actions"], [action])
+      [node]
+    else
+      _ -> [node]
+    end
+  end
+
+  defp import_contact_field(import_flow, organization_id) do
+    import_flow["contact_field"]
+    |> Enum.each(fn contact_field ->
+      %{
+        name: contact_field,
+        organization_id: organization_id,
+        shortcode: contact_field
+      }
+      |> ContactField.create_contact_field()
+    end)
+  end
+
+  defp import_groups(import_flow, organization_id) do
+    import_flow["collections"]
+    |> Enum.each(fn collection ->
+      Groups.get_or_create_group_by_label(collection, organization_id)
+    end)
+  end
+
+  @doc """
     Generate a json map with all the flows related fields.
   """
   @spec export_flow(non_neg_integer()) :: map()
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    %{"flows" => []}
+    %{"flows" => [], "contact_field" => [], "collections" => []}
     |> init_export_flow(flow.uuid)
   end
 
   @doc """
-    Process the flows and get all the subflow defination.
+    Process the flows and get all the subflow definition.
   """
   @spec init_export_flow(map(), String.t()) :: map()
   def init_export_flow(results, flow_uuid),
@@ -739,22 +867,71 @@ defmodule Glific.Flows do
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
-    if Enum.any?(results["flows"], fn flow -> Map.get(flow, "uuid") == flow_uuid end) do
+    if Enum.any?(results["flows"], fn flow -> Map.get(flow.definition, "uuid") == flow_uuid end) do
       results
     else
-      defination = get_latest_definition(flow_uuid)
-      results = Map.put(results, "flows", results["flows"] ++ [defination])
+      flow = Repo.get_by(Flow, %{uuid: flow_uuid})
+      definition = get_latest_definition(flow_uuid) |> Map.put("name", flow.name)
+
+      results =
+        Map.put(
+          results,
+          "flows",
+          results["flows"] ++ [%{definition: definition, keywords: flow.keywords}]
+        )
+        |> Map.put(
+          "contact_field",
+          results["contact_field"] ++ export_contact_fields(definition)
+        )
+        |> Map.put(
+          "collections",
+          results["collections"] ++ export_collections(definition)
+        )
+
       ## here we can export more details like fields, triggers, groups and all.
 
-      defination
+      definition
       |> Map.get("nodes", [])
       |> get_sub_flows()
-      |> Enum.reduce(results, fn sub_flow, acc -> export_flow_details(sub_flow["uuid"], acc) end)
+      |> Enum.reduce(results, &export_flow_details(&1["uuid"], &2))
     end
   end
 
+  @spec export_collections(map()) :: list()
+  defp export_collections(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.reduce([], &(&2 ++ do_export_collections(&1)))
+  end
+
+  @spec do_export_collections(map()) :: list()
+  defp do_export_collections(%{"actions" => actions}) when actions == [], do: []
+
+  defp do_export_collections(%{"actions" => actions}) do
+    action = actions |> hd
+
+    if action["type"] == "add_contact_groups",
+      do: action["groups"] |> Enum.reduce([], &(&2 ++ [&1["name"]])),
+      else: []
+  end
+
+  @spec export_contact_fields(map()) :: list()
+  defp export_contact_fields(definition) do
+    definition
+    |> Map.get("nodes", [])
+    |> Enum.reduce([], &(&2 ++ do_export_contact_fields(&1)))
+  end
+
+  @spec do_export_contact_fields(map()) :: list()
+  defp do_export_contact_fields(%{"actions" => actions}) when actions == [], do: []
+
+  defp do_export_contact_fields(%{"actions" => actions}) do
+    action = actions |> hd
+    if action["type"] == "set_contact_field", do: [action["field"]["key"]], else: []
+  end
+
   @doc """
-    Extract all the subflows form the parent flow defination.
+    Extract all the subflows form the parent flow definition.
   """
   @spec get_sub_flows(list()) :: list()
   def get_sub_flows(nodes),
@@ -764,13 +941,13 @@ defmodule Glific.Flows do
   defp do_get_sub_flows(%{"actions" => actions}, list),
     do:
       Enum.reduce(actions, list, fn action, acc ->
-        if action["type"] == "enter_flow",
+        if action["type"] == "enter_flow" and action["flow"]["name"] != "Expression",
           do: acc ++ [action["flow"]],
           else: acc
       end)
 
-  ## Get latest flow defination to export. There is one more function with the same name in
-  ## Glific.Flows.flow but that gives us the defination without UI placesments.
+  ## Get latest flow definition to export. There is one more function with the same name in
+  ## Glific.Flows.flow but that gives us the definition without UI placesments.
   @spec get_latest_definition(String.t()) :: map()
   defp get_latest_definition(flow_uuid) do
     json =
@@ -781,5 +958,21 @@ defmodule Glific.Flows do
       |> Repo.one()
 
     Map.get(json, "definition", json)
+  end
+
+  @doc """
+  Check if the type is a media type we handle in flows
+  """
+  @spec is_media_type?(atom()) :: boolean()
+  def is_media_type?(type),
+    do: type in [:audio, :document, :image, :video]
+
+  @doc """
+   Terminate all flows for a contact
+  """
+  @spec terminate_contact_flows?(non_neg_integer) :: :ok
+  def terminate_contact_flows?(contact_id) do
+    FlowContext.mark_flows_complete(contact_id, false)
+    :ok
   end
 end

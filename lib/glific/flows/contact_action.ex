@@ -4,11 +4,24 @@ defmodule Glific.Flows.ContactAction do
   centralizing it here
   """
 
-  alias Glific.{Contacts, Flows, Messages, Messages.Message, Templates.SessionTemplate}
+  alias Glific.{
+    Contacts,
+    Flows,
+    Flows.Node,
+    Messages,
+    Messages.Message,
+    Repo,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
+    Templates.SessionTemplate
+  }
+
   alias Glific.Flows.{Action, FlowContext, Localization, MessageVarParser}
 
   require Logger
   @min_delay 2
+  @max_loop_limit 3
+  @abort_loop_limit 4
 
   @doc """
   This is just a think wrapper for send_message, since its basically the same,
@@ -29,6 +42,64 @@ defmodule Glific.Flows.ContactAction do
         send_message(context, action, messages, cid)
       end
     )
+  end
+
+  @doc """
+  Send interactive messages
+  """
+  @spec send_interactive_message(FlowContext.t(), Action.t(), [Message.t()]) ::
+          {:ok, map(), any()}
+  def send_interactive_message(context, action, messages) do
+    ## We might need to think how to send the interactive message to a group
+    {context, action} = process_labels(context, action)
+    {cid, message_vars} = resolve_cid(context, nil)
+
+    {:ok, interactive_template} =
+      Repo.fetch_by(
+        InteractiveTemplate,
+        %{id: action.interactive_template_id, organization_id: context.organization_id}
+      )
+
+    interactive_content =
+      interactive_template
+      |> InteractiveTemplates.translated_content(context.contact.language_id)
+      |> MessageVarParser.parse_map(message_vars)
+
+    body = InteractiveTemplates.get_interactive_body(interactive_content)
+
+    media_id = InteractiveTemplates.get_media(interactive_content, context.organization_id)
+
+    with {false, context} <- has_loops?(context, body, messages) do
+      attrs = %{
+        body: body,
+        uuid: action.uuid,
+        type: interactive_content["type"],
+        receiver_id: cid,
+        flow_label: action.labels,
+        organization_id: context.organization_id,
+        flow_id: context.flow_id,
+        flow_broadcast_id: context.flow_broadcast_id,
+        send_at: DateTime.add(DateTime.utc_now(), context.delay),
+        is_optin_flow: Flows.is_optin_flow?(context.flow),
+        interactive_template_id: action.interactive_template_id,
+        interactive_content: interactive_content,
+        media_id: media_id
+      }
+
+      attrs
+      |> Messages.create_and_send_message()
+      |> handle_message_result(context, messages, attrs)
+    end
+  end
+
+  @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
+          {:ok, map(), any()} | {false, FlowContext.t()}
+  defp has_loops?(context, body, messages) do
+    {context, count} = update_recent(context, body)
+
+    if count <= @max_loop_limit,
+      do: {false, context},
+      else: process_loops(context, count, messages, body)
   end
 
   # handle the case if we are sending a notification to another contact who is
@@ -67,7 +138,6 @@ defmodule Glific.Flows.ContactAction do
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
     count = FlowContext.match_outbound(context, body)
-
     {context, count}
   end
 
@@ -91,6 +161,7 @@ defmodule Glific.Flows.ContactAction do
   def send_message(context, action, messages, cid \\ nil)
 
   def send_message(context, %Action{templating: nil} = action, messages, cid) do
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
     # get the text translation if needed
@@ -100,15 +171,12 @@ defmodule Glific.Flows.ContactAction do
       text
       |> MessageVarParser.parse(message_vars)
 
-    {context, count} = update_recent(context, body)
-
-    if count >= 5 do
-      process_loops(context, count, messages, body)
-    else
+    with {false, context} <- has_loops?(context, body, messages) do
       do_send_message(context, action, messages, %{
         cid: cid,
         body: body,
-        text: text
+        text: text,
+        flow_label: action.labels
       })
     end
   end
@@ -119,22 +187,22 @@ defmodule Glific.Flows.ContactAction do
         messages,
         cid
       ) do
+    {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, cid)
 
-    vars = Enum.map(templating.variables, &MessageVarParser.parse(&1, message_vars))
+    variables = Localization.get_translated_template_vars(context, templating)
+    vars = Enum.map(variables, &MessageVarParser.parse(&1, message_vars))
 
     session_template = Messages.parse_template_vars(templating.template, vars)
 
     body = get_body(session_template)
-    {context, count} = update_recent(context, body)
 
-    if count >= 5 do
-      process_loops(context, count, messages, body)
-    else
+    with {false, context} <- has_loops?(context, body, messages) do
       do_send_template_message(context, action, messages, %{
         cid: cid,
         session_template: session_template,
-        params: vars
+        params: vars,
+        flow_label: action.labels
       })
     end
   end
@@ -144,14 +212,15 @@ defmodule Glific.Flows.ContactAction do
   defp do_send_template_message(context, action, messages, %{
          cid: cid,
          session_template: session_template,
-         params: params
+         params: params,
+         flow_label: flow_label
        }) do
     attachments = Localization.get_translation(context, action, :attachments)
 
     {type, media_id} =
       if is_nil(attachments) or attachments == %{},
         do: {session_template.type, session_template.message_media_id},
-        else: get_media_from_attachment(attachments, "", context.organization_id)
+        else: get_media_from_attachment(attachments, "", context, cid)
 
     session_template =
       session_template
@@ -159,7 +228,7 @@ defmodule Glific.Flows.ContactAction do
 
     ## This is bit expansive and we will optimize it bit more
     # session_template =
-    if type in [:image, :video, :audio] and media_id != nil do
+    if Flows.is_media_type?(type) and media_id != nil do
       Messages.get_message_media!(media_id)
       |> Messages.update_message_media(%{caption: session_template.body})
     end
@@ -168,7 +237,9 @@ defmodule Glific.Flows.ContactAction do
       receiver_id: cid,
       uuid: action.uuid,
       flow_id: context.flow_id,
+      flow_broadcast_id: context.flow_broadcast_id,
       is_hsm: true,
+      flow_label: flow_label,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       params: params
     }
@@ -177,26 +248,30 @@ defmodule Glific.Flows.ContactAction do
     |> handle_message_result(context, messages, attrs)
   end
 
+  @spec process_labels(FlowContext.t(), Action.t()) :: {FlowContext.t(), Action.t()}
+  defp process_labels(context, %{labels: nil} = action), do: {context, action}
+
+  defp process_labels(context, %{labels: labels} = action) do
+    flow_label =
+      labels
+      |> Enum.map_join(", ", fn label ->
+        FlowContext.parse_context_string(context, label["name"])
+      end)
+
+    {context, Map.put(action, :labels, flow_label)}
+  end
+
   @spec process_loops(FlowContext.t(), non_neg_integer, [Message.t()], String.t()) ::
           {:ok, map(), any()}
   defp process_loops(context, count, messages, body) do
-    if count > 5 do
+    if count > @abort_loop_limit do
       # this might happen when there is no Exit pathway out of the loop
-      infinite_loop(context, body)
+      Node.infinite_loop(context, body)
     else
       # :loop_detected
+      FlowContext.notification(context, "Infinite loop detected, body: #{body}. Aborting flow.")
       exit_loop(context, messages)
     end
-  end
-
-  @spec infinite_loop(FlowContext.t(), String.t()) ::
-          {:ok, map(), any()}
-  defp infinite_loop(context, body) do
-    message = "Infinite loop detected, body: #{body}. Resetting flows"
-    context = FlowContext.reset_all_contexts(context, message)
-
-    # at some point soon, we should change action signatures to allow error
-    {:ok, context, []}
   end
 
   @spec exit_loop(FlowContext.t(), [Message.t()]) ::
@@ -215,14 +290,15 @@ defmodule Glific.Flows.ContactAction do
          %{
            body: body,
            text: text,
-           cid: cid
+           cid: cid,
+           flow_label: flow_label
          }
        ) do
     organization_id = context.organization_id
 
     attachments = Localization.get_translation(context, action, :attachments)
 
-    {type, media_id} = get_media_from_attachment(attachments, text, organization_id)
+    {type, media_id} = get_media_from_attachment(attachments, text, context, cid)
 
     attrs = %{
       uuid: action.uuid,
@@ -231,7 +307,9 @@ defmodule Glific.Flows.ContactAction do
       media_id: media_id,
       receiver_id: cid,
       organization_id: organization_id,
+      flow_label: flow_label,
       flow_id: context.flow_id,
+      flow_broadcast_id: context.flow_broadcast_id,
       send_at: DateTime.add(DateTime.utc_now(), context.delay),
       is_optin_flow: Flows.is_optin_flow?(context.flow)
     }
@@ -260,18 +338,22 @@ defmodule Glific.Flows.ContactAction do
     {:ok, context, []}
   end
 
-  @spec get_media_from_attachment(any(), any(), non_neg_integer()) :: any()
-  defp get_media_from_attachment(attachment, _, _) when attachment == %{} or is_nil(attachment),
-    do: {:text, nil}
+  @spec get_media_from_attachment(any(), any(), FlowContext.t(), non_neg_integer()) :: any()
+  defp get_media_from_attachment(attachment, _, _, _)
+       when attachment == %{} or is_nil(attachment),
+       do: {:text, nil}
 
-  defp get_media_from_attachment(attachment, caption, organization_id) do
+  defp get_media_from_attachment(attachment, caption, context, cid) do
     [type | _tail] = Map.keys(attachment)
+    url = String.trim(attachment[type])
 
-    url =
-      attachment[type]
-      |> String.trim()
+    {type, url} = handle_attachment_expression(context, type, url)
+
+    %{is_valid: true, message: _message} = Messages.validate_media(url, to_string(type))
 
     type = Glific.safe_string_to_atom(type)
+
+    {_cid, message_vars} = resolve_cid(context, cid)
 
     {:ok, message_media} =
       %{
@@ -279,13 +361,23 @@ defmodule Glific.Flows.ContactAction do
         url: url,
         source_url: url,
         thumbnail: url,
-        caption: caption,
-        organization_id: organization_id
+        caption: MessageVarParser.parse(caption, message_vars),
+        organization_id: context.organization_id
       }
       |> Messages.create_message_media()
 
     {type, message_media.id}
   end
+
+  @spec handle_attachment_expression(FlowContext.t(), String.t(), String.t()) :: tuple()
+  defp handle_attachment_expression(context, "expression", expression),
+    do:
+      FlowContext.parse_context_string(context, expression)
+      |> Glific.execute_eex()
+      |> Messages.get_media_type_from_url()
+
+  defp handle_attachment_expression(_context, type, url),
+    do: {type, url}
 
   @doc """
   Contact opts in via a flow
@@ -293,12 +385,10 @@ defmodule Glific.Flows.ContactAction do
   @spec optin(FlowContext.t(), Keyword.t()) :: FlowContext.t()
   def optin(context, opts \\ []) do
     # We need to update the contact with optout_time and status
-    Contacts.contact_opted_in(
-      context.contact.phone,
-      context.contact.organization_id,
-      DateTime.utc_now(),
-      Keyword.put(opts, :optin_on_bsp, true)
-    )
+    context.contact
+    |> Map.from_struct()
+    |> Map.merge(Enum.into(opts, %{}))
+    |> Contacts.optin_contact()
 
     context
   end
@@ -312,7 +402,9 @@ defmodule Glific.Flows.ContactAction do
     Contacts.contact_opted_out(
       context.contact.phone,
       context.contact.organization_id,
-      DateTime.utc_now()
+      DateTime.utc_now(),
+      # at some point we might want to add flow name
+      "Glific Flows"
     )
 
     context

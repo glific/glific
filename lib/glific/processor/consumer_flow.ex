@@ -25,22 +25,12 @@ defmodule Glific.Processor.ConsumerFlow do
   @doc false
   @spec process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
   def process_message({message, state}, body) do
-    if skip_message?(message, state),
-      do: {message, state},
-      else: do_process_message({message, state}, body)
-  end
-
-  # Setting this to 0 since we are pushing out our own optin flow
-  @delay_time 0
-
-  @spec do_process_message({Message.t(), map()}, String.t()) :: {Message.t(), map()}
-  defp do_process_message({message, state}, body) do
     # check if draft keyword, if so bypass ignore keywords
     # and start draft flow, issue #621
     is_draft = is_draft_keyword?(state, body)
 
     if is_draft,
-      do: FlowContext.mark_flows_complete(message.contact_id)
+      do: FlowContext.mark_flows_complete(message.contact_id, false)
 
     context = FlowContext.active_context(message.contact_id)
 
@@ -52,6 +42,9 @@ defmodule Glific.Processor.ConsumerFlow do
       do: start_optin_flow(message, state),
       else: move_forward({message, state}, body, context, is_draft: is_draft)
   end
+
+  # Setting this to 0 since we are pushing out our own optin flow
+  @delay_time 0
 
   @doc """
   In case contact is not in optin flow let's move ahead with the regualr processing.
@@ -71,12 +64,18 @@ defmodule Glific.Processor.ConsumerFlow do
       _ ->
         cond do
           Map.get(state, :newcontact, false) &&
-              Map.has_key?(state.flow_keywords["published"], "newcontact") ->
+              !is_nil(state.flow_keywords["org_default_new_contact"]) ->
             # delay new contact flows by 2 minutes to allow user to deal with signon link
-            check_flows(message, "newcontact", state, is_draft: false, delay: @delay_time)
+            flow_id = state.flow_keywords["org_default_new_contact"]
+
+            check_flows(message, body, state,
+              is_newcontact: true,
+              flow_id: flow_id,
+              delay: @delay_time
+            )
 
           Map.has_key?(state.flow_keywords["published"], body) ->
-            check_flows(message, body, state, is_draft: false)
+            check_flows(message, body, state)
 
           Keyword.get(opts, :is_draft, false) ->
             check_flows(message, message.body, state, is_draft: true)
@@ -110,6 +109,8 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec check_flows(atom() | Message.t(), String.t(), map(), Keyword.t()) :: {Message.t(), map()}
   def check_flows(message, body, state, opts \\ []) do
     is_draft = Keyword.get(opts, :is_draft, false)
+    is_newcontact = Keyword.get(opts, :is_newcontact, false)
+    flow_id = Keyword.get(opts, :flow_id, nil)
 
     {status, body} =
       if is_draft do
@@ -119,12 +120,15 @@ defmodule Glific.Processor.ConsumerFlow do
         {@final_phrase, body}
       end
 
-    Flows.get_cached_flow(
+    get_cached_flow(
+      is_newcontact,
       message.organization_id,
-      {:flow_keyword, body, status}
+      {:flow_keyword, body, status},
+      flow_id
     )
     |> case do
       {:ok, flow} ->
+        opts = Keyword.put(opts, :flow_keyword, message.body)
         FlowContext.init_context(flow, message.contact, status, opts)
 
       {:error, _} ->
@@ -133,6 +137,16 @@ defmodule Glific.Processor.ConsumerFlow do
 
     {message, state}
   end
+
+  # fetches cached flow based on flow_id when contact is new contact
+  # or fetches based on flow keyword when newcontact flow is not set
+  @spec get_cached_flow(boolean(), non_neg_integer(), tuple(), non_neg_integer()) ::
+          {atom, any} | {atom(), String.t()}
+  defp get_cached_flow(false, organization_id, params, _flow_id),
+    do: Flows.get_cached_flow(organization_id, params)
+
+  defp get_cached_flow(true, organization_id, _params, flow_id),
+    do: Flows.get_cached_flow(organization_id, {:flow_id, flow_id, @final_phrase})
 
   @doc false
   @spec check_contexts(FlowContext.t() | nil, atom() | Message.t(), String.t(), map()) ::
@@ -170,21 +184,12 @@ defmodule Glific.Processor.ConsumerFlow do
         id: message.id,
         media: message.media,
         media_id: message.media_id,
-        location: message.location
+        location: message.location,
+        interactive_content: message.interactive_content
       )
     )
 
     {message, state}
-  end
-
-  # if this is a new contact then we will allow to
-  # process the message other wise system will check if
-  # they opted in again and skip the flow
-  @spec skip_message?(Message.t(), map()) :: boolean()
-  defp skip_message?(message, state) do
-    if Map.get(state, :newcontact, false) || is_nil(message.body),
-      do: false,
-      else: String.contains?(message.body, "Hi, I would like to receive notifications.")
   end
 
   @optin_flow_keyword "optin"
@@ -204,7 +209,7 @@ defmodule Glific.Processor.ConsumerFlow do
   @spec start_optin_flow(Message.t(), map()) :: {Message.t(), map()}
   defp start_optin_flow(message, state) do
     ## remove all the previous flow context
-    FlowContext.mark_flows_complete(message.contact_id)
+    FlowContext.mark_flows_complete(message.contact_id, false)
 
     Flows.get_cached_flow(
       message.organization_id,

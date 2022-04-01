@@ -59,7 +59,7 @@ defmodule Glific.GCS.GcsWorker do
       |> join(:left, [m], msg in Message, as: :msg, on: m.id == msg.media_id)
       |> where([m], m.organization_id == ^organization_id and m.id > ^message_media_id)
       |> order_by([m], asc: m.id)
-      |> limit(10)
+      |> limit(5)
       |> Repo.all()
 
     max_id = if is_list(data), do: List.last(data), else: message_media_id
@@ -154,19 +154,20 @@ defmodule Glific.GCS.GcsWorker do
     |> case do
       {:ok, _} ->
         uploading_to_gcs(local_name, media)
+        :ok
 
       {:error, :timeout} ->
         {:error,
-         "GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}"}
+         """
+         GCS Download timeout for org_id: #{media["organization_id"]}, media_id: #{media["id"]}
+         """}
 
       {:error, error} ->
         {:discard,
-         "GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error #{
-           inspect(error)
-         }"}
+         """
+         GCS Upload failed for org_id: #{media["organization_id"]}, media_id: #{media["id"]}, error: #{inspect(error)}
+         """}
     end
-
-    :ok
   end
 
   @spec uploading_to_gcs(String.t(), map()) :: :ok
@@ -226,7 +227,7 @@ defmodule Glific.GCS.GcsWorker do
   end
 
   @spec upload_file_on_gcs(String.t(), String.t(), non_neg_integer) ::
-          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()}
+          {:ok, GoogleApi.Storage.V1.Model.Object.t()} | {:error, Tesla.Env.t()} | {:error, map()}
   defp upload_file_on_gcs(local, remote, organization_id) do
     Logger.info("Uploading to GCS, org_id: #{organization_id}, file_name: #{remote}")
 
@@ -238,6 +239,16 @@ defmodule Glific.GCS.GcsWorker do
         "#{organization_id}"
       }
     )
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, error} when is_map(error) == true ->
+        {:error, error}
+
+      response ->
+        {:error, %{body: response}}
+    end
   end
 
   @doc """
@@ -260,9 +271,17 @@ defmodule Glific.GCS.GcsWorker do
   @spec update_gcs_url(String.t(), integer()) ::
           {:ok, MessageMedia.t()} | {:error, Ecto.Changeset.t()}
   defp update_gcs_url(gcs_url, id) do
-    Repo.get(MessageMedia, id)
-    |> MessageMedia.changeset(%{gcs_url: gcs_url})
-    |> Repo.update()
+    {:ok, message_media} =
+      Repo.get(MessageMedia, id)
+      |> MessageMedia.changeset(%{gcs_url: gcs_url})
+      |> Repo.update()
+
+    message_media.organization_id
+    |> Jobs.update_bigquery_job("messages", %{
+      last_updated_at: Timex.shift(Timex.now(), minutes: -2)
+    })
+
+    {:ok, message_media}
   end
 
   @spec get_media_extension(String.t()) :: String.t()
@@ -276,9 +295,13 @@ defmodule Glific.GCS.GcsWorker do
     |> Map.get(Glific.safe_string_to_atom(type), "png")
   end
 
+  @doc """
+  Download a file to the specific path. Should move this to a more generic
+  helper file in glific
+  """
   @spec download_file_to_temp(String.t(), String.t(), non_neg_integer) ::
           {:ok, String.t()} | {:error, any()}
-  defp download_file_to_temp(url, path, org_id) do
+  def download_file_to_temp(url, path, org_id) do
     Logger.info("Downloading file: org_id: #{org_id}, url: #{url}")
 
     Tesla.get(url)

@@ -6,7 +6,7 @@ defmodule Glific.Contacts do
   import GlificWeb.Gettext
 
   use Tesla
-  plug Tesla.Middleware.FormUrlencoded
+  plug(Tesla.Middleware.FormUrlencoded)
 
   alias __MODULE__
 
@@ -15,11 +15,13 @@ defmodule Glific.Contacts do
   alias Glific.{
     Clients,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Contacts.Location,
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
     Providers.GupshupContacts,
+    Providers.GupshupEnterpriseContacts,
     Repo,
     Tags.ContactTag,
     Users.User
@@ -96,10 +98,10 @@ defmodule Glific.Contacts do
 
     Enum.reduce(filter, query, fn
       {:status, status}, query ->
-        from q in query, where: q.status == ^status
+        from(q in query, where: q.status == ^status)
 
       {:bsp_status, bsp_status}, query ->
-        from q in query, where: q.bsp_status == ^bsp_status
+        from(q in query, where: q.bsp_status == ^bsp_status)
 
       {:include_groups, []}, query ->
         query
@@ -283,9 +285,8 @@ defmodule Glific.Contacts do
 
   """
   @spec change_contact(Contact.t(), map()) :: Ecto.Changeset.t()
-  def change_contact(%Contact{} = contact, attrs \\ %{}) do
-    Contact.changeset(contact, attrs)
-  end
+  def change_contact(%Contact{} = contact, attrs \\ %{}),
+    do: Contact.changeset(contact, attrs)
 
   @doc """
   Gets or Creates a Contact based on the unique indexes in the table. If there is a match
@@ -372,24 +373,25 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted in and ignore if it's blocked
   """
-  @spec contact_opted_in(String.t(), non_neg_integer, DateTime.t(), Keyword.t()) ::
+  @spec contact_opted_in(map(), non_neg_integer, DateTime.t(), Keyword.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  def contact_opted_in(phone, organization_id, utc_time, opts \\ []) do
+  def contact_opted_in(%{phone: phone} = contact_attrs, organization_id, utc_time, opts \\ []) do
     attrs = %{
       phone: phone,
       optin_time: utc_time,
       optin_status: true,
       optin_method: Keyword.get(opts, :method, "BSP"),
       optin_message_id: Keyword.get(opts, :message_id),
-      last_message_at: DateTime.utc_now(),
       optout_time: nil,
       status: :valid,
-      bsp_status: Keyword.get(opts, :bsp_status, :session_and_hsm),
       organization_id: organization_id,
       updated_at: DateTime.utc_now()
     }
 
-    case Repo.get_by(Contact, %{phone: phone}) do
+    attrs = Map.merge(contact_attrs, attrs)
+
+    Repo.get_by(Contact, %{phone: phone})
+    |> case do
       nil ->
         create_contact(attrs)
 
@@ -399,7 +401,24 @@ defmodule Glific.Contacts do
           do: {:ok, contact},
           else: update_contact(contact, attrs)
     end
-    |> optin_on_bsp(Keyword.get(opts, :optin_on_bsp, false))
+    |> case do
+      {:ok, contact} ->
+        {:ok, contact} = set_session_status(contact, :hsm)
+
+        capture_history(contact.id, :contact_opted_in, %{
+          event_label: "contact opted in, via #{attrs.optin_method}",
+          event_meta: %{
+            method: attrs[:optin_method],
+            utc_time: utc_time,
+            optin_message_id: attrs[:optin_message_id]
+          }
+        })
+
+        {:ok, contact}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
   end
 
   @spec ignore_optin?(Contact.t(), Keyword.t()) :: boolean()
@@ -413,23 +432,12 @@ defmodule Glific.Contacts do
     end
   end
 
-  @spec optin_on_bsp({:ok, Contact.t()} | {:error, Ecto.Changeset.t()}, Keyword.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp optin_on_bsp({:ok, contact}, true) do
-    contact
-    |> Map.from_struct()
-    |> optin_contact()
-
-    {:ok, contact}
-  end
-
-  defp optin_on_bsp(res, _), do: res
-
-  @spec opted_out_attrs(String.t(), non_neg_integer, DateTime.t()) :: map()
-  defp opted_out_attrs(phone, organization_id, utc_time),
+  @spec opted_out_attrs(String.t(), non_neg_integer, DateTime.t(), String.t()) :: map()
+  defp opted_out_attrs(phone, organization_id, utc_time, method),
     do: %{
       phone: phone,
       optout_time: utc_time,
+      optout_method: method,
       optin_time: nil,
       optin_status: false,
       optin_method: nil,
@@ -443,8 +451,8 @@ defmodule Glific.Contacts do
   @doc """
   Update DB fields when contact opted out
   """
-  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t()) :: :ok | :error
-  def contact_opted_out(phone, organization_id, utc_time) do
+  @spec contact_opted_out(String.t(), non_neg_integer, DateTime.t(), String.t()) :: :ok | :error
+  def contact_opted_out(phone, organization_id, utc_time, method \\ "Glific Flows") do
     if is_simulator_contact?(phone) do
       :ok
     else
@@ -454,14 +462,41 @@ defmodule Glific.Contacts do
           :error
 
         contact ->
+          capture_history(contact.id, :contact_opted_out, %{
+            event_label: "contact opted out, via #{method}",
+            event_meta: %{
+              method: method,
+              utc_time: utc_time
+            }
+          })
+
           update_contact(
             contact,
-            opted_out_attrs(phone, organization_id, utc_time)
+            opted_out_attrs(phone, organization_id, utc_time, method)
           )
 
           :ok
       end
     end
+  end
+
+  @doc """
+  Opt out a contact if the provider returns an error code about Number not
+  exisiting or not on whatsapp
+  """
+  @spec number_does_not_exist(non_neg_integer(), String.t()) :: any()
+  def number_does_not_exist(contact_id, method \\ "Number does not exist") do
+    contact = get_contact!(contact_id)
+
+    update_contact(
+      contact,
+      opted_out_attrs(
+        contact.phone,
+        contact.organization_id,
+        DateTime.utc_now(),
+        method
+      )
+    )
   end
 
   @doc """
@@ -484,7 +519,17 @@ defmodule Glific.Contacts do
         {:error, dgettext("errors", "Cannot send hsm message to contact, not opted in.")}
 
       true ->
-        {:ok, nil}
+        # ensure that the organization is not in suspended state
+        organization = Partners.organization(contact.organization_id)
+
+        if organization.is_suspended,
+          do:
+            {:error,
+             dgettext(
+               "errors",
+               "Cannot send hsm message to contact, organization is in suspended state"
+             )},
+          else: {:ok, nil}
     end
   end
 
@@ -572,13 +617,14 @@ defmodule Glific.Contacts do
   """
   @spec update_contact_status(non_neg_integer, map()) :: :ok
   def update_contact_status(organization_id, _args) do
-    t = Glific.go_back_time(24)
+    t = Glific.go_back_time(24 * 60 - 1, DateTime.utc_now(), :minute)
 
     Contact
-    |> where([c], c.last_message_at <= ^t)
     |> where([c], c.organization_id == ^organization_id)
+    |> where([c], c.last_message_at <= ^t)
+    |> where([c], c.bsp_status in [:session, :session_and_hsm])
     |> select([c], c.id)
-    |> Repo.all(skip_organization_id: true)
+    |> Repo.all()
     |> set_session_status(:none)
   end
 
@@ -593,8 +639,13 @@ defmodule Glific.Contacts do
       else: update_contact(contact, %{bsp_status: :hsm})
   end
 
-  def set_session_status([], _) do
-    :ok
+  def set_session_status(%Contact{} = contact, :hsm = _status) do
+    last_message_at = contact.last_message_at
+    t = Glific.go_back_time(24)
+
+    if !is_nil(last_message_at) && Timex.compare(last_message_at, t) > 0,
+      do: update_contact(contact, %{bsp_status: :session_and_hsm}),
+      else: update_contact(contact, %{bsp_status: :hsm})
   end
 
   def set_session_status(contact_ids, :none = _status) when is_list(contact_ids) do
@@ -616,6 +667,8 @@ defmodule Glific.Contacts do
       do: update_contact(contact, %{bsp_status: :session}),
       else: update_contact(contact, %{bsp_status: :session_and_hsm})
   end
+
+  def set_session_status(_, _), do: :ok
 
   @doc """
   check if contact is blocked or not
@@ -640,6 +693,7 @@ defmodule Glific.Contacts do
 
     case organization.bsp.shortcode do
       "gupshup" -> GupshupContacts.optin_contact(attrs)
+      "gupshup_enterprise" -> GupshupEnterpriseContacts.optin_contact(attrs)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end
@@ -670,6 +724,20 @@ defmodule Glific.Contacts do
         fn g, list -> [g.label | list] end
       )
     )
+    ## We change the name of the contact whenever we receive  a message from the contact.
+    ## so the contact name will always be the name contact added in the whatsApp app.
+    ## This is just so that organizations can use the custom name or the name they collected from the
+    ## various surveys in glific flows.
+    |> put_in(
+      [:fields, "name"],
+      contact.fields["name"] ||
+        %{
+          "type" => "string",
+          "label" => "Name",
+          "inserted_at" => DateTime.utc_now(),
+          "value" => contact.name
+        }
+    )
   end
 
   @simulator_phone_prefix "9876543210"
@@ -683,4 +751,78 @@ defmodule Glific.Contacts do
   """
   @spec is_simulator_contact?(String.t()) :: boolean
   def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
+
+  @doc """
+  create new contact histroy record.
+  """
+  @spec capture_history(Contact.t() | non_neg_integer(), atom(), map()) ::
+          {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
+  def capture_history(contact_id, event_type, attrs) when is_integer(contact_id),
+    do:
+      contact_id
+      |> get_contact!()
+      |> capture_history(event_type, attrs)
+
+  def capture_history(%Contact{} = contact, event_type, attrs) do
+    ## I will add the telemetery evenets here.
+    attrs =
+      Map.merge(
+        %{
+          event_type: event_type |> Atom.to_string(),
+          contact_id: contact.id,
+          event_datetime: DateTime.utc_now(),
+          organization_id: contact.organization_id,
+          event_meta: %{}
+        },
+        attrs
+      )
+
+    %ContactHistory{}
+    |> ContactHistory.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  def capture_history(_, _event_type, _attrs),
+    do: {:error, dgettext("errors", "Invalid event type")}
+
+  @doc """
+  Get contact history
+  """
+  @spec list_contact_history(map()) :: [ContactHistory.t()]
+  def list_contact_history(args) do
+    args
+    |> Repo.list_filter_query(
+      ContactHistory,
+      &Repo.opts_with_id/2,
+      &filter_history_with/2
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  count contact history
+  """
+  @spec count_contact_history(map) :: integer
+  def count_contact_history(args),
+    do: Repo.count_filter(args, ContactHistory, &filter_history_with/2)
+
+  @spec filter_history_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_history_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
+    Enum.reduce(filter, query, fn
+      {:contact_id, contact_id}, query ->
+        from(q in query, where: q.contact_id == ^contact_id)
+
+      {:event_type, event_type}, query ->
+        from(q in query, where: ilike(q.event_type, ^"%#{event_type}%"))
+
+      {:event_label, event_label}, query ->
+        from(q in query, where: ilike(q.event_label, ^"%#{event_label}%"))
+
+      _, query ->
+        query
+    end)
+  end
 end

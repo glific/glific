@@ -7,7 +7,8 @@ defmodule Glific.Flows.ActionTest do
     Groups.ContactGroup,
     Partners,
     Seeds.SeedsDev,
-    Settings
+    Settings,
+    Templates.InteractiveTemplate
   }
 
   alias Glific.Flows.{
@@ -20,8 +21,9 @@ defmodule Glific.Flows.ActionTest do
 
   setup do
     default_provider = SeedsDev.seed_providers()
-    SeedsDev.seed_organizations(default_provider)
+    organization = SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -210,6 +212,30 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
+  test "process extracts the right values from json for send_interactive_msg" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "id" => 1,
+      "name" => "Quick Reply Text",
+      "text" =>
+        "{\"content\":{\"caption\":\"Glific is a two way communication platform\",\"text\":\"How excited are you for Glific?\",\"type\":\"text\"},\"options\":[{\"title\":\"Excited\",\"type\":\"text\"},{\"title\":\"Very Excited\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+      "type" => "send_interactive_msg",
+      "uuid" => "UUID 1"
+    }
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "send_interactive_msg"
+    assert action.node_uuid == node.uuid
+    assert action.interactive_template_id == 1
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "send_interactive_msg"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
   test "process extracts the right values from json for add_contact_groups" do
     node = %Node{uuid: "Test UUID"}
     json = %{"uuid" => "UUID 1", "type" => "add_contact_groups", "groups" => ["23", "45"]}
@@ -272,7 +298,24 @@ defmodule Glific.Flows.ActionTest do
     assert uuid_map[action.uuid] == {:action, action}
 
     # ensure that not sending either of the required fields, raises an error
-    json = %{"uuid" => "UUID 1", "type" => "send_broadcast", "text" => "Test Text"}
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_time", "text" => "Test Text"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for wait_for_result" do
+    node = %Node{uuid: "Test UUID"}
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_result", "delay" => "23"}
+
+    {action, uuid_map} = Action.process(json, %{}, node)
+
+    assert action.uuid == "UUID 1"
+    assert action.type == "wait_for_result"
+    assert action.node_uuid == node.uuid
+    assert action.wait_time == 23
+    assert uuid_map[action.uuid] == {:action, action}
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "wait_for_result", "text" => "Test Text"}
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
@@ -316,7 +359,16 @@ defmodule Glific.Flows.ActionTest do
     {:ok, context} = FlowContext.create_flow_context(attrs)
     context = Repo.preload(context, [:flow, :contact])
 
-    action = %Action{type: "send_msg", text: "This is a test send_msg"}
+    action = %Action{
+      type: "send_msg",
+      text: "This is a test send_msg",
+      labels: [
+        %{
+          "name" => "Age Group 11 to 14",
+          "uuid" => "aed0e1a1-29ad-413e-9aaa-3ece3ec4011e"
+        }
+      ]
+    }
 
     message_stream = []
 
@@ -331,6 +383,52 @@ defmodule Glific.Flows.ActionTest do
       |> Repo.one()
 
     assert message.body == "This is a test send_msg"
+    assert message.flow_label == "Age Group 11 to 14"
+  end
+
+  test "execute an action when type is send_interactive_msg", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+    # preload contact
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+    interactive = Repo.get_by(InteractiveTemplate, %{label: "Quick Reply Text"})
+
+    action = %Action{
+      type: "send_interactive_msg",
+      text: "This is a test send_msg",
+      interactive_template_id: interactive.id,
+      labels: [
+        %{
+          "name" => "Age Group 11 to 14",
+          "uuid" => "aed0e1a1-29ad-413e-9aaa-3ece3ec4011e"
+        }
+      ]
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, _updated_context, _updated_message_stream} = result
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == "Glific is a two way communication platform"
+    assert message.flow_label == "Age Group 11 to 14"
   end
 
   test "execute an action when type is send_broadcast", attrs do
@@ -379,7 +477,7 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    context = %FlowContext{contact_id: contact.id, flow_id: 1} |> Repo.preload([:contact, :flow])
 
     action = %Action{type: "set_contact_language", text: "English"}
 
@@ -395,7 +493,9 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
-    context = %FlowContext{contact_id: contact.id} |> Repo.preload(:contact)
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
 
     action = %Action{type: "set_contact_name", value: "Updated Name"}
 
@@ -411,8 +511,8 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
-      %FlowContext{contact_id: contact.id, results: %{"test_result" => "preference1"}}
-      |> Repo.preload(:contact)
+      %FlowContext{contact_id: contact.id, flow_id: 1, results: %{"test_result" => "preference1"}}
+      |> Repo.preload([:contact, :flow])
 
     action = %Action{
       type: "set_contact_field",
@@ -445,8 +545,8 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     context =
-      %FlowContext{contact_id: contact.id, results: %{"test_result" => "field1"}}
-      |> Repo.preload(:contact)
+      %FlowContext{contact_id: contact.id, flow_id: 1, results: %{"test_result" => "field1"}}
+      |> Repo.preload([:contact, :flow])
 
     action = %Action{
       type: "set_contact_field",
@@ -500,9 +600,15 @@ defmodule Glific.Flows.ActionTest do
     contact = Repo.get_by(Contact, %{name: "Default receiver"})
 
     # preload contact
-    context =
-      %FlowContext{contact_id: contact.id, flow_id: 1, organization_id: attrs.organization_id}
-      |> Repo.preload([:contact, :flow])
+    context_args = %{
+      contact_id: contact.id,
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, context} = FlowContext.create_flow_context(context_args)
+    context = Repo.preload(context, [:contact, :flow])
 
     # using uuid of language flow
     action = %Action{
@@ -517,11 +623,11 @@ defmodule Glific.Flows.ActionTest do
 
     # good message, proceed ahead
     result = Action.execute(action, context, [%{body: "No Response"}])
-    assert elem(result, 1) == context
+    assert match?(%FlowContext{}, elem(result, 1))
 
     # delay is 0
     result = Action.execute(action, context, [])
-    assert elem(result, 1) == context
+    assert match?(%FlowContext{}, elem(result, 1))
 
     node = %{uuid: Ecto.UUID.generate()}
     # here we need a real context
@@ -530,16 +636,17 @@ defmodule Glific.Flows.ActionTest do
       |> Map.put(:nodes, [node])
       |> Map.put(:start_node, node)
       |> Map.put(:uuid_map, %{})
+      |> Map.put(:is_background, false)
 
     {:ok, context} = FlowContext.seed_context(flow, contact, "published")
 
     # delay > 0
-    result = Action.execute(Map.put(action, :wait_time, 30), context, [])
+    result = Action.execute(Map.put(action, :wait_time, 30), context |> Repo.preload(:flow), [])
     assert elem(result, 0) == :wait
 
     context = Repo.get(FlowContext, context.id)
     assert !is_nil(context.wakeup_at)
-    assert context.wait_for_time == true
+    assert context.is_background_flow == false
   end
 
   test "execute an action when type is call_webhook", attrs do

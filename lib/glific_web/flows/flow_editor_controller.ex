@@ -15,7 +15,10 @@ defmodule GlificWeb.Flows.FlowEditorController do
     Flows.FlowLabel,
     GCS.GcsWorker,
     Partners,
+    Repo,
     Settings,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Users.User
   }
 
@@ -200,6 +203,69 @@ defmodule GlificWeb.Flows.FlowEditorController do
     json(conn, resthooks)
   end
 
+  @doc """
+  A list of all the interactive templates in format that is understood by flow editor
+  """
+  @spec interactive_templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def interactive_templates(conn, _params) do
+    results =
+      InteractiveTemplates.list_interactives(%{
+        filter: %{organization_id: conn.assigns[:organization_id]}
+      })
+      |> Enum.reduce([], fn interactive, acc ->
+        [
+          %{
+            id: interactive.id,
+            name: interactive.label,
+            type: interactive.type,
+            interactive_content: interactive.interactive_content,
+            created_on: interactive.inserted_at,
+            modified_on: interactive.updated_at
+          }
+          | acc
+        ]
+      end)
+
+    json(conn, %{results: results})
+  end
+
+  @doc """
+  Fetching single interactive template and returning in format that is understood by flow editor
+  or
+  Return error Interactive message not found
+  """
+  @spec interactive_template(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def interactive_template(conn, params) do
+    [id] = params["vars"]
+    {:ok, id} = Glific.parse_maybe_integer(id)
+
+    case Repo.fetch_by(InteractiveTemplate, %{id: id}) do
+      {:ok, interactive_template} ->
+        %{
+          id: interactive_template.id,
+          name: interactive_template.label,
+          type: interactive_template.type,
+          interactive_content: interactive_template.interactive_content,
+          created_on: interactive_template.inserted_at,
+          modified_on: interactive_template.updated_at,
+          translations: get_interactive_translations(interactive_template.translations)
+        }
+        |> then(&json(conn, &1))
+
+      {:error, _} ->
+        json(conn, %{error: "Interactive message not found"})
+    end
+  end
+
+  @spec get_interactive_translations(map) :: map()
+  defp get_interactive_translations(interactive_translations) do
+    language_map = Settings.get_language_id_local_map()
+
+    interactive_translations
+    |> Enum.map(fn {language_id, value} -> %{language_map[language_id] => value} end)
+    |> Enum.reduce(%{}, fn translation, acc -> Map.merge(acc, translation) end)
+  end
+
   @doc false
   @spec templates(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
   def templates(conn, _params) do
@@ -242,10 +308,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
   defp get_template_translations(nil), do: []
 
   defp get_template_translations(template_translations) do
-    language_map =
-      Map.new(Settings.locale_id_map(), fn {locale, language_id} ->
-        {to_string(language_id), locale}
-      end)
+    language_map = Settings.get_language_id_local_map()
 
     template_translations
     |> Enum.reduce([], fn {language_id, translation}, acc ->
@@ -306,7 +369,16 @@ defmodule GlificWeb.Flows.FlowEditorController do
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/completion.json"))
       |> Jason.decode!()
 
-    json(conn, completion)
+    functions =
+      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
+      |> Jason.decode!()
+
+    results = %{
+      context: completion,
+      functions: functions
+    }
+
+    json(conn, results)
   end
 
   @doc """
@@ -381,7 +453,7 @@ defmodule GlificWeb.Flows.FlowEditorController do
 
         [flow_uuid] ->
           with {:ok, flow} <-
-                 Glific.Repo.fetch_by(Flow, %{
+                 Repo.fetch_by(Flow, %{
                    uuid: flow_uuid,
                    organization_id: conn.assigns[:organization_id]
                  }),
@@ -409,18 +481,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def save_revisions(conn, params) do
     revision = Flows.create_flow_revision(params)
     json(conn, %{revision: revision.id})
-  end
-
-  @doc """
-    all the supported funcations we provide
-  """
-  @spec functions(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
-  def functions(conn, _) do
-    functions =
-      File.read!(Path.join(:code.priv_dir(:glific), "data/flows/functions.json"))
-      |> Jason.decode!()
-
-    json(conn, functions)
   end
 
   @doc """
@@ -455,6 +515,34 @@ defmodule GlificWeb.Flows.FlowEditorController do
       end
 
     json(conn, res)
+  end
+
+  @doc false
+  @spec recents(Plug.Conn.t(), nil | maybe_improper_list | map) :: Plug.Conn.t()
+  def recents(conn, params) do
+    [exit_uuid, destination_uuid, flow_uuid] = params["vars"]
+
+    {:ok, flow_count} =
+      Repo.fetch_by(FlowCount, %{
+        uuid: exit_uuid,
+        destination_uuid: destination_uuid,
+        flow_uuid: flow_uuid,
+        organization_id: conn.assigns[:organization_id]
+      })
+
+    results =
+      Enum.reduce(flow_count.recent_messages, [], fn recent_message, acc ->
+        [
+          %{
+            contact: recent_message["contact"],
+            operand: recent_message["message"],
+            time: recent_message["date"]
+          }
+          | acc
+        ]
+      end)
+
+    json(conn, results)
   end
 
   @doc false

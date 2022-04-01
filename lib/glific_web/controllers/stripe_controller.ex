@@ -76,6 +76,13 @@ defmodule GlificWeb.StripeController do
          %{type: "invoice.created", data: %{object: invoice}} = _stripe_event,
          organization_id
        ) do
+    Billing.credit_customer(%{
+      invoice_id: invoice.id,
+      organization_id: organization_id,
+      status: invoice.status,
+      amount_due: invoice.subtotal
+    })
+
     case Invoice.create_invoice(%{stripe_invoice: invoice, organization_id: organization_id}) do
       {:ok, invoice} -> {:ok, "success, #{invoice.id}"}
       {:error, error} -> {:error, error}
@@ -101,11 +108,21 @@ defmodule GlificWeb.StripeController do
        do: Billing.update_subscription_details(subscription, organization_id, nil)
 
   defp handle_webhook(
+         %{type: "customer.subscription.created", data: %{object: subscription}} = _stripe_event,
+         organization_id
+       ),
+       do: Billing.subscription_created_callback(subscription, organization_id)
+
+  defp handle_webhook(
          %{type: "customer.updated", data: %{object: customer}} = _stripe_event,
          organization_id
        ) do
     Billing.get_billing(%{stripe_customer_id: customer.id, organization_id: organization_id})
-    |> Billing.update_billing(%{email: customer.email})
+    |> then(
+      &if is_nil(&1),
+        do: {:ok, "No Billing corresponding to customer id #{customer.id} exist"},
+        else: Billing.update_billing(&1, %{email: customer.email})
+    )
   end
 
   defp handle_webhook(

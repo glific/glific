@@ -1,0 +1,16 @@
+fragment FlowLabelFields on FlowLabelResult {
+  flowLabel {
+    id
+    insertedAt
+    name
+    updatedAt
+    uuid
+  }
+}
+
+fragment ErrorFields on FlowLabelResult {
+  errors {
+    key
+    message
+  }
+}

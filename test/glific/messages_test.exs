@@ -16,6 +16,8 @@ defmodule Glific.MessagesTest do
     Repo,
     Seeds.SeedsDev,
     Tags.Tag,
+    Templates.InteractiveTemplate,
+    Templates.InteractiveTemplates,
     Templates.SessionTemplate,
     Users
   }
@@ -25,6 +27,7 @@ defmodule Glific.MessagesTest do
     SeedsDev.seed_contacts(organization)
     SeedsDev.hsm_templates(organization)
     SeedsDev.seed_users(organization)
+    SeedsDev.seed_interactives(organization)
     :ok
   end
 
@@ -94,6 +97,23 @@ defmodule Glific.MessagesTest do
         |> Contacts.create_contact()
 
       %{sender_id: sender.id, receiver_id: receiver.id, organization_id: sender.organization_id}
+    end
+
+    # Update Gupshup Enterprise as default bsp
+    defp enable_gupshup_enterprise(attrs) do
+      updated_attrs = %{
+        is_active: true,
+        organization_id: attrs.organization_id,
+        shortcode: "gupshup_enterprise"
+      }
+
+      {:ok, cred} =
+        Partners.get_credential(%{
+          organization_id: attrs.organization_id,
+          shortcode: "gupshup_enterprise"
+        })
+
+      Partners.update_credential(cred, updated_attrs)
     end
 
     def message_fixture(attrs) do
@@ -413,6 +433,25 @@ defmodule Glific.MessagesTest do
                |> Messages.create_message()
     end
 
+    test "variable will be replaced in media caption after creating a message", attrs do
+      media =
+        attrs
+        |> Map.merge(%{caption: "Hello @contact.phone"})
+        |> Fixtures.message_media_fixture()
+
+      {:ok, message} =
+        @valid_attrs
+        |> Map.merge(foreign_key_constraint(attrs))
+        |> Map.merge(%{type: :image, media_id: media.id})
+        |> Messages.create_message()
+
+      message_media = Messages.get_message_media!(media.id)
+
+      receiver = Contacts.get_contact!(message.receiver_id)
+
+      assert message_media.caption == "Hello #{receiver.phone}"
+    end
+
     test "create and send message to multiple contacts should update the bsp_message_id field in message",
          %{organization_id: organization_id, global_schema: global_schema} = attrs do
       {:ok, receiver_1} =
@@ -610,6 +649,260 @@ defmodule Glific.MessagesTest do
       assert message.body == "test message"
     end
 
+    test "create and send message should send message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      valid_attrs = %{
+        body: "test message",
+        flow: :outbound,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "test message"
+    end
+
+    test "create and send message should send template message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      shortcode = "otp"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: attrs.organization_id}
+        )
+
+      valid_attrs = %{
+        body: hsm_template.example,
+        flow: :outbound,
+        is_hsm: true,
+        params: ["adding Anil as a payee", "1234", "15 minutes"],
+        template_id: hsm_template.id,
+        type: :text
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+
+      assert message.body ==
+               "Your OTP for adding Anil as a payee is 1234. This is valid for 15 minutes."
+    end
+
+    test "create and send message should send image message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          caption: "image caption",
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :image,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :image
+      assert is_nil(message.media_id) == false
+    end
+
+    test "create and send message should send video message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          caption: "video caption",
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :video,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :video
+      assert is_nil(message.media_id) == false
+    end
+
+    test "create and send message should send file message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          caption: "file name",
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :document,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :document
+      assert is_nil(message.media_id) == false
+    end
+
+    test "create and send message should send audio message to contact through gupshup enterprise",
+         attrs do
+      enable_gupshup_enterprise(attrs)
+
+      message_media =
+        message_media_fixture(%{
+          organization_id: attrs.organization_id
+        })
+
+      valid_attrs = %{
+        flow: :outbound,
+        type: :audio,
+        media_id: message_media.id
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.type == :audio
+      assert is_nil(message.media_id) == false
+    end
+
+    test "create and send message interactive quick reply message with image should have message body as image caption",
+         %{organization_id: organization_id} = attrs do
+      label = "Quick Reply Image"
+
+      Glific.Fixtures.mock_validate_media()
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id,
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "body text"
+      assert false == is_nil(message.media_id)
+    end
+
+    test "create and send message interactive quick reply message should have message body text",
+         %{organization_id: organization_id} = attrs do
+      label = "Quick Reply Text"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id,
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      msg_interactive_content = message.interactive_content
+      assert message.body == "Glific is a two way communication platform"
+      assert msg_interactive_content["content"]["header"] == "Quick Reply Text"
+      # send interactive quick reply message with send_with_title as false
+      InteractiveTemplates.update_interactive_template(interactive_template, %{
+        send_with_title: false
+      })
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "Glific is a two way communication platform"
+    end
+
+    test "create and send message interactive quick reply message with document should have message body as ",
+         %{organization_id: organization_id} = attrs do
+      label = "Quick Reply Document"
+      Glific.Fixtures.mock_validate_media("pdf")
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id,
+        type: :quick_reply
+      }
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "http://enterprise.smsgupshup.com/doc/GatewayAPIDoc.pdf"
+      assert false == is_nil(message.media_id)
+    end
+
+    test "create and send message interactive list message should have message body as list body",
+         %{organization_id: organization_id} = attrs do
+      label = "Interactive list"
+
+      {:ok, interactive_template} =
+        Repo.fetch_by(
+          InteractiveTemplate,
+          %{label: label, organization_id: organization_id}
+        )
+
+      valid_attrs = %{
+        body: nil,
+        flow: :outbound,
+        interactive_template_id: interactive_template.id,
+        type: :quick_reply
+      }
+
+      # send interactive list message with send_with_title as false
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "Glific"
+
+      InteractiveTemplates.update_interactive_template(interactive_template, %{
+        send_with_title: false
+      })
+
+      message_attrs = Map.merge(valid_attrs, foreign_key_constraint(attrs))
+      {:ok, message} = Messages.create_and_send_message(message_attrs)
+      message = Messages.get_message!(message.id)
+      assert message.body == "Glific"
+    end
+
     test "create and send message should send message to contact with replacing global vars",
          attrs do
       Partners.get_organization!(attrs.organization_id)
@@ -712,6 +1005,69 @@ defmodule Glific.MessagesTest do
       assert message.sent_at != nil
     end
 
+    test "send button template message",
+         %{organization_id: organization_id, global_schema: global_schema} = attrs do
+      SeedsDev.seed_session_templates()
+      contact = Fixtures.contact_fixture(attrs)
+      shortcode = "account_balance"
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: shortcode, organization_id: organization_id}
+        )
+
+      parameters = ["param1"]
+
+      # send hsm with buttons should send button template
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.is_hsm == true
+
+      assert message.body ==
+               "You can now view your Account Balance or Mini statement for Account ending with param1 simply by selecting one of the options below.| [View Account Balance] | [View Mini Statement] "
+
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+
+      # send hsm with buttons should send translated button template
+      Contacts.update_contact(contact, %{language_id: 2})
+
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+      assert message.is_hsm == true
+
+      assert message.body ==
+               " अब आप नीचे दिए विकल्पों में से एक का चयन करके param1 के साथ समाप्त होने वाले खाते के लिए अपना खाता शेष या मिनी स्टेटमेंट देख सकते हैं। | [अकाउंट बैलेंस देखें] | [देखें मिनी स्टेटमेंट]"
+
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+    end
+
     test "send media hsm message",
          %{organization_id: organization_id, global_schema: global_schema} = attrs do
       SeedsDev.seed_session_templates()
@@ -735,6 +1091,36 @@ defmodule Glific.MessagesTest do
       assert error_message == "Please provide media for media template."
 
       media = Fixtures.message_media_fixture(attrs)
+
+      # send media hsm with media should send media template
+      {:ok, message} =
+        %{
+          template_id: hsm_template.id,
+          receiver_id: contact.id,
+          parameters: parameters,
+          media_id: media.id
+        }
+        |> Messages.create_and_send_hsm_message()
+
+      assert_enqueued(worker: Worker, prefix: global_schema)
+      Oban.drain_queue(queue: :gupshup)
+
+      message = Messages.get_message!(message.id)
+
+      assert message.is_hsm == true
+      assert message.flow == :outbound
+      assert message.bsp_message_id != nil
+      assert message.bsp_status == :enqueued
+      assert message.sent_at != nil
+
+      # send media hsm with media should send video template
+      parameters = ["anil"]
+
+      {:ok, hsm_template} =
+        Repo.fetch_by(
+          SessionTemplate,
+          %{shortcode: "file_update", organization_id: organization_id}
+        )
 
       {:ok, message} =
         %{
@@ -867,6 +1253,74 @@ defmodule Glific.MessagesTest do
       message_media = message_media_fixture(%{organization_id: attrs.organization_id})
       assert {:ok, %MessageMedia{}} = Messages.delete_message_media(message_media)
       assert_raise Ecto.NoResultsError, fn -> Messages.get_message_media!(message_media.id) end
+    end
+
+    test "get_media_type_from_url/1 check the url and share the type", _attrs do
+      media_types = [
+        %{
+          type: :image,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/jpg/sample01.jpg",
+          content_type: "image/png"
+        },
+        %{
+          type: :video,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/video/sample01.mp4",
+          content_type: "video/x-msvideo"
+        },
+        %{
+          type: :audio,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/audio/sample01.mp3",
+          content_type: "audio/aac"
+        },
+        %{
+          type: :document,
+          url: "https://www.buildquickbots.com/whatsapp/media/sample/pdf/sample01.pdf",
+          content_type: "application/pdf"
+        }
+      ]
+
+      Enum.each(media_types, fn media_type ->
+        Tesla.Mock.mock(fn
+          %{method: :get} ->
+            %Tesla.Env{
+              headers: [
+                {"content-type", media_type.content_type},
+                {"content-length", "3209581"}
+              ],
+              method: :get,
+              status: 200
+            }
+        end)
+
+        assert {media_type.type, media_type.url} ==
+                 Messages.get_media_type_from_url(media_type.url)
+      end)
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-type", "unknown"}
+            ],
+            method: :get,
+            status: 200
+          }
+      end)
+
+      assert {:text, nil} == Messages.get_media_type_from_url("any url")
+
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            headers: [
+              {"content-typess", "anthing"}
+            ],
+            method: :get,
+            status: 400
+          }
+      end)
+
+      assert {:text, nil} == Messages.get_media_type_from_url("any url")
     end
 
     test "validate media/2 check for nil or empty media url", _attrs do

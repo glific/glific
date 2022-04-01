@@ -3,6 +3,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
   Dedicated controller to handle different types of user events requests like optin an optout form
   """
   use GlificWeb, :controller
+  require Logger
 
   @doc false
   @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
@@ -15,11 +16,15 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
   def opted_in(conn, params) do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
 
-    get_in(params, ["payload", "phone"])
+    %{phone: get_in(params, ["payload", "phone"])}
     |> Glific.Contacts.contact_opted_in(
       conn.assigns[:organization_id],
       timestamp,
       method: "BSP"
+    )
+
+    Logger.info(
+      "Contact with phone: #{get_in(params, ["payload", "phone"])} opted in on #{timestamp}"
     )
 
     handler(conn, params, "Opted in handler")
@@ -31,7 +36,15 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.UserEventController do
     {:ok, timestamp} = DateTime.from_unix(params["timestamp"], :millisecond)
 
     get_in(params, ["payload", "phone"])
-    |> Glific.Contacts.contact_opted_out(conn.assigns[:organization_id], timestamp)
+    |> Glific.Contacts.contact_opted_out(
+      conn.assigns[:organization_id],
+      timestamp,
+      "BSP"
+    )
+
+    Logger.info(
+      "Contact with phone: #{get_in(params, ["payload", "phone"])} opted out on #{timestamp}"
+    )
 
     handler(conn, params, "Opted out handler")
   end

@@ -56,13 +56,21 @@ defmodule Glific.Flows.CaseTest do
   end
 
   test "test the execute function for has_phrase" do
-    args = ["This is a green apple"]
+    args = ["This is a green"]
 
     c = %Case{type: "has_phrase", arguments: args}
 
-    assert wrap_execute(c, nil, "This is a green") == true
+    assert wrap_execute(c, nil, "This is a green apple") == true
     assert wrap_execute(c, nil, "This is a red apple ") == false
-    assert wrap_execute(c, nil, "apple") == true
+    assert wrap_execute(c, nil, "Yes. This is a green apple") == true
+
+    args = ["I am 😀"]
+
+    c = %Case{type: "has_phrase", arguments: args}
+
+    assert wrap_execute(c, nil, "I am happy") == false
+    assert wrap_execute(c, nil, "I am 😀") == true
+    assert wrap_execute(c, nil, "Yehh. I am 😀 today.") == true
   end
 
   test "test the execute function for has_multiple" do
@@ -121,6 +129,39 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "one") == false
   end
 
+  test "test the execute function for has_beginning" do
+    c = %Case{type: "has_beginning", arguments: ["one"]}
+
+    assert wrap_execute(c, nil, "one thi") == true
+    assert wrap_execute(c, nil, "this one is") == false
+    assert wrap_execute(c, nil, "one is a sentence") == true
+
+    assert wrap_execute(c, nil, "this is not a sentence") == false
+    assert wrap_execute(c, nil, "his is") == false
+    assert wrap_execute(c, nil, "whateever") == false
+
+    assert wrap_execute(c, nil, "whateever", type: :audio) == false
+
+    args = ["😀"]
+
+    c = %Case{type: "has_beginning", arguments: args}
+
+    assert wrap_execute(c, nil, "😀") == true
+    assert wrap_execute(c, nil, "😀 I am") == true
+    assert wrap_execute(c, nil, "Yehh. I am 😀 today.") == false
+  end
+
+  test "test the execute function for has_pattern" do
+    c = %Case{type: "has_pattern", arguments: "^[[:alnum:]]+$"}
+
+    assert wrap_execute(c, nil, "thi") == true
+    assert wrap_execute(c, nil, "this") == true
+    assert wrap_execute(c, nil, "sentence123") == true
+    assert wrap_execute(c, nil, "senTence 123  !@#") == false
+
+    assert wrap_execute(c, nil, "Wwhateever", type: :audio) == false
+  end
+
   test "test the execute function for has_location" do
     c = %Case{type: "has_location"}
     assert wrap_execute(c, nil, nil, [{:type, :location}]) == true
@@ -141,11 +182,21 @@ defmodule Glific.Flows.CaseTest do
   end
 
   defp wrap_execute(c, context, body) do
+    context =
+      if is_nil(context),
+        do: Fixtures.flow_context_fixture(),
+        else: context
+
     message = Messages.create_temp_message(Fixtures.get_org_id(), body)
     Case.execute(c, context, message)
   end
 
   defp wrap_execute(c, context, body, opts) do
+    context =
+      if is_nil(context),
+        do: Fixtures.flow_context_fixture(),
+        else: context
+
     message = Messages.create_temp_message(Fixtures.get_org_id(), body, opts)
     Case.execute(c, context, message)
   end
@@ -154,6 +205,8 @@ defmodule Glific.Flows.CaseTest do
     c = %Case{type: "has_number_between", arguments: ["1", "10"]}
 
     assert wrap_execute(c, nil, "1") == true
+    assert wrap_execute(c, nil, "2@") == false
+    assert wrap_execute(c, nil, "2.5") == false
     assert wrap_execute(c, nil, "second") == false
     assert wrap_execute(c, nil, "4") == true
     assert wrap_execute(c, nil, "") == false
@@ -223,6 +276,13 @@ defmodule Glific.Flows.CaseTest do
     assert wrap_execute(c, nil, "only phrase") == true
     assert wrap_execute(c, nil, "only phrase 1") == false
     assert wrap_execute(c, nil, "") == false
+  end
+
+  test "test the execute function for has_groups" do
+    c = %Case{type: "has_group", arguments: ["3", "Default groups"]}
+    assert wrap_execute(c, nil, "", extra: %{contact_groups: ["Default groups"]}) == true
+
+    assert wrap_execute(c, nil, "", extra: %{contact_groups: []}) == false
   end
 
   test "test exceptions" do

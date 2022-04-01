@@ -9,6 +9,8 @@ defmodule Glific.Partners do
   import GlificWeb.Gettext
   require Logger
 
+  alias __MODULE__
+
   alias Glific.{
     BigQuery,
     Caches,
@@ -18,6 +20,7 @@ defmodule Glific.Partners do
     Notifications,
     Partners.Credential,
     Partners.Organization,
+    Partners.OrganizationData,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
     Providers.GupshupContacts,
@@ -39,7 +42,7 @@ defmodule Glific.Partners do
       [%Provider{}, ...]
 
   """
-  @spec list_providers(map()) :: [%Provider{}, ...]
+  @spec list_providers(map()) :: [Provider.t(), ...]
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
@@ -74,7 +77,7 @@ defmodule Glific.Partners do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_provider!(id :: integer) :: %Provider{}
+  @spec get_provider!(id :: integer) :: Provider.t()
   def get_provider!(id), do: Repo.get!(Provider, id)
 
   @doc """
@@ -89,7 +92,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec create_provider(map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  @spec create_provider(map()) :: {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
   def create_provider(attrs \\ %{}) do
     %Provider{}
     |> Provider.changeset(attrs)
@@ -108,7 +111,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec update_provider(%Provider{}, map()) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  @spec update_provider(Provider.t(), map()) :: {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
   def update_provider(%Provider{} = provider, attrs) do
     provider
     |> Provider.changeset(attrs)
@@ -127,7 +130,7 @@ defmodule Glific.Partners do
       {:error, %Ecto.Changeset{}}
 
   """
-  @spec delete_provider(%Provider{}) :: {:ok, %Provider{}} | {:error, Ecto.Changeset.t()}
+  @spec delete_provider(Provider.t()) :: {:ok, Provider.t()} | {:error, Ecto.Changeset.t()}
   def delete_provider(%Provider{} = provider) do
     provider
     |> Ecto.Changeset.change()
@@ -136,21 +139,20 @@ defmodule Glific.Partners do
     |> Repo.delete()
   end
 
-  @doc ~S"""
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking provider changes.
 
   ## Examples
 
-      iex> change_provider(provider)
-      %Ecto.Changeset{data: %Provider{}}
-
+  iex> change_provider(provider)
+  %Ecto.Changeset{data: %Provider{}}
   """
-  @spec change_provider(%Provider{}, map()) :: Ecto.Changeset.t()
+  @spec change_provider(Provider.t(), map()) :: Ecto.Changeset.t()
   def change_provider(%Provider{} = provider, attrs \\ %{}) do
     Provider.changeset(provider, attrs)
   end
 
-  @doc ~S"""
+  @doc """
   Returns the list of organizations.
 
   ## Examples
@@ -173,11 +175,12 @@ defmodule Glific.Partners do
   @doc """
   List of organizations that are active within the system
   """
-  @spec active_organizations(list()) :: map()
-  def active_organizations(orgs) do
+  @spec active_organizations(list(), boolean) :: map()
+  def active_organizations(orgs, suspended \\ false) do
     Organization
     |> where([q], q.is_active == true)
     |> select([q], [q.id, q.name, q.last_communication_at])
+    |> where([q], q.is_suspended == ^suspended)
     |> restrict_orgs(orgs)
     |> Repo.all(skip_organization_id: true)
     |> Enum.reduce(%{}, fn row, acc ->
@@ -235,24 +238,23 @@ defmodule Glific.Partners do
 
   # codebeat:enable[ABC]
 
-  @doc ~S"""
+  @doc """
   Gets a single organization.
 
   Raises `Ecto.NoResultsError` if the organization does not exist.
 
   ## Examples
 
-      iex> Glific.Partners.get_organization!(1)
-      %Glific.Partners.Organization{}
+  iex> Glific.Partners.get_organization!(1)
+  %Glific.Partners.Organization{}
 
-      iex> Glific.Partners.get_organization!(-1)
-      ** (Ecto.NoResultsError)
-
+  iex> Glific.Partners.get_organization!(-1)
+  ** (Ecto.NoResultsError)
   """
   @spec get_organization!(integer) :: Organization.t()
   def get_organization!(id), do: Repo.get!(Organization, id, skip_organization_id: true)
 
-  @doc ~S"""
+  @doc """
   Creates a organization.
 
   ## Examples
@@ -271,7 +273,7 @@ defmodule Glific.Partners do
     |> Repo.insert(skip_organization_id: true)
   end
 
-  @doc ~S"""
+  @doc """
   Updates an organization.
 
   ## Examples
@@ -298,7 +300,7 @@ defmodule Glific.Partners do
     |> Repo.update(skip_organization_id: true)
   end
 
-  @doc ~S"""
+  @doc """
   Deletes an Orgsanization.
 
   ## Examples
@@ -318,7 +320,7 @@ defmodule Glific.Partners do
     Repo.delete(organization, skip_organization_id: true, timeout: 900_000)
   end
 
-  @doc ~S"""
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking organization changes.
 
   ## Examples
@@ -332,7 +334,7 @@ defmodule Glific.Partners do
     Organization.changeset(organization, attrs)
   end
 
-  @doc ~S"""
+  @doc """
   Returns bsp balance for an organization
   """
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
@@ -369,6 +371,7 @@ defmodule Glific.Partners do
       |> set_bsp_info()
       |> set_out_of_office_values()
       |> set_languages()
+      |> set_flow_uuid_display()
 
     Caches.set(
       @global_organization_id,
@@ -495,6 +498,39 @@ defmodule Glific.Partners do
     |> Map.put(:languages, languages)
   end
 
+  @doc """
+  Determine if we need to show uuid on the nodes.
+  """
+  @spec get_flow_uuid_display(map()) :: boolean
+  def get_flow_uuid_display(organization) do
+    id = organization.id
+
+    cond do
+      FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
+        true
+
+      # the below 2 conds are just for testing and prototyping purposes
+      # we'll get rid of them when we start using this actively
+      Application.get_env(:glific, :environment) == :prod && id == 2 ->
+        true
+
+      Application.get_env(:glific, :environment) != :prod && id == 1 ->
+        true
+
+      true ->
+        false
+    end
+  end
+
+  @spec set_flow_uuid_display(map()) :: map()
+  defp set_flow_uuid_display(organization) do
+    Map.put(
+      organization,
+      :is_flow_uuid_display,
+      get_flow_uuid_display(organization)
+    )
+  end
+
   # Lets cache all bsp provider specific info in the organization entity since
   # we use it on all sending / receiving of messages
   @spec set_bsp_info(map()) :: map()
@@ -530,9 +566,76 @@ defmodule Glific.Partners do
     |> Map.put(:services, services_map)
   end
 
+  @spec suspend_offset(Organization.t(), non_neg_integer()) :: DateTime.t()
+  defp suspend_offset(org, 0), do: start_of_next_day(org)
+
+  defp suspend_offset(_org, hours), do: Timex.shift(DateTime.utc_now(), hours: hours)
+
+  # get the start of the next day in orgs timezone and then convert that to UTC since
+  # we only store UTC time in our DB
+  @spec start_of_next_day(Organization.t()) :: DateTime.t()
+  defp start_of_next_day(org),
+    do:
+      org.timezone
+      |> DateTime.now!()
+      |> Timex.beginning_of_day()
+      |> Timex.shift(days: 1)
+      |> Timex.to_datetime("Etc/UTC")
+
+  @doc """
+  Suspend an organization till the start of the next day for the organization
+  (we still need to figure out if this is the right WABA interpretation)
+  """
+  @spec suspend_organization(Organization.t(), non_neg_integer()) :: any()
+  def suspend_organization(organization, hours \\ 0) do
+    {:ok, _} =
+      organization
+      |> then(fn org ->
+        Partners.update_organization(
+          org,
+          %{
+            is_suspended: true,
+            suspended_until: suspend_offset(org, hours)
+          }
+        )
+      end)
+  end
+
+  @spec unsuspend_org_list(DateTime.t()) :: list()
+  defp unsuspend_org_list(time \\ DateTime.utc_now()) do
+    Organization
+    |> where([q], q.is_active == true)
+    |> select([q], q.id)
+    |> where([q], q.is_suspended == true)
+    |> where([q], q.suspended_until < ^time)
+    |> Repo.all(skip_organization_id: true)
+  end
+
+  @spec unsuspend_organization(non_neg_integer()) :: any()
+  defp unsuspend_organization(org_id) do
+    {:ok, _} =
+      update_organization(
+        organization(org_id),
+        %{
+          is_suspended: false,
+          suspended_until: nil
+        }
+      )
+  end
+
+  @doc """
+  Resume all organization that are suspended if we are past the suspended time, we check this on an hourly basis for all organizations
+  that are in a suspended state via a cron job
+  """
+  @spec unsuspend_organizations :: any()
+  def unsuspend_organizations do
+    unsuspend_org_list()
+    |> Enum.each(&unsuspend_organization(&1))
+  end
+
   @doc """
   Execute a function across all active organizations. This function is typically called
-  by a cron job worker process
+  by a micron job worker process
 
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
@@ -544,10 +647,10 @@ defmodule Glific.Partners do
   list == [] (empty list) - the action should be performed for all organizations
   list == [ values ] - the actions should be performed only for organizations in the values list
   """
-  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: :ok
+  @spec perform_all((... -> nil), map() | nil, list() | [] | nil, boolean) :: any
   def perform_all(handler, handler_args, list, only_recent \\ false)
 
-  def perform_all(_handler, _handler_args, nil, _only_recent), do: :ok
+  def perform_all(_handler, _handler_args, nil, _only_recent), do: nil
 
   def perform_all(handler, handler_args, list, only_recent) do
     # We need to do this for all the active organizations
@@ -565,8 +668,12 @@ defmodule Glific.Partners do
             Map.put(handler_args, :organization_name, name)
           )
     end)
-
-    :ok
+  rescue
+    # If we fail, we need to mark the organization as failed
+    # and log the error
+    err ->
+      "Error occured while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      |> Glific.log_error()
   end
 
   @active_minutes 60
@@ -601,9 +708,9 @@ defmodule Glific.Partners do
         "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
         _ -> raise "Invalid BSP"
       end
-    end
 
-    :ok
+      :ok
+    end
   end
 
   @doc """
@@ -653,16 +760,43 @@ defmodule Glific.Partners do
 
   # Ensures we have all the keys required in the credential to call Gupshup
   @spec valid_bsp?(Credential.t()) :: boolean()
-  defp valid_bsp?(credential) do
-    credential.provider.group == "bsp" &&
-      non_nil_string(credential.keys["api_end_point"]) &&
-      non_nil_string(credential.secrets["app_name"]) &&
-      non_nil_string(credential.secrets["api_key"])
+  defp valid_bsp?(credential)
+       when credential.provider.shortcode in ["gupshup_enterprise", "gupshup"] do
+    case credential.provider.shortcode do
+      "gupshup" ->
+        credential.provider.group == "bsp" &&
+          non_nil_string(credential.keys["api_end_point"]) &&
+          validate_secrets?(credential.secrets, "gupshup")
+
+      "gupshup_enterprise" ->
+        credential.provider.group == "bsp" &&
+          non_nil_string(credential.keys["api_end_point"]) &&
+          validate_secrets?(credential.secrets, "gupshup_enterprise")
+    end
   end
+
+  defp valid_bsp?(_credential), do: false
+
+  @spec validate_secrets?(map(), String.t()) :: boolean()
+  defp validate_secrets?(secrets, "gupshup"),
+    do:
+      non_nil_string(secrets["app_name"]) &&
+        non_nil_string(secrets["api_key"])
+
+  defp validate_secrets?(secrets, "gupshup_enterprise"),
+    do:
+      non_nil_string(secrets["hsm_user_id"]) &&
+        non_nil_string(secrets["hsm_password"]) &&
+        non_nil_string(secrets["two_way_user_id"]) &&
+        non_nil_string(secrets["two_way_password"])
+
+  defp validate_secrets?(_secrets, _bsp),
+    do: false
 
   @doc """
   Updates an organization's credential
   """
+
   @spec update_credential(Credential.t(), map()) ::
           {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
   def update_credential(%Credential{} = credential, attrs) do
@@ -679,8 +813,17 @@ defmodule Glific.Partners do
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
-    if valid_bsp?(credential),
-      do: fetch_opted_in_contacts(attrs)
+    if valid_bsp?(credential) do
+      credential.provider.shortcode
+      |> case do
+        "gupshup" ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+          fetch_opted_in_contacts(attrs)
+
+        "gupshup_enterprise" ->
+          update_organization(organization, %{bsp_id: credential.provider.id})
+      end
+    end
 
     credential.organization
     |> credential_update_callback(credential.provider.shortcode)
@@ -706,6 +849,14 @@ defmodule Glific.Partners do
     )
   end
 
+  @spec config(map()) :: map() | :error
+  defp config(credentials) do
+    case Jason.decode(credentials.secrets["service_account"]) do
+      {:ok, config} -> config
+      _ -> :error
+    end
+  end
+
   @doc """
   Common function to get the goth config
   """
@@ -719,29 +870,29 @@ defmodule Glific.Partners do
         nil
 
       credentials ->
-        config =
-          case Jason.decode(credentials.secrets["service_account"]) do
-            {:ok, config} -> config
-            _ -> :error
-          end
+        config = config(credentials)
 
-        Goth.Config.add_config(config)
+        if config != :error do
+          Goth.Config.add_config(config)
 
-        Goth.Token.for_scope(
           {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-        )
-        |> case do
-          {:ok, token} ->
-            token
+          |> Goth.Token.for_scope()
+          |> case do
+            {:ok, token} ->
+              token
 
-          {:error, error} ->
-            Logger.info(
-              "Error while fetching token for provder #{provider_shortcode} with error: #{error} for org_id #{
-                organization_id
-              }"
-            )
+            {:error, error} ->
+              Logger.info(
+                "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
+              )
 
-            handle_token_error(organization_id, provider_shortcode, error)
+              handle_token_error(organization_id, provider_shortcode, error)
+          end
+        else
+          error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"
+          Logger.info(error)
+
+          handle_token_error(organization_id, provider_shortcode, error)
         end
     end
   end
@@ -765,7 +916,7 @@ defmodule Glific.Partners do
   @doc """
   Disable a specific credential for the organization
   """
-  @spec disable_credential(non_neg_integer, String.t(), String.t()) :: :ok
+  @spec disable_credential(non_neg_integer, String.t(), String.t()) :: :ok | {:error, list()}
   def disable_credential(organization_id, shortcode, error_message) do
     case Repo.fetch_by(Provider, %{shortcode: shortcode}) do
       {:ok, provider} ->
@@ -791,11 +942,11 @@ defmodule Glific.Partners do
           }
         })
 
+        :ok
+
       _ ->
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
-
-    :ok
   end
 
   @doc """
@@ -920,7 +1071,8 @@ defmodule Glific.Partners do
         ),
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
-      "dialogflow" => organization.services["dialogflow"] != nil
+      "dialogflow" => organization.services["dialogflow"] != nil,
+      "flow_uuid_display" => get_flow_uuid_display(organization)
     }
 
     Map.put(services, organization_id, service)
@@ -950,5 +1102,62 @@ defmodule Glific.Partners do
       )
 
     Map.merge(services, combined)
+  end
+
+  @doc """
+  Create a Client Data struct
+  """
+  @spec create_organization_data(map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def create_organization_data(attrs \\ %{}) do
+    %OrganizationData{}
+    |> OrganizationData.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Update a Client Data struct
+  """
+  @spec update_organization_data(OrganizationData.t(), map()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def update_organization_data(organization_data, attrs) do
+    organization_data
+    |> OrganizationData.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Delete Client Data struct
+  """
+  @spec delete_organization_data(OrganizationData.t()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def delete_organization_data(%OrganizationData{} = organization_data) do
+    Repo.delete(organization_data)
+  end
+
+  @doc """
+  Insert or update data if key present for OrganizationData table.
+  """
+  @spec maybe_insert_organization_data(String.t(), map(), non_neg_integer()) ::
+          {:ok, OrganizationData.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_insert_organization_data(key, data, org_id) do
+    # check if the week key is already present in the database
+    case Repo.get_by(OrganizationData, %{key: key, organization_id: org_id}) do
+      nil ->
+        attrs =
+          %{}
+          |> Map.put(:key, key)
+          |> Map.put(:json, data)
+          |> Map.put(:organization_id, org_id)
+
+        %OrganizationData{}
+        |> OrganizationData.changeset(attrs)
+        |> Repo.insert()
+
+      organization_data ->
+        organization_data
+        |> OrganizationData.changeset(%{json: data})
+        |> Repo.update()
+    end
   end
 end

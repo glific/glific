@@ -3,6 +3,7 @@ defmodule Glific.TemplatesTest do
 
   alias Glific.{
     Fixtures,
+    Providers.GupshupEnterprise.Template,
     Seeds.SeedsDev,
     Settings,
     Templates,
@@ -622,12 +623,107 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: "16e84186-97fa-454e-ac3b-8c9b94e53b4b"})
 
       assert hsm.example != nil
+    end
+
+    test "update_hsms/1 should insert newly received button HSM with type as call_to_action",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ALERT_UPDATE",
+                    "createdOn" => 1_595_904_220_466,
+                    "data" =>
+                      "Hey {{1}}, Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]",
+                    "elementName" => "tech_concern",
+                    "id" => "2f826c4a-cacd-42b6-9536-ece4c459ffea",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => false,
+                    "meta" =>
+                      "{\"example\":\"Hey [Akhilesh], Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]\"}",
+                    "modifiedOn" => 1_595_904_220_466,
+                    "status" => "APPROVED",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: "2f826c4a-cacd-42b6-9536-ece4c459ffea"})
+
+      assert hsm.example != nil
+      assert hsm.button_type == :call_to_action
+
+      assert hsm.buttons == [
+               %{
+                 "phone_number" => "+917302307943 ",
+                 "text" => "call here",
+                 "type" => "PHONE_NUMBER"
+               },
+               %{"text" => "visit here", "type" => "URL", "url" => "https://github.com/glific"}
+             ]
+    end
+
+    test "update_hsms/1 should insert newly received button HSM with type as quick_reply",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :get} ->
+          %Tesla.Env{
+            status: 200,
+            body:
+              Jason.encode!(%{
+                "status" => "success",
+                "templates" => [
+                  %{
+                    "category" => "ALERT_UPDATE",
+                    "createdOn" => 1_595_904_220_466,
+                    "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
+                    "elementName" => "status_response",
+                    "id" => "eb939119-097d-414d-844d-1fce3adec486",
+                    "languageCode" => "en",
+                    "languagePolicy" => "deterministic",
+                    "master" => false,
+                    "meta" =>
+                      "{\"example\":\"Hi [M'gann], What is your status | [cold] | [warm]\"}",
+                    "modifiedOn" => 1_595_904_220_466,
+                    "status" => "APPROVED",
+                    "templateType" => "TEXT",
+                    "vertical" => "ACTION_BUTTON"
+                  }
+                ]
+              })
+          }
+      end)
+
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
+
+      assert {:ok, %SessionTemplate{} = hsm} =
+               Repo.fetch_by(SessionTemplate, %{uuid: "eb939119-097d-414d-844d-1fce3adec486"})
+
+      assert hsm.example != nil
+      assert hsm.button_type == :quick_reply
+
+      assert hsm.buttons == [
+               %{"text" => "cold ", "type" => "QUICK_REPLY"},
+               %{"text" => "warm", "type" => "QUICK_REPLY"}
+             ]
     end
 
     test "update_hsms/1 should return error in case of error response", attrs do
@@ -644,7 +740,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      assert {:error, _message} = Templates.update_hsms(attrs.organization_id)
+      assert {:error, _message} = Templates.sync_hsms_from_bsp(attrs.organization_id)
     end
 
     test "update_hsms/1 should update status of already existing HSM", attrs do
@@ -653,7 +749,7 @@ defmodule Glific.TemplatesTest do
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
 
-      # shouldn update irrespective of the last modified time on BSP
+      # should update irrespective of the last modified time on BSP
       Tesla.Mock.mock(fn
         %{method: :get} ->
           %Tesla.Env{
@@ -673,7 +769,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = updated_hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
@@ -701,7 +797,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "APPROVED"
@@ -735,7 +831,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} = Repo.fetch_by(SessionTemplate, %{uuid: hsm.uuid})
       assert hsm.status == "REJECTED"
@@ -743,6 +839,8 @@ defmodule Glific.TemplatesTest do
     end
 
     def otp_hsm_fixture(language_id, status) do
+      uuid = Ecto.UUID.generate()
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -752,7 +850,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "template" => %{
                   "elementName" => "common_otp",
-                  "id" => Ecto.UUID.generate(),
+                  "id" => uuid,
                   "languageCode" => "en",
                   "status" => status
                 }
@@ -767,7 +865,9 @@ defmodule Glific.TemplatesTest do
         category: "ALERT_UPDATE",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
-        language_id: language_id
+        language_id: language_id,
+        uuid: uuid,
+        bsp_id: uuid
       })
     end
 
@@ -797,7 +897,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -833,7 +933,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -884,7 +984,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -897,6 +997,33 @@ defmodule Glific.TemplatesTest do
 
       assert hsm2.status == "REJECTED"
       assert hsm2.is_active == false
+    end
+
+    test "import_enterprise_templates/1 should import templates", attrs do
+      data =
+        "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
+
+      Template.import_enterprise_templates(attrs.organization_id, data)
+
+      assert {:ok, %SessionTemplate{} = imported_template} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6122571"})
+
+      assert imported_template.status == "APPROVED"
+      assert imported_template.shortcode == "2meq_payment_link"
+      assert imported_template.language_id == 1
+      assert imported_template.category == "ALERT_UPDATE"
+
+      assert imported_template.example ==
+               "Your OTP for [sample text 1] is [sample text 2]. This is valid for [sample text 3]."
+
+      assert {:ok, %SessionTemplate{} = imported_template2} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6122572"})
+
+      assert imported_template2.status == "REJECTED"
+      assert imported_template2.shortcode == "meq_payment_link2"
+
+      assert imported_template2.example ==
+               "You are one step away! Please click the link below to make your payment for the Future Perfect program."
     end
 
     test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do
@@ -940,7 +1067,7 @@ defmodule Glific.TemplatesTest do
           }
       end)
 
-      Templates.update_hsms(attrs.organization_id)
+      Templates.sync_hsms_from_bsp(attrs.organization_id)
 
       assert {:ok, %SessionTemplate{} = hsm1} =
                Repo.fetch_by(SessionTemplate, %{uuid: otp_hsm_1.uuid})
@@ -954,6 +1081,55 @@ defmodule Glific.TemplatesTest do
 
       assert translation["status"] == "APPROVED"
       assert translation["uuid"] == hsm2.uuid
+    end
+
+    test "template_parameters_count/1 should return number of parameters in a template" do
+      template_body = "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{3}}"
+      assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 3
+      template_body = "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{1}}"
+      assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 2
+      template_body = "Thankyou for joining {{1}}"
+      assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 1
+      template_body = "Welcome to our program"
+      assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 0
+
+      template_body =
+        "Hi {{1}}, Here is the report for activity {{2}} sent to Grade {{3}}, School {{4}} on date {{5}}: Chapter: {{6}} Topic: {{7}} No. of students who attempted - {{8}}, Accuracy - {{9}}, Watch Time - {{10}}"
+
+      assert Templates.template_parameters_count(%{body: template_body, has_buttons: false}) == 10
+    end
+
+    test "parse_buttons/2 should return updated body with buttons" do
+      template_body = "Hi {{1}}, What is your status"
+
+      buttons = [
+        %{
+          "phone_number" => "+917302307943 ",
+          "text" => "call here",
+          "type" => "PHONE_NUMBER"
+        },
+        %{
+          "text" => "visit here",
+          "type" => "URL",
+          "url" => "https://github.com/glific"
+        }
+      ]
+
+      assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{
+               body:
+                 "Hi {{1}}, What is your status| [call here, +917302307943 ] | [visit here, https://github.com/glific] ",
+               buttons: buttons
+             }
+
+      buttons = [
+        %{"text" => "cold ", "type" => "QUICK_REPLY"},
+        %{"text" => "warm", "type" => "QUICK_REPLY"}
+      ]
+
+      assert Templates.parse_buttons(%{body: template_body, buttons: buttons}, false, true) == %{
+               body: "Hi {{1}}, What is your status| [cold ] | [warm] ",
+               buttons: buttons
+             }
     end
   end
 end

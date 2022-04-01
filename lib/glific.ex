@@ -12,6 +12,8 @@ defmodule Glific do
   a new file
   """
 
+  require Logger
+
   alias Glific.{
     Partners,
     Repo
@@ -33,6 +35,15 @@ defmodule Glific do
       {_num, _rest} -> :error
       :error -> :error
     end
+  end
+
+  @doc """
+  parse and integer and die if parse fails
+  """
+  @spec parse_maybe_integer!(String.t() | integer) :: integer
+  def parse_maybe_integer!(value) do
+    {:ok, value} = parse_maybe_integer(value)
+    value
   end
 
   @doc """
@@ -99,7 +110,7 @@ defmodule Glific do
   @doc """
   Convert map string keys to :atom keys
   """
-  @spec atomize_keys(map()) :: map()
+  @spec atomize_keys(any) :: any
   def atomize_keys(nil), do: nil
 
   # Structs don't do enumerable and anyway the keys are already
@@ -107,13 +118,14 @@ defmodule Glific do
   def atomize_keys(map) when is_struct(map),
     do: map
 
-  def atomize_keys([head | rest]), do: [atomize_keys(head) | atomize_keys(rest)]
+  def atomize_keys([head | rest] = list) when is_list(list),
+    do: [atomize_keys(head) | atomize_keys(rest)]
 
   def atomize_keys(map) when is_map(map),
     do:
       Enum.map(map, fn {k, v} ->
         if is_atom(k) do
-          {atomize_keys(k), atomize_keys(v)}
+          {k, atomize_keys(v)}
         else
           {Glific.safe_string_to_atom(k), atomize_keys(v)}
         end
@@ -131,7 +143,7 @@ defmodule Glific do
     inspect(stacktrace)
   end
 
-  @not_allowed ["Repo", "IO", "File", "Code"]
+  @not_allowed ["Repo.", "IO.", "File.", "Code."]
 
   @doc """
   Really simple function to ensure folks do not add Repo and/or IO calls
@@ -147,6 +159,27 @@ defmodule Glific do
     do: String.contains?(code, @not_allowed)
 
   @doc """
+    execute string in eex
+  """
+  @spec execute_eex(String.t()) :: String.t()
+  def execute_eex(content) do
+    if suspicious_code(content) do
+      Logger.error("EEx suspicious code: #{content}")
+      "Suspicious Code. Please change your code. #{content}"
+    else
+      EEx.eval_string(content)
+    end
+  rescue
+    EEx.SyntaxError ->
+      Logger.error("EEx threw a SyntaxError: #{content}")
+      "Invalid Code"
+
+    _ ->
+      Logger.error("EEx threw a Error: #{content}")
+      "Invalid Code"
+  end
+
+  @doc """
   Compute the signature at a specific time for the body
   """
   @spec signature(non_neg_integer, String.t(), non_neg_integer) :: String.t()
@@ -154,7 +187,7 @@ defmodule Glific do
     secret = Partners.organization(organization_id).signature_phrase
 
     signed_payload = "#{timestamp}.#{body}"
-    hmac = :crypto.hmac(:sha256, secret, signed_payload)
+    hmac = :crypto.mac(:hmac, :sha256, secret, signed_payload)
     Base.encode16(hmac, case: :lower)
   end
 
@@ -222,5 +255,35 @@ defmodule Glific do
     params
     |> Map.put(:organization_id, value)
     |> Map.delete(key)
+  end
+
+  @doc """
+  A hack to suppress error messages when running lots of flows. These are expected
+  and we want to improve signal <-> noise ratio
+  """
+  @spec ignore_error?(String.t()) :: boolean
+  def ignore_error?(error) do
+    # These errors are ok, and need not be reported to appsignal
+    # to a large extent, its more a completion exit rather than an
+    # error exit
+    String.contains?(error, "Exit Loop") ||
+      String.contains?(error, "finished the flow")
+  end
+
+  @doc """
+  Log the error and also send it over to our friends at appsignal
+  """
+  @spec log_error(String.t(), boolean) :: {:error, String.t()}
+  def log_error(error, send_appsignal? \\ true) do
+    Logger.error(error)
+
+    # disable sending exit loop and finished flow errors, since
+    # these are beneficiary errors
+    if !ignore_error?(error) && send_appsignal? do
+      {_, stacktrace} = Process.info(self(), :current_stacktrace)
+      Appsignal.send_error(:error, error, stacktrace)
+    end
+
+    {:error, error}
   end
 end

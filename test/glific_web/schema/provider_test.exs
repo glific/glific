@@ -19,6 +19,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/providers/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/providers/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/providers/delete.gql")
+  load_gql(:bspbalance, GlificWeb.Schema, "assets/gql/providers/bspbalance.gql")
 
   test "providers field returns list of providers", %{user: user} do
     result = auth_query_gql_by(:list, user)
@@ -113,7 +114,7 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert {:ok, query_data} = result
 
     message = get_in(query_data, [:data, "createProvider", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "update a provider and test possible scenarios and errors", %{glific_admin: user} do
@@ -166,7 +167,7 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     assert {:ok, query_data} = result
     message = get_in(query_data, [:data, "updateProvider", "errors", Access.at(0), "message"])
-    assert message == "has already been taken"
+    assert message =~ "has already been taken"
   end
 
   test "delete a provider", %{glific_admin: user} do
@@ -181,5 +182,24 @@ defmodule GlificWeb.Schema.ProviderTest do
 
     message = get_in(query_data, [:data, "deleteProvider", "errors", Access.at(0), "message"])
     assert message == "Resource not found"
+  end
+
+  test "provider bsp balance", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body: "{\"balance\":0.787,\"status\":\"success\"}"
+        }
+    end)
+
+    result = auth_query_gql_by(:bspbalance, user)
+    assert {:ok, query_data} = result
+
+    balance =
+      get_in(query_data, [:data, "bspbalance"])
+      |> Jason.decode!()
+
+    assert balance["balance"] == 0.787
   end
 end

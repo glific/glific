@@ -17,6 +17,18 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
         description: "User name",
         name: "name",
         type: "STRING",
@@ -44,6 +56,12 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Opted language of the user for templates and other communications",
         name: "language",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "The source from the contact got optin into Glific",
+        name: "contact_optin_method",
         type: "STRING",
         mode: "NULLABLE"
       },
@@ -189,6 +207,18 @@ defmodule Glific.BigQuery.Schema do
             mode: "REQUIRED"
           }
         ]
+      },
+      %{
+        description: "JSON object for storing the contact fields",
+        name: "raw_fields",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Label of all the groups that the contact belongs to",
+        name: "group_labels",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -204,6 +234,18 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       },
       %{
         description: "Uniquely generated message UUID, primarily needed for the flow editor",
@@ -351,6 +393,111 @@ defmodule Glific.BigQuery.Schema do
         name: "gcs_url",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Status if the message was an HSM",
+        name: "is_hsm",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "refrence ID for an HSM",
+        name: "template_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "refrence ID for an interactive template",
+        name: "interactive_template_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "context message id for an template response",
+        name: "context_message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "group message id when a flow started for a group",
+        name: "group_message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "flow broadcast id when a flow started for a group",
+        name: "flow_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the message media table refrence to the message media table",
+        name: "media_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for messages media table
+  """
+  @spec messages_media_schema :: list()
+  def messages_media_schema do
+    [
+      %{
+        description: "Unique ID generated for each message",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "caption we received with the message",
+        name: "caption",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "URL of media file stored in provider",
+        name: "url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "URL of media file stored in provider",
+        name: "source_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "URL of media file stored in GCS",
+        name: "gcs_url",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was first made",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -366,6 +513,18 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       },
       %{
         description: "Name of the created flow",
@@ -413,6 +572,142 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for flow context schema
+  """
+  @spec flow_context_schema :: list()
+  def flow_context_schema do
+    [
+      %{
+        description: "Flow Context ID; key",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the current node uuid flow",
+        name: "node_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow",
+        name: "flow_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Unique ID generated for each flow in the glific db",
+        name: "flow_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "contact id refrences to the contact table",
+        name: "contact_id",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "contact phone refrences to the contact table",
+        name: "contact_phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "local result of a perticular flow context",
+        name: "results",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Few latest messages received by the contact",
+        name: "recent_inbound",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Few latest messages sent to the contact",
+        name: "recent_outbound",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of the flow context is it for draft or published only",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Parent flow context id refrences to the flow context table",
+        name: "parent_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "flow_broadcast_id refrences to the flow broadcast table",
+        name: "flow_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check to see if the flow context is for a background or foreground flow",
+        name: "is_background_flow",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description:
+          "Check in case we killed the flow for a contact. Not when contact finished the flow",
+        name: "is_killed",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check for a flow results node",
+        name: "is_await_result",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Check if the flow is waiting for a action or time to resume.",
+        name: "wakeup_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow was killed or completed",
+        name: "completed_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the flow was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
   Schema for flow results table
   """
   @spec flow_result_schema :: list()
@@ -423,6 +718,18 @@ defmodule Glific.BigQuery.Schema do
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       },
       %{
         description: "Name of the workflow",
@@ -483,6 +790,88 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for flow count table
+  """
+  @spec flow_count_schema :: list()
+  def flow_count_schema do
+    [
+      %{
+        description: "Flow Count ID",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "UUID of the source node",
+        name: "source_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "UUID of the destination node",
+        name: "destination_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the workflow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description:
+          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+        name: "flow_uuid",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Type of the node",
+        name: "type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Travel count for a node",
+        name: "count",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "JSON object for storing the recenet messages",
+        name: "recent_messages",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the flow results entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the flow results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      }
+    ]
+  end
+
+  @doc """
   Schema for the stats_global_schema table
   """
   @spec stats_all_schema :: list()
@@ -498,6 +887,12 @@ defmodule Glific.BigQuery.Schema do
         %{
           description: "Organization Name",
           name: "organization_name",
+          type: "STRING",
+          mode: "NULLABLE"
+        },
+        %{
+          description: "Organization Status",
+          name: "organization_status",
           type: "STRING",
           mode: "NULLABLE"
         }

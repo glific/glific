@@ -30,6 +30,7 @@ defmodule Glific.Triggers.Trigger do
           is_repeating: boolean(),
           frequency: list() | nil,
           days: list() | nil,
+          hours: list() | nil,
           is_active: boolean(),
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -52,7 +53,8 @@ defmodule Glific.Triggers.Trigger do
     :next_trigger_at,
     :is_repeating,
     :frequency,
-    :days
+    :days,
+    :hours
   ]
 
   schema "triggers" do
@@ -70,6 +72,7 @@ defmodule Glific.Triggers.Trigger do
 
     field :frequency, {:array, :string}, default: []
     field :days, {:array, :integer}, default: []
+    field :hours, {:array, :integer}, default: []
 
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
@@ -113,13 +116,8 @@ defmodule Glific.Triggers.Trigger do
   defp validate_start_at(changeset), do: changeset
 
   @spec start_at(map()) :: DateTime.t()
-  defp start_at(%{start_at: nil} = attrs) do
-    DateTime.new!(attrs.start_date, attrs.start_time)
-  end
-
-  ## We might need to change this and convert the datetime to utc
-  defp start_at(%{start_at: start_at} = _attrs),
-    do: start_at
+  defp start_at(%{start_at: nil} = attrs), do: DateTime.new!(attrs.start_date, attrs.start_time)
+  defp start_at(%{start_at: start_at} = _attrs), do: start_at
 
   @spec get_name(map()) :: String.t()
   defp get_name(%{name: name} = _attrs) when not is_nil(name), do: name
@@ -149,6 +147,10 @@ defmodule Glific.Triggers.Trigger do
     attrs
     |> Map.put(:start_at, start_at)
     |> Map.put(:name, get_name(attrs))
+
+    # set the last_trigger_at value to nil whenever trigger is updated or new trigger is created
+    |> Map.put(:last_trigger_at, Map.get(attrs, :last_trigger_at, nil))
+
     # set the initial value of the next firing of the trigger
     |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
   end

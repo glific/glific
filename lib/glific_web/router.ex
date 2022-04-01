@@ -4,7 +4,6 @@ defmodule GlificWeb.Router do
   """
   use GlificWeb, :router
   @dialyzer {:nowarn_function, __checks__: 0}
-  use Plug.ErrorHandler
   use Appsignal.Plug
 
   pipeline :browser do
@@ -52,9 +51,9 @@ defmodule GlificWeb.Router do
   end
 
   scope "/", GlificWeb do
-    pipe_through [:browser, :auth]
+    pipe_through [:browser]
 
-    live "/", PageLive, :index
+    live "/liveview", StatsLive
   end
 
   use GlificWeb.InjectOban
@@ -107,11 +106,14 @@ defmodule GlificWeb.Router do
   scope "/", GlificWeb do
     # pipe_through :gupshup
     forward("/gupshup", Providers.Gupshup.Plugs.Shunt)
+    forward("/gupshup-enterprise", Providers.Gupshup.Enterprise.Plugs.Shunt)
   end
 
   scope "/webhook", GlificWeb do
     post "/stripe", StripeController, :stripe_webhook
+    # we need to remove this. This was a experimental code
     post "/stir/survey", Flows.WebhookController, :stir_survey
+    get "/exotel/optin", ExotelController, :optin
   end
 
   scope "/flow-editor", GlificWeb.Flows do
@@ -133,6 +135,10 @@ defmodule GlificWeb.Router do
 
     get "/templates", FlowEditorController, :templates
 
+    get "/interactive-templates", FlowEditorController, :interactive_templates
+
+    get "/interactive-templates/*vars", FlowEditorController, :interactive_template
+
     get "/languages", FlowEditorController, :languages
 
     get "/environment", FlowEditorController, :environment
@@ -145,6 +151,8 @@ defmodule GlificWeb.Router do
 
     get "/revisions/*vars", FlowEditorController, :revisions
 
+    get "/recents/*vars", FlowEditorController, :recents
+
     post "/revisions/*vars", FlowEditorController, :save_revisions
 
     get "/globals", FlowEditorController, :globals
@@ -154,8 +162,6 @@ defmodule GlificWeb.Router do
     post "/fields", FlowEditorController, :fields_post
 
     get "/completion", FlowEditorController, :completion
-
-    get "/functions", FlowEditorController, :functions
 
     get "/validate-media", FlowEditorController, :validate_media
 
@@ -170,11 +176,4 @@ defmodule GlificWeb.Router do
     password = Application.fetch_env!(:glific, :auth_password)
     Plug.BasicAuth.basic_auth(conn, username: username, password: password)
   end
-
-  # defp debug_response(conn, _) do
-  #  Plug.Conn.register_before_send(conn, fn conn ->
-  #    conn.resp_body |> IO.puts()
-  #    conn
-  #  end)
-  # end
 end

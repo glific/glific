@@ -38,7 +38,10 @@ defmodule Glific.Partners.Organization do
     :organization_id,
     :signature_phrase,
     :last_communication_at,
-    :fields
+    :fields,
+    :newcontact_flow_id,
+    :is_suspended,
+    :suspended_until
   ]
 
   @type t() :: %__MODULE__{
@@ -56,6 +59,7 @@ defmodule Glific.Partners.Organization do
           default_language_id: non_neg_integer | nil,
           default_language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           out_of_office: OutOfOffice.t() | nil,
+          newcontact_flow_id: non_neg_integer | nil,
           hours: list() | nil,
           days: list() | nil,
           is_active: boolean() | true,
@@ -70,7 +74,9 @@ defmodule Glific.Partners.Organization do
           last_communication_at: :utc_datetime | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
-          fields: map() | nil
+          fields: map() | nil,
+          is_suspended: boolean() | false,
+          suspended_until: DateTime.t() | nil
         }
 
   schema "organizations" do
@@ -98,6 +104,8 @@ defmodule Glific.Partners.Organization do
 
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
 
+    # id of flow which gets triggered when new contact joins bot
+    field :newcontact_flow_id, :integer
     field :is_active, :boolean, default: true
     field :is_approved, :boolean, default: false
 
@@ -121,6 +129,15 @@ defmodule Glific.Partners.Organization do
     field :last_communication_at, :utc_datetime
 
     field :fields, :map, default: %{}
+
+    # lets add support for suspending orgs briefly
+    field :is_suspended, :boolean, default: false
+    field :suspended_until, :utc_datetime
+
+    # 2085
+    # Lets create a virtual field for now to conditionally enable
+    # the display of node uuids. We need an NGO friendly way to do this globally
+    field :is_flow_uuid_display, :boolean, default: false, virtual: true
 
     timestamps(type: :utc_datetime)
   end

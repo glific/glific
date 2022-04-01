@@ -5,7 +5,10 @@ defmodule GlificWeb.Schema.MessageTypes do
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
-  alias Glific.Repo
+  alias Glific.{
+    Messages.Message,
+    Repo
+  }
 
   alias GlificWeb.{
     Resolvers,
@@ -34,10 +37,22 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :body, :string
     field :type, :message_type_enum
     field :flow, :message_flow_enum
+    field :flow_label, :string
     field :bsp_message_id, :string
     field :status, :string
     field :errors, :json
     field :message_number, :integer
+
+    field :send_by, :string do
+      resolve(fn message, _, _ ->
+        updated_message =
+          message
+          |> Repo.preload([:flow_object, :user])
+          |> Message.append_send_by()
+
+        {:ok, updated_message.send_by}
+      end)
+    end
 
     field :is_hsm, :boolean
 
@@ -52,6 +67,8 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :updated_at, :datetime
 
     field :send_at, :datetime
+
+    field :interactive_content, :json
 
     # the context of this message if applicable
     # basically links to the message which the user
@@ -130,6 +147,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     field :send_at, :datetime
     field :is_hsm, :boolean
     field :template_id, :integer
+    field :interactive_template_id, :integer
     field :params, list_of(:string)
   end
 
@@ -230,6 +248,22 @@ defmodule GlificWeb.Schema.MessageTypes do
     end
 
     field :sent_message, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :received_simulator_message, :message do
+      arg(:organization_id, non_null(:id))
+
+      config(&Schema.config_fun/2)
+
+      resolve(&Resolvers.Messages.publish_message/3)
+    end
+
+    field :sent_simulator_message, :message do
       arg(:organization_id, non_null(:id))
 
       config(&Schema.config_fun/2)

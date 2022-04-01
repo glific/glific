@@ -5,10 +5,13 @@ defmodule GlificWeb.Schema.FlowTest do
   alias Glific.{
     Contacts,
     Fixtures,
+    Flows,
     Flows.Flow,
     Flows.FlowRevision,
+    Groups,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    State
   }
 
   setup do
@@ -21,11 +24,27 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/flows/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/flows/update.gql")
   load_gql(:export_flow, GlificWeb.Schema, "assets/gql/flows/export_flow.gql")
+  load_gql(:import_flow, GlificWeb.Schema, "assets/gql/flows/import_flow.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/flows/delete.gql")
   load_gql(:publish, GlificWeb.Schema, "assets/gql/flows/publish.gql")
   load_gql(:contact_flow, GlificWeb.Schema, "assets/gql/flows/contact_flow.gql")
+  load_gql(:contact_resume, GlificWeb.Schema, "assets/gql/flows/contact_resume.gql")
   load_gql(:group_flow, GlificWeb.Schema, "assets/gql/flows/group_flow.gql")
   load_gql(:copy, GlificWeb.Schema, "assets/gql/flows/copy.gql")
+  load_gql(:flow_get, GlificWeb.Schema, "assets/gql/flows/flow_get.gql")
+  load_gql(:flow_rel, GlificWeb.Schema, "assets/gql/flows/flow_release.gql")
+
+  load_gql(
+    :terminate_contact_flows,
+    GlificWeb.Schema,
+    "assets/gql/flows/terminate_contact_flows.gql"
+  )
+
+  load_gql(
+    :reset_flow_count,
+    GlificWeb.Schema,
+    "assets/gql/flows/reset_flow_count.gql"
+  )
 
   test "flows field returns list of flows", %{staff: user} do
     result = auth_query_gql_by(:list, user)
@@ -64,6 +83,15 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
     flow_name = get_in(query_data, [:data, "flows", Access.at(0), "name"])
     assert flow_name == "Help Workflow"
+
+    result =
+      auth_query_gql_by(:list, user,
+        variables: %{"filter" => %{"is_background" => flow.is_background}}
+      )
+
+    assert {:ok, query_data} = result
+    flow_name = get_in(query_data, [:data, "flows", Access.at(0), "name"])
+    assert flow_name == "Help Workflow"
   end
 
   test "flows field returns list of flows filtered by status", %{manager: user} do
@@ -96,7 +124,7 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "definiton field returns one flow definition or nil", %{staff: user} do
-    [flow | _] = Glific.Flows.list_flows(%{filter: %{name: "activity"}})
+    [flow | _] = Flows.list_flows(%{filter: %{name: "activity"}})
 
     name = flow.name
     flow_id = flow.id
@@ -113,7 +141,73 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert length(data["flows"]) > 0
 
-    assert Enum.any?(data["flows"], fn flow -> Map.get(flow, "name") == name end)
+    assert Enum.any?(data["flows"], fn flow -> flow["definition"]["name"] == name end)
+  end
+
+  test "export flow and the import flow with template when published returns no error",
+       %{manager: user} = _attrs do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "Import Workflow"}})
+
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    data =
+      get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> Jason.decode!()
+
+    # Deleting all existing flows as importing same flow
+    Flows.list_flows(%{})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    assert length(data["flows"]) > 0
+    import_flow = data |> Jason.encode!()
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+    assert true = get_in(query_data, [:data, "importFlow", "success"])
+
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Import Workflow", organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:publish, user, variables: %{"uuid" => flow.uuid})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "publishFlow", "errors"]) == nil
+    assert get_in(query_data, [:data, "publishFlow", "success"]) == true
+  end
+
+  test "export flow and the import flow", %{staff: user} do
+    [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
+
+    flow_id = flow.id
+
+    Repo.fetch_by(FlowRevision, %{flow_id: flow_id, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:export_flow, user, variables: %{"id" => flow.id})
+    assert {:ok, query_data} = result
+
+    data =
+      get_in(query_data, [:data, "exportFlow", "export_data"])
+      |> Jason.decode!()
+
+    assert length(data["flows"]) > 0
+
+    # Deleting all existing flows as importing New Contact Flow creates sub flows as well
+    Flows.list_flows(%{})
+    |> Enum.each(fn flow -> Flows.delete_flow(flow) end)
+
+    # Deleting all existing collections as importing New Contact Flow creates collections
+    Groups.list_groups(%{})
+    |> Enum.each(fn group -> Groups.delete_group(group) end)
+
+    import_flow = data |> Jason.encode!()
+    result = auth_query_gql_by(:import_flow, user, variables: %{"flow" => import_flow})
+    assert {:ok, query_data} = result
+    assert true = get_in(query_data, [:data, "importFlow", "success"])
+    [group | _] = Groups.list_groups(%{filter: %{label: "Optin contacts"}})
+    assert group.label == "Optin contacts"
   end
 
   test "create a flow and test possible scenarios and errors", %{manager: user} do
@@ -137,8 +231,8 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
 
-    assert "can't be blank" =
-             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
+    assert get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"]) =~
+             "can't be blank"
 
     # create flow with existing keyword
     result =
@@ -155,11 +249,11 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert "keywords" = get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "key"])
 
-    assert "The keyword `testkeyword` was already used in the `Flow Test Name` Flow." =
-             get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"])
+    assert get_in(query_data, [:data, "createFlow", "errors", Access.at(0), "message"]) =~
+             "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
-  test "update a flow and test possible scenarios and errors", %{manager: user} do
+  test "update a flow and test possible scenarios and errorss", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -231,6 +325,58 @@ defmodule GlificWeb.Schema.FlowTest do
     # will add test for success with integration tests
   end
 
+  test "Resume flow for a contact", %{staff: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    data = %{one: "1", two: "2"} |> Jason.encode!()
+
+    result =
+      auth_query_gql_by(:contact_resume, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id, "result" => data}
+      )
+
+    assert {:ok, query_data} = result
+
+    # this flow is not waiting, so it should return error
+    # we'll expand test case for a flow waiting soon
+    assert get_in(query_data, [:data, "resumeContactFlow", "success"]) == true
+    assert !is_nil(get_in(query_data, [:data, "resumeContactFlow", "errors"]))
+
+    # will add test for success with integration tests
+    # need to start the flow, setup the context, toggle the DB field
+    # and then resume the flow
+  end
+
+  test "Terminate all flows for a contact", %{staff: user} = attrs do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    [contact | _tail] = Contacts.list_contacts(%{filter: attrs})
+
+    result =
+      auth_query_gql_by(:terminate_contact_flows, user,
+        variables: %{"flowId" => flow.id, "contactId" => contact.id}
+      )
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "terminateContactFlows", "success"]) == true
+  end
+
+  test "Reset all the counts for a flows", %{staff: user} do
+    {:ok, flow} =
+      Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:reset_flow_count, user, variables: %{"flowId" => flow.id})
+
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "resetFlowCount", "success"]) == true
+  end
+
   test "Start flow for contacts of a group", %{staff: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
@@ -265,5 +411,39 @@ defmodule GlificWeb.Schema.FlowTest do
     assert {:ok, query_data} = result
 
     assert name == get_in(query_data, [:data, "copyFlow", "flow", "name"])
+  end
+
+  test "flow get returns a flow contact",
+       %{staff: staff, user: user} do
+    State.reset()
+
+    result = auth_query_gql_by(:flow_get, staff, variables: %{"id" => 1})
+    assert {:ok, query_data} = result
+
+    assert String.contains?(
+             get_in(query_data, [:data, "flowGet", "flow", "name"]),
+             "Help Workflow"
+           )
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:flow_get, user, variables: %{"id" => 1})
+    assert {:ok, query_data} = result
+
+    assert get_in(query_data, [:data, "flowGet", "errors", Access.at(0), "message"]) ==
+             "Sorry! You cannot edit the flow right now. It is being edited by \n some name"
+
+    # now release a flow and try again
+    result = auth_query_gql_by(:flow_rel, staff, variables: %{})
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "flowRelease"]) == nil
+
+    user = Map.put(user, :fingerprint, Ecto.UUID.generate())
+    result = auth_query_gql_by(:flow_get, user, variables: %{"id" => 1})
+    assert {:ok, query_data} = result
+
+    assert String.contains?(
+             get_in(query_data, [:data, "flowGet", "flow", "name"]),
+             "Help Workflow"
+           )
   end
 end

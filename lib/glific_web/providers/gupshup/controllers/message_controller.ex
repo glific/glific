@@ -73,6 +73,30 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
     handler(conn, params, "media handler")
   end
 
+  @doc """
+  Callback for interactive quick reply
+  """
+  @spec quick_reply(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def quick_reply(conn, params), do: interactive(conn, params, :quick_reply)
+
+  @doc """
+  Callback for interactive list
+  """
+  @spec list(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def list(conn, params), do: interactive(conn, params, :list)
+
+  @doc false
+  # Handle Gupshup media message and convert them into Glific Message struct
+  @spec interactive(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
+  defp interactive(conn, params, type) do
+    params
+    |> Gupshup.Message.receive_interactive()
+    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> Communications.Message.receive_message(type)
+
+    handler(conn, params, "interactive handler")
+  end
+
   @doc false
   # Handle Gupshup location message and convert them into Glific Message struct
   @spec location(Plug.Conn.t(), map()) :: Plug.Conn.t()

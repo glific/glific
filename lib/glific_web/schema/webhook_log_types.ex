@@ -45,6 +45,8 @@ defmodule GlificWeb.Schema.WebhookLogTypes do
     field :url, :string
     @desc "Match the status code"
     field :status_code, :integer
+    @desc "Match the phone"
+    field :contact_phone, :string
   end
 
   object :webhook_log_queries do

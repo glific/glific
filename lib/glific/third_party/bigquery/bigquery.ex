@@ -10,10 +10,13 @@ defmodule Glific.BigQuery do
     BigQuery.BigQueryJob,
     BigQuery.Schema,
     Contacts.Contact,
+    Flows,
+    Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
+    Messages.MessageMedia,
     Partners,
     Partners.Saas,
     Repo,
@@ -33,7 +36,10 @@ defmodule Glific.BigQuery do
     "contacts" => :contact_schema,
     "flows" => :flow_schema,
     "flow_results" => :flow_result_schema,
-    "stats" => :stats_schema
+    "stats" => :stats_schema,
+    "flow_counts" => :flow_count_schema,
+    "messages_media" => :messages_media_schema,
+    "flow_contexts" => :flow_context_schema
   }
 
   defp bigquery_tables(organization_id) do
@@ -105,9 +111,9 @@ defmodule Glific.BigQuery do
     "flows" => FlowRevision,
     "stats" => Stat,
     "stats_all" => Stat,
-    "messages_delta" => Message,
-    "contacts_delta" => Contact,
-    "flow_results_delta" => FlowResult
+    "flow_counts" => FlowCount,
+    "messages_media" => MessageMedia,
+    "flow_contexts" => Flows.FlowContext
   }
 
   # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
@@ -154,7 +160,12 @@ defmodule Glific.BigQuery do
         bigquery_job
 
       _ ->
-        %BigQueryJob{table: table_name, table_id: 0, organization_id: organization_id}
+        %BigQueryJob{
+          table: table_name,
+          table_id: 0,
+          organization_id: organization_id,
+          last_updated_at: DateTime.utc_now()
+        }
         |> Repo.insert!()
     end
 
@@ -442,21 +453,30 @@ defmodule Glific.BigQuery do
   @doc """
     Insert rows in the biqquery
   """
-  @spec make_insert_query(map() | list, String.t(), non_neg_integer, non_neg_integer) :: :ok
+  @spec make_insert_query(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
   def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
       when data in [[], nil, %{}],
       do: :ok
 
-  def make_insert_query(data, table, organization_id, max_id) do
+  def make_insert_query(data, table, organization_id, attrs) do
+    max_id = Keyword.get(attrs, :max_id)
+    last_updated_at = Keyword.get(attrs, :last_updated_at)
+
     Logger.info(
-      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
-        Enum.count(data)
-      }"
+      "insert data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     fetch_bigquery_credentials(organization_id)
-    |> do_make_insert_query(organization_id, data, table: table, max_id: max_id)
-    |> handle_insert_query_response(organization_id, table: table, max_id: max_id)
+    |> do_make_insert_query(organization_id, data,
+      table: table,
+      max_id: max_id,
+      last_updated_at: last_updated_at
+    )
+    |> handle_insert_query_response(organization_id,
+      table: table,
+      max_id: max_id,
+      last_updated_at: last_updated_at
+    )
 
     :ok
   end
@@ -472,9 +492,7 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{
-        Enum.count(data)
-      }"
+      "inserting data to bigquery for org_id: #{organization_id}, table: #{table}, rows_count: #{Enum.count(data)}"
     )
 
     Tabledata.bigquery_tabledata_insert_all(
@@ -491,6 +509,7 @@ defmodule Glific.BigQuery do
   defp handle_insert_query_response({:ok, res}, organization_id, opts) do
     table = Keyword.get(opts, :table)
     max_id = Keyword.get(opts, :max_id)
+    last_updated_at = Keyword.get(opts, :last_updated_at)
 
     cond do
       res.insertErrors != nil ->
@@ -501,17 +520,18 @@ defmodule Glific.BigQuery do
         Jobs.update_bigquery_job(organization_id, table, %{table_id: max_id})
 
         Logger.info(
-          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
-            table
-          }, res: #{inspect(res)}"
+          "New Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{table}, res: #{inspect(res)}"
+        )
+
+      last_updated_at not in [nil, 0] ->
+        Jobs.update_bigquery_job(organization_id, table, %{last_updated_at: last_updated_at})
+
+        Logger.info(
+          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, last_updated_at: #{last_updated_at} table: #{table}, res: #{inspect(res)}"
         )
 
       true ->
-        Logger.info(
-          "Updated Data has been inserted to bigquery successfully org_id: #{organization_id}, table: #{
-            table
-          }, res: #{inspect(res)}"
-        )
+        Logger.info("Count not found the operation for bigquery insert and update")
     end
 
     :ok
@@ -521,9 +541,7 @@ defmodule Glific.BigQuery do
     table = Keyword.get(opts, :table)
 
     Logger.info(
-      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{
-        inspect(response)
-      }"
+      "Error while inserting the data to bigquery. org_id: #{organization_id}, table: #{table}, response: #{inspect(response)}"
     )
 
     bigquery_error_status(response)
@@ -542,7 +560,7 @@ defmodule Glific.BigQuery do
         Logger.info("Timeout while inserting the data. #{inspect(response)}")
 
       _ ->
-        raise("BigQuery Insert Error for table #{table} #{response}")
+        raise("BigQuery Insert Error for table #{table} #{inspect(response)}")
     end
   end
 
@@ -554,8 +572,12 @@ defmodule Glific.BigQuery do
       error["error"]["status"]
     else
       _ ->
-        Logger.info("Bigquery status error #{inspect(response)}")
-        :unknown
+        if is_atom(response) do
+          "TIMEOUT"
+        else
+          Logger.info("Bigquery status error #{inspect(response)}")
+          :unknown
+        end
     end
   end
 
@@ -590,9 +612,9 @@ defmodule Glific.BigQuery do
 
     """
     DELETE FROM `#{credentials.dataset_id}.#{table}`
-    WHERE struct(id, updated_at) IN (
-      SELECT STRUCT(id, updated_at)  FROM (
-        SELECT id, updated_at, ROW_NUMBER() OVER (
+    WHERE struct(id, updated_at, bq_uuid) IN (
+      SELECT STRUCT(id, updated_at, bq_uuid)  FROM (
+        SELECT id, updated_at, bq_uuid, ROW_NUMBER() OVER (
           PARTITION BY delta.id ORDER BY delta.updated_at DESC
         ) AS rn
         FROM `#{credentials.dataset_id}.#{table}` delta
@@ -603,20 +625,16 @@ defmodule Glific.BigQuery do
 
   @spec handle_duplicate_removal_job_error(tuple() | nil, String.t(), map(), non_neg_integer) ::
           :ok
-  defp handle_duplicate_removal_job_error({:ok, response}, table, _credentials, organization_id),
+  defp handle_duplicate_removal_job_error({:ok, _response}, table, _credentials, organization_id),
     do:
       Logger.info(
-        "duplicate entries have been removed from #{table} on bigquery for org_id: #{
-          organization_id
-        }. #{inspect(response)}"
+        "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}"
       )
 
   ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
-      "Error while removing duplicate entries from the table #{table} on bigquery. #{
-        inspect(error)
-      }"
+      "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"
     )
   end
 end

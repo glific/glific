@@ -29,6 +29,7 @@ defmodule Glific.Flows.Flow do
     :nodes,
     :ignore_keywords,
     :is_active,
+    :is_background,
     :respond_other,
     :respond_no_response
   ]
@@ -42,6 +43,7 @@ defmodule Glific.Flows.Flow do
           keywords: [String.t()] | nil,
           ignore_keywords: boolean() | nil,
           is_active: boolean() | nil,
+          is_background: boolean() | nil,
           respond_other: boolean() | nil,
           respond_no_response: boolean() | nil,
           flow_type: String.t() | nil,
@@ -81,6 +83,7 @@ defmodule Glific.Flows.Flow do
     field :keywords, {:array, :string}, default: []
     field :ignore_keywords, :boolean, default: false
     field :is_active, :boolean, default: true
+    field :is_background, :boolean, default: false
     field :respond_other, :boolean, default: false
     field :respond_no_response, :boolean, default: false
 
@@ -109,6 +112,7 @@ defmodule Glific.Flows.Flow do
       |> unique_constraint([:name, :organization_id],
         message: "Sorry, the flow name already exists."
       )
+      |> unique_constraint([:uuid, :organization_id])
       |> update_change(:keywords, &update_keywords(&1))
 
     validate_keywords(changeset, get_change(changeset, :keywords))
@@ -159,11 +163,12 @@ defmodule Glific.Flows.Flow do
   defp create_keywords_error_message(existing_keywords, flow_keyword_list) do
     existing_keywords_string =
       existing_keywords
-      |> Enum.map(fn keyword ->
+      |> Enum.map_join(", ", fn keyword ->
         "The keyword `#{keyword}` was already used in the `#{flow_keyword_list[keyword]}` Flow"
       end)
-      |> Enum.join(", ")
 
+    # this should be combined with the above pipe, leaving for now since
+    # i'm just cleaning up credo errors
     "#{existing_keywords_string}."
   end
 
@@ -295,6 +300,7 @@ defmodule Glific.Flows.Flow do
           id: f.id,
           name: f.name,
           uuid: f.uuid,
+          is_background: f.is_background,
           keywords: f.keywords,
           ignore_keywords: f.ignore_keywords,
           respond_other: f.respond_other,
@@ -311,14 +317,18 @@ defmodule Glific.Flows.Flow do
       |> Repo.one!()
       |> Map.put(:status, status)
 
-    start_node_uuid = start_node(flow.definition["_ui"])
+    if flow.definition["nodes"] == [] do
+      flow
+    else
+      start_node_uuid = start_node(flow.definition["_ui"])
 
-    flow.definition
-    |> clean_definition()
-    |> process(flow, start_node_uuid)
+      flow.definition
+      |> clean_definition()
+      |> process(flow, start_node_uuid)
+    end
   end
 
-  @spec start_node(map()) :: Ecto.UUID.t()
+  @spec start_node(map()) :: Ecto.UUID.t() | nil
   defp start_node(json) do
     {node_uuid, _top, _left} =
       json["nodes"]
@@ -351,15 +361,17 @@ defmodule Glific.Flows.Flow do
 
   @spec validate_flow(map()) :: Keyword.t()
   defp validate_flow(flow) do
-    errors = []
-
-    flow.nodes
-    |> Enum.reduce(
-      errors,
-      &Node.validate(&1, &2, flow)
-    )
-    |> dangling_nodes(flow)
-    |> missing_flow_context_nodes(flow)
+    if flow.definition["nodes"] == [] do
+      [Flow: "Flow is empty"]
+    else
+      flow.nodes
+      |> Enum.reduce(
+        [],
+        &Node.validate(&1, &2, flow)
+      )
+      |> dangling_nodes(flow)
+      |> missing_flow_context_nodes(flow)
+    end
   end
 
   @spec flow_objects(map(), atom()) :: MapSet.t()

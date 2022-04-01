@@ -5,9 +5,11 @@ defmodule GlificWeb.Schema.ContactTypes do
 
   use Absinthe.Schema.Notation
   import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  import Ecto.Query, warn: false
 
   alias Glific.{
     Contacts.Contact,
+    Contacts.ContactHistory,
     Repo
   }
 
@@ -54,6 +56,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :optin_time, :datetime
     field :optout_time, :datetime
 
+    field :optin_method, :string
+    field :optout_method, :string
+
     field :fields, :json
     field :settings, :json
 
@@ -74,11 +79,33 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :groups, list_of(:group) do
       resolve(dataloader(Repo, use_parent: true))
     end
+
+    field :history, list_of(:contact_history) do
+      resolve(fn contact, _, _ ->
+        contact_histories =
+          ContactHistory
+          |> where([ch], ch.contact_id == ^contact.id)
+          |> order_by([ch], ch.event_datetime)
+          |> Repo.all()
+
+        {:ok, contact_histories}
+      end)
+    end
   end
 
   object :location do
     field :longitude, :float
     field :latitude, :float
+  end
+
+  object :contact_history do
+    field(:id, :id)
+    field(:event_type, :string)
+    field(:event_label, :string)
+    field(:event_meta, :json)
+    field(:event_datetime, :datetime)
+    field(:inserted_at, :datetime)
+    field(:updated_at, :datetime)
   end
 
   @desc "Filtering options for contacts"
@@ -127,6 +154,18 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :settings, :json
   end
 
+  @desc "Filtering options for contacts history"
+  input_object :contacts_history_filter do
+    @desc "contact id"
+    field :contact_id, :id
+
+    @desc "Match the event type"
+    field :event_type, :string
+
+    @desc "Match the event label"
+    field :event_label, :string
+  end
+
   object :contact_queries do
     @desc "get the details of one contact"
     field :contact, :contact_result do
@@ -168,6 +207,21 @@ defmodule GlificWeb.Schema.ContactTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.simulator_release/3)
     end
+
+    @desc "Get a list of all contacts histroy filtered by various criteria"
+    field :contact_history, list_of(:contact_history) do
+      arg(:filter, :contacts_history_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.contact_history/3)
+    end
+
+    @desc "Get a count of all contacts histroy filtered by various criteria"
+    field :count_contact_history, :integer do
+      arg(:filter, :contacts_history_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.count_contact_history/3)
+    end
   end
 
   object :contact_mutations do
@@ -198,6 +252,8 @@ defmodule GlificWeb.Schema.ContactTypes do
     end
 
     field :import_contacts, :import_result do
+      arg(:id, non_null(:id))
+      arg(:type, :import_contacts_type_enum)
       arg(:group_label, non_null(:string))
       arg(:data, non_null(:string))
       middleware(Authorize, :staff)

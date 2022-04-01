@@ -47,11 +47,16 @@ defmodule Glific.Dialogflow do
 
       {:error, %Tesla.Error{reason: reason}} ->
         {:error, reason}
+
+      {:error, :timeout} ->
+        {:error, "Timeout"}
     end
   end
 
   @spec do_request(atom(), String.t(), String.t(), list()) :: Tesla.Env.result()
-  defp do_request(:post, url, body, header), do: Tesla.post(url, body, headers: header)
+  defp do_request(:post, url, body, header),
+    do: Tesla.post(url, body, headers: header, opts: [adapter: [recv_timeout: 30_000]])
+
   defp do_request(_, url, _, _), do: Tesla.get(url)
 
   # ---------------------------------------------------------------------------
@@ -95,7 +100,7 @@ defmodule Glific.Dialogflow do
         service_account = Jason.decode!(credential.secrets["service_account"])
 
         %{
-          url: "https://dialogflow.clients6.google.com/v2beta1/projects",
+          url: "https://dialogflow.googleapis.com/v2/projects",
           id: service_account["project_id"],
           email: service_account["client_email"]
         }
@@ -147,6 +152,13 @@ defmodule Glific.Dialogflow do
           updated_at: DateTime.utc_now()
         }
       end)
+      |> List.insert_at(0, %{
+        ## Default list items.
+        name: "all",
+        organization_id: organization_id,
+        inserted_at: DateTime.utc_now(),
+        updated_at: DateTime.utc_now()
+      })
       |> Enum.filter(fn el -> !Enum.member?(existing_items, el.name) end)
 
     Intent

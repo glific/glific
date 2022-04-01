@@ -9,6 +9,7 @@ defmodule Glific.Flows.Action do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Dialogflow,
     Flows,
@@ -46,6 +47,9 @@ defmodule Glific.Flows.Action do
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
+  @required_fields_interactive_template [:name, :id | @required_field_common]
+
+  @wait_for ["wait_for_time", "wait_for_result"]
 
   @type t() :: %__MODULE__{
           uuid: Ecto.UUID.t() | nil,
@@ -62,6 +66,7 @@ defmodule Glific.Flows.Action do
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
           enter_flow_name: String.t() | nil,
+          enter_flow_expression: String.t() | nil,
           attachments: list() | nil,
           labels: list() | nil,
           groups: list() | nil,
@@ -70,47 +75,50 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          wait_time: integer() | nil
+          wait_time: integer() | nil,
+          interactive_template_id: integer() | nil
         }
 
   embedded_schema do
-    field :uuid, Ecto.UUID
-    field :name, :string
-    field :text, :string
-    field :value, :string
+    field(:uuid, Ecto.UUID)
+    field(:name, :string)
+    field(:text, :string)
+    field(:value, :string)
 
     # various fields for webhooks
-    field :url, :string
-    field :headers, :map
-    field :method, :string
-    field :result_name, :string
-    field :body, :string
+    field(:url, :string)
+    field(:headers, :map)
+    field(:method, :string)
+    field(:result_name, :string)
+    field(:body, :string)
 
     # fields for certain actions: set_contact_field, set_contact_language
-    field :field, :map
-    field :language, :string
+    field(:field, :map)
+    field(:language, :string)
 
-    field :type, :string
+    field(:type, :string)
 
-    field :quick_replies, {:array, :string}, default: []
+    field(:quick_replies, {:array, :string}, default: [])
 
-    field :attachments, :map
+    field(:attachments, :map)
 
-    field :labels, :map
-    field :groups, :map
-    field :contacts, :map
+    field(:labels, :map)
+    field(:groups, :map)
+    field(:contacts, :map)
 
-    field :wait_time, :integer
+    field(:wait_time, :integer)
+    field(:interactive_template_id, :integer)
 
-    field :node_uuid, Ecto.UUID
-    embeds_one :node, Node
+    field(:node_uuid, Ecto.UUID)
+    embeds_one(:node, Node)
 
-    embeds_one :templating, Templating
+    embeds_one(:templating, Templating)
 
-    field :enter_flow_uuid, Ecto.UUID
-    field :enter_flow_name, :string
+    field(:enter_flow_uuid, Ecto.UUID)
+    field(:enter_flow_name, :string)
+    field(:enter_flow_expression, :string)
 
-    embeds_one :enter_flow, Flow
+    embeds_one(:enter_flow, Flow)
   end
 
   @spec process(map(), map(), Node.t(), map()) :: {Action.t(), map()}
@@ -137,7 +145,8 @@ defmodule Glific.Flows.Action do
 
     process(json, uuid_map, node, %{
       enter_flow_uuid: json["flow"]["uuid"],
-      enter_flow_name: json["flow"]["name"]
+      enter_flow_name: json["flow"]["name"],
+      enter_flow_expression: json["flow"]["expression"]
     })
   end
 
@@ -191,7 +200,7 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
-    process(json, uuid_map, node, %{labels: json["labels"]})
+    process(json, uuid_map, node, %{labels: process_lebels(json["labels"])})
   end
 
   def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
@@ -213,6 +222,11 @@ defmodule Glific.Flows.Action do
     process(json, uuid_map, node, attrs)
   end
 
+  def process(%{"type" => "send_interactive_msg"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_interactive_template)
+    process(json, uuid_map, node, %{interactive_template_id: json["id"], labels: json["labels"]})
+  end
+
   def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_group)
 
@@ -223,17 +237,33 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def process(%{"type" => "wait_for_time"} = json, uuid_map, node) do
+  @default_wait_time 5 * 60
+  def process(%{"type" => type} = json, uuid_map, node)
+      when type in @wait_for do
     Flows.check_required_fields(json, @required_fields_waittime)
 
+    # use a default wait time< of 5 minutes
     wait_time =
       if is_nil(json["delay"]) || String.trim(json["delay"]) == "" do
-        0
+        @default_wait_time
       else
-        String.to_integer(json["delay"])
+        time = String.to_integer(json["delay"])
+
+        if time <= 0,
+          do: @default_wait_time,
+          else: time
       end
 
-    process(json, uuid_map, node, %{wait_time: wait_time})
+    process(
+      json,
+      uuid_map,
+      node,
+      %{
+        wait_time: wait_time,
+        # this is potentially set in wait_for_result
+        result_name: json["result_name"]
+      }
+    )
   end
 
   def process(json, uuid_map, node) do
@@ -242,11 +272,13 @@ defmodule Glific.Flows.Action do
     attrs = %{
       name: json["name"],
       text: json["text"],
+      labels: process_lebels(json["labels"]),
       quick_replies: json["quick_replies"],
       attachments: process_attachments(json["attachments"])
     }
 
     {templating, uuid_map} = Templating.process(json["templating"], uuid_map)
+
     attrs = Map.put(attrs, :templating, templating)
 
     process(json, uuid_map, node, attrs)
@@ -277,14 +309,14 @@ defmodule Glific.Flows.Action do
   Validate a action and all its children
   """
   @spec validate(Action.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(%{type: type} = action, errors, _flow)
+  def validate(%{type: type, groups: groups} = action, errors, _flow)
       when type in ["add_contact_groups", "remove_contact_groups", "send_broadcast"] do
     # ensure that the contacts and/or groups exist that are involved in the above
     # action
     object = object(type)
 
     Enum.reduce(
-      if(object == Contact, do: action.contacts, else: action.groups),
+      check_object(object, action, groups),
       errors,
       fn entity, errors ->
         case Glific.parse_maybe_integer(entity["uuid"]) do
@@ -307,7 +339,8 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def validate(%{type: "wait_for_time"} = action, errors, flow) do
+  def validate(%{type: type} = action, errors, flow)
+      when type in @wait_for do
     # ensure that any downstream messages from this action are of type HSM
     # if wait time > 24 hours!
     if action.wait_time >= 24 * 60 * 60 &&
@@ -327,6 +360,13 @@ defmodule Glific.Flows.Action do
   # default validate, do nothing
   def validate(_action, errors, _flow), do: errors
 
+  defp check_object(Contact, action, _groups), do: action.contacts
+
+  defp check_object(_object, _action, ["all_groups"]),
+    do: Group |> select([m], %{"uuid" => m.id, "name" => m.label}) |> Repo.all()
+
+  defp check_object(_object, action, _groups), do: action.groups
+
   @spec type_of_next_message(Flow.t(), Action.t()) :: atom()
   defp type_of_next_message(flow, action) do
     # lets keep this simple for now, we'll just go follow the exit of this
@@ -344,6 +384,21 @@ defmodule Glific.Flows.Action do
     _ -> :unknown
   end
 
+  ## Label formatter so that we can apply the dynamic label to the message
+  @spec process_lebels(list() | nil) :: list() | nil
+  defp process_lebels(labels) when is_list(labels) do
+    Enum.map(
+      labels,
+      fn label ->
+        if is_nil(label["name_match"]),
+          do: label,
+          else: Map.put_new(label, "name", label["name_match"])
+      end
+    )
+  end
+
+  defp process_lebels(labels), do: labels
+
   @doc """
   Execute a action, given a message stream.
   Consume the message stream as processing occurs
@@ -351,7 +406,13 @@ defmodule Glific.Flows.Action do
   @spec execute(Action.t(), FlowContext.t(), [Message.t()]) ::
           {:ok | :wait, FlowContext.t(), [Message.t()]} | {:error, String.t()}
   def execute(%{type: "send_msg"} = action, context, messages) do
+    templating = Templating.execute(action.templating, context, messages)
+    action = Map.put(action, :templating, templating)
     ContactAction.send_message(context, action, messages)
+  end
+
+  def execute(%{type: "send_interactive_msg"} = action, context, messages) do
+    ContactAction.send_interactive_message(context, action, messages)
   end
 
   def execute(%{type: "send_broadcast"} = action, context, messages) do
@@ -369,7 +430,7 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_name"} = action, context, messages) do
-    value = FlowContext.get_result_value(context, action.value)
+    value = ContactField.parse_contact_field_value(context, action.value)
     context = ContactSetting.set_contact_name(context, value)
     {:ok, context, messages}
   end
@@ -377,8 +438,8 @@ defmodule Glific.Flows.Action do
   # Fake the valid key so we can have the same function signature and simplify the code base
   def execute(%{type: "set_contact_field_valid"} = action, context, messages) do
     name = action.field.name
-    key = String.downcase(name) |> String.replace(" ", "_")
-    value = FlowContext.get_result_value(context, action.value)
+    key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
+    value = ContactField.parse_contact_field_value(context, action.value)
 
     context =
       if key == "settings",
@@ -402,13 +463,15 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
+    flow_uuid = get_flow_uuid(action, context)
+
     # check if we've seen this flow in this execution
-    if Map.has_key?(context.uuids_seen, action.enter_flow_uuid) do
-      FlowContext.log_error("Repeated loop, hence finished the flow")
+    if Map.has_key?(context.uuids_seen, flow_uuid) do
+      Glific.log_error("Repeated loop, hence finished the flow", false)
     else
       # check if we are looping with the same flow, if so reset
       # and start from scratch, since we really dont want to have too deep a stack
-      maybe_reset_flows(context, action.enter_flow_uuid)
+      maybe_reset_flows(context, flow_uuid)
 
       # if the action is part of a terminal node, then lets mark this context as
       # complete, and use the parent context
@@ -425,9 +488,9 @@ defmodule Glific.Flows.Action do
       context =
         context
         |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
-        |> Map.update!(:uuids_seen, &Map.put(&1, action.enter_flow_uuid, 1))
+        |> Map.update!(:uuids_seen, &Map.put(&1, flow_uuid, 1))
 
-      Flow.start_sub_flow(context, action.enter_flow_uuid, parent_id)
+      Flow.start_sub_flow(context, flow_uuid, parent_id)
 
       # We null the messages here, since we are going into a different flow
       # this clears any potential errors
@@ -455,8 +518,9 @@ defmodule Glific.Flows.Action do
     ## We will soon figure out how we will manage the UUID with tags
     flow_label =
       action.labels
-      |> Enum.map(fn label -> label["name"] end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn label ->
+        FlowContext.parse_context_string(context, label["name"])
+      end)
 
     add_flow_label(context, flow_label)
 
@@ -478,6 +542,24 @@ defmodule Glific.Flows.Action do
                 organization_id: context.organization_id
               })
 
+              {:ok, _} =
+                Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+                  event_label: "Added to collection: \"#{group["name"]}\"",
+                  event_meta: %{
+                    context_id: context.id,
+                    group: %{
+                      id: group_id,
+                      name: group["name"],
+                      uuid: group["uuid"]
+                    },
+                    flow: %{
+                      id: context.flow.id,
+                      name: context.flow.name,
+                      uuid: context.flow.uuid
+                    }
+                  }
+                })
+
             _ ->
               Logger.error("Could not parse action groups: #{inspect(action)}")
           end
@@ -493,12 +575,47 @@ defmodule Glific.Flows.Action do
     if action.groups == ["all_groups"] do
       groups_ids = Groups.get_group_ids()
       Groups.delete_contact_groups_by_ids(context.contact_id, groups_ids)
+
+      {:ok, _} =
+        Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+          event_label: "Removed from All the collections",
+          event_meta: %{
+            context_id: context.id,
+            group: %{
+              ids: groups_ids
+            },
+            flow: %{
+              id: context.flow.id,
+              name: context.flow.name,
+              uuid: context.flow.uuid
+            }
+          }
+        })
     else
       groups_ids =
         Enum.map(
           action.groups,
           fn group ->
             {:ok, group_id} = Glific.parse_maybe_integer(group["uuid"])
+
+            {:ok, _} =
+              Contacts.capture_history(context.contact_id, :contact_groups_updated, %{
+                event_label: "Removed from collection: \"#{group["name"]}\"",
+                event_meta: %{
+                  context_id: context.id,
+                  group: %{
+                    id: group_id,
+                    name: group["name"],
+                    uuid: group["uuid"]
+                  },
+                  flow: %{
+                    id: context.flow.id,
+                    name: context.flow.name,
+                    uuid: context.flow.uuid
+                  }
+                }
+              })
+
             group_id
           end
         )
@@ -509,29 +626,26 @@ defmodule Glific.Flows.Action do
     {:ok, context, messages}
   end
 
-  def execute(%{type: "wait_for_time"} = _action, context, [msg]) do
-    if msg.body != "No Response" do
-      FlowContext.log_error("Unexpected message #{msg.body} received")
-    else
-      {:ok, context, []}
-    end
+  def execute(%{type: type} = _action, context, [msg])
+      when type in @wait_for do
+    if msg.body != "No Response",
+      do: Glific.log_error("Unexpected message #{msg.body} received", false),
+      else: {:ok, context, []}
   end
 
-  def execute(%{type: "wait_for_time"} = action, context, []) do
-    if action.wait_time <= 0 do
-      {:ok, context, []}
-    else
-      {:ok, context} =
-        FlowContext.update_flow_context(
-          context,
-          %{
-            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
-            wait_for_time: true
-          }
-        )
+  def execute(%{type: type} = action, context, [])
+      when type in @wait_for do
+    {:ok, context} =
+      FlowContext.update_flow_context(
+        context,
+        %{
+          wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+          is_background_flow: context.flow.is_background,
+          is_await_result: type == "wait_for_result"
+        }
+      )
 
-      {:wait, context, []}
-    end
+    {:wait, context, []}
   end
 
   def execute(action, _context, _messages),
@@ -616,4 +730,17 @@ defmodule Glific.Flows.Action do
       false
     end
   end
+
+  @spec get_flow_uuid(Action.t(), FlowContext.t()) :: String.t()
+  defp get_flow_uuid(
+         %{enter_flow_name: "Expression", enter_flow_expression: expression} = _action,
+         context
+       ),
+       do:
+         FlowContext.parse_context_string(context, expression)
+         |> Glific.execute_eex()
+         |> String.trim()
+
+  defp get_flow_uuid(action, _),
+    do: action.enter_flow_uuid
 end

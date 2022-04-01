@@ -721,21 +721,20 @@ mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [St
     }
   }
 }
-
 ```
 
 ### Query Parameters
 
-| Parameter  | Type                            | Default  | Description |
-| ---------- | ------------------------------- | -------- | ----------- |
-| templateId | <a href="#id">ID</a>!           | required |             |
-| groupId | <a href="#id">ID</a>!           | required |             |
+| Parameter  | Type                                    | Default  | Description |
+| ---------- | --------------------------------------- | -------- | ----------- |
+| templateId | <a href="#id">ID</a>!                   | required |             |
+| groupId    | <a href="#id">ID</a>!                   | required |             |
 | parameters | [<a href="#string">List of String</a>]! | required |             |
 
 ### Return Parameters
 
-| Parameter                                  | Type                     | Default | Description |
-| ------------------------------------------ | ------------------------ | ------- | ----------- |
+| Parameter                                              | Type                | Default | Description |
+| ------------------------------------------------------ | ------------------- | ------- | ----------- |
 | [<a href="#groupmessageresult">GroupMessageResult</a>] | List of contact ids |
 
 ## Send Media HSM Message
@@ -1126,6 +1125,11 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>SendBy</strong></td>
+<td valign="top">[<a href="#string">String</a>]</td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>BspStatus</strong></td>
 <td valign="top"><a href="#string">MessageStatusEnum</a></td>
 <td></td>
@@ -1156,7 +1160,6 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 <td valign="top"><a href="#messagemedia">MessageMedia</a></td>
 <td></td>
 </tr>
-
 
 <tr>
 <td colspan="2" valign="top"><strong>ContextMessage</strong></td>
@@ -1435,6 +1438,18 @@ Match the tags excluded
 
 <tr>
 <td colspan="2" valign="top"><strong>sender_id</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>template_id</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>interactive_template_id</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
