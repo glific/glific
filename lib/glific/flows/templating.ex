@@ -6,6 +6,8 @@ defmodule Glific.Flows.Templating do
 
   use Ecto.Schema
 
+  require Logger
+
   alias Glific.{
     Flows,
     Flows.FlowContext,
@@ -52,18 +54,24 @@ defmodule Glific.Flows.Templating do
   def process(json, uuid_map) do
     Flows.check_required_fields(json, @required_fields)
     uuid = json["template"]["uuid"]
-    {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
 
-    templating = %Templating{
-      uuid: json["uuid"],
-      name: json["template"]["name"],
-      template: template,
-      variables: json["variables"],
-      expression: nil,
-      localization: json["localization"]
-    }
+    if uuid in ["", "false", "nil"] do
+      Logger.info("No template uuid found, skipping templating. #{inspect(json)}")
+      {nil, uuid_map}
+    else
+      {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
 
-    {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
+      templating = %Templating{
+        uuid: json["uuid"],
+        name: json["template"]["name"],
+        template: template,
+        variables: json["variables"],
+        expression: nil,
+        localization: json["localization"]
+      }
+
+      {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
+    end
   end
 
   @doc """

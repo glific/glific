@@ -223,6 +223,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
   defp get_message_payload("image", params), do: Jason.decode!(params["image"])
   defp get_message_payload("video", params), do: Jason.decode!(params["video"])
   defp get_message_payload("audio", params), do: Jason.decode!(params["audio"])
+  defp get_message_payload("voice", params), do: Jason.decode!(params["voice"])
   defp get_message_payload("document", params), do: Jason.decode!(params["document"])
 
   @doc false
