@@ -106,11 +106,13 @@ defmodule Glific.Search.Full do
   defp run_date_range(query, nil, to) do
     query
     |> where([c: c], c.last_message_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day()))
+    |> where([m: m], m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day()))
   end
 
   defp run_date_range(query, from, nil) do
     query
     |> where([c: c], c.last_message_at >= ^Timex.to_datetime(from))
+    |> where([m: m], m.inserted_at >= ^Timex.to_datetime(from))
   end
 
   defp run_date_range(query, from, to) do
@@ -119,6 +121,11 @@ defmodule Glific.Search.Full do
       [c: c],
       c.last_message_at >= ^Timex.to_datetime(from) and
         c.last_message_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
+    )
+    |> where(
+      [m: m],
+      m.inserted_at >= ^Timex.to_datetime(from) and
+        m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
     )
   end
 end
