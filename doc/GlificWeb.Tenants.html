@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>GlificWeb.Tenants — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>GlificWeb.Tenants — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -79,105 +86,116 @@ Glific
   <div class="content-outer">
     <div id="content" class="content-inner">
 
-      <h1>
-GlificWeb.Tenants <small class="app-vsn">(Glific v1.3.3)</small>
-
-          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L1" title="View Source" class="view-source" rel="help">
-            <span class="icon-code" aria-hidden="true"></span>
-            <span class="sr-only">View Source</span>
-          </a>
-
-      </h1>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-        <section id="moduledoc">
+    <a href="https://github.com/glific/glific/blob/main/lib/glific_web/tenants.ex#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">GlificWeb.Tenants</span> 
+  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
 <p>This is the main module of multi-tenancy in Glific. It has been borrowed from
-Triplex. (<a href="https://github.com/ateliware/triplex).">https://github.com/ateliware/triplex).</a> However we are going to us
+Triplex. (<a href="https://github.com/ateliware/triplex">https://github.com/ateliware/triplex</a>). However we are going to us
 postgres row level security instead, and hence copying the code from there. The
 original copyright and license (MIT) belong to the contributors to Triplex.</p><p>The main objetive of it is to make a little bit easier to manage organizations
 through postgres db schemas or equivalents, executing queries and commands
 inside and outside the organization without much boilerplate code.</p>
-        </section>
+  </section>
 
 
-        <section id="summary" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#summary">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
-            Summary
-          </h1>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#organization_handler/1">organization_handler(name \\ nil)</a>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#organization_handler/1" translate="no">organization_handler(name \\ nil)</a>
 
-    <div class="summary-synopsis"><p>Given a string from the connection info (subdomain), check and
+        </div>
+
+          <div class="summary-synopsis"><p>Given a string from the connection info (subdomain), check and
 retrieve the organization id.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#remote_ip/1">remote_ip(conn)</a>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#remote_ip/1" translate="no">remote_ip(conn)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Given a conn object, get the remote ip of the user as a string</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#reserved_organization?/1" translate="no">reserved_organization?(prefix)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Returns if the given <code class="inline">organization</code> is reserved or not.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#reserved_organizations/0" translate="no">reserved_organizations()</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Returns the list of reserved organizations.</p></div>
+
+      </div>
 
   </div>
 
-    <div class="summary-synopsis"><p>Given a conn object, get the remote ip of the user as a string</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#reserved_organization?/1">reserved_organization?(prefix)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Returns if the given <code class="inline">organization</code> is reserved or not.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#reserved_organizations/0">reserved_organizations()</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Returns the list of reserved organizations.</p></div>
-
-</div>
-
-  </div>
-
-        </section>
+  </section>
 
 
-        <section id="functions" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#functions">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
 Functions
-          </h1>
-          <div class="functions-list">
+    </h1>
+    <div class="functions-list">
 <section class="detail" id="organization_handler/1">
 
     <span id="organization_handler/0"></span>
 
   <div class="detail-header">
     <a href="#organization_handler/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">organization_handler(name \\ nil)</h1>
+    <h1 class="signature" translate="no">organization_handler(name \\ nil)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L60" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/tenants.ex#L60" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -186,10 +204,9 @@ Functions
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>organization_handler(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> organization_handler(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
 
       </div>
 
@@ -202,13 +219,13 @@ we cannot resolve the sub-domain, we'll remove this in v0.4</p>
 
   <div class="detail-header">
     <a href="#remote_ip/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">remote_ip(conn)</h1>
+    <h1 class="signature" translate="no">remote_ip(conn)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L87" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/tenants.ex#L95" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -217,10 +234,9 @@ we cannot resolve the sub-domain, we'll remove this in v0.4</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>remote_ip(<a href="https://hexdocs.pm/plug/1.11.1/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> remote_ip(<a href="https://hexdocs.pm/plug/1.13.4/Plug.Conn.html#t:t/0">Plug.Conn.t</a>()) :: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
 
       </div>
 
@@ -231,13 +247,13 @@ we cannot resolve the sub-domain, we'll remove this in v0.4</p>
 
   <div class="detail-header">
     <a href="#reserved_organization?/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">reserved_organization?(prefix)</h1>
+    <h1 class="signature" translate="no">reserved_organization?(prefix)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L42" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/tenants.ex#L42" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -246,10 +262,9 @@ we cannot resolve the sub-domain, we'll remove this in v0.4</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>reserved_organization?(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> reserved_organization?(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
 
       </div>
 
@@ -260,13 +275,13 @@ we cannot resolve the sub-domain, we'll remove this in v0.4</p>
 
   <div class="detail-header">
     <a href="#reserved_organizations/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">reserved_organizations()</h1>
+    <h1 class="signature" translate="no">reserved_organizations()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/tenants.ex#L25" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/tenants.ex#L25" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -275,10 +290,9 @@ we cannot resolve the sub-domain, we'll remove this in v0.4</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>reserved_organizations() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> reserved_organizations() :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
 
       </div>
 
@@ -288,38 +302,31 @@ names.</p>
   </section>
 </section>
 
-          </div>
-        </section>
+    </div>
+  </section>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific_web/tenants.ex">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>

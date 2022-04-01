@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>Glific.Repo — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>Glific.Repo — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -79,550 +86,620 @@ Glific
   <div class="content-outer">
     <div id="content" class="content-inner">
 
-      <h1>
-Glific.Repo <small class="app-vsn">(Glific v1.3.3)</small>
-
-          <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L1" title="View Source" class="view-source" rel="help">
-            <span class="icon-code" aria-hidden="true"></span>
-            <span class="sr-only">View Source</span>
-          </a>
-
-      </h1>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-        <section id="moduledoc">
+    <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">Glific.Repo</span> 
+  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
 <p>A repository that maps to an underlying data store, controlled by the Postgres adapter.</p><p>We add a few functions to make our life easier with a few helper functions that ecto does
 not provide.</p>
-        </section>
+  </section>
 
 
-        <section id="summary" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#summary">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
-            Summary
-          </h1>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#add_permission/3">add_permission(query, permission_fn, skip_permission \\ false)</a>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#add_permission/3" translate="no">add_permission(query, permission_fn, skip_permission \\ false)</a>
 
-    <div class="summary-synopsis"><p>Implement permissioning support via groups. This is the basic wrapper, it uses
+        </div>
+
+          <div class="summary-synopsis"><p>Implement permissioning support via groups. This is the basic wrapper, it uses
 a context specific permissioning wrapper to add the actual clauses</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#aggregate/3">aggregate(queryable, aggregate, opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#aggregate/3" translate="no">aggregate(queryable, aggregate, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:aggregate/3"><code class="inline">Ecto.Repo.aggregate/3</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#aggregate/4">aggregate(queryable, aggregate, field, opts)</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:aggregate/3"><code class="inline">Ecto.Repo.aggregate/3</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:aggregate/4"><code class="inline">Ecto.Repo.aggregate/4</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#aggregate/4" translate="no">aggregate(queryable, aggregate, field, opts)</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#all/2">all(queryable, opts \\ [])</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:aggregate/4"><code class="inline">Ecto.Repo.aggregate/4</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:all/2"><code class="inline">Ecto.Repo.all/2</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#checkout/2">checkout(fun, opts \\ [])</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#all/2" translate="no">all(queryable, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:checkout/2"><code class="inline">Ecto.Repo.checkout/2</code></a>.</p></div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:all/2"><code class="inline">Ecto.Repo.all/2</code></a>.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#child_spec/1">child_spec(opts)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#checked_out?/0" translate="no">checked_out?()</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#config/0">config()</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:checked_out?/0"><code class="inline">Ecto.Repo.checked_out?/0</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:config/0"><code class="inline">Ecto.Repo.config/0</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#count_filter/4">count_filter(args \\ %{}, object, filter_with_fn, repo_opts \\ [])</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#checkout/2" translate="no">checkout(fun, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>We use this function also  in most list_OBJECT api's, where we process the
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:checkout/2"><code class="inline">Ecto.Repo.checkout/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#child_spec/1" translate="no">child_spec(opts)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#config/0" translate="no">config()</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:config/0"><code class="inline">Ecto.Repo.config/0</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#count_filter/4" translate="no">count_filter(args \\ %{}, object, filter_with_fn, repo_opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>We use this function also  in most list_OBJECT api's, where we process the
 the filter. Centralizing this code at the top level, to make things
 cleaner</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#delete/2">delete(struct, opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#delete!/2" translate="no">delete!(struct, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:delete/2"><code class="inline">Ecto.Repo.delete/2</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#delete!/2">delete!(struct, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:delete!/2"><code class="inline">Ecto.Repo.delete!/2</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:delete!/2"><code class="inline">Ecto.Repo.delete!/2</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#delete/2" translate="no">delete(struct, opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#delete_all/2">delete_all(queryable, opts \\ [])</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:delete/2"><code class="inline">Ecto.Repo.delete/2</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:delete_all/2"><code class="inline">Ecto.Repo.delete_all/2</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#delete_relationships_by_ids/2">delete_relationships_by_ids(object, fields)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#delete_all/2" translate="no">delete_all(queryable, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>In Join tables we rarely use the table id. We always know the object ids
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:delete_all/2"><code class="inline">Ecto.Repo.delete_all/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#delete_relationships_by_ids/2" translate="no">delete_relationships_by_ids(object, fields)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>In Join tables we rarely use the table id. We always know the object ids
 and hence more convenient to delete an entry via its object ids.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#exists?/2">exists?(queryable, opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#exists?/2" translate="no">exists?(queryable, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:exists?/2"><code class="inline">Ecto.Repo.exists?/2</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#explain/3">explain(operation, queryable, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:exists?/2"><code class="inline">Ecto.Repo.exists?/2</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that executes an EXPLAIN statement or similar
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#explain/3" translate="no">explain(operation, queryable, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that executes an EXPLAIN statement or similar
 depending on the adapter to obtain statistics for the given query.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#fetch/3">fetch(queryable, id, opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#fetch/3" translate="no">fetch(queryable, id, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Glific version of get, which returns a tuple with an :ok | :error as the first element</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#fetch_by/3">fetch_by(queryable, clauses, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Glific version of get, which returns a tuple with an :ok | :error as the first element</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Glific version of get_by, which returns a tuple with an :ok | :error as the first element</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#fetch_by/3" translate="no">fetch_by(queryable, clauses, opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#filter_with/2">filter_with(query, filter)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Glific version of get_by, which returns a tuple with an :ok | :error as the first element</p></div>
 
-    <div class="summary-synopsis"><p>Add all the common filters here, rather than in each file</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get/3">get(queryable, id, opts \\ [])</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#filter_with/2" translate="no">filter_with(query, filter)</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get/3"><code class="inline">Ecto.Repo.get/3</code></a>.</p></div>
+          <div class="summary-synopsis"><p>Add all the common filters here, rather than in each file</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get!/3">get!(queryable, id, opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get!/3" translate="no">get!(queryable, id, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get!/3"><code class="inline">Ecto.Repo.get!/3</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_by/3">get_by(queryable, clauses, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get!/3"><code class="inline">Ecto.Repo.get!/3</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get_by/3"><code class="inline">Ecto.Repo.get_by/3</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get/3" translate="no">get(queryable, id, opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_by!/3">get_by!(queryable, clauses, opts \\ [])</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get/3"><code class="inline">Ecto.Repo.get/3</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get_by!/3"><code class="inline">Ecto.Repo.get_by!/3</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_dynamic_repo/0">get_dynamic_repo()</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_by!/3" translate="no">get_by!(queryable, clauses, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get_dynamic_repo/0"><code class="inline">Ecto.Repo.get_dynamic_repo/0</code></a>.</p></div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get_by!/3"><code class="inline">Ecto.Repo.get_by!/3</code></a>.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#in_transaction?/0">in_transaction?()</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_by/3" translate="no">get_by(queryable, clauses, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:in_transaction?/0"><code class="inline">Ecto.Repo.in_transaction?/0</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#insert/2">insert(struct, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get_by/3"><code class="inline">Ecto.Repo.get_by/3</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert/2"><code class="inline">Ecto.Repo.insert/2</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_dynamic_repo/0" translate="no">get_dynamic_repo()</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#insert!/2">insert!(struct, opts \\ [])</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get_dynamic_repo/0"><code class="inline">Ecto.Repo.get_dynamic_repo/0</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert!/2"><code class="inline">Ecto.Repo.insert!/2</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#insert_all/3">insert_all(schema_or_source, entries, opts \\ [])</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#in_transaction?/0" translate="no">in_transaction?()</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert_all/3"><code class="inline">Ecto.Repo.insert_all/3</code></a>.</p></div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:in_transaction?/0"><code class="inline">Ecto.Repo.in_transaction?/0</code></a>.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#insert_or_update/2">insert_or_update(changeset, opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#insert!/2" translate="no">insert!(struct, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert_or_update/2"><code class="inline">Ecto.Repo.insert_or_update/2</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#insert_or_update!/2">insert_or_update!(changeset, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert!/2"><code class="inline">Ecto.Repo.insert!/2</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert_or_update!/2"><code class="inline">Ecto.Repo.insert_or_update!/2</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#insert/2" translate="no">insert(struct, opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#label_id_map/4">label_id_map(queryable, values, organization_id, field \\ :label)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert/2"><code class="inline">Ecto.Repo.insert/2</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Get map of field (typically label) to ids for easier lookup for various system objects - language, tag</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#limit_offset/2">limit_offset(query, opts)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#insert_all/3" translate="no">insert_all(schema_or_source, entries, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Extracts the limit offset field, and adds to query</p></div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert_all/3"><code class="inline">Ecto.Repo.insert_all/3</code></a>.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#list_filter/5">list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#insert_or_update!/2" translate="no">insert_or_update!(changeset, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>We use this function in most list_OBJECT api's, where we process the opts
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert_or_update!/2"><code class="inline">Ecto.Repo.insert_or_update!/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#insert_or_update/2" translate="no">insert_or_update(changeset, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert_or_update/2"><code class="inline">Ecto.Repo.insert_or_update/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#label_id_map/4" translate="no">label_id_map(queryable, values, organization_id, field \\ :label)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Get map of field (typically label) to ids for easier lookup for various system objects - language, tag</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#limit_offset/2" translate="no">limit_offset(query, opts)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Extracts the limit offset field, and adds to query</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list_filter/5" translate="no">list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>We use this function in most list_OBJECT api's, where we process the opts
 and the filter. Centralizing this code at the top level, to make things
 cleaner</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#list_filter_query/4">list_filter_query(args \\ %{}, object, opts_with_fn, filter_with_fn)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list_filter_query/4" translate="no">list_filter_query(args \\ %{}, object, opts_with_fn, filter_with_fn)</a>
 
-    <div class="summary-synopsis"><p>This function builds the query, and is used in places where we want to
+        </div>
+
+          <div class="summary-synopsis"><p>This function builds the query, and is used in places where we want to
 layer permissioning on top of the query</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#load/2">load(schema_or_types, data)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#load/2" translate="no">load(schema_or_types, data)</a>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:load/2"><code class="inline">Ecto.Repo.load/2</code></a>.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#one/2">one(queryable, opts \\ [])</a>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:load/2"><code class="inline">Ecto.Repo.load/2</code></a>.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:one/2"><code class="inline">Ecto.Repo.one/2</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#one!/2" translate="no">one!(queryable, opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#one!/2">one!(queryable, opts \\ [])</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:one!/2"><code class="inline">Ecto.Repo.one!/2</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:one!/2"><code class="inline">Ecto.Repo.one!/2</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#opts_with_field/3">opts_with_field(query, opts, field)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#one/2" translate="no">one(queryable, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>A funtion which handles the order clause for a data type that has
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:one/2"><code class="inline">Ecto.Repo.one/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#opts_with_field/3" translate="no">opts_with_field(query, opts, field)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>A funtion which handles the order clause for a data type that has
 a 'name/body/label' in its schema (which is true for a fair number of Glific's
 data types)</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#opts_with_nil/2">opts_with_nil(query, opts)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#opts_with_nil/2" translate="no">opts_with_nil(query, opts)</a>
 
-    <div class="summary-synopsis"><p>An empty function for objects that ignore the opts</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#preload/3">preload(struct_or_structs_or_nil, preloads, opts \\ [])</a>
+          <div class="summary-synopsis"><p>An empty function for objects that ignore the opts</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:preload/3"><code class="inline">Ecto.Repo.preload/3</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#preload/3" translate="no">preload(struct_or_structs_or_nil, preloads, opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#put_dynamic_repo/1">put_dynamic_repo(dynamic)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:preload/3"><code class="inline">Ecto.Repo.preload/3</code></a>.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:put_dynamic_repo/1"><code class="inline">Ecto.Repo.put_dynamic_repo/1</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#query/3">query(sql, params \\ [], opts \\ [])</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#put_dynamic_repo/1" translate="no">put_dynamic_repo(dynamic)</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that executes the given query.</p></div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:put_dynamic_repo/1"><code class="inline">Ecto.Repo.put_dynamic_repo/1</code></a>.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#query!/3">query!(sql, params \\ [], opts \\ [])</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#query!/3" translate="no">query!(sql, params \\ [], opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that executes the given query.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#reload/2">reload(queryable, opts \\ [])</a>
+          <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that executes the given query.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:reload/2"><code class="inline">Ecto.Repo.reload/2</code></a>.</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#query/3" translate="no">query(sql, params \\ [], opts \\ [])</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#reload!/2">reload!(queryable, opts \\ [])</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that executes the given query.</p></div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:reload!/2"><code class="inline">Ecto.Repo.reload!/2</code></a>.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#rollback/1">rollback(value)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#reload!/2" translate="no">reload!(queryable, opts \\ [])</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:rollback/1"><code class="inline">Ecto.Repo.rollback/1</code></a>.</p></div>
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:reload!/2"><code class="inline">Ecto.Repo.reload!/2</code></a>.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#skip_permission?/1">skip_permission?(user \\ get_current_user())</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#reload/2" translate="no">reload(queryable, opts \\ [])</a>
 
-    <div class="summary-synopsis"><p>Can we skip checking permissions for this user. This eliminates a DB call
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:reload/2"><code class="inline">Ecto.Repo.reload/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#rollback/1" translate="no">rollback(value)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:rollback/1"><code class="inline">Ecto.Repo.rollback/1</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#skip_permission?/1" translate="no">skip_permission?(user \\ get_current_user())</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Can we skip checking permissions for this user. This eliminates a DB call
 in many a case</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#start_link/1">start_link(opts \\ [])</a>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#start_link/1" translate="no">start_link(opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:start_link/1"><code class="inline">Ecto.Repo.start_link/1</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#stop/1" translate="no">stop(timeout \\ 5000)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:stop/1"><code class="inline">Ecto.Repo.stop/1</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#stream/2" translate="no">stream(queryable, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:stream/2"><code class="inline">Ecto.Repo.stream/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#to_sql/2" translate="no">to_sql(operation, queryable)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that translates the given query to SQL.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#transaction/2" translate="no">transaction(fun_or_multi, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:transaction/2"><code class="inline">Ecto.Repo.transaction/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update!/2" translate="no">update!(struct, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:update!/2"><code class="inline">Ecto.Repo.update!/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update/2" translate="no">update(struct, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:update/2"><code class="inline">Ecto.Repo.update/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update_all/3" translate="no">update_all(queryable, updates, opts \\ [])</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:update_all/3"><code class="inline">Ecto.Repo.update_all/3</code></a>.</p></div>
+
+      </div>
 
   </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:start_link/1"><code class="inline">Ecto.Repo.start_link/1</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#stop/1">stop(timeout \\ 5000)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:stop/1"><code class="inline">Ecto.Repo.stop/1</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#stream/2">stream(queryable, opts \\ [])</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:stream/2"><code class="inline">Ecto.Repo.stream/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#to_sql/2">to_sql(operation, queryable)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>A convenience function for SQL-based repositories that translates the given query to SQL.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#transaction/2">transaction(fun_or_multi, opts \\ [])</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:transaction/2"><code class="inline">Ecto.Repo.transaction/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#update/2">update(struct, opts \\ [])</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:update/2"><code class="inline">Ecto.Repo.update/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#update!/2">update!(struct, opts \\ [])</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:update!/2"><code class="inline">Ecto.Repo.update!/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#update_all/3">update_all(queryable, updates, opts \\ [])</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:update_all/3"><code class="inline">Ecto.Repo.update_all/3</code></a>.</p></div>
-
-</div>
-
-  </div>
-
-        </section>
+  </section>
 
 
-        <section id="functions" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#functions">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
 Functions
-          </h1>
-          <div class="functions-list">
+    </h1>
+    <div class="functions-list">
 <section class="detail" id="add_permission/3">
 
     <span id="add_permission/2"></span>
 
   <div class="detail-header">
     <a href="#add_permission/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">add_permission(query, permission_fn, skip_permission \\ false)</h1>
+    <h1 class="signature" translate="no">add_permission(query, permission_fn, skip_permission \\ false)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L300" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L307" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -631,14 +708,13 @@ Functions
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>add_permission(
-  <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(),
-  (<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t() -&gt; <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()),
+          <pre translate="no"><span class="attribute">@spec</span> add_permission(
+  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(),
+  (<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t() -&gt; <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()),
   <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()
-) :: <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
 
       </div>
 
@@ -652,13 +728,13 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <div class="detail-header">
     <a href="#aggregate/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">aggregate(queryable, aggregate, opts \\ [])</h1>
+    <h1 class="signature" translate="no">aggregate(queryable, aggregate, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -667,20 +743,20 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:aggregate/3"><code class="inline">Ecto.Repo.aggregate/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:aggregate/3"><code class="inline">Ecto.Repo.aggregate/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="aggregate/4">
 
   <div class="detail-header">
     <a href="#aggregate/4" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">aggregate(queryable, aggregate, field, opts)</h1>
+    <h1 class="signature" translate="no">aggregate(queryable, aggregate, field, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -689,7 +765,7 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:aggregate/4"><code class="inline">Ecto.Repo.aggregate/4</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:aggregate/4"><code class="inline">Ecto.Repo.aggregate/4</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="all/2">
@@ -698,13 +774,13 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <div class="detail-header">
     <a href="#all/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">all(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">all(queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -713,7 +789,29 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:all/2"><code class="inline">Ecto.Repo.all/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:all/2"><code class="inline">Ecto.Repo.all/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="checked_out?/0">
+
+  <div class="detail-header">
+    <a href="#checked_out?/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">checked_out?()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:checked_out?/0"><code class="inline">Ecto.Repo.checked_out?/0</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="checkout/2">
@@ -722,13 +820,13 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <div class="detail-header">
     <a href="#checkout/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">checkout(fun, opts \\ [])</h1>
+    <h1 class="signature" translate="no">checkout(fun, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -737,20 +835,20 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:checkout/2"><code class="inline">Ecto.Repo.checkout/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:checkout/2"><code class="inline">Ecto.Repo.checkout/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="child_spec/1">
 
   <div class="detail-header">
     <a href="#child_spec/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">child_spec(opts)</h1>
+    <h1 class="signature" translate="no">child_spec(opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -766,13 +864,13 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <div class="detail-header">
     <a href="#config/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">config()</h1>
+    <h1 class="signature" translate="no">config()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -781,7 +879,7 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:config/0"><code class="inline">Ecto.Repo.config/0</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:config/0"><code class="inline">Ecto.Repo.config/0</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="count_filter/4">
@@ -792,13 +890,13 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <div class="detail-header">
     <a href="#count_filter/4" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">count_filter(args \\ %{}, object, filter_with_fn, repo_opts \\ [])</h1>
+    <h1 class="signature" translate="no">count_filter(args \\ %{}, object, filter_with_fn, repo_opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L135" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L135" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -807,13 +905,12 @@ a context specific permissioning wrapper to add the actual clauses</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>count_filter(
+          <pre translate="no"><span class="attribute">@spec</span> count_filter(
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
-  (<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
+  (<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
   <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()
 ) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
 
@@ -824,43 +921,19 @@ the filter. Centralizing this code at the top level, to make things
 cleaner</p>
   </section>
 </section>
-<section class="detail" id="delete/2">
-
-    <span id="delete/1"></span>
-
-  <div class="detail-header">
-    <a href="#delete/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">delete(struct, opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:delete/2"><code class="inline">Ecto.Repo.delete/2</code></a>.</p>
-  </section>
-</section>
 <section class="detail" id="delete!/2">
 
     <span id="delete!/1"></span>
 
   <div class="detail-header">
     <a href="#delete!/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete!(struct, opts \\ [])</h1>
+    <h1 class="signature" translate="no">delete!(struct, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -869,7 +942,31 @@ cleaner</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:delete!/2"><code class="inline">Ecto.Repo.delete!/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:delete!/2"><code class="inline">Ecto.Repo.delete!/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="delete/2">
+
+    <span id="delete/1"></span>
+
+  <div class="detail-header">
+    <a href="#delete/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">delete(struct, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:delete/2"><code class="inline">Ecto.Repo.delete/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="delete_all/2">
@@ -878,13 +975,13 @@ cleaner</p>
 
   <div class="detail-header">
     <a href="#delete_all/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete_all(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">delete_all(queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -893,20 +990,20 @@ cleaner</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:delete_all/2"><code class="inline">Ecto.Repo.delete_all/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:delete_all/2"><code class="inline">Ecto.Repo.delete_all/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="delete_relationships_by_ids/2">
 
   <div class="detail-header">
     <a href="#delete_relationships_by_ids/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete_relationships_by_ids(object, fields)</h1>
+    <h1 class="signature" translate="no">delete_relationships_by_ids(object, fields)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L316" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L323" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -915,10 +1012,9 @@ cleaner</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>delete_relationships_by_ids(
+          <pre translate="no"><span class="attribute">@spec</span> delete_relationships_by_ids(
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
   {{<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()}, {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()]}}
 ) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(), nil | [<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()]}</pre>
@@ -935,13 +1031,13 @@ and hence more convenient to delete an entry via its object ids.</p>
 
   <div class="detail-header">
     <a href="#exists?/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">exists?(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">exists?(queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -950,7 +1046,7 @@ and hence more convenient to delete an entry via its object ids.</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:exists?/2"><code class="inline">Ecto.Repo.exists?/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:exists?/2"><code class="inline">Ecto.Repo.exists?/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="explain/3">
@@ -959,13 +1055,13 @@ and hence more convenient to delete an entry via its object ids.</p>
 
   <div class="detail-header">
     <a href="#explain/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">explain(operation, queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">explain(operation, queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -975,7 +1071,7 @@ and hence more convenient to delete an entry via its object ids.</p>
   <section class="docstring">
 
 <p>A convenience function for SQL-based repositories that executes an EXPLAIN statement or similar
-depending on the adapter to obtain statistics for the given query.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.5.4/Ecto.Adapters.SQL.html#explain/4"><code class="inline">Ecto.Adapters.SQL.explain/4</code></a> for more information.</p>
+depending on the adapter to obtain statistics for the given query.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.7.2/Ecto.Adapters.SQL.html#explain/4"><code class="inline">Ecto.Adapters.SQL.explain/4</code></a> for more information.</p>
   </section>
 </section>
 <section class="detail" id="fetch/3">
@@ -984,13 +1080,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#fetch/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">fetch(queryable, id, opts \\ [])</h1>
+    <h1 class="signature" translate="no">fetch(queryable, id, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L26" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L26" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -999,11 +1095,10 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>fetch(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()) ::
-  {:ok, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Schema.html#t:t/0">Ecto.Schema.t</a>()} | {:error, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> fetch(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Schema.html#t:t/0">Ecto.Schema.t</a>()} | {:error, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]}</pre>
 
       </div>
 
@@ -1016,13 +1111,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#fetch_by/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">fetch_by(queryable, clauses, opts \\ [])</h1>
+    <h1 class="signature" translate="no">fetch_by(queryable, clauses, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L38" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L38" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1031,11 +1126,10 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>fetch_by(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()) ::
-  {:ok, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Schema.html#t:t/0">Ecto.Schema.t</a>()} | {:error, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> fetch_by(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Schema.html#t:t/0">Ecto.Schema.t</a>()} | {:error, [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()]}</pre>
 
       </div>
 
@@ -1046,13 +1140,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#filter_with/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">filter_with(query, filter)</h1>
+    <h1 class="signature" translate="no">filter_with(query, filter)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L240" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L247" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1061,39 +1155,14 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>filter_with(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}) ::
-  <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> filter_with(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}) ::
+  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
 
       </div>
 
 <p>Add all the common filters here, rather than in each file</p>
-  </section>
-</section>
-<section class="detail" id="get/3">
-
-    <span id="get/2"></span>
-
-  <div class="detail-header">
-    <a href="#get/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">get(queryable, id, opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get/3"><code class="inline">Ecto.Repo.get/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="get!/3">
@@ -1102,13 +1171,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#get!/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get!(queryable, id, opts \\ [])</h1>
+    <h1 class="signature" translate="no">get!(queryable, id, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1117,22 +1186,22 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get!/3"><code class="inline">Ecto.Repo.get!/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get!/3"><code class="inline">Ecto.Repo.get!/3</code></a>.</p>
   </section>
 </section>
-<section class="detail" id="get_by/3">
+<section class="detail" id="get/3">
 
-    <span id="get_by/2"></span>
+    <span id="get/2"></span>
 
   <div class="detail-header">
-    <a href="#get_by/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#get/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_by(queryable, clauses, opts \\ [])</h1>
+    <h1 class="signature" translate="no">get(queryable, id, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1141,7 +1210,7 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get_by/3"><code class="inline">Ecto.Repo.get_by/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get/3"><code class="inline">Ecto.Repo.get/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="get_by!/3">
@@ -1150,13 +1219,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#get_by!/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_by!(queryable, clauses, opts \\ [])</h1>
+    <h1 class="signature" translate="no">get_by!(queryable, clauses, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1165,20 +1234,44 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get_by!/3"><code class="inline">Ecto.Repo.get_by!/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get_by!/3"><code class="inline">Ecto.Repo.get_by!/3</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="get_by/3">
+
+    <span id="get_by/2"></span>
+
+  <div class="detail-header">
+    <a href="#get_by/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_by(queryable, clauses, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get_by/3"><code class="inline">Ecto.Repo.get_by/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="get_dynamic_repo/0">
 
   <div class="detail-header">
     <a href="#get_dynamic_repo/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_dynamic_repo()</h1>
+    <h1 class="signature" translate="no">get_dynamic_repo()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1187,20 +1280,20 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:get_dynamic_repo/0"><code class="inline">Ecto.Repo.get_dynamic_repo/0</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:get_dynamic_repo/0"><code class="inline">Ecto.Repo.get_dynamic_repo/0</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="in_transaction?/0">
 
   <div class="detail-header">
     <a href="#in_transaction?/0" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">in_transaction?()</h1>
+    <h1 class="signature" translate="no">in_transaction?()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1209,31 +1302,7 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:in_transaction?/0"><code class="inline">Ecto.Repo.in_transaction?/0</code></a>.</p>
-  </section>
-</section>
-<section class="detail" id="insert/2">
-
-    <span id="insert/1"></span>
-
-  <div class="detail-header">
-    <a href="#insert/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">insert(struct, opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert/2"><code class="inline">Ecto.Repo.insert/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:in_transaction?/0"><code class="inline">Ecto.Repo.in_transaction?/0</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="insert!/2">
@@ -1242,13 +1311,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#insert!/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">insert!(struct, opts \\ [])</h1>
+    <h1 class="signature" translate="no">insert!(struct, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1257,7 +1326,31 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert!/2"><code class="inline">Ecto.Repo.insert!/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert!/2"><code class="inline">Ecto.Repo.insert!/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="insert/2">
+
+    <span id="insert/1"></span>
+
+  <div class="detail-header">
+    <a href="#insert/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">insert(struct, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert/2"><code class="inline">Ecto.Repo.insert/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="insert_all/3">
@@ -1266,13 +1359,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#insert_all/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">insert_all(schema_or_source, entries, opts \\ [])</h1>
+    <h1 class="signature" translate="no">insert_all(schema_or_source, entries, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1281,31 +1374,7 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert_all/3"><code class="inline">Ecto.Repo.insert_all/3</code></a>.</p>
-  </section>
-</section>
-<section class="detail" id="insert_or_update/2">
-
-    <span id="insert_or_update/1"></span>
-
-  <div class="detail-header">
-    <a href="#insert_or_update/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">insert_or_update(changeset, opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert_or_update/2"><code class="inline">Ecto.Repo.insert_or_update/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert_all/3"><code class="inline">Ecto.Repo.insert_all/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="insert_or_update!/2">
@@ -1314,13 +1383,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#insert_or_update!/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">insert_or_update!(changeset, opts \\ [])</h1>
+    <h1 class="signature" translate="no">insert_or_update!(changeset, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1329,7 +1398,31 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:insert_or_update!/2"><code class="inline">Ecto.Repo.insert_or_update!/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert_or_update!/2"><code class="inline">Ecto.Repo.insert_or_update!/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="insert_or_update/2">
+
+    <span id="insert_or_update/1"></span>
+
+  <div class="detail-header">
+    <a href="#insert_or_update/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">insert_or_update(changeset, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:insert_or_update/2"><code class="inline">Ecto.Repo.insert_or_update/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="label_id_map/4">
@@ -1338,13 +1431,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#label_id_map/4" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">label_id_map(queryable, values, organization_id, field \\ :label)</h1>
+    <h1 class="signature" translate="no">label_id_map(queryable, values, organization_id, field \\ :label)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L51" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L51" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1353,10 +1446,9 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>label_id_map(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: %{
+          <pre translate="no"><span class="attribute">@spec</span> label_id_map(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), [<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: %{
   required(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()
 }</pre>
 
@@ -1369,13 +1461,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#limit_offset/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">limit_offset(query, opts)</h1>
+    <h1 class="signature" translate="no">limit_offset(query, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L145" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L145" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1384,10 +1476,9 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>limit_offset(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> limit_offset(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
 
       </div>
 
@@ -1402,13 +1493,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <div class="detail-header">
     <a href="#list_filter/5" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ [])</h1>
+    <h1 class="signature" translate="no">list_filter(args \\ %{}, object, opts_with_fn, filter_with_fn, repo_opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L75" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L75" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1417,14 +1508,13 @@ depending on the adapter to obtain statistics for the given query.</p><p>See <a 
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>list_filter(
+          <pre translate="no"><span class="attribute">@spec</span> list_filter(
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
-  (<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
-  (<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
+  (<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
+  (<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()),
   <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()
 ) :: [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()]</pre>
 
@@ -1441,13 +1531,13 @@ cleaner</p>
 
   <div class="detail-header">
     <a href="#list_filter_query/4" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_filter_query(args \\ %{}, object, opts_with_fn, filter_with_fn)</h1>
+    <h1 class="signature" translate="no">list_filter_query(args \\ %{}, object, opts_with_fn, filter_with_fn)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L110" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L110" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1456,16 +1546,15 @@ cleaner</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>list_filter_query(
+          <pre translate="no"><span class="attribute">@spec</span> list_filter_query(
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(),
-  (<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>())
+  (<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>())
   | nil,
-  (<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>())
-) :: <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+  (<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), %{optional(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) =&gt; <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} -&gt; <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>())
+) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
 
       </div>
 
@@ -1477,13 +1566,13 @@ layer permissioning on top of the query</p>
 
   <div class="detail-header">
     <a href="#load/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">load(schema_or_types, data)</h1>
+    <h1 class="signature" translate="no">load(schema_or_types, data)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1492,31 +1581,7 @@ layer permissioning on top of the query</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:load/2"><code class="inline">Ecto.Repo.load/2</code></a>.</p>
-  </section>
-</section>
-<section class="detail" id="one/2">
-
-    <span id="one/1"></span>
-
-  <div class="detail-header">
-    <a href="#one/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">one(queryable, opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:one/2"><code class="inline">Ecto.Repo.one/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:load/2"><code class="inline">Ecto.Repo.load/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="one!/2">
@@ -1525,13 +1590,13 @@ layer permissioning on top of the query</p>
 
   <div class="detail-header">
     <a href="#one!/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">one!(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">one!(queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1540,20 +1605,44 @@ layer permissioning on top of the query</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:one!/2"><code class="inline">Ecto.Repo.one!/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:one!/2"><code class="inline">Ecto.Repo.one!/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="one/2">
+
+    <span id="one/1"></span>
+
+  <div class="detail-header">
+    <a href="#one/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">one(queryable, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:one/2"><code class="inline">Ecto.Repo.one/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="opts_with_field/3">
 
   <div class="detail-header">
     <a href="#opts_with_field/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">opts_with_field(query, opts, field)</h1>
+    <h1 class="signature" translate="no">opts_with_field(query, opts, field)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L174" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L174" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1562,14 +1651,13 @@ layer permissioning on top of the query</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>opts_with_field(
-  <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(),
+          <pre translate="no"><span class="attribute">@spec</span> opts_with_field(
+  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(),
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
-  :name | :body | :label | :inserted_at
-) :: <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+  :name | :body | :label | :inserted_at | :id
+) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
 
       </div>
 
@@ -1582,13 +1670,13 @@ data types)</p>
 
   <div class="detail-header">
     <a href="#opts_with_nil/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">opts_with_nil(query, opts)</h1>
+    <h1 class="signature" translate="no">opts_with_nil(query, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L162" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L162" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1597,10 +1685,9 @@ data types)</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>opts_with_nil(<a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> opts_with_nil(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Queryable.html#t:t/0">Ecto.Queryable.t</a>()</pre>
 
       </div>
 
@@ -1613,13 +1700,13 @@ data types)</p>
 
   <div class="detail-header">
     <a href="#preload/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">preload(struct_or_structs_or_nil, preloads, opts \\ [])</h1>
+    <h1 class="signature" translate="no">preload(struct_or_structs_or_nil, preloads, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1628,20 +1715,20 @@ data types)</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:preload/3"><code class="inline">Ecto.Repo.preload/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:preload/3"><code class="inline">Ecto.Repo.preload/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="put_dynamic_repo/1">
 
   <div class="detail-header">
     <a href="#put_dynamic_repo/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">put_dynamic_repo(dynamic)</h1>
+    <h1 class="signature" translate="no">put_dynamic_repo(dynamic)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1650,33 +1737,7 @@ data types)</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:put_dynamic_repo/1"><code class="inline">Ecto.Repo.put_dynamic_repo/1</code></a>.</p>
-  </section>
-</section>
-<section class="detail" id="query/3">
-
-    <span id="query/1"></span>
-
-    <span id="query/2"></span>
-
-  <div class="detail-header">
-    <a href="#query/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">query(sql, params \\ [], opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>A convenience function for SQL-based repositories that executes the given query.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.5.4/Ecto.Adapters.SQL.html#query/4"><code class="inline">Ecto.Adapters.SQL.query/4</code></a> for more information.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:put_dynamic_repo/1"><code class="inline">Ecto.Repo.put_dynamic_repo/1</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="query!/3">
@@ -1687,13 +1748,13 @@ data types)</p>
 
   <div class="detail-header">
     <a href="#query!/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">query!(sql, params \\ [], opts \\ [])</h1>
+    <h1 class="signature" translate="no">query!(sql, params \\ [], opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1702,22 +1763,24 @@ data types)</p>
 
   <section class="docstring">
 
-<p>A convenience function for SQL-based repositories that executes the given query.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.5.4/Ecto.Adapters.SQL.html#query!/4"><code class="inline">Ecto.Adapters.SQL.query!/4</code></a> for more information.</p>
+<p>A convenience function for SQL-based repositories that executes the given query.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.7.2/Ecto.Adapters.SQL.html#query!/4"><code class="inline">Ecto.Adapters.SQL.query!/4</code></a> for more information.</p>
   </section>
 </section>
-<section class="detail" id="reload/2">
+<section class="detail" id="query/3">
 
-    <span id="reload/1"></span>
+    <span id="query/1"></span>
+
+    <span id="query/2"></span>
 
   <div class="detail-header">
-    <a href="#reload/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#query/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">reload(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">query(sql, params \\ [], opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1726,7 +1789,7 @@ data types)</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:reload/2"><code class="inline">Ecto.Repo.reload/2</code></a>.</p>
+<p>A convenience function for SQL-based repositories that executes the given query.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.7.2/Ecto.Adapters.SQL.html#query/4"><code class="inline">Ecto.Adapters.SQL.query/4</code></a> for more information.</p>
   </section>
 </section>
 <section class="detail" id="reload!/2">
@@ -1735,13 +1798,13 @@ data types)</p>
 
   <div class="detail-header">
     <a href="#reload!/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">reload!(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">reload!(queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1750,20 +1813,44 @@ data types)</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:reload!/2"><code class="inline">Ecto.Repo.reload!/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:reload!/2"><code class="inline">Ecto.Repo.reload!/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="reload/2">
+
+    <span id="reload/1"></span>
+
+  <div class="detail-header">
+    <a href="#reload/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">reload(queryable, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:reload/2"><code class="inline">Ecto.Repo.reload/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="rollback/1">
 
   <div class="detail-header">
     <a href="#rollback/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">rollback(value)</h1>
+    <h1 class="signature" translate="no">rollback(value)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1772,14 +1859,13 @@ data types)</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>rollback(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> rollback(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">no_return</a>()</pre>
 
       </div>
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:rollback/1"><code class="inline">Ecto.Repo.rollback/1</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:rollback/1"><code class="inline">Ecto.Repo.rollback/1</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="skip_permission?/1">
@@ -1788,13 +1874,13 @@ data types)</p>
 
   <div class="detail-header">
     <a href="#skip_permission?/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">skip_permission?(user \\ get_current_user())</h1>
+    <h1 class="signature" translate="no">skip_permission?(user \\ get_current_user())</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L286" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L293" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1803,10 +1889,9 @@ data types)</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>skip_permission?(Glific.Users.User.t() | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> skip_permission?(Glific.Users.User.t() | nil) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
 
       </div>
 
@@ -1820,13 +1905,13 @@ in many a case</p>
 
   <div class="detail-header">
     <a href="#start_link/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">start_link(opts \\ [])</h1>
+    <h1 class="signature" translate="no">start_link(opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1835,7 +1920,7 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:start_link/1"><code class="inline">Ecto.Repo.start_link/1</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:start_link/1"><code class="inline">Ecto.Repo.start_link/1</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="stop/1">
@@ -1844,13 +1929,13 @@ in many a case</p>
 
   <div class="detail-header">
     <a href="#stop/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">stop(timeout \\ 5000)</h1>
+    <h1 class="signature" translate="no">stop(timeout \\ 5000)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1859,7 +1944,7 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:stop/1"><code class="inline">Ecto.Repo.stop/1</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:stop/1"><code class="inline">Ecto.Repo.stop/1</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="stream/2">
@@ -1868,13 +1953,13 @@ in many a case</p>
 
   <div class="detail-header">
     <a href="#stream/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">stream(queryable, opts \\ [])</h1>
+    <h1 class="signature" translate="no">stream(queryable, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1883,20 +1968,20 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:stream/2"><code class="inline">Ecto.Repo.stream/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:stream/2"><code class="inline">Ecto.Repo.stream/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="to_sql/2">
 
   <div class="detail-header">
     <a href="#to_sql/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">to_sql(operation, queryable)</h1>
+    <h1 class="signature" translate="no">to_sql(operation, queryable)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1905,7 +1990,7 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>A convenience function for SQL-based repositories that translates the given query to SQL.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.5.4/Ecto.Adapters.SQL.html#to_sql/3"><code class="inline">Ecto.Adapters.SQL.to_sql/3</code></a> for more information.</p>
+<p>A convenience function for SQL-based repositories that translates the given query to SQL.</p><p>See <a href="https://hexdocs.pm/ecto_sql/3.7.2/Ecto.Adapters.SQL.html#to_sql/3"><code class="inline">Ecto.Adapters.SQL.to_sql/3</code></a> for more information.</p>
   </section>
 </section>
 <section class="detail" id="transaction/2">
@@ -1914,13 +1999,13 @@ in many a case</p>
 
   <div class="detail-header">
     <a href="#transaction/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">transaction(fun_or_multi, opts \\ [])</h1>
+    <h1 class="signature" translate="no">transaction(fun_or_multi, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1929,31 +2014,7 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:transaction/2"><code class="inline">Ecto.Repo.transaction/2</code></a>.</p>
-  </section>
-</section>
-<section class="detail" id="update/2">
-
-    <span id="update/1"></span>
-
-  <div class="detail-header">
-    <a href="#update/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature">update(struct, opts \\ [])</h1>
-
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:update/2"><code class="inline">Ecto.Repo.update/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:transaction/2"><code class="inline">Ecto.Repo.transaction/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="update!/2">
@@ -1962,13 +2023,13 @@ in many a case</p>
 
   <div class="detail-header">
     <a href="#update!/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update!(struct, opts \\ [])</h1>
+    <h1 class="signature" translate="no">update!(struct, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -1977,7 +2038,31 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:update!/2"><code class="inline">Ecto.Repo.update!/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:update!/2"><code class="inline">Ecto.Repo.update!/2</code></a>.</p>
+  </section>
+</section>
+<section class="detail" id="update/2">
+
+    <span id="update/1"></span>
+
+  <div class="detail-header">
+    <a href="#update/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">update(struct, opts \\ [])</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:update/2"><code class="inline">Ecto.Repo.update/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="update_all/3">
@@ -1986,13 +2071,13 @@ in many a case</p>
 
   <div class="detail-header">
     <a href="#update_all/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update_all(queryable, updates, opts \\ [])</h1>
+    <h1 class="signature" translate="no">update_all(queryable, updates, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/repo.ex#L17" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -2001,42 +2086,35 @@ in many a case</p>
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Repo.html#c:update_all/3"><code class="inline">Ecto.Repo.update_all/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Repo.html#c:update_all/3"><code class="inline">Ecto.Repo.update_all/3</code></a>.</p>
   </section>
 </section>
 
-          </div>
-        </section>
+    </div>
+  </section>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/repo.ex">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>

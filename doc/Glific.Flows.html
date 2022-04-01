@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>Glific.Flows — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>Glific.Flows — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -79,262 +86,370 @@ Glific
   <div class="content-outer">
     <div id="content" class="content-inner">
 
-      <h1>
-Glific.Flows <small class="app-vsn">(Glific v1.3.3)</small>
-
-          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L1" title="View Source" class="view-source" rel="help">
-            <span class="icon-code" aria-hidden="true"></span>
-            <span class="sr-only">View Source</span>
-          </a>
-
-      </h1>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-        <section id="moduledoc">
+    <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">Glific.Flows</span> 
+  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
 <p>The Flows context.</p>
-        </section>
+  </section>
 
 
-        <section id="summary" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#summary">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
-            Summary
-          </h1>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#build_flow_objects/4">build_flow_objects(json, uuid_map, process_fn, object \\ nil)</a>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#build_flow_objects/4" translate="no">build_flow_objects(json, uuid_map, process_fn, object \\ nil)</a>
 
-    <div class="summary-synopsis"><p>A generic json traversal and building the structure for a specific flow schema
+        </div>
+
+          <div class="summary-synopsis"><p>A generic json traversal and building the structure for a specific flow schema
 which is an array of objects in the json file. Used for Node/Actions, Node/Exits,
 Router/Cases, and Router/Categories</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#change_flow/2">change_flow(flow, attrs \\ %{})</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#change_flow/2" translate="no">change_flow(flow, attrs \\ %{})</a>
 
-    <div class="summary-synopsis"><p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking flow changes.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#check_required_fields/2">check_required_fields(json, required)</a>
+          <div class="summary-synopsis"><p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking flow changes.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Check the required fields for all flow objects. If missing, raise an exception</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#check_required_fields/2" translate="no">check_required_fields(json, required)</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#copy_flow/2">copy_flow(flow, attrs)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Check the required fields for all flow objects. If missing, raise an exception</p></div>
 
-    <div class="summary-synopsis"><p>Make a copy of a flow</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#count_flows/1">count_flows(args)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#copy_flow/2" translate="no">copy_flow(flow, attrs)</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Return the count of tags, using the same filter as list_tags</p></div>
+          <div class="summary-synopsis"><p>Make a copy of a flow</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#create_flow/1">create_flow(attrs)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#count_flows/1" translate="no">count_flows(args)</a>
 
-    <div class="summary-synopsis"><p>Creates a flow.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#create_flow_revision/1">create_flow_revision(definition)</a>
+          <div class="summary-synopsis"><p>Return the count of flows, using the same filter as list_flows</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Save new revision for the flow</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#create_flow/1" translate="no">create_flow(attrs)</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#delete_flow/1">delete_flow(flow)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Creates a flow.</p></div>
 
-    <div class="summary-synopsis"><p>Deletes a flow.</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#flow_activated/3">flow_activated(flow_id, contact_id, since)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#create_flow_revision/1" translate="no">create_flow_revision(definition)</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Check if a flow has been activated since the time sent as a parameter
+          <div class="summary-synopsis"><p>Save new revision for the flow</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#delete_flow/1" translate="no">delete_flow(flow)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Deletes a flow.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#export_flow/1" translate="no">export_flow(flow_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  Generate a json map with all the flows related fields.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#export_flow_details/2" translate="no">export_flow_details(flow_uuid, results)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  process subflows and check if there is more subflows in it.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#fetch_flow/1" translate="no">fetch_flow(id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Fetches a single flow</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#flow_activated/3" translate="no">flow_activated(flow_id, contact_id, since)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Check if a flow has been activated since the time sent as a parameter
 e.g. outofoffice will check if that flow was activated in the last 24 hours
 daily/weekly will check since start of day/week, etc</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#flow_keywords_map/1">flow_keywords_map(organization_id)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#flow_keywords_map/1" translate="no">flow_keywords_map(organization_id)</a>
 
-    <div class="summary-synopsis"><p>Create a map of keywords that map to flow ids for each
+        </div>
+
+          <div class="summary-synopsis"><p>Create a map of keywords that map to flow ids for each
 active organization. Also cache this value including the outoffice
 shortcode</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_cached_flow/2">get_cached_flow(organization_id, key)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_cached_flow/2" translate="no">get_cached_flow(organization_id, key)</a>
 
-    <div class="summary-synopsis"><p>A helper function to interact with the Caching API and get the cached flow.
+        </div>
+
+          <div class="summary-synopsis"><p>A helper function to interact with the Caching API and get the cached flow.
 It will also set the loaded flow to cache in case it does not exists.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_flow!/1">get_flow!(id)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_flow!/1" translate="no">get_flow!(id)</a>
 
-    <div class="summary-synopsis"><p>Gets a single flow.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_flow_revision/2">get_flow_revision(flow_uuid, revision_id)</a>
+          <div class="summary-synopsis"><p>Gets a single flow.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Get specific flow revision by number</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_flow_revision/2" translate="no">get_flow_revision(flow_uuid, revision_id)</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#get_flow_revision_list/1">get_flow_revision_list(flow_uuid)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Get specific flow revision by number</p></div>
 
-    <div class="summary-synopsis"><p>Get a list of all the revisions based on a flow UUID</p></div>
+      </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#is_optin_flow?/1">is_optin_flow?(flow)</a>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_flow_revision_list/1" translate="no">get_flow_revision_list(flow_uuid)</a>
 
-  </div>
+        </div>
 
-    <div class="summary-synopsis"><p>Check if the flow is optin flow. Currently we are
+          <div class="summary-synopsis"><p>Get a list of all the revisions based on a flow UUID</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_sub_flows/1" translate="no">get_sub_flows(nodes)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  Extract all the subflows form the parent flow definition.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#import_flow/2" translate="no">import_flow(import_flow, organization_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>import a flow from json</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#init_export_flow/2" translate="no">init_export_flow(results, flow_uuid)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  Process the flows and get all the subflow definition.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#is_media_type?/1" translate="no">is_media_type?(type)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Check if the type is a media type we handle in flows</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#is_optin_flow?/1" translate="no">is_optin_flow?(flow)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Check if the flow is optin flow. Currently we are
 checking based on the optin keyword only.</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#list_flows/1">list_flows(args)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list_flows/1" translate="no">list_flows(args)</a>
 
-    <div class="summary-synopsis"><p>Returns the list of flows.</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#publish_flow/1">publish_flow(flow)</a>
+          <div class="summary-synopsis"><p>Returns the list of flows.</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Update latest flow revision status as published and increment the version
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#publish_flow/1" translate="no">publish_flow(flow)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Update latest flow revision status as published and increment the version
 Update cached flow definition</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#start_contact_flow/2">start_contact_flow(flow, contact)</a>
+      </div>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#start_contact_flow/2" translate="no">start_contact_flow(flow_id, contact)</a>
 
-    <div class="summary-synopsis"><p>Start flow for a contact</p></div>
+        </div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#start_group_flow/2">start_group_flow(flow, group)</a>
+          <div class="summary-synopsis"><p>Start flow for a contact</p></div>
 
-  </div>
+      </div>
 
-    <div class="summary-synopsis"><p>Start flow for contacts of a group</p></div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#start_group_flow/2" translate="no">start_group_flow(flow, group)</a>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#update_cached_flow/2">update_cached_flow(flow, status)</a>
+        </div>
 
-  </div>
+          <div class="summary-synopsis"><p>Start flow for contacts of a group</p></div>
 
-    <div class="summary-synopsis"><p>Update the cached flow from db. This typically happens when the flow definition is updated
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#terminate_contact_flows?/1" translate="no">terminate_contact_flows?(contact_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p> Terminate all flows for a contact</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update_cached_flow/2" translate="no">update_cached_flow(flow, status)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Update the cached flow from db. This typically happens when the flow definition is updated
 via the UI</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#update_flow/2">update_flow(flow, attrs)</a>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update_flow/2" translate="no">update_flow(flow, attrs)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Updates a flow.</p></div>
+
+      </div>
 
   </div>
 
-    <div class="summary-synopsis"><p>Updates a flow.</p></div>
-
-</div>
-
-  </div>
-
-        </section>
+  </section>
 
 
-        <section id="functions" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#functions">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
 Functions
-          </h1>
-          <div class="functions-list">
+    </h1>
+    <div class="functions-list">
 <section class="detail" id="build_flow_objects/4">
 
     <span id="build_flow_objects/3"></span>
 
   <div class="detail-header">
     <a href="#build_flow_objects/4" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">build_flow_objects(json, uuid_map, process_fn, object \\ nil)</h1>
+    <h1 class="signature" translate="no">build_flow_objects(json, uuid_map, process_fn, object \\ nil)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L364" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L392" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -343,10 +458,14 @@ Functions
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>build_flow_objects(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), (<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>() -&gt; {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()) ::
+          <pre translate="no"><span class="attribute">@spec</span> build_flow_objects(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(),
+  (<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>() -&gt; {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()
+) ::
   {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()}</pre>
 
       </div>
@@ -362,13 +481,13 @@ Router/Cases, and Router/Categories</p>
 
   <div class="detail-header">
     <a href="#change_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">change_flow(flow, attrs \\ %{})</h1>
+    <h1 class="signature" translate="no">change_flow(flow, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L242" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L270" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -377,32 +496,33 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>change_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
 <p>Returns an <code class="inline">%Ecto.Changeset{}</code> for tracking flow changes.</p><h2 id="change_flow/2-examples" class="section-heading">
-  <a href="#change_flow/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#change_flow/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
-<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">change_flow</span><span class="p" data-group-id="8897448328-1">(</span><span class="n">flow</span><span class="p" data-group-id="8897448328-1">)</span><span class="w">
-</span><span class="p" data-group-id="8897448328-2">%</span><span class="nc" data-group-id="8897448328-2">Ecto.Changeset</span><span class="p" data-group-id="8897448328-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8897448328-3">%</span><span class="nc" data-group-id="8897448328-3">Flow</span><span class="p" data-group-id="8897448328-3">{</span><span class="p" data-group-id="8897448328-3">}</span><span class="p" data-group-id="8897448328-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_flow</span><span class="p" data-group-id="6099212768-1">(</span><span class="n">flow</span><span class="p" data-group-id="6099212768-1">)</span><span class="w">
+</span><span class="p" data-group-id="6099212768-2">%</span><span class="nc" data-group-id="6099212768-2">Ecto.Changeset</span><span class="p" data-group-id="6099212768-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6099212768-3">%</span><span class="nc" data-group-id="6099212768-3">Flow</span><span class="p" data-group-id="6099212768-3">{</span><span class="p" data-group-id="6099212768-3">}</span><span class="p" data-group-id="6099212768-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="check_required_fields/2">
 
   <div class="detail-header">
     <a href="#check_required_fields/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">check_required_fields(json, required)</h1>
+    <h1 class="signature" translate="no">check_required_fields(json, required)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L342" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L370" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -411,10 +531,9 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>check_required_fields(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()]) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> check_required_fields(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()]) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
 
       </div>
 
@@ -425,13 +544,13 @@ Router/Cases, and Router/Categories</p>
 
   <div class="detail-header">
     <a href="#copy_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">copy_flow(flow, attrs)</h1>
+    <h1 class="signature" translate="no">copy_flow(flow, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L557" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L600" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -440,10 +559,9 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>copy_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+          <pre translate="no"><span class="attribute">@spec</span> copy_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
   {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
@@ -455,13 +573,13 @@ Router/Cases, and Router/Categories</p>
 
   <div class="detail-header">
     <a href="#count_flows/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">count_flows(args)</h1>
+    <h1 class="signature" translate="no">count_flows(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L122" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L136" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -470,27 +588,26 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>count_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> count_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
 
       </div>
 
-<p>Return the count of tags, using the same filter as list_tags</p>
+<p>Return the count of flows, using the same filter as list_flows</p>
   </section>
 </section>
 <section class="detail" id="create_flow/1">
 
   <div class="detail-header">
     <a href="#create_flow/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_flow(attrs)</h1>
+    <h1 class="signature" translate="no">create_flow(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L159" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L191" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -499,36 +616,37 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>create_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> create_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
 <p>Creates a flow.</p><h2 id="create_flow/1-examples" class="section-heading">
-  <a href="#create_flow/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#create_flow/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
-<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="8892163749-1">(</span><span class="p" data-group-id="8892163749-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8892163749-2">}</span><span class="p" data-group-id="8892163749-1">)</span><span class="w">
-</span><span class="p" data-group-id="8892163749-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8892163749-4">%</span><span class="nc" data-group-id="8892163749-4">Flow</span><span class="p" data-group-id="8892163749-4">{</span><span class="p" data-group-id="8892163749-4">}</span><span class="p" data-group-id="8892163749-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="4488523719-1">(</span><span class="p" data-group-id="4488523719-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4488523719-2">}</span><span class="p" data-group-id="4488523719-1">)</span><span class="w">
+</span><span class="p" data-group-id="4488523719-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4488523719-4">%</span><span class="nc" data-group-id="4488523719-4">Flow</span><span class="p" data-group-id="4488523719-4">{</span><span class="p" data-group-id="4488523719-4">}</span><span class="p" data-group-id="4488523719-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="8892163749-5">(</span><span class="p" data-group-id="8892163749-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8892163749-6">}</span><span class="p" data-group-id="8892163749-5">)</span><span class="w">
-</span><span class="p" data-group-id="8892163749-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8892163749-8">%</span><span class="nc" data-group-id="8892163749-8">Ecto.Changeset</span><span class="p" data-group-id="8892163749-8">{</span><span class="p" data-group-id="8892163749-8">}</span><span class="p" data-group-id="8892163749-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="4488523719-5">(</span><span class="p" data-group-id="4488523719-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4488523719-6">}</span><span class="p" data-group-id="4488523719-5">)</span><span class="w">
+</span><span class="p" data-group-id="4488523719-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4488523719-8">%</span><span class="nc" data-group-id="4488523719-8">Ecto.Changeset</span><span class="p" data-group-id="4488523719-8">{</span><span class="p" data-group-id="4488523719-8">}</span><span class="p" data-group-id="4488523719-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_flow_revision/1">
 
   <div class="detail-header">
     <a href="#create_flow_revision/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_flow_revision(definition)</h1>
+    <h1 class="signature" translate="no">create_flow_revision(definition)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L315" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L343" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -537,10 +655,9 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>create_flow_revision(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="Glific.Flows.FlowRevision.html#t:t/0">Glific.Flows.FlowRevision.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> create_flow_revision(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="Glific.Flows.FlowRevision.html#t:t/0">Glific.Flows.FlowRevision.t</a>()</pre>
 
       </div>
 
@@ -551,13 +668,13 @@ Router/Cases, and Router/Categories</p>
 
   <div class="detail-header">
     <a href="#delete_flow/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">delete_flow(flow)</h1>
+    <h1 class="signature" translate="no">delete_flow(flow)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L228" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L256" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -566,36 +683,131 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>delete_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) ::
-  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> delete_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) ::
+  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
 <p>Deletes a flow.</p><h2 id="delete_flow/1-examples" class="section-heading">
-  <a href="#delete_flow/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#delete_flow/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
-<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="5630133927-1">(</span><span class="n">flow</span><span class="p" data-group-id="5630133927-1">)</span><span class="w">
-</span><span class="p" data-group-id="5630133927-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5630133927-3">%</span><span class="nc" data-group-id="5630133927-3">Flow</span><span class="p" data-group-id="5630133927-3">{</span><span class="p" data-group-id="5630133927-3">}</span><span class="p" data-group-id="5630133927-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="0352186017-1">(</span><span class="n">flow</span><span class="p" data-group-id="0352186017-1">)</span><span class="w">
+</span><span class="p" data-group-id="0352186017-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0352186017-3">%</span><span class="nc" data-group-id="0352186017-3">Flow</span><span class="p" data-group-id="0352186017-3">{</span><span class="p" data-group-id="0352186017-3">}</span><span class="p" data-group-id="0352186017-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="5630133927-4">(</span><span class="n">flow</span><span class="p" data-group-id="5630133927-4">)</span><span class="w">
-</span><span class="p" data-group-id="5630133927-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5630133927-6">%</span><span class="nc" data-group-id="5630133927-6">Ecto.Changeset</span><span class="p" data-group-id="5630133927-6">{</span><span class="p" data-group-id="5630133927-6">}</span><span class="p" data-group-id="5630133927-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="0352186017-4">(</span><span class="n">flow</span><span class="p" data-group-id="0352186017-4">)</span><span class="w">
+</span><span class="p" data-group-id="0352186017-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0352186017-6">%</span><span class="nc" data-group-id="0352186017-6">Ecto.Changeset</span><span class="p" data-group-id="0352186017-6">{</span><span class="p" data-group-id="0352186017-6">}</span><span class="p" data-group-id="0352186017-5">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="export_flow/1">
+
+  <div class="detail-header">
+    <a href="#export_flow/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">export_flow(flow_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L851" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> export_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>  Generate a json map with all the flows related fields.</p>
+  </section>
+</section>
+<section class="detail" id="export_flow_details/2">
+
+  <div class="detail-header">
+    <a href="#export_flow_details/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">export_flow_details(flow_uuid, results)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L869" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> export_flow_details(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>  process subflows and check if there is more subflows in it.</p>
+  </section>
+</section>
+<section class="detail" id="fetch_flow/1">
+
+  <div class="detail-header">
+    <a href="#fetch_flow/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">fetch_flow(id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L175" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> fetch_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
+      </div>
+
+<p>Fetches a single flow</p><p>Returns <code class="inline">Resource not found</code> if the Interactive Template does not exist.</p><h2 id="fetch_flow/1-examples" class="section-heading">
+  <a href="#fetch_flow/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">fetch_interactive_template</span><span class="p" data-group-id="8545327007-1">(</span><span class="mi">123</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="8545327007-1">)</span><span class="w">
+  </span><span class="p" data-group-id="8545327007-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8545327007-3">%</span><span class="nc" data-group-id="8545327007-3">Flow</span><span class="p" data-group-id="8545327007-3">{</span><span class="p" data-group-id="8545327007-3">}</span><span class="p" data-group-id="8545327007-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">fetch_interactive_template</span><span class="p" data-group-id="8545327007-4">(</span><span class="mi">456</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="8545327007-4">)</span><span class="w">
+  </span><span class="p" data-group-id="8545327007-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8545327007-6">[</span><span class="s">&quot;Elixir.Glific.Flows.Flow&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Resource not found&quot;</span><span class="p" data-group-id="8545327007-6">]</span><span class="p" data-group-id="8545327007-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="flow_activated/3">
 
   <div class="detail-header">
     <a href="#flow_activated/3" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">flow_activated(flow_id, contact_id, since)</h1>
+    <h1 class="signature" translate="no">flow_activated(flow_id, contact_id, since)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L445" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L473" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -604,10 +816,9 @@ Router/Cases, and Router/Categories</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>flow_activated(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> flow_activated(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
 
       </div>
 
@@ -620,13 +831,13 @@ daily/weekly will check since start of day/week, etc</p>
 
   <div class="detail-header">
     <a href="#flow_keywords_map/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">flow_keywords_map(organization_id)</h1>
+    <h1 class="signature" translate="no">flow_keywords_map(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L606" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L650" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -635,10 +846,9 @@ daily/weekly will check since start of day/week, etc</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>flow_keywords_map(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> flow_keywords_map(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
 
       </div>
 
@@ -651,13 +861,13 @@ shortcode</p>
 
   <div class="detail-header">
     <a href="#get_cached_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_cached_flow(organization_id, key)</h1>
+    <h1 class="signature" translate="no">get_cached_flow(organization_id, key)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L416" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L444" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -666,10 +876,9 @@ shortcode</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>get_cached_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}) ::
+          <pre translate="no"><span class="attribute">@spec</span> get_cached_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}) ::
   {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
@@ -682,13 +891,13 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <div class="detail-header">
     <a href="#get_flow!/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_flow!(id)</h1>
+    <h1 class="signature" translate="no">get_flow!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L140" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L154" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -697,21 +906,22 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>get_flow!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> get_flow!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()</pre>
 
       </div>
 
-<p>Gets a single flow.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Flow does not exist.</p><h2 id="get_flow!/1-examples" class="section-heading">
-  <a href="#get_flow!/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+<p>Gets a single flow.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Flow does not exist.</p><h2 id="get_flow!/1-examples" class="section-heading">
+  <a href="#get_flow!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
-<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="3375011693-1">(</span><span class="mi">123</span><span class="p" data-group-id="3375011693-1">)</span><span class="w">
-</span><span class="p" data-group-id="3375011693-2">%</span><span class="nc" data-group-id="3375011693-2">Flow</span><span class="p" data-group-id="3375011693-2">{</span><span class="p" data-group-id="3375011693-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="4698844424-1">(</span><span class="mi">123</span><span class="p" data-group-id="4698844424-1">)</span><span class="w">
+</span><span class="p" data-group-id="4698844424-2">%</span><span class="nc" data-group-id="4698844424-2">Flow</span><span class="p" data-group-id="4698844424-2">{</span><span class="p" data-group-id="4698844424-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="3375011693-3">(</span><span class="mi">456</span><span class="p" data-group-id="3375011693-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="4698844424-3">(</span><span class="mi">456</span><span class="p" data-group-id="4698844424-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -719,13 +929,13 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <div class="detail-header">
     <a href="#get_flow_revision/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_flow_revision(flow_uuid, revision_id)</h1>
+    <h1 class="signature" translate="no">get_flow_revision(flow_uuid, revision_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L306" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L334" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -734,10 +944,9 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>get_flow_revision(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> get_flow_revision(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
 
       </div>
 
@@ -748,13 +957,13 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <div class="detail-header">
     <a href="#get_flow_revision_list/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">get_flow_revision_list(flow_uuid)</h1>
+    <h1 class="signature" translate="no">get_flow_revision_list(flow_uuid)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L261" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L289" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -763,27 +972,26 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>get_flow_revision_list(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: %{results: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> get_flow_revision_list(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: %{results: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()}</pre>
 
       </div>
 
 <p>Get a list of all the revisions based on a flow UUID</p>
   </section>
 </section>
-<section class="detail" id="is_optin_flow?/1">
+<section class="detail" id="get_sub_flows/1">
 
   <div class="detail-header">
-    <a href="#is_optin_flow?/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#get_sub_flows/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">is_optin_flow?(flow)</h1>
+    <h1 class="signature" translate="no">get_sub_flows(nodes)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L697" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L937" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -792,10 +1000,121 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>is_optin_flow?(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> get_sub_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()</pre>
+
+      </div>
+
+<p>  Extract all the subflows form the parent flow definition.</p>
+  </section>
+</section>
+<section class="detail" id="import_flow/2">
+
+  <div class="detail-header">
+    <a href="#import_flow/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">import_flow(import_flow, organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L763" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> import_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>import a flow from json</p>
+  </section>
+</section>
+<section class="detail" id="init_export_flow/2">
+
+  <div class="detail-header">
+    <a href="#init_export_flow/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">init_export_flow(results, flow_uuid)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L862" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> init_export_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>  Process the flows and get all the subflow definition.</p>
+  </section>
+</section>
+<section class="detail" id="is_media_type?/1">
+
+  <div class="detail-header">
+    <a href="#is_media_type?/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">is_media_type?(type)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L967" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> is_media_type?(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Check if the type is a media type we handle in flows</p>
+  </section>
+</section>
+<section class="detail" id="is_optin_flow?/1">
+
+  <div class="detail-header">
+    <a href="#is_optin_flow?/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">is_optin_flow?(flow)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L756" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> is_optin_flow?(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
 
       </div>
 
@@ -807,13 +1126,13 @@ checking based on the optin keyword only.</p>
 
   <div class="detail-header">
     <a href="#list_flows/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_flows(args)</h1>
+    <h1 class="signature" translate="no">list_flows(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L29" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L32" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -822,32 +1141,33 @@ checking based on the optin keyword only.</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>list_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()]</pre>
+          <pre translate="no"><span class="attribute">@spec</span> list_flows(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()]</pre>
 
       </div>
 
 <p>Returns the list of flows.</p><h2 id="list_flows/1-examples" class="section-heading">
-  <a href="#list_flows/1-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#list_flows/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
-<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">list_flows</span><span class="p" data-group-id="5636738169-1">(</span><span class="p" data-group-id="5636738169-1">)</span><span class="w">
-</span><span class="p" data-group-id="5636738169-2">[</span><span class="p" data-group-id="5636738169-3">%</span><span class="nc" data-group-id="5636738169-3">Flow</span><span class="p" data-group-id="5636738169-3">{</span><span class="p" data-group-id="5636738169-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="5636738169-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_flows</span><span class="p" data-group-id="0588462956-1">(</span><span class="p" data-group-id="0588462956-1">)</span><span class="w">
+</span><span class="p" data-group-id="0588462956-2">[</span><span class="p" data-group-id="0588462956-3">%</span><span class="nc" data-group-id="0588462956-3">Flow</span><span class="p" data-group-id="0588462956-3">{</span><span class="p" data-group-id="0588462956-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0588462956-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="publish_flow/1">
 
   <div class="detail-header">
     <a href="#publish_flow/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">publish_flow(flow)</h1>
+    <h1 class="signature" translate="no">publish_flow(flow)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L463" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L491" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -856,10 +1176,9 @@ checking based on the optin keyword only.</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>publish_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) ::
+          <pre translate="no"><span class="attribute">@spec</span> publish_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) ::
   {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
 
       </div>
@@ -872,13 +1191,13 @@ Update cached flow definition</p>
 
   <div class="detail-header">
     <a href="#start_contact_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">start_contact_flow(flow, contact)</h1>
+    <h1 class="signature" translate="no">start_contact_flow(flow_id, contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L538" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L578" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -887,10 +1206,12 @@ Update cached flow definition</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>start_contact_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()) ::
+          <pre translate="no"><span class="attribute">@spec</span> start_contact_flow(
+  <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(),
+  <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()
+) ::
   {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
@@ -902,13 +1223,13 @@ Update cached flow definition</p>
 
   <div class="detail-header">
     <a href="#start_group_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">start_group_flow(flow, group)</h1>
+    <h1 class="signature" translate="no">start_group_flow(flow, group)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L547" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L590" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -917,10 +1238,9 @@ Update cached flow definition</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>start_group_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()) ::
+          <pre translate="no"><span class="attribute">@spec</span> start_group_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()) ::
   {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()}</pre>
 
       </div>
@@ -928,17 +1248,17 @@ Update cached flow definition</p>
 <p>Start flow for contacts of a group</p>
   </section>
 </section>
-<section class="detail" id="update_cached_flow/2">
+<section class="detail" id="terminate_contact_flows?/1">
 
   <div class="detail-header">
-    <a href="#update_cached_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#terminate_contact_flows?/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update_cached_flow(flow, status)</h1>
+    <h1 class="signature" translate="no">terminate_contact_flows?(contact_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L434" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L974" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -947,10 +1267,37 @@ Update cached flow definition</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>update_cached_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> terminate_contact_flows?(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+
+      </div>
+
+<p> Terminate all flows for a contact</p>
+  </section>
+</section>
+<section class="detail" id="update_cached_flow/2">
+
+  <div class="detail-header">
+    <a href="#update_cached_flow/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">update_cached_flow(flow, status)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L462" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> update_cached_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: {<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
 
       </div>
 
@@ -962,13 +1309,13 @@ via the UI</p>
 
   <div class="detail-header">
     <a href="#update_flow/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">update_flow(flow, attrs)</h1>
+    <h1 class="signature" translate="no">update_flow(flow, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows.ex#L201" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L228" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -977,58 +1324,52 @@ via the UI</p>
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>update_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> update_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
 <p>Updates a flow.</p><h2 id="update_flow/2-examples" class="section-heading">
-  <a href="#update_flow/2-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#update_flow/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
-<pre><code class="makeup elixir"><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="9388054441-1">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9388054441-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="9388054441-2">}</span><span class="p" data-group-id="9388054441-1">)</span><span class="w">
-</span><span class="p" data-group-id="9388054441-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9388054441-4">%</span><span class="nc" data-group-id="9388054441-4">Flow</span><span class="p" data-group-id="9388054441-4">{</span><span class="p" data-group-id="9388054441-4">}</span><span class="p" data-group-id="9388054441-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="4786161903-1">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4786161903-2">}</span><span class="p" data-group-id="4786161903-1">)</span><span class="w">
+</span><span class="p" data-group-id="4786161903-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-4">%</span><span class="nc" data-group-id="4786161903-4">Flow</span><span class="p" data-group-id="4786161903-4">{</span><span class="p" data-group-id="4786161903-4">}</span><span class="p" data-group-id="4786161903-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="9388054441-5">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9388054441-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9388054441-6">}</span><span class="p" data-group-id="9388054441-5">)</span><span class="w">
-</span><span class="p" data-group-id="9388054441-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9388054441-8">%</span><span class="nc" data-group-id="9388054441-8">Ecto.Changeset</span><span class="p" data-group-id="9388054441-8">{</span><span class="p" data-group-id="9388054441-8">}</span><span class="p" data-group-id="9388054441-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="4786161903-5">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4786161903-6">}</span><span class="p" data-group-id="4786161903-5">)</span><span class="w">
+</span><span class="p" data-group-id="4786161903-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-8">%</span><span class="nc" data-group-id="4786161903-8">Ecto.Changeset</span><span class="p" data-group-id="4786161903-8">{</span><span class="p" data-group-id="4786161903-8">}</span><span class="p" data-group-id="4786161903-7">}</span></code></pre>
   </section>
 </section>
 
-          </div>
-        </section>
+    </div>
+  </section>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/flows.ex">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>

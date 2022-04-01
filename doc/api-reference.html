@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>API Reference — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>API Reference — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -80,19 +87,28 @@ Glific
     <div id="content" class="content-inner">
 
 <h1>
-  API Reference <small class="app-vsn">Glific v1.3.3</small>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
+
+
+  <span>API Reference <small class="app-vsn">Glific v4.3.0</small></span>
 </h1>
+
 
   <section class="details-list">
     <h2 id="modules" class="section-heading">
-  <a href="#modules" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#modules" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">modules</p>
+  </a>
   Modules
 </h2>
 
     <div class="summary">
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.html">Glific</a>
+    <a href="Glific.html" translate="no">Glific</a>
 
   </div>
 
@@ -102,7 +118,7 @@ and business logic.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Appsignal.html">Glific.Appsignal</a>
+    <a href="Glific.Appsignal.html" translate="no">Glific.Appsignal</a>
 
   </div>
 
@@ -111,16 +127,37 @@ and business logic.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Bigquery.html">Glific.Bigquery</a>
+    <a href="Glific.BigQuery.html" translate="no">Glific.BigQuery</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Glific Bigquery Dataset and table creation</p></div>
+    <div class="summary-synopsis"><p>Glific BigQuery Dataset and table creation</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.BigquerySchema.html">Glific.BigquerySchema</a>
+    <a href="Glific.BigQuery.BigQueryJob.html" translate="no">Glific.BigQuery.BigQueryJob</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Book keeping table to keep track of the last job that we processed from the
+messages belonging to the organization</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.BigQuery.BigQueryWorker.html" translate="no">Glific.BigQuery.BigQueryWorker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Process the message table for each organization. Chunk number of messages
+in groups of 128 and create a bigquery Worker Job to deliver the message to
+the bigquery servers</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.BigQuery.Schema.html" translate="no">Glific.BigQuery.Schema</a>
 
   </div>
 
@@ -129,7 +166,7 @@ and business logic.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.CSV.Content.html">Glific.CSV.Content</a>
+    <a href="Glific.CSV.Content.html" translate="no">Glific.CSV.Content</a>
 
   </div>
 
@@ -139,7 +176,7 @@ or sends a sub-menu. A menu is an array of menu items</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.CSV.File.html">Glific.CSV.File</a>
+    <a href="Glific.CSV.File.html" translate="no">Glific.CSV.File</a>
 
   </div>
 
@@ -148,7 +185,7 @@ or sends a sub-menu. A menu is an array of menu items</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.CSV.Flow.html">Glific.CSV.Flow</a>
+    <a href="Glific.CSV.Flow.html" translate="no">Glific.CSV.Flow</a>
 
   </div>
 
@@ -159,7 +196,7 @@ back in the database</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.CSV.Menu.html">Glific.CSV.Menu</a>
+    <a href="Glific.CSV.Menu.html" translate="no">Glific.CSV.Menu</a>
 
   </div>
 
@@ -169,7 +206,7 @@ or sends a sub-menu. A menu is an array of menu items</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.CSV.Template.html">Glific.CSV.Template</a>
+    <a href="Glific.CSV.Template.html" translate="no">Glific.CSV.Template</a>
 
   </div>
 
@@ -179,7 +216,7 @@ store this either in the DB and/or in the Flow CSV.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Caches.html">Glific.Caches</a>
+    <a href="Glific.Caches.html" translate="no">Glific.Caches</a>
 
   </div>
 
@@ -188,7 +225,7 @@ store this either in the DB and/or in the Flow CSV.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Caches.CacheBehaviour.html">Glific.Caches.CacheBehaviour</a>
+    <a href="Glific.Caches.CacheBehaviour.html" translate="no">Glific.Caches.CacheBehaviour</a>
 
   </div>
 
@@ -197,7 +234,7 @@ store this either in the DB and/or in the Flow CSV.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Clients.html">Glific.Clients</a>
+    <a href="Glific.Clients.html" translate="no">Glific.Clients</a>
 
   </div>
 
@@ -208,7 +245,34 @@ in a similar manner to plugins wordpress.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Clients.ReapBenefit.html">Glific.Clients.ReapBenefit</a>
+    <a href="Glific.Clients.ArogyaWorld.html" translate="no">Glific.Clients.ArogyaWorld</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom code extenison for ArogyaWorld</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Avanti.html" translate="no">Glific.Clients.Avanti</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Fetches data from Plio Bigquery dataset to send reports to users</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Balajanaagraha.html" translate="no">Glific.Clients.Balajanaagraha</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom webhook implementation specific to balajanaagraha usecase</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Bandhu.html" translate="no">Glific.Clients.Bandhu</a>
 
   </div>
 
@@ -217,7 +281,7 @@ in a similar manner to plugins wordpress.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Clients.Sol.html">Glific.Clients.Sol</a>
+    <a href="Glific.Clients.DigitalGreen.html" translate="no">Glific.Clients.DigitalGreen</a>
 
   </div>
 
@@ -226,7 +290,70 @@ in a similar manner to plugins wordpress.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Clients.Stir.html">Glific.Clients.Stir</a>
+    <a href="Glific.Clients.DigitalGreenDGSeed.html" translate="no">Glific.Clients.DigitalGreenDGSeed</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>One shot migration of DG data</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Lahi.html" translate="no">Glific.Clients.Lahi</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom webhook implementation specific to Lahi usecase</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.MukkaMaar.html" translate="no">Glific.Clients.MukkaMaar</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom webhook implementation specific to MukkaMaar usecase</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.NayiDisha.html" translate="no">Glific.Clients.NayiDisha</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom webhook implementation specific to NayiDisha usecase</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.NayiDisha.Data.html" translate="no">Glific.Clients.NayiDisha.Data</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Custom webhook implementation specific to NayiDisha usecase</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.ReapBenefit.html" translate="no">Glific.Clients.ReapBenefit</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tweak GCS Bucket name based on group that the contact is in (if any)</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Sol.html" translate="no">Glific.Clients.Sol</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Tweak GCS Bucket name based on group that the contact is in (if any)</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.Stir.html" translate="no">Glific.Clients.Stir</a>
 
   </div>
 
@@ -236,7 +363,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Clients.Tap.html">Glific.Clients.Tap</a>
+    <a href="Glific.Clients.Tap.html" translate="no">Glific.Clients.Tap</a>
 
   </div>
 
@@ -245,7 +372,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.CloakMigration.html">Glific.CloakMigration</a>
+    <a href="Glific.CloakMigration.html" translate="no">Glific.CloakMigration</a>
 
   </div>
 
@@ -254,7 +381,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Communications.html">Glific.Communications</a>
+    <a href="Glific.Communications.html" translate="no">Glific.Communications</a>
 
   </div>
 
@@ -263,7 +390,16 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Communications.Message.html">Glific.Communications.Message</a>
+    <a href="Glific.Communications.Mailer.html" translate="no">Glific.Communications.Mailer</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This module provides a simple interface for sending emails.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Communications.Message.html" translate="no">Glific.Communications.Message</a>
 
   </div>
 
@@ -272,7 +408,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Contacts.html">Glific.Contacts</a>
+    <a href="Glific.Contacts.html" translate="no">Glific.Contacts</a>
 
   </div>
 
@@ -281,7 +417,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Contacts.Contact.html">Glific.Contacts.Contact</a>
+    <a href="Glific.Contacts.Contact.html" translate="no">Glific.Contacts.Contact</a>
 
   </div>
 
@@ -290,7 +426,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Contacts.ContactsField.html">Glific.Contacts.ContactsField</a>
+    <a href="Glific.Contacts.ContactHistory.html" translate="no">Glific.Contacts.ContactHistory</a>
 
   </div>
 
@@ -299,7 +435,16 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Contacts.Import.html">Glific.Contacts.Import</a>
+    <a href="Glific.Contacts.ContactsField.html" translate="no">Glific.Contacts.ContactsField</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The minimal wrapper for the base Contact structure</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Contacts.Import.html" translate="no">Glific.Contacts.Import</a>
 
   </div>
 
@@ -308,7 +453,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Contacts.Location.html">Glific.Contacts.Location</a>
+    <a href="Glific.Contacts.Location.html" translate="no">Glific.Contacts.Location</a>
 
   </div>
 
@@ -317,17 +462,7 @@ Glific.Clients.Stir.compute_art_content(res)</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Contacts.Simulator.html">Glific.Contacts.Simulator</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Manage simulator state and allocation to ensure we can have multiple simulators
-run at the same time</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Conversations.html">Glific.Conversations</a>
+    <a href="Glific.Conversations.html" translate="no">Glific.Conversations</a>
 
   </div>
 
@@ -339,7 +474,7 @@ fair number of iterations to get right</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Conversations.Conversation.html">Glific.Conversations.Conversation</a>
+    <a href="Glific.Conversations.Conversation.html" translate="no">Glific.Conversations.Conversation</a>
 
   </div>
 
@@ -349,7 +484,7 @@ glific data types including: message, contact, and tag</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.ConversationsGroup.html">Glific.ConversationsGroup</a>
+    <a href="Glific.ConversationsGroup.html" translate="no">Glific.ConversationsGroup</a>
 
   </div>
 
@@ -361,7 +496,7 @@ API</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Dialogflow.html">Glific.Dialogflow</a>
+    <a href="Glific.Dialogflow.html" translate="no">Glific.Dialogflow</a>
 
   </div>
 
@@ -371,7 +506,16 @@ API</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Dialogflow.SessionWorker.html">Glific.Dialogflow.SessionWorker</a>
+    <a href="Glific.Dialogflow.Intent.html" translate="no">Glific.Dialogflow.Intent</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The intent object which has the intent information from any classifiers</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Dialogflow.SessionWorker.html" translate="no">Glific.Dialogflow.SessionWorker</a>
 
   </div>
 
@@ -380,7 +524,7 @@ API</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Dialogflow.Sessions.html">Glific.Dialogflow.Sessions</a>
+    <a href="Glific.Dialogflow.Sessions.html" translate="no">Glific.Dialogflow.Sessions</a>
 
   </div>
 
@@ -389,7 +533,7 @@ API</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Encrypted.Binary.html">Glific.Encrypted.Binary</a>
+    <a href="Glific.Encrypted.Binary.html" translate="no">Glific.Encrypted.Binary</a>
 
   </div>
 
@@ -398,7 +542,7 @@ API</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Encrypted.Map.html">Glific.Encrypted.Map</a>
+    <a href="Glific.Encrypted.Map.html" translate="no">Glific.Encrypted.Map</a>
 
   </div>
 
@@ -407,7 +551,7 @@ API</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.html">Glific.Enums</a>
+    <a href="Glific.Enums.html" translate="no">Glific.Enums</a>
 
   </div>
 
@@ -418,14 +562,14 @@ functions</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.APIStatus.html">Glific.Enums.APIStatus</a>
+    <a href="Glific.Enums.APIStatus.html" translate="no">Glific.Enums.APIStatus</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.Constants.html">Glific.Enums.Constants</a>
+    <a href="Glific.Enums.Constants.html" translate="no">Glific.Enums.Constants</a>
 
   </div>
 
@@ -436,105 +580,151 @@ all enums</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.ContactFieldScope.html">Glific.Enums.ContactFieldScope</a>
+    <a href="Glific.Enums.ContactFieldScope.html" translate="no">Glific.Enums.ContactFieldScope</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.ContactFieldValueType.html">Glific.Enums.ContactFieldValueType</a>
+    <a href="Glific.Enums.ContactFieldValueType.html" translate="no">Glific.Enums.ContactFieldValueType</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.ContactProviderStatus.html">Glific.Enums.ContactProviderStatus</a>
+    <a href="Glific.Enums.ContactProviderStatus.html" translate="no">Glific.Enums.ContactProviderStatus</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.ContactStatus.html">Glific.Enums.ContactStatus</a>
+    <a href="Glific.Enums.ContactStatus.html" translate="no">Glific.Enums.ContactStatus</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.FlowActionType.html">Glific.Enums.FlowActionType</a>
+    <a href="Glific.Enums.FlowActionType.html" translate="no">Glific.Enums.FlowActionType</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.FlowCase.html">Glific.Enums.FlowCase</a>
+    <a href="Glific.Enums.FlowCase.html" translate="no">Glific.Enums.FlowCase</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.FlowRouter.html">Glific.Enums.FlowRouter</a>
+    <a href="Glific.Enums.FlowRouter.html" translate="no">Glific.Enums.FlowRouter</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.FlowType.html">Glific.Enums.FlowType</a>
+    <a href="Glific.Enums.FlowType.html" translate="no">Glific.Enums.FlowType</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.MessageFlow.html">Glific.Enums.MessageFlow</a>
+    <a href="Glific.Enums.ImportContactsType.html" translate="no">Glific.Enums.ImportContactsType</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.MessageStatus.html">Glific.Enums.MessageStatus</a>
+    <a href="Glific.Enums.InteractiveMessageType.html" translate="no">Glific.Enums.InteractiveMessageType</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.MessageType.html">Glific.Enums.MessageType</a>
+    <a href="Glific.Enums.MessageFlow.html" translate="no">Glific.Enums.MessageFlow</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.QuestionType.html">Glific.Enums.QuestionType</a>
+    <a href="Glific.Enums.MessageStatus.html" translate="no">Glific.Enums.MessageStatus</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.SortOrder.html">Glific.Enums.SortOrder</a>
+    <a href="Glific.Enums.MessageType.html" translate="no">Glific.Enums.MessageType</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Enums.UserRoles.html">Glific.Enums.UserRoles</a>
+    <a href="Glific.Enums.OrganizationStatus.html" translate="no">Glific.Enums.OrganizationStatus</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flags.html">Glific.Flags</a>
+    <a href="Glific.Enums.QuestionType.html" translate="no">Glific.Enums.QuestionType</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.SortOrder.html" translate="no">Glific.Enums.SortOrder</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.TemplateButtonType.html" translate="no">Glific.Enums.TemplateButtonType</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Enums.UserRoles.html" translate="no">Glific.Enums.UserRoles</a>
+
+  </div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Erase.html" translate="no">Glific.Erase</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A simple module to periodically delete old data to clean up db</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Extensions.Extension.html" translate="no">Glific.Extensions.Extension</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The table structure for all our extensions</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flags.html" translate="no">Glific.Flags</a>
 
   </div>
 
@@ -544,7 +734,7 @@ also put operational code on flags here, as we figure out the right structure</p
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.html">Glific.Flows</a>
+    <a href="Glific.Flows.html" translate="no">Glific.Flows</a>
 
   </div>
 
@@ -553,7 +743,7 @@ also put operational code on flags here, as we figure out the right structure</p
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Action.html">Glific.Flows.Action</a>
+    <a href="Glific.Flows.Action.html" translate="no">Glific.Flows.Action</a>
 
   </div>
 
@@ -562,7 +752,7 @@ also put operational code on flags here, as we figure out the right structure</p
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Broadcast.html">Glific.Flows.Broadcast</a>
+    <a href="Glific.Flows.Broadcast.html" translate="no">Glific.Flows.Broadcast</a>
 
   </div>
 
@@ -572,7 +762,16 @@ possible and ensure we are under the rate limits.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Case.html">Glific.Flows.Case</a>
+    <a href="Glific.Flows.BroadcastWorker.html" translate="no">Glific.Flows.BroadcastWorker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A worker to handle send message processes</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.Case.html" translate="no">Glific.Flows.Case</a>
 
   </div>
 
@@ -581,7 +780,7 @@ possible and ensure we are under the rate limits.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Category.html">Glific.Flows.Category</a>
+    <a href="Glific.Flows.Category.html" translate="no">Glific.Flows.Category</a>
 
   </div>
 
@@ -590,7 +789,7 @@ possible and ensure we are under the rate limits.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.ContactAction.html">Glific.Flows.ContactAction</a>
+    <a href="Glific.Flows.ContactAction.html" translate="no">Glific.Flows.ContactAction</a>
 
   </div>
 
@@ -600,7 +799,7 @@ centralizing it here</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.ContactField.html">Glific.Flows.ContactField</a>
+    <a href="Glific.Flows.ContactField.html" translate="no">Glific.Flows.ContactField</a>
 
   </div>
 
@@ -610,7 +809,7 @@ centralize all the code here for now</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.ContactSetting.html">Glific.Flows.ContactSetting</a>
+    <a href="Glific.Flows.ContactSetting.html" translate="no">Glific.Flows.ContactSetting</a>
 
   </div>
 
@@ -620,7 +819,7 @@ centralize all the code here for now</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Exit.html">Glific.Flows.Exit</a>
+    <a href="Glific.Flows.Exit.html" translate="no">Glific.Flows.Exit</a>
 
   </div>
 
@@ -629,7 +828,7 @@ centralize all the code here for now</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Flow.html">Glific.Flows.Flow</a>
+    <a href="Glific.Flows.Flow.html" translate="no">Glific.Flows.Flow</a>
 
   </div>
 
@@ -639,7 +838,7 @@ by <code class="inline">https://github.com/nyaruka/floweditor</code></p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.FlowContext.html">Glific.Flows.FlowContext</a>
+    <a href="Glific.Flows.FlowBroadcast.html" translate="no">Glific.Flows.FlowBroadcast</a>
 
   </div>
 
@@ -650,7 +849,29 @@ this in a module and isolate the flow from the other aspects of Glific</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.FlowCount.html">Glific.Flows.FlowCount</a>
+    <a href="Glific.Flows.FlowBroadcastContact.html" translate="no">Glific.Flows.FlowBroadcastContact</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>When we are running a flow, we are running it in the context of a
+contact and/or a conversation (or other Glific data types). Let encapsulate
+this in a module and isolate the flow from the other aspects of Glific</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.FlowContext.html" translate="no">Glific.Flows.FlowContext</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>When we are running a flow, we are running it in the context of a
+contact and/or a conversation (or other Glific data types). Let encapsulate
+this in a module and isolate the flow from the other aspects of Glific</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Flows.FlowCount.html" translate="no">Glific.Flows.FlowCount</a>
 
   </div>
 
@@ -659,7 +880,7 @@ this in a module and isolate the flow from the other aspects of Glific</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.FlowLabel.html">Glific.Flows.FlowLabel</a>
+    <a href="Glific.Flows.FlowLabel.html" translate="no">Glific.Flows.FlowLabel</a>
 
   </div>
 
@@ -668,7 +889,7 @@ this in a module and isolate the flow from the other aspects of Glific</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.FlowResult.html">Glific.Flows.FlowResult</a>
+    <a href="Glific.Flows.FlowResult.html" translate="no">Glific.Flows.FlowResult</a>
 
   </div>
 
@@ -677,7 +898,7 @@ this in a module and isolate the flow from the other aspects of Glific</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.FlowRevision.html">Glific.Flows.FlowRevision</a>
+    <a href="Glific.Flows.FlowRevision.html" translate="no">Glific.Flows.FlowRevision</a>
 
   </div>
 
@@ -687,7 +908,7 @@ by <code class="inline">https://github.com/nyaruka/floweditor</code></p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Localization.html">Glific.Flows.Localization</a>
+    <a href="Glific.Flows.Localization.html" translate="no">Glific.Flows.Localization</a>
 
   </div>
 
@@ -697,7 +918,7 @@ languages for a flow</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.MessageVarParser.html">Glific.Flows.MessageVarParser</a>
+    <a href="Glific.Flows.MessageVarParser.html" translate="no">Glific.Flows.MessageVarParser</a>
 
   </div>
 
@@ -706,7 +927,7 @@ languages for a flow</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Node.html">Glific.Flows.Node</a>
+    <a href="Glific.Flows.Node.html" translate="no">Glific.Flows.Node</a>
 
   </div>
 
@@ -715,7 +936,7 @@ languages for a flow</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Periodic.html">Glific.Flows.Periodic</a>
+    <a href="Glific.Flows.Periodic.html" translate="no">Glific.Flows.Periodic</a>
 
   </div>
 
@@ -725,7 +946,7 @@ priority order are</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Router.html">Glific.Flows.Router</a>
+    <a href="Glific.Flows.Router.html" translate="no">Glific.Flows.Router</a>
 
   </div>
 
@@ -734,7 +955,7 @@ priority order are</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Templating.html">Glific.Flows.Templating</a>
+    <a href="Glific.Flows.Templating.html" translate="no">Glific.Flows.Templating</a>
 
   </div>
 
@@ -743,7 +964,7 @@ priority order are</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Wait.html">Glific.Flows.Wait</a>
+    <a href="Glific.Flows.Wait.html" translate="no">Glific.Flows.Wait</a>
 
   </div>
 
@@ -752,17 +973,17 @@ priority order are</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.Webhook.html">Glific.Flows.Webhook</a>
+    <a href="Glific.Flows.Webhook.html" translate="no">Glific.Flows.Webhook</a>
 
   </div>
 
     <div class="summary-synopsis"><p>Lets wrap all webhook functionality here as we try and get
-a better handle on the breadth and depth of webhooks</p></div>
+a better handle on the breadth and depth of webhooks.</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Flows.WebhookLog.html">Glific.Flows.WebhookLog</a>
+    <a href="Glific.Flows.WebhookLog.html" translate="no">Glific.Flows.WebhookLog</a>
 
   </div>
 
@@ -771,117 +992,16 @@ a better handle on the breadth and depth of webhooks</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.GCS.html">Glific.GCS</a>
+    <a href="Glific.GCS.html" translate="no">Glific.GCS</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Glific Bigquery Dataset and table creation</p></div>
+    <div class="summary-synopsis"><p>Glific GCS Manager</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Groups.html">Glific.Groups</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>The Groups context.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.ContactGroup.html">Glific.Groups.ContactGroup</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>A pipe for managing the contact groups</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.ContactGroups.html">Glific.Groups.ContactGroups</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Simple container to hold all the contact groups we associate with one contact</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.Group.html">Glific.Groups.Group</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>The minimal wrapper for the base Group structure</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.GroupContacts.html">Glific.Groups.GroupContacts</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Simple container to hold all the group contacts we associate with one group</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.GroupUsers.html">Glific.Groups.GroupUsers</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Simple container to hold all the group users we associate with one group</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.UserGroup.html">Glific.Groups.UserGroup</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>A pipe for managing the user groups</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Groups.UserGroups.html">Glific.Groups.UserGroups</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Simple container to hold all the user groups we associate with one user</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.html">Glific.Jobs</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>The Jobs context.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.BSPBalanceWorker.html">Glific.Jobs.BSPBalanceWorker</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Module for checking remaining balance</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.BigQueryWorker.html">Glific.Jobs.BigQueryWorker</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Process the message table for each organization. Chunk number of messages
-in groups of 128 and create a bigquery Worker Job to deliver the message to
-the bigquery servers</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.BigqueryJob.html">Glific.Jobs.BigqueryJob</a>
+    <a href="Glific.GCS.GcsJob.html" translate="no">Glific.GCS.GcsJob</a>
 
   </div>
 
@@ -891,38 +1011,7 @@ messages belonging to the organization</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Jobs.ChatbaseJob.html">Glific.Jobs.ChatbaseJob</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Book keeping table to keep track of the last job that we processed from the
-messages belonging to the organization</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.ChatbaseWorker.html">Glific.Jobs.ChatbaseWorker</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Process the message table for each organization. Chunk number of messages
-in groups of 128 and create a Chatbase Worker Job to deliver the message to
-the chatbase servers</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.GcsJob.html">Glific.Jobs.GcsJob</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Book keeping table to keep track of the last job that we processed from the
-messages belonging to the organization</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Jobs.GcsWorker.html">Glific.Jobs.GcsWorker</a>
+    <a href="Glific.GCS.GcsWorker.html" translate="no">Glific.GCS.GcsWorker</a>
 
   </div>
 
@@ -933,7 +1022,97 @@ the gcs servers</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Jobs.MinuteWorker.html">Glific.Jobs.MinuteWorker</a>
+    <a href="Glific.Groups.html" translate="no">Glific.Groups</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The Groups context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.ContactGroup.html" translate="no">Glific.Groups.ContactGroup</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A pipe for managing the contact groups</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.ContactGroups.html" translate="no">Glific.Groups.ContactGroups</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple container to hold all the contact groups we associate with one contact</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.Group.html" translate="no">Glific.Groups.Group</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The minimal wrapper for the base Group structure</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.GroupContacts.html" translate="no">Glific.Groups.GroupContacts</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple container to hold all the group contacts we associate with one group</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.GroupUsers.html" translate="no">Glific.Groups.GroupUsers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple container to hold all the group users we associate with one group</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.UserGroup.html" translate="no">Glific.Groups.UserGroup</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A pipe for managing the user groups</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Groups.UserGroups.html" translate="no">Glific.Groups.UserGroups</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple container to hold all the user groups we associate with one user</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.html" translate="no">Glific.Jobs</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The Jobs context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.BSPBalanceWorker.html" translate="no">Glific.Jobs.BSPBalanceWorker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module for checking remaining balance</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Jobs.MinuteWorker.html" translate="no">Glific.Jobs.MinuteWorker</a>
 
   </div>
 
@@ -942,7 +1121,43 @@ the gcs servers</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Media.html">Glific.Media</a>
+    <a href="Glific.Mails.BalanceAlertMail.html" translate="no">Glific.Mails.BalanceAlertMail</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This module is used to send an email to the user when their balance is low.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Mails.CriticalNotificationMail.html" translate="no">Glific.Mails.CriticalNotificationMail</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>CriticalNotificationMail is a mail that is sent to the org admin when a critical error occurs.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Mails.MailLog.html" translate="no">Glific.Mails.MailLog</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The mail log object</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Mails.NewPartnerOnboardedMail.html" translate="no">Glific.Mails.NewPartnerOnboardedMail</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>NewPartnerOnboardedMail will have the content for formatting for the new partner onboarded email.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Media.html" translate="no">Glific.Media</a>
 
   </div>
 
@@ -951,14 +1166,14 @@ the gcs servers</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Media.Type.html">Glific.Media.Type</a>
+    <a href="Glific.Media.Type.html" translate="no">Glific.Media.Type</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Messages.html">Glific.Messages</a>
+    <a href="Glific.Messages.html" translate="no">Glific.Messages</a>
 
   </div>
 
@@ -967,7 +1182,7 @@ the gcs servers</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Messages.MessageMedia.html">Glific.Messages.MessageMedia</a>
+    <a href="Glific.Messages.MessageMedia.html" translate="no">Glific.Messages.MessageMedia</a>
 
   </div>
 
@@ -976,17 +1191,36 @@ the gcs servers</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Messages.MessageVariables.html">Glific.Messages.MessageVariables</a>
+    <a href="Glific.Metrics.html" translate="no">Glific.Metrics</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Create maps for substitutions in message body
-These maps of available variables will be required by frontend team</p></div>
+    <div class="summary-synopsis"><p>Wrapper for various statistical tables which we can cache and write to in batch. For now, we are
+managing the flow_counts table</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Notifications.html">Glific.Notifications</a>
+    <a href="Glific.Metrics.Worker.html" translate="no">Glific.Metrics.Worker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple worker which caches all the counts for a specific flow and writes them
+out in batches. This allows us to amortize multiple requests into one DB write.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Navanatech.html" translate="no">Glific.Navanatech</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Glific Navanatech for all api calls to navatech</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Notifications.html" translate="no">Glific.Notifications</a>
 
   </div>
 
@@ -995,7 +1229,7 @@ These maps of available variables will be required by frontend team</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Partners.html">Glific.Partners</a>
+    <a href="Glific.Partners.html" translate="no">Glific.Partners</a>
 
   </div>
 
@@ -1005,7 +1239,17 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Partners.Credential.html">Glific.Partners.Credential</a>
+    <a href="Glific.Partners.Billing.html" translate="no">Glific.Partners.Billing</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>We will use this as the main context interface for all billing subscriptions and the stripe
+interface.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Partners.Credential.html" translate="no">Glific.Partners.Credential</a>
 
   </div>
 
@@ -1014,7 +1258,16 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Partners.Organization.html">Glific.Partners.Organization</a>
+    <a href="Glific.Partners.Invoice.html" translate="no">Glific.Partners.Invoice</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Invoice model wrapper</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Partners.Organization.html" translate="no">Glific.Partners.Organization</a>
 
   </div>
 
@@ -1023,7 +1276,7 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Partners.OrganizationSettings.OutOfOffice.html">Glific.Partners.OrganizationSettings.OutOfOffice</a>
+    <a href="Glific.Partners.OrganizationSettings.OutOfOffice.html" translate="no">Glific.Partners.OrganizationSettings.OutOfOffice</a>
 
   </div>
 
@@ -1032,7 +1285,7 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay.html">Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay</a>
+    <a href="Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay.html" translate="no">Glific.Partners.OrganizationSettings.OutOfOffice.EnabledDay</a>
 
   </div>
 
@@ -1041,7 +1294,7 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Partners.Provider.html">Glific.Partners.Provider</a>
+    <a href="Glific.Partners.Provider.html" translate="no">Glific.Partners.Provider</a>
 
   </div>
 
@@ -1050,7 +1303,16 @@ and Provider information.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerFlow.html">Glific.Processor.ConsumerFlow</a>
+    <a href="Glific.Partners.Saas.html" translate="no">Glific.Partners.Saas</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Saas is the DB table that holds the various parameters we need to run the service.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Processor.ConsumerFlow.html" translate="no">Glific.Processor.ConsumerFlow</a>
 
   </div>
 
@@ -1060,7 +1322,7 @@ consumer_worker which is the main workhorse</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerTagger.html">Glific.Processor.ConsumerTagger</a>
+    <a href="Glific.Processor.ConsumerTagger.html" translate="no">Glific.Processor.ConsumerTagger</a>
 
   </div>
 
@@ -1069,7 +1331,7 @@ consumer_worker which is the main workhorse</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerWorker.html">Glific.Processor.ConsumerWorker</a>
+    <a href="Glific.Processor.ConsumerWorker.html" translate="no">Glific.Processor.ConsumerWorker</a>
 
   </div>
 
@@ -1080,7 +1342,7 @@ from this GenStage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Processor.ConsumerWorkerMock.html">Glific.Processor.ConsumerWorkerMock</a>
+    <a href="Glific.Processor.ConsumerWorkerMock.html" translate="no">Glific.Processor.ConsumerWorkerMock</a>
 
   </div>
 
@@ -1089,7 +1351,7 @@ from this GenStage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Processor.Helper.html">Glific.Processor.Helper</a>
+    <a href="Glific.Processor.Helper.html" translate="no">Glific.Processor.Helper</a>
 
   </div>
 
@@ -1099,7 +1361,7 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.ContactBehaviour.html">Glific.Providers.ContactBehaviour</a>
+    <a href="Glific.Providers.ContactBehaviour.html" translate="no">Glific.Providers.ContactBehaviour</a>
 
   </div>
 
@@ -1108,34 +1370,25 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.Gupshup.ApiClient.html">Glific.Providers.Gupshup.ApiClient</a>
+    <a href="Glific.Providers.Gupshup.ApiClient.html" translate="no">Glific.Providers.Gupshup.ApiClient</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Http API client to intract with Gupshup</p></div>
+    <div class="summary-synopsis"><p>Https API client to interact with Gupshup</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.Gupshup.GupshupWallet.html">Glific.Providers.Gupshup.GupshupWallet</a>
+    <a href="Glific.Providers.Gupshup.Enterprise.ApiClient.html" translate="no">Glific.Providers.Gupshup.Enterprise.ApiClient</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Module for checking gupshup remaining balance</p></div>
+    <div class="summary-synopsis"><p>Http API client to interact with Gupshup Enterprise</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.Gupshup.Message.html">Glific.Providers.Gupshup.Message</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Messgae API layer between application and Gupshup</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="Glific.Providers.Gupshup.Template.html">Glific.Providers.Gupshup.Template</a>
+    <a href="Glific.Providers.Gupshup.Enterprise.Message.html" translate="no">Glific.Providers.Gupshup.Enterprise.Message</a>
 
   </div>
 
@@ -1144,7 +1397,17 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.Gupshup.Worker.html">Glific.Providers.Gupshup.Worker</a>
+    <a href="Glific.Providers.Gupshup.Enterprise.ResponseHandler.html" translate="no">Glific.Providers.Gupshup.Enterprise.ResponseHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module for handling response from Provider end
+or Handle response for simulators</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.Enterprise.Worker.html" translate="no">Glific.Providers.Gupshup.Enterprise.Worker</a>
 
   </div>
 
@@ -1153,7 +1416,53 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.GupshupContacts.html">Glific.Providers.GupshupContacts</a>
+    <a href="Glific.Providers.Gupshup.GupshupWallet.html" translate="no">Glific.Providers.Gupshup.GupshupWallet</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module for checking gupshup remaining balance</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.Message.html" translate="no">Glific.Providers.Gupshup.Message</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Message API layer between application and Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.ResponseHandler.html" translate="no">Glific.Providers.Gupshup.ResponseHandler</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module for handling response from Provider end
+or Handle response for simulators</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.Template.html" translate="no">Glific.Providers.Gupshup.Template</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module for handling template operations specific to Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.Worker.html" translate="no">Glific.Providers.Gupshup.Worker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A worker to handle send message processes</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.GupshupContacts.html" translate="no">Glific.Providers.GupshupContacts</a>
 
   </div>
 
@@ -1162,7 +1471,25 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Providers.MessageBehaviour.html">Glific.Providers.MessageBehaviour</a>
+    <a href="Glific.Providers.GupshupEnterprise.Template.html" translate="no">Glific.Providers.GupshupEnterprise.Template</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module for handling template operations specific to Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.GupshupEnterpriseContacts.html" translate="no">Glific.Providers.GupshupEnterpriseContacts</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Contacts API layer between application and Gupshup Enterprise</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.MessageBehaviour.html" translate="no">Glific.Providers.MessageBehaviour</a>
 
   </div>
 
@@ -1171,7 +1498,16 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Release.html">Glific.Release</a>
+    <a href="Glific.Providers.Worker.html" translate="no">Glific.Providers.Worker</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A common worker to handle send message processes irrespective of BSP</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Release.html" translate="no">Glific.Release</a>
 
   </div>
 
@@ -1182,7 +1518,7 @@ release file. Copied from:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Repo.html">Glific.Repo</a>
+    <a href="Glific.Repo.html" translate="no">Glific.Repo</a>
 
   </div>
 
@@ -1191,7 +1527,36 @@ release file. Copied from:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Search.Full.html">Glific.Search.Full</a>
+    <a href="Glific.Saas.ConsultingHour.html" translate="no">Glific.Saas.ConsultingHour</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The table structure to record consulting hours</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Saas.Onboard.html" translate="no">Glific.Saas.Onboard</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>For now, we will build this on top of organization table, and have a group of helper functions
+here to manage global operations across all organizations.
+At some later point, we might decide to have a separate onboarding table and managment structure</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Saas.Queries.html" translate="no">Glific.Saas.Queries</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Lets keep all the onboarding queries and validation here</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Search.Full.html" translate="no">Glific.Search.Full</a>
 
   </div>
 
@@ -1200,7 +1565,7 @@ release file. Copied from:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Searches.html">Glific.Searches</a>
+    <a href="Glific.Searches.html" translate="no">Glific.Searches</a>
 
   </div>
 
@@ -1209,7 +1574,7 @@ release file. Copied from:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Searches.CollectionCount.html">Glific.Searches.CollectionCount</a>
+    <a href="Glific.Searches.CollectionCount.html" translate="no">Glific.Searches.CollectionCount</a>
 
   </div>
 
@@ -1218,7 +1583,7 @@ release file. Copied from:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Searches.SavedSearch.html">Glific.Searches.SavedSearch</a>
+    <a href="Glific.Searches.SavedSearch.html" translate="no">Glific.Searches.SavedSearch</a>
 
   </div>
 
@@ -1227,7 +1592,7 @@ release file. Copied from:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Searches.Search.html">Glific.Searches.Search</a>
+    <a href="Glific.Searches.Search.html" translate="no">Glific.Searches.Search</a>
 
   </div>
 
@@ -1237,7 +1602,7 @@ glific data types including: message, contact, and tag</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.Seed.html">Glific.Seeds.Seed</a>
+    <a href="Glific.Seeds.Seed.html" translate="no">Glific.Seeds.Seed</a>
 
   </div>
 
@@ -1246,7 +1611,7 @@ glific data types including: message, contact, and tag</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.Seeder.html">Glific.Seeds.Seeder</a>
+    <a href="Glific.Seeds.Seeder.html" translate="no">Glific.Seeds.Seeder</a>
 
   </div>
 
@@ -1256,7 +1621,7 @@ Wish us luck</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.SeedsDev.html">Glific.Seeds.SeedsDev</a>
+    <a href="Glific.Seeds.SeedsDev.html" translate="no">Glific.Seeds.SeedsDev</a>
 
   </div>
 
@@ -1265,7 +1630,7 @@ Wish us luck</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.SeedsMigration.html">Glific.Seeds.SeedsMigration</a>
+    <a href="Glific.Seeds.SeedsMigration.html" translate="no">Glific.Seeds.SeedsMigration</a>
 
   </div>
 
@@ -1276,7 +1641,7 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.SeedsOptins.html">Glific.Seeds.SeedsOptins</a>
+    <a href="Glific.Seeds.SeedsOptins.html" translate="no">Glific.Seeds.SeedsOptins</a>
 
   </div>
 
@@ -1285,7 +1650,7 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.SeedsScale.html">Glific.Seeds.SeedsScale</a>
+    <a href="Glific.Seeds.SeedsScale.html" translate="no">Glific.Seeds.SeedsScale</a>
 
   </div>
 
@@ -1294,7 +1659,7 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Seeds.SeedsStats.html">Glific.Seeds.SeedsStats</a>
+    <a href="Glific.Seeds.SeedsStats.html" translate="no">Glific.Seeds.SeedsStats</a>
 
   </div>
 
@@ -1303,7 +1668,7 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Settings.html">Glific.Settings</a>
+    <a href="Glific.Settings.html" translate="no">Glific.Settings</a>
 
   </div>
 
@@ -1312,7 +1677,7 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Settings.Language.html">Glific.Settings.Language</a>
+    <a href="Glific.Settings.Language.html" translate="no">Glific.Settings.Language</a>
 
   </div>
 
@@ -1321,7 +1686,46 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Stats.html">Glific.Stats</a>
+    <a href="Glific.Sheets.ApiClient.html" translate="no">Glific.Sheets.ApiClient</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Http API client to intract with Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.State.html" translate="no">Glific.State</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manage simulator and flows, managing state and allocation to ensure we can have multiple simulators
+and flow run at the same time</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.State.Flow.html" translate="no">Glific.State.Flow</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manage flow state and allocation to ensure we only have one user modify
+a flow at a time</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.State.Simulator.html" translate="no">Glific.State.Simulator</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Manage simulator state and allocation to ensure we can have multiple simulators
+run at the same time</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Stats.html" translate="no">Glific.Stats</a>
 
   </div>
 
@@ -1330,7 +1734,7 @@ they are created</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Taggers.html">Glific.Taggers</a>
+    <a href="Glific.Taggers.html" translate="no">Glific.Taggers</a>
 
   </div>
 
@@ -1343,7 +1747,7 @@ The proposed taggers are:
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Taggers.Keyword.html">Glific.Taggers.Keyword</a>
+    <a href="Glific.Taggers.Keyword.html" translate="no">Glific.Taggers.Keyword</a>
 
   </div>
 
@@ -1353,7 +1757,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Taggers.Numeric.html">Glific.Taggers.Numeric</a>
+    <a href="Glific.Taggers.Numeric.html" translate="no">Glific.Taggers.Numeric</a>
 
   </div>
 
@@ -1367,7 +1771,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Taggers.Status.html">Glific.Taggers.Status</a>
+    <a href="Glific.Taggers.Status.html" translate="no">Glific.Taggers.Status</a>
 
   </div>
 
@@ -1376,7 +1780,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.html">Glific.Tags</a>
+    <a href="Glific.Tags.html" translate="no">Glific.Tags</a>
 
   </div>
 
@@ -1385,7 +1789,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.ContactTag.html">Glific.Tags.ContactTag</a>
+    <a href="Glific.Tags.ContactTag.html" translate="no">Glific.Tags.ContactTag</a>
 
   </div>
 
@@ -1394,7 +1798,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.ContactTags.html">Glific.Tags.ContactTags</a>
+    <a href="Glific.Tags.ContactTags.html" translate="no">Glific.Tags.ContactTags</a>
 
   </div>
 
@@ -1403,7 +1807,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.MessageTag.html">Glific.Tags.MessageTag</a>
+    <a href="Glific.Tags.MessageTag.html" translate="no">Glific.Tags.MessageTag</a>
 
   </div>
 
@@ -1412,7 +1816,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.MessageTags.html">Glific.Tags.MessageTags</a>
+    <a href="Glific.Tags.MessageTags.html" translate="no">Glific.Tags.MessageTags</a>
 
   </div>
 
@@ -1421,7 +1825,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.Tag.html">Glific.Tags.Tag</a>
+    <a href="Glific.Tags.Tag.html" translate="no">Glific.Tags.Tag</a>
 
   </div>
 
@@ -1430,7 +1834,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.TemplateTag.html">Glific.Tags.TemplateTag</a>
+    <a href="Glific.Tags.TemplateTag.html" translate="no">Glific.Tags.TemplateTag</a>
 
   </div>
 
@@ -1439,7 +1843,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Tags.TemplateTags.html">Glific.Tags.TemplateTags</a>
+    <a href="Glific.Tags.TemplateTags.html" translate="no">Glific.Tags.TemplateTags</a>
 
   </div>
 
@@ -1448,7 +1852,7 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Templates.html">Glific.Templates</a>
+    <a href="Glific.Templates.html" translate="no">Glific.Templates</a>
 
   </div>
 
@@ -1457,7 +1861,16 @@ with each tag in the DB and matches it to the input text.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Triggers.html">Glific.Triggers</a>
+    <a href="Glific.Templates.InteractiveTemplates.html" translate="no">Glific.Templates.InteractiveTemplates</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The InteractiveTemplate Context, which encapsulates and manages interactive templates</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Triggers.html" translate="no">Glific.Triggers</a>
 
   </div>
 
@@ -1467,7 +1880,7 @@ within Glific</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Triggers.Helper.html">Glific.Triggers.Helper</a>
+    <a href="Glific.Triggers.Helper.html" translate="no">Glific.Triggers.Helper</a>
 
   </div>
 
@@ -1477,7 +1890,17 @@ complexity of time queries</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Users.html">Glific.Users</a>
+    <a href="Glific.URI.html" translate="no">Glific.URI</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This file has been copied (and modified a wee bit)from
+<a href="https://github.com/jerel/ecto_fields/blob/master/lib/fields/url.ex">https://github.com/jerel/ecto_fields/blob/master/lib/fields/url.ex</a></p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Users.html" translate="no">Glific.Users</a>
 
   </div>
 
@@ -1486,7 +1909,7 @@ complexity of time queries</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Vault.html">Glific.Vault</a>
+    <a href="Glific.Vault.html" translate="no">Glific.Vault</a>
 
   </div>
 
@@ -1495,7 +1918,7 @@ complexity of time queries</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.html">GlificWeb</a>
+    <a href="GlificWeb.html" translate="no">GlificWeb</a>
 
   </div>
 
@@ -1505,7 +1928,16 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.API.V1.RegistrationController.html">GlificWeb.API.V1.RegistrationController</a>
+    <a href="GlificWeb.API.V1.OnboardController.html" translate="no">GlificWeb.API.V1.OnboardController</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The Glific Onboarding Controller</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.API.V1.RegistrationController.html" translate="no">GlificWeb.API.V1.RegistrationController</a>
 
   </div>
 
@@ -1514,7 +1946,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.API.V1.SessionController.html">GlificWeb.API.V1.SessionController</a>
+    <a href="GlificWeb.API.V1.SessionController.html" translate="no">GlificWeb.API.V1.SessionController</a>
 
   </div>
 
@@ -1523,7 +1955,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.APIAuthErrorHandler.html">GlificWeb.APIAuthErrorHandler</a>
+    <a href="GlificWeb.APIAuthErrorHandler.html" translate="no">GlificWeb.APIAuthErrorHandler</a>
 
   </div>
 
@@ -1532,7 +1964,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.ContextPlug.html">GlificWeb.ContextPlug</a>
+    <a href="GlificWeb.ContextPlug.html" translate="no">GlificWeb.ContextPlug</a>
 
   </div>
 
@@ -1541,7 +1973,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.EnsurePlug.html">GlificWeb.EnsurePlug</a>
+    <a href="GlificWeb.EnsurePlug.html" translate="no">GlificWeb.EnsurePlug</a>
 
   </div>
 
@@ -1550,7 +1982,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.EnsurePlugConfig.html">GlificWeb.EnsurePlugConfig</a>
+    <a href="GlificWeb.EnsurePlugConfig.html" translate="no">GlificWeb.EnsurePlugConfig</a>
 
   </div>
 
@@ -1559,7 +1991,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.ErrorHelpers.html">GlificWeb.ErrorHelpers</a>
+    <a href="GlificWeb.ErrorHelpers.html" translate="no">GlificWeb.ErrorHelpers</a>
 
   </div>
 
@@ -1568,14 +2000,23 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.ErrorView.html">GlificWeb.ErrorView</a>
+    <a href="GlificWeb.ErrorView.html" translate="no">GlificWeb.ErrorView</a>
 
   </div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Flows.FlowEditorController.html">GlificWeb.Flows.FlowEditorController</a>
+    <a href="GlificWeb.ExotelController.html" translate="no">GlificWeb.ExotelController</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The controller to process events received from exotel</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Flows.FlowEditorController.html" translate="no">GlificWeb.Flows.FlowEditorController</a>
 
   </div>
 
@@ -1584,7 +2025,7 @@ as controllers, views, channels and so on.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Flows.WebhookController.html">GlificWeb.Flows.WebhookController</a>
+    <a href="GlificWeb.Flows.WebhookController.html" translate="no">GlificWeb.Flows.WebhookController</a>
 
   </div>
 
@@ -1594,7 +2035,7 @@ This bypasses using a third party and hence makes things a lot more efficient</p
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Gettext.html">GlificWeb.Gettext</a>
+    <a href="GlificWeb.Gettext.html" translate="no">GlificWeb.Gettext</a>
 
   </div>
 
@@ -1603,7 +2044,19 @@ This bypasses using a third party and hence makes things a lot more efficient</p
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Misc.BodyReader.html">GlificWeb.Misc.BodyReader</a>
+    <a href="GlificWeb.InjectOban.html" translate="no">GlificWeb.InjectOban</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple macro to conditionally load Oban.Web only if already loaded. This allows
+us to include it only in the production release and hence make it a lot easier on potential
+open source contributors. We thus avoid the problem of sharing the oban key and/or them hacking
+the code to get it working</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Misc.BodyReader.html" translate="no">GlificWeb.Misc.BodyReader</a>
 
   </div>
 
@@ -1613,7 +2066,7 @@ processed by Phoenix. Used to validate the signature</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Misc.HTTPSignature.html">GlificWeb.Misc.HTTPSignature</a>
+    <a href="GlificWeb.Misc.HTTPSignature.html" translate="no">GlificWeb.Misc.HTTPSignature</a>
 
   </div>
 
@@ -1622,7 +2075,7 @@ processed by Phoenix. Used to validate the signature</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Plug.html">GlificWeb.Plug</a>
+    <a href="GlificWeb.Plug.html" translate="no">GlificWeb.Plug</a>
 
   </div>
 
@@ -1632,7 +2085,7 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Providers.Gupshup.Controllers.MessageController.html">GlificWeb.Providers.Gupshup.Controllers.MessageController</a>
+    <a href="GlificWeb.Providers.Gupshup.Controllers.MessageController.html" translate="no">GlificWeb.Providers.Gupshup.Controllers.MessageController</a>
 
   </div>
 
@@ -1641,7 +2094,7 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Providers.Gupshup.Controllers.MessageEventController.html">GlificWeb.Providers.Gupshup.Controllers.MessageEventController</a>
+    <a href="GlificWeb.Providers.Gupshup.Controllers.MessageEventController.html" translate="no">GlificWeb.Providers.Gupshup.Controllers.MessageEventController</a>
 
   </div>
 
@@ -1650,7 +2103,7 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Providers.Gupshup.Controllers.UserEventController.html">GlificWeb.Providers.Gupshup.Controllers.UserEventController</a>
+    <a href="GlificWeb.Providers.Gupshup.Controllers.UserEventController.html" translate="no">GlificWeb.Providers.Gupshup.Controllers.UserEventController</a>
 
   </div>
 
@@ -1659,7 +2112,16 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Providers.Gupshup.Plugs.Shunt.html">GlificWeb.Providers.Gupshup.Plugs.Shunt</a>
+    <a href="GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController.html" translate="no">GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageController</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Dedicated controller to handle different types of inbound message form Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt.html" translate="no">GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt</a>
 
   </div>
 
@@ -1668,7 +2130,7 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Providers.Gupshup.Router.html">GlificWeb.Providers.Gupshup.Router</a>
+    <a href="GlificWeb.Providers.Gupshup.Enterprise.Router.html" translate="no">GlificWeb.Providers.Gupshup.Enterprise.Router</a>
 
   </div>
 
@@ -1677,7 +2139,34 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Providers.Gupshup.Router.Helpers.html">GlificWeb.Providers.Gupshup.Router.Helpers</a>
+    <a href="GlificWeb.Providers.Gupshup.Enterprise.Router.Helpers.html" translate="no">GlificWeb.Providers.Gupshup.Enterprise.Router.Helpers</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Module with named helpers generated from GlificWeb.Providers.Gupshup.Enterprise.Router.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Providers.Gupshup.Plugs.Shunt.html" translate="no">GlificWeb.Providers.Gupshup.Plugs.Shunt</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A Gupshup shunt which will redirect all the incoming requests to the gupshup router based on there event type.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Providers.Gupshup.Router.html" translate="no">GlificWeb.Providers.Gupshup.Router</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A Gupshup router which will redirect all the gupsup incoming request to there controller actions.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Providers.Gupshup.Router.Helpers.html" translate="no">GlificWeb.Providers.Gupshup.Router.Helpers</a>
 
   </div>
 
@@ -1686,7 +2175,7 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.RateLimitPlug.html">GlificWeb.RateLimitPlug</a>
+    <a href="GlificWeb.RateLimitPlug.html" translate="no">GlificWeb.RateLimitPlug</a>
 
   </div>
 
@@ -1695,17 +2184,46 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Contacts.html">GlificWeb.Resolvers.Contacts</a>
+    <a href="GlificWeb.Resolvers.Billings.html" translate="no">GlificWeb.Resolvers.Billings</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Contact Resolver which sits between the GraphQL schema and Glific Contact Context API. This layer basically stiches together
+    <div class="summary-synopsis"><p>Billing Resolver which sits between the GraphQL schema and Glific Billing Context API. This layer basically stiches together
 one or more calls to resolve the incoming queries.</p></div>
 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Conversations.html">GlificWeb.Resolvers.Conversations</a>
+    <a href="GlificWeb.Resolvers.ConsultingHours.html" translate="no">GlificWeb.Resolvers.ConsultingHours</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Consulting Hours Resolver which sits between the GraphQL schema and Glific Consulting Hour Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Contacts.html" translate="no">GlificWeb.Resolvers.Contacts</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Contact Resolver which sits between the GraphQL schema and Glific Contact Context API.
+This layer basically stiches together one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.ContactsField.html" translate="no">GlificWeb.Resolvers.ContactsField</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Contact Field Resolver which sits between the GraphQL schema and Glific Contact Field Context API.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Conversations.html" translate="no">GlificWeb.Resolvers.Conversations</a>
 
   </div>
 
@@ -1715,7 +2233,26 @@ This layer basically stiches together one or more calls to resolve the incoming 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Flows.html">GlificWeb.Resolvers.Flows</a>
+    <a href="GlificWeb.Resolvers.Extensions.html" translate="no">GlificWeb.Resolvers.Extensions</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Extensions Resolver which sits between the GraphQL schema and Glific Extensions API.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.FlowLabels.html" translate="no">GlificWeb.Resolvers.FlowLabels</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Flow Labels Resolver which sits between the GraphQL schema and Glific Flow Label Context API.
+This layer basically stiches together one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Flows.html" translate="no">GlificWeb.Resolvers.Flows</a>
 
   </div>
 
@@ -1725,7 +2262,7 @@ This layer basically stiches together one or more calls to resolve the incoming 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Groups.html">GlificWeb.Resolvers.Groups</a>
+    <a href="GlificWeb.Resolvers.Groups.html" translate="no">GlificWeb.Resolvers.Groups</a>
 
   </div>
 
@@ -1735,7 +2272,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Helper.html">GlificWeb.Resolvers.Helper</a>
+    <a href="GlificWeb.Resolvers.Helper.html" translate="no">GlificWeb.Resolvers.Helper</a>
 
   </div>
 
@@ -1744,7 +2281,17 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Locations.html">GlificWeb.Resolvers.Locations</a>
+    <a href="GlificWeb.Resolvers.InteractiveTemplates.html" translate="no">GlificWeb.Resolvers.InteractiveTemplates</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Interactives Resolver which sits between the GraphQL schema and Glific Interactives Context API. This layer basically stiches together
+one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Locations.html" translate="no">GlificWeb.Resolvers.Locations</a>
 
   </div>
 
@@ -1754,7 +2301,16 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Messages.html">GlificWeb.Resolvers.Messages</a>
+    <a href="GlificWeb.Resolvers.Media.html" translate="no">GlificWeb.Resolvers.Media</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Resolver to deal with file uploads, which we send directly to GCS</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Messages.html" translate="no">GlificWeb.Resolvers.Messages</a>
 
   </div>
 
@@ -1764,7 +2320,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Notifications.html">GlificWeb.Resolvers.Notifications</a>
+    <a href="GlificWeb.Resolvers.Notifications.html" translate="no">GlificWeb.Resolvers.Notifications</a>
 
   </div>
 
@@ -1774,7 +2330,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Partners.html">GlificWeb.Resolvers.Partners</a>
+    <a href="GlificWeb.Resolvers.Partners.html" translate="no">GlificWeb.Resolvers.Partners</a>
 
   </div>
 
@@ -1784,7 +2340,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Searches.html">GlificWeb.Resolvers.Searches</a>
+    <a href="GlificWeb.Resolvers.Searches.html" translate="no">GlificWeb.Resolvers.Searches</a>
 
   </div>
 
@@ -1794,7 +2350,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Settings.html">GlificWeb.Resolvers.Settings</a>
+    <a href="GlificWeb.Resolvers.Settings.html" translate="no">GlificWeb.Resolvers.Settings</a>
 
   </div>
 
@@ -1804,7 +2360,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Tags.html">GlificWeb.Resolvers.Tags</a>
+    <a href="GlificWeb.Resolvers.Tags.html" translate="no">GlificWeb.Resolvers.Tags</a>
 
   </div>
 
@@ -1814,7 +2370,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Templates.html">GlificWeb.Resolvers.Templates</a>
+    <a href="GlificWeb.Resolvers.Templates.html" translate="no">GlificWeb.Resolvers.Templates</a>
 
   </div>
 
@@ -1824,7 +2380,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Triggers.html">GlificWeb.Resolvers.Triggers</a>
+    <a href="GlificWeb.Resolvers.Triggers.html" translate="no">GlificWeb.Resolvers.Triggers</a>
 
   </div>
 
@@ -1834,7 +2390,7 @@ This layer basically stiches together one or more calls to resolve the incoming 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.Users.html">GlificWeb.Resolvers.Users</a>
+    <a href="GlificWeb.Resolvers.Users.html" translate="no">GlificWeb.Resolvers.Users</a>
 
   </div>
 
@@ -1844,7 +2400,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Resolvers.WebhookLogs.html">GlificWeb.Resolvers.WebhookLogs</a>
+    <a href="GlificWeb.Resolvers.WebhookLogs.html" translate="no">GlificWeb.Resolvers.WebhookLogs</a>
 
   </div>
 
@@ -1854,7 +2410,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Router.html">GlificWeb.Router</a>
+    <a href="GlificWeb.Router.html" translate="no">GlificWeb.Router</a>
 
   </div>
 
@@ -1863,7 +2419,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Router.Helpers.html">GlificWeb.Router.Helpers</a>
+    <a href="GlificWeb.Router.Helpers.html" translate="no">GlificWeb.Router.Helpers</a>
 
   </div>
 
@@ -1872,7 +2428,7 @@ one or more calls to resolve the incoming queries.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.html">GlificWeb.Schema</a>
+    <a href="GlificWeb.Schema.html" translate="no">GlificWeb.Schema</a>
 
   </div>
 
@@ -1882,7 +2438,25 @@ This file is primarily a container and pulls in the relevant information for dat
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.ContactGroupTypes.html">GlificWeb.Schema.ContactGroupTypes</a>
+    <a href="GlificWeb.Schema.BillingTypes.html" translate="no">GlificWeb.Schema.BillingTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Billing DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.ConsultingHourTypes.html" translate="no">GlificWeb.Schema.ConsultingHourTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Consulting Hours DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.ContactGroupTypes.html" translate="no">GlificWeb.Schema.ContactGroupTypes</a>
 
   </div>
 
@@ -1891,7 +2465,7 @@ This file is primarily a container and pulls in the relevant information for dat
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.ContactTagTypes.html">GlificWeb.Schema.ContactTagTypes</a>
+    <a href="GlificWeb.Schema.ContactTagTypes.html" translate="no">GlificWeb.Schema.ContactTagTypes</a>
 
   </div>
 
@@ -1900,7 +2474,7 @@ This file is primarily a container and pulls in the relevant information for dat
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.ContactTypes.html">GlificWeb.Schema.ContactTypes</a>
+    <a href="GlificWeb.Schema.ContactTypes.html" translate="no">GlificWeb.Schema.ContactTypes</a>
 
   </div>
 
@@ -1909,7 +2483,16 @@ This file is primarily a container and pulls in the relevant information for dat
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.CredentialTypes.html">GlificWeb.Schema.CredentialTypes</a>
+    <a href="GlificWeb.Schema.ContactsFieldTypes.html" translate="no">GlificWeb.Schema.ContactsFieldTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Contact Field DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.CredentialTypes.html" translate="no">GlificWeb.Schema.CredentialTypes</a>
 
   </div>
 
@@ -1918,7 +2501,7 @@ This file is primarily a container and pulls in the relevant information for dat
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.EnumTypes.html">GlificWeb.Schema.EnumTypes</a>
+    <a href="GlificWeb.Schema.EnumTypes.html" translate="no">GlificWeb.Schema.EnumTypes</a>
 
   </div>
 
@@ -1928,7 +2511,25 @@ atoms in the object definitions within the GraphQL Schema</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.FlowTypes.html">GlificWeb.Schema.FlowTypes</a>
+    <a href="GlificWeb.Schema.ExtensionTypes.html" translate="no">GlificWeb.Schema.ExtensionTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Extension DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.FlowLabelTypes.html" translate="no">GlificWeb.Schema.FlowLabelTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of FlowLabel DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.FlowTypes.html" translate="no">GlificWeb.Schema.FlowTypes</a>
 
   </div>
 
@@ -1937,7 +2538,7 @@ atoms in the object definitions within the GraphQL Schema</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.GenericTypes.html">GlificWeb.Schema.GenericTypes</a>
+    <a href="GlificWeb.Schema.GenericTypes.html" translate="no">GlificWeb.Schema.GenericTypes</a>
 
   </div>
 
@@ -1947,7 +2548,7 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.GroupTypes.html">GlificWeb.Schema.GroupTypes</a>
+    <a href="GlificWeb.Schema.GroupTypes.html" translate="no">GlificWeb.Schema.GroupTypes</a>
 
   </div>
 
@@ -1956,7 +2557,16 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.LanguageTypes.html">GlificWeb.Schema.LanguageTypes</a>
+    <a href="GlificWeb.Schema.InteractiveTemplateTypes.html" translate="no">GlificWeb.Schema.InteractiveTemplateTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Interactive DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.LanguageTypes.html" translate="no">GlificWeb.Schema.LanguageTypes</a>
 
   </div>
 
@@ -1965,7 +2575,7 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.LocationTypes.html">GlificWeb.Schema.LocationTypes</a>
+    <a href="GlificWeb.Schema.LocationTypes.html" translate="no">GlificWeb.Schema.LocationTypes</a>
 
   </div>
 
@@ -1974,7 +2584,16 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.MessageMediaTypes.html">GlificWeb.Schema.MessageMediaTypes</a>
+    <a href="GlificWeb.Schema.MediaTypes.html" translate="no">GlificWeb.Schema.MediaTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Location DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.MessageMediaTypes.html" translate="no">GlificWeb.Schema.MessageMediaTypes</a>
 
   </div>
 
@@ -1983,7 +2602,7 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.MessageTagTypes.html">GlificWeb.Schema.MessageTagTypes</a>
+    <a href="GlificWeb.Schema.MessageTagTypes.html" translate="no">GlificWeb.Schema.MessageTagTypes</a>
 
   </div>
 
@@ -1992,7 +2611,7 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.MessageTypes.html">GlificWeb.Schema.MessageTypes</a>
+    <a href="GlificWeb.Schema.MessageTypes.html" translate="no">GlificWeb.Schema.MessageTypes</a>
 
   </div>
 
@@ -2001,7 +2620,7 @@ Glific's DataType</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.Middleware.AddOrganization.html">GlificWeb.Schema.Middleware.AddOrganization</a>
+    <a href="GlificWeb.Schema.Middleware.AddOrganization.html" translate="no">GlificWeb.Schema.Middleware.AddOrganization</a>
 
   </div>
 
@@ -2011,7 +2630,7 @@ consumable and displayable to the API user. This version is specifically for mut
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.Middleware.Authorize.html">GlificWeb.Schema.Middleware.Authorize</a>
+    <a href="GlificWeb.Schema.Middleware.Authorize.html" translate="no">GlificWeb.Schema.Middleware.Authorize</a>
 
   </div>
 
@@ -2021,7 +2640,7 @@ consumable and displayable to the API user. This version is specifically for mut
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.Middleware.ChangesetErrors.html">GlificWeb.Schema.Middleware.ChangesetErrors</a>
+    <a href="GlificWeb.Schema.Middleware.ChangesetErrors.html" translate="no">GlificWeb.Schema.Middleware.ChangesetErrors</a>
 
   </div>
 
@@ -2031,7 +2650,7 @@ consumable and displayable to the API user. This version is specifically for mut
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.Middleware.QueryErrors.html">GlificWeb.Schema.Middleware.QueryErrors</a>
+    <a href="GlificWeb.Schema.Middleware.QueryErrors.html" translate="no">GlificWeb.Schema.Middleware.QueryErrors</a>
 
   </div>
 
@@ -2041,7 +2660,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.NotificationTypes.html">GlificWeb.Schema.NotificationTypes</a>
+    <a href="GlificWeb.Schema.NotificationTypes.html" translate="no">GlificWeb.Schema.NotificationTypes</a>
 
   </div>
 
@@ -2050,7 +2669,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.OrganizationTypes.html">GlificWeb.Schema.OrganizationTypes</a>
+    <a href="GlificWeb.Schema.OrganizationTypes.html" translate="no">GlificWeb.Schema.OrganizationTypes</a>
 
   </div>
 
@@ -2059,7 +2678,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.ProviderTypes.html">GlificWeb.Schema.ProviderTypes</a>
+    <a href="GlificWeb.Schema.ProviderTypes.html" translate="no">GlificWeb.Schema.ProviderTypes</a>
 
   </div>
 
@@ -2068,7 +2687,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.SearchTypes.html">GlificWeb.Schema.SearchTypes</a>
+    <a href="GlificWeb.Schema.SearchTypes.html" translate="no">GlificWeb.Schema.SearchTypes</a>
 
   </div>
 
@@ -2077,7 +2696,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.SessionTemplateTypes.html">GlificWeb.Schema.SessionTemplateTypes</a>
+    <a href="GlificWeb.Schema.SessionTemplateTypes.html" translate="no">GlificWeb.Schema.SessionTemplateTypes</a>
 
   </div>
 
@@ -2086,7 +2705,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.TagTypes.html">GlificWeb.Schema.TagTypes</a>
+    <a href="GlificWeb.Schema.TagTypes.html" translate="no">GlificWeb.Schema.TagTypes</a>
 
   </div>
 
@@ -2095,7 +2714,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.TemplateTagTypes.html">GlificWeb.Schema.TemplateTagTypes</a>
+    <a href="GlificWeb.Schema.TemplateTagTypes.html" translate="no">GlificWeb.Schema.TemplateTagTypes</a>
 
   </div>
 
@@ -2104,7 +2723,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.TriggerTypes.html">GlificWeb.Schema.TriggerTypes</a>
+    <a href="GlificWeb.Schema.TriggerTypes.html" translate="no">GlificWeb.Schema.TriggerTypes</a>
 
   </div>
 
@@ -2113,7 +2732,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.UserGroupTypes.html">GlificWeb.Schema.UserGroupTypes</a>
+    <a href="GlificWeb.Schema.UserGroupTypes.html" translate="no">GlificWeb.Schema.UserGroupTypes</a>
 
   </div>
 
@@ -2122,7 +2741,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.UserTypes.html">GlificWeb.Schema.UserTypes</a>
+    <a href="GlificWeb.Schema.UserTypes.html" translate="no">GlificWeb.Schema.UserTypes</a>
 
   </div>
 
@@ -2131,7 +2750,7 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Schema.WebhookLogTypes.html">GlificWeb.Schema.WebhookLogTypes</a>
+    <a href="GlificWeb.Schema.WebhookLogTypes.html" translate="no">GlificWeb.Schema.WebhookLogTypes</a>
 
   </div>
 
@@ -2140,7 +2759,34 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.SubdomainPlug.html">GlificWeb.SubdomainPlug</a>
+    <a href="GlificWeb.StatsLive.html" translate="no">GlificWeb.StatsLive</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>StatsLive uses phoenix live view to show current stats</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.StripeController.html" translate="no">GlificWeb.StripeController</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The controller for all events received from Stripe</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.StripeWebhook.html" translate="no">GlificWeb.StripeWebhook</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Simple plug to handle and authenticate incoming webhook calls from Stripe</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.SubdomainPlug.html" translate="no">GlificWeb.SubdomainPlug</a>
 
   </div>
 
@@ -2150,7 +2796,7 @@ value set on subdomain.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.SubdomainPlugConfig.html">GlificWeb.SubdomainPlugConfig</a>
+    <a href="GlificWeb.SubdomainPlugConfig.html" translate="no">GlificWeb.SubdomainPlugConfig</a>
 
   </div>
 
@@ -2159,12 +2805,12 @@ value set on subdomain.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="GlificWeb.Tenants.html">GlificWeb.Tenants</a>
+    <a href="GlificWeb.Tenants.html" translate="no">GlificWeb.Tenants</a>
 
   </div>
 
     <div class="summary-synopsis"><p>This is the main module of multi-tenancy in Glific. It has been borrowed from
-Triplex. (<a href="https://github.com/ateliware/triplex).">https://github.com/ateliware/triplex).</a> However we are going to us
+Triplex. (<a href="https://github.com/ateliware/triplex">https://github.com/ateliware/triplex</a>). However we are going to us
 postgres row level security instead, and hence copying the code from there. The
 original copyright and license (MIT) belong to the contributors to Triplex.</p></div>
 
@@ -2193,34 +2839,25 @@ Glific - Two Way Open Source Communication Platform
 </div>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>

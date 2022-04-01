@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>Glific.Flows.ContactField — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>Glific.Flows.ContactField — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -79,99 +86,160 @@ Glific
   <div class="content-outer">
     <div id="content" class="content-inner">
 
-      <h1>
-Glific.Flows.ContactField <small class="app-vsn">(Glific v1.3.3)</small>
-
-          <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L1" title="View Source" class="view-source" rel="help">
-            <span class="icon-code" aria-hidden="true"></span>
-            <span class="sr-only">View Source</span>
-          </a>
-
-      </h1>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-        <section id="moduledoc">
+    <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">Glific.Flows.ContactField</span> 
+  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
 <p>Since many of the functions set/update fields in contact and related tables, lets
 centralize all the code here for now</p>
-        </section>
+  </section>
 
 
-        <section id="summary" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#summary">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
-            Summary
-          </h1>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#add_contact_field/5">add_contact_field(context, field, label, value, type)</a>
 
-  </div>
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#add_contact_field/5" translate="no">add_contact_field(context, field, label, value, type)</a>
 
-    <div class="summary-synopsis"><p>Add a field {key, value} to a contact. For now, all preferences are stored under the
+        </div>
+
+          <div class="summary-synopsis"><p>Add a field {key, value} to a contact. For now, all preferences are stored under the
 settings map, with a sub-map of preferences. We expect to get more clarity on this soon</p></div>
 
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#create_contact_field/1">create_contact_field(attrs)</a>
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#count_contacts_fields/1" translate="no">count_contacts_fields(args)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Return the count of contacts_fields, using the same filter as list_contacts_fields</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#create_contact_field/1" translate="no">create_contact_field(attrs)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Create contact field</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#delete_contacts_field/1" translate="no">delete_contacts_field(contacts_field)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Deletes a contact field.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#do_add_contact_field/5" translate="no">do_add_contact_field(contact, field, label, value, type \\ &quot;string&quot;)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Add contact field taking contact as parameter. We should change the name of this function for the consistency</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list_contacts_fields/1" translate="no">list_contacts_fields(args)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>list contacts fields.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#parse_contact_field_value/2" translate="no">parse_contact_field_value(context, value)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  parse contact fields values with check if it has</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#reset_contact_fields/1" translate="no">reset_contact_fields(context)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Reset the fields for a contact.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update_contacts_field/2" translate="no">update_contacts_field(contacts_field, attrs)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Updates a contact field.</p></div>
+
+      </div>
 
   </div>
 
-    <div class="summary-synopsis"><p>Create contact field</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#list_contacts_fields/1">list_contacts_fields(args)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>list contacts fields.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#reset_contact_fields/1">reset_contact_fields(context)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Reset the fields for a contact.</p></div>
-
-</div>
-
-  </div>
-
-        </section>
+  </section>
 
 
-        <section id="functions" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#functions">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
 Functions
-          </h1>
-          <div class="functions-list">
+    </h1>
+    <div class="functions-list">
 <section class="detail" id="add_contact_field/5">
 
   <div class="detail-header">
     <a href="#add_contact_field/5" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">add_contact_field(context, field, label, value, type)</h1>
+    <h1 class="signature" translate="no">add_contact_field(context, field, label, value, type)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L20" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L22" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -180,16 +248,16 @@ Functions
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>add_contact_field(
+          <pre translate="no"><span class="attribute">@spec</span> add_contact_field(
   <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
   <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()
-) :: <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>()</pre>
+) ::
+  <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>()</pre>
 
       </div>
 
@@ -197,17 +265,17 @@ Functions
 settings map, with a sub-map of preferences. We expect to get more clarity on this soon</p>
   </section>
 </section>
-<section class="detail" id="create_contact_field/1">
+<section class="detail" id="count_contacts_fields/1">
 
   <div class="detail-header">
-    <a href="#create_contact_field/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#count_contacts_fields/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">create_contact_field(attrs)</h1>
+    <h1 class="signature" translate="no">count_contacts_fields(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L64" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L122" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -216,28 +284,55 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>create_contact_field(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.5.8/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> count_contacts_fields(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+
+      </div>
+
+<p>Return the count of contacts_fields, using the same filter as list_contacts_fields</p>
+  </section>
+</section>
+<section class="detail" id="create_contact_field/1">
+
+  <div class="detail-header">
+    <a href="#create_contact_field/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">create_contact_field(attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L129" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> create_contact_field(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
 <p>Create contact field</p>
   </section>
 </section>
-<section class="detail" id="list_contacts_fields/1">
+<section class="detail" id="delete_contacts_field/1">
 
   <div class="detail-header">
-    <a href="#list_contacts_fields/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#delete_contacts_field/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">list_contacts_fields(args)</h1>
+    <h1 class="signature" translate="no">delete_contacts_field(contacts_field)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L57" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L173" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -246,27 +341,102 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>list_contacts_fields(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()]</pre>
+          <pre translate="no"><span class="attribute">@spec</span> delete_contacts_field(<a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()) ::
+  {:ok, <a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Deletes a contact field.</p><h2 id="delete_contacts_field/1-examples" class="section-heading">
+  <a href="#delete_contacts_field/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contacts_field</span><span class="p" data-group-id="3439359731-1">(</span><span class="n">contacts_field</span><span class="p" data-group-id="3439359731-1">)</span><span class="w">
+</span><span class="p" data-group-id="3439359731-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3439359731-3">%</span><span class="nc" data-group-id="3439359731-3">ContactsField</span><span class="p" data-group-id="3439359731-3">{</span><span class="p" data-group-id="3439359731-3">}</span><span class="p" data-group-id="3439359731-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contacts_field</span><span class="p" data-group-id="3439359731-4">(</span><span class="n">contacts_field</span><span class="p" data-group-id="3439359731-4">)</span><span class="w">
+</span><span class="p" data-group-id="3439359731-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3439359731-6">%</span><span class="nc" data-group-id="3439359731-6">Ecto.Changeset</span><span class="p" data-group-id="3439359731-6">{</span><span class="p" data-group-id="3439359731-6">}</span><span class="p" data-group-id="3439359731-5">}</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="do_add_contact_field/5">
+
+    <span id="do_add_contact_field/4"></span>
+
+  <div class="detail-header">
+    <a href="#do_add_contact_field/5" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">do_add_contact_field(contact, field, label, value, type \\ &quot;string&quot;)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L33" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> do_add_contact_field(
+  <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()
+) ::
+  <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()</pre>
+
+      </div>
+
+<p>Add contact field taking contact as parameter. We should change the name of this function for the consistency</p>
+  </section>
+</section>
+<section class="detail" id="list_contacts_fields/1">
+
+  <div class="detail-header">
+    <a href="#list_contacts_fields/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">list_contacts_fields(args)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L105" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> list_contacts_fields(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()]</pre>
 
       </div>
 
 <p>list contacts fields.</p>
   </section>
 </section>
-<section class="detail" id="reset_contact_fields/1">
+<section class="detail" id="parse_contact_field_value/2">
 
   <div class="detail-header">
-    <a href="#reset_contact_fields/1" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+    <a href="#parse_contact_field_value/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">reset_contact_fields(context)</h1>
+    <h1 class="signature" translate="no">parse_contact_field_value(context, value)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/flows/contact_field.ex#L43" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L89" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -275,10 +445,38 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
 
   <section class="docstring">
 
-      <h2>Specs</h2>
       <div class="specs">
 
-          <pre>reset_contact_fields(<a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>()) ::
+          <pre translate="no"><span class="attribute">@spec</span> parse_contact_field_value(<a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) ::
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()</pre>
+
+      </div>
+
+<p>  parse contact fields values with check if it has</p>
+  </section>
+</section>
+<section class="detail" id="reset_contact_fields/1">
+
+  <div class="detail-header">
+    <a href="#reset_contact_fields/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">reset_contact_fields(context)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L70" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> reset_contact_fields(<a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>()) ::
   <a href="Glific.Flows.FlowContext.html#t:t/0">Glific.Flows.FlowContext.t</a>()</pre>
 
       </div>
@@ -286,39 +484,71 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
 <p>Reset the fields for a contact.</p>
   </section>
 </section>
+<section class="detail" id="update_contacts_field/2">
 
-          </div>
-        </section>
+  <div class="detail-header">
+    <a href="#update_contacts_field/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">update_contacts_field(contacts_field, attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_field.ex#L153" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> update_contacts_field(<a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, <a href="Glific.Contacts.ContactsField.html#t:t/0">Glific.Contacts.ContactsField.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Updates a contact field.</p><h2 id="update_contacts_field/2-examples" class="section-heading">
+  <a href="#update_contacts_field/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_contacts_field</span><span class="p" data-group-id="6482333839-1">(</span><span class="n">contacts_field</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6482333839-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="6482333839-2">}</span><span class="p" data-group-id="6482333839-1">)</span><span class="w">
+</span><span class="p" data-group-id="6482333839-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6482333839-4">%</span><span class="nc" data-group-id="6482333839-4">ContactsField</span><span class="p" data-group-id="6482333839-4">{</span><span class="p" data-group-id="6482333839-4">}</span><span class="p" data-group-id="6482333839-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contacts_field</span><span class="p" data-group-id="6482333839-5">(</span><span class="n">contacts_field</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6482333839-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6482333839-6">}</span><span class="p" data-group-id="6482333839-5">)</span><span class="w">
+</span><span class="p" data-group-id="6482333839-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6482333839-8">%</span><span class="nc" data-group-id="6482333839-8">Ecto.Changeset</span><span class="p" data-group-id="6482333839-8">{</span><span class="p" data-group-id="6482333839-8">}</span><span class="p" data-group-id="6482333839-7">}</span></code></pre>
+  </section>
+</section>
+
+    </div>
+  </section>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/flows/contact_field.ex">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>

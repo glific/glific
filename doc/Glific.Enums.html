@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>Glific.Enums — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>Glific.Enums — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -79,170 +86,224 @@ Glific
   <div class="content-outer">
     <div id="content" class="content-inner">
 
-      <h1>
-Glific.Enums <small class="app-vsn">(Glific v1.3.3)</small>
-
-          <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L1" title="View Source" class="view-source" rel="help">
-            <span class="icon-code" aria-hidden="true"></span>
-            <span class="sr-only">View Source</span>
-          </a>
-
-      </h1>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-        <section id="moduledoc">
+    <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">Glific.Enums</span> 
+  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
 <p>The Enum provides a location for all enum related macros. All the constants that
 Ecto/Elixir used are exposed here as macros, so other files can invoke them as simple
 functions</p>
-        </section>
+  </section>
 
 
-        <section id="summary" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#summary">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
-            Summary
-          </h1>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#api_status_const/0">api_status_const()</a>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#api_status_const/0" translate="no">api_status_const()</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Lets ensure that the constants evaluate to some expected values</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#contact_field_scope_const/0" translate="no">contact_field_scope_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#contact_field_value_type_const/0" translate="no">contact_field_value_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#contact_provider_status_const/0" translate="no">contact_provider_status_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#contact_status_const/0" translate="no">contact_status_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#flow_action_type_const/0" translate="no">flow_action_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#flow_case_const/0" translate="no">flow_case_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#flow_router_const/0" translate="no">flow_router_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#flow_type_const/0" translate="no">flow_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#import_contacts_type_const/0" translate="no">import_contacts_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#interactive_message_type_const/0" translate="no">interactive_message_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#message_flow_const/0" translate="no">message_flow_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#message_status_const/0" translate="no">message_status_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#message_type_const/0" translate="no">message_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#organization_status_const/0" translate="no">organization_status_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#question_type_const/0" translate="no">question_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#sort_order_const/0" translate="no">sort_order_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#template_button_type_const/0" translate="no">template_button_type_const()</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#user_roles_const/0" translate="no">user_roles_const()</a>
+
+        </div>
+
+      </div>
 
   </div>
 
-    <div class="summary-synopsis"><p>Lets ensure that the constants evaluate to some expected values</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#contact_field_scope_const/0">contact_field_scope_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#contact_field_value_type_const/0">contact_field_value_type_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#contact_provider_status_const/0">contact_provider_status_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#contact_status_const/0">contact_status_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#flow_action_type_const/0">flow_action_type_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#flow_case_const/0">flow_case_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#flow_router_const/0">flow_router_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#flow_type_const/0">flow_type_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#message_flow_const/0">message_flow_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#message_status_const/0">message_status_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#message_type_const/0">message_type_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#question_type_const/0">question_type_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#sort_order_const/0">sort_order_const()</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#user_roles_const/0">user_roles_const()</a>
-
-  </div>
-
-</div>
-
-  </div>
-
-        </section>
+  </section>
 
 
-        <section id="functions" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#functions">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
 Functions
-          </h1>
-          <div class="functions-list">
+    </h1>
+    <div class="functions-list">
 <section class="detail" id="api_status_const/0">
 
   <div class="detail-header">
     <a href="#api_status_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">api_status_const()</h1>
+    <h1 class="signature" translate="no">api_status_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L102" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L114" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -254,7 +315,9 @@ Functions
   <section class="docstring">
 
 <p>Lets ensure that the constants evaluate to some expected values</p><h2 id="api_status_const/0-examples" class="section-heading">
-  <a href="#api_status_const/0-examples" class="hover-link"><span class="icon-link" aria-hidden="true"></span></a>
+  <a href="#api_status_const/0-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
   Examples
 </h2>
 <p>iex&gt; Glific.Enums.api_status_const()
@@ -268,7 +331,7 @@ Functions
 [:message]</p><p>iex&gt; Glific.Enums.message_flow_const()
 [:inbound, :outbound]</p><p>iex&gt; Glific.Enums.message_status_const()
 [:sent, :delivered, :enqueued, :error, :read, :received, :contact_opt_out]</p><p>iex&gt; Glific.Enums.message_type_const()
-[:audio, :contact, :document, :hsm, :image, :location, :text, :video, :sticker]</p><p>iex&gt; Glific.Enums.question_type_const()
+[:audio, :contact, :document, :hsm, :image, :location, :list, :quick_reply, :text, :video, :sticker]</p><p>iex&gt; Glific.Enums.question_type_const()
 [:text, :numeric, :date]</p><p>iex&gt; Glific.Enums.sort_order_const()
 [:asc, :desc]</p><p>We also test the ecto enums in this file, since they exist outside a module</p><p>iex&gt; Glific.Enums.APIStatus.<strong>enum_map</strong>()
 Glific.Enums.api_status_const()</p><p>iex&gt; Glific.Enums.ContactStatus.<strong>enum_map</strong>()
@@ -285,20 +348,24 @@ Glific.Enums.question_type_const()</p><p>iex&gt; Glific.Enums.SortOrder.<strong>
 Glific.Enums.sort_order_const()</p><p>iex&gt; Glific.Enums.ContactFieldValueType.<strong>enum_map</strong>()
 Glific.Enums.contact_field_value_type_const()</p><p>iex&gt; Glific.Enums.ContactFieldScope.<strong>enum_map</strong>()
 Glific.Enums.contact_field_scope_const()</p><p>iex&gt; Glific.Enums.UserRoles.<strong>enum_map</strong>()
-Glific.Enums.user_roles_const()</p>
+Glific.Enums.user_roles_const()</p><p>iex&gt; Glific.Enums.TemplateButtonType.<strong>enum_map</strong>()
+Glific.Enums.template_button_type_const()</p><p>iex&gt; Glific.Enums.OrganizationStatus.<strong>enum_map</strong>()
+Glific.Enums.organization_status_const()</p><p>iex&gt; Glific.Enums.InteractiveMessageType.<strong>enum_map</strong>()
+Glific.Enums.interactive_message_type_const()</p><p>iex&gt; Glific.Enums.ImportContactsType.<strong>enum_map</strong>()
+Glific.Enums.import_contacts_type_const()</p>
   </section>
 </section>
 <section class="detail" id="contact_field_scope_const/0">
 
   <div class="detail-header">
     <a href="#contact_field_scope_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">contact_field_scope_const()</h1>
+    <h1 class="signature" translate="no">contact_field_scope_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L141" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L153" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -316,13 +383,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#contact_field_value_type_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">contact_field_value_type_const()</h1>
+    <h1 class="signature" translate="no">contact_field_value_type_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L138" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L150" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -340,13 +407,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#contact_provider_status_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">contact_provider_status_const()</h1>
+    <h1 class="signature" translate="no">contact_provider_status_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L108" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L120" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -364,13 +431,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#contact_status_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">contact_status_const()</h1>
+    <h1 class="signature" translate="no">contact_status_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L105" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L117" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -388,13 +455,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#flow_action_type_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">flow_action_type_const()</h1>
+    <h1 class="signature" translate="no">flow_action_type_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L117" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L129" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -412,13 +479,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#flow_case_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">flow_case_const()</h1>
+    <h1 class="signature" translate="no">flow_case_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L111" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L123" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -436,13 +503,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#flow_router_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">flow_router_const()</h1>
+    <h1 class="signature" translate="no">flow_router_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L114" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L126" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -460,13 +527,61 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#flow_type_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">flow_type_const()</h1>
+    <h1 class="signature" translate="no">flow_type_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L120" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L132" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+      <span class="note">(macro)</span>
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="import_contacts_type_const/0">
+
+  <div class="detail-header">
+    <a href="#import_contacts_type_const/0" class="detail-link" title="Link to this macro">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this macro</span>
+    </a>
+    <h1 class="signature" translate="no">import_contacts_type_const()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L168" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+      <span class="note">(macro)</span>
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="interactive_message_type_const/0">
+
+  <div class="detail-header">
+    <a href="#interactive_message_type_const/0" class="detail-link" title="Link to this macro">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this macro</span>
+    </a>
+    <h1 class="signature" translate="no">interactive_message_type_const()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L165" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -484,13 +599,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#message_flow_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">message_flow_const()</h1>
+    <h1 class="signature" translate="no">message_flow_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L123" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L135" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -508,13 +623,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#message_status_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">message_status_const()</h1>
+    <h1 class="signature" translate="no">message_status_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L126" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L138" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -532,13 +647,37 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#message_type_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">message_type_const()</h1>
+    <h1 class="signature" translate="no">message_type_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L129" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L141" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+      <span class="note">(macro)</span>
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="organization_status_const/0">
+
+  <div class="detail-header">
+    <a href="#organization_status_const/0" class="detail-link" title="Link to this macro">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this macro</span>
+    </a>
+    <h1 class="signature" translate="no">organization_status_const()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L162" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -556,13 +695,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#question_type_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">question_type_const()</h1>
+    <h1 class="signature" translate="no">question_type_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L132" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L144" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -580,13 +719,37 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#sort_order_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">sort_order_const()</h1>
+    <h1 class="signature" translate="no">sort_order_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L135" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L147" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+      <span class="note">(macro)</span>
+
+  </div>
+
+  <section class="docstring">
+
+
+  </section>
+</section>
+<section class="detail" id="template_button_type_const/0">
+
+  <div class="detail-header">
+    <a href="#template_button_type_const/0" class="detail-link" title="Link to this macro">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this macro</span>
+    </a>
+    <h1 class="signature" translate="no">template_button_type_const()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L159" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -604,13 +767,13 @@ Glific.Enums.user_roles_const()</p>
 
   <div class="detail-header">
     <a href="#user_roles_const/0" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">user_roles_const()</h1>
+    <h1 class="signature" translate="no">user_roles_const()</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific/enums/enums.ex#L144" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/enums/enums.ex#L156" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -625,38 +788,31 @@ Glific.Enums.user_roles_const()</p>
   </section>
 </section>
 
-          </div>
-        </section>
+    </div>
+  </section>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/enums/enums.ex">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>

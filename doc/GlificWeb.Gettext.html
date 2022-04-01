@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.24.1">
-    <meta name="project" content="Glific v1.3.3">
+    <meta name="generator" content="ExDoc v0.28.3">
+    <meta name="project" content="Glific v4.3.0">
 
-    <title>GlificWeb.Gettext — Glific v1.3.3</title>
-    <link rel="stylesheet" href="dist/elixir-a172fe91e725dcb259e2.css" />
+    <title>GlificWeb.Gettext — Glific v4.3.0</title>
+    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
 
-    <script src="dist/sidebar_items-35501c8f01.js"></script>
+    <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-f27ff079945e43879c46.js"></script>
+    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
 
 
   </head>
@@ -22,27 +22,34 @@
     <script>
 
       try {
-        if (localStorage.getItem('night-mode') === 'true') {
-          document.body.classList.add('night-mode');
+        var settings = JSON.parse(localStorage.getItem('ex_doc:settings') || '{}');
+
+        if (settings.theme === 'dark' ||
+           ((settings.theme === 'system' || settings.theme == null) &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)
+           ) {
+          document.body.classList.add('dark')
         }
       } catch (error) { }
     </script>
 
 <div class="main">
 
-<button class="sidebar-button sidebar-toggle">
-  <span class="icon-menu" title="Collapse/expand sidebar"></span>
-</button>
 
 <section class="sidebar">
+  <button class="sidebar-button sidebar-toggle" aria-label="toggle sidebar">
+    <i class="ri-menu-line ri-lg" title="Collapse/expand sidebar"></i>
+  </button>
+
   <form class="sidebar-search" action="search.html">
     <button type="submit" class="search-button" aria-label="Submit Search">
-      <span class="icon-search" aria-hidden="true" title="Submit search"></span>
+      <i class="ri-search-2-line" aria-hidden="true" title="Submit search"></i>
     </button>
     <button type="button" tabindex="-1" class="search-close-button" aria-label="Cancel Search">
-      <span class="icon-cross" aria-hidden="true" title="Cancel search"></span>
+      <i class="ri-close-line ri-lg" aria-hidden="true" title="Cancel search"></i>
     </button>
     <label class="search-label">
+      <p class="sr-only">Search</p>
       <input name="q" type="text" class="search-input" placeholder="Search..." aria-label="Input your search terms" autocomplete="off" />
     </label>
   </form>
@@ -53,24 +60,24 @@
   </div>
 
   <div class="sidebar-header">
+
     <div class="sidebar-projectDetails">
-      <a href="https://glific.io" class="sidebar-projectName">
+      <a href="https://glific.io" class="sidebar-projectName" translate="no">
 Glific
       </a>
-      <strong class="sidebar-projectVersion">
-        v1.3.3
+      <strong class="sidebar-projectVersion" translate="no">
+        v4.3.0
       </strong>
     </div>
+    <ul class="sidebar-listNav">
+      <li><a id="extras-list-link" href="#full-list">Pages</a></li>
 
+        <li><a id="modules-list-link" href="#full-list">Modules</a></li>
+
+
+    </ul>
   </div>
 
-  <ul class="sidebar-listNav">
-    <li><a id="extras-list-link" href="#full-list">Pages</a></li>
-
-      <li><a id="modules-list-link" href="#full-list">Modules</a></li>
-
-
-  </ul>
   <div class="gradient"></div>
   <ul id="full-list" class="sidebar-fullList"></ul>
 </section>
@@ -79,261 +86,290 @@ Glific
   <div class="content-outer">
     <div id="content" class="content-inner">
 
-      <h1>
-GlificWeb.Gettext <small class="app-vsn">(Glific v1.3.3)</small>
-
-          <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" title="View Source" class="view-source" rel="help">
-            <span class="icon-code" aria-hidden="true"></span>
-            <span class="sr-only">View Source</span>
-          </a>
-
-      </h1>
+<h1>
+<button class="settings display-settings">
+  <i class="ri-settings-3-line"></i>
+  <span class="sr-only">Settings</span>
+</button>
 
 
-        <section id="moduledoc">
+    <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" title="View Source" class="view-source" rel="help">
+      <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+      <span class="sr-only">View Source</span>
+    </a>
+
+  <span translate="no">GlificWeb.Gettext</span> 
+  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+
+</h1>
+
+
+  <section id="moduledoc">
 <p>A module providing Internationalization with a gettext-based API.</p><p>By using <a href="https://hexdocs.pm/gettext">Gettext</a>,
-your module gains a set of macros for translations, for example:</p><pre><code class="makeup elixir"><span class="kn">import</span><span class="w"> </span><span class="nc">GlificWeb.Gettext</span><span class="w">
+your module gains a set of macros for translations, for example:</p><pre><code class="makeup elixir" translate="no"><span class="kn">import</span><span class="w"> </span><span class="nc">GlificWeb.Gettext</span><span class="w">
 
 </span><span class="c1"># Simple translation</span><span class="w">
-</span><span class="n">gettext</span><span class="p" data-group-id="1700289525-1">(</span><span class="s">&quot;Here is the string to translate&quot;</span><span class="p" data-group-id="1700289525-1">)</span><span class="w">
+</span><span class="n">gettext</span><span class="p" data-group-id="0659962207-1">(</span><span class="s">&quot;Here is the string to translate&quot;</span><span class="p" data-group-id="0659962207-1">)</span><span class="w">
 
 </span><span class="c1"># Plural translation</span><span class="w">
-</span><span class="n">ngettext</span><span class="p" data-group-id="1700289525-2">(</span><span class="s">&quot;Here is the string to translate&quot;</span><span class="p">,</span><span class="w">
+</span><span class="n">ngettext</span><span class="p" data-group-id="0659962207-2">(</span><span class="s">&quot;Here is the string to translate&quot;</span><span class="p">,</span><span class="w">
          </span><span class="s">&quot;Here are the strings to translate&quot;</span><span class="p">,</span><span class="w">
-         </span><span class="mi">3</span><span class="p" data-group-id="1700289525-2">)</span><span class="w">
+         </span><span class="mi">3</span><span class="p" data-group-id="0659962207-2">)</span><span class="w">
 
 </span><span class="c1"># Domain-based translation</span><span class="w">
-</span><span class="n">dgettext</span><span class="p" data-group-id="1700289525-3">(</span><span class="s">&quot;errors&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Here is the error message to translate&quot;</span><span class="p" data-group-id="1700289525-3">)</span></code></pre><p>See the <a href="https://hexdocs.pm/gettext">Gettext Docs</a> for detailed usage.</p>
-        </section>
+</span><span class="n">dgettext</span><span class="p" data-group-id="0659962207-3">(</span><span class="s">&quot;errors&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Here is the error message to translate&quot;</span><span class="p" data-group-id="0659962207-3">)</span></code></pre><p>See the <a href="https://hexdocs.pm/gettext">Gettext Docs</a> for detailed usage.</p>
+  </section>
 
 
-        <section id="summary" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#summary">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
-            Summary
-          </h1>
+  <section id="summary" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#summary">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
+      Summary
+    </h1>
 
   <div class="summary-functions summary">
     <h2>
       <a href="#functions">Functions</a>
     </h2>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dgettext/3">dgettext(domain, msgid, bindings \\ Macro.escape(%{}))</a>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dgettext/3" translate="no">dgettext(domain, msgid, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dgettext/3"><code class="inline">Gettext.Backend.dgettext/3</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dgettext_noop/2" translate="no">dgettext_noop(domain, msgid)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dgettext_noop/2"><code class="inline">Gettext.Backend.dgettext_noop/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dngettext/5" translate="no">dngettext(domain, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dngettext/5"><code class="inline">Gettext.Backend.dngettext/5</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dngettext_noop/3" translate="no">dngettext_noop(domain, msgid, msgid_plural)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dngettext_noop/3"><code class="inline">Gettext.Backend.dngettext_noop/3</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dpgettext/4" translate="no">dpgettext(domain, msgctxt, msgid, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dpgettext/4"><code class="inline">Gettext.Backend.dpgettext/4</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dpgettext_noop/3" translate="no">dpgettext_noop(domain, msgctxt, msgid)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dpngettext/6" translate="no">dpngettext(domain, msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dpngettext/6"><code class="inline">Gettext.Backend.dpngettext/6</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#dpngettext_noop/4" translate="no">dpngettext_noop(domain, msgctxt, msgid, msgid_plural)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#gettext/2" translate="no">gettext(msgid, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:gettext/2"><code class="inline">Gettext.Backend.gettext/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#gettext_comment/1" translate="no">gettext_comment(comment)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:gettext_comment/1"><code class="inline">Gettext.Backend.gettext_comment/1</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#gettext_noop/1" translate="no">gettext_noop(msgid)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:gettext_noop/1"><code class="inline">Gettext.Backend.gettext_noop/1</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#handle_missing_bindings/2" translate="no">handle_missing_bindings(exception, incomplete)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:handle_missing_bindings/2"><code class="inline">Gettext.Backend.handle_missing_bindings/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#handle_missing_plural_translation/6" translate="no">handle_missing_plural_translation(locale, domain, msgid, msgid_plural, n, bindings)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:handle_missing_plural_translation/6"><code class="inline">Gettext.Backend.handle_missing_plural_translation/6</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#handle_missing_translation/4" translate="no">handle_missing_translation(locale, domain, msgid, bindings)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:handle_missing_translation/4"><code class="inline">Gettext.Backend.handle_missing_translation/4</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#lgettext/5" translate="no">lgettext(locale, domain, msgctxt \\ nil, msgid, bindings)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#lngettext/7" translate="no">lngettext(locale, domain, msgctxt \\ nil, msgid, msgid_plural, n, bindings)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#ngettext/4" translate="no">ngettext(msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:ngettext/4"><code class="inline">Gettext.Backend.ngettext/4</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#ngettext_noop/2" translate="no">ngettext_noop(msgid, msgid_plural)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:ngettext_noop/2"><code class="inline">Gettext.Backend.ngettext_noop/2</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#pgettext/3" translate="no">pgettext(msgctxt, msgid, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:pgettext/3"><code class="inline">Gettext.Backend.pgettext/3</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#pgettext_noop/2" translate="no">pgettext_noop(msgid, context)</a>
+
+        </div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#pngettext/5" translate="no">pngettext(msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:pngettext/5"><code class="inline">Gettext.Backend.pngettext/5</code></a>.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#pngettext_noop/3" translate="no">pngettext_noop(msgctxt, msgid, msgid_plural)</a>
+
+        </div>
+
+      </div>
 
   </div>
 
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dgettext/3"><code class="inline">Gettext.Backend.dgettext/3</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dgettext_noop/2">dgettext_noop(domain, msgid)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dgettext_noop/2"><code class="inline">Gettext.Backend.dgettext_noop/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dngettext/5">dngettext(domain, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dngettext/5"><code class="inline">Gettext.Backend.dngettext/5</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dngettext_noop/3">dngettext_noop(domain, msgid, msgid_plural)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dngettext_noop/3"><code class="inline">Gettext.Backend.dngettext_noop/3</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dpgettext/4">dpgettext(domain, msgctxt, msgid, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dpgettext/4"><code class="inline">Gettext.Backend.dpgettext/4</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dpgettext_noop/3">dpgettext_noop(domain, msgctxt, msgid)</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dpngettext/6">dpngettext(domain, msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dpngettext/6"><code class="inline">Gettext.Backend.dpngettext/6</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#dpngettext_noop/4">dpngettext_noop(domain, msgctxt, msgid, msgid_plural)</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#gettext/2">gettext(msgid, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:gettext/2"><code class="inline">Gettext.Backend.gettext/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#gettext_comment/1">gettext_comment(comment)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:gettext_comment/1"><code class="inline">Gettext.Backend.gettext_comment/1</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#gettext_noop/1">gettext_noop(msgid)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:gettext_noop/1"><code class="inline">Gettext.Backend.gettext_noop/1</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#handle_missing_bindings/2">handle_missing_bindings(exception, incomplete)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:handle_missing_bindings/2"><code class="inline">Gettext.Backend.handle_missing_bindings/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#handle_missing_plural_translation/6">handle_missing_plural_translation(locale, domain, msgid, msgid_plural, n, bindings)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:handle_missing_plural_translation/6"><code class="inline">Gettext.Backend.handle_missing_plural_translation/6</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#handle_missing_translation/4">handle_missing_translation(locale, domain, msgid, bindings)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:handle_missing_translation/4"><code class="inline">Gettext.Backend.handle_missing_translation/4</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#lgettext/5">lgettext(locale, domain, msgctxt \\ nil, msgid, bindings)</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#lngettext/7">lngettext(locale, domain, msgctxt \\ nil, msgid, msgid_plural, n, bindings)</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#ngettext/4">ngettext(msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:ngettext/4"><code class="inline">Gettext.Backend.ngettext/4</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#ngettext_noop/2">ngettext_noop(msgid, msgid_plural)</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:ngettext_noop/2"><code class="inline">Gettext.Backend.ngettext_noop/2</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#pgettext/3">pgettext(msgctxt, msgid, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:pgettext/3"><code class="inline">Gettext.Backend.pgettext/3</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#pgettext_noop/2">pgettext_noop(msgid, context)</a>
-
-  </div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#pngettext/5">pngettext(msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</a>
-
-  </div>
-
-    <div class="summary-synopsis"><p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:pngettext/5"><code class="inline">Gettext.Backend.pngettext/5</code></a>.</p></div>
-
-</div>
-<div class="summary-row">
-  <div class="summary-signature">
-    <a href="#pngettext_noop/3">pngettext_noop(msgctxt, msgid, msgid_plural)</a>
-
-  </div>
-
-</div>
-
-  </div>
-
-        </section>
+  </section>
 
 
-        <section id="functions" class="details-list">
-          <h1 class="section-heading">
-            <a class="hover-link" href="#functions">
-              <span class="icon-link" aria-hidden="true"></span>
-              <span class="sr-only">Link to this section</span>
-            </a>
+  <section id="functions" class="details-list">
+    <h1 class="section-heading">
+      <a class="hover-link" href="#functions">
+        <i class="ri-link-m" aria-hidden="true"></i>
+        <span class="sr-only">Link to this section</span>
+      </a>
 Functions
-          </h1>
-          <div class="functions-list">
+    </h1>
+    <div class="functions-list">
 <section class="detail" id="dgettext/3">
 
     <span id="dgettext/2"></span>
 
   <div class="detail-header">
     <a href="#dgettext/3" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dgettext(domain, msgid, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">dgettext(domain, msgid, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -344,20 +380,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dgettext/3"><code class="inline">Gettext.Backend.dgettext/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dgettext/3"><code class="inline">Gettext.Backend.dgettext/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="dgettext_noop/2">
 
   <div class="detail-header">
     <a href="#dgettext_noop/2" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dgettext_noop(domain, msgid)</h1>
+    <h1 class="signature" translate="no">dgettext_noop(domain, msgid)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -368,7 +404,7 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dgettext_noop/2"><code class="inline">Gettext.Backend.dgettext_noop/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dgettext_noop/2"><code class="inline">Gettext.Backend.dgettext_noop/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="dngettext/5">
@@ -377,13 +413,13 @@ Functions
 
   <div class="detail-header">
     <a href="#dngettext/5" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dngettext(domain, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">dngettext(domain, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -394,20 +430,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dngettext/5"><code class="inline">Gettext.Backend.dngettext/5</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dngettext/5"><code class="inline">Gettext.Backend.dngettext/5</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="dngettext_noop/3">
 
   <div class="detail-header">
     <a href="#dngettext_noop/3" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dngettext_noop(domain, msgid, msgid_plural)</h1>
+    <h1 class="signature" translate="no">dngettext_noop(domain, msgid, msgid_plural)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -418,7 +454,7 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dngettext_noop/3"><code class="inline">Gettext.Backend.dngettext_noop/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dngettext_noop/3"><code class="inline">Gettext.Backend.dngettext_noop/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="dpgettext/4">
@@ -427,13 +463,13 @@ Functions
 
   <div class="detail-header">
     <a href="#dpgettext/4" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dpgettext(domain, msgctxt, msgid, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">dpgettext(domain, msgctxt, msgid, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -444,20 +480,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dpgettext/4"><code class="inline">Gettext.Backend.dpgettext/4</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dpgettext/4"><code class="inline">Gettext.Backend.dpgettext/4</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="dpgettext_noop/3">
 
   <div class="detail-header">
     <a href="#dpgettext_noop/3" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dpgettext_noop(domain, msgctxt, msgid)</h1>
+    <h1 class="signature" translate="no">dpgettext_noop(domain, msgctxt, msgid)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -477,13 +513,13 @@ Functions
 
   <div class="detail-header">
     <a href="#dpngettext/6" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dpngettext(domain, msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">dpngettext(domain, msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -494,20 +530,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:dpngettext/6"><code class="inline">Gettext.Backend.dpngettext/6</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:dpngettext/6"><code class="inline">Gettext.Backend.dpngettext/6</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="dpngettext_noop/4">
 
   <div class="detail-header">
     <a href="#dpngettext_noop/4" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">dpngettext_noop(domain, msgctxt, msgid, msgid_plural)</h1>
+    <h1 class="signature" translate="no">dpngettext_noop(domain, msgctxt, msgid, msgid_plural)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -527,13 +563,13 @@ Functions
 
   <div class="detail-header">
     <a href="#gettext/2" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">gettext(msgid, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">gettext(msgid, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -544,20 +580,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:gettext/2"><code class="inline">Gettext.Backend.gettext/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:gettext/2"><code class="inline">Gettext.Backend.gettext/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="gettext_comment/1">
 
   <div class="detail-header">
     <a href="#gettext_comment/1" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">gettext_comment(comment)</h1>
+    <h1 class="signature" translate="no">gettext_comment(comment)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -568,20 +604,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:gettext_comment/1"><code class="inline">Gettext.Backend.gettext_comment/1</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:gettext_comment/1"><code class="inline">Gettext.Backend.gettext_comment/1</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="gettext_noop/1">
 
   <div class="detail-header">
     <a href="#gettext_noop/1" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">gettext_noop(msgid)</h1>
+    <h1 class="signature" translate="no">gettext_noop(msgid)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -592,20 +628,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:gettext_noop/1"><code class="inline">Gettext.Backend.gettext_noop/1</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:gettext_noop/1"><code class="inline">Gettext.Backend.gettext_noop/1</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="handle_missing_bindings/2">
 
   <div class="detail-header">
     <a href="#handle_missing_bindings/2" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">handle_missing_bindings(exception, incomplete)</h1>
+    <h1 class="signature" translate="no">handle_missing_bindings(exception, incomplete)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L23" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L23" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -614,20 +650,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:handle_missing_bindings/2"><code class="inline">Gettext.Backend.handle_missing_bindings/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:handle_missing_bindings/2"><code class="inline">Gettext.Backend.handle_missing_bindings/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="handle_missing_plural_translation/6">
 
   <div class="detail-header">
     <a href="#handle_missing_plural_translation/6" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">handle_missing_plural_translation(locale, domain, msgid, msgid_plural, n, bindings)</h1>
+    <h1 class="signature" translate="no">handle_missing_plural_translation(locale, domain, msgid, msgid_plural, n, bindings)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L23" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L23" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -636,20 +672,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:handle_missing_plural_translation/6"><code class="inline">Gettext.Backend.handle_missing_plural_translation/6</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:handle_missing_plural_translation/6"><code class="inline">Gettext.Backend.handle_missing_plural_translation/6</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="handle_missing_translation/4">
 
   <div class="detail-header">
     <a href="#handle_missing_translation/4" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">handle_missing_translation(locale, domain, msgid, bindings)</h1>
+    <h1 class="signature" translate="no">handle_missing_translation(locale, domain, msgid, bindings)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L23" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L23" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -658,7 +694,7 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:handle_missing_translation/4"><code class="inline">Gettext.Backend.handle_missing_translation/4</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:handle_missing_translation/4"><code class="inline">Gettext.Backend.handle_missing_translation/4</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="lgettext/5">
@@ -667,13 +703,13 @@ Functions
 
   <div class="detail-header">
     <a href="#lgettext/5" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">lgettext(locale, domain, msgctxt \\ nil, msgid, bindings)</h1>
+    <h1 class="signature" translate="no">lgettext(locale, domain, msgctxt \\ nil, msgid, bindings)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -691,13 +727,13 @@ Functions
 
   <div class="detail-header">
     <a href="#lngettext/7" class="detail-link" title="Link to this function">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature">lngettext(locale, domain, msgctxt \\ nil, msgid, msgid_plural, n, bindings)</h1>
+    <h1 class="signature" translate="no">lngettext(locale, domain, msgctxt \\ nil, msgid, msgid_plural, n, bindings)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -715,13 +751,13 @@ Functions
 
   <div class="detail-header">
     <a href="#ngettext/4" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">ngettext(msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">ngettext(msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -732,20 +768,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:ngettext/4"><code class="inline">Gettext.Backend.ngettext/4</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:ngettext/4"><code class="inline">Gettext.Backend.ngettext/4</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="ngettext_noop/2">
 
   <div class="detail-header">
     <a href="#ngettext_noop/2" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">ngettext_noop(msgid, msgid_plural)</h1>
+    <h1 class="signature" translate="no">ngettext_noop(msgid, msgid_plural)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -756,7 +792,7 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:ngettext_noop/2"><code class="inline">Gettext.Backend.ngettext_noop/2</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:ngettext_noop/2"><code class="inline">Gettext.Backend.ngettext_noop/2</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="pgettext/3">
@@ -765,13 +801,13 @@ Functions
 
   <div class="detail-header">
     <a href="#pgettext/3" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">pgettext(msgctxt, msgid, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">pgettext(msgctxt, msgid, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -782,20 +818,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:pgettext/3"><code class="inline">Gettext.Backend.pgettext/3</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:pgettext/3"><code class="inline">Gettext.Backend.pgettext/3</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="pgettext_noop/2">
 
   <div class="detail-header">
     <a href="#pgettext_noop/2" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">pgettext_noop(msgid, context)</h1>
+    <h1 class="signature" translate="no">pgettext_noop(msgid, context)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -815,13 +851,13 @@ Functions
 
   <div class="detail-header">
     <a href="#pngettext/5" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">pngettext(msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
+    <h1 class="signature" translate="no">pngettext(msgctxt, msgid, msgid_plural, n, bindings \\ Macro.escape(%{}))</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -832,20 +868,20 @@ Functions
 
   <section class="docstring">
 
-<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.18.2/Gettext.Backend.html#c:pngettext/5"><code class="inline">Gettext.Backend.pngettext/5</code></a>.</p>
+<p>Callback implementation for <a href="https://hexdocs.pm/gettext/0.19.1/Gettext.Backend.html#c:pngettext/5"><code class="inline">Gettext.Backend.pngettext/5</code></a>.</p>
   </section>
 </section>
 <section class="detail" id="pngettext_noop/3">
 
   <div class="detail-header">
     <a href="#pngettext_noop/3" class="detail-link" title="Link to this macro">
-      <span class="icon-link" aria-hidden="true"></span>
+      <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this macro</span>
     </a>
-    <h1 class="signature">pngettext_noop(msgctxt, msgid, msgid_plural)</h1>
+    <h1 class="signature" translate="no">pngettext_noop(msgctxt, msgid, msgid_plural)</h1>
 
-      <a href="https://github.com/glific/glific/blob/master/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
-       <span class="icon-code" aria-hidden="true"></span>
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/gettext.ex#L1" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
 
@@ -860,38 +896,31 @@ Functions
   </section>
 </section>
 
-          </div>
-        </section>
+    </div>
+  </section>
 
       <footer class="footer">
-        <p>
-          <span class="line">
-            Built using
-            <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener">ExDoc</a> (v0.24.1) for the
-            <a href="https://elixir-lang.org" title="Elixir" target="_blank">Elixir programming language</a>.
-          </span>
-          <span class="line">
-            Designed by
-            <a href="https://twitter.com/dignifiedquire" target="_blank" rel="noopener" title="@dignifiedquire">Friedel Ziegelmayer</a>.
-          </span>
-        </p>
-        <p>
 
-            <a href="api-reference.html" title="API reference" class="line footer-button">API Reference</a>
+          <p>
+            On Hex.pm:
 
-          <button class="line footer-button display-shortcuts-help">
-            Display keyboard shortcuts
-          </button>
-          <button class="line footer-button night-mode-toggle">
-            Toggle night mode
-          </button>
-          <button class="line footer-button display-quick-switch">
-            Go to a HexDocs package
-          </button>
-          <button class="line footer-button tooltips-toggle">
-            <span class="tooltips-option-disable">Disable tooltips</span>
-            <span class="tooltips-option-enable">Enable tooltips</span>
-          </button>
+            <span class="line">
+              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+
+                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific_web/gettext.ex">(current file)</a>
+
+            </span>
+
+            <button class="line footer-button display-quick-switch">
+              Search
+            </button>
+          </p>
+
+        <p>
+          Built using
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
+          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
         </p>
       </footer>
     </div>
