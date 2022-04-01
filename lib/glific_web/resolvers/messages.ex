@@ -124,8 +124,9 @@ defmodule GlificWeb.Resolvers.Messages do
   def send_hsm_message(_, attrs, %{
         context: %{current_user: user}
       }) do
-    {:ok, message} = Messages.create_and_send_hsm_message(Map.put(attrs, :user_id, user.id))
-    {:ok, %{message: message}}
+    with {:ok, message} <-
+           Messages.create_and_send_hsm_message(Map.put(attrs, :user_id, user.id)),
+         do: {:ok, %{message: message}}
   end
 
   @doc false
@@ -148,8 +149,8 @@ defmodule GlificWeb.Resolvers.Messages do
         }) ::
           {:ok, any} | {:error, any}
   def send_session_message(_, %{id: id, receiver_id: receiver_id}, _) do
-    {:ok, message} = Messages.create_and_send_session_template(id, receiver_id)
-    {:ok, %{message: message}}
+    with {:ok, message} <- Messages.create_and_send_session_template(id, receiver_id),
+         do: {:ok, %{message: message}}
   end
 
   # Message Media Resolver which sits between the GraphQL schema and Glific
