@@ -62,6 +62,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   # fetches app id from phone using partner API
   @spec get_apps_details(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, any}
   defp get_apps_details(organization_id, phone) do
+    # Need to use Caches.fetch and do_get_apps_details should be used as fallback fn but somehow testcases are failing when used
     {:ok, app_id} = Caches.get(organization_id, {:app_id, phone})
 
     if app_id == false,
@@ -93,6 +94,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec get_app_token(non_neg_integer(), String.t()) :: {:ok, map()} | {:error, any}
   defp get_app_token(organization_id, app_id) do
     with {:ok, %{partner_token: partner_token}} <- get_partner_token() do
+      # Need to use Caches.fetch and do_get_apps_details should be used as fallback fn but somehow testcases are failing when used
       {:ok, app_token} = Caches.get(organization_id, {:app_token, app_id})
 
       if app_token == false,
