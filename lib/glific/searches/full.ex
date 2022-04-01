@@ -68,7 +68,6 @@ defmodule Glific.Search.Full do
     do:
       query
       |> apply_filters(args.filter)
-      |> IO.inspect()
 
   @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp apply_filters(query, filter) when is_nil(filter), do: query
