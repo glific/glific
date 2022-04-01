@@ -68,6 +68,7 @@ defmodule Glific.Search.Full do
     do:
       query
       |> apply_filters(args.filter)
+      |> IO.inspect()
 
   @spec apply_filters(Ecto.Queryable.t(), map()) :: Ecto.Queryable.t()
   defp apply_filters(query, filter) when is_nil(filter), do: query
@@ -106,11 +107,13 @@ defmodule Glific.Search.Full do
   defp run_date_range(query, nil, to) do
     query
     |> where([c: c], c.last_message_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day()))
+    |> where([m: m], m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day()))
   end
 
   defp run_date_range(query, from, nil) do
     query
     |> where([c: c], c.last_message_at >= ^Timex.to_datetime(from))
+    |> where([m: m], m.inserted_at >= ^Timex.to_datetime(from))
   end
 
   defp run_date_range(query, from, to) do
@@ -119,6 +122,11 @@ defmodule Glific.Search.Full do
       [c: c],
       c.last_message_at >= ^Timex.to_datetime(from) and
         c.last_message_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
+    )
+    |> where(
+      [m: m],
+      m.inserted_at >= ^Timex.to_datetime(from) and
+        m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
     )
   end
 end
