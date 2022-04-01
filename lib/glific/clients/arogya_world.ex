@@ -163,6 +163,9 @@ defmodule Glific.Clients.ArogyaWorld do
   defp do_hourly_tasks(7, sharing_file_time, org_id, _current_week),
     do: if(sharing_file_time, do: update_week_number(org_id))
 
+  defp do_hourly_tasks(_time, _sharing_file_time, _org_id, _current_week),
+    do: nil
+
   defp get_current_week(organization_id) do
     ## For pilot phase, it will be the day number.
     {:ok, organization_data} =
@@ -580,7 +583,8 @@ defmodule Glific.Clients.ArogyaWorld do
         Integer.to_string(contact["ID"]) === contact_id
       end)
 
-    contact["Q_response"]
+    # send 0 as response code when the contact did not answer instead of blank
+    get_in(contact, ["Q_response"]) || 0
   end
 
   @doc """
