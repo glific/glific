@@ -35,8 +35,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
     url = @partner_url <> "/login"
 
-    # Using Cachex.get instead of Caches.get as token expire after 24hrs and we dont want to refresh the cache
-    {:ok, partner_token} = Cachex.get(:glific_cache, {@global_organization_id, "partner_token"})
+    # Using opts as [{refresh_cache: false}] as token expire after 24hrs and we dont want to refresh the cache
+    {:ok, partner_token} =
+      Caches.get(@global_organization_id, "partner_token", refresh_cache: false)
 
     if partner_token,
       do: {:ok, %{partner_token: partner_token}},
