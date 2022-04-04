@@ -40,10 +40,21 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
   end
 
   def call(%Conn{params: %{"response" => response}} = conn, opts) do
-    IO.inspect(response)
+    response
+    |> Jason.decode!()
+    |> Enum.each(fn message_event ->
+      put_in(conn.params, %{payload: message_event})
+      |> change_path_info(["gupshup", "message-event", message_event["eventType"]])
+      |> Router.call(opts)
+    end)
 
     conn
-    |> change_path_info(["gupshup", "message-event", "unknown"])
+  end
+
+  @doc false
+  def call(conn, opts) do
+    conn
+    |> change_path_info(["gupshup", "unknown", "unknown"])
     |> Router.call(opts)
   end
 
