@@ -39,16 +39,19 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
     |> Router.call(opts)
   end
 
-  def call(%Conn{params: %{"response" => response}} = conn, opts) do
-    response
-    |> Jason.decode!()
-    |> Enum.each(fn message_event ->
-      put_in(conn.params, %{payload: message_event})
-      |> change_path_info(["gupshup", "message-event", message_event["eventType"]])
-      |> Router.call(opts)
-    end)
+  @doc false
+  def call(%Conn{params: %{"response" => _response}} = conn, opts) do
+    organization = build_context(conn)
+
+    path =
+      ["gupshup"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: ["message-event", "handler"],
+          else: ["not_active_or_approved"]
 
     conn
+    |> change_path_info(path)
+    |> Router.call(opts)
   end
 
   @doc false

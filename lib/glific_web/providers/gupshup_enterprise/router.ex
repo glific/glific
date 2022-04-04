@@ -21,11 +21,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Router do
     end
 
     scope "/message-event" do
-      post("/enqueued", MessageEventController, :enqueued)
-      post("/failed", MessageEventController, :failed)
-      post("/sent", MessageEventController, :sent)
-      post("/delivered", MessageEventController, :delivered)
-      post("/read", MessageEventController, :read)
+      post("/handler", MessageEventController, :handler)
       post("/*unknown", DefaultController, :unknown)
     end
   end

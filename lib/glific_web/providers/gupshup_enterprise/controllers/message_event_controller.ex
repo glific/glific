@@ -6,54 +6,30 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventControl
 
   alias Glific.Communications
 
+  @message_event_type %{
+    "DELIVERED" => :delivered,
+    "SENT" => :sent,
+    "READ" => :read
+  }
   @doc """
   Default handle for all message event callbacks
   """
-  @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
+  @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def handler(conn, %{"response" => response} = _params) do
+    response
+    |> Jason.decode!()
+    |> Jason.decode!()
+    |> Enum.each(&update_status(&1, &1["eventType"]))
+
     json(conn, nil)
   end
 
-  @doc """
-  Message status when the message has been sent to gupshup
-  """
-  @spec enqueued(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def enqueued(conn, params),
-    do: update_status(conn, params, :enqueued)
-
-  @doc """
-  Message status when gupshup could not send the message to whats app
-  """
-  @spec failed(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def failed(conn, params),
-    do: update_status(conn, params, :error)
-
-  @doc """
-  Message has been sent to whats app via Gupshup
-  """
-  @spec sent(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def sent(conn, params),
-    do: update_status(conn, params, :sent)
-
-  @doc """
-  Message has been delivered to whats app
-  """
-  @spec delivered(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def delivered(conn, params),
-    do: update_status(conn, params, :delivered)
-
-  @doc """
-  Message has been read by the beneficiary
-  """
-  @spec read(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def read(conn, params),
-    do: update_status(conn, params, :read)
-
   # Updates the provider message status based on provider message id
-  @spec update_status(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
-  defp update_status(conn, params, status) do
-    bsp_message_id = get_in(params, ["payload", "externalId"])
+  @spec update_status(map(), String.t()) :: any()
+  defp update_status(params, status) do
+    IO.inspect(params)
+    status = Map.get(@message_event_type, status)
+    bsp_message_id = Map.get(params, "externalId")
     Communications.Message.update_bsp_status(bsp_message_id, status, params)
-    handler(conn, params, "Status updated")
   end
 end
