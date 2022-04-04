@@ -70,7 +70,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
               SET
                 last_communication_at = now,
                 last_message_at = now,
-                last_message_number = last_message_number + 1,
+                last_message_number = var_message_number + 1,
                 is_org_read = false,
                 is_org_replied = false,
                 is_contact_replied = true,
@@ -91,7 +91,7 @@ defmodule Glific.Repo.Migrations.UpdateMessageStatus do
             UPDATE contacts
               SET
                 last_communication_at = now,
-                last_message_number = last_message_number + 1,
+                last_message_number = var_message_number + 1,
                 is_org_replied = true,
                 is_contact_replied = false,
                 updated_at = now
