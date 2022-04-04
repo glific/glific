@@ -39,6 +39,14 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
     |> Router.call(opts)
   end
 
+  def call(%Conn{params: %{"response" => response}} = conn, opts) do
+    IO.inspect(response)
+
+    conn
+    |> change_path_info(["gupshup", "message-event", "unknown"])
+    |> Router.call(opts)
+  end
+
   @doc false
   @spec change_path_info(Plug.Conn.t(), list()) :: Plug.Conn.t()
   def change_path_info(conn, new_path),
