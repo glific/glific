@@ -1,6 +1,6 @@
 defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventController do
   @moduledoc """
-  Dedicated controller to handle all the message status requests like read, delivered etc..
+  Dedicated controller to handle all the message status requests like sent, delivered etc..
   """
   use GlificWeb, :controller
 
@@ -11,6 +11,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventControl
     "SENT" => :sent,
     "READ" => :read
   }
+
   @doc """
   Default handle for all message event callbacks
   """
@@ -26,7 +27,6 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventControl
   # Updates the provider message status based on provider message id
   @spec update_status(map(), String.t()) :: any()
   defp update_status(params, status) do
-    IO.inspect(params)
     status = Map.get(@message_event_type, status)
     bsp_message_id = Map.get(params, "externalId")
     Communications.Message.update_bsp_status(bsp_message_id, status, params)
