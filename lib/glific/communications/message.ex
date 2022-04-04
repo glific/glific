@@ -318,7 +318,7 @@ defmodule Glific.Communications.Message do
   # lets have a default timeout of 3 seconds for each call
   @timeout 4000
 
-  @spec error(String.t(), any(), any(), list() | nil) :: :ok
+  @spec error(String.t(), any(), any(), list() | nil) :: nil
   defp error(error, e, r \\ nil, stacktrace \\ nil) do
     error = error <> ": #{inspect(e)}, #{inspect(r)}"
     Logger.error(error)
@@ -329,7 +329,7 @@ defmodule Glific.Communications.Message do
         else: stacktrace
 
     Appsignal.send_error(:error, error, stacktrace)
-    :ok
+    nil
   end
 
   @spec process_message(Message.t() | nil) :: any

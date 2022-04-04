@@ -845,25 +845,20 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Generate a json map with all the flows related fields.
+  Generate a json map with all the flows related fields.
   """
   @spec export_flow(non_neg_integer()) :: map()
   def export_flow(flow_id) do
     flow = Repo.get!(Flow, flow_id)
 
-    %{"flows" => [], "contact_field" => [], "collections" => []}
-    |> init_export_flow(flow.uuid)
+    export_flow_details(
+      flow.uuid,
+      %{"flows" => [], "contact_field" => [], "collections" => []}
+    )
   end
 
   @doc """
-    Process the flows and get all the subflow definition.
-  """
-  @spec init_export_flow(map(), String.t()) :: map()
-  def init_export_flow(results, flow_uuid),
-    do: export_flow_details(flow_uuid, results)
-
-  @doc """
-    process subflows and check if there is more subflows in it.
+  Process subflows and check if there is more subflows in it.
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
@@ -871,7 +866,12 @@ defmodule Glific.Flows do
       results
     else
       flow = Repo.get_by(Flow, %{uuid: flow_uuid})
-      definition = get_latest_definition(flow_uuid) |> Map.put("name", flow.name)
+
+      # definition can be nil, hence assigning empty map if so
+      # Issue #2173
+      definition =
+        (get_latest_definition(flow_uuid) || %{})
+        |> Map.put("name", flow.name)
 
       results =
         Map.put(
@@ -948,7 +948,7 @@ defmodule Glific.Flows do
 
   ## Get latest flow definition to export. There is one more function with the same name in
   ## Glific.Flows.flow but that gives us the definition without UI placesments.
-  @spec get_latest_definition(String.t()) :: map()
+  @spec get_latest_definition(String.t()) :: map() | nil
   defp get_latest_definition(flow_uuid) do
     json =
       FlowRevision

@@ -96,8 +96,11 @@ defmodule Glific.Flows.Templating do
     struct!(Templating, opts)
   end
 
-  defp update_session_template(attrs) do
+  @spec update_session_template(map()) :: map()
+  defp update_session_template(%{uuid: uuid} = attrs) when uuid not in ["", nil] do
     {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: attrs[:uuid]})
     Map.put(attrs, :template, template)
   end
+
+  defp update_session_template(attrs), do: attrs
 end
