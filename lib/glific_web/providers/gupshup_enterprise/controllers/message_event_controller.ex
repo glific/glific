@@ -18,7 +18,6 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventControl
   def handler(conn, %{"response" => response} = _params) do
     response
     |> Jason.decode!()
-    |> Jason.decode!()
     |> Enum.each(&update_status(&1, &1["eventType"]))
 
     json(conn, nil)
