@@ -24,14 +24,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @doc """
   Fetch the stripe tax rates
   """
-  @spec gupshup_partner_api :: map()
-  def gupshup_partner_api,
-    do: Saas.gupshup_partner_api()
+  @spec get_isv_credentials :: map()
+  def get_isv_credentials,
+    do: Saas.isv_credentials()
 
   # fetches partner token
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
-    credentials = gupshup_partner_api()
+    credentials = get_isv_credentials()
 
     url = @partner_url <> "/login"
 

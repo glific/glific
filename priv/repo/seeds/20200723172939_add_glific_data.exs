@@ -166,14 +166,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       stripe_ids: Enum.into(get_stripe_ids(), %{}),
       tax_rates: %{
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
-      }
-    })
-
-    Repo.insert!(%Saas{
-      name: "Gupshup Partner API",
-      organization_id: organization.id,
-      phone: "91111222333",
-      json: %{email: "test_email", user: "test user"}
+      },
+      isv_credentials: %{email: "test_email", user: "test user"}
     })
   end
 

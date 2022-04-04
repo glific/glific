@@ -7,7 +7,7 @@ defmodule Glific.Repo.Migrations.AddJsonToSaasTable do
 
   defp add_json do
     alter table(:saas) do
-      add :json, :map, default: %{}
+      add :isv_credentials, :map, default: %{}
     end
   end
 end
