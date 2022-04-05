@@ -27,7 +27,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventControl
   describe "handler" do
     test "handler should return nil data", %{conn: conn} do
       message = %{"response" => Jason.encode!([@message_event_request_params])}
-      conn = post(conn, "/gupshup-enterprise-enterprise", message)
+      conn = post(conn, "/gupshup-enterprise", message)
       assert json_response(conn, 200) == nil
     end
   end
