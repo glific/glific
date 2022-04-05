@@ -99,7 +99,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       attrs
       |> Map.merge(%{
         "send_to" => attrs["send_to"],
-        "msg" => URI.encode_www_form(attrs["msg"])
+        "msg" => attrs["msg"]
       })
       |> Map.merge(@common_params)
       |> Map.merge(@default_send_template_params)
