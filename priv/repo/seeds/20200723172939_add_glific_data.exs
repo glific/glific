@@ -166,7 +166,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       stripe_ids: Enum.into(get_stripe_ids(), %{}),
       tax_rates: %{
         gst: "txr_1IjH4wEMShkCsLFnSIELvS4n"
-      }
+      },
+      isv_credentials: %{email: "test_email", user: "test user"}
     })
   end
 

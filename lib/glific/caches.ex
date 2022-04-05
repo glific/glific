@@ -43,11 +43,12 @@ defmodule Glific.Caches do
   Get a cached value based on a key
   """
   @impl Glific.Caches.CacheBehaviour
-  @spec get(non_neg_integer, any()) :: {:ok, any()} | {:ok, false}
-  def get(organization_id, key) do
+  @spec get(non_neg_integer, any(), Keyword.t()) :: {:ok, any()} | {:ok, false}
+  def get(organization_id, key, opts \\ []) do
     case Cachex.exists?(@cache_bucket, {organization_id, key}) do
       {:ok, true} ->
-        Cachex.refresh(@cache_bucket, {organization_id, key})
+        refresh_cache = Keyword.get(opts, :refresh_cache, true)
+        if refresh_cache, do: Cachex.refresh(@cache_bucket, {organization_id, key})
         Cachex.get(@cache_bucket, {organization_id, key})
 
       _ ->
