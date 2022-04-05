@@ -236,7 +236,7 @@ defmodule Glific.Clients.DigitalGreen do
     ApiClient.get_csv_content(url: "https://storage.googleapis.com/dg_voicebot/crp_ids.csv")
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       crp_id = row["Employee Id"]
-      if is_nil(crp_id), do: acc, else: Map.put(acc, crp_id, row)
+      if crp_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(crp_id), row)
     end)
     |> then(fn crp_data ->
       Partners.maybe_insert_organization_data(@crp_id_key, crp_data, org_id)
@@ -246,6 +246,8 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   def validate_crp_id(org_id, crp_id) do
+    crp_id = Glific.string_clean(crp_id)
+
     {:ok, org_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: org_id,
