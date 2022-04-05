@@ -60,14 +60,11 @@ defmodule Glific.Flows.ContactAction do
         %{id: action.interactive_template_id, organization_id: context.organization_id}
       )
 
-    interactive_content =
-      interactive_template
-      |> InteractiveTemplates.translated_content(context.contact.language_id)
-      |> MessageVarParser.parse_map(message_vars)
+    {interactive_content, body, media_id} =
+      InteractiveTemplates.formatted_data(interactive_template, context.contact.language_id)
 
-    body = InteractiveTemplates.get_interactive_body(interactive_content)
-
-    media_id = InteractiveTemplates.get_media(interactive_content, context.organization_id)
+    ## since we have flow context here, we have to replace parse the results as well.
+    interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
 
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{

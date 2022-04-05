@@ -109,7 +109,20 @@ defmodule Glific.Clients.DigitalGreen do
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
+  @crp_id_key "dg_crp_ids"
+
   @spec webhook(String.t(), map()) :: map()
+  def webhook("load_crp_ids", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    load_crp_ids(org_id)
+    fields
+  end
+
+  def webhook("validate_crp_id", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    validate_crp_id(org_id, fields["crp_id"])
+  end
+
   def webhook("daily", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
@@ -213,19 +226,6 @@ defmodule Glific.Clients.DigitalGreen do
     else
       %{is_valid_village: false}
     end
-  end
-
-  @crp_id_key "dg_crp_ids"
-
-  def webhook("load_crp_ids", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    load_crp_ids(org_id)
-    fields
-  end
-
-  def webhook("validate_crp_id", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    validate_crp_id(org_id, fields["crp_id"])
   end
 
   def webhook(_, _fields),
