@@ -1,4 +1,4 @@
-defmodule Glific.Repo.Migrations.AddJsonToSaasTable do
+defmodule Glific.Repo.Migrations.AddISVCredentialsToSaasTable do
   use Ecto.Migration
 
   def change do
