@@ -23,6 +23,7 @@ defmodule Glific.Partners do
     Partners.OrganizationData,
     Partners.Provider,
     Providers.Gupshup.GupshupWallet,
+    Providers.Gupshup.PartnerAPI,
     Providers.GupshupContacts,
     Repo,
     Settings.Language,
@@ -339,7 +340,7 @@ defmodule Glific.Partners do
   """
   @spec get_bsp_balance(non_neg_integer) :: {:ok, any()} | {:error, String.t()}
   def get_bsp_balance(organization_id) do
-    organization = Glific.Partners.organization(organization_id)
+    organization = organization(organization_id)
 
     if is_nil(organization.services["bsp"]) do
       {:error, dgettext("errors", "No active BSP available")}
@@ -349,6 +350,23 @@ defmodule Glific.Partners do
 
       case organization.bsp.shortcode do
         "gupshup" -> GupshupWallet.balance(api_key)
+        _ -> {:error, dgettext("errors", "Invalid BSP provider")}
+      end
+    end
+  end
+
+  @doc """
+  Returns quality rating information for an organization provider
+  """
+  @spec get_quality_rating(non_neg_integer()) :: {:ok, any()} | {:error, String.t()}
+  def get_quality_rating(organization_id) do
+    organization = organization(organization_id)
+
+    if is_nil(organization.services["bsp"]) do
+      {:error, dgettext("errors", "No active BSP available")}
+    else
+      case organization.bsp.shortcode do
+        "gupshup" -> PartnerAPI.get_quality_rating(organization_id, organization.contact.phone)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end

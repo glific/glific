@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   load_gql(:update, GlificWeb.Schema, "assets/gql/providers/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/providers/delete.gql")
   load_gql(:bspbalance, GlificWeb.Schema, "assets/gql/providers/bspbalance.gql")
+  load_gql(:quality_rating, GlificWeb.Schema, "assets/gql/providers/quality_rating.gql")
 
   test "providers field returns list of providers", %{user: user} do
     result = auth_query_gql_by(:list, user)
@@ -201,5 +202,46 @@ defmodule GlificWeb.Schema.ProviderTest do
       |> Jason.decode!()
 
     assert balance["balance"] == 0.787
+  end
+
+  test "get quality rating details", %{user: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "token" => "some random partner token"
+            })
+        }
+
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "partnerAppsList" => [
+                %{
+                  "id" => "app id 1",
+                  "phone" => "app phone 1"
+                },
+                %{
+                  "id" => "app id 2",
+                  "phone" => "917834811114"
+                }
+              ],
+              "token" => %{"token" => "some random app token"},
+              "currentLimit" => "Tier100K",
+              "oldLimit" => "Tier1K",
+              "event" => "upgrade"
+            })
+        }
+    end)
+
+    result = auth_query_gql_by(:quality_rating, user)
+    assert {:ok, query_data} = result
+    assert get_in(query_data, [:data, "qualityRating", "current_limit"]) == "Tier100K"
+    assert get_in(query_data, [:data, "qualityRating", "event"]) == "upgrade"
+    assert get_in(query_data, [:data, "qualityRating", "previous_limit"]) == "Tier1K"
   end
 end
