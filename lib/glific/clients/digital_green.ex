@@ -21,6 +21,12 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.Sheets.ApiClient
 
+  @geographies %{
+    database_key: "geography",
+    sheet_link:
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=1669998910&single=true&output=csv"
+  }
+
   @stages %{
     "stage 1" => %{
       "group" => "stage 1",
@@ -232,7 +238,7 @@ defmodule Glific.Clients.DigitalGreen do
     do: %{}
 
   @spec load_crp_ids(any) :: %{status: <<_::88>>}
-  def load_crp_ids(org_id) do
+  defp load_crp_ids(org_id) do
     ApiClient.get_csv_content(url: "https://storage.googleapis.com/dg_voicebot/crp_ids.csv")
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       crp_id = row["Employee Id"]
@@ -245,7 +251,7 @@ defmodule Glific.Clients.DigitalGreen do
     %{status: "successfull"}
   end
 
-  def validate_crp_id(org_id, crp_id) do
+  defp validate_crp_id(org_id, crp_id) do
     crp_id = Glific.string_clean(crp_id)
 
     {:ok, org_data} =
@@ -257,6 +263,34 @@ defmodule Glific.Clients.DigitalGreen do
     %{
       is_vaid: Map.has_key?(org_data.json, crp_id)
     }
+  end
+
+  def load_geographies() do
+    ApiClient.get_csv_content(url: @geographies.sheet_link)
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      region = row["Region Name"]
+      district = row["Proposed District"]
+      division = row["Proposed Division"]
+      mandal = row["Mandal"]
+
+      region_map = Map.get(acc, region, %{})
+      district_map = Map.get(region_map, district, %{})
+      division_map = Map.get(district_map, division, %{})
+      mandals = Map.get(division_map, "mandals", [])
+
+      division_map =
+        Map.merge(division_map, %{"mandals" => mandals ++ [mandal], "division" => division})
+
+      district_map =
+        Map.merge(district_map, %{
+          "divisions" => Map.put(district_map["divisions"], division, division_map),
+          "district" => district
+        })
+
+      region_map = Map.put(region_map, district, district_map)
+
+      Map.put(acc, region, region_map)
+    end)
   end
 
   @doc """
