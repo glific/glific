@@ -230,7 +230,7 @@ defmodule Glific.Messages do
     contact = Glific.Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
 
-    ## we need to clean this bit more.
+    ## we need to clean this code in the future.
     attrs = check_for_interactive(attrs, contact.language_id)
 
     check_for_hsm_message(attrs, contact)
