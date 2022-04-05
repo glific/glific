@@ -18,7 +18,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   use Tesla
   plug(Tesla.Middleware.Logger)
 
-  plug(Tesla.Middleware.FormUrlencoded,
+  plug(Tesla.Middleware.EncodeFormUrlencoded,
     encode: &Query.encode/1
   )
 
