@@ -51,7 +51,6 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
          %{conn: conn, message_params: message_params} do
       conn = post(conn, "/gupshup-enterprise", message_params)
       assert conn.halted
-      IO.inspect(message_params)
       bsp_message_id = get_in(message_params, ["replyId"])
 
       {:ok, message} =
