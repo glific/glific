@@ -16,6 +16,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageControllerTe
     "timestamp" => "1644911629000",
     "type" => "text",
     "replyId" => Faker.String.base64(36),
+    "messageId" => Faker.String.base64(36),
     "waNumber" => "911244006972"
   }
 
