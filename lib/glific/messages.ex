@@ -251,7 +251,8 @@ defmodule Glific.Messages do
     {:ok, interactive_template} = Repo.fetch(InteractiveTemplate, interactive_template_id)
 
     {interactive_content, body, media_id} =
-      InteractiveTemplates.formatted_data(interactive_template, language_id)
+      interactive_template
+      |> InteractiveTemplates.formatted_data(language_id)
 
     Map.merge(attrs, %{
       body: body,

@@ -61,7 +61,8 @@ defmodule Glific.Flows.ContactAction do
       )
 
     {interactive_content, body, media_id} =
-      InteractiveTemplates.formatted_data(interactive_template, context.contact.language_id)
+      interactive_template
+      |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
     ## since we have flow context here, we have to replace parse the results as well.
     interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
