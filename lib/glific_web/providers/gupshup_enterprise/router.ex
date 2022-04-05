@@ -24,5 +24,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Router do
       post("/handler", MessageEventController, :handler)
       post("/*unknown", DefaultController, :unknown)
     end
+
+    post("/*unknown", DefaultController, :unknown)
   end
 end
