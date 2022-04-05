@@ -59,6 +59,14 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :to, :date
   end
 
+  input_object :date_expression_input do
+    @desc "Start date for the filter"
+    field :from_expression, :date
+
+    @desc "End date for the filter"
+    field :to_expression, :date
+  end
+
   @desc "Filtering options for search"
   input_object :search_filter do
     @desc "Match one contact ID"
@@ -88,8 +96,11 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "status of the message, this replaces the unread/not responded tags"
     field :status, :string
 
-    @desc "term for saving the search"
+    @desc "a static date range input field"
     field :date_range, :date_range_input
+
+    @desc "a dynamic date expression input field"
+    field :date_expression, :date_expression_input
 
     @desc "It will use the save search filters"
     field :saved_search_id, :id
