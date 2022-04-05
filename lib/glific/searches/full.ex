@@ -83,6 +83,9 @@ defmodule Glific.Search.Full do
       {:date_range, dates}, query ->
         query |> run_date_range(dates[:from], dates[:to])
 
+      {:date_expression, dates}, query ->
+        query |> run_date_expression(dates[:from_expression], dates[:to_expression])
+
       {_key, _value}, query ->
         query
     end)
@@ -99,14 +102,46 @@ defmodule Glific.Search.Full do
 
   defp normalize(term), do: term
 
+  # Filter based on date expression
+  # #2077
+  @spec run_date_expression(Ecto.Queryable.t(), String.t(), String.t()) :: Ecto.Queryable.t()
+  defp run_date_expression(query, from_expression, to_expression) do
+    from = get_date(from_expression)
+    to = get_date(to_expression)
+
+    run_date_range(query, from, to)
+  end
+
+  @spec get_date(String.t() | nil) :: DateTime.t() | nil
+  defp get_date(s) when s == "" or is_nil(s), do: nil
+
+  defp get_date(s) do
+    {status, date} =
+      s
+      |> Glific.execute_eex()
+      |> Date.from_iso8601()
+
+    if status == :ok,
+      do: date,
+      else: nil
+  end
+
+  @spec end_of_day(DateTime.t()) :: DateTime.t()
+  defp end_of_day(date),
+    do:
+      date
+      |> Timex.to_datetime()
+      |> Timex.end_of_day()
+
   # Filter based on the date range
-  @spec run_date_range(Ecto.Queryable.t(), DateTime.t(), DateTime.t()) :: Ecto.Queryable.t()
+  @spec run_date_range(Ecto.Queryable.t(), DateTime.t() | nil, DateTime.t() | nil) ::
+          Ecto.Queryable.t()
   defp run_date_range(query, nil, nil), do: query
 
   defp run_date_range(query, nil, to) do
     query
-    |> where([c: c], c.last_message_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day()))
-    |> where([m: m], m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day()))
+    |> where([c: c], c.last_message_at <= ^end_of_day(to))
+    |> where([m: m], m.inserted_at <= ^end_of_day(to))
   end
 
   defp run_date_range(query, from, nil) do
@@ -120,12 +155,12 @@ defmodule Glific.Search.Full do
     |> where(
       [c: c],
       c.last_message_at >= ^Timex.to_datetime(from) and
-        c.last_message_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
+        c.last_message_at <= ^end_of_day(to)
     )
     |> where(
       [m: m],
       m.inserted_at >= ^Timex.to_datetime(from) and
-        m.inserted_at <= ^(Timex.to_datetime(to) |> Timex.end_of_day())
+        m.inserted_at <= ^end_of_day(to)
     )
   end
 end
