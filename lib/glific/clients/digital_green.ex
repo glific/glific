@@ -13,7 +13,10 @@ defmodule Glific.Clients.DigitalGreen do
     Groups,
     Groups.Group,
     Navanatech,
-    Repo
+    Partners,
+    Partners.OrganizationData,
+    Repo,
+    Sheets.ApiClient
   }
 
   alias Glific.Sheets.ApiClient
@@ -212,8 +215,47 @@ defmodule Glific.Clients.DigitalGreen do
     end
   end
 
+  @crp_id_key "dg_crp_ids"
+
+  def webhook("load_crp_ids", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    load_crp_ids(org_id)
+    fields
+  end
+
+  def webhook("validate_crp_id", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    validate_crp_id(org_id, fields["crp_id"])
+  end
+
   def webhook(_, _fields),
     do: %{}
+
+  @spec load_crp_ids(any) :: %{status: <<_::88>>}
+  def load_crp_ids(org_id) do
+    ApiClient.get_csv_content(url: "https://storage.googleapis.com/dg_voicebot/crp_ids.csv")
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      crp_id = row["Employee Id"]
+      if is_nil(crp_id), do: acc, else: Map.put(acc, crp_id, row)
+    end)
+    |> then(fn crp_data ->
+      Partners.maybe_insert_organization_data(@crp_id_key, crp_data, org_id)
+    end)
+
+    %{status: "successfull"}
+  end
+
+  def validate_crp_id(org_id, crp_id) do
+    {:ok, org_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: @crp_id_key
+      })
+
+    %{
+      is_vaid: Map.has_key?(org_data.json, crp_id)
+    }
+  end
 
   @doc """
   A callback function to support daily tasks for the client
