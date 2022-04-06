@@ -113,11 +113,11 @@ defmodule Glific.Search.Full do
   end
 
   @spec get_date(String.t() | nil) :: DateTime.t() | nil
-  defp get_date(s) when s == "" or is_nil(s), do: nil
+  defp get_date(expression) when expression == "" or is_nil(expression), do: nil
 
-  defp get_date(s) do
+  defp get_date(expression) do
     {status, date} =
-      s
+      expression
       |> Glific.execute_eex()
       |> Date.from_iso8601()
 
