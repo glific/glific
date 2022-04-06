@@ -170,6 +170,7 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
+  @spec get_geographies_data(non_neg_integer()) :: map()
   defp get_geographies_data(org_id) do
     {:ok, org_data} =
       Repo.fetch_by(OrganizationData, %{
@@ -180,6 +181,7 @@ defmodule Glific.Clients.DigitalGreen do
     org_data.json
   end
 
+  @spec geographies_list_results(map()) :: map()
   defp geographies_list_results(resource_list) when resource_list in [nil, %{}] do
     %{error: true, message: "Resource not found"}
   end
@@ -196,6 +198,7 @@ defmodule Glific.Clients.DigitalGreen do
     }
   end
 
+  @spec format_geographies_message(list()) :: {map(), list()}
   defp format_geographies_message(districts) do
     districts
     |> Enum.with_index(1)
