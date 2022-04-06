@@ -191,14 +191,9 @@ defmodule GlificWeb.Resolvers.Partners do
   Get the message count details
   """
   @spec bsp_message_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, map()} | {:error, any()}
-  def bsp_message_count(_, _, %{context: %{current_user: user}}) do
-    Glific.Stats.get_bsp_message_count(user.organization_id)
-    |> case do
-      {:ok, data} -> {:ok, data}
-      _ -> {:error, dgettext("errors", "Error while fetching Quality Rating details")}
-    end
-  end
+          {:ok, non_neg_integer()}
+  def bsp_message_count(_, _, %{context: %{current_user: user}}),
+    do: Glific.Stats.get_bsp_message_count(user.organization_id)
 
   @doc """
   Get a specific bsp balance by organization id

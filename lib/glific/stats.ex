@@ -57,13 +57,13 @@ defmodule Glific.Stats do
 
     Enum.reduce(filter, query, fn
       {:period, period}, query ->
-        from q in query, where: q.period == ^period
+        from(q in query, where: q.period == ^period)
 
       {:hour, hour}, query ->
-        from q in query, where: q.hour == ^hour
+        from(q in query, where: q.hour == ^hour)
 
       {:date, date}, query ->
-        from q in query, where: q.date == ^date
+        from(q in query, where: q.date == ^date)
 
       _, query ->
         query
@@ -455,14 +455,19 @@ defmodule Glific.Stats do
   """
   @spec get_bsp_message_count(non_neg_integer()) :: {:ok, non_neg_integer()}
   def get_bsp_message_count(organization_id) do
-    Stat
-    |> where([s], s.organization_id == ^organization_id)
-    |> where([s], s.period == "hour")
-    |> select([s], %{
-      messages: sum(s.messages)
-    })
-    |> Repo.one()
+    start_date = Timex.shift(DateTime.utc_now(), days: -1)
+    end_date = DateTime.utc_now()
 
-    {:ok, organization_id}
+    %{messages: messages} =
+      Stat
+      |> where([s], s.organization_id == ^organization_id)
+      |> where([s], s.period == "hour")
+      |> where([s], s.inserted_at > ^start_date and s.inserted_at < ^end_date)
+      |> select([s], %{
+        messages: sum(s.messages)
+      })
+      |> Repo.one()
+
+    {:ok, messages}
   end
 end
