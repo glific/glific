@@ -119,14 +119,22 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec webhook(String.t(), map()) :: map()
   def webhook("load_crp_ids", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    load_crp_ids(org_id)
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_crp_ids()
+
     fields
   end
 
   def webhook("validate_crp_id", fields) do
-    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    validate_crp_id(org_id, fields["crp_id"])
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> validate_crp_id(fields["crp_id"])
+  end
+
+  def webhook("load_geography", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_geographies()
+
+    fields
   end
 
   def webhook("daily", fields) do
@@ -265,7 +273,7 @@ defmodule Glific.Clients.DigitalGreen do
     }
   end
 
-  def load_geographies() do
+  defp load_geographies(org_id) do
     ApiClient.get_csv_content(url: @geographies.sheet_link)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       region = row["Region Name"]
@@ -278,14 +286,16 @@ defmodule Glific.Clients.DigitalGreen do
       division_map = Map.get(district_map, division, %{})
       mandals = Map.get(division_map, "mandals", [])
 
-      division_map =
-        Map.merge(division_map, %{"mandals" => mandals ++ [mandal], "division" => division})
+      division_map = Map.merge(division_map, %{"mandals" => mandals ++ [mandal]})
 
       district_map = Map.put(district_map, division, division_map)
 
       region_map = Map.put(region_map, district, district_map)
 
       Map.put(acc, region, region_map)
+    end)
+    |> then(fn geographies_data ->
+      Partners.maybe_insert_organization_data(@geographies.database_key, geographies_data, org_id)
     end)
   end
 
