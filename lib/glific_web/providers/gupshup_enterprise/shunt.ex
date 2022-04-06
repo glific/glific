@@ -40,6 +40,28 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
   end
 
   @doc false
+  def call(%Conn{params: %{"response" => _response}} = conn, opts) do
+    organization = build_context(conn)
+
+    path =
+      ["gupshup"] ++
+        if Glific.safe_string_to_atom(organization.status) == :active,
+          do: ["message-event", "handler"],
+          else: ["not_active_or_approved"]
+
+    conn
+    |> change_path_info(path)
+    |> Router.call(opts)
+  end
+
+  @doc false
+  def call(conn, opts) do
+    conn
+    |> change_path_info(["gupshup", "unknown", "unknown"])
+    |> Router.call(opts)
+  end
+
+  @doc false
   @spec change_path_info(Plug.Conn.t(), list()) :: Plug.Conn.t()
   def change_path_info(conn, new_path),
     do: put_in(conn.path_info, new_path)
