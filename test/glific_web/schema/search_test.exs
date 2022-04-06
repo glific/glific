@@ -736,6 +736,44 @@ defmodule GlificWeb.Schema.SearchTest do
     assert data == []
   end
 
+  test "search with the date expression filters will returns the conversations", %{staff: user} do
+    message =
+      Fixtures.message_fixture()
+      |> Repo.preload([:contact])
+
+    contact_count = Contacts.count_contacts(%{filter: %{organization_id: user.organization_id}})
+
+    {:ok, contact} =
+      Contacts.update_contact(
+        message.contact,
+        %{last_message_at: DateTime.utc_now()}
+      )
+
+    result =
+      auth_query_gql_by(:search, user,
+        variables: %{
+          "filter" => %{
+            "term" => "",
+            "dateExpression" => %{
+              "fromExpression" => "<%= Timex.shift(Timex.today(), days: -2)",
+              "toExpression" => "<%= Timex.today() %>"
+            }
+          },
+          "contactOpts" => %{"limit" => contact_count},
+          "messageOpts" => %{"limit" => 1}
+        }
+      )
+
+    assert {:ok, query_data} = result
+
+    contact_ids =
+      Enum.reduce(query_data[:data]["search"], [], fn row, acc ->
+        acc ++ [row["contact"]["id"]]
+      end)
+
+    assert "#{contact.id}" in contact_ids
+  end
+
   test "search with incomplete date range filters will return the conversations", %{staff: user} do
     message =
       Fixtures.message_fixture()
