@@ -281,11 +281,7 @@ defmodule Glific.Clients.DigitalGreen do
       division_map =
         Map.merge(division_map, %{"mandals" => mandals ++ [mandal], "division" => division})
 
-      district_map =
-        Map.merge(district_map, %{
-          "divisions" => Map.put(district_map["divisions"], division, division_map),
-          "district" => district
-        })
+      district_map = Map.put(district_map, division, division_map)
 
       region_map = Map.put(region_map, district, district_map)
 
