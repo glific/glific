@@ -565,7 +565,7 @@ defmodule Glific.Clients.ArogyaWorld do
     |> Enum.each(&IO.write(file, &1))
 
     # Upload the file to GCS
-    GcsWorker.upload_media(temp_path, "participant_responses_week_#{week}.csv", org_id)
+    GcsWorker.upload_media(temp_path, "participant_responses_week_#{previous_week}.csv", org_id)
     |> case do
       {:ok, gcs_url} -> %{url: gcs_url, error: nil}
       {:error, error} -> %{url: nil, error: error}
@@ -584,7 +584,7 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     # send 0 as response code when the contact did not answer instead of blank
-    get_in(contact, ["Q_response"]) || 0
+    get_in(contact, ["Q_response"]) || "0"
   end
 
   @doc """
