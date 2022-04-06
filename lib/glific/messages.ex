@@ -250,9 +250,13 @@ defmodule Glific.Messages do
        ) do
     {:ok, interactive_template} = Repo.fetch(InteractiveTemplate, interactive_template_id)
 
+    # Check if this is coming form a flow
     {interactive_content, body, media_id} =
-      interactive_template
-      |> InteractiveTemplates.formatted_data(language_id)
+      if attrs[:interactive_content] not in [nil, %{}] do
+        {attrs[:interactive_content], attrs[:body], attrs[:media_id]}
+      else
+        InteractiveTemplates.formatted_data(interactive_template, language_id)
+      end
 
     Map.merge(attrs, %{
       body: body,
