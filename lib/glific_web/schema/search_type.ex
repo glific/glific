@@ -61,10 +61,10 @@ defmodule GlificWeb.Schema.SearchTypes do
 
   input_object :date_expression_input do
     @desc "Start date for the filter"
-    field :from_expression, :date
+    field :from_expression, :string
 
     @desc "End date for the filter"
-    field :to_expression, :date
+    field :to_expression, :string
   end
 
   @desc "Filtering options for search"
