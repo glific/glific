@@ -84,6 +84,12 @@ defmodule GlificWeb.Schema.ProviderTypes do
       middleware(Authorize, :admin)
       resolve(&Resolvers.Partners.quality_rating/3)
     end
+
+    @desc "Get Message count details"
+    field :bsp_message_count, :integer do
+      middleware(Authorize, :admin)
+      resolve(&Resolvers.Partners.bsp_message_count/3)
+    end
   end
 
   object :provider_mutations do

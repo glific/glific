@@ -449,4 +449,20 @@ defmodule Glific.Stats do
     })
     |> Repo.one()
   end
+
+  @doc """
+  Get the details of the usage for this organization, from start_date to end_date both inclusive
+  """
+  @spec get_bsp_message_count(non_neg_integer()) :: {:ok, non_neg_integer()}
+  def get_bsp_message_count(organization_id) do
+    Stat
+    |> where([s], s.organization_id == ^organization_id)
+    |> where([s], s.period == "hour")
+    |> select([s], %{
+      messages: sum(s.messages)
+    })
+    |> Repo.one()
+
+    {:ok, organization_id}
+  end
 end
