@@ -137,113 +137,75 @@ defmodule Glific.Clients.DigitalGreen do
     fields
   end
 
-  def webhook("daily", fields) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+  def webhook("get_district_list", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    region_name = fields["region"]
 
-    ## check if we need to scheduled a flow for the contact tomorrow.
-    check_for_next_scheduled_flow(fields, contact_id, organization_id)
-
-    ## check and update contact stage based on the total days they have.
-    total_days = get_total_stage_days(fields)
-
-    if is_integer(total_days) do
-      update_crop_stage(total_days, contact_id, organization_id)
-    end
-
-    Logger.info(
-      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{inspect(fields)} "
-    )
-
-    %{status: "successfull"}
+    get_geographies_data(org_id)
+    |> get_in([region_name])
+    |> geographies_list_results()
   end
 
-  def webhook("update_crop_stage", fields) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+  def webhook("get_division_list", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    region_name = fields["region"]
+    district_name = fields["district"]
 
-    total_days = get_total_stage_days(fields)
-    update_crop_stage(total_days, contact_id, organization_id)
+    get_geographies_data(org_id)
+    |> get_in([region_name, district_name])
+    |> geographies_list_results()
   end
 
-  def webhook("set_crop_stage", fields) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+  def webhook("get_mandal_list", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    region_name = fields["region"]
+    district_name = fields["district"]
+    division_name = fields["division"]
 
-    stage =
-      fields["crop_stage"]
-      |> String.downcase()
-      |> String.trim()
-
-    @stages[stage]
-    |> set_initial_crop_state(contact_id, organization_id)
-  end
-
-  def webhook("decode_message", fields) do
-    params =
-      if Map.has_key?(fields, "media_url"),
-        do: %{
-          media_url: fields["media_url"],
-          case_id: fields["case_id"],
-          organization_id: fields["organization_id"]
-        },
-        else: %{
-          text: validate_text_to_decode(fields["text"]),
-          case_id: fields["case_id"],
-          organization_id: fields["organization_id"]
-        }
-
-    Navanatech.decode_message(params)
-    |> case do
-      ## We will move these conditions to Navanatech module.
-      {:ok, %{"keywords" => []} = attrs} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(attrs)}"
-        }
-
-      {:ok, %{"keywords" => keywords} = attrs} ->
-        %{
-          decoded_message: hd(keywords),
-          request_data: "Data Decode #{inspect(params)} with response #{inspect(attrs)}"
-        }
-
-      {:ok, message} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"
-        }
-
-      {:error, message} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"
-        }
-    end
-  end
-
-  def webhook("weather_updates", fields) do
-    today = Timex.today()
-    village_name = String.downcase(fields["village_name"]) |> String.trim()
-
-    opts = [
-      start_date: Timex.beginning_of_week(today, :friday),
-      end_date: Timex.end_of_week(today, :friday),
-      village: village_name
-    ]
-
-    if village_name in @villages do
-      ApiClient.get_csv_content(url: @weather_updates["published_csv"])
-      |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
-      |> generate_weather_results(opts)
-      |> Map.put(:is_valid_village, true)
-    else
-      %{is_valid_village: false}
-    end
+    get_geographies_data(org_id)
+    |> get_in([region_name, district_name, division_name, "mandals"])
+    |> geographies_list_results()
   end
 
   def webhook(_, _fields),
     do: %{}
+
+  defp get_geographies_data(org_id) do
+    {:ok, org_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: @geographies.database_key
+      })
+
+    org_data.json
+  end
+
+  defp geographies_list_results(resource_list) when resource_list in [nil, %{}] do
+    %{error: true, message: "Resource not found"}
+  end
+
+  defp geographies_list_results(resource_list) do
+    {index_map, message_list} =
+      Map.keys(resource_list)
+      |> format_geographies_message()
+
+    %{
+      error: false,
+      list_message: Enum.join(message_list, "\n"),
+      index_map: index_map
+    }
+  end
+
+  defp format_geographies_message(districts) do
+    districts
+    |> Enum.with_index(1)
+    |> Enum.reduce({%{}, []}, fn {district, index}, {index_map, message_list} ->
+      {
+        Map.put(index_map, index, district),
+        message_list ++ ["Type *#{index}* for #{district}"]
+      }
+    end)
+  end
 
   @spec load_crp_ids(any) :: %{status: <<_::88>>}
   defp load_crp_ids(org_id) do
