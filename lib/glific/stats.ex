@@ -57,13 +57,13 @@ defmodule Glific.Stats do
 
     Enum.reduce(filter, query, fn
       {:period, period}, query ->
-        from(q in query, where: q.period == ^period)
+        from q in query, where: q.period == ^period
 
       {:hour, hour}, query ->
-        from(q in query, where: q.hour == ^hour)
+        from q in query, where: q.hour == ^hour
 
       {:date, date}, query ->
-        from(q in query, where: q.date == ^date)
+        from q in query, where: q.date == ^date
 
       _, query ->
         query
