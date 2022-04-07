@@ -743,12 +743,6 @@ defmodule GlificWeb.Schema.SearchTest do
 
     contact_count = Contacts.count_contacts(%{filter: %{organization_id: user.organization_id}})
 
-    {:ok, contact} =
-      Contacts.update_contact(
-        message.contact,
-        %{last_message_at: DateTime.utc_now()}
-      )
-
     result =
       auth_query_gql_by(:search, user,
         variables: %{
@@ -771,7 +765,7 @@ defmodule GlificWeb.Schema.SearchTest do
         acc ++ [row["contact"]["id"]]
       end)
 
-    assert "#{contact.id}" in contact_ids
+    assert "#{message.contact.id}" in contact_ids
   end
 
   test "search with incomplete date range filters will return the conversations", %{staff: user} do
