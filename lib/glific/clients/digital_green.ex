@@ -110,8 +110,37 @@ defmodule Glific.Clients.DigitalGreen do
     |> geographies_list_results()
   end
 
+  def webhook("set_geography", fields) do
+    _org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    type = fields["type"]
+    selected_index = fields["selected_index"]
+    index_map = Jason.decode!(fields["index_map"])
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+
+    if Map.has_key?(index_map, selected_index) do
+      selected_value = index_map[selected_index]
+      set_geography(type, selected_value, contact_id)
+
+      %{
+        error: false,
+        message: "Geography set successfully for ${type}"
+      }
+    else
+      %{
+        error: true,
+        message: "Invalid selected index"
+      }
+    end
+  end
+
   def webhook(_, _fields),
     do: %{}
+
+  @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
+  defp set_geography(type, value, contact_id) do
+    Glific.Contacts.get_contact!(contact_id)
+    |> Glific.Flows.ContactField.do_add_contact_field(type, type, value)
+  end
 
   @spec get_geographies_data(non_neg_integer()) :: map()
   defp get_geographies_data(org_id) do
@@ -125,19 +154,29 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   @spec geographies_list_results(map()) :: map()
-  defp geographies_list_results(resource_list) when resource_list in [nil, %{}] do
+  defp geographies_list_results(resource_map) when resource_map in [nil, %{}] do
     %{error: true, message: "Resource not found"}
   end
 
-  defp geographies_list_results(resource_list) do
+  defp geographies_list_results(resource_list) when is_list(resource_list) do
+    {index_map, message_list} = format_geographies_message(resource_list)
+
+    %{
+      error: false,
+      list_message: Enum.join(message_list, "\n"),
+      index_map: Jason.encode!(index_map)
+    }
+  end
+
+  defp geographies_list_results(resource_map) do
     {index_map, message_list} =
-      Map.keys(resource_list)
+      Map.keys(resource_map)
       |> format_geographies_message()
 
     %{
       error: false,
       list_message: Enum.join(message_list, "\n"),
-      index_map: index_map
+      index_map: Jason.encode!(index_map)
     }
   end
 
