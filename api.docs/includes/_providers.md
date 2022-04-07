@@ -157,6 +157,31 @@ query qualityRating() {
 | ------------------------------------------------------ | --------------------- |
 | <a href="#qualityRatingResult">qualityRatingResult</a> | Queried QualityRating |
 
+## Get BSP Message count
+
+```graphql
+query bspMessageCount() {
+  bspMessageCount
+}
+
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "bspMessageCount": 455
+  }
+}
+```
+
+### Return Parameters
+
+| Type                   | Description                                |
+| ---------------------- | ------------------------------------------ |
+| <a href="#int">Int</a> | Count of messages exchanged in last 24 hrs |
+
 ## Count all Providers
 
 ```graphql
