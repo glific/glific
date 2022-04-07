@@ -159,7 +159,7 @@ defmodule Glific do
     do: String.contains?(code, @not_allowed)
 
   @doc """
-    execute string in eex
+  execute string in eex
   """
   @spec execute_eex(String.t()) :: String.t()
   def execute_eex(content) do
@@ -167,7 +167,9 @@ defmodule Glific do
       Logger.error("EEx suspicious code: #{content}")
       "Suspicious Code. Please change your code. #{content}"
     else
-      EEx.eval_string(content)
+      content
+      |> EEx.eval_string()
+      |> String.trim()
     end
   rescue
     EEx.SyntaxError ->
