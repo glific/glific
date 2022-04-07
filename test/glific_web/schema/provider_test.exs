@@ -5,7 +5,8 @@ defmodule GlificWeb.Schema.ProviderTest do
   alias Glific.{
     Partners.Provider,
     Repo,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Stats
   }
 
   setup do
@@ -254,9 +255,10 @@ defmodule GlificWeb.Schema.ProviderTest do
       date: DateTime.to_date(DateTime.utc_now())
     }
 
-    assert {:ok, _stat} = Glific.Stats.create_stat(attrs)
+    Stats.create_stat(attrs)
+    Stats.create_stat(Map.merge(attrs, %{messages: 221}))
     result = auth_query_gql_by(:bsp_message_count, user)
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "bspMessageCount"]) == 234
+    assert get_in(query_data, [:data, "bspMessageCount"]) == 455
   end
 end
