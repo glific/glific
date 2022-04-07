@@ -462,7 +462,7 @@ defmodule Glific.Stats do
       Stat
       |> where([s], s.organization_id == ^organization_id)
       |> where([s], s.period == "hour")
-      |> where([s], s.inserted_at > ^start_date and s.inserted_at < ^end_date)
+      |> where([s], s.inserted_at > ^start_date and s.inserted_at <= ^end_date)
       |> select([s], %{
         messages: sum(s.messages)
       })
