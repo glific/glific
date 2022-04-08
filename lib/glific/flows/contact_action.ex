@@ -64,6 +64,14 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
+    interactive_content =
+      if action.params_count in [nil, "", 0] do
+        interactive_content
+      else
+        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+        process_dynamic_interactive_content(interactive_content, params)
+      end
+
     ## since we have flow context here, we have to replace parse the results as well.
     interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
 
@@ -406,5 +414,24 @@ defmodule Glific.Flows.ContactAction do
     )
 
     context
+  end
+
+  @spec process_dynamic_interactive_content(map(), list()) :: map()
+  defp process_dynamic_interactive_content(interactive_content, params) do
+    get_in(interactive_content, ["items"])
+    |> hd()
+    |> Map.put("options", build_list_items(params))
+    |> then(&Map.put(interactive_content, "items", [&1]))
+  end
+
+  @spec build_list_items(list()) :: list()
+  defp build_list_items(params) do
+    Enum.map(params, fn val ->
+      %{
+        "title" => val,
+        "description" => "No Descritpion",
+        "type" => "text"
+      }
+    end)
   end
 end
