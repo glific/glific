@@ -252,10 +252,10 @@ defmodule Glific.Messages do
 
     # Check if this is coming form a flow
     {interactive_content, body, media_id} =
-      if attrs[:interactive_content] not in [nil, %{}] do
-        {attrs[:interactive_content], attrs[:body], attrs[:media_id]}
-      else
+      if attrs[:interactive_content] in [nil, %{}] do
         InteractiveTemplates.formatted_data(interactive_template, language_id)
+      else
+        {attrs[:interactive_content], attrs[:body], attrs[:media_id]}
       end
 
     Map.merge(attrs, %{

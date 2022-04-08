@@ -8,6 +8,8 @@ defmodule Glific.Clients.DigitalGreen do
   require Logger
 
   alias Glific.{
+    Contacts,
+    Flows.ContactField,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -138,8 +140,8 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
   defp set_geography(type, value, contact_id) do
-    Glific.Contacts.get_contact!(contact_id)
-    |> Glific.Flows.ContactField.do_add_contact_field(type, type, value)
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(type, type, value)
   end
 
   @spec get_geographies_data(non_neg_integer()) :: map()
@@ -153,7 +155,7 @@ defmodule Glific.Clients.DigitalGreen do
     org_data.json
   end
 
-  @spec geographies_list_results(map()) :: map()
+  @spec geographies_list_results(map() | list()) :: map()
   defp geographies_list_results(resource_map) when resource_map in [nil, %{}] do
     %{error: true, message: "Resource not found"}
   end
