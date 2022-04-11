@@ -3,6 +3,7 @@ defmodule Glific.Clients.MukkaMaar do
   Custom webhook implementation specific to MukkaMaar usecase
   """
   import Ecto.Query, warn: false
+  alias GoogleApi.BigQuery.V2.Api.Jobs
 
   alias Glific.{
     Contacts.Contact,
@@ -43,8 +44,60 @@ defmodule Glific.Clients.MukkaMaar do
     end
   end
 
+  def webhook("fetch_leaderboard_data", fields) do
+    phone = fields["contact"]["phone"]
+
+    with %{is_valid: true, data: data} <- fetch_bigquery_data(fields, phone) do
+      data
+      |> Enum.reduce(%{found: false}, fn student, acc ->
+        if student["phone"] == phone,
+          do: acc |> Map.merge(%{found: true, student_rank: student["StudentRank"]}),
+          else: acc
+      end)
+    end
+  end
+
   def webhook(_, _fields),
     do: %{}
+
+  @spec fetch_bigquery_data(map(), String.t()) :: map()
+  defp fetch_bigquery_data(fields, phone) do
+    Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
+    |> case do
+      {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
+        with sql <- get_report_sql(phone),
+             {:ok, %{totalRows: total_rows} = response} <-
+               Jobs.bigquery_jobs_query(conn, project_id,
+                 body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
+               ),
+             true <- total_rows != "0" do
+          data =
+            response.rows
+            |> Enum.map(fn row ->
+              row.f
+              |> Enum.with_index()
+              |> Enum.reduce(%{}, fn {cell, i}, acc ->
+                acc |> Map.put_new("#{Enum.at(response.schema.fields, i).name}", cell.v)
+              end)
+            end)
+
+          %{is_valid: true, data: data}
+        else
+          _ ->
+            %{is_valid: false, message: "No data found for phone: #{phone}"}
+        end
+
+      _ ->
+        %{is_valid: false, message: "Credentials not valid"}
+    end
+  end
+
+  @spec get_report_sql(String.t()) :: String.t()
+  defp get_report_sql(phone),
+    do: """
+    SELECT * FROM `cohesive-idiom-312313.919930029265.rptLeaderBoard`
+    WHERE phone = '#{phone}'
+    """
 
   @spec set_message_category(map(), list(), non_neg_integer()) :: map()
   defp set_message_category(contact, _list, 1) do
