@@ -21,9 +21,15 @@ defmodule Glific.Clients.DigitalGreen do
   @crp_id_key "dg_crp_ids"
 
   @geographies %{
-    database_key: "geography",
-    sheet_link:
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=1669998910&single=true&output=csv"
+    "en" => %{
+      "database_key" => "geography_en",
+      "sheet_link" => "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=1669998910&single=true&output=csv"
+    },
+
+    "te" => %{
+      "database_key" => "geography_te",
+      "sheet_link" => "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=752391516&single=true&output=csv"
+    }
   }
 
   @doc """
@@ -76,8 +82,9 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   def webhook("load_geography", fields) do
-    Glific.parse_maybe_integer!(fields["organization_id"])
-    |> load_geographies()
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    load_geographies(org_id, @geographies["en"])
+    load_geographies(org_id, @geographies["te"])
 
     fields
   end
@@ -85,29 +92,32 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("get_district_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     region_name = fields["region"]
+    langauge = get_language(fields["contact"]["id"])
 
-    get_geographies_data(org_id)
+    get_geographies_data(org_id, @geographies[langauge.locale])
     |> get_in([region_name])
     |> geographies_list_results()
   end
 
   def webhook("get_division_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    langauge = get_language(fields["contact"]["id"])
     region_name = fields["region"]
     district_name = fields["district"]
 
-    get_geographies_data(org_id)
+    get_geographies_data(org_id, @geographies[langauge.locale])
     |> get_in([region_name, district_name])
     |> geographies_list_results()
   end
 
   def webhook("get_mandal_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    langauge = get_language(fields["contact"]["id"])
     region_name = fields["region"]
     district_name = fields["district"]
     division_name = fields["division"]
 
-    get_geographies_data(org_id)
+    get_geographies_data(org_id, @geographies[langauge.locale])
     |> get_in([region_name, district_name, division_name, "mandals"])
     |> geographies_list_results()
   end
@@ -120,7 +130,7 @@ defmodule Glific.Clients.DigitalGreen do
 
     if Map.has_key?(index_map, user_input) do
       set_geography(type, index_map[user_input], contact_id)
-      %{error: false, message: "Geography set successfully for ${type}"}
+      %{error: false, message: "Geography set successfully for #{type}"}
     else
       index_map
       |> Enum.find(fn {_index, value} -> String.downcase(value) == String.downcase(user_input) end)
@@ -147,12 +157,12 @@ defmodule Glific.Clients.DigitalGreen do
     |> ContactField.do_add_contact_field(type, type, value)
   end
 
-  @spec get_geographies_data(non_neg_integer()) :: map()
-  defp get_geographies_data(org_id) do
+  @spec get_geographies_data(non_neg_integer(), map()) :: map()
+  defp get_geographies_data(org_id, geographies_config) do
     {:ok, org_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: org_id,
-        key: @geographies.database_key
+        key: geographies_config["database_key"]
       })
 
     org_data.json
@@ -249,8 +259,8 @@ defmodule Glific.Clients.DigitalGreen do
     }
   end
 
-  defp load_geographies(org_id) do
-    ApiClient.get_csv_content(url: @geographies.sheet_link)
+  defp load_geographies(org_id, geographies_config) do
+    ApiClient.get_csv_content(url: geographies_config["sheet_link"])
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       region = row["Region Name"]
       district = row["Proposed District"]
@@ -271,7 +281,7 @@ defmodule Glific.Clients.DigitalGreen do
       Map.put(acc, region, region_map)
     end)
     |> then(fn geographies_data ->
-      Partners.maybe_insert_organization_data(@geographies.database_key, geographies_data, org_id)
+      Partners.maybe_insert_organization_data(geographies_config["database_key"], geographies_data, org_id)
     end)
   end
 
@@ -285,5 +295,16 @@ defmodule Glific.Clients.DigitalGreen do
     # fetch_contacts_from_farmer_group(org_id)
     # |> Enum.each(&run_daily_task/1)
     :ok
+  end
+
+  defp get_language(contact_id) do
+    contact_id = Glific.parse_maybe_integer!(contact_id)
+
+    contact =
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language])
+
+    contact.language
   end
 end

@@ -64,12 +64,15 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-      interactive_content =
-        if is_integer(action.params_count) && action.params_count > 0  do
+
+    params_count = get_params_count(action, message_vars)
+
+    interactive_content =
+        if params_count > 0  do
           params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
           process_dynamic_interactive_content(
             interactive_content,
-            Enum.take(params, action.params_count)
+            Enum.take(params, params_count)
           )
         else
           interactive_content
@@ -417,6 +420,17 @@ defmodule Glific.Flows.ContactAction do
     )
 
     context
+  end
+
+  defp get_params_count(action, message_vars) do
+    action.params_count
+    |> MessageVarParser.parse(message_vars)
+    |> Glific.parse_maybe_integer()
+    |> case do
+     {:ok, nil} -> 0
+     {:ok, value} -> value
+     {:error, _} -> 0
+    end
   end
 
   @spec process_dynamic_interactive_content(map(), list()) :: map()
