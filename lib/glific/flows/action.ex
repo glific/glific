@@ -76,7 +76,9 @@ defmodule Glific.Flows.Action do
           node: Node.t() | nil,
           templating: Templating.t() | nil,
           wait_time: integer() | nil,
-          interactive_template_id: integer() | nil
+          interactive_template_id: integer() | nil,
+          params_count: String.t() | nil,
+          params: list() | nil
         }
 
   embedded_schema do
@@ -117,6 +119,9 @@ defmodule Glific.Flows.Action do
     field(:enter_flow_uuid, Ecto.UUID)
     field(:enter_flow_name, :string)
     field(:enter_flow_expression, :string)
+
+    field :params, {:array, :string}, default: []
+    field(:params_count, :string)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -224,7 +229,13 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "send_interactive_msg"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_interactive_template)
-    process(json, uuid_map, node, %{interactive_template_id: json["id"], labels: json["labels"]})
+
+    process(json, uuid_map, node, %{
+      interactive_template_id: json["id"],
+      labels: json["labels"],
+      params: json["params"] || [],
+      params_count: json["paramsCount"] || "0"
+    })
   end
 
   def process(%{"type" => "remove_contact_groups"} = json, uuid_map, node) do

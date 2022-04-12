@@ -22,7 +22,7 @@ defmodule Glific do
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
   """
-  @spec parse_maybe_integer(String.t() | integer) :: {:ok, integer} | :error
+  @spec parse_maybe_integer(String.t() | integer) :: {:ok, integer} | {:ok, nil} | :error
   def parse_maybe_integer(value) when is_integer(value),
     do: {:ok, value}
 
