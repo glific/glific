@@ -190,10 +190,16 @@ defmodule GlificWeb.Resolvers.Partners do
   @doc """
   Get the message count details
   """
-  @spec bsp_message_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec message_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, non_neg_integer()}
-  def bsp_message_count(_, _, %{context: %{current_user: user}}),
-    do: Glific.Stats.get_bsp_message_count(user.organization_id)
+  def message_count(_, _, %{context: %{current_user: user}}) do
+    start_date = Timex.shift(DateTime.utc_now(), days: -1)
+
+    Glific.Stats.get_message_count(user.organization_id, [
+      {:start_date, start_date},
+      {:end_date, DateTime.utc_now()}
+    ])
+  end
 
   @doc """
   Get a specific bsp balance by organization id

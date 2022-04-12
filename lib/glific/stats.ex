@@ -453,10 +453,11 @@ defmodule Glific.Stats do
   @doc """
   Get the details of the usage for this organization, from start_date to end_date both inclusive
   """
-  @spec get_bsp_message_count(non_neg_integer()) :: {:ok, non_neg_integer()}
-  def get_bsp_message_count(organization_id) do
-    start_date = Timex.shift(DateTime.utc_now(), days: -1)
-    end_date = DateTime.utc_now()
+  @spec get_message_count(non_neg_integer(), Keyword.t()) :: {:ok, non_neg_integer()}
+  def get_message_count(organization_id, opts \\ []) do
+    default_start_date = Timex.shift(DateTime.utc_now(), days: -1)
+    start_date = Keyword.get(opts, :start_date, default_start_date)
+    end_date = Keyword.get(opts, :end_date, DateTime.utc_now())
 
     %{messages: messages} =
       Stat
