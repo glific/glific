@@ -64,16 +64,16 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-    interactive_content =
-      if action.params_count < 1 do
-        interactive_content
-      else
-        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
-        process_dynamic_interactive_content(
-          interactive_content,
-          Enum.take(params, action.params_count)
-        )
-      end
+      interactive_content =
+        if is_integer(action.params_count) && action.params_count > 0  do
+          params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+          process_dynamic_interactive_content(
+            interactive_content,
+            Enum.take(params, action.params_count)
+          )
+        else
+          interactive_content
+        end
 
     ## since we have flow context here, we have to replace parse the results as well.
     interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
