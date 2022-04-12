@@ -195,7 +195,7 @@ defmodule GlificWeb.Resolvers.Partners do
   def message_count(_, _, %{context: %{current_user: user}}) do
     start_date = Timex.shift(DateTime.utc_now(), days: -1)
 
-    Glific.Stats.get_message_count(user.organization_id, [
+    Glific.Stats.get_message_count(user.organization_id, "hour", [
       {:start_date, start_date},
       {:end_date, DateTime.utc_now()}
     ])
