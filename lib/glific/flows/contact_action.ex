@@ -65,11 +65,10 @@ defmodule Glific.Flows.ContactAction do
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
     interactive_content =
-      if action.params_count in [nil, "", 0] do
+      if action.params_count < 1 do
         interactive_content
       else
         params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
-
         process_dynamic_interactive_content(
           interactive_content,
           Enum.take(params, action.params_count)
