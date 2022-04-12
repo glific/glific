@@ -64,19 +64,21 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-
-    params_count = get_params_count(action, message_vars)
+    params_count =
+      action.params_count
+      |> get_params_count(message_vars)
 
     interactive_content =
-        if params_count > 0  do
-          params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
-          process_dynamic_interactive_content(
-            interactive_content,
-            Enum.take(params, params_count)
-          )
-        else
-          interactive_content
-        end
+      if params_count > 0 do
+        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+
+        process_dynamic_interactive_content(
+          interactive_content,
+          Enum.take(params, params_count)
+        )
+      else
+        interactive_content
+      end
 
     ## since we have flow context here, we have to replace parse the results as well.
     interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
@@ -422,14 +424,15 @@ defmodule Glific.Flows.ContactAction do
     context
   end
 
-  defp get_params_count(action, message_vars) do
-    action.params_count
+  @spec get_params_count(String.t(), map()) :: integer
+  defp get_params_count(params_count, message_vars) do
+    params_count
     |> MessageVarParser.parse(message_vars)
     |> Glific.parse_maybe_integer()
     |> case do
-     {:ok, nil} -> 0
-     {:ok, value} -> value
-     {:error, _} -> 0
+      {:ok, nil} -> 0
+      {:ok, value} -> value
+      _ -> 0
     end
   end
 

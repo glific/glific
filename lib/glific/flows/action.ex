@@ -77,7 +77,7 @@ defmodule Glific.Flows.Action do
           templating: Templating.t() | nil,
           wait_time: integer() | nil,
           interactive_template_id: integer() | nil,
-          params_count: integer() | nil,
+          params_count: String.t() | nil,
           params: list() | nil
         }
 
@@ -121,7 +121,7 @@ defmodule Glific.Flows.Action do
     field(:enter_flow_expression, :string)
 
     field :params, {:array, :string}, default: []
-    field(:params_count, :integer)
+    field(:params_count, :string)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -234,7 +234,7 @@ defmodule Glific.Flows.Action do
       interactive_template_id: json["id"],
       labels: json["labels"],
       params: json["params"] || [],
-      params_count: json["paramsCount"]
+      params_count: json["paramsCount"] || "0"
     })
   end
 
