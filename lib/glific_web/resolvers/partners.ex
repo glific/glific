@@ -188,7 +188,7 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Get the message count details
+  Get the message count details in last 24 hrs from stat data
   """
   @spec message_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, non_neg_integer()}
