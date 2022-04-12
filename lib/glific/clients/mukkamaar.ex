@@ -11,6 +11,10 @@ defmodule Glific.Clients.MukkaMaar do
     Repo
   }
 
+  @mukkamaar %{
+    "dataset" => "919930029265",
+    "rank_table" => "rptLeaderBoard"
+  }
   @registration_flow_id [822, 2801]
   @nudge_category %{
     # category_1 in nudge_category is in hours while rest are in days
@@ -95,7 +99,7 @@ defmodule Glific.Clients.MukkaMaar do
   @spec get_report_sql(String.t()) :: String.t()
   defp get_report_sql(phone),
     do: """
-    SELECT * FROM `cohesive-idiom-312313.919930029265.rptLeaderBoard`
+    SELECT * FROM `#{@mukkamaar["dataset"]}.#{@mukkamaar["rank_table"]}`
     WHERE phone = '#{phone}'
     """
 
