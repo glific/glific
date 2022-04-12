@@ -955,7 +955,6 @@ defmodule Glific.Flows do
     |> join(:inner, [fr], fl in Flow, on: fr.flow_id == fl.id)
     |> where([fr, fl], fr.revision_number == 0 and fl.uuid == ^flow_uuid)
     |> Repo.one()
-    |> IO.inspect()
   end
 
   @doc """
