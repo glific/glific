@@ -113,25 +113,28 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   def webhook("set_geography", fields) do
-    _org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     type = fields["type"]
-    selected_index = fields["selected_index"]
+    user_input = fields["selected_index"]
     index_map = Jason.decode!(fields["index_map"])
     contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
 
-    if Map.has_key?(index_map, selected_index) do
-      selected_value = index_map[selected_index]
-      set_geography(type, selected_value, contact_id)
-
-      %{
-        error: false,
-        message: "Geography set successfully for ${type}"
-      }
+    if Map.has_key?(index_map, user_input) do
+      set_geography(type, index_map[user_input], contact_id)
+      %{error: false, message: "Geography set successfully for ${type}"}
     else
-      %{
-        error: true,
-        message: "Invalid selected index"
-      }
+      index_map
+      |> Enum.find(fn {_index, value} -> String.downcase(value) == String.downcase(user_input) end)
+      |> case do
+        nil ->
+          %{error: true, message: "Invalid selected index"}
+
+        {index, value} ->
+          set_geography(type, index_map[index], contact_id)
+          %{error: false, message: "Geography set successfully for #{type} and value #{value}"}
+
+        _ ->
+          %{error: true, message: "Invalid selected index"}
+      end
     end
   end
 
@@ -168,6 +171,7 @@ defmodule Glific.Clients.DigitalGreen do
       list_message: Enum.join(message_list, "\n"),
       index_map: Jason.encode!(index_map)
     }
+    |> Map.merge(convert_to_interactive_message(resource_list))
   end
 
   defp geographies_list_results(resource_map) do
@@ -180,6 +184,7 @@ defmodule Glific.Clients.DigitalGreen do
       list_message: Enum.join(message_list, "\n"),
       index_map: Jason.encode!(index_map)
     }
+    |> Map.merge(convert_to_interactive_message(Map.keys(resource_map)))
   end
 
   @spec format_geographies_message(list()) :: {map(), list()}
@@ -192,6 +197,28 @@ defmodule Glific.Clients.DigitalGreen do
         message_list ++ ["Type *#{index}* for #{district}"]
       }
     end)
+  end
+
+  @spec convert_to_interactive_message(list()) :: map()
+  defp convert_to_interactive_message(resource_list) do
+    list_length = length(resource_list)
+
+    if(list_length > 100) do
+      %{
+        is_interative: false,
+        interative_items_count: 0
+      }
+    else
+      %{
+        is_interative: true,
+        interative_items_count: list_length,
+        interative_data:
+          resource_list
+          |> Enum.with_index()
+          |> Enum.map(fn {value, index} -> {index + 1, value} end)
+          |> Enum.into(%{})
+      }
+    end
   end
 
   @spec load_crp_ids(any) :: %{status: <<_::88>>}

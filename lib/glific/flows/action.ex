@@ -234,7 +234,14 @@ defmodule Glific.Flows.Action do
       interactive_template_id: json["id"],
       labels: json["labels"],
       params: json["params"] || [],
-      params_count: json["paramsCount"] || 0
+      params_count:
+        json["paramsCount"]
+        |> Glific.parse_maybe_integer()
+        |> case do
+          {:ok, nil} -> 0
+          {:ok, value} -> value
+          _ -> 0
+        end
     })
   end
 

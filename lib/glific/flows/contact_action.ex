@@ -69,7 +69,11 @@ defmodule Glific.Flows.ContactAction do
         interactive_content
       else
         params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
-        process_dynamic_interactive_content(interactive_content, params)
+
+        process_dynamic_interactive_content(
+          interactive_content,
+          Enum.take(params, action.params_count)
+        )
       end
 
     ## since we have flow context here, we have to replace parse the results as well.
@@ -429,7 +433,7 @@ defmodule Glific.Flows.ContactAction do
     Enum.map(params, fn val ->
       %{
         "title" => val,
-        "description" => "No Descritpion",
+        "description" => "",
         "type" => "text"
       }
     end)
