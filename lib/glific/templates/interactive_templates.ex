@@ -278,4 +278,16 @@ defmodule Glific.Templates.InteractiveTemplates do
   end
 
   defp do_get_media(_interactive_content, _type, _organization_id), do: nil
+
+  @doc """
+  A single function to fetch all the interactive templates related info
+  """
+  @spec formatted_data(Glific.Templates.InteractiveTemplate.t(), non_neg_integer) ::
+          {map, binary, nil | non_neg_integer}
+  def formatted_data(interactive_template, language_id) do
+    interactive_content = translated_content(interactive_template, language_id)
+    body = get_interactive_body(interactive_content)
+    media_id = get_media(interactive_content, interactive_template.organization_id)
+    {interactive_content, body, media_id}
+  end
 end
