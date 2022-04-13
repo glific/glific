@@ -60,14 +60,28 @@ defmodule Glific.Flows.ContactAction do
         %{id: action.interactive_template_id, organization_id: context.organization_id}
       )
 
-    interactive_content =
+    {interactive_content, body, media_id} =
       interactive_template
-      |> InteractiveTemplates.translated_content(context.contact.language_id)
-      |> MessageVarParser.parse_map(message_vars)
+      |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-    body = InteractiveTemplates.get_interactive_body(interactive_content)
+    params_count =
+      action.params_count
+      |> get_params_count(message_vars)
 
-    media_id = InteractiveTemplates.get_media(interactive_content, context.organization_id)
+    interactive_content =
+      if params_count > 0 do
+        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+
+        process_dynamic_interactive_content(
+          interactive_content,
+          Enum.take(params, params_count)
+        )
+      else
+        interactive_content
+      end
+
+    ## since we have flow context here, we have to replace parse the results as well.
+    interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
 
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{
@@ -408,5 +422,36 @@ defmodule Glific.Flows.ContactAction do
     )
 
     context
+  end
+
+  @spec get_params_count(String.t(), map()) :: integer
+  defp get_params_count(params_count, message_vars) do
+    params_count
+    |> MessageVarParser.parse(message_vars)
+    |> Glific.parse_maybe_integer()
+    |> case do
+      {:ok, nil} -> 0
+      {:ok, value} -> value
+      _ -> 0
+    end
+  end
+
+  @spec process_dynamic_interactive_content(map(), list()) :: map()
+  defp process_dynamic_interactive_content(interactive_content, params) do
+    get_in(interactive_content, ["items"])
+    |> hd()
+    |> Map.put("options", build_list_items(params))
+    |> then(&Map.put(interactive_content, "items", [&1]))
+  end
+
+  @spec build_list_items(list()) :: list()
+  defp build_list_items(params) do
+    Enum.map(params, fn val ->
+      %{
+        "title" => val,
+        "description" => "",
+        "type" => "text"
+      }
+    end)
   end
 end
