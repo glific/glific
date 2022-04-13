@@ -55,7 +55,13 @@ defmodule Glific.Clients.MukkaMaar do
       data
       |> Enum.reduce(%{found: false}, fn student, acc ->
         if student["phone"] == phone,
-          do: acc |> Map.merge(%{found: true, student_rank: student["StudentRank"]}),
+          do:
+            acc
+            |> Map.merge(%{
+              found: true,
+              student_rank: student["StudentRank"],
+              total_students: Enum.count(data)
+            }),
           else: acc
       end)
     end
@@ -100,7 +106,6 @@ defmodule Glific.Clients.MukkaMaar do
   defp get_report_sql(phone),
     do: """
     SELECT * FROM `#{@mukkamaar["dataset"]}.#{@mukkamaar["rank_table"]}`
-    WHERE phone = '#{phone}'
     """
 
   @spec set_message_category(map(), list(), non_neg_integer()) :: map()
