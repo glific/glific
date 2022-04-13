@@ -1437,6 +1437,12 @@ Match the tags excluded
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>flow_broadcast_id</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>sender_id</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
