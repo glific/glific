@@ -1162,6 +1162,12 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 </tr>
 
 <tr>
+<td colspan="2" valign="top"><strong>FlowBroadcastId</strong></td>
+<td valign="top"><a href="#id">Id</a></td>
+<td></td>
+</tr>
+
+<tr>
 <td colspan="2" valign="top"><strong>ContextMessage</strong></td>
 <td valign="top"><a href="#messagemedia">Message</a></td>
 <td>Context message that the user responded to</td>
