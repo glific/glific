@@ -157,11 +157,11 @@ query qualityRating() {
 | ------------------------------------------------------ | --------------------- |
 | <a href="#qualityRatingResult">qualityRatingResult</a> | Queried QualityRating |
 
-## Get BSP Message count
+## Get HSM Message count
 
 ```graphql
-query bspMessageCount() {
-  bspMessageCount
+query hsmStats() {
+  hsmStats
 }
 
 ```
@@ -171,16 +171,16 @@ query bspMessageCount() {
 ```json
 {
   "data": {
-    "bspMessageCount": 455
+    "hsmStats": 21
   }
 }
 ```
 
 ### Return Parameters
 
-| Type                   | Description                                |
-| ---------------------- | ------------------------------------------ |
-| <a href="#int">Int</a> | Count of messages exchanged in last 24 hrs |
+| Type                   | Description                                    |
+| ---------------------- | ---------------------------------------------- |
+| <a href="#int">Int</a> | Count of HSM messages exchanged in last 24 hrs |
 
 ## Count all Providers
 

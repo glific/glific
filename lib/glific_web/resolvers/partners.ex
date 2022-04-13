@@ -188,14 +188,14 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
-  Get the message count details in last 24 hrs from stat data
+  Get the hsm stats details in last 24 hrs from stat data
   """
-  @spec message_count(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec hsm_stats(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, non_neg_integer()}
-  def message_count(_, _, %{context: %{current_user: user}}) do
+  def hsm_stats(_, _, %{context: %{current_user: user}}) do
     start_date = Timex.shift(DateTime.utc_now(), days: -1)
 
-    Glific.Stats.get_message_count(user.organization_id, "hour", [
+    Glific.Stats.hsms(user.organization_id, "hour", [
       {:start_date, start_date},
       {:end_date, DateTime.utc_now()}
     ])

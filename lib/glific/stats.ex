@@ -451,24 +451,24 @@ defmodule Glific.Stats do
   end
 
   @doc """
-  Get the details of the usage for this organization, from start_date to end_date both inclusive
+  Get the count of business initiated conversations for organization through hsm stats, from start_date to end_date both inclusive
   """
-  @spec get_message_count(non_neg_integer(), String.t(), Keyword.t()) :: {:ok, non_neg_integer()}
-  def get_message_count(organization_id, period \\ "hour", opts \\ []) do
+  @spec hsms(non_neg_integer(), String.t(), Keyword.t()) :: {:ok, non_neg_integer()}
+  def hsms(organization_id, period \\ "hour", opts \\ []) do
     default_start_date = Timex.shift(DateTime.utc_now(), days: -1)
     start_date = Keyword.get(opts, :start_date, default_start_date)
     end_date = Keyword.get(opts, :end_date, DateTime.utc_now())
 
-    %{messages: messages} =
+    %{hsms: hsms} =
       Stat
       |> where([s], s.organization_id == ^organization_id)
       |> where([s], s.period == ^period)
       |> where([s], s.inserted_at > ^start_date and s.inserted_at <= ^end_date)
       |> select([s], %{
-        messages: sum(s.messages)
+        hsms: sum(s.hsm)
       })
       |> Repo.one()
 
-    {:ok, messages}
+    {:ok, hsms}
   end
 end

@@ -85,10 +85,10 @@ defmodule GlificWeb.Schema.ProviderTypes do
       resolve(&Resolvers.Partners.quality_rating/3)
     end
 
-    @desc "Get Message count details"
-    field :bsp_message_count, :integer do
+    @desc "Get HSM Message count details"
+    field :hsm_stats, :integer do
       middleware(Authorize, :admin)
-      resolve(&Resolvers.Partners.message_count/3)
+      resolve(&Resolvers.Partners.hsm_stats/3)
     end
   end
 

@@ -22,7 +22,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   load_gql(:delete, GlificWeb.Schema, "assets/gql/providers/delete.gql")
   load_gql(:bspbalance, GlificWeb.Schema, "assets/gql/providers/bspbalance.gql")
   load_gql(:quality_rating, GlificWeb.Schema, "assets/gql/providers/quality_rating.gql")
-  load_gql(:bsp_message_count, GlificWeb.Schema, "assets/gql/providers/bsp_message_count.gql")
+  load_gql(:hsm_stats, GlificWeb.Schema, "assets/gql/providers/hsm_stats.gql")
 
   test "providers field returns list of providers", %{user: user} do
     result = auth_query_gql_by(:list, user)
@@ -247,18 +247,18 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert get_in(query_data, [:data, "qualityRating", "previous_limit"]) == "Tier1K"
   end
 
-  test "get bsp message count details", %{user: user} = attrs do
+  test "Get HSM Message count details", %{user: user} = attrs do
     attrs = %{
       organization_id: attrs.organization_id,
       period: "hour",
-      messages: 234,
+      hsm: 21,
       date: DateTime.to_date(DateTime.utc_now())
     }
 
     Stats.create_stat(attrs)
-    Stats.create_stat(Map.merge(attrs, %{messages: 221}))
-    result = auth_query_gql_by(:bsp_message_count, user)
+    Stats.create_stat(Map.merge(attrs, %{hsm: 10}))
+    result = auth_query_gql_by(:hsm_stats, user)
     assert {:ok, query_data} = result
-    assert get_in(query_data, [:data, "bspMessageCount"]) == 455
+    assert get_in(query_data, [:data, "hsmStats"]) == 31
   end
 end
