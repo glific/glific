@@ -284,7 +284,7 @@ defmodule Glific.Flows.Broadcast do
         success: 0,
         failed: 0,
         pending: 0,
-        failed_catogries: %{
+        failed_categories: %{
           sent: 0,
           opted_out: 0
         }
@@ -330,7 +330,7 @@ defmodule Glific.Flows.Broadcast do
   end
 
   defp count_failed_deliveries_by_category(map, flow_broadcast_id) do
-    Map.put(map, :failed_catogries, failed_deliveries_by_category(flow_broadcast_id))
+    Map.put(map, :failed_categories, failed_deliveries_by_category(flow_broadcast_id))
   end
 
   defp failed_deliveries_by_category(flow_broadcast_id) do
@@ -338,9 +338,21 @@ defmodule Glific.Flows.Broadcast do
       broadcast_stats_base_query(flow_broadcast_id)
       |> Repo.query!()
 
+    sent_count =
+      Enum.count(data.rows, fn d ->
+        [_id, _flow_broadcast_id, _contact_id, status | _] = d
+        status == "sent"
+      end)
+
+    opted_out =
+      Enum.count(data.rows, fn d ->
+        [_id, _flow_broadcast_id, _contact_id, status | _] = d
+        status == "contact_opt_out"
+      end)
+
     %{
-      sent: Enum.count(data, fn d -> d.status == "sent" end),
-      opted_out: Enum.count(data, fn d -> d.status == "contact_opt_out" end)
+      sent: sent_count,
+      opted_out: opted_out
     }
   end
 end
