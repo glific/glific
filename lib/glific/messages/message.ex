@@ -136,7 +136,7 @@ defmodule Glific.Messages.Message do
     belongs_to(:context_message, Message, foreign_key: :context_message_id)
 
     # the originating group message which kicked off this flow if any
-    belongs_to(:flow_broadcast, FlowBroadcast)
+    belongs_to(:flow_broadcast, FlowBroadcast, foreign_key: :flow_broadcast_id)
 
     field(:errors, :map, default: %{})
     field(:send_at, :utc_datetime)
