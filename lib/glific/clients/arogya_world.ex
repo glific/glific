@@ -146,7 +146,7 @@ defmodule Glific.Clients.ArogyaWorld do
     Logger.info("Ran hourly tasks for organization #{org_id}")
 
     sharing_file_time = Timex.now().hour === 13
-    current_week = get_current_week(org_id)
+    current_week = Glific.parse_maybe_integer!(get_current_week(org_id))
 
     get_week_day_number()
     |> do_hourly_tasks(sharing_file_time, org_id, current_week)
