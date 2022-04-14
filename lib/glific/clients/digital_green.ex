@@ -23,12 +23,13 @@ defmodule Glific.Clients.DigitalGreen do
   @geographies %{
     "en" => %{
       "database_key" => "geography_en",
-      "sheet_link" => "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=1669998910&single=true&output=csv"
+      "sheet_link" =>
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=1669998910&single=true&output=csv"
     },
-
     "te" => %{
       "database_key" => "geography_te",
-      "sheet_link" => "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=752391516&single=true&output=csv"
+      "sheet_link" =>
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=752391516&single=true&output=csv"
     }
   }
 
@@ -213,7 +214,7 @@ defmodule Glific.Clients.DigitalGreen do
   defp convert_to_interactive_message(resource_list) do
     list_length = length(resource_list)
 
-    if(list_length > 100) do
+    if(list_length > 10) do
       %{
         is_interative: false,
         interative_items_count: 0
@@ -281,7 +282,11 @@ defmodule Glific.Clients.DigitalGreen do
       Map.put(acc, region, region_map)
     end)
     |> then(fn geographies_data ->
-      Partners.maybe_insert_organization_data(geographies_config["database_key"], geographies_data, org_id)
+      Partners.maybe_insert_organization_data(
+        geographies_config["database_key"],
+        geographies_data,
+        org_id
+      )
     end)
   end
 
