@@ -284,15 +284,19 @@ defmodule Glific.Flows.Broadcast do
         success: 0,
         failed: 0,
         pending: 0,
-        failed_categories: %{
+        msg_categories: %{
           sent: 0,
-          opted_out: 0
+          read: 0,
+          delivered: 0,
+          enqueued: 0,
+          opted_out: 0,
+          error: 0
         }
       }
       |> count_successful_deliveries(flow_broadcast_id)
       |> count_failed_deliveries(flow_broadcast_id)
       |> count_pending_deliveries(flow_broadcast_id)
-      |> count_failed_deliveries_by_category(flow_broadcast_id)
+      |> count_deliveries_by_category(flow_broadcast_id)
 
     {:ok, results}
   end
@@ -329,30 +333,59 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :failed, count)
   end
 
-  defp count_failed_deliveries_by_category(map, flow_broadcast_id) do
-    Map.put(map, :failed_categories, failed_deliveries_by_category(flow_broadcast_id))
+  defp count_deliveries_by_category(map, flow_broadcast_id) do
+    Map.put(map, :msg_categories, msg_deliveries_by_category(flow_broadcast_id))
   end
 
-  defp failed_deliveries_by_category(flow_broadcast_id) do
+  # Glific.Flows.Broadcast.msg_deliveries_by_category
+  def msg_deliveries_by_category(flow_broadcast_id) do
     data =
       broadcast_stats_base_query(flow_broadcast_id)
       |> Repo.query!()
 
     sent_count =
       Enum.count(data.rows, fn d ->
-        [_id, _flow_broadcast_id, _contact_id, status | _] = d
-        status == "sent"
+        [_message_id, message_status, _processed_at, _broadcast_status, _bsp_status, _errors] = d
+        message_status == "sent"
       end)
 
-    opted_out =
+    read_count =
       Enum.count(data.rows, fn d ->
-        [_id, _flow_broadcast_id, _contact_id, status | _] = d
-        status == "contact_opt_out"
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "read"
+      end)
+
+    delivered_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "delivered"
+      end)
+
+    opted_out_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, message_status, _processed_at, _broadcast_status, _bsp_status, _errors] = d
+        message_status == "contact_opt_out"
+      end)
+
+    enqueued_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "enqueued"
+      end)
+
+    error_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "error"
       end)
 
     %{
       sent: sent_count,
-      opted_out: opted_out
+      read: read_count,
+      delivered: delivered_count,
+      enqueued: enqueued_count,
+      opted_out: opted_out_count,
+      error: error_count
     }
   end
 end
