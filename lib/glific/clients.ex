@@ -83,6 +83,15 @@ defmodule Glific.Clients do
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
+  # Currently we need same functionality
+  # on both DG platforms.
+  @digitalgreen_ryss %{
+    id: 68,
+    name: "Digitalgreen RYSS",
+    webhook: Glific.Clients.DigitalGreen,
+    daily_tasks: Glific.Clients.DigitalGreen
+  }
+
   @nayi_disha %{
     id: 22,
     name: "Nayi Disha",
@@ -105,6 +114,7 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.Bandhu
   }
 
+  ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
@@ -117,7 +127,8 @@ defmodule Glific.Clients do
     @digital_green[:id] => @digital_green,
     @nayi_disha[:id] => @nayi_disha,
     @arogyaworld[:id] => @arogyaworld,
-    @bandhu[:id] => @bandhu
+    @bandhu[:id] => @bandhu,
+    @digitalgreen_ryss[:id] => @digitalgreen_ryss
   }
 
   @spec env(atom() | nil) :: atom()
