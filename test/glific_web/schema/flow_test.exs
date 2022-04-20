@@ -9,6 +9,8 @@ defmodule GlificWeb.Schema.FlowTest do
     Flows.Flow,
     Flows.FlowRevision,
     Groups,
+    Groups.Group,
+    Messages,
     Repo,
     Seeds.SeedsDev,
     State
@@ -16,6 +18,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
   setup do
     SeedsDev.seed_test_flows()
+    Fixtures.group_fixture()
     :ok
   end
 
@@ -33,6 +36,7 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:copy, GlificWeb.Schema, "assets/gql/flows/copy.gql")
   load_gql(:flow_get, GlificWeb.Schema, "assets/gql/flows/flow_get.gql")
   load_gql(:flow_rel, GlificWeb.Schema, "assets/gql/flows/flow_release.gql")
+  load_gql(:broadcast_stats, GlificWeb.Schema, "assets/gql/flows/broadcast_stats.gql")
 
   load_gql(
     :terminate_contact_flows,
@@ -445,5 +449,61 @@ defmodule GlificWeb.Schema.FlowTest do
              get_in(query_data, [:data, "flowGet", "flow", "name"]),
              "Help Workflow"
            )
+  end
+
+  test "flow broadcast stats", %{glific_admin: glific_admin} = attrs do
+    label = "Default Group"
+
+    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: attrs.organization_id})
+
+    [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
+
+    valid_attrs = %{
+      body: "group message",
+      flow: :outbound,
+      type: :text,
+      sender_id: glific_admin.contact_id,
+      receiver_id: glific_admin.contact_id,
+      organization_id: attrs.organization_id
+    }
+
+    {:ok, message} = Messages.create_and_send_message(valid_attrs)
+
+    {:ok, flow_broadcast} =
+      Flows.Broadcast.create_flow_broadcast(%{
+        flow_id: flow.id,
+        group_id: group.id,
+        message_id: message.id,
+        started_at: DateTime.utc_now(),
+        user_id: Repo.get_current_user().id,
+        organization_id: group.organization_id
+      })
+
+    [contact1, contact2 | _] =
+      Contacts.list_contacts(%{
+        filter: %{organization_id: attrs.organization_id, name: "Glific Simulator"}
+      })
+
+    valid_attrs
+    |> Map.merge(%{receiver_id: contact1.id, flow_broadcast_id: flow_broadcast.id})
+    |> Messages.create_and_send_message()
+
+    valid_attrs
+    |> Map.merge(%{
+      receiver_id: contact2.id,
+      flow_broadcast_id: flow_broadcast.id,
+      bsp_status: :error
+    })
+    |> Messages.create_and_send_message()
+
+    result =
+      auth_query_gql_by(:broadcast_stats, glific_admin,
+        variables: %{
+          "flowBroadcastId" => flow_broadcast.id
+        }
+      )
+
+    # assert {:ok, query_data} = result
+    IO.inspect(result)
   end
 end

@@ -240,8 +240,11 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
+  @doc """
+  Creates a Flow broadcast.
+  """
   @spec create_flow_broadcast(map()) :: {:ok, FlowBroadcast.t()} | {:error, Ecto.Changeset.t()}
-  defp create_flow_broadcast(attrs) do
+  def create_flow_broadcast(attrs) do
     %FlowBroadcast{}
     |> FlowBroadcast.changeset(attrs)
     |> Repo.insert()
