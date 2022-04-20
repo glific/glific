@@ -950,14 +950,11 @@ defmodule Glific.Flows do
   ## Glific.Flows.flow but that gives us the definition without UI placesments.
   @spec get_latest_definition(String.t()) :: map() | nil
   defp get_latest_definition(flow_uuid) do
-    json =
-      FlowRevision
-      |> select([fr], fr.definition)
-      |> join(:inner, [fr], fl in Flow, on: fr.flow_id == fl.id)
-      |> where([fr, fl], fr.revision_number == 0 and fl.uuid == ^flow_uuid)
-      |> Repo.one()
-
-    Map.get(json, "definition", json)
+    FlowRevision
+    |> select([fr], fr.definition)
+    |> join(:inner, [fr], fl in Flow, on: fr.flow_id == fl.id)
+    |> where([fr, fl], fr.revision_number == 0 and fl.uuid == ^flow_uuid)
+    |> Repo.one()
   end
 
   @doc """

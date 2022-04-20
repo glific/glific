@@ -55,7 +55,13 @@ defmodule Glific.Clients.MukkaMaar do
       data
       |> Enum.reduce(%{found: false}, fn student, acc ->
         if student["phone"] == phone,
-          do: acc |> Map.merge(%{found: true, student_rank: student["StudentRank"]}),
+          do:
+            acc
+            |> Map.merge(%{
+              found: true,
+              student_rank: student["StudentRank"],
+              total_students: Enum.count(data)
+            }),
           else: acc
       end)
     end
@@ -69,7 +75,7 @@ defmodule Glific.Clients.MukkaMaar do
     Glific.BigQuery.fetch_bigquery_credentials(fields["organization_id"])
     |> case do
       {:ok, %{conn: conn, project_id: project_id, dataset_id: _dataset_id} = _credentials} ->
-        with sql <- get_report_sql(phone),
+        with sql <- get_report_sql(),
              {:ok, %{totalRows: total_rows} = response} <-
                Jobs.bigquery_jobs_query(conn, project_id,
                  body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
@@ -96,11 +102,10 @@ defmodule Glific.Clients.MukkaMaar do
     end
   end
 
-  @spec get_report_sql(String.t()) :: String.t()
-  defp get_report_sql(phone),
+  @spec get_report_sql :: String.t()
+  defp get_report_sql,
     do: """
     SELECT * FROM `#{@mukkamaar["dataset"]}.#{@mukkamaar["rank_table"]}`
-    WHERE phone = '#{phone}'
     """
 
   @spec set_message_category(map(), list(), non_neg_integer()) :: map()
