@@ -492,9 +492,11 @@ defmodule GlificWeb.Schema.FlowTest do
         }
       )
 
+    # testcase should be checking the message categories as well
+    # but currently as bsp_status is returning null, msg_categories is not populated. Will come back at later time
     assert {:ok, query_data} = result
-    broadcastStats = get_in(query_data, [:data, "broadcastStats"])
-    broadcast_map = Jason.decode!(broadcastStats)
+    broadcast_stats = get_in(query_data, [:data, "broadcastStats"])
+    broadcast_map = Jason.decode!(broadcast_stats)
     assert true == Map.has_key?(broadcast_map, "failed")
     assert true == Map.has_key?(broadcast_map, "msg_categories")
     assert true == Map.has_key?(broadcast_map, "pending")
