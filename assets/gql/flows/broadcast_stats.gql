@@ -1,0 +1,3 @@
+query broadcastStats($id: ID!) {
+  broadcastStats
+}
