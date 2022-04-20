@@ -6,11 +6,11 @@ defmodule GlificWeb.Schema.FlowTest do
     Contacts,
     Fixtures,
     Flows,
+    Flows.Broadcast,
     Flows.Flow,
+    Flows.FlowBroadcast,
     Flows.FlowRevision,
     Groups,
-    Groups.Group,
-    Messages,
     Repo,
     Seeds.SeedsDev,
     State
@@ -18,7 +18,6 @@ defmodule GlificWeb.Schema.FlowTest do
 
   setup do
     SeedsDev.seed_test_flows()
-    Fixtures.group_fixture()
     :ok
   end
 
@@ -452,49 +451,39 @@ defmodule GlificWeb.Schema.FlowTest do
   end
 
   test "flow broadcast stats", %{glific_admin: glific_admin} = attrs do
-    label = "Default Group"
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    group = Fixtures.group_fixture()
 
-    {:ok, group} = Repo.fetch_by(Group, %{label: label, organization_id: attrs.organization_id})
-
-    [flow | _] = Flows.list_flows(%{filter: %{name: "New Contact Workflow"}})
-
-    valid_attrs = %{
-      body: "group message",
-      flow: :outbound,
-      type: :text,
-      sender_id: glific_admin.contact_id,
-      receiver_id: glific_admin.contact_id,
-      organization_id: attrs.organization_id
-    }
-
-    {:ok, message} = Messages.create_and_send_message(valid_attrs)
-
-    {:ok, flow_broadcast} =
-      Flows.Broadcast.create_flow_broadcast(%{
-        flow_id: flow.id,
-        group_id: group.id,
-        message_id: message.id,
-        started_at: DateTime.utc_now(),
-        user_id: Repo.get_current_user().id,
-        organization_id: group.organization_id
-      })
-
-    [contact1, contact2 | _] =
+    [contact, contact2 | _] =
       Contacts.list_contacts(%{
         filter: %{organization_id: attrs.organization_id, name: "Glific Simulator"}
       })
 
-    valid_attrs
-    |> Map.merge(%{receiver_id: contact1.id, flow_broadcast_id: flow_broadcast.id})
-    |> Messages.create_and_send_message()
-
-    valid_attrs
-    |> Map.merge(%{
-      receiver_id: contact2.id,
-      flow_broadcast_id: flow_broadcast.id,
-      bsp_status: :error
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
     })
-    |> Messages.create_and_send_message()
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact2.id,
+      organization_id: attrs.organization_id
+    })
+
+    {:ok, flow} = Flows.start_group_flow(flow, group)
+
+    assert {:ok, flow_broadcast} =
+             Repo.fetch_by(FlowBroadcast, %{
+               group_id: group.id,
+               flow_id: flow.id
+             })
+
+    assert flow_broadcast.completed_at == nil
+
+    # lets sleep for 3 seconds, to ensure that messages have been delivered
+    Broadcast.execute_group_broadcasts(attrs.organization_id)
+    Process.sleep(3_000)
 
     result =
       auth_query_gql_by(:broadcast_stats, glific_admin,
@@ -503,7 +492,12 @@ defmodule GlificWeb.Schema.FlowTest do
         }
       )
 
-    # assert {:ok, query_data} = result
-    IO.inspect(result)
+    assert {:ok, query_data} = result
+    broadcastStats = get_in(query_data, [:data, "broadcastStats"])
+    broadcast_map = Jason.decode!(broadcastStats)
+    assert true == Map.has_key?(broadcast_map, "failed")
+    assert true == Map.has_key?(broadcast_map, "msg_categories")
+    assert true == Map.has_key?(broadcast_map, "pending")
+    assert true == Map.has_key?(broadcast_map, "success")
   end
 end
