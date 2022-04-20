@@ -301,6 +301,7 @@ defmodule Glific.Flows.Broadcast do
     {:ok, results}
   end
 
+  @spec count_successful_deliveries(map(), non_neg_integer()) :: map()
   defp count_successful_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
@@ -312,6 +313,7 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :success, count)
   end
 
+  @spec count_failed_deliveries(map(), non_neg_integer()) :: map()
   defp count_failed_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
@@ -323,6 +325,7 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :failed, count)
   end
 
+  @spec count_pending_deliveries(map(), non_neg_integer()) :: map()
   defp count_pending_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
@@ -333,12 +336,13 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :failed, count)
   end
 
+  @spec count_deliveries_by_category(map(), non_neg_integer()) :: map()
   defp count_deliveries_by_category(map, flow_broadcast_id) do
     Map.put(map, :msg_categories, msg_deliveries_by_category(flow_broadcast_id))
   end
 
-  # Glific.Flows.Broadcast.msg_deliveries_by_category
-  def msg_deliveries_by_category(flow_broadcast_id) do
+  @spec msg_deliveries_by_category(non_neg_integer()) :: map()
+  defp msg_deliveries_by_category(flow_broadcast_id) do
     data =
       broadcast_stats_base_query(flow_broadcast_id)
       |> Repo.query!()
