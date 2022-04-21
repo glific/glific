@@ -449,7 +449,12 @@ defmodule Glific.Templates do
   @spec do_update_hsm(map(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
-    update_attrs = do_update_attrs(template["status"], template)
+    current_template = db_templates[template["bsp_id"]]
+
+    update_attrs =
+      if current_template.status != template["status"],
+        do: do_update_attrs(template["status"], template),
+        else: %{status: template["status"]}
 
     db_templates[template["bsp_id"]]
     |> SessionTemplate.changeset(update_attrs)
