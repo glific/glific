@@ -114,10 +114,11 @@ These are the preliminary steps involved
 
 ## Documentation
 
+- [Postman API docs](https://postman.glific.com/)
 - [GraphQL API docs](https://glific.github.io/slate/)
-- [Code docs](https://glific.github.io/glific/doc/readme.html#documentation)
-- [Slab docs](https://docs.glific.com)
-- [Recipes](https://github.com/glific/recipes) - Framework for integration with Glific APIs, Webhooks and more.
+- [Code Documentation](https://glific.github.io/glific/doc/readme.html#documentation)
+- [User Guide](https://docs.glific.com)
+- [Recipes](https://github.com/glific/recipes) - Code smaples for some common use cases in glific.
 
 ## Learn more
 
