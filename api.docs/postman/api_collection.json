@@ -1,0 +1,847 @@
+{
+  "info": {
+    "_postman_id": "477071b2-2c6a-4ced-b2f2-39fe474ab27f",
+    "name": "Glific backend APis",
+    "description": "Glific is purely APIs based. We try to create an API endpoint for all the features. Our frontend is just a user of Glific APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "_postman_id": "a0e5ca4b-f95f-49e9-b4ed-8236cb2e3399",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}",
+              "options": {}
+            },
+            "url": "{{api_url}}/v1/session"
+          },
+          "response": []
+        }
+      ],
+      "_postman_id": "0322ea88-1ec3-4c75-a6f6-c1e03811ab7a"
+    },
+    {
+      "name": "Contacts",
+      "item": [
+        {
+          "name": "Get All Contacts",
+          "_postman_id": "03bf873f-147e-4f22-925c-83a5a0fa24d7",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts:$opts) {\n    id\n    name\n    optinTime\n    optoutTime\n    optinMethod\n    optoutMethod\n    phone\n    maskedPhone\n    bspStatus\n    status\n    tags {\n      id\n      label\n    }\n    groups {\n      id\n      label\n    }\n  }\n}",
+                "variables": "{\n  \"filter\": {\n    \"name\": \"Default Receiver\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Other filters on Contacts",
+          "_postman_id": "dc050593-34ff-4116-8c11-d88942b517bd",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts: $opts) {\n    id\n    name\n    groups {\n      id\n    }\n    tags {\n      id\n    }\n  }\n}",
+                "variables": "{\n  \"filter\": {\n    \"includeGroups\": [\n      1,\n      2\n    ],\n    \"includeTags\": [\n      1\n    ]\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Contact by ID",
+          "_postman_id": "6a285d22-543c-452e-a95a-e118056639ef",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query contact($id: ID!) {\n  contact(id: $id) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n      lastMessageAt\n      language {\n        label\n      }\n      fields\n      settings\n      history {\n        eventType\n        eventLabel\n        eventMeta\n      }\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 5\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Blocked Contacts",
+          "_postman_id": "736bcdab-9fc1-4392-80b6-985f3869d53c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts:$opts) {\n    id\n    phone\n    status\n  }\n}\n",
+                "variables": "{\n  \"filter\": {\n    \"status\": \"BLOCKED\"\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Contacts",
+          "_postman_id": "c1156d88-09c5-4396-a7e2-b9b1280a3147",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countContacts($filter: ContactFilter) {\n  countContacts(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"status\": \"VALID\"\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Contacts",
+          "_postman_id": "4ee9a7db-7041-4904-8a10-cda88af8b780",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createContact($input:ContactInput!) {\n  createContact(input: $input) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"name\": \"This is a new contact for this example\",\n    \"phone\": \"9876543232\"\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Contacts",
+          "_postman_id": "ccedda48-592d-403f-b4ce-ee4817c5952a",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateContact($id: ID!, $input:ContactInput!) {\n  updateContact(id: $id, input: $input) {\n    contact {\n      id\n      name\n      bspStatus\n      status\n      fields\n      settings\n      language{\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"name\": \"This is a updated contact for this example\",\n    \"fields\": \"{\\\"name\\\":{\\\"value\\\":\\\"Vikrant Wadekar\\\",\\\"type\\\":\\\"string\\\",\\\"inserted_at\\\":\\\"2020-08-29T05:35:38.298593Z\\\"},\\\"age_group\\\":{\\\"value\\\":\\\"19 or above\\\",\\\"type\\\":\\\"string\\\",\\\"inserted_at\\\":\\\"2020-08-29T05:35:46.623892Z\\\"}}\",\n    \"languageId\": 2\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Block a Contacts",
+          "_postman_id": "d6492ffa-24da-4f8e-9cb8-cadea99d8373",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateContact($id: ID!, $input:ContactInput!) {\n  updateContact(id: $id, input: $input) {\n    contact {\n      id\n      phone\n      status\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"status\": \"BLOCKED\"\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "UnBlock a Contact",
+          "_postman_id": "62ccf1d6-2b4f-439e-a28e-8cc8f20d550c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateContact($id: ID!, $input:ContactInput!) {\n  updateContact(id: $id, input: $input) {\n    contact {\n      id\n      phone\n      status\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"status\": \"VALID\"\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Contact",
+          "_postman_id": "8d6d75d7-1a50-470a-892f-1f32c6d4ea14",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteContact($id: ID!) {\n  deleteContact(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\"\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Contact's Location",
+          "_postman_id": "41109b78-828b-4bf0-8920-6f5cdbeeb6c9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query contactLocation($id: ID!) {\n  contactLocation(id: $id) {\n    latitude\n    longitude\n  }\n}\n",
+                "variables": "{\n  \"id\": \"1975\"\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Optin a Contact",
+          "_postman_id": "8710d024-1854-40fe-bc5c-89b676a9145e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation optinContact($phone: String!, $name: String) {\n  optinContact(phone: $phone, name: $name) {\n    contact {\n      id\n      phone\n      name\n      lastMessageAt\n      optinTime\n      bspStatus\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"phone\": \"917834811119\",\n  \"name\": \"contact name\"\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a Simulator Contact",
+          "_postman_id": "6e2ea142-9ec0-4e4c-a08a-cc49453a18bd",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query simulatorGet() {\n  simulatorGet {\n    id\n    name\n  }\n}",
+                "variables": ""
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Release a Simulator Contact",
+          "_postman_id": "8d54e9e6-6b4b-4deb-a51b-1827acb24831",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query simulatorRelease {\n  simulatorRelease {\n    id\n  }\n}",
+                "variables": ""
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Contact History",
+          "_postman_id": "ca12d85d-7749-4d73-b174-2c59ffe6c5a1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query ContactHistory($filter: ContactsHistoryFilter, $opts: Opts) {\n    contactHistory(filter: $filter, opts: $opts) {\n      eventDatetime\n      eventLabel\n      eventMeta\n      eventType\n      id\n      insertedAt\n      updatedAt\n    }\n  }\n",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"contactId\": 1\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count All Contact History",
+          "_postman_id": "703fc04b-d455-4a9d-92e3-7d16197384bd",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countContactHistory($filter: ContactsHistoryFilter) {\n  countContactHistory(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"contact_id\": 1\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "_postman_id": "1d3dd745-1f61-4ca0-83ba-2b264b65b14b",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ],
+            "id": "8dcc0bbf-c700-4497-83cb-09dc8accdf91"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ],
+            "id": "2948ef18-adad-4999-bf9c-f7a4c333d60b"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flows",
+      "item": [
+        {
+          "name": "Get All Flows",
+          "_postman_id": "ad1a8dcf-9760-4a50-a09c-832f9e7f3796",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flows($filter: FlowFilter, $opts: Opts) {\n  flows(filter: $filter, opts: $opts) {\n    id\n    uuid\n    name\n    versionNumber\n    flowType\n    keywords\n    lastPublishedAt\n    lastChangedAt\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"limit\": 2,\n    \"offset\": 0,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Workflow\"\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Flow by ID",
+          "_postman_id": "595d2e8c-092d-4b4a-8c03-aa97162ac046",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flow($id: ID!) {\n  flow(id: $id) {\n    flow {\n      id\n      name\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 1\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Flows",
+          "_postman_id": "60fb2422-9816-4af4-9ab5-cdc92ed102f1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countFlows($filter: FlowFilter) {\n  countFlows(filter: $filter)\n}",
+                "variables": "{\n  \"id\": 1\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Flow",
+          "_postman_id": "55ae3bf2-cf23-4a17-bd6d-2a1a617e5cd9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation ($input: FlowInput!) {\n  createFlow(input: $input) {\n    flow {\n      id\n      name\n      keywords\n      isActive\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"input\": {\n    \"keywords\": [\n      \"tests\",\n      \"testing\"\n    ],\n    \"name\": \"test workflow\",\n    \"isActive\": true\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Flow",
+          "_postman_id": "9d3bde0f-229f-45d0-b526-36d9c3499d90",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Flow",
+          "_postman_id": "7061e0b4-9850-4826-b9b6-d17eec4dca71",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish a Flow",
+          "_postman_id": "3f3b4435-a4ee-4a00-a0b4-2e6280dc95cf",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Start flow for a contact",
+          "_postman_id": "f1580ca4-fd6c-469d-96a4-32b89975b0cd",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+              },
+              "options": {}
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "_postman_id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
+    }
+  ]
+}
