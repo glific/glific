@@ -744,7 +744,7 @@ defmodule Glific.TemplatesTest do
     end
 
     test "update_hsms/1 should update status of already existing HSM", attrs do
-      [hsm | _] =
+      [hsm, hsm2 | _] =
         Templates.list_session_templates(%{
           filter: %{organization_id: attrs.organization_id, is_hsm: true}
         })
@@ -763,6 +763,12 @@ defmodule Glific.TemplatesTest do
                     "modifiedOn" =>
                       DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
                     "status" => "APPROVED"
+                  },
+                  %{
+                    "id" => hsm2.uuid,
+                    "modifiedOn" =>
+                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                    "status" => "PENDING"
                   }
                 ]
               })
@@ -776,6 +782,12 @@ defmodule Glific.TemplatesTest do
 
       assert updated_hsm.status == "APPROVED"
       assert updated_hsm.is_active == true
+
+      assert {:ok, %SessionTemplate{} = updated_hsm2} =
+               Repo.fetch_by(SessionTemplate, %{uuid: hsm2.uuid})
+
+      assert updated_hsm2.status == "PENDING"
+      assert updated_hsm2.is_active == false
 
       # should update the existing hsm if it is modified by BSP since last update in the db
       Tesla.Mock.mock(fn
