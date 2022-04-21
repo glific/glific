@@ -55,6 +55,9 @@ defmodule Glific.Communications.Mailer do
   """
   @spec common_send(Organization.t(), String.t(), String.t(), tuple() | nil) :: Swoosh.Email.t()
   def common_send(org, subject, body, send_to \\ nil) do
+    # Subject can not have a line break
+    subject = String.replace(subject, "\n", "")
+
     send_to =
       if is_nil(send_to),
         do: {org.name, org.email},
