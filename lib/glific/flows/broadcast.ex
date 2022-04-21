@@ -365,12 +365,6 @@ defmodule Glific.Flows.Broadcast do
         bsp_status == "delivered"
       end)
 
-    opted_out_count =
-      Enum.count(data.rows, fn d ->
-        [_message_id, message_status, _processed_at, _broadcast_status, _bsp_status, _errors] = d
-        message_status == "contact_opt_out"
-      end)
-
     enqueued_count =
       Enum.count(data.rows, fn d ->
         [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
@@ -388,7 +382,6 @@ defmodule Glific.Flows.Broadcast do
       read: read_count,
       delivered: delivered_count,
       enqueued: enqueued_count,
-      opted_out: opted_out_count,
       error: error_count
     }
   end
