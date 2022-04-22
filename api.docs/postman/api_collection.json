@@ -969,6 +969,68 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Get a flow",
+          "id": "f414a30d-ed05-4ed7-9d26-ccb29d674b19",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Release a flow contact",
+          "id": "e957cf66-aebe-4077-9f72-2d6926b9d9fe",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
