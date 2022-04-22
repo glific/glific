@@ -2078,7 +2078,7 @@
           "response": []
         },
         {
-          "name": "Update a Message Media Copy",
+          "name": "Delete a Message Media",
           "id": "c10495bd-cfdd-43e3-9e07-3b6d3854b780",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
