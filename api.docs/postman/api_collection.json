@@ -2137,7 +2137,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation deleteMessageMedia($id: ID!) {\n  deleteMessageMedia(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "query": "mutation uploadMedia($media: Upload!, $extension: String!) {\n  uploadMedia(media: $media, extension: $extension)\n}",
                 "variables": "{\n  \"id\": \"26\"\n}"
               }
             },
