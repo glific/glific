@@ -1533,6 +1533,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Subscription for Sent Message",
+          "id": "969dce1a-746f-44e2-a942-d1737aaebe40",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {\n  createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
