@@ -2014,6 +2014,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Create a Message Media",
+          "id": "31986f1d-029e-44cf-9604-13b839f9f53f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query validateMedia($url: String!, $type: String!) {\n  validateMedia(url: $url, type: $type)\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "6a893218-c9d7-4c9c-9599-73373016590b"
