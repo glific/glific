@@ -122,8 +122,8 @@
           "response": []
         },
         {
-          "name": "Create a new session for an existing user",
-          "id": "ddb0e26d-56f1-41b4-a700-cd6351ec142b",
+          "name": "Login Copy",
+          "id": "6efae35b-4e82-40b7-8339-72310dffedaa",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -143,9 +143,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"user\": {\n        \"name\": \"Test User\",\n        \"phone\": \"911234554321\",\n        \"password\": \"secret1234\",\n        \"otp\": \"321721\"\n    }\n}"
+              "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/registration"
+            "url": "{{api_url}}/v1/session"
           },
           "response": []
         }
