@@ -1086,7 +1086,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation terminateContactFlows($contactId: ID!) {\n  terminateContactFlows(contactId: $contactId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
+                "query": "mutation resetFlowCount($flowId: ID!) {\n  resetFlowCount(flowId: $flowId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
                 "variables": ""
               }
             },
