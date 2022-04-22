@@ -2038,8 +2038,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query validateMedia($url: String!, $type: String!) {\n  validateMedia(url: $url, type: $type)\n}",
-                "variables": ""
+                "query": "mutation createMessageMedia($input:MessageMediaInput!) {\n  createMessageMedia(input: $input) {\n    messageMedia {\n      id\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
