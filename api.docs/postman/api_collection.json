@@ -938,6 +938,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Export a Flow",
+          "id": "4d0ccc1f-aabc-4d5f-a9ba-1f6997dece7e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation exportFlow($id: ID!) {\n  publishFlow(id: $id) {\n    export_data\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 10\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
