@@ -1055,7 +1055,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+                "query": "mutation terminateContactFlows($contactId: ID!) {\n  terminateContactFlows(contactId: $contactId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
                 "variables": ""
               }
             },
