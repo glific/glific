@@ -1952,6 +1952,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Count all Message Media",
+          "id": "920e00c9-9eaf-41af-98b4-f4cda617ab57",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query messageMedia($id: ID!) {\n  messageMedia(id: $id) {\n    messageMedia {\n      id\n      url\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "6a893218-c9d7-4c9c-9599-73373016590b"
