@@ -2168,8 +2168,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation uploadMedia($media: Upload!, $extension: String!) {\n  uploadMedia(media: $media, extension: $extension)\n}",
-                "variables": ""
+                "query": "mutation uploadBlob($media: String!, $extension: String!) {\n  uploadBlob(media: $media, extension: $extension)\n}",
+                "variables": "{\n  \"input\": {\n    \"media\": \"W29iamVjdCBCbG9iXQ==\",\n    \"extension\": \"wav\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
