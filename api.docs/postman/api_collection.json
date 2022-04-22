@@ -2045,6 +2045,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Update a Message Media",
+          "id": "fa22d0db-454c-4fcf-ad1b-2ab50c5693ef",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createMessageMedia($input:MessageMediaInput!) {\n  createMessageMedia(input: $input) {\n    messageMedia {\n      id\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "6a893218-c9d7-4c9c-9599-73373016590b"
