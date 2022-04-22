@@ -1626,6 +1626,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Subscription for Cleared Message",
+          "id": "363318b9-af9b-42c7-8d89-2781ea5f7f42",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  sent_group_message() {\n    id\n    body\n    flow\n    type\n    status\n    group_id\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
