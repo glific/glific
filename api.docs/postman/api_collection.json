@@ -148,6 +148,34 @@
             "url": "{{api_url}}/v1/session"
           },
           "response": []
+        },
+        {
+          "name": "Renew an existing session",
+          "id": "aeda5619-3c0c-487a-8e85-0d568a96409b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+            },
+            "url": "{{api_url}}/v1/session"
+          },
+          "response": []
         }
       ],
       "id": "0322ea88-1ec3-4c75-a6f6-c1e03811ab7a"
