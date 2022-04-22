@@ -1983,6 +1983,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Validate a Media URL and type",
+          "id": "bc0a6357-af4f-4445-a451-93cd0357d70b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countMessagesMedia {\n  countMessagesMedia\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "6a893218-c9d7-4c9c-9599-73373016590b"
