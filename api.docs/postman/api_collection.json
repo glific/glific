@@ -1890,7 +1890,39 @@
     },
     {
       "name": "Message Media",
-      "item": [],
+      "item": [
+        {
+          "name": "Get all message media",
+          "id": "7c044350-3131-40f6-ba57-a2e72ddf4a48",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  receivedMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
       "id": "6a893218-c9d7-4c9c-9599-73373016590b"
     }
   ]
