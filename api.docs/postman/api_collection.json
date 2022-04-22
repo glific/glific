@@ -122,7 +122,7 @@
           "response": []
         },
         {
-          "name": "Login Copy",
+          "name": "Create a new session for an existing user",
           "id": "6efae35b-4e82-40b7-8339-72310dffedaa",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
