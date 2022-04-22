@@ -2007,7 +2007,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countMessagesMedia {\n  countMessagesMedia\n}",
+                "query": "query validateMedia($url: String!, $type: String!) {\n  validateMedia(url: $url, type: $type)\n}",
                 "variables": ""
               }
             },
