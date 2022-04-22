@@ -1976,8 +1976,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query messageMedia($id: ID!) {\n  messageMedia(id: $id) {\n    messageMedia {\n      id\n      url\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 2\n}"
+                "query": "query countMessagesMedia {\n  countMessagesMedia\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
