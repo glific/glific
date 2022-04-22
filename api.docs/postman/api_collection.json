@@ -909,7 +909,7 @@
           "response": []
         },
         {
-          "name": "Copy a Flow Copy",
+          "name": "Import a Flow",
           "id": "2512c4d9-0695-48ba-9b7a-856445ece726",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
