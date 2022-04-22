@@ -869,8 +869,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+                "query": "mutation startGroupFlow($flowId: ID!, $groupId: ID!) {\n  startGroupFlow(flowId: $flowId, groupId: $groupId) {\n    success\n    errors {\n        key\n        message\n    }\n  }\n}",
+                "variables": "{\n  \"flowId\": \"1\",\n  \"groupId\": \"1\"\n}"
               }
             },
             "url": "{{api_url}}"
