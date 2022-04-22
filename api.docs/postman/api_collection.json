@@ -1619,7 +1619,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  update_message_status() {\n    id\n    body\n    flow\n    type\n    status\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+                "query": "subscription {\n  sent_group_message() {\n    id\n    body\n    flow\n    type\n    status\n    group_id\n  }\n}",
                 "variables": ""
               }
             },
