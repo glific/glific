@@ -561,13 +561,18 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>insertedAt</strong></td>
-<td valign="top"><a href="#datetime">DateTime</a></td>
+<td colspan="2" valign="top"><strong>translations</strong></td>
+<td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>translations</strong></td>
-<td valign="top"><a href="#json">Json</a></td>
+<td colspan="2" valign="top"><strong>reason</strong></td>
+<td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>insertedAt</strong></td>
+<td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
 </tr>
 <tr>
