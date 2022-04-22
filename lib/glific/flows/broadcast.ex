@@ -284,19 +284,24 @@ defmodule Glific.Flows.Broadcast do
         success: 0,
         failed: 0,
         pending: 0,
-        failed_catogries: %{
+        msg_categories: %{
           sent: 0,
-          opted_out: 0
+          read: 0,
+          delivered: 0,
+          enqueued: 0,
+          opted_out: 0,
+          error: 0
         }
       }
       |> count_successful_deliveries(flow_broadcast_id)
       |> count_failed_deliveries(flow_broadcast_id)
       |> count_pending_deliveries(flow_broadcast_id)
-      |> count_failed_deliveries_by_category(flow_broadcast_id)
+      |> count_deliveries_by_category(flow_broadcast_id)
 
     {:ok, results}
   end
 
+  @spec count_successful_deliveries(map(), non_neg_integer()) :: map()
   defp count_successful_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
@@ -308,6 +313,7 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :success, count)
   end
 
+  @spec count_failed_deliveries(map(), non_neg_integer()) :: map()
   defp count_failed_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
@@ -319,6 +325,7 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :failed, count)
   end
 
+  @spec count_pending_deliveries(map(), non_neg_integer()) :: map()
   defp count_pending_deliveries(map, flow_broadcast_id) do
     count =
       FlowBroadcastContact
@@ -329,18 +336,53 @@ defmodule Glific.Flows.Broadcast do
     Map.put_new(map, :failed, count)
   end
 
-  defp count_failed_deliveries_by_category(map, flow_broadcast_id) do
-    Map.put(map, :failed_catogries, failed_deliveries_by_category(flow_broadcast_id))
+  @spec count_deliveries_by_category(map(), non_neg_integer()) :: map()
+  defp count_deliveries_by_category(map, flow_broadcast_id) do
+    Map.put(map, :msg_categories, msg_deliveries_by_category(flow_broadcast_id))
   end
 
-  defp failed_deliveries_by_category(flow_broadcast_id) do
+  @spec msg_deliveries_by_category(non_neg_integer()) :: map()
+  defp msg_deliveries_by_category(flow_broadcast_id) do
     data =
       broadcast_stats_base_query(flow_broadcast_id)
       |> Repo.query!()
 
+    sent_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, message_status, _processed_at, _broadcast_status, _bsp_status, _errors] = d
+        message_status == "sent"
+      end)
+
+    read_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "read"
+      end)
+
+    delivered_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "delivered"
+      end)
+
+    enqueued_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "enqueued"
+      end)
+
+    error_count =
+      Enum.count(data.rows, fn d ->
+        [_message_id, _message_status, _processed_at, _broadcast_status, bsp_status, _errors] = d
+        bsp_status == "error"
+      end)
+
     %{
-      sent: Enum.count(data, fn d -> d.status == "sent" end),
-      opted_out: Enum.count(data, fn d -> d.status == "contact_opt_out" end)
+      sent: sent_count,
+      read: read_count,
+      delivered: delivered_count,
+      enqueued: enqueued_count,
+      error: error_count
     }
   end
 end
