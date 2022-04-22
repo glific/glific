@@ -1223,6 +1223,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Update a Message",
+          "id": "3a01502c-89bc-4e02-b181-18139bc46032",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
