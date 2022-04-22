@@ -1657,6 +1657,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Subscription for Received Message",
+          "id": "bc677e6e-b358-43f6-83c2-84bc0d40114f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  cleared_messages() {\n    id\n    phone\n    name\n    lastMessageAt\n    optinTime\n    bspStatus\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
