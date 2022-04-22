@@ -38,8 +38,8 @@
           "response": []
         },
         {
-          "name": "Send an OTP request to verify a phone number",
-          "id": "f066aa3e-0e86-40c9-9dbf-e8077a0ae66d",
+          "name": "Send an OTP request to verify a phone number Copy",
+          "id": "d2a6a2c4-cedc-46cf-a9f8-e2a3c4a64f4e",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
