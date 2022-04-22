@@ -2138,7 +2138,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation uploadMedia($media: Upload!, $extension: String!) {\n  uploadMedia(media: $media, extension: $extension)\n}",
-                "variables": "{\n  \"id\": \"26\"\n}"
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
