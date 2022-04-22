@@ -1340,8 +1340,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation clearMessages($contactId: ID!) {\n  clearMessages(contactId: $contactId) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"contactId\": \"26\"\n}"
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 2\n  }\n}"
               }
             },
             "url": "{{api_url}}"
