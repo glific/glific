@@ -1316,6 +1316,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Create and send Message",
+          "id": "5c6faef3-dedf-4d75-a51e-7206e6240d8c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation clearMessages($contactId: ID!) {\n  clearMessages(contactId: $contactId) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"contactId\": \"26\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
