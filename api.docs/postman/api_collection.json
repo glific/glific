@@ -1588,7 +1588,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  sentMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+                "query": "subscription {\n  update_message_status() {\n    id\n    body\n    flow\n    type\n    status\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
                 "variables": ""
               }
             },
