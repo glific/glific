@@ -1062,6 +1062,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Reset flow counts for a specific flow",
+          "id": "3b34f4ac-3c92-4fae-98b0-dfb86aa97f82",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation terminateContactFlows($contactId: ID!) {\n  terminateContactFlows(contactId: $contactId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
