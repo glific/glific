@@ -1101,7 +1101,7 @@
       "name": "Messages",
       "item": [
         {
-          "name": "Reset flow counts for a specific flow Copy",
+          "name": "Get All Messages",
           "id": "8ad1a94a-ad5f-4394-875e-132a2d882b74",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
