@@ -1378,6 +1378,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Create and send Scheduled Message",
+          "id": "8554c4de-7fb4-41c8-aa27-cbf378ba0c91",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 11,\n    \"isHsm\": true,\n    \"params\": [\"Fifty\", \"Next Week\"],\n    \"templateId\": 32\n\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
