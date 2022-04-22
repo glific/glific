@@ -1347,6 +1347,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Create and send SessionTemplate",
+          "id": "e27c1545-495d-4a2f-bb37-cd85e3dd86fa",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 2\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
