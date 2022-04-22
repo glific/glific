@@ -1440,6 +1440,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Send HSM Message",
+          "id": "aec66242-56d8-42b3-9374-c0994e1dad20",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {\n  createAndSendMessageToGroup(input: $input, groupId: $groupId) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1\n  },\n  \"groupId\": 1\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
