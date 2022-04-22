@@ -1161,6 +1161,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Count all Messages",
+          "id": "af81ebcc-30ed-445b-8af8-f057eadf1312",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
