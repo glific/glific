@@ -1247,8 +1247,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
+                "query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
