@@ -876,6 +876,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Start flow for a group contacts Copy",
+          "id": "afc8c74e-cf81-4611-8a44-2c4530d82be9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation copyFlow($id: ID!, $input:FlowInput!) {\n  copyFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"new name\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
