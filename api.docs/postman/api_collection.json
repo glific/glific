@@ -878,7 +878,7 @@
           "response": []
         },
         {
-          "name": "Start flow for a group contacts Copy",
+          "name": "Copy a Flow",
           "id": "afc8c74e-cf81-4611-8a44-2c4530d82be9",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
