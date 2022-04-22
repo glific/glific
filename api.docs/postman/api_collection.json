@@ -1433,8 +1433,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      insertedAt\n      sendAt\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"body\": \"This message should reach at 21:00 (India)\",\n    \"flow\": \"OUTBOUND\",\n    \"receiverId\": 7,\n    \"sendAt\": \"2020-07-10T03:30:00Z\",\n    \"senderId\": 1,\n    \"type\": \"TEXT\"\n  }\n}"
+                "query": "mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {\n  createAndSendMessageToGroup(input: $input, groupId: $groupId) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1\n  },\n  \"groupId\": 1\n}"
               }
             },
             "url": "{{api_url}}"
