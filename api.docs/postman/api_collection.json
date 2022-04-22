@@ -115,9 +115,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+              "raw": "{\n    \"user\": {\n        \"name\": \"Test User\",\n        \"phone\": \"911234554321\",\n        \"password\": \"secret1234\",\n        \"otp\": \"321721\"\n    }\n}"
             },
-            "url": "{{api_url}}/v1/session"
+            "url": "{{api_url}}/v1/registration"
           },
           "response": []
         }
