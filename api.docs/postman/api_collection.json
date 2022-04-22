@@ -36,34 +36,6 @@
             "url": "{{api_url}}/v1/session"
           },
           "response": []
-        },
-        {
-          "name": "Send an OTP request to verify a phone number Copy",
-          "id": "d2a6a2c4-cedc-46cf-a9f8-e2a3c4a64f4e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              },
-              {
-                "key": "Accept",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
-            },
-            "url": "{{api_url}}/v1/session"
-          },
-          "response": []
         }
       ],
       "id": "0322ea88-1ec3-4c75-a6f6-c1e03811ab7a"
