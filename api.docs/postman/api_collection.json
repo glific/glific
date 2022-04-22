@@ -1557,8 +1557,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {\n  createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+                "query": "subscription {\n  sentMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
