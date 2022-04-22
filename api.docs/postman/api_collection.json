@@ -1914,8 +1914,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  receivedMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
-                "variables": ""
+                "query": "query messagesMedia($opts: Opts) {\n  messagesMedia(filter: $filter, opts:$opts) {\n    id\n    url\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
               }
             },
             "url": "{{api_url}}"
