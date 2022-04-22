@@ -1502,6 +1502,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Send Media HSM Message",
+          "id": "a795c676-3303-459d-a2fc-7716da30ec4e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"templateId\": 34,\n  \"groupId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
