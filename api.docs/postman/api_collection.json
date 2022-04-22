@@ -907,6 +907,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Copy a Flow Copy",
+          "id": "2512c4d9-0695-48ba-9b7a-856445ece726",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation ($flow: JSON!) {\n  importFlow(flow: $flow){\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"{\\\"flows\\\":[{\\\"keywords\\\":[\\\"hello\\\"],\\\"definition\\\":{\\\"vars\\\":[\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\"],\\\"uuid\\\":\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\",\\\"type\\\":\\\"messaging\\\",\\\"spec_version\\\":\\\"13.1.0\\\",\\\"revision\\\":1,\\\"nodes\\\":[{\\\"uuid\\\":\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\",\\\"exits\\\":[{\\\"uuid\\\":\\\"49d2775d-a658-4c74-be10-b7d605b4ea6f\\\",\\\"destination_uuid\\\":null}],\\\"actions\\\":[{\\\"uuid\\\":\\\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\\\",\\\"type\\\":\\\"send_msg\\\",\\\"text\\\":\\\"hehlo\\\",\\\"quick_replies\\\":[],\\\"attachments\\\":[]}]}],\\\"name\\\":\\\"hello\\\",\\\"localization\\\":{},\\\"language\\\":\\\"base\\\",\\\"expire_after_minutes\\\":10080,\\\"_ui\\\":{\\\"nodes\\\":{\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\":{\\\"type\\\":\\\"execute_actions\\\",\\\"position\\\":{\\\"top\\\":0,\\\"left\\\":0}}}}}}],\\\"contact_field\\\":[],\\\"collections\\\":[]}\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
