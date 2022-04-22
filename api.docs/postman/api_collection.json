@@ -1285,6 +1285,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Delete a Messages of a contact",
+          "id": "95c0a4dc-26ef-4358-bf96-a9f49e71681d",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
