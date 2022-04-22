@@ -993,8 +993,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation exportFlow($id: ID!) {\n  publishFlow(id: $id) {\n    export_data\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 10\n}"
+                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
