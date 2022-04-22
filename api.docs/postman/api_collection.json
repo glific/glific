@@ -1650,7 +1650,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  sent_group_message() {\n    id\n    body\n    flow\n    type\n    status\n    group_id\n  }\n}",
+                "query": "subscription {\n  cleared_messages() {\n    id\n    phone\n    name\n    lastMessageAt\n    optinTime\n    bspStatus\n  }\n}",
                 "variables": ""
               }
             },
