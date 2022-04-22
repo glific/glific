@@ -1681,7 +1681,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  cleared_messages() {\n    id\n    phone\n    name\n    lastMessageAt\n    optinTime\n    bspStatus\n  }\n}",
+                "query": "subscription {\n  receivedMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
                 "variables": ""
               }
             },
