@@ -171,9 +171,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+              "raw": "{\"data\":\n  {\n    \"data\": {\n          \"access_token\": \"AUTH_TOKEN\",\n          \"token_expiry_time\": \"2020-07-13T16:22:53.678465Z\",\n          \"renewal_token\": \"RENEW_TOKEN\"\n      }\n  }\n}"
             },
-            "url": "{{api_url}}/v1/session"
+            "url": "{{api_url}}/v1/session/renew"
           },
           "response": []
         }
