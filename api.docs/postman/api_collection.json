@@ -1409,6 +1409,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Create and send Session Message to contacts of a collection",
+          "id": "598e0b75-4d91-4c25-8169-ae50934ddcc7",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      insertedAt\n      sendAt\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"input\": {\n    \"body\": \"This message should reach at 21:00 (India)\",\n    \"flow\": \"OUTBOUND\",\n    \"receiverId\": 7,\n    \"sendAt\": \"2020-07-10T03:30:00Z\",\n    \"senderId\": 1,\n    \"type\": \"TEXT\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
