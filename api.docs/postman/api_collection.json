@@ -1185,8 +1185,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
+                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
