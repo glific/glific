@@ -845,6 +845,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Start flow for a group contacts",
+          "id": "8078a272-3a7b-4d0c-aba8-4d061c221384",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
