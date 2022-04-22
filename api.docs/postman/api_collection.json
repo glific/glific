@@ -1526,8 +1526,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"templateId\": 34,\n  \"groupId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+                "query": "mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {\n  createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
               }
             },
             "url": "{{api_url}}"
