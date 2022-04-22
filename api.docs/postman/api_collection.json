@@ -2069,8 +2069,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createMessageMedia($input:MessageMediaInput!) {\n  createMessageMedia(input: $input) {\n    messageMedia {\n      id\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
+                "query": "mutation updateMessageMedia($id: ID!, $input:MessageMediaInput!) {\n  updateMessageMedia(id: $id, input: $input) {\n    messageMedia {\n      id\n      url\n      caption\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set1/bgset_bg1/b7FBMrsOQbn8EJ\",\n    \"caption\": \"This is a caption\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
