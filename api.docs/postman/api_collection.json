@@ -2113,7 +2113,39 @@
     },
     {
       "name": "Media Management",
-      "item": [],
+      "item": [
+        {
+          "name": "Upload a file",
+          "id": "7999e373-2cf7-44c3-9145-7862626c230b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteMessageMedia($id: ID!) {\n  deleteMessageMedia(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
       "id": "9c799832-9559-4f73-b4c8-2bc1a3901312"
     }
   ]
