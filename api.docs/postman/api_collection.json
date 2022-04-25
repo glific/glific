@@ -2530,7 +2530,7 @@
           "response": []
         },
         {
-          "name": "Delete a Language",
+          "name": "Delete a Provider",
           "id": "cfd81872-e83d-40f8-be66-da8641a4c84e",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
