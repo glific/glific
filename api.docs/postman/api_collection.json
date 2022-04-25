@@ -2744,8 +2744,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation updateProvider($id: ID!, $input:ProviderInput!) {\n  updateProvider(id: $id, input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "\n{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"Updated Provider\",\n  }\n}"
+                "query": "mutation updateOrganization($id: ID!, $input: OrganizationInput!) {\n  updateOrganization(id: $id, input: $input) {\n    organization {\n      id\n      name\n      shortcode\n      sessionLimit\n      outOfOffice {\n        enabled\n        startTime\n        endTime\n        flowId\n        enabledDays {\n          id\n          enabled\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"updated organization display name\",\n    \"sessionLimit\": 180,\n    \"outOfOffice\": {\n      \"enabled\": true,\n      \"enabledDays\": [\n        {\n          \"enabled\": true,\n          \"id\": 1\n        },\n        {\n          \"enabled\": true,\n          \"id\": 2\n        },\n        {\n          \"enabled\": true,\n          \"id\": 3\n        },\n        {\n          \"enabled\": true,\n          \"id\": 4\n        },\n        {\n          \"enabled\": true,\n          \"id\": 5\n        },\n        {\n          \"enabled\": false,\n          \"id\": 6\n        },\n        {\n          \"enabled\": false,\n          \"id\": 7\n        }\n      ],\n      \"endTime\": \"T19:00:00\",\n      \"flowId\": 1,\n      \"defaultFlowId\": 1,\n      \"startTime\": \"T09:00:00\"\n    }\n  }\n}"
               }
             },
             "url": "{{api_url}}"
