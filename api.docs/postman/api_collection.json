@@ -2552,8 +2552,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation deleteLanguage($id: ID!) {\n  deleteLanguage(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 2\n}"
+                "query": "mutation deleteProvider($id: ID!) {\n  deleteProvider(id: $id) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
             "url": "{{api_url}}"
