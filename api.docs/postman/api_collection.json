@@ -2682,8 +2682,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query provider_queries {\n  bspbalance\n}",
-                "variables": ""
+                "query": "query countOrganizations($filter: OrganizationFilter) {\n  countOrganizations(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"language\": \"Hindi\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
