@@ -2437,6 +2437,37 @@
           "response": []
         },
         {
+          "name": "Get BSP balance for an organization",
+          "id": "f2201a4d-bad6-489e-abb2-8bff036d257e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
           "name": "Update a Language",
           "id": "2e55030f-c31e-4c35-b98c-89abf36c2d06",
           "protocolProfileBehavior": {
