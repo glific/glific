@@ -2629,7 +2629,7 @@
           "response": []
         },
         {
-          "name": "Count all Providers",
+          "name": "Get Organization Services",
           "id": "e65719ee-4eb3-402b-89a5-22abdc97f7b3",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
