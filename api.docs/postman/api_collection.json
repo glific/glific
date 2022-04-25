@@ -2753,7 +2753,7 @@
           "response": []
         },
         {
-          "name": "Delete a Provider",
+          "name": "Delete an Organization",
           "id": "d96f25ab-eb87-41e5-8d65-6ddd318296a3",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
