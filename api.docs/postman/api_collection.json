@@ -2183,7 +2183,7 @@
       "name": "Languages",
       "item": [
         {
-          "name": "Get All Languages",
+          "name": "Get All Providers",
           "id": "9bf3a6e8-cd68-4728-b373-05c91d13e6ab",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
