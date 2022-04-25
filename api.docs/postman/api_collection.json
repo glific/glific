@@ -2620,7 +2620,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query provider($id: ID!) {\n  provider(id: $id) {\n    provider {\n      id\n      name\n      shortcode\n      keys\n      secrets\n      group\n      isRequired\n    }\n  }\n}",
+                "query": "query organization($id: ID) {\n  organization(id: $id) {\n    organization {\n      id\n      name\n      isActive\n      timezone\n      defaultLanguage {\n        id\n        label\n      }\n    }\n  }\n}",
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
