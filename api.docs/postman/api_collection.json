@@ -2660,7 +2660,7 @@
           "response": []
         },
         {
-          "name": "Get BSP balance for an organization",
+          "name": "Count all Organizations",
           "id": "cc83d2dd-27e8-44fb-928e-340811219789",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
