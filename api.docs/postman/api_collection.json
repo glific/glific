@@ -2236,8 +2236,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query messagesMedia($opts: Opts) {\n  messagesMedia(filter: $filter, opts:$opts) {\n    id\n    url\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+                "query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
               }
             },
             "url": "{{api_url}}"
