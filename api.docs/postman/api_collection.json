@@ -2598,7 +2598,7 @@
           "response": []
         },
         {
-          "name": "Get a specific Provider by ID",
+          "name": "Get a specific Organization by ID",
           "id": "1386de3e-eb3c-4786-be4c-6d134ae9beb7",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
