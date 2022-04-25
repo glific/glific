@@ -2329,7 +2329,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+                "query": "mutation deleteLanguage($id: ID!) {\n  deleteLanguage(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
