@@ -2775,7 +2775,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation deleteProvider($id: ID!) {\n  deleteProvider(id: $id) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "query": "mutation deleteOrganization($id: ID!) {\n  deleteOrganization(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
                 "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
