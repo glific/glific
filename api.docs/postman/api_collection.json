@@ -2651,8 +2651,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countProviders($filter: ProviderFilter) {\n  countProviders(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n  }\n}"
+                "query": "\nquery organizationServices() {\n  bigquery\n  dialogflow\n  googleCloudStorage\n  funWithFlags\n  flowUuidDisplay\n  errors {\n    key\n    message\n  }\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
