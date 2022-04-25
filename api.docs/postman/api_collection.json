@@ -2782,6 +2782,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Check for attachment support for the given user",
+          "id": "b7b89ead-81fb-4da9-ba76-0b4b15c0dae1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteOrganization($id: ID!) {\n  deleteOrganization(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"3\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "eb583ec8-0ef3-471f-9037-62c42eed0f2d"
