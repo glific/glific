@@ -2691,7 +2691,7 @@
           "response": []
         },
         {
-          "name": "Create a Provider",
+          "name": "Create an Organization",
           "id": "e22d4593-3f8b-4a54-8a28-1ceacd5defa8",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
