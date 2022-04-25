@@ -2344,7 +2344,7 @@
       "name": "Providers",
       "item": [
         {
-          "name": "Get All Languages",
+          "name": "Get All Providers",
           "id": "5e669af3-a689-427c-9256-679337f87822",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
