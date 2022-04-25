@@ -2567,7 +2567,7 @@
       "name": "Organizations",
       "item": [
         {
-          "name": "Get All Providers",
+          "name": "Get All Organizations",
           "id": "175f7942-4729-4537-a9fd-34c34b25f530",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
