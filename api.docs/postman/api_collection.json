@@ -2722,7 +2722,7 @@
           "response": []
         },
         {
-          "name": "Update a Provider",
+          "name": "Update an Organization",
           "id": "c9d1a919-8de8-4b95-a0d6-b11f5d4a724b",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
