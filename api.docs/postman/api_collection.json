@@ -2375,7 +2375,7 @@
           "response": []
         },
         {
-          "name": "Get a specific language by ID",
+          "name": "Get a specific Provider by ID",
           "id": "52ee9ccd-a1ef-410c-8c17-09041a9a0da4",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
@@ -2397,7 +2397,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+                "query": "query provider($id: ID!) {\n  provider(id: $id) {\n    provider {\n      id\n      name\n      shortcode\n      keys\n      secrets\n      group\n      isRequired\n    }\n  }\n}",
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
@@ -2406,7 +2406,7 @@
           "response": []
         },
         {
-          "name": "Count all Languages",
+          "name": "Count all Providers",
           "id": "b051f533-cba8-4a67-a95e-50dec11e0aa4",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
@@ -2428,8 +2428,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 2\n}"
+                "query": "query countProviders($filter: ProviderFilter) {\n  countProviders(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n  }\n}"
               }
             },
             "url": "{{api_url}}"
