@@ -2499,7 +2499,7 @@
           "response": []
         },
         {
-          "name": "Update a Language",
+          "name": "Update a Provider",
           "id": "2e55030f-c31e-4c35-b98c-89abf36c2d06",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
