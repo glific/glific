@@ -3069,7 +3069,7 @@
           "response": []
         },
         {
-          "name": "Get a specific Provider by ID",
+          "name": "Get a specific User by ID",
           "id": "c0c33d4c-cd08-4b17-89d6-af49cae7b03c",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
