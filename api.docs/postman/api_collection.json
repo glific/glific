@@ -2930,7 +2930,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription organization_subscriptions {\n  bsp_balance(organizationId: \"1\")\n}",
+                "query": "subscription organization_subscriptions {\n  collection_count(organizationId: \"1\")\n}",
                 "variables": ""
               }
             },
