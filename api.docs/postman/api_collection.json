@@ -2522,7 +2522,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation updateProvider($id: ID!, $input:ProviderInput!) {\n  updateProvider(id: $id, input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "\n{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"Updated Provider\",\n  }\n}"
+                "variables": "\n{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"Updated Provider\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
