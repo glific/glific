@@ -2844,6 +2844,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Get List of Organization Status",
+          "id": "199ea12d-4cc3-4569-b4eb-64ca40eeb8e1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "eb583ec8-0ef3-471f-9037-62c42eed0f2d"
