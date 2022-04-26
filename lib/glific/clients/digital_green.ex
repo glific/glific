@@ -149,6 +149,22 @@ defmodule Glific.Clients.DigitalGreen do
     end
   end
 
+  def webhook("get_paddy_template", fields) do
+    crop_age = fields["crop_age"]
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: fields["organization_id"],
+        key: "ryss_push_paddy"
+      })
+
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"]) |> IO.inspect()
+
+    if template_uuid,
+      do: %{is_valid: true, template_uuid: template_uuid},
+      else: %{is_valid: false}
+  end
+
   def webhook(_, _fields),
     do: %{}
 
