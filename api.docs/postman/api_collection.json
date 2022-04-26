@@ -2491,7 +2491,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation createProvider($input:ProviderInput!) {\n  createProvider(input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"name\": \"new_provider\",\n  }\n}"
+                "variables": "{\n  \"input\": {\n    \"name\": \"new_provider\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
@@ -2941,6 +2941,37 @@
         {
           "name": "Subscription for Simulator release",
           "id": "72cf257a-ba03-4543-b911-ba402d4df07d",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Simulator release Copy",
+          "id": "5ee90874-7669-4766-98b0-0bba41d07020",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
