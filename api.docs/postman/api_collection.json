@@ -2868,7 +2868,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
+                "query": "query organizationStatus {\n  organizationStatus\n}",
                 "variables": ""
               }
             },
