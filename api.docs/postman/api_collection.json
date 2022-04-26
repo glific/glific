@@ -3007,7 +3007,7 @@
       "name": "Users",
       "item": [
         {
-          "name": "Get All Roles",
+          "name": "Get All Providers",
           "id": "0663113e-5549-4a82-9eaf-dc9b4e1f3166",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
@@ -3038,38 +3038,7 @@
           "response": []
         },
         {
-          "name": "Get All Users",
-          "id": "ccaa4995-6264-4341-b330-8eaac9f9433a",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query users($filter: UserFilter, $opts: Opts) {\n  users(filter: $filter, opts:$opts) {\n    id\n    name\n    phone\n    roles\n    groups {\n      label\n    }\n  }\n}",
-                "variables": "{\n  \"filter\": {\n    \"name\": \"Doe\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get a specific User by ID",
+          "name": "Get a specific Provider by ID",
           "id": "c0c33d4c-cd08-4b17-89d6-af49cae7b03c",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
