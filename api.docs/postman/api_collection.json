@@ -2961,7 +2961,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription organization_subscriptions {\n  collection_count(organizationId: \"1\")\n}",
+                "query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
                 "variables": ""
               }
             },
