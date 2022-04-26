@@ -3038,6 +3038,37 @@
           "response": []
         },
         {
+          "name": "Get All Users",
+          "id": "ccaa4995-6264-4341-b330-8eaac9f9433a",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query providers($filter: ProviderFilter, $opts: Opts) {\n  providers(filter: $filter, opts: $opts) {\n    id\n    name\n    shortcode\n    keys\n    secrets\n    group\n    description\n    isRequired\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Default\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
           "name": "Get a specific Provider by ID",
           "id": "c0c33d4c-cd08-4b17-89d6-af49cae7b03c",
           "protocolProfileBehavior": {
