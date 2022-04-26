@@ -3002,6 +3002,229 @@
         }
       ],
       "id": "eb583ec8-0ef3-471f-9037-62c42eed0f2d"
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get All Roles",
+          "id": "0663113e-5549-4a82-9eaf-dc9b4e1f3166",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query providers($filter: ProviderFilter, $opts: Opts) {\n  providers(filter: $filter, opts: $opts) {\n    id\n    name\n    shortcode\n    keys\n    secrets\n    group\n    description\n    isRequired\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Default\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Provider by ID",
+          "id": "c0c33d4c-cd08-4b17-89d6-af49cae7b03c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query provider($id: ID!) {\n  provider(id: $id) {\n    provider {\n      id\n      name\n      shortcode\n      keys\n      secrets\n      group\n      isRequired\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Providers",
+          "id": "17aad756-cc03-4530-a611-e755b450514f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countProviders($filter: ProviderFilter) {\n  countProviders(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get BSP balance for an organization",
+          "id": "588906fe-2e15-4308-95df-0fe1014e00f8",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query provider_queries {\n  bspbalance\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Provider",
+          "id": "1149300c-e435-4d97-8725-a443eefbd431",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createProvider($input:ProviderInput!) {\n  createProvider(input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"input\": {\n    \"name\": \"new_provider\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Provider",
+          "id": "5edc1eb6-f1a7-4c2d-974d-5bb00f30614f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateProvider($id: ID!, $input:ProviderInput!) {\n  updateProvider(id: $id, input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "\n{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"Updated Provider\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Provider",
+          "id": "d3ffef3c-bbfc-4382-b70b-f71a2c70bba4",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteProvider($id: ID!) {\n  deleteProvider(id: $id) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"3\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "8d552133-999f-4449-a1ec-d319dc5d9472"
     }
   ]
 }
