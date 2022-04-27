@@ -3478,7 +3478,7 @@
           "response": []
         },
         {
-          "name": "Check for attachment support for the given user",
+          "name": "Remove unread status from contact",
           "id": "6f3d9416-ca20-4956-90d0-a9ed3ade663a",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
