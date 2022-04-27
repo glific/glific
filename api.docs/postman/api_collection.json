@@ -3153,8 +3153,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query provider_queries {\n  bspbalance\n}",
-                "variables": ""
+                "query": "query countUsers($filter: UserFilter) {\n  countUsers(filter: $filter)\n}\n",
+                "variables": "{\n  \"filter\": {\n    \"name\": \"John\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
