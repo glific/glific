@@ -3292,7 +3292,7 @@
       "name": "Tags",
       "item": [
         {
-          "name": "Get All Organizations",
+          "name": "Get All Tags",
           "id": "86a14260-bdd6-426d-848f-2a5b24dee7e5",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
