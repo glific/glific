@@ -3637,37 +3637,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Delete a Tag",
-          "id": "77e91168-c590-4cd4-bdb5-4490f225c310",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation deleteTag($id: ID!) {\n  deleteTag(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"3\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "d573b4d6-4942-4699-87f2-ff2eac827f68"
