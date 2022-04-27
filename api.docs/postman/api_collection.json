@@ -3224,7 +3224,7 @@
           "response": []
         },
         {
-          "name": "Delete a Provider",
+          "name": "Update Current User Password",
           "id": "d3ffef3c-bbfc-4382-b70b-f71a2c70bba4",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
