@@ -3323,7 +3323,7 @@
           "response": []
         },
         {
-          "name": "Get a specific Organization by ID",
+          "name": "Get a specific Tag by ID",
           "id": "1b707a2d-dc11-4b5c-8edc-7dce72d74c3e",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
