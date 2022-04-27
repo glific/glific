@@ -3668,37 +3668,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Remove unread status from contact",
-          "id": "5eb98bf7-5d8d-40ae-8014-f4113627ed73",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation markContactMessagesAsRead($contactId : Gid!) {\n  markContactMessagesAsRead(contactId: $contactId)\n}",
-                "variables": "{\n  \"contactId\": \"26\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "d573b4d6-4942-4699-87f2-ff2eac827f68"
