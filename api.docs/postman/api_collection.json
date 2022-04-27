@@ -3515,7 +3515,7 @@
       "name": "Contact Tag",
       "item": [
         {
-          "name": "Get All Tags",
+          "name": "Create Contact Tag",
           "id": "f080b302-ff9a-474d-9139-3270d2a7e6a6",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
