@@ -3354,7 +3354,7 @@
           "response": []
         },
         {
-          "name": "Count all Organizations",
+          "name": "Count all Tags",
           "id": "7e46e462-476e-4bcd-bd75-d7a4427ab754",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
