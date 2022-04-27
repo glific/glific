@@ -3507,37 +3507,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Get List of Organization Status",
-          "id": "3140009c-26b3-4433-8cf3-c6844eaa7e22",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query organizationStatus {\n  organizationStatus\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
