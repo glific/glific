@@ -3345,7 +3345,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query organization($id: ID) {\n  organization(id: $id) {\n    organization {\n      id\n      name\n      isActive\n      timezone\n      defaultLanguage {\n        id\n        label\n      }\n    }\n  }\n}",
+                "query": "query tag($id: ID!) {\n  tag(id: $id) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n    }\n  }\n}",
                 "variables": "{\n  \"id\": 2\n}"
               }
             },
