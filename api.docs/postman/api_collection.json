@@ -3577,7 +3577,7 @@
           "response": []
         },
         {
-          "name": "Count all Tags",
+          "name": "Subscription for Create Contact Tag",
           "id": "0e3e8602-4dc4-4ead-a2da-55fea6434ba2",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
