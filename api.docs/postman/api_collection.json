@@ -3510,6 +3510,229 @@
         }
       ],
       "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
+    },
+    {
+      "name": "Contact Tag",
+      "item": [
+        {
+          "name": "Get All Tags",
+          "id": "f080b302-ff9a-474d-9139-3270d2a7e6a6",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query tags($filter: TagFilter, $opts: Opts) {\n  tags(filter: $filter, opts:$opts) {\n    id\n    label\n    language {\n      id\n      label\n    }\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"languageId\": 1\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Tag by ID",
+          "id": "346de0cf-485d-4b61-af65-157cf4d1adf4",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query tag($id: ID!) {\n  tag(id: $id) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Tags",
+          "id": "0e3e8602-4dc4-4ead-a2da-55fea6434ba2",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countTags($filter: TagFilter) {\n  countTags(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"languageId\": 2\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Tag",
+          "id": "c542d09b-1f63-4d40-9df2-d0cc1c3c1018",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createTag($input:TagInput!) {\n  createTag(input: $input) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n      description\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"label\": \"This is a new tag for this example\",\n    \"shortcode\": \"new-tag\",\n    \"description\": \"This is a cool description\",\n    \"languageId\": \"1\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Tag",
+          "id": "eaaa3a67-75e0-4317-bd23-293a3ec1aaa0",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateTag($id: ID!, $input:TagInput!) {\n  updateTag(id: $id, input: $input) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n      description\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a update tag for this example\",\n    \"description\": \"This is a updated cool description\",\n    \"languageId\": \"2\"\n  }\n}```\n"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Tag",
+          "id": "77e91168-c590-4cd4-bdb5-4490f225c310",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteTag($id: ID!) {\n  deleteTag(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"3\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Remove unread status from contact",
+          "id": "5eb98bf7-5d8d-40ae-8014-f4113627ed73",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation markContactMessagesAsRead($contactId : Gid!) {\n  markContactMessagesAsRead(contactId: $contactId)\n}",
+                "variables": "{\n  \"contactId\": \"26\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "d573b4d6-4942-4699-87f2-ff2eac827f68"
     }
   ]
 }
