@@ -3599,8 +3599,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countTags($filter: TagFilter) {\n  countTags(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n    \"languageId\": 2\n  }\n}"
+                "query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
