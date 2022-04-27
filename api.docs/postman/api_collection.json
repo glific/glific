@@ -3500,8 +3500,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
-                "variables": ""
+                "query": "mutation markContactMessagesAsRead($contactId : Gid!) {\n  markContactMessagesAsRead(contactId: $contactId)\n}",
+                "variables": "{\n  \"contactId\": \"26\"\n}"
               }
             },
             "url": "{{api_url}}"
