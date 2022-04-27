@@ -3538,37 +3538,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Subscription for Wallet Balance",
-          "id": "504686aa-83a0-4c95-8cfe-cb534af52790",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription organization_subscriptions {\n  bsp_balance(organizationId: \"1\")\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
