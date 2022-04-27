@@ -3639,37 +3639,6 @@
           "response": []
         },
         {
-          "name": "Update a Tag",
-          "id": "eaaa3a67-75e0-4317-bd23-293a3ec1aaa0",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateTag($id: ID!, $input:TagInput!) {\n  updateTag(id: $id, input: $input) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n      description\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a update tag for this example\",\n    \"description\": \"This is a updated cool description\",\n    \"languageId\": \"2\"\n  }\n}```\n"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
           "name": "Delete a Tag",
           "id": "77e91168-c590-4cd4-bdb5-4490f225c310",
           "protocolProfileBehavior": {
