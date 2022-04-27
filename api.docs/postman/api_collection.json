@@ -3354,37 +3354,6 @@
           "response": []
         },
         {
-          "name": "Get Organization Services",
-          "id": "be674121-1414-47c6-b29c-45984cca59d2",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "\nquery organizationServices() {\n  bigquery\n  dialogflow\n  googleCloudStorage\n  funWithFlags\n  flowUuidDisplay\n  errors {\n    key\n    message\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
           "name": "Count all Organizations",
           "id": "7e46e462-476e-4bcd-bd75-d7a4427ab754",
           "protocolProfileBehavior": {
