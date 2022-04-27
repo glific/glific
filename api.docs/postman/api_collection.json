@@ -3385,7 +3385,7 @@
           "response": []
         },
         {
-          "name": "Create an Organization",
+          "name": "Create a Tag",
           "id": "c3c11dc5-f6ce-47e9-b545-2bf4f8f5dc5f",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
