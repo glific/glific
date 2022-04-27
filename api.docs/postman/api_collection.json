@@ -3131,7 +3131,7 @@
           "response": []
         },
         {
-          "name": "Get BSP balance for an organization",
+          "name": "Count all Users",
           "id": "588906fe-2e15-4308-95df-0fe1014e00f8",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
