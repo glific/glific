@@ -3537,8 +3537,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query tags($filter: TagFilter, $opts: Opts) {\n  tags(filter: $filter, opts:$opts) {\n    id\n    label\n    language {\n      id\n      label\n    }\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"languageId\": 1\n  }\n}"
+                "query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
               }
             },
             "url": "{{api_url}}"
