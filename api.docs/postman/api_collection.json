@@ -3631,37 +3631,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Subscription for Simulator release Copy",
-          "id": "691aa014-e78e-4477-86f5-b8d6e151320b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
