@@ -3193,7 +3193,7 @@
           "response": []
         },
         {
-          "name": "Update a Provider",
+          "name": "Update Current User Details",
           "id": "5edc1eb6-f1a7-4c2d-974d-5bb00f30614f",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
