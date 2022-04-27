@@ -158,10 +158,11 @@ defmodule Glific.Clients.DigitalGreen do
         key: "ryss_push_paddy"
       })
 
-    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"]) |> IO.inspect()
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
 
     if template_uuid,
-      do: %{is_valid: true, template_uuid: template_uuid},
+      do: %{is_valid: true, template_uuid: template_uuid, variables: Jason.encode!(variables)},
       else: %{is_valid: false}
   end
 
@@ -327,5 +328,18 @@ defmodule Glific.Clients.DigitalGreen do
       |> Repo.preload([:language])
 
     contact.language
+  end
+
+  @doc """
+    get template for IEX
+  """
+  @spec send_template(String.t(), list()) :: binary
+  def send_template(uuid, variables) do
+    %{
+      uuid: uuid,
+      variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
   end
 end
