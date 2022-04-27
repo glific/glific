@@ -3469,7 +3469,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation deleteOrganization($id: ID!) {\n  deleteOrganization(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "query": "mutation deleteTag($id: ID!) {\n  deleteTag(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
                 "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
