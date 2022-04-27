@@ -3447,7 +3447,7 @@
           "response": []
         },
         {
-          "name": "Delete an Organization",
+          "name": "Delete a Tag",
           "id": "959b412e-167a-4735-9de3-f8ffd5c5b1a1",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
