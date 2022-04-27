@@ -3416,7 +3416,7 @@
           "response": []
         },
         {
-          "name": "Update an Organization",
+          "name": "Update a Tag",
           "id": "ce52c21c-e526-4f2a-899b-d2aecfe8a288",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
