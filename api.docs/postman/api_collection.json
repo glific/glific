@@ -3162,7 +3162,7 @@
           "response": []
         },
         {
-          "name": "Create a Provider",
+          "name": "Update a User",
           "id": "1149300c-e435-4d97-8725-a443eefbd431",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
