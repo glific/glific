@@ -3287,6 +3287,446 @@
         }
       ],
       "id": "8d552133-999f-4449-a1ec-d319dc5d9472"
+    },
+    {
+      "name": "Tags",
+      "item": [
+        {
+          "name": "Get All Organizations",
+          "id": "86a14260-bdd6-426d-848f-2a5b24dee7e5",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query organizations($filter: OrganizationFilter, $opts: Opts) {\n  organizations(filter: $filter, opts: $opts) {\n    id\n    name\n    defaultLanguage {\n      id\n      label\n    }\n    activeLanguages {\n      id\n      label\n    }\n    isActive\n    timezone\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"defaultLanguage\": \"Hindi\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Organization by ID",
+          "id": "1b707a2d-dc11-4b5c-8edc-7dce72d74c3e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query organization($id: ID) {\n  organization(id: $id) {\n    organization {\n      id\n      name\n      isActive\n      timezone\n      defaultLanguage {\n        id\n        label\n      }\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Organization Services",
+          "id": "be674121-1414-47c6-b29c-45984cca59d2",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "\nquery organizationServices() {\n  bigquery\n  dialogflow\n  googleCloudStorage\n  funWithFlags\n  flowUuidDisplay\n  errors {\n    key\n    message\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Organizations",
+          "id": "7e46e462-476e-4bcd-bd75-d7a4427ab754",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countOrganizations($filter: OrganizationFilter) {\n  countOrganizations(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"language\": \"Hindi\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create an Organization",
+          "id": "c3c11dc5-f6ce-47e9-b545-2bf4f8f5dc5f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createOrganization($input:OrganizationInput!) {\n  createOrganization(input: $input) {\n    organization {\n      id\n      name\n      shortcode\n      contact {\n        id\n      }\n      email\n      bsp {\n        id\n        name\n      }\n      defaultLanguage {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"shortcode\": \"new_organization\",\n    \"name\": \"new organization\",\n    \"contactId\": 1,\n    \"email\": \"test@test.com\",\n    \"bspId\": 1,\n    \"defaultLanguageId\": 1,\n    \"activeLanguageIds\": [1]\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update an Organization",
+          "id": "ce52c21c-e526-4f2a-899b-d2aecfe8a288",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateOrganization($id: ID!, $input: OrganizationInput!) {\n  updateOrganization(id: $id, input: $input) {\n    organization {\n      id\n      name\n      shortcode\n      sessionLimit\n      outOfOffice {\n        enabled\n        startTime\n        endTime\n        flowId\n        enabledDays {\n          id\n          enabled\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"updated organization display name\",\n    \"sessionLimit\": 180,\n    \"outOfOffice\": {\n      \"enabled\": true,\n      \"enabledDays\": [\n        {\n          \"enabled\": true,\n          \"id\": 1\n        },\n        {\n          \"enabled\": true,\n          \"id\": 2\n        },\n        {\n          \"enabled\": true,\n          \"id\": 3\n        },\n        {\n          \"enabled\": true,\n          \"id\": 4\n        },\n        {\n          \"enabled\": true,\n          \"id\": 5\n        },\n        {\n          \"enabled\": false,\n          \"id\": 6\n        },\n        {\n          \"enabled\": false,\n          \"id\": 7\n        }\n      ],\n      \"endTime\": \"T19:00:00\",\n      \"flowId\": 1,\n      \"defaultFlowId\": 1,\n      \"startTime\": \"T09:00:00\"\n    }\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete an Organization",
+          "id": "959b412e-167a-4735-9de3-f8ffd5c5b1a1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteOrganization($id: ID!) {\n  deleteOrganization(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"3\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Check for attachment support for the given user",
+          "id": "6f3d9416-ca20-4956-90d0-a9ed3ade663a",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get List of Timezones",
+          "id": "0593902a-cd86-4153-9b92-c0402cd31825",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get List of Organization Status",
+          "id": "3140009c-26b3-4433-8cf3-c6844eaa7e22",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query organizationStatus {\n  organizationStatus\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Wallet Balance",
+          "id": "504686aa-83a0-4c95-8cfe-cb534af52790",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription organization_subscriptions {\n  bsp_balance(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Collection Count",
+          "id": "cf41302f-ff9c-4e84-8817-01c3afca24cf",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription organization_subscriptions {\n  collection_count(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Simulator release",
+          "id": "0a196361-4ae3-4471-ac85-1bee2afeeec5",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Simulator release Copy",
+          "id": "691aa014-e78e-4477-86f5-b8d6e151320b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
     }
   ]
 }
