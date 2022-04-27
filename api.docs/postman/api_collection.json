@@ -3184,8 +3184,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createProvider($input:ProviderInput!) {\n  createProvider(input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"name\": \"new_provider\"\n  }\n}"
+                "query": "mutation updateUser($id: ID!, $input: UserInput!) {\n  updateUser(id: $id, input: $input) {\n    user {\n      id\n      name\n      phone\n      roles\n      groups {\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"2\",\n  \"input\": {\n    \"name\": \"Updated Name\",\n    \"roles\": [\n      \"admin\"\n    ],\n    \"groupIds\": [\n      1,\n      2\n    ]\n  }\n}"
               }
             },
             "url": "{{api_url}}"
