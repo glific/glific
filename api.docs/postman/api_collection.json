@@ -3376,8 +3376,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countOrganizations($filter: OrganizationFilter) {\n  countOrganizations(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n    \"language\": \"Hindi\"\n  }\n}"
+                "query": "query countTags($filter: TagFilter) {\n  countTags(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"languageId\": 2\n  }\n}"
               }
             },
             "url": "{{api_url}}"
