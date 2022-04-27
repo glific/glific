@@ -3608,7 +3608,7 @@
           "response": []
         },
         {
-          "name": "Create a Tag",
+          "name": "Subscription for Delete Contact Tag",
           "id": "c542d09b-1f63-4d40-9df2-d0cc1c3c1018",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
