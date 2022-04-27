@@ -3546,7 +3546,7 @@
           "response": []
         },
         {
-          "name": "Get a specific Tag by ID",
+          "name": "Update a Contact with tags to be added and tags to be deleted",
           "id": "346de0cf-485d-4b61-af65-157cf4d1adf4",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
