@@ -3407,8 +3407,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createOrganization($input:OrganizationInput!) {\n  createOrganization(input: $input) {\n    organization {\n      id\n      name\n      shortcode\n      contact {\n        id\n      }\n      email\n      bsp {\n        id\n        name\n      }\n      defaultLanguage {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"shortcode\": \"new_organization\",\n    \"name\": \"new organization\",\n    \"contactId\": 1,\n    \"email\": \"test@test.com\",\n    \"bspId\": 1,\n    \"defaultLanguageId\": 1,\n    \"activeLanguageIds\": [1]\n  }\n}"
+                "query": "mutation createTag($input:TagInput!) {\n  createTag(input: $input) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n      description\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"label\": \"This is a new tag for this example\",\n    \"shortcode\": \"new-tag\",\n    \"description\": \"This is a cool description\",\n    \"languageId\": \"1\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
