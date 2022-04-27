@@ -3569,37 +3569,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Subscription for Collection Count",
-          "id": "cf41302f-ff9c-4e84-8817-01c3afca24cf",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription organization_subscriptions {\n  collection_count(organizationId: \"1\")\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "3ab9c1fd-db0f-4fc3-9336-b1a345168579"
