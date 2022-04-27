@@ -3314,8 +3314,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query organizations($filter: OrganizationFilter, $opts: Opts) {\n  organizations(filter: $filter, opts: $opts) {\n    id\n    name\n    defaultLanguage {\n      id\n      label\n    }\n    activeLanguages {\n      id\n      label\n    }\n    isActive\n    timezone\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"defaultLanguage\": \"Hindi\"\n  }\n}"
+                "query": "query tags($filter: TagFilter, $opts: Opts) {\n  tags(filter: $filter, opts:$opts) {\n    id\n    label\n    language {\n      id\n      label\n    }\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"languageId\": 1\n  }\n}"
               }
             },
             "url": "{{api_url}}"
