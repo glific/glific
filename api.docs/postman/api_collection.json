@@ -3029,8 +3029,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query providers($filter: ProviderFilter, $opts: Opts) {\n  providers(filter: $filter, opts: $opts) {\n    id\n    name\n    shortcode\n    keys\n    secrets\n    group\n    description\n    isRequired\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Default\"\n  }\n}"
+                "query": "query {\n  roles\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
