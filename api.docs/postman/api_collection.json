@@ -3509,37 +3509,6 @@
           "response": []
         },
         {
-          "name": "Get List of Timezones",
-          "id": "0593902a-cd86-4153-9b92-c0402cd31825",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
           "name": "Get List of Organization Status",
           "id": "3140009c-26b3-4433-8cf3-c6844eaa7e22",
           "protocolProfileBehavior": {
