@@ -3122,8 +3122,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countProviders($filter: ProviderFilter) {\n  countProviders(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n  }\n}"
+                "query": "query currentUser {\n  currentUser {\n    user {\n      id\n      name\n      phone\n      roles\n      organization {\n        activeLanguages {\n          label\n        }\n      }\n    }\n  }\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
