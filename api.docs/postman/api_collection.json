@@ -3253,6 +3253,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Delete a User",
+          "id": "1ce5fdc3-e45e-4d0f-8137-5bd4d8ec7f7e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateCurrentUser($input:CurrentUserInput!) {\n  updateCurrentUser(input: $input) {\n    user {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"name\": \"Updated Name\",\n    \"otp\": \"340606\",\n    \"password\": \"new_password\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "8d552133-999f-4449-a1ec-d319dc5d9472"
