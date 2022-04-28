@@ -149,13 +149,13 @@ defmodule Glific.Clients.DigitalGreen do
     end
   end
 
-  def webhook("get_paddy_template", fields) do
+  def webhook("push_crop_message", fields) do
     crop_age = fields["crop_age"]
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
         organization_id: fields["organization_id"],
-        key: "ryss_push_paddy"
+        key: fields["crop"]
       })
 
     template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
