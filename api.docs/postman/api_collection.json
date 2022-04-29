@@ -4680,6 +4680,136 @@
         }
       ],
       "id": "d91a50c8-b17d-4594-94e4-7438192d7c6a"
+    },
+    {
+      "name": "Glific Contact Import",
+      "item": [
+        {
+          "name": "Create Contact Tag",
+          "id": "227919cd-8a5e-45df-92f0-e913988af43c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Contact with tags to be added and tags to be deleted",
+          "id": "35989c10-cd5f-452c-9851-c46bded3b888",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
+                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Create Contact Tag",
+          "id": "54b606fb-a5cf-441a-ae5a-8d6cf2c1eb41",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Delete Contact Tag",
+          "id": "4aa764c7-220e-48b4-8438-45370ce6f8f9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "d8dae722-dc96-4aff-b809-ba13981c44f7"
     }
   ]
 }
