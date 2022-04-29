@@ -160,9 +160,10 @@ defmodule Glific.Clients.DigitalGreen do
 
     template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
     variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
 
     if template_uuid,
-      do: %{is_valid: true, template_uuid: template_uuid, variables: Jason.encode!(variables)},
+      do: %{is_valid: true, template_uuid: template_uuid, crop_stage: crop_stage, variables: Jason.encode!(variables)},
       else: %{is_valid: false}
   end
 
