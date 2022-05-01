@@ -3828,8 +3828,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+                "query": "query searchMulti( $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {\n\n  searchMulti(filter: $searchFilter, contactOpts: $contactOpts, messageOpts: $messageOpts) {\n    contacts {\n        body\n        contact {\n            name\n        }\n      }\n      messages {\n        body\n        contact {\n            name\n        }\n      }\n\n      tags {\n        body\n        contact {\n            name\n        }\n\n        tag {\n          label\n        }\n      }\n  }\n}",
+                "variables": "{\n  \"searchFilter\": {\n    \"term\": \"def\"\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
               }
             },
             "url": "{{api_url}}"
