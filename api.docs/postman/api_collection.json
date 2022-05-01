@@ -4704,7 +4704,7 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
+          "name": "Delete a MessageGroup",
           "id": "f0d0556a-6e65-410d-9729-6a66267857e0",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
