@@ -4221,7 +4221,7 @@
           "response": []
         },
         {
-          "name": "Get List of Whatsapp HSM categories",
+          "name": "Get Group Information for a Group by ID",
           "id": "2c32a078-fa18-4726-a767-7931bd77924e",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
