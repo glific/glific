@@ -4058,6 +4058,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Update a Saved Search",
+          "id": "26100e92-51bf-41ad-9a9f-f72cfca9a9f8",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createSavedSearch($input: SavedSearchInput!) {\n  createSavedSearch(input: $input) {\n    savedSearch {\n      id\n      label\n      shortcode\n      args\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"label\": \"This is a saved search\",\n    \"shortcode\": \"Save Search\"\n    \"args\": \"{\"term\": \"\\Save this search\\\"}\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "5b65be1c-95ec-49a8-af74-1e4affba73f3"
