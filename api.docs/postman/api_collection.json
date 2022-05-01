@@ -4314,7 +4314,7 @@
           "response": []
         },
         {
-          "name": "Update a Saved Search",
+          "name": "Delete a SessionTemplate",
           "id": "98157fcc-f1b7-4bb3-b761-7878211122b1",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
