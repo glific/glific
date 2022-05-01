@@ -4252,7 +4252,7 @@
           "response": []
         },
         {
-          "name": "Create a Session Template",
+          "name": "Create Group",
           "id": "9202d5eb-ed24-453f-83ee-c92444143764",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
