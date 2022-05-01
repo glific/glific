@@ -5001,7 +5001,7 @@
           "response": []
         },
         {
-          "name": "Subscription for Delete Contact Tag",
+          "name": "Reset selected tables from Organization",
           "id": "e05cfa8e-b5c7-4c51-945b-61260541b7e4",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
