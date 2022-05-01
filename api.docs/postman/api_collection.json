@@ -4190,7 +4190,7 @@
           "response": []
         },
         {
-          "name": "Count all Session Templates",
+          "name": "Get a Group by ID",
           "id": "88d3b017-ece1-48d5-9b4c-5973900fefb9",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
