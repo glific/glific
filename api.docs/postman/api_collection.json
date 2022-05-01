@@ -4020,7 +4020,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+                "query": "query search_queries {\n  collectionStats(organizationId: \"1\")\n}",
                 "variables": ""
               }
             },
