@@ -4150,8 +4150,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {\n  sessionTemplates(filter: $filter, opts:$opts) {\n    id\n    body\n    label\n    shortcode\n    isHsm\n    type\n    isActive\n    translation\n    isReserved\n    isSource\n    parent {\n      id\n      label\n    }\n    language {\n      id\n      label\n    }\n    messageMedia {\n      id\n      caption\n    }\n  }\n}",
-                "variables": "{\n  \"filter\": {\n    \"body\": \"template\",\n    \"term\": \"label\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+                "query": "query groups($filter: GroupFilter, $opts: Opts) {\n  groups(filter: $filter, opts:$opts) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}\n",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
