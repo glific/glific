@@ -4970,7 +4970,7 @@
           "response": []
         },
         {
-          "name": "Subscription for Create Contact Tag",
+          "name": "Delete Organization with status as inactive",
           "id": "4b6998b5-3856-4452-bf8b-e61ecc69eac8",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
