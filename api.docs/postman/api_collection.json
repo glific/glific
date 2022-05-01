@@ -4993,7 +4993,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation deleteInactiveOrganization($deleteOrganizationID: ID!, $isConfirmed: Boolean) {}\n  deleteInactiveOrganization(\n    deleteOrganizationID: $deleteOrganizationID,\n    isConfirmed: $isConfirmed) {\n    organization {\n      email\n      isActive\n      isApproved\n      name\n      shortcode\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"isConfirmed\": true,\n    \"deleteOrganizationId\": 1,\n  }\n}"
+                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"isConfirmed\": true,\n    \"deleteOrganizationId\": 1\n  }\n}"
               }
             },
             "url": "{{api_url}}"
