@@ -3905,7 +3905,7 @@
       "name": "Saved Searches",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Get All Saved Searches",
           "id": "900c2099-3ef2-4c80-840b-f8fd6e298727",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
