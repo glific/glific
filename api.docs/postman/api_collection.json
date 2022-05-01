@@ -4243,8 +4243,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query savedSearch($id: ID!) {\n  savedSearch(id: $id) {\n    savedSearch {\n      id\n      label\n      count\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 2\n}"
+                "query": "query {\n  whatsappHsmCategories\n}",
+                "variables": ""
               }
             },
             "url": "{{api_url}}"
