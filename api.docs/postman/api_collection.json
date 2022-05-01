@@ -4159,7 +4159,7 @@
           "response": []
         },
         {
-          "name": "Get a specific SessionTemplate by ID",
+          "name": "Get All Organization Groups",
           "id": "25793ec8-3967-4c91-8aed-b6243ab583c4",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
