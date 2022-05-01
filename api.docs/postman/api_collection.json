@@ -4243,8 +4243,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query {\n  whatsappHsmCategories\n}",
-                "variables": ""
+                "query": "query groupInfo($id: ID!) {\n    groupInfo(id: $id)\n}",
+                "variables": "{\n  \"id\": \"2\"\n}"
               }
             },
             "url": "{{api_url}}"
