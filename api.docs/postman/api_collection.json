@@ -4283,7 +4283,7 @@
           "response": []
         },
         {
-          "name": "Import Session Templates",
+          "name": "Update a SessionTemplate",
           "id": "0dca76e5-2a52-46c9-ae50-5ed18ee67ced",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
