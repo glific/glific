@@ -761,539 +761,6 @@
       ]
     },
     {
-      "name": "Flows",
-      "item": [
-        {
-          "name": "Get All Flows",
-          "id": "ad1a8dcf-9760-4a50-a09c-832f9e7f3796",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query flows($filter: FlowFilter, $opts: Opts) {\n  flows(filter: $filter, opts: $opts) {\n    id\n    uuid\n    name\n    versionNumber\n    flowType\n    keywords\n    lastPublishedAt\n    lastChangedAt\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"limit\": 2,\n    \"offset\": 0,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Workflow\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get a specific Flow by ID",
-          "id": "595d2e8c-092d-4b4a-8c03-aa97162ac046",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query flow($id: ID!) {\n  flow(id: $id) {\n    flow {\n      id\n      name\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 1\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Count all Flows",
-          "id": "60fb2422-9816-4af4-9ab5-cdc92ed102f1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query countFlows($filter: FlowFilter) {\n  countFlows(filter: $filter)\n}",
-                "variables": "{\n  \"id\": 1\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create a Flow",
-          "id": "55ae3bf2-cf23-4a17-bd6d-2a1a617e5cd9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation ($input: FlowInput!) {\n  createFlow(input: $input) {\n    flow {\n      id\n      name\n      keywords\n      isActive\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"keywords\": [\n      \"tests\",\n      \"testing\"\n    ],\n    \"name\": \"test workflow\",\n    \"isActive\": true\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Update a Flow",
-          "id": "9d3bde0f-229f-45d0-b526-36d9c3499d90",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete a Flow",
-          "id": "7061e0b4-9850-4826-b9b6-d17eec4dca71",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Publish a Flow",
-          "id": "3f3b4435-a4ee-4a00-a0b4-2e6280dc95cf",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Start flow for a contact",
-          "id": "f1580ca4-fd6c-469d-96a4-32b89975b0cd",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Resume flow for a contact",
-          "id": "4233a602-ee0c-48ce-bf12-4d3deec2b392",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Start flow for a group contacts",
-          "id": "8078a272-3a7b-4d0c-aba8-4d061c221384",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation startGroupFlow($flowId: ID!, $groupId: ID!) {\n  startGroupFlow(flowId: $flowId, groupId: $groupId) {\n    success\n    errors {\n        key\n        message\n    }\n  }\n}",
-                "variables": "{\n  \"flowId\": \"1\",\n  \"groupId\": \"1\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Copy a Flow",
-          "id": "afc8c74e-cf81-4611-8a44-2c4530d82be9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation copyFlow($id: ID!, $input:FlowInput!) {\n  copyFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"new name\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Import a Flow",
-          "id": "2512c4d9-0695-48ba-9b7a-856445ece726",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation ($flow: JSON!) {\n  importFlow(flow: $flow){\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"{\\\"flows\\\":[{\\\"keywords\\\":[\\\"hello\\\"],\\\"definition\\\":{\\\"vars\\\":[\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\"],\\\"uuid\\\":\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\",\\\"type\\\":\\\"messaging\\\",\\\"spec_version\\\":\\\"13.1.0\\\",\\\"revision\\\":1,\\\"nodes\\\":[{\\\"uuid\\\":\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\",\\\"exits\\\":[{\\\"uuid\\\":\\\"49d2775d-a658-4c74-be10-b7d605b4ea6f\\\",\\\"destination_uuid\\\":null}],\\\"actions\\\":[{\\\"uuid\\\":\\\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\\\",\\\"type\\\":\\\"send_msg\\\",\\\"text\\\":\\\"hehlo\\\",\\\"quick_replies\\\":[],\\\"attachments\\\":[]}]}],\\\"name\\\":\\\"hello\\\",\\\"localization\\\":{},\\\"language\\\":\\\"base\\\",\\\"expire_after_minutes\\\":10080,\\\"_ui\\\":{\\\"nodes\\\":{\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\":{\\\"type\\\":\\\"execute_actions\\\",\\\"position\\\":{\\\"top\\\":0,\\\"left\\\":0}}}}}}],\\\"contact_field\\\":[],\\\"collections\\\":[]}\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Export a Flow",
-          "id": "4d0ccc1f-aabc-4d5f-a9ba-1f6997dece7e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation exportFlow($id: ID!) {\n  publishFlow(id: $id) {\n    export_data\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 10\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get a flow",
-          "id": "f414a30d-ed05-4ed7-9d26-ccb29d674b19",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Release a flow contact",
-          "id": "e957cf66-aebe-4077-9f72-2d6926b9d9fe",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Terminate flows for a contact",
-          "id": "b5519f3e-8fa6-4186-b1ba-12cea9763e6f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation terminateContactFlows($contactId: ID!) {\n  terminateContactFlows(contactId: $contactId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Reset flow counts for a specific flow",
-          "id": "3b34f4ac-3c92-4fae-98b0-dfb86aa97f82",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation resetFlowCount($flowId: ID!) {\n  resetFlowCount(flowId: $flowId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        }
-      ],
-      "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
-    },
-    {
       "name": "Languages",
       "item": [
         {
@@ -4868,10 +4335,543 @@
       "id": "d91a50c8-b17d-4594-94e4-7438192d7c6a"
     },
     {
+      "name": "Flows",
+      "item": [
+        {
+          "name": "Get All Flows",
+          "id": "ad1a8dcf-9760-4a50-a09c-832f9e7f3796",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flows($filter: FlowFilter, $opts: Opts) {\n  flows(filter: $filter, opts: $opts) {\n    id\n    uuid\n    name\n    versionNumber\n    flowType\n    keywords\n    lastPublishedAt\n    lastChangedAt\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"limit\": 2,\n    \"offset\": 0,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Workflow\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Flow by ID",
+          "id": "595d2e8c-092d-4b4a-8c03-aa97162ac046",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flow($id: ID!) {\n  flow(id: $id) {\n    flow {\n      id\n      name\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 1\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Flows",
+          "id": "60fb2422-9816-4af4-9ab5-cdc92ed102f1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countFlows($filter: FlowFilter) {\n  countFlows(filter: $filter)\n}",
+                "variables": "{\n  \"id\": 1\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Flow",
+          "id": "55ae3bf2-cf23-4a17-bd6d-2a1a617e5cd9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation ($input: FlowInput!) {\n  createFlow(input: $input) {\n    flow {\n      id\n      name\n      keywords\n      isActive\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"input\": {\n    \"keywords\": [\n      \"tests\",\n      \"testing\"\n    ],\n    \"name\": \"test workflow\",\n    \"isActive\": true\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Flow",
+          "id": "9d3bde0f-229f-45d0-b526-36d9c3499d90",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Flow",
+          "id": "7061e0b4-9850-4826-b9b6-d17eec4dca71",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Publish a Flow",
+          "id": "3f3b4435-a4ee-4a00-a0b4-2e6280dc95cf",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Start flow for a contact",
+          "id": "f1580ca4-fd6c-469d-96a4-32b89975b0cd",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Resume flow for a contact",
+          "id": "4233a602-ee0c-48ce-bf12-4d3deec2b392",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Start flow for a group contacts",
+          "id": "8078a272-3a7b-4d0c-aba8-4d061c221384",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation startGroupFlow($flowId: ID!, $groupId: ID!) {\n  startGroupFlow(flowId: $flowId, groupId: $groupId) {\n    success\n    errors {\n        key\n        message\n    }\n  }\n}",
+                "variables": "{\n  \"flowId\": \"1\",\n  \"groupId\": \"1\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Copy a Flow",
+          "id": "afc8c74e-cf81-4611-8a44-2c4530d82be9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation copyFlow($id: ID!, $input:FlowInput!) {\n  copyFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"new name\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Import a Flow",
+          "id": "2512c4d9-0695-48ba-9b7a-856445ece726",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation ($flow: JSON!) {\n  importFlow(flow: $flow){\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"{\\\"flows\\\":[{\\\"keywords\\\":[\\\"hello\\\"],\\\"definition\\\":{\\\"vars\\\":[\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\"],\\\"uuid\\\":\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\",\\\"type\\\":\\\"messaging\\\",\\\"spec_version\\\":\\\"13.1.0\\\",\\\"revision\\\":1,\\\"nodes\\\":[{\\\"uuid\\\":\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\",\\\"exits\\\":[{\\\"uuid\\\":\\\"49d2775d-a658-4c74-be10-b7d605b4ea6f\\\",\\\"destination_uuid\\\":null}],\\\"actions\\\":[{\\\"uuid\\\":\\\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\\\",\\\"type\\\":\\\"send_msg\\\",\\\"text\\\":\\\"hehlo\\\",\\\"quick_replies\\\":[],\\\"attachments\\\":[]}]}],\\\"name\\\":\\\"hello\\\",\\\"localization\\\":{},\\\"language\\\":\\\"base\\\",\\\"expire_after_minutes\\\":10080,\\\"_ui\\\":{\\\"nodes\\\":{\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\":{\\\"type\\\":\\\"execute_actions\\\",\\\"position\\\":{\\\"top\\\":0,\\\"left\\\":0}}}}}}],\\\"contact_field\\\":[],\\\"collections\\\":[]}\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Export a Flow",
+          "id": "4d0ccc1f-aabc-4d5f-a9ba-1f6997dece7e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation exportFlow($id: ID!) {\n  publishFlow(id: $id) {\n    export_data\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 10\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a flow",
+          "id": "f414a30d-ed05-4ed7-9d26-ccb29d674b19",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Release a flow contact",
+          "id": "e957cf66-aebe-4077-9f72-2d6926b9d9fe",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Terminate flows for a contact",
+          "id": "b5519f3e-8fa6-4186-b1ba-12cea9763e6f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation terminateContactFlows($contactId: ID!) {\n  terminateContactFlows(contactId: $contactId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset flow counts for a specific flow",
+          "id": "3b34f4ac-3c92-4fae-98b0-dfb86aa97f82",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation resetFlowCount($flowId: ID!) {\n  resetFlowCount(flowId: $flowId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
+    },
+    {
       "name": "Glific Contact Import",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Import Contacts API",
           "id": "227919cd-8a5e-45df-92f0-e913988af43c",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
