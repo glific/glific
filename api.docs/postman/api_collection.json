@@ -4908,7 +4908,7 @@
       "name": "SaaS",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Create an organization, organization contact and BSP credentials",
           "id": "e23158e3-3e71-42f1-962c-9b65506230af",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
