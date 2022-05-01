@@ -3797,8 +3797,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
+                "query": "query search(  $saveSearchInput: SaveSearchInput,\n  $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {\n\n  search(filter: $searchFilter, saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {\n\n    messages {\n      id,\n      body,\n      tags{\n        label\n      }\n    }\n\n    contact {\n      name\n    }\n  }\n}",
+                "variables": "{\n  \"saveSearchInput\": {\n      \"label\": \"Save with this name\",\n      \"shortcode\": \"SaveName\"\n  },\n\n  \"searchFilter\": {\n    \"includeTags\": [\"17\"],\n    \"includeGroups\": [\"1\"],\n    \"includeUsers\": [\"1\"],\n    \"term\": \"def\",\n    \"dateRange\": {\n      \"to\": \"2020-08-10\",\n      \"from\": \"2020-08-12\"\n    }\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
               }
             },
             "url": "{{api_url}}"
