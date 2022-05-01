@@ -4348,11 +4348,11 @@
       "id": "7dfa9644-ed03-46b6-b805-786ff1d6e40a"
     },
     {
-      "name": "Groups",
+      "name": "Saved Searches Copy 2",
       "item": [
         {
-          "name": "Create Contact Tag",
-          "id": "d391c092-e053-4822-91fb-277b9805e058",
+          "name": "Get All Session Templates",
+          "id": "92ef68fb-5613-4d31-9141-04c3cfde52f5",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4373,8 +4373,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
+                "query": "query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {\n  sessionTemplates(filter: $filter, opts:$opts) {\n    id\n    body\n    label\n    shortcode\n    isHsm\n    type\n    isActive\n    translation\n    isReserved\n    isSource\n    parent {\n      id\n      label\n    }\n    language {\n      id\n      label\n    }\n    messageMedia {\n      id\n      caption\n    }\n  }\n}",
+                "variables": "{\n  \"filter\": {\n    \"body\": \"template\",\n    \"term\": \"label\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
               }
             },
             "url": "{{api_url}}"
@@ -4382,8 +4382,8 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
-          "id": "10fc10dd-0a9a-4604-bcfe-1ac595a7c54f",
+          "name": "Get a specific SessionTemplate by ID",
+          "id": "207c4502-72cb-41f8-a2ef-cf1b74921ff0",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4404,8 +4404,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+                "query": "query sessionTemplate($id: ID!) {\n  sessionTemplate(id: $id) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      translation\n      type\n      language {\n        id\n        label\n      }\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 1\n}"
               }
             },
             "url": "{{api_url}}"
@@ -4413,8 +4413,8 @@
           "response": []
         },
         {
-          "name": "Subscription for Create Contact Tag",
-          "id": "10472c75-686a-44ac-9cba-61c6836a3757",
+          "name": "Count all Session Templates",
+          "id": "dce652ba-6850-473b-9458-76f3640903ea",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4435,7 +4435,38 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
+                "query": "query countSessionTemplates($filter: SessionTemplateFilter) {\n  countSessionTemplates(filter: $filter)\n}",
+                "variables": "{\n  \"filter\":  {\n    \"language\": \"Hindi\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get List of Whatsapp HSM categories",
+          "id": "cd7a529f-2dcf-4fca-817e-ffed85ae7a36",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query {\n  whatsappHsmCategories\n}",
                 "variables": ""
               }
             },
@@ -4444,8 +4475,8 @@
           "response": []
         },
         {
-          "name": "Subscription for Delete Contact Tag",
-          "id": "b9d763fd-df6e-4066-9eac-5cf63eac587e",
+          "name": "Create a Session Template",
+          "id": "063c0877-8b46-4b52-8e70-4d8783784108",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4466,8 +4497,70 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
-                "variables": ""
+                "query": "mutation createSessionTemplate($input:SessionTemplateInput!) {\n  createSessionTemplate(input: $input) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      type\n    }\n    errors{\n            key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test template\",\n    \"label\": \"Test label\",\n    \"languageId\": 1,\n    \"translations\": \"{\\\"2\\\":{\\\"number_parameters\\\":0,\\\"language_id\\\":2,\\\"body\\\":\\\"पूर्व उपस्थित नमूना\\\"}}\",\n    \"type\": \"TEXT\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a SessionTemplate",
+          "id": "7601360a-f67b-4870-b1eb-180a1e15a5d4",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {\n  updateSessionTemplate(id: $id, input: $input) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      translation\n      type\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"body\": \"Test template\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a SessionTemplate",
+          "id": "acb265fa-ae52-4038-b545-6c833e09a0a9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteSessionTemplate($id: ID!) {\n  deleteSessionTemplate(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"3\"\n}"
               }
             },
             "url": "{{api_url}}"
@@ -4475,7 +4568,7 @@
           "response": []
         }
       ],
-      "id": "0dcc4e4c-3aed-48cc-bd79-458620b5cc2c"
+      "id": "0fd84bd3-cd7a-4921-be64-393f78847a65"
     },
     {
       "name": "Contact Group",
