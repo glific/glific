@@ -5023,7 +5023,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+                "query": "mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}\n  resetOrganization(\n    resetOrganizationID: $resetOrganizationID,\n    isConfirmed: $isConfirmed)\n}\n",
                 "variables": ""
               }
             },
