@@ -1294,892 +1294,6 @@
       "id": "9a308ab0-deb9-49d5-a671-ac5c546c99f0"
     },
     {
-      "name": "Messages",
-      "item": [
-        {
-          "name": "Get All Messages",
-          "id": "8ad1a94a-ad5f-4394-875e-132a2d882b74",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get a specific Message by ID",
-          "id": "1ac310ce-b04e-4353-b28c-1220349536c5",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Count all Messages",
-          "id": "af81ebcc-30ed-445b-8af8-f057eadf1312",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create a Message",
-          "id": "ce54a56d-e2ea-4eb2-85ec-af7cfc133a23",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Update a Message",
-          "id": "3a01502c-89bc-4e02-b181-18139bc46032",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete a Message",
-          "id": "f7ea854a-9a4d-4fba-90c3-fb875862e268",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete a Messages of a contact",
-          "id": "95c0a4dc-26ef-4358-bf96-a9f49e71681d",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation clearMessages($contactId: ID!) {\n  clearMessages(contactId: $contactId) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"contactId\": \"26\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create and send Message",
-          "id": "5c6faef3-dedf-4d75-a51e-7206e6240d8c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 2\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create and send SessionTemplate",
-          "id": "e27c1545-495d-4a2f-bb37-cd85e3dd86fa",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 11,\n    \"isHsm\": true,\n    \"params\": [\"Fifty\", \"Next Week\"],\n    \"templateId\": 32\n\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create and send Scheduled Message",
-          "id": "8554c4de-7fb4-41c8-aa27-cbf378ba0c91",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      insertedAt\n      sendAt\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"body\": \"This message should reach at 21:00 (India)\",\n    \"flow\": \"OUTBOUND\",\n    \"receiverId\": 7,\n    \"sendAt\": \"2020-07-10T03:30:00Z\",\n    \"senderId\": 1,\n    \"type\": \"TEXT\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create and send Session Message to contacts of a collection",
-          "id": "598e0b75-4d91-4c25-8169-ae50934ddcc7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {\n  createAndSendMessageToGroup(input: $input, groupId: $groupId) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1\n  },\n  \"groupId\": 1\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Send HSM Message",
-          "id": "aec66242-56d8-42b3-9374-c0994e1dad20",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"templateId\": 34,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Send HSM Message to contacts of a collection",
-          "id": "25cd8dc6-1932-4ad3-ae02-1889aa1b45f3",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"templateId\": 34,\n  \"groupId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Send Media HSM Message",
-          "id": "a795c676-3303-459d-a2fc-7716da30ec4e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {\n  createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Subscription for Sent Message",
-          "id": "969dce1a-746f-44e2-a942-d1737aaebe40",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription {\n  sentMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Subscription for Update Message Status",
-          "id": "c5126c74-50d1-4a68-ad2c-96d29d3969f7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription {\n  update_message_status() {\n    id\n    body\n    flow\n    type\n    status\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Subscription for Sent Group Message",
-          "id": "6ee9f6fa-c64d-42fb-9a90-b690ffa0955b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription {\n  sent_group_message() {\n    id\n    body\n    flow\n    type\n    status\n    group_id\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Subscription for Cleared Message",
-          "id": "363318b9-af9b-42c7-8d89-2781ea5f7f42",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription {\n  cleared_messages() {\n    id\n    phone\n    name\n    lastMessageAt\n    optinTime\n    bspStatus\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Subscription for Received Message",
-          "id": "bc677e6e-b358-43f6-83c2-84bc0d40114f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription {\n  receivedMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        }
-      ],
-      "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
-    },
-    {
-      "name": "Message Media",
-      "item": [
-        {
-          "name": "Get all message media",
-          "id": "7c044350-3131-40f6-ba57-a2e72ddf4a48",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query messagesMedia($opts: Opts) {\n  messagesMedia(filter: $filter, opts:$opts) {\n    id\n    url\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get a specific Message Media by ID",
-          "id": "5ef69164-0846-48b0-8b05-4df65f9c6e8e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query messageMedia($id: ID!) {\n  messageMedia(id: $id) {\n    messageMedia {\n      id\n      url\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 2\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Count all Message Media",
-          "id": "920e00c9-9eaf-41af-98b4-f4cda617ab57",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query countMessagesMedia {\n  countMessagesMedia\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Validate a Media URL and type",
-          "id": "bc0a6357-af4f-4445-a451-93cd0357d70b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query validateMedia($url: String!, $type: String!) {\n  validateMedia(url: $url, type: $type)\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create a Message Media",
-          "id": "31986f1d-029e-44cf-9604-13b839f9f53f",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createMessageMedia($input:MessageMediaInput!) {\n  createMessageMedia(input: $input) {\n    messageMedia {\n      id\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Update a Message Media",
-          "id": "fa22d0db-454c-4fcf-ad1b-2ab50c5693ef",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateMessageMedia($id: ID!, $input:MessageMediaInput!) {\n  updateMessageMedia(id: $id, input: $input) {\n    messageMedia {\n      id\n      url\n      caption\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set1/bgset_bg1/b7FBMrsOQbn8EJ\",\n    \"caption\": \"This is a caption\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete a Message Media",
-          "id": "c10495bd-cfdd-43e3-9e07-3b6d3854b780",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation deleteMessageMedia($id: ID!) {\n  deleteMessageMedia(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        }
-      ],
-      "id": "6a893218-c9d7-4c9c-9599-73373016590b"
-    },
-    {
-      "name": "Media Management",
-      "item": [
-        {
-          "name": "Upload a file",
-          "id": "7999e373-2cf7-44c3-9145-7862626c230b",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation uploadMedia($media: Upload!, $extension: String!) {\n  uploadMedia(media: $media, extension: $extension)\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Upload a buffer",
-          "id": "88dec84b-edfe-461f-866c-1f3a2f0d4333",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation uploadBlob($media: String!, $extension: String!) {\n  uploadBlob(media: $media, extension: $extension)\n}",
-                "variables": "{\n  \"input\": {\n    \"media\": \"W29iamVjdCBCbG9iXQ==\",\n    \"extension\": \"wav\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        }
-      ],
-      "id": "9c799832-9559-4f73-b4c8-2bc1a3901312"
-    },
-    {
       "name": "Languages",
       "item": [
         {
@@ -4125,11 +3239,11 @@
       "id": "5b65be1c-95ec-49a8-af74-1e4affba73f3"
     },
     {
-      "name": "Session Template",
+      "name": "Messages",
       "item": [
         {
-          "name": "Create Contact Tag",
-          "id": "06c099f9-0d95-4ce6-a20d-e41b431af54a",
+          "name": "Get All Messages",
+          "id": "8ad1a94a-ad5f-4394-875e-132a2d882b74",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4150,8 +3264,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
+                "query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
@@ -4159,8 +3273,8 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
-          "id": "27edeb18-7711-47f8-ae49-3caf9c7a3c2f",
+          "name": "Get a specific Message by ID",
+          "id": "1ac310ce-b04e-4353-b28c-1220349536c5",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4181,8 +3295,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+                "query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
@@ -4190,8 +3304,8 @@
           "response": []
         },
         {
-          "name": "Subscription for Create Contact Tag",
-          "id": "a75cfd09-f427-4d5d-ba35-7459a3f1eef1",
+          "name": "Count all Messages",
+          "id": "af81ebcc-30ed-445b-8af8-f057eadf1312",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4212,7 +3326,379 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
+                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Message",
+          "id": "ce54a56d-e2ea-4eb2-85ec-af7cfc133a23",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Message",
+          "id": "3a01502c-89bc-4e02-b181-18139bc46032",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Message",
+          "id": "f7ea854a-9a4d-4fba-90c3-fb875862e268",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Messages of a contact",
+          "id": "95c0a4dc-26ef-4358-bf96-a9f49e71681d",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation clearMessages($contactId: ID!) {\n  clearMessages(contactId: $contactId) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"contactId\": \"26\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create and send Message",
+          "id": "5c6faef3-dedf-4d75-a51e-7206e6240d8c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 2\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create and send SessionTemplate",
+          "id": "e27c1545-495d-4a2f-bb37-cd85e3dd86fa",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 11,\n    \"isHsm\": true,\n    \"params\": [\"Fifty\", \"Next Week\"],\n    \"templateId\": 32\n\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create and send Scheduled Message",
+          "id": "8554c4de-7fb4-41c8-aa27-cbf378ba0c91",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      insertedAt\n      sendAt\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"input\": {\n    \"body\": \"This message should reach at 21:00 (India)\",\n    \"flow\": \"OUTBOUND\",\n    \"receiverId\": 7,\n    \"sendAt\": \"2020-07-10T03:30:00Z\",\n    \"senderId\": 1,\n    \"type\": \"TEXT\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create and send Session Message to contacts of a collection",
+          "id": "598e0b75-4d91-4c25-8169-ae50934ddcc7",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {\n  createAndSendMessageToGroup(input: $input, groupId: $groupId) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1\n  },\n  \"groupId\": 1\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Send HSM Message",
+          "id": "aec66242-56d8-42b3-9374-c0994e1dad20",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"templateId\": 34,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Send HSM Message to contacts of a collection",
+          "id": "25cd8dc6-1932-4ad3-ae02-1889aa1b45f3",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"templateId\": 34,\n  \"groupId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Send Media HSM Message",
+          "id": "a795c676-3303-459d-a2fc-7716da30ec4e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {\n  createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Sent Message",
+          "id": "969dce1a-746f-44e2-a942-d1737aaebe40",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  sentMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
                 "variables": ""
               }
             },
@@ -4221,8 +3707,8 @@
           "response": []
         },
         {
-          "name": "Subscription for Delete Contact Tag",
-          "id": "919a938d-2269-41f0-b267-06c8022d8f21",
+          "name": "Subscription for Update Message Status",
+          "id": "c5126c74-50d1-4a68-ad2c-96d29d3969f7",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
           },
@@ -4243,7 +3729,100 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+                "query": "subscription {\n  update_message_status() {\n    id\n    body\n    flow\n    type\n    status\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Sent Group Message",
+          "id": "6ee9f6fa-c64d-42fb-9a90-b690ffa0955b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  sent_group_message() {\n    id\n    body\n    flow\n    type\n    status\n    group_id\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Cleared Message",
+          "id": "363318b9-af9b-42c7-8d89-2781ea5f7f42",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  cleared_messages() {\n    id\n    phone\n    name\n    lastMessageAt\n    optinTime\n    bspStatus\n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription for Received Message",
+          "id": "bc677e6e-b358-43f6-83c2-84bc0d40114f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "subscription {\n  receivedMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
                 "variables": ""
               }
             },
@@ -4252,7 +3831,298 @@
           "response": []
         }
       ],
-      "id": "d4ae008e-478a-4c80-92d6-8bb81adf53b6"
+      "id": "bf155ea3-c86e-4838-aaf7-cd41b7b84e8a"
+    },
+    {
+      "name": "Message Media",
+      "item": [
+        {
+          "name": "Get all message media",
+          "id": "7c044350-3131-40f6-ba57-a2e72ddf4a48",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query messagesMedia($opts: Opts) {\n  messagesMedia(filter: $filter, opts:$opts) {\n    id\n    url\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Message Media by ID",
+          "id": "5ef69164-0846-48b0-8b05-4df65f9c6e8e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query messageMedia($id: ID!) {\n  messageMedia(id: $id) {\n    messageMedia {\n      id\n      url\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Message Media",
+          "id": "920e00c9-9eaf-41af-98b4-f4cda617ab57",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countMessagesMedia {\n  countMessagesMedia\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Validate a Media URL and type",
+          "id": "bc0a6357-af4f-4445-a451-93cd0357d70b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query validateMedia($url: String!, $type: String!) {\n  validateMedia(url: $url, type: $type)\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create a Message Media",
+          "id": "31986f1d-029e-44cf-9604-13b839f9f53f",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createMessageMedia($input:MessageMediaInput!) {\n  createMessageMedia(input: $input) {\n    messageMedia {\n      id\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Message Media",
+          "id": "fa22d0db-454c-4fcf-ad1b-2ab50c5693ef",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateMessageMedia($id: ID!, $input:MessageMediaInput!) {\n  updateMessageMedia(id: $id, input: $input) {\n    messageMedia {\n      id\n      url\n      caption\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set1/bgset_bg1/b7FBMrsOQbn8EJ\",\n    \"caption\": \"This is a caption\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Message Media",
+          "id": "c10495bd-cfdd-43e3-9e07-3b6d3854b780",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteMessageMedia($id: ID!) {\n  deleteMessageMedia(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "6a893218-c9d7-4c9c-9599-73373016590b"
+    },
+    {
+      "name": "Media Management",
+      "item": [
+        {
+          "name": "Upload a file",
+          "id": "7999e373-2cf7-44c3-9145-7862626c230b",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation uploadMedia($media: Upload!, $extension: String!) {\n  uploadMedia(media: $media, extension: $extension)\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload a buffer",
+          "id": "88dec84b-edfe-461f-866c-1f3a2f0d4333",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation uploadBlob($media: String!, $extension: String!) {\n  uploadBlob(media: $media, extension: $extension)\n}",
+                "variables": "{\n  \"input\": {\n    \"media\": \"W29iamVjdCBCbG9iXQ==\",\n    \"extension\": \"wav\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "9c799832-9559-4f73-b4c8-2bc1a3901312"
     },
     {
       "name": "Groups",
