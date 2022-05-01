@@ -4726,8 +4726,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+                "query": "mutation deleteMessageGroup($id: ID!) {\n  deleteMessageGroup(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 1\n}"
               }
             },
             "url": "{{api_url}}"
