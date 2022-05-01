@@ -4052,7 +4052,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation createSavedSearch($input: SavedSearchInput!) {\n  createSavedSearch(input: $input) {\n    savedSearch {\n      id\n      label\n      shortcode\n      args\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"label\": \"This is a saved search\",\n    \"shortcode\": \"Save Search\"\n    \"args\": \"{\\\"term\\\": \"\\Save this search\\\"}\"\n  }\n}"
+                "variables": "{\n  \"input\": {\n    \"label\": \"This is a saved search\",\n    \"shortcode\": \"Save Search\",\n    \"args\": \"{'term': 'Save this search'}\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
