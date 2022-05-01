@@ -4027,6 +4027,37 @@
             "url": "{{api_url}}"
           },
           "response": []
+        },
+        {
+          "name": "Save a Search",
+          "id": "6f10e6eb-600b-40bf-a13b-2136e5190835",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query search_queries {\n  collectionStats(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
         }
       ],
       "id": "5b65be1c-95ec-49a8-af74-1e4affba73f3"
