@@ -4636,7 +4636,7 @@
           "response": []
         },
         {
-          "name": "Subscription for Create Contact Tag",
+          "name": "Update groups to be added and groups to be deleted to a Contact",
           "id": "29b90660-8fba-4a3e-9b36-8ee9f7b42eb0",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
