@@ -4803,7 +4803,7 @@
           "response": []
         },
         {
-          "name": "Subscription for Create Contact Tag",
+          "name": "Update groups to be added and groups to be deleted to a User",
           "id": "ec310b39-c404-43eb-bcd3-146203a81842",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
