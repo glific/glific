@@ -4125,6 +4125,229 @@
       "id": "9c799832-9559-4f73-b4c8-2bc1a3901312"
     },
     {
+      "name": "Saved Searches Copy",
+      "item": [
+        {
+          "name": "Get All Session Templates",
+          "id": "3b9e2784-4dc2-4615-b5f6-058126ef44d2",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {\n  savedSearches(filter: $filter, opts: $opts) {\n    id\n    label\n    shortcode\n    args\n    count\n  }\n}",
+                "variables": "{\n  \"filter\": {\n    \"label\": \"conv\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"offset\": 0,\n    \"limit\": 1\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Count all Saved Searches",
+          "id": "88d3b017-ece1-48d5-9b4c-5973900fefb9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query countSavedSearches($filter: SavedSearchFilter) {\n  countSavedSearches(filter: $filter)\n}",
+                "variables": "{\n  \"filter\": {\n    \"label\": \"Conversations read but not replied\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a specific Saved Search by ID",
+          "id": "2c32a078-fa18-4726-a767-7931bd77924e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query savedSearch($id: ID!) {\n  savedSearch(id: $id) {\n    savedSearch {\n      id\n      label\n      count\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a Collection Count Stats for organization",
+          "id": "9202d5eb-ed24-453f-83ee-c92444143764",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query search_queries {\n  collectionStats(organizationId: \"1\")\n}",
+                "variables": ""
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Save a Search",
+          "id": "0dca76e5-2a52-46c9-ae50-5ed18ee67ced",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createSavedSearch($input: SavedSearchInput!) {\n  createSavedSearch(input: $input) {\n    savedSearch {\n      id\n      label\n      shortcode\n      args\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"label\": \"This is a saved search\",\n    \"shortcode\": \"Save Search\",\n    \"args\": \"{'term': 'Save this search'}\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Saved Search",
+          "id": "98157fcc-f1b7-4bb3-b761-7878211122b1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {\n  updateSavedSearch(id: $id, input: $input) {\n    savedSearch {\n      id\n      label\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a updated saved search\",\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a SavedSearch",
+          "id": "fcfc9d00-976d-46b4-8f70-7e4f0b66313c",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteSavedSearch($id: ID!) {\n  deleteSavedSearch(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": \"26\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "7dfa9644-ed03-46b6-b805-786ff1d6e40a"
+    },
+    {
       "name": "Groups",
       "item": [
         {
