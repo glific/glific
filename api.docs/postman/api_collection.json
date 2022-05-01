@@ -4181,8 +4181,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query sessionTemplate($id: ID!) {\n  sessionTemplate(id: $id) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      translation\n      type\n      language {\n        id\n        label\n      }\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 1\n}"
+                "query": "query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {\n  organization_groups(filter: $filter, opts: $opts, id:$id) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  },\n  \"id\": \"1\"\n}"
               }
             },
             "url": "{{api_url}}"
