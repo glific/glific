@@ -3967,7 +3967,7 @@
           "response": []
         },
         {
-          "name": "Subscription for Create Contact Tag",
+          "name": "Get a specific Saved Search by ID",
           "id": "f397975c-7b93-4224-9f34-cacb8cd622b6",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
