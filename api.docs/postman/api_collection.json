@@ -4283,7 +4283,7 @@
           "response": []
         },
         {
-          "name": "Update a SessionTemplate",
+          "name": "Update a Group",
           "id": "0dca76e5-2a52-46c9-ae50-5ed18ee67ced",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
