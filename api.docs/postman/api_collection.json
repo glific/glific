@@ -4665,37 +4665,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Subscription for Delete Contact Tag",
-          "id": "30a49847-3892-44e9-b6d0-245a161830e7",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "fa680840-51d4-4492-b3dd-b8335a49943a"
