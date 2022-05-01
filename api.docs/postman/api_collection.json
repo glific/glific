@@ -4343,37 +4343,6 @@
             "url": "{{api_url}}"
           },
           "response": []
-        },
-        {
-          "name": "Delete a SavedSearch",
-          "id": "fcfc9d00-976d-46b4-8f70-7e4f0b66313c",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation deleteSavedSearch($id: ID!) {\n  deleteSavedSearch(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
         }
       ],
       "id": "7dfa9644-ed03-46b6-b805-786ff1d6e40a"
