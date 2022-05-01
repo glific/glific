@@ -4212,8 +4212,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countSavedSearches($filter: SavedSearchFilter) {\n  countSavedSearches(filter: $filter)\n}",
-                "variables": "{\n  \"filter\": {\n    \"label\": \"Conversations read but not replied\"\n  }\n}"
+                "query": "query countSessionTemplates($filter: SessionTemplateFilter) {\n  countSessionTemplates(filter: $filter)\n}",
+                "variables": "{\n  \"filter\":  {\n    \"language\": \"Hindi\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
