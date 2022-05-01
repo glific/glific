@@ -4159,6 +4159,37 @@
           "response": []
         },
         {
+          "name": "Get a specific SessionTemplate by ID",
+          "id": "25793ec8-3967-4c91-8aed-b6243ab583c4",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {\n  sessionTemplates(filter: $filter, opts:$opts) {\n    id\n    body\n    label\n    shortcode\n    isHsm\n    type\n    isActive\n    translation\n    isReserved\n    isSource\n    parent {\n      id\n      label\n    }\n    language {\n      id\n      label\n    }\n    messageMedia {\n      id\n      caption\n    }\n  }\n}",
+                "variables": "{\n  \"filter\": {\n    \"body\": \"template\",\n    \"term\": \"label\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
           "name": "Count all Saved Searches",
           "id": "88d3b017-ece1-48d5-9b4c-5973900fefb9",
           "protocolProfileBehavior": {
