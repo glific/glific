@@ -4212,8 +4212,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query countSessionTemplates($filter: SessionTemplateFilter) {\n  countSessionTemplates(filter: $filter)\n}",
-                "variables": "{\n  \"filter\":  {\n    \"language\": \"Hindi\"\n  }\n}"
+                "query": "query group($id: ID!) {\n  group(id: $id) {\n    group {\n      id\n      label\n      isRestricted\n      contacts{\n        name\n      }\n      users{\n        name\n      }\n    }\n  }\n}",
+                "variables": "{\n    \"id\": 1\n}"
               }
             },
             "url": "{{api_url}}"
