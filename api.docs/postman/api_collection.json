@@ -2664,7 +2664,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {\n  updateSavedSearch(id: $id, input: $input) {\n    savedSearch {\n      id\n      label\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a updated saved search\",\n  }\n}"
+                "variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a updated saved search\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
