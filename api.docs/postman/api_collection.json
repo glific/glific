@@ -4305,8 +4305,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {\n  updateSessionTemplate(id: $id, input: $input) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      translation\n      type\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"body\": \"Test template\"\n  }\n}"
+                "query": "mutation updateGroup($id: ID!, $input: GroupInput!) {\n  updateGroup(id: $id, input: $input) {\n    group {\n      id\n      label\n      isRestricted\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2,\n    \"input\": {\n    \"label\": \"My First Updated non-Restricted Group\",\n    \"isRestricted\": false\n  }\n}"
               }
             },
             "url": "{{api_url}}"
