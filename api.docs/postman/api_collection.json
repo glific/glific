@@ -4128,7 +4128,7 @@
       "name": "Groups",
       "item": [
         {
-          "name": "Get All Session Templates",
+          "name": "Get All Groups",
           "id": "3b9e2784-4dc2-4615-b5f6-058126ef44d2",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
