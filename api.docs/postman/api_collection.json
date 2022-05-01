@@ -4902,37 +4902,6 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
-          "id": "35989c10-cd5f-452c-9851-c46bded3b888",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
-                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
           "name": "Subscription for Create Contact Tag",
           "id": "54b606fb-a5cf-441a-ae5a-8d6cf2c1eb41",
           "protocolProfileBehavior": {
