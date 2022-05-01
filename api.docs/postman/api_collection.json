@@ -4274,8 +4274,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "query search_queries {\n  collectionStats(organizationId: \"1\")\n}",
-                "variables": ""
+                "query": "mutation createSessionTemplate($input:SessionTemplateInput!) {\n  createSessionTemplate(input: $input) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      type\n    }\n    errors{\n            key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"body\": \"Test template\",\n    \"label\": \"Test label\",\n    \"languageId\": 1,\n    \"translations\": \"{\\\"2\\\":{\\\"number_parameters\\\":0,\\\"language_id\\\":2,\\\"body\\\":\\\"पूर्व उपस्थित नमूना\\\"}}\"\n    \"type\": \"TEXT\"\n  }\n}"
               }
             },
             "url": "{{api_url}}"
