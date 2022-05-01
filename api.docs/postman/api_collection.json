@@ -4336,8 +4336,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "mutation deleteSessionTemplate($id: ID!) {\n  deleteSessionTemplate(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": \"3\"\n}"
+                "query": "mutation deleteGroup($id: ID!) {\n  deleteGroup(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"id\": 2\n}"
               }
             },
             "url": "{{api_url}}"
