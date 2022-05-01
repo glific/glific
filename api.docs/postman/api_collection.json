@@ -3998,7 +3998,7 @@
           "response": []
         },
         {
-          "name": "Subscription for Delete Contact Tag",
+          "name": "Get a Collection Count Stats for organization",
           "id": "6db0e56a-5969-4a49-a250-0843eb1700ce",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
