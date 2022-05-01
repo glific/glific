@@ -3775,7 +3775,7 @@
       "name": "Search",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Search Contacts and Conversations",
           "id": "6f69ab6f-126b-47df-b2f8-0f0706ba190d",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
