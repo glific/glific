@@ -4741,7 +4741,7 @@
       "name": "User Group",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Create User Group",
           "id": "0a5fbc8e-1c47-4dde-8580-02152b84c833",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
