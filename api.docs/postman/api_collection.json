@@ -4221,7 +4221,7 @@
           "response": []
         },
         {
-          "name": "Get a specific Saved Search by ID",
+          "name": "Get List of Whatsapp HSM categories",
           "id": "2c32a078-fa18-4726-a767-7931bd77924e",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
