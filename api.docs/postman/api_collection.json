@@ -4939,7 +4939,7 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
+          "name": "Update Organization Status IsActive or IsApproved",
           "id": "adb26a39-2865-4bb1-953e-20551ef4df54",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
