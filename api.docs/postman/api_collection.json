@@ -4772,7 +4772,7 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
+          "name": "Update a Group with users to be added and users to be deleted",
           "id": "ff48f511-95ee-45ad-a246-2db024d20623",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
