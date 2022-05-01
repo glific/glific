@@ -4658,8 +4658,8 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
-                "variables": ""
+                "query": "mutation updateContactGroups($input: ContactGroupsInput!) {\n  updateContactGroups(input: $input) {\n    contactGroups {\n      id\n      group {\n        label\n      }\n      contact {\n        name\n      }\n    }\n    numberDeleted\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addGroupIds\": [1],\n    \"deleteGroupIds\": [2, 3]\n  }\n}"
               }
             },
             "url": "{{api_url}}"
