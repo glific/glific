@@ -3806,7 +3806,7 @@
           "response": []
         },
         {
-          "name": "Update a Contact with tags to be added and tags to be deleted",
+          "name": "Search for a multiple section based on term",
           "id": "012d399b-4ac7-4253-b3d4-14958551938b",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
