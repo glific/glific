@@ -4252,7 +4252,7 @@
           "response": []
         },
         {
-          "name": "Get a Collection Count Stats for organization",
+          "name": "Create a Session Template",
           "id": "9202d5eb-ed24-453f-83ee-c92444143764",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
