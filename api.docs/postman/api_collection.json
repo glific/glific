@@ -4125,229 +4125,6 @@
       "id": "9c799832-9559-4f73-b4c8-2bc1a3901312"
     },
     {
-      "name": "Groups",
-      "item": [
-        {
-          "name": "Get All Groups",
-          "id": "3b9e2784-4dc2-4615-b5f6-058126ef44d2",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query groups($filter: GroupFilter, $opts: Opts) {\n  groups(filter: $filter, opts:$opts) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}\n",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get All Organization Groups",
-          "id": "25793ec8-3967-4c91-8aed-b6243ab583c4",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {\n  organization_groups(filter: $filter, opts: $opts, id:$id) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}",
-                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  },\n  \"id\": \"1\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get a Group by ID",
-          "id": "88d3b017-ece1-48d5-9b4c-5973900fefb9",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query group($id: ID!) {\n  group(id: $id) {\n    group {\n      id\n      label\n      isRestricted\n      contacts{\n        name\n      }\n      users{\n        name\n      }\n    }\n  }\n}",
-                "variables": "{\n    \"id\": 1\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Get Group Information for a Group by ID",
-          "id": "2c32a078-fa18-4726-a767-7931bd77924e",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "query groupInfo($id: ID!) {\n    groupInfo(id: $id)\n}",
-                "variables": "{\n  \"id\": \"2\"\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Create Group",
-          "id": "9202d5eb-ed24-453f-83ee-c92444143764",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation createGroup($input: GroupInput!) {\n  createGroup(input: $input) {\n    group {\n      id\n      label\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"input\": {\n    \"label\": \"My First Group\"\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Update a Group",
-          "id": "0dca76e5-2a52-46c9-ae50-5ed18ee67ced",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation updateGroup($id: ID!, $input: GroupInput!) {\n  updateGroup(id: $id, input: $input) {\n    group {\n      id\n      label\n      isRestricted\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"id\": 2,\n    \"input\": {\n    \"label\": \"My First Updated non-Restricted Group\",\n    \"isRestricted\": false\n  }\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        },
-        {
-          "name": "Delete a Group",
-          "id": "98157fcc-f1b7-4bb3-b761-7878211122b1",
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "authorization",
-                "value": "{{auth_token}}",
-                "type": "text"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "mutation deleteGroup($id: ID!) {\n  deleteGroup(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}\n",
-                "variables": "{\n  \"id\": 2\n}"
-              }
-            },
-            "url": "{{api_url}}"
-          },
-          "response": []
-        }
-      ],
-      "id": "7dfa9644-ed03-46b6-b805-786ff1d6e40a"
-    },
-    {
       "name": "Session Template",
       "item": [
         {
@@ -4571,10 +4348,233 @@
       "id": "0fd84bd3-cd7a-4921-be64-393f78847a65"
     },
     {
+      "name": "Groups",
+      "item": [
+        {
+          "name": "Get All Groups",
+          "id": "3b9e2784-4dc2-4615-b5f6-058126ef44d2",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query groups($filter: GroupFilter, $opts: Opts) {\n  groups(filter: $filter, opts:$opts) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}\n",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Organization Groups",
+          "id": "25793ec8-3967-4c91-8aed-b6243ab583c4",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {\n  organization_groups(filter: $filter, opts: $opts, id:$id) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}",
+                "variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  },\n  \"id\": \"1\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get a Group by ID",
+          "id": "88d3b017-ece1-48d5-9b4c-5973900fefb9",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query group($id: ID!) {\n  group(id: $id) {\n    group {\n      id\n      label\n      isRestricted\n      contacts{\n        name\n      }\n      users{\n        name\n      }\n    }\n  }\n}",
+                "variables": "{\n    \"id\": 1\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Group Information for a Group by ID",
+          "id": "2c32a078-fa18-4726-a767-7931bd77924e",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "query groupInfo($id: ID!) {\n    groupInfo(id: $id)\n}",
+                "variables": "{\n  \"id\": \"2\"\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Group",
+          "id": "9202d5eb-ed24-453f-83ee-c92444143764",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation createGroup($input: GroupInput!) {\n  createGroup(input: $input) {\n    group {\n      id\n      label\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"input\": {\n    \"label\": \"My First Group\"\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update a Group",
+          "id": "0dca76e5-2a52-46c9-ae50-5ed18ee67ced",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation updateGroup($id: ID!, $input: GroupInput!) {\n  updateGroup(id: $id, input: $input) {\n    group {\n      id\n      label\n      isRestricted\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+                "variables": "{\n  \"id\": 2,\n    \"input\": {\n    \"label\": \"My First Updated non-Restricted Group\",\n    \"isRestricted\": false\n  }\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete a Group",
+          "id": "98157fcc-f1b7-4bb3-b761-7878211122b1",
+          "protocolProfileBehavior": {
+            "disableBodyPruning": true
+          },
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "{{auth_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "mutation deleteGroup($id: ID!) {\n  deleteGroup(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+                "variables": "{\n  \"id\": 2\n}"
+              }
+            },
+            "url": "{{api_url}}"
+          },
+          "response": []
+        }
+      ],
+      "id": "7dfa9644-ed03-46b6-b805-786ff1d6e40a"
+    },
+    {
       "name": "Contact Group",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Create Contact Group",
           "id": "21fb7b58-c000-4c46-8812-086a93db8bb6",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
