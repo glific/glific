@@ -4962,7 +4962,7 @@
               "mode": "graphql",
               "graphql": {
                 "query": "mutation updateOrganizationStatus($updateOrganizationid: ID!, $isActive: Boolean, $isApproved: Boolean) {\n  updateOrganizationStatus($updateOrganizationid: updateOrganizationid, $isActive: isActive, $isApproved: isApproved) {}\n    organization {\n      email\n      isActive\n      isApproved\n      name\n      shortcode\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
-                "variables": "{\n  \"isActive\": true,\n  \"isApproved\": true,\n  \"updateOrganizationId\": 1,\n}"
+                "variables": "{\n  \"isActive\": true,\n  \"isApproved\": true,\n  \"updateOrganizationId\": 1\n}"
               }
             },
             "url": "{{api_url}}"
