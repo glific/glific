@@ -4673,7 +4673,7 @@
       "name": "Message Group",
       "item": [
         {
-          "name": "Create Contact Tag",
+          "name": "Create Message Group",
           "id": "62e18760-7de2-4e1c-9f7b-9a017a065c0e",
           "protocolProfileBehavior": {
             "disableBodyPruning": true
