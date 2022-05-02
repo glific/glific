@@ -310,7 +310,7 @@ defmodule Glific.Clients.DigitalGreen do
       })
 
     %{
-      is_vaid: Map.has_key?(org_data.json, crp_id)
+      is_valid: Map.has_key?(org_data.json, crp_id)
     }
   end
 
