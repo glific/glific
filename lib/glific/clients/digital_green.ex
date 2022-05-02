@@ -188,7 +188,9 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
-  @spec set_contact_reminder(DateTime.t()) :: map()
+  @spec set_contact_reminder(DateTime.t() | nil) :: map()
+  defp set_contact_reminder(nil), do: %{is_inactive: false, send_reminder: false}
+
   defp set_contact_reminder(last_message_at) do
     days_since_last_message = Timex.diff(Timex.today(), last_message_at, :days)
     is_inactive = if days_since_last_message >= 7, do: true, else: false
