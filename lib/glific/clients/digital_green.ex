@@ -9,6 +9,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.ContactField,
     Partners,
     Partners.OrganizationData,
@@ -163,12 +164,45 @@ defmodule Glific.Clients.DigitalGreen do
     crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
 
     if template_uuid,
-      do: %{is_valid: true, template_uuid: template_uuid, crop_stage: crop_stage, variables: Jason.encode!(variables)},
+      do: %{
+        is_valid: true,
+        template_uuid: template_uuid,
+        crop_stage: crop_stage,
+        variables: Jason.encode!(variables)
+      },
       else: %{is_valid: false}
+  end
+
+  def webhook("set_reminders", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact"]["id"])
+
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             organization_id: fields["organization_id"],
+             id: contact_id
+           }) do
+      set_contact_reminder(contact.last_message_at)
+    end
   end
 
   def webhook(_, _fields),
     do: %{}
+
+  @spec set_contact_reminder(DateTime.t()) :: map()
+  defp set_contact_reminder(last_message_at) do
+    days_since_last_message = Timex.diff(Timex.today(), last_message_at, :days)
+    is_inactive = if days_since_last_message >= 7, do: true, else: false
+
+    send_reminder =
+      if days_since_last_message != 0 and rem(days_since_last_message, 7) == 0,
+        do: true,
+        else: false
+
+    %{
+      is_inactive: is_inactive,
+      send_reminder: send_reminder
+    }
+  end
 
   @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
   defp set_geography(type, value, contact_id) do
