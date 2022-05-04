@@ -188,6 +188,17 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook(_, _fields),
     do: %{}
 
+  @spec find_translation(map(), String.t(), String.t()) :: map()
+  defp find_translation(translations, type, value) do
+    geographies = get_in(translations, [type])
+
+    Enum.reduce(geographies, %{found: false}, fn geography, acc ->
+      if geography["telugu"] == value || geography["english"] == value,
+        do: Map.merge(acc, %{found: true, slug: geography["english"]}),
+        else: acc
+    end)
+  end
+
   @spec set_contact_reminder(DateTime.t() | nil) :: map()
   defp set_contact_reminder(nil), do: %{is_inactive: false, send_reminder: false}
 
@@ -208,8 +219,20 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
   defp set_geography(type, value, contact_id) do
-    Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field(type, type, value)
+    contact = Contacts.get_contact!(contact_id)
+
+    ContactField.do_add_contact_field(contact, type, type, value)
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: contact.organization_id,
+        key: "ryss_geography_translations"
+      })
+
+    translation = find_translation(organization_data.json, type, value)
+
+    if translation.found,
+      do: ContactField.do_add_contact_field(contact, type, "#{type}_slug", translation.slug)
   end
 
   @spec get_geographies_data(non_neg_integer(), map()) :: map()
