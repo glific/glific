@@ -68,11 +68,9 @@ defmodule Glific.Clients.KEF do
 
   @spec validate_worksheet_code(non_neg_integer(), String.t()) :: boolean()
   defp validate_worksheet_code(org_id, worksheet_code) do
-    worksheet_code = Glific.string_clean(worksheet_code)
-
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
-      key: "worksheet_code_#{worksheet_code}"
+      key: clean_worksheet_code(worksheet_code)
     })
     |> case do
       {:ok, _data} -> true
@@ -84,9 +82,8 @@ defmodule Glific.Clients.KEF do
   defp do_load_code_worksheet(class, sheet_link, org_id) do
     ApiClient.get_csv_content(url: sheet_link)
     |> Enum.map(fn {_, row} ->
-      worksheet_code = Glific.string_clean(row["Worksheet Code"])
       row = Map.put(row, "class", class)
-      key = "worksheet_code_#{worksheet_code}"
+      key = clean_worksheet_code(row["Worksheet Code"] || "")
       Partners.maybe_insert_organization_data(key, row, org_id)
     end)
 
@@ -96,11 +93,9 @@ defmodule Glific.Clients.KEF do
 
   @spec get_worksheet_info(non_neg_integer(), String.t()) :: map()
   defp get_worksheet_info(org_id, worksheet_code) do
-    worksheet_code = Glific.string_clean(worksheet_code)
-
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
-      key: "worksheet_code_#{worksheet_code}"
+      key: clean_worksheet_code(worksheet_code)
     })
     |> case do
       {:ok, data} ->
@@ -122,5 +117,11 @@ defmodule Glific.Clients.KEF do
     data
     |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
     |> Enum.into(%{})
+  end
+
+  @spec clean_worksheet_code(String.t()) :: String.t()
+  defp clean_worksheet_code(str) do
+    code = Glific.string_clean(str)
+    "worksheet_code_#{code}"
   end
 end
