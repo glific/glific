@@ -8,8 +8,6 @@ defmodule Glific.Clients.KEF do
   require Logger
 
   alias Glific.{
-    Contacts,
-    Flows.ContactField,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -58,12 +56,30 @@ defmodule Glific.Clients.KEF do
     |> get_worksheet_info(fields["worksheet_code"])
   end
 
+  def webhook(_, _) do
+    raise "Unknown webhook"
+  end
+
   @spec load_worksheets(non_neg_integer()) :: map()
   defp load_worksheets(org_id) do
     @props.worksheets.sheet_links
     |> Enum.each(fn {k, v} -> do_load_code_worksheet(k, v, org_id) end)
 
     %{status: "successfull"}
+  end
+
+  @spec do_load_code_worksheet(String.t(), String.t(), non_neg_integer()) :: :ok
+  defp do_load_code_worksheet(class, sheet_link, org_id) do
+    ApiClient.get_csv_content(url: sheet_link)
+    |> Enum.map(fn {_, row} ->
+      row = Map.put(row, "class", class)
+      row = Map.put(row, "code", row["Worksheet Code"])
+      key = clean_worksheet_code(row["Worksheet Code"] || "")
+      Partners.maybe_insert_organization_data(key, row, org_id)
+    end)
+
+    # We will return a better results
+    :ok
   end
 
   @spec validate_worksheet_code(non_neg_integer(), String.t()) :: boolean()
@@ -78,19 +94,6 @@ defmodule Glific.Clients.KEF do
     end
   end
 
-  @spec do_load_code_worksheet(String.t(), String.t(), non_neg_integer()) :: :ok
-  defp do_load_code_worksheet(class, sheet_link, org_id) do
-    ApiClient.get_csv_content(url: sheet_link)
-    |> Enum.map(fn {_, row} ->
-      row = Map.put(row, "class", class)
-      key = clean_worksheet_code(row["Worksheet Code"] || "")
-      Partners.maybe_insert_organization_data(key, row, org_id)
-    end)
-
-    # We will return a better results
-    :ok
-  end
-
   @spec get_worksheet_info(non_neg_integer(), String.t()) :: map()
   defp get_worksheet_info(org_id, worksheet_code) do
     Repo.fetch_by(OrganizationData, %{
@@ -99,7 +102,7 @@ defmodule Glific.Clients.KEF do
     })
     |> case do
       {:ok, data} ->
-        data
+        data.json
         |> clean_map_keys()
         |> Map.put("worksheet_code", worksheet_code)
         |> Map.put("is_valid", true)
