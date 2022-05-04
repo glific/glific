@@ -53,6 +53,12 @@ defmodule Glific.Clients.KEF do
     }
   end
 
+  def webhook("get_worksheet_info", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_worksheet_info(fields["worksheet_code"])
+  end
+
+  @spec load_worksheets(non_neg_integer()) :: map()
   defp load_worksheets(org_id) do
     @props.worksheets.sheet_links
     |> Enum.each(fn {k, v} -> do_load_code_worksheet(k, v, org_id) end)
@@ -60,12 +66,13 @@ defmodule Glific.Clients.KEF do
     %{status: "successfull"}
   end
 
+  @spec validate_worksheet_code(non_neg_integer(), String.t()) :: boolean()
   defp validate_worksheet_code(org_id, worksheet_code) do
     worksheet_code = Glific.string_clean(worksheet_code)
 
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
-      key: worksheet_code
+      key: "worksheet_code_#{worksheet_code}"
     })
     |> case do
       {:ok, _data} -> true
@@ -73,16 +80,47 @@ defmodule Glific.Clients.KEF do
     end
   end
 
+  @spec do_load_code_worksheet(String.t(), String.t(), non_neg_integer()) :: :ok
   defp do_load_code_worksheet(class, sheet_link, org_id) do
     ApiClient.get_csv_content(url: sheet_link)
-    |> Enum.reduce(%{}, fn {_, row}, acc ->
-      code = Glific.string_clean(row["code"])
+    |> Enum.map(fn {_, row} ->
+      worksheet_code = Glific.string_clean(row["Worksheet Code"])
+      row = Map.put(row, "class", class)
+      key = "worksheet_code_#{worksheet_code}"
+      Partners.maybe_insert_organization_data(key, row, org_id)
+    end)
 
-      crp_id = row["Employee Id"]
-      if crp_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(crp_id), row)
-    end)
-    |> then(fn crp_data ->
-      Partners.maybe_insert_organization_data(@crp_id_key, crp_data, org_id)
-    end)
+    # We will return a better results
+    :ok
+  end
+
+  @spec get_worksheet_info(non_neg_integer(), String.t()) :: map()
+  defp get_worksheet_info(org_id, worksheet_code) do
+    worksheet_code = Glific.string_clean(worksheet_code)
+
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "worksheet_code_#{worksheet_code}"
+    })
+    |> case do
+      {:ok, data} ->
+        data
+        |> clean_map_keys()
+        |> Map.put("worksheet_code", worksheet_code)
+        |> Map.put("is_valid", true)
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Worksheet code not found"
+        }
+    end
+  end
+
+  @spec clean_map_keys(map()) :: map()
+  defp clean_map_keys(data) do
+    data
+    |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
+    |> Enum.into(%{})
   end
 end
