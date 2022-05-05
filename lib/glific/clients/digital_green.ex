@@ -219,20 +219,26 @@ defmodule Glific.Clients.DigitalGreen do
 
   @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
   defp set_geography(type, value, contact_id) do
-    contact = Contacts.get_contact!(contact_id)
-
-    ContactField.do_add_contact_field(contact, type, type, value)
+    updated_contact =
+      Contacts.get_contact!(contact_id)
+      |> ContactField.do_add_contact_field(type, type, value)
 
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
-        organization_id: contact.organization_id,
+        organization_id: updated_contact.organization_id,
         key: "ryss_geography_translations"
       })
 
     translation = find_translation(organization_data.json, type, value)
 
     if translation.found,
-      do: ContactField.do_add_contact_field(contact, type, "#{type}_slug", translation.slug)
+      do:
+        ContactField.do_add_contact_field(
+          updated_contact,
+          "#{type}_slug",
+          "#{type}_slug",
+          translation.slug
+        )
   end
 
   @spec get_geographies_data(non_neg_integer(), map()) :: map()
