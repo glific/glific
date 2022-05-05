@@ -177,7 +177,8 @@ defmodule Glific.Clients.KEF do
     completed_worksheet_codes =
       get_in(contact_fields, ["completed_worksheet_code", "value"]) || ""
 
-    (completed_worksheet_codes.split(",") || [])
+    completed_worksheet_codes
+    |> String.split(",", trim: true)
     |> Enum.uniq()
   end
 
