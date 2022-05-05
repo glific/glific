@@ -130,11 +130,11 @@ defmodule Glific.Clients.KEF do
       worksheet: %{
         completed: length(uniq_completed_worksheets),
         remaining: 36 - length(uniq_completed_worksheets),
-        list: List.to_string(uniq_completed_worksheets)
+        list: Enum.join(uniq_completed_worksheets, ",")
       },
       helping_hand: %{
         completed: length(uniq_completed_helping_hands),
-        list: List.to_string(uniq_completed_helping_hands),
+        list: Enum.join(uniq_completed_helping_hands, ","),
         total: 3
       }
     }
