@@ -8,6 +8,8 @@ defmodule Glific.Clients.KEF do
   require Logger
 
   alias Glific.{
+    Contacts,
+    Flows.ContactField,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -54,6 +56,57 @@ defmodule Glific.Clients.KEF do
   def webhook("get_worksheet_info", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_worksheet_info(fields["worksheet_code"])
+  end
+
+  def webhook("validate_reflection_response", fields) do
+    userInput = Glific.string_clean(fields["user_answer"])
+    correctAnswer = Glific.string_clean(fields["correct_answer"])
+
+    %{
+      is_correct: userInput == correctAnswer
+    }
+  end
+
+  def webhook("mark_worksheet_completed", fields) do
+    worksheet_code = fields["worksheet_code"]
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    completed_worksheet_codes =
+      get_in(fields, ["contact", "fields", "completed_worksheet_code", "value"]) || ""
+
+    completed_worksheet_codes =
+      if completed_worksheet_codes == "",
+        do: worksheet_code,
+        else: "#{completed_worksheet_codes}, #{worksheet_code}"
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(
+      "completed_worksheet_code",
+      "completed_worksheet_code",
+      completed_worksheet_codes
+    )
+
+    %{
+      error: false,
+      message: "Worksheet #{worksheet_code} marked as completed"
+    }
+  end
+
+  def webhook("get_reports_info", fields) do
+    uniq_completed_worksheets =
+      get_in(fields, ["contact", "fields"])
+      |> get_completed_worksheets()
+
+    %{
+      worksheet: %{
+        completed: length(uniq_completed_worksheets),
+        remaining: 36 - length(uniq_completed_worksheets)
+      },
+      helping_hand: %{
+        completed: 10,
+        total: 20
+      }
+    }
   end
 
   def webhook(_, _) do
@@ -103,6 +156,7 @@ defmodule Glific.Clients.KEF do
         |> clean_map_keys()
         |> Map.put("worksheet_code", worksheet_code)
         |> Map.put("is_valid", true)
+        |> Map.put("worksheet_code_label", worksheet_code)
 
       _ ->
         %{
@@ -117,6 +171,14 @@ defmodule Glific.Clients.KEF do
     data
     |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
     |> Enum.into(%{})
+  end
+
+  defp get_completed_worksheets(contact_fields) do
+    completed_worksheet_codes =
+      get_in(contact_fields, ["completed_worksheet_code", "value"]) || ""
+
+    (completed_worksheet_codes.split(",") || [])
+    |> Enum.uniq()
   end
 
   @spec clean_worksheet_code(String.t()) :: String.t()
