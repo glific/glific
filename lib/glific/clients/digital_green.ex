@@ -94,32 +94,32 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("get_district_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     region_name = fields["region"]
-    langauge = get_language(fields["contact"]["id"])
+    language = get_language(fields["contact"]["id"])
 
-    get_geographies_data(org_id, @geographies[langauge.locale])
+    get_geographies_data(org_id, @geographies[language.locale])
     |> get_in([region_name])
     |> geographies_list_results()
   end
 
   def webhook("get_division_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    langauge = get_language(fields["contact"]["id"])
+    language = get_language(fields["contact"]["id"])
     region_name = fields["region"]
     district_name = fields["district"]
 
-    get_geographies_data(org_id, @geographies[langauge.locale])
+    get_geographies_data(org_id, @geographies[language.locale])
     |> get_in([region_name, district_name])
     |> geographies_list_results()
   end
 
   def webhook("get_mandal_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    langauge = get_language(fields["contact"]["id"])
+    language = get_language(fields["contact"]["id"])
     region_name = fields["region"]
     district_name = fields["district"]
     division_name = fields["division"]
 
-    get_geographies_data(org_id, @geographies[langauge.locale])
+    get_geographies_data(org_id, @geographies[language.locale])
     |> get_in([region_name, district_name, division_name, "mandals"])
     |> geographies_list_results()
   end
