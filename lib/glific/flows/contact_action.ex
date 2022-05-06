@@ -450,11 +450,19 @@ defmodule Glific.Flows.ContactAction do
   end
 
   @spec process_dynamic_interactive_content(map(), list()) :: map()
-  defp process_dynamic_interactive_content(interactive_content, params) do
+  defp process_dynamic_interactive_content(%{"type" => "list"} = interactive_content, params) do
     get_in(interactive_content, ["items"])
     |> hd()
     |> Map.put("options", build_list_items(params))
     |> then(&Map.put(interactive_content, "items", [&1]))
+  end
+
+  @spec process_dynamic_interactive_content(map(), list()) :: map()
+  defp process_dynamic_interactive_content(
+         %{"type" => "quick_reply"} = interactive_content,
+         params
+       ) do
+    Map.put(interactive_content, "options", build_list_items(params))
   end
 
   @spec build_list_items(list()) :: list()
