@@ -228,7 +228,7 @@ defmodule Glific.Flows.Webhook do
   rescue
     error ->
       error_message =
-        "Calling webhook function threw an exception, args: #{inspect(function)}, object: #{inspect(body)}, error: #{inspect(error)}"
+        "Calling webhook function threw an exception, error: #{inspect(error)} , args: #{inspect(function)}, object: #{inspect(body)},"
 
       Logger.error(error_message)
       Appsignal.send_error(:error, error_message, __STACKTRACE__)

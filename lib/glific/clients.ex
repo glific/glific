@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.DigitalGreen,
+    webhook: Glific.Clients.KEF,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -114,6 +114,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.Bandhu
   }
 
+  @kef %{
+    id: 70,
+    name: "Key Education Foundation",
+    webhook: Glific.Clients.KEF
+  }
+
   ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
@@ -128,7 +134,8 @@ defmodule Glific.Clients do
     @nayi_disha[:id] => @nayi_disha,
     @arogyaworld[:id] => @arogyaworld,
     @bandhu[:id] => @bandhu,
-    @digitalgreen_ryss[:id] => @digitalgreen_ryss
+    @digitalgreen_ryss[:id] => @digitalgreen_ryss,
+    @kef[:id] => @kef
   }
 
   @spec env(atom() | nil) :: atom()
