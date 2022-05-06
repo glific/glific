@@ -425,7 +425,7 @@ defmodule Glific.Flows.ContactAction do
     context
   end
 
-  @spec get_interative_template_id(Action.t(), FlowContext.t()) :: FlowContext.t()
+  @spec get_interative_template_id(Action.t(), FlowContext.t()) :: integer | nil
   defp get_interative_template_id(action, context) do
     if is_nil(action.interactive_template_expression) do
       action.interactive_template_id
@@ -457,13 +457,15 @@ defmodule Glific.Flows.ContactAction do
     |> then(&Map.put(interactive_content, "items", [&1]))
   end
 
-  @spec process_dynamic_interactive_content(map(), list()) :: map()
   defp process_dynamic_interactive_content(
          %{"type" => "quick_reply"} = interactive_content,
          params
        ) do
     Map.put(interactive_content, "options", build_list_items(params))
   end
+
+  defp process_dynamic_interactive_content(interactive_content, _params),
+    do: interactive_content
 
   @spec build_list_items(list()) :: list()
   defp build_list_items(params) do
