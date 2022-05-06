@@ -8,6 +8,8 @@ defmodule Glific.Clients.KEF do
   require Logger
 
   alias Glific.{
+    Contacts,
+    Flows.ContactField,
     Partners,
     Partners.OrganizationData,
     Repo,
@@ -54,6 +56,88 @@ defmodule Glific.Clients.KEF do
   def webhook("get_worksheet_info", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_worksheet_info(fields["worksheet_code"])
+  end
+
+  def webhook("validate_reflection_response", fields) do
+    user_input = Glific.string_clean(fields["user_answer"])
+    correct_answer = Glific.string_clean(fields["correct_answer"])
+
+   %{
+      is_correct: user_input == correct_answer
+    }
+  end
+
+  def webhook("mark_worksheet_completed", fields) do
+    worksheet_code = String.trim(fields["worksheet_code"] || "")
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    completed_worksheet_codes =
+      get_in(fields, ["contact", "fields", "completed_worksheet_code", "value"]) || ""
+
+    completed_worksheet_codes =
+      if completed_worksheet_codes == "",
+        do: worksheet_code,
+        else: "#{completed_worksheet_codes}, #{worksheet_code}"
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(
+      "completed_worksheet_code",
+      "completed_worksheet_code",
+      completed_worksheet_codes
+    )
+
+    %{
+      error: false,
+      message: "Worksheet #{worksheet_code} marked as completed"
+    }
+  end
+
+  def webhook("mark_helping_hand_complete", fields) do
+    helping_hand_topic = String.trim(fields["helping_hand_topic"] || "")
+    contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
+
+    completed_helping_hand_topics =
+      get_in(fields, ["contact", "fields", "completed_helping_hand_topic", "value"]) || ""
+
+    completed_helping_hand_topics =
+      if completed_helping_hand_topics == "",
+        do: helping_hand_topic,
+        else: "#{completed_helping_hand_topics}, #{helping_hand_topic}"
+
+    Contacts.get_contact!(contact_id)
+    |> ContactField.do_add_contact_field(
+      "completed_helping_hand_topic",
+      "completed_helping_hand_topic",
+      completed_helping_hand_topics
+    )
+
+    %{
+      error: false,
+      message: "Helping hand #{helping_hand_topic} marked as completed"
+    }
+  end
+
+  def webhook("get_reports_info", fields) do
+    uniq_completed_worksheets =
+      get_in(fields, ["contact", "fields"])
+      |> get_completed_worksheets()
+
+    uniq_completed_helping_hands =
+      get_in(fields, ["contact", "fields"])
+      |> get_completed_helping_hands()
+
+    %{
+      worksheet: %{
+        completed: length(uniq_completed_worksheets),
+        remaining: 36 - length(uniq_completed_worksheets),
+        list: Enum.join(uniq_completed_worksheets, ",")
+      },
+      helping_hand: %{
+        completed: length(uniq_completed_helping_hands),
+        list: Enum.join(uniq_completed_helping_hands, ","),
+        total: 3
+      }
+    }
   end
 
   def webhook(_, _) do
@@ -103,6 +187,7 @@ defmodule Glific.Clients.KEF do
         |> clean_map_keys()
         |> Map.put("worksheet_code", worksheet_code)
         |> Map.put("is_valid", true)
+        |> Map.put("worksheet_code_label", worksheet_code)
 
       _ ->
         %{
@@ -117,6 +202,26 @@ defmodule Glific.Clients.KEF do
     data
     |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
     |> Enum.into(%{})
+  end
+
+  @spec get_completed_worksheets(map()) :: list()
+  defp get_completed_worksheets(contact_fields) do
+    completed_worksheet_codes =
+      get_in(contact_fields, ["completed_worksheet_code", "value"]) || ""
+
+    completed_worksheet_codes
+    |> String.split(",", trim: true)
+    |> Enum.uniq_by(&String.trim(&1))
+  end
+
+  @spec get_completed_helping_hands(map()) :: list()
+  defp get_completed_helping_hands(contact_fields) do
+    completed_helping_hands =
+      get_in(contact_fields, ["completed_helping_hand_topic", "value"]) || ""
+
+    completed_helping_hands
+    |> String.split(",", trim: true)
+    |> Enum.uniq_by(&String.trim(&1))
   end
 
   @spec clean_worksheet_code(String.t()) :: String.t()
