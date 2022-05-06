@@ -53,11 +53,12 @@ defmodule Glific.Flows.ContactAction do
     ## We might need to think how to send the interactive message to a group
     {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, nil)
+    interactive_template_id = get_interative_template_id(action, context)
 
     {:ok, interactive_template} =
       Repo.fetch_by(
         InteractiveTemplate,
-        %{id: action.interactive_template_id, organization_id: context.organization_id}
+        %{id: interactive_template_id, organization_id: context.organization_id}
       )
 
     {interactive_content, body, media_id} =
@@ -95,7 +96,7 @@ defmodule Glific.Flows.ContactAction do
         flow_broadcast_id: context.flow_broadcast_id,
         send_at: DateTime.add(DateTime.utc_now(), context.delay),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
-        interactive_template_id: action.interactive_template_id,
+        interactive_template_id: interactive_template_id,
         interactive_content: interactive_content,
         media_id: media_id
       }
@@ -422,6 +423,18 @@ defmodule Glific.Flows.ContactAction do
     )
 
     context
+  end
+
+  @spec get_interative_template_id(Action.t(), FlowContext.t()) :: FlowContext.t()
+  defp get_interative_template_id(action, context) do
+    if is_nil(action.interactive_template_expression) do
+      action.interactive_template_id
+    else
+      FlowContext.parse_context_string(context, action.interactive_template_expression)
+      |> Glific.execute_eex()
+      # We will only allow id to be dynamic for now.
+      |> Glific.parse_maybe_integer!()
+    end
   end
 
   @spec get_params_count(String.t(), map()) :: integer
