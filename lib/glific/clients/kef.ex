@@ -59,11 +59,11 @@ defmodule Glific.Clients.KEF do
   end
 
   def webhook("validate_reflection_response", fields) do
-    userInput = Glific.string_clean(fields["user_answer"])
-    correctAnswer = Glific.string_clean(fields["correct_answer"])
+    user_input = Glific.string_clean(fields["user_answer"])
+    correct_answer = Glific.string_clean(fields["correct_answer"])
 
-    %{
-      is_correct: userInput == correctAnswer
+   %{
+      is_correct: user_input == correct_answer
     }
   end
 
