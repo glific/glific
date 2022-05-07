@@ -163,7 +163,7 @@ defmodule Glific.Clients.KEF do
     }
   end
 
-  def webhook(name, _) do
+  def webhook(_, _) do
     raise "Unknown webhook"
   end
 
@@ -246,7 +246,7 @@ defmodule Glific.Clients.KEF do
             correct_response: worksheet_code_info["reflectionquestionanswerhindi"]
           }
 
-        "Telugu" ->
+        "Kannada" ->
           %{
             valid_answers: worksheet_code_info["reflectionquestionvalidresponseskan"],
             correct_response: worksheet_code_info["reflectionquestionanswerkan"]
