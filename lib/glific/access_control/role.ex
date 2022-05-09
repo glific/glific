@@ -2,7 +2,10 @@ defmodule Glific.AccessControl.Role do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.Partners.Organization
+  alias Glific.{
+    AccessControl.Permission,
+    Partners.Organization
+  }
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -21,6 +24,7 @@ defmodule Glific.AccessControl.Role do
     field :label, :string
 
     belongs_to :organization, Organization
+    many_to_many :permissions, Permission, join_through: "role_permissions", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

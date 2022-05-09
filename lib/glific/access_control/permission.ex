@@ -1,5 +1,7 @@
 defmodule Glific.AccessControl.Permission do
   use Ecto.Schema
+
+  alias Glific.AccessControl.Role
   import Ecto.Changeset
 
   @type t() :: %__MODULE__{
@@ -11,11 +13,14 @@ defmodule Glific.AccessControl.Permission do
         }
   schema "permissions" do
     field :entity, :string
-
+    many_to_many :roles, Role, join_through: "role_permissions", on_replace: :delete
     timestamps()
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
+  @spec changeset(Permission.t(), map()) :: Ecto.Changeset.t()
   def changeset(permission, attrs) do
     permission
     |> cast(attrs, [:entity])
