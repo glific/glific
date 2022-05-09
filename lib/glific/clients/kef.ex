@@ -190,7 +190,6 @@ defmodule Glific.Clients.KEF do
     }
   end
 
-  @spec webhook(String.t(), map()) :: map()
   def webhook("get_school_id_info", fields) do
     school_id = Glific.string_clean(fields["school_id"] || "")
     Glific.parse_maybe_integer!(fields["organization_id"])
