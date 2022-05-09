@@ -9,6 +9,7 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.ContactField,
     Partners,
     Partners.OrganizationData,
@@ -93,32 +94,32 @@ defmodule Glific.Clients.DigitalGreen do
   def webhook("get_district_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     region_name = fields["region"]
-    langauge = get_language(fields["contact"]["id"])
+    language = get_language(fields["contact"]["id"])
 
-    get_geographies_data(org_id, @geographies[langauge.locale])
+    get_geographies_data(org_id, @geographies[language.locale])
     |> get_in([region_name])
     |> geographies_list_results()
   end
 
   def webhook("get_division_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    langauge = get_language(fields["contact"]["id"])
+    language = get_language(fields["contact"]["id"])
     region_name = fields["region"]
     district_name = fields["district"]
 
-    get_geographies_data(org_id, @geographies[langauge.locale])
+    get_geographies_data(org_id, @geographies[language.locale])
     |> get_in([region_name, district_name])
     |> geographies_list_results()
   end
 
   def webhook("get_mandal_list", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
-    langauge = get_language(fields["contact"]["id"])
+    language = get_language(fields["contact"]["id"])
     region_name = fields["region"]
     district_name = fields["district"]
     division_name = fields["division"]
 
-    get_geographies_data(org_id, @geographies[langauge.locale])
+    get_geographies_data(org_id, @geographies[language.locale])
     |> get_in([region_name, district_name, division_name, "mandals"])
     |> geographies_list_results()
   end
@@ -149,13 +150,95 @@ defmodule Glific.Clients.DigitalGreen do
     end
   end
 
+  def webhook("push_crop_message", fields) do
+    crop_age = fields["crop_age"]
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: fields["organization_id"],
+        key: fields["crop"]
+      })
+
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
+
+    if template_uuid,
+      do: %{
+        is_valid: true,
+        template_uuid: template_uuid,
+        crop_stage: crop_stage,
+        variables: Jason.encode!(variables)
+      },
+      else: %{is_valid: false}
+  end
+
+  def webhook("set_reminders", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact"]["id"])
+
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             organization_id: fields["organization_id"],
+             id: contact_id
+           }) do
+      set_contact_reminder(contact.last_message_at)
+    end
+  end
+
   def webhook(_, _fields),
     do: %{}
 
+  @spec find_translation(map(), String.t(), String.t()) :: map()
+  defp find_translation(translations, type, value) do
+    geographies = get_in(translations, [type])
+
+    Enum.reduce(geographies, %{found: false}, fn geography, acc ->
+      if geography["telugu"] == value || geography["english"] == value,
+        do: Map.merge(acc, %{found: true, slug: geography["english"]}),
+        else: acc
+    end)
+  end
+
+  @spec set_contact_reminder(DateTime.t() | nil) :: map()
+  defp set_contact_reminder(nil), do: %{is_inactive: false, send_reminder: false}
+
+  defp set_contact_reminder(last_message_at) do
+    days_since_last_message = Timex.diff(Timex.today(), last_message_at, :days)
+    is_inactive = if days_since_last_message >= 7, do: true, else: false
+
+    send_reminder =
+      if days_since_last_message != 0 and rem(days_since_last_message, 7) == 0,
+        do: true,
+        else: false
+
+    %{
+      is_inactive: is_inactive,
+      send_reminder: send_reminder
+    }
+  end
+
   @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
   defp set_geography(type, value, contact_id) do
-    Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field(type, type, value)
+    updated_contact =
+      Contacts.get_contact!(contact_id)
+      |> ContactField.do_add_contact_field(type, type, value)
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: updated_contact.organization_id,
+        key: "ryss_geography_translations"
+      })
+
+    translation = find_translation(organization_data.json, type, value)
+
+    if translation.found,
+      do:
+        ContactField.do_add_contact_field(
+          updated_contact,
+          "#{type}_slug",
+          "#{type}_slug",
+          translation.slug
+        )
   end
 
   @spec get_geographies_data(non_neg_integer(), map()) :: map()
@@ -256,7 +339,7 @@ defmodule Glific.Clients.DigitalGreen do
       })
 
     %{
-      is_vaid: Map.has_key?(org_data.json, crp_id)
+      is_valid: Map.has_key?(org_data.json, crp_id)
     }
   end
 
@@ -311,5 +394,18 @@ defmodule Glific.Clients.DigitalGreen do
       |> Repo.preload([:language])
 
     contact.language
+  end
+
+  @doc """
+    get template for IEX
+  """
+  @spec send_template(String.t(), list()) :: binary
+  def send_template(uuid, variables) do
+    %{
+      uuid: uuid,
+      variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
   end
 end
