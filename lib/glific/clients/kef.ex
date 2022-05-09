@@ -219,7 +219,7 @@ defmodule Glific.Clients.KEF do
     end)
   end
 
-  @spec load_school_ids(non_neg_integer()) :: map()
+  @spec load_school_ids(non_neg_integer()) :: :ok
   defp load_school_ids(org_id) do
     ApiClient.get_csv_content(url: @props.school_ids_sheet_link)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
@@ -229,6 +229,8 @@ defmodule Glific.Clients.KEF do
     |> then(fn school_ids_data ->
       Partners.maybe_insert_organization_data("school_ids_data", school_ids_data, org_id)
     end)
+
+    :ok
   end
 
   @spec validate_worksheet_code(non_neg_integer(), String.t()) :: boolean()
