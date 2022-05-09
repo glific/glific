@@ -47,7 +47,7 @@ defmodule Glific.Flows.Action do
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
-  @required_fields_interactive_template [:name, :id | @required_field_common]
+  @required_fields_interactive_template [:name | @required_field_common]
 
   @wait_for ["wait_for_time", "wait_for_result"]
 
@@ -77,6 +77,7 @@ defmodule Glific.Flows.Action do
           templating: Templating.t() | nil,
           wait_time: integer() | nil,
           interactive_template_id: integer() | nil,
+          interactive_template_expression: String.t() | nil,
           params_count: String.t() | nil,
           params: list() | nil
         }
@@ -122,6 +123,7 @@ defmodule Glific.Flows.Action do
 
     field :params, {:array, :string}, default: []
     field(:params_count, :string)
+    field(:interactive_template_expression, :string)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -234,7 +236,8 @@ defmodule Glific.Flows.Action do
       interactive_template_id: json["id"],
       labels: json["labels"],
       params: json["params"] || [],
-      params_count: json["paramsCount"] || "0"
+      params_count: json["paramsCount"] || "0",
+      interactive_template_expression: json["expression"] || nil
     })
   end
 
