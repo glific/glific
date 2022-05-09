@@ -28,8 +28,29 @@ defmodule Glific.Clients.KEF do
         ukg:
           "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1715409890&single=true&output=csv"
       }
-    }
+    },
+    school_ids_sheet_link:
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1503063199&single=true&output=csv"
   }
+
+  @doc """
+  Generate custom GCS bucket name based on group that the contact is in (if any)
+  """
+  @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(media) do
+    {:ok, contact} =
+      Repo.fetch_by(Contacts.Contact, %{
+        id: media["contact_id"],
+        organization_id: media["organization_id"]
+      })
+
+    school_id = get_in(contact.fields, ["school_id", "value"])
+    phone = contact.phone
+
+    if is_nil(school_id),
+      do: media["remote_name"],
+      else: "schools/#{school_id}/#{phone}" <> "/" <> media["remote_name"]
+  end
 
   @doc """
   Create a webhook with different signatures, so we can easily implement
@@ -39,6 +60,13 @@ defmodule Glific.Clients.KEF do
   def webhook("load_worksheets", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> load_worksheets()
+
+    fields
+  end
+
+  def webhook("load_school_ids", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_school_ids()
 
     fields
   end
@@ -56,15 +84,38 @@ defmodule Glific.Clients.KEF do
   def webhook("get_worksheet_info", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_worksheet_info(fields["worksheet_code"])
+    |> interactive_message_reflection_question(fields["language_label"])
+  end
+
+  def webhook("get_interactive_message_reflection_question", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_worksheet_info(fields["worksheet_code"])
+    |> interactive_message_reflection_question(fields["language_label"])
   end
 
   def webhook("validate_reflection_response", fields) do
     user_input = Glific.string_clean(fields["user_answer"])
     correct_answer = Glific.string_clean(fields["correct_answer"])
 
-   %{
-      is_correct: user_input == correct_answer
-    }
+    in_valid_answer_range =
+      fields["valid_answers"]
+      |> String.split("|", trim: true)
+      |> Enum.map(&Glific.string_clean(&1))
+      |> Enum.member?(user_input)
+
+    cond do
+      user_input == correct_answer ->
+        %{status: "correct_response"}
+
+      correct_answer == "allanswers" && in_valid_answer_range ->
+        %{status: "correct_response"}
+
+      in_valid_answer_range ->
+        %{status: "incorrect_response"}
+
+      true ->
+        %{status: "out_of_range"}
+    end
   end
 
   def webhook("mark_worksheet_completed", fields) do
@@ -140,6 +191,13 @@ defmodule Glific.Clients.KEF do
     }
   end
 
+  def webhook("get_school_id_info", fields) do
+    school_id = Glific.string_clean(fields["school_id"] || "")
+
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_school_id_info(school_id)
+  end
+
   def webhook(_, _) do
     raise "Unknown webhook"
   end
@@ -161,6 +219,23 @@ defmodule Glific.Clients.KEF do
       key = clean_worksheet_code(row["Worksheet Code"] || "")
       Partners.maybe_insert_organization_data(key, row, org_id)
     end)
+  end
+
+  @spec load_school_ids(non_neg_integer()) :: :ok
+  defp load_school_ids(org_id) do
+    ApiClient.get_csv_content(url: @props.school_ids_sheet_link)
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      school_id = row["School ID"]
+
+      if school_id in [nil, ""],
+        do: acc,
+        else: Map.put(acc, Glific.string_clean(school_id), clean_map_keys(row))
+    end)
+    |> then(fn school_ids_data ->
+      Partners.maybe_insert_organization_data("school_ids_data", school_ids_data, org_id)
+    end)
+
+    :ok
   end
 
   @spec validate_worksheet_code(non_neg_integer(), String.t()) :: boolean()
@@ -195,6 +270,87 @@ defmodule Glific.Clients.KEF do
           message: "Worksheet code not found"
         }
     end
+  end
+
+  @spec get_school_id_info(non_neg_integer(), String.t()) :: map()
+  defp get_school_id_info(org_id, school_id) do
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "school_ids_data"
+    })
+    |> case do
+      {:ok, data} ->
+        {key, value} =
+          data.json
+          |> Enum.find(fn {k, _v} ->
+            k
+            |> Glific.string_clean()
+            |> String.ends_with?(school_id)
+          end) || {nil, nil}
+
+        %{
+          is_valid: key != nil,
+          info: value
+        }
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Worksheet code not found"
+        }
+    end
+  end
+
+  @spec interactive_message_reflection_question(map(), String.t()) :: map()
+  defp interactive_message_reflection_question(worksheet_code_info, langauge_label) do
+    get_reflection_question_answer_count(worksheet_code_info, langauge_label)
+    |> Map.merge(%{
+      worksheet_code: worksheet_code_info["code"],
+      langauge_label: langauge_label
+    })
+    |> Map.merge(worksheet_code_info)
+  end
+
+  @spec get_reflection_question_answer_count(map(), String.t()) :: map()
+  defp get_reflection_question_answer_count(worksheet_code_info, langauge_label) do
+    refelction_answers =
+      case langauge_label do
+        "English" ->
+          %{
+            valid_answers: worksheet_code_info["reflectionquestionvalidresponses"],
+            correct_response: worksheet_code_info["reflectionquestionanswer"]
+          }
+
+        "Hindi" ->
+          %{
+            valid_answers: worksheet_code_info["reflectionquestionvalidresponseshindi"],
+            correct_response: worksheet_code_info["reflectionquestionanswerhindi"]
+          }
+
+        "Kannada" ->
+          %{
+            valid_answers: worksheet_code_info["reflectionquestionvalidresponseskan"],
+            correct_response: worksheet_code_info["reflectionquestionanswerkan"]
+          }
+
+        _ ->
+          %{}
+      end
+
+    buttons =
+      refelction_answers.valid_answers
+      |> String.split("|")
+      |> Enum.with_index()
+      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", answer} end)
+      |> Enum.into(%{})
+
+    Map.merge(
+      refelction_answers,
+      %{
+        buttons: buttons,
+        button_count: length(Map.keys(buttons))
+      }
+    )
   end
 
   @spec clean_map_keys(map()) :: map()
