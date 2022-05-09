@@ -26,9 +26,10 @@ defmodule Glific.Clients.KEF do
         lkg:
           "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=531803735&single=true&output=csv",
         ukg:
-          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1715409890&single=true&output=csv"
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1715409890&single=true&output=csv",
       }
-    }
+    },
+    school_ids_sheet_link: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1503063199&single=true&output=csv"
   }
 
   @doc """
@@ -140,6 +141,13 @@ defmodule Glific.Clients.KEF do
     }
   end
 
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("get_school_id_info", fields) do
+    school_id = Glific.string_clean(fields["school_id"] || "")
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_school_id_info(school_id)
+  end
+
   def webhook(_, _) do
     raise "Unknown webhook"
   end
@@ -160,6 +168,18 @@ defmodule Glific.Clients.KEF do
       row = Map.put(row, "code", row["Worksheet Code"])
       key = clean_worksheet_code(row["Worksheet Code"] || "")
       Partners.maybe_insert_organization_data(key, row, org_id)
+    end)
+  end
+
+  @spec load_schoolIds(non_neg_integer()) :: map()
+  def load_schoolIds(org_id) do
+    ApiClient.get_csv_content(url: @props.school_ids_sheet_link)
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      school_id = row["School ID"]
+      if school_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(school_id), row)
+    end)
+    |> then(fn school_ids_data ->
+      Partners.maybe_insert_organization_data("school_ids_data", school_ids_data, org_id)
     end)
   end
 
@@ -188,6 +208,27 @@ defmodule Glific.Clients.KEF do
         |> Map.put("worksheet_code", worksheet_code)
         |> Map.put("is_valid", true)
         |> Map.put("worksheet_code_label", worksheet_code)
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Worksheet code not found"
+        }
+    end
+  end
+
+  @spec get_school_id_info(non_neg_integer(), String.t()) :: map()
+  defp get_school_id_info(org_id, school_id) do
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "school_ids_data"
+    })
+    |> case do
+      {:ok, data} ->
+        %{
+          is_valid: Map.has_key?(data.json, school_id),
+          info: data.json[school_id]
+        }
 
       _ ->
         %{
