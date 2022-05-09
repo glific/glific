@@ -20,6 +20,7 @@ defmodule Glific.AccessControl do
       [%Role{}, ...]
 
   """
+  @spec list_roles(map()) :: [Role.t()]
   def list_roles(args), do: Repo.list_filter(args, Role, &Repo.opts_with_label/2, &filter_with/2)
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
@@ -28,10 +29,10 @@ defmodule Glific.AccessControl do
 
     Enum.reduce(filter, query, fn
       {:description, description}, query ->
-        from q in query, where: ilike(q.description, ^"%#{description}%")
+        from(q in query, where: ilike(q.description, ^"%#{description}%"))
 
       {:is_reserved, is_reserved}, query ->
-        from q in query, where: q.is_reserved == ^is_reserved
+        from(q in query, where: q.is_reserved == ^is_reserved)
 
       _, query ->
         query
@@ -58,6 +59,7 @@ defmodule Glific.AccessControl do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_role!(integer) :: Role.t()
   def get_role!(id), do: Repo.get!(Role, id)
 
   @doc """
@@ -72,6 +74,7 @@ defmodule Glific.AccessControl do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_role(map()) :: {:ok, Role.t()} | {:error, Ecto.Changeset.t()}
   def create_role(attrs \\ %{}) do
     %Role{}
     |> Role.changeset(attrs)
@@ -90,6 +93,7 @@ defmodule Glific.AccessControl do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_role(Role.t(), map()) :: {:ok, Role.t()} | {:error, Ecto.Changeset.t()}
   def update_role(%Role{} = role, attrs) do
     role
     |> Role.changeset(attrs)
@@ -108,6 +112,7 @@ defmodule Glific.AccessControl do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_role(Role.t()) :: {:ok, Role.t()} | {:error, Ecto.Changeset.t()}
   def delete_role(%Role{} = role) do
     Repo.delete(role)
   end
@@ -121,6 +126,7 @@ defmodule Glific.AccessControl do
       %Ecto.Changeset{data: %Role{}}
 
   """
+  @spec change_role(Role.t()) :: Ecto.Changeset.t()
   def change_role(%Role{} = role, attrs \\ %{}) do
     Role.changeset(role, attrs)
   end
@@ -134,6 +140,7 @@ defmodule Glific.AccessControl do
       [%Permission{}, ...]
 
   """
+  @spec list_permissions :: [Permission.t()]
   def list_permissions do
     Repo.all(Permission)
   end
@@ -152,6 +159,7 @@ defmodule Glific.AccessControl do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_permission!(integer) :: Permission.t()
   def get_permission!(id), do: Repo.get!(Permission, id)
 
   @doc """
@@ -166,6 +174,7 @@ defmodule Glific.AccessControl do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_permission(map()) :: {:ok, Permission.t()} | {:error, Ecto.Changeset.t()}
   def create_permission(attrs \\ %{}) do
     %Permission{}
     |> Permission.changeset(attrs)
@@ -184,6 +193,8 @@ defmodule Glific.AccessControl do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_permission(Permission.t(), map()) ::
+          {:ok, Permission.t()} | {:error, Ecto.Changeset.t()}
   def update_permission(%Permission{} = permission, attrs) do
     permission
     |> Permission.changeset(attrs)
@@ -202,11 +213,13 @@ defmodule Glific.AccessControl do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_permission(Permission.t()) :: {:ok, Permission.t()} | {:error, Ecto.Changeset.t()}
   def delete_permission(%Permission{} = permission) do
     Repo.delete(permission)
   end
 
   @doc """
+
   Returns an `%Ecto.Changeset{}` for tracking permission changes.
 
   ## Examples
@@ -215,6 +228,7 @@ defmodule Glific.AccessControl do
       %Ecto.Changeset{data: %Permission{}}
 
   """
+  @spec change_permission(Permission.t()) :: Ecto.Changeset.t()
   def change_permission(%Permission{} = permission, attrs \\ %{}) do
     Permission.changeset(permission, attrs)
   end

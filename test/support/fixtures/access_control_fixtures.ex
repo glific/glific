@@ -4,9 +4,15 @@ defmodule Glific.AccessControlFixtures do
   entities via the `Glific.AccessControl` context.
   """
 
+  alias Glific.{
+    AccessControl.Permission,
+    AccessControl.Role
+  }
+
   @doc """
   Generate a role.
   """
+  @spec role_fixture(map()) :: Role.t()
   def role_fixture(attrs \\ %{}) do
     {:ok, role} =
       attrs
@@ -23,6 +29,7 @@ defmodule Glific.AccessControlFixtures do
   @doc """
   Generate a permission.
   """
+  @spec permission_fixture(map()) :: Permission.t()
   def permission_fixture(attrs \\ %{}) do
     {:ok, permission} =
       attrs

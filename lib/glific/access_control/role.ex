@@ -34,7 +34,9 @@ defmodule Glific.AccessControl.Role do
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
+  @doc """
+  Standard changeset pattern we use for all data types
+  """
   @spec changeset(Role.t(), map()) :: Ecto.Changeset.t()
   def changeset(role, attrs) do
     role

@@ -65,20 +65,20 @@ defmodule GlificWeb.Schema.RoleTypes do
   end
 
   object :access_role_mutations do
-    field :create_role, :access_role_result do
+    field :create_access_role, :access_role_result do
       arg(:input, non_null(:access_role_input))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Roles.create_role/3)
     end
 
-    field :update_role, :access_role_result do
+    field :update_access_role, :access_role_result do
       arg(:id, non_null(:id))
       arg(:input, :access_role_input)
       middleware(Authorize, :manager)
       resolve(&Resolvers.Roles.update_role/3)
     end
 
-    field :delete_role, :access_role_result do
+    field :delete_access_role, :access_role_result do
       arg(:id, non_null(:id))
       middleware(Authorize, :manager)
       resolve(&Resolvers.Roles.delete_role/3)
