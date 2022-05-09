@@ -1,6 +1,11 @@
 defmodule Glific.AccessControl.Role do
+  @moduledoc """
+  The minimal wrapper for the base Access Control Role structure
+  """
   use Ecto.Schema
   import Ecto.Changeset
+
+  alias __MODULE__
 
   alias Glific.{
     AccessControl.Permission,

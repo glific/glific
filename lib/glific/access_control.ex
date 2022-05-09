@@ -6,8 +6,8 @@ defmodule Glific.AccessControl do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    AccessControl.Role,
     AccessControl.Permission,
+    AccessControl.Role,
     Repo
   }
 
