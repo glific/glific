@@ -202,7 +202,7 @@ defmodule Glific.Clients.KEF do
     ApiClient.get_csv_content(url: @props.school_ids_sheet_link)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       school_id = row["School ID"]
-      if school_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(school_id), row)
+      if school_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(school_id), clean_map_keys(row))
     end)
     |> then(fn school_ids_data ->
       Partners.maybe_insert_organization_data("school_ids_data", school_ids_data, org_id)
