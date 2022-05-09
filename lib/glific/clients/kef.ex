@@ -33,6 +33,26 @@ defmodule Glific.Clients.KEF do
   }
 
   @doc """
+  Generate custom GCS bucket name based on group that the contact is in (if any)
+  """
+  @spec gcs_file_name(map()) :: String.t()
+  def gcs_file_name(media) do
+    {:ok, contact} =
+      Repo.fetch_by(Contacts.Contact, %{
+        id: media["contact_id"],
+        organization_id: media["organization_id"]
+      })
+
+    school_id = get_in(contact.fields, ["school_id", "value"])
+    phone = contact.phone
+
+    if is_nil(school_id),
+    do: media["remote_name"],
+    else: "schools/#{school_id}/#{phone}" <> "/" <> media["remote_name"]
+  end
+
+
+  @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
   """
