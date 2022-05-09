@@ -26,10 +26,11 @@ defmodule Glific.Clients.KEF do
         lkg:
           "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=531803735&single=true&output=csv",
         ukg:
-          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1715409890&single=true&output=csv",
+          "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1715409890&single=true&output=csv"
       }
     },
-    school_ids_sheet_link: "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1503063199&single=true&output=csv"
+    school_ids_sheet_link:
+      "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=1503063199&single=true&output=csv"
   }
 
   @doc """
@@ -47,8 +48,8 @@ defmodule Glific.Clients.KEF do
     phone = contact.phone
 
     if is_nil(school_id),
-    do: media["remote_name"],
-    else: "schools/#{school_id}/#{phone}" <> "/" <> media["remote_name"]
+      do: media["remote_name"],
+      else: "schools/#{school_id}/#{phone}" <> "/" <> media["remote_name"]
   end
 
   @doc """
@@ -192,6 +193,7 @@ defmodule Glific.Clients.KEF do
 
   def webhook("get_school_id_info", fields) do
     school_id = Glific.string_clean(fields["school_id"] || "")
+
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_school_id_info(school_id)
   end
@@ -224,7 +226,10 @@ defmodule Glific.Clients.KEF do
     ApiClient.get_csv_content(url: @props.school_ids_sheet_link)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       school_id = row["School ID"]
-      if school_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(school_id), clean_map_keys(row))
+
+      if school_id in [nil, ""],
+        do: acc,
+        else: Map.put(acc, Glific.string_clean(school_id), clean_map_keys(row))
     end)
     |> then(fn school_ids_data ->
       Partners.maybe_insert_organization_data("school_ids_data", school_ids_data, org_id)
@@ -275,9 +280,17 @@ defmodule Glific.Clients.KEF do
     })
     |> case do
       {:ok, data} ->
+        {key, value} =
+          data.json
+          |> Enum.find(fn {k, _v} ->
+            k
+            |> Glific.string_clean()
+            |> String.ends_with?(school_id)
+          end) || {nil, nil}
+
         %{
-          is_valid: Map.has_key?(data.json, school_id),
-          info: data.json[school_id]
+          is_valid: key != nil,
+          info: value
         }
 
       _ ->
