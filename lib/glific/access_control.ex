@@ -4,9 +4,12 @@ defmodule Glific.AccessControl do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.AccessControl.Role
+  alias Glific.{
+    AccessControl.Role,
+    AccessControl.Permission,
+    Repo
+  }
 
   @doc """
   Returns the list of roles.
@@ -17,8 +20,22 @@ defmodule Glific.AccessControl do
       [%Role{}, ...]
 
   """
-  def list_roles do
-    Repo.all(Role)
+  def list_roles(args), do: Repo.list_filter(args, Role, &Repo.opts_with_label/2, &filter_with/2)
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:description, description}, query ->
+        from q in query, where: ilike(q.description, ^"%#{description}%")
+
+      {:is_reserved, is_reserved}, query ->
+        from q in query, where: q.is_reserved == ^is_reserved
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """
@@ -101,8 +118,6 @@ defmodule Glific.AccessControl do
   def change_role(%Role{} = role, attrs \\ %{}) do
     Role.changeset(role, attrs)
   end
-
-  alias Glific.AccessControl.Permission
 
   @doc """
   Returns the list of permissions.

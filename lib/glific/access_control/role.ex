@@ -11,7 +11,7 @@ defmodule Glific.AccessControl.Role do
 
     belongs_to :organization, Organization
 
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc false

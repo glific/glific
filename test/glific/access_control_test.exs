@@ -35,7 +35,12 @@ defmodule Glific.AccessControlTest do
 
     test "update_role/2 with valid data updates the role" do
       role = role_fixture()
-      update_attrs = %{description: "some updated description", is_reserved: false, label: "some updated label"}
+
+      update_attrs = %{
+        description: "some updated description",
+        is_reserved: false,
+        label: "some updated label"
+      }
 
       assert {:ok, %Role{} = role} = AccessControl.update_role(role, update_attrs)
       assert role.description == "some updated description"
@@ -93,13 +98,18 @@ defmodule Glific.AccessControlTest do
       permission = permission_fixture()
       update_attrs = %{entity: "some updated entity"}
 
-      assert {:ok, %Permission{} = permission} = AccessControl.update_permission(permission, update_attrs)
+      assert {:ok, %Permission{} = permission} =
+               AccessControl.update_permission(permission, update_attrs)
+
       assert permission.entity == "some updated entity"
     end
 
     test "update_permission/2 with invalid data returns error changeset" do
       permission = permission_fixture()
-      assert {:error, %Ecto.Changeset{}} = AccessControl.update_permission(permission, @invalid_attrs)
+
+      assert {:error, %Ecto.Changeset{}} =
+               AccessControl.update_permission(permission, @invalid_attrs)
+
       assert permission == AccessControl.get_permission!(permission.id)
     end
 

@@ -19,21 +19,35 @@ defmodule GlificWeb.Resolvers.Roles do
           {:ok, any} | {:error, any}
   def role(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, role} <- Repo.fetch_by(Role, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{role: role}}
+         do: {:ok, %{access_role: role}}
   end
 
   @doc """
-  Get the list of roles
+  Get the list of roles filtered by args
   """
+  @spec roles(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, [Role.t()]}
   def roles(_, args, _) do
-    # {:ok, AccessControl.list_roles(args)}
+    {:ok, AccessControl.list_roles(args)}
   end
 
   @doc false
   @spec create_role(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
+          {:ok, Role.t()} | {:error, any}
   def create_role(_, %{input: params}, _) do
     with {:ok, role} <- AccessControl.create_role(params) do
+      {:ok, %{access_role: role}}
+    end
+  end
+
+  @doc """
+  Updates the role
+  """
+
+  @spec update_role(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def update_role(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, role} <- Repo.fetch_by(Role, %{id: id, organization_id: user.organization_id}),
+         {:ok, role} <- AccessControl.update_role(role, params) do
       {:ok, %{access_role: role}}
     end
   end

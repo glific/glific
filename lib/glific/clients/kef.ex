@@ -62,7 +62,7 @@ defmodule Glific.Clients.KEF do
     user_input = Glific.string_clean(fields["user_answer"])
     correct_answer = Glific.string_clean(fields["correct_answer"])
 
-   %{
+    %{
       is_correct: user_input == correct_answer
     }
   end
