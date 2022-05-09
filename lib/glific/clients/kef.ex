@@ -51,7 +51,6 @@ defmodule Glific.Clients.KEF do
     else: "schools/#{school_id}/#{phone}" <> "/" <> media["remote_name"]
   end
 
-
   @doc """
   Create a webhook with different signatures, so we can easily implement
   additional functionality as needed
@@ -60,6 +59,13 @@ defmodule Glific.Clients.KEF do
   def webhook("load_worksheets", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> load_worksheets()
+
+    fields
+  end
+
+  def webhook("load_school_ids", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_school_ids()
 
     fields
   end
@@ -191,8 +197,8 @@ defmodule Glific.Clients.KEF do
     end)
   end
 
-  @spec load_schoolIds(non_neg_integer()) :: map()
-  def load_schoolIds(org_id) do
+  @spec load_school_ids(non_neg_integer()) :: map()
+  defp load_school_ids(org_id) do
     ApiClient.get_csv_content(url: @props.school_ids_sheet_link)
     |> Enum.reduce(%{}, fn {_, row}, acc ->
       school_id = row["School ID"]
