@@ -39,6 +39,12 @@ defmodule Glific.AccessControl do
   end
 
   @doc """
+  Return the count of roles, using the same filter as list_roles
+  """
+  @spec count_access_roles(map()) :: integer
+  def count_access_roles(args), do: Repo.count_filter(args, Role, &filter_with/2)
+
+  @doc """
   Gets a single role.
 
   Raises `Ecto.NoResultsError` if the Role does not exist.

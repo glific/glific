@@ -55,6 +55,13 @@ defmodule GlificWeb.Schema.RoleTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Roles.roles/3)
     end
+
+    @desc "Get a count of all access_roles filtered by various criteria"
+    field :count_access_roles, :integer do
+      arg(:filter, :access_role_filter)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Roles.count_access_roles/3)
+    end
   end
 
   object :access_role_mutations do
