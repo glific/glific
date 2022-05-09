@@ -83,15 +83,38 @@ defmodule Glific.Clients.KEF do
   def webhook("get_worksheet_info", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_worksheet_info(fields["worksheet_code"])
+    |> interactive_message_reflection_question(fields["language_label"])
+  end
+
+  def webhook("get_interactive_message_reflection_question", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_worksheet_info(fields["worksheet_code"])
+    |> interactive_message_reflection_question(fields["language_label"])
   end
 
   def webhook("validate_reflection_response", fields) do
     user_input = Glific.string_clean(fields["user_answer"])
     correct_answer = Glific.string_clean(fields["correct_answer"])
 
-   %{
-      is_correct: user_input == correct_answer
-    }
+    in_valid_answer_range =
+      fields["valid_answers"]
+      |> String.split("|", trim: true)
+      |> Enum.map(&Glific.string_clean(&1))
+      |> Enum.member?(user_input)
+
+    cond do
+      user_input == correct_answer ->
+        %{status: "correct_response"}
+
+      correct_answer == "allanswers" && in_valid_answer_range ->
+        %{status: "correct_response"}
+
+      in_valid_answer_range ->
+        %{status: "incorrect_response"}
+
+      true ->
+        %{status: "out_of_range"}
+    end
   end
 
   def webhook("mark_worksheet_completed", fields) do
@@ -262,6 +285,58 @@ defmodule Glific.Clients.KEF do
           message: "Worksheet code not found"
         }
     end
+  end
+
+  @spec interactive_message_reflection_question(map(), String.t()) :: map()
+  defp interactive_message_reflection_question(worksheet_code_info, langauge_label) do
+    get_reflection_question_answer_count(worksheet_code_info, langauge_label)
+    |> Map.merge(%{
+      worksheet_code: worksheet_code_info["code"],
+      langauge_label: langauge_label
+    })
+    |> Map.merge(worksheet_code_info)
+  end
+
+  @spec get_reflection_question_answer_count(map(), String.t()) :: map()
+  defp get_reflection_question_answer_count(worksheet_code_info, langauge_label) do
+    refelction_answers =
+      case langauge_label do
+        "English" ->
+          %{
+            valid_answers: worksheet_code_info["reflectionquestionvalidresponses"],
+            correct_response: worksheet_code_info["reflectionquestionanswer"]
+          }
+
+        "Hindi" ->
+          %{
+            valid_answers: worksheet_code_info["reflectionquestionvalidresponseshindi"],
+            correct_response: worksheet_code_info["reflectionquestionanswerhindi"]
+          }
+
+        "Kannada" ->
+          %{
+            valid_answers: worksheet_code_info["reflectionquestionvalidresponseskan"],
+            correct_response: worksheet_code_info["reflectionquestionanswerkan"]
+          }
+
+        _ ->
+          %{}
+      end
+
+    buttons =
+      refelction_answers.valid_answers
+      |> String.split("|")
+      |> Enum.with_index()
+      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", answer} end)
+      |> Enum.into(%{})
+
+    Map.merge(
+      refelction_answers,
+      %{
+        buttons: buttons,
+        button_count: length(Map.keys(buttons))
+      }
+    )
   end
 
   @spec clean_map_keys(map()) :: map()
