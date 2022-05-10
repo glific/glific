@@ -97,6 +97,8 @@ defmodule GlificWeb.Schema do
     import_fields(:flow_label_queries)
 
     import_fields(:access_role_queries)
+
+    import_fields(:access_control_queries)
   end
 
   mutation do
@@ -153,6 +155,8 @@ defmodule GlificWeb.Schema do
     import_fields(:interactive_template_mutations)
 
     import_fields(:access_role_mutations)
+
+    import_fields(:access_control_mutations)
   end
 
   subscription do

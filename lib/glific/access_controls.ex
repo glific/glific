@@ -6,6 +6,7 @@ defmodule Glific.AccessControls do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    AccessControl,
     AccessControl.Permission,
     AccessControl.Role,
     Repo
@@ -232,4 +233,80 @@ defmodule Glific.AccessControls do
   def change_permission(%Permission{} = permission, attrs \\ %{}) do
     Permission.changeset(permission, attrs)
   end
+
+  @doc """
+  Creates a access control.
+
+  ## Examples
+
+      iex> create_access_control(%{field: value})
+      {:ok, %Role{}}
+
+      iex> create_access_control(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_access_control(map()) :: {:ok, AccessControl.t()} | {:error, Ecto.Changeset.t()}
+  def create_access_control(attrs \\ %{}) do
+    %AccessControl{}
+    |> AccessControl.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a access control.
+
+  ## Examples
+
+      iex> update_access_control(access_control, %{field: new_value})
+      {:ok, %Permission{}}
+
+      iex> update_access_control(access_control, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_access_control(AccessControl.t(), map()) ::
+          {:ok, AccessControl.t()} | {:error, Ecto.Changeset.t()}
+  def update_access_control(%AccessControl{} = access_control, attrs) do
+    access_control
+    |> AccessControl.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a access control.
+
+  ## Examples
+
+      iex> delete_access_control(access_control)
+      {:ok, %AccessControl{}}
+
+      iex> delete_access_control(access_control)
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec delete_access_control(AccessControl.t()) ::
+          {:ok, AccessControl.t()} | {:error, Ecto.Changeset.t()}
+  def delete_access_control(%AccessControl{} = access_control) do
+    Repo.delete(access_control)
+  end
+
+  @doc """
+  Returns the list of access controls.
+
+  ## Examples
+
+      iex> list_access_controls()
+      [%Role{}, ...]
+
+  """
+  @spec list_access_controls(map()) :: [AccessControl.t()]
+  def list_access_controls(args),
+    do: Repo.list_filter(args, AccessControl, &Repo.opts_with_label/2, &filter_with/2)
+
+  @doc """
+  Return the count of access controls, using the same filter as list_roles
+  """
+  @spec count_access_controls(map()) :: integer
+  def count_access_controls(args), do: Repo.count_filter(args, AccessControl, &filter_with/2)
 end

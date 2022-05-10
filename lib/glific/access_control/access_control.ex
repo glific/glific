@@ -13,6 +13,8 @@ defmodule Glific.AccessControl do
   alias __MODULE__
   import Ecto.Changeset
 
+  @required_fields [:entity_id, :entity_type, :role_id, :organization_id]
+
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
@@ -38,9 +40,10 @@ defmodule Glific.AccessControl do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(AccessControl.t(), map()) :: Ecto.Changeset.t()
-  def changeset(permission, attrs) do
-    permission
-    |> cast(attrs, [:entity])
-    |> validate_required([:entity])
+  def changeset(access, attrs) do
+    access
+    |> cast(attrs, @required_fields)
+    |> validate_required(@required_fields)
+    |> unique_constraint([:entity_id, :entity_type, :role_id, :organization_id])
   end
 end
