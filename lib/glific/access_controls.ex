@@ -35,6 +35,9 @@ defmodule Glific.AccessControls do
       {:is_reserved, is_reserved}, query ->
         from(q in query, where: q.is_reserved == ^is_reserved)
 
+      {:entity_type, entity_type}, query ->
+        from(q in query, where: q.entity_type == ^entity_type)
+
       _, query ->
         query
     end)

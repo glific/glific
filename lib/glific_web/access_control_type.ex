@@ -16,7 +16,7 @@ defmodule GlificWeb.Schema.AccessControlTypes do
   object :access_control do
     field :id, :id
     field :entity_id, :id
-    field :entity_type, :string
+    field :entity_type, :entity_type_enum
     field :role_id, :id
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -25,12 +25,12 @@ defmodule GlificWeb.Schema.AccessControlTypes do
   @desc "Filtering options for roles"
   input_object :access_control_filter do
     @desc "Match the entity type"
-    field :entity_type, :entity_enum
+    field :entity_type, :entity_type_enum
   end
 
   input_object :access_control_input do
     field :entity_id, :id
-    field :entity_type, :string
+    field :entity_type, :entity_type_enum
     field :role_id, :id
   end
 

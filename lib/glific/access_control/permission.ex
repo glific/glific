@@ -19,7 +19,7 @@ defmodule Glific.AccessControl.Permission do
   schema "permissions" do
     field :entity, :string
     many_to_many :roles, Role, join_through: "role_permissions", on_replace: :delete
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """

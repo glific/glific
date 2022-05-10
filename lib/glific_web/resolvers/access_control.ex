@@ -71,8 +71,9 @@ defmodule GlificWeb.Resolvers.AccessControl do
           {:ok, any} | {:error, any}
   def delete_access_control(_, %{id: id}, %{context: %{current_user: user}}) do
     with {:ok, access_control} <-
-           Repo.fetch_by(AccessControl, %{id: id, organization_id: user.organization_id}) do
-      AccessControls.delete_access_control(access_control)
+           Repo.fetch_by(AccessControl, %{id: id, organization_id: user.organization_id}),
+         {:ok, access_control} <- AccessControls.delete_access_control(access_control) do
+      {:ok, %{access_control: access_control}}
     end
   end
 end

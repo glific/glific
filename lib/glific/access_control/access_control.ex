@@ -33,7 +33,7 @@ defmodule Glific.AccessControl do
 
     belongs_to :role, Role
     belongs_to :organization, Organization
-    timestamps()
+    timestamps(type: :utc_datetime)
   end
 
   @doc """

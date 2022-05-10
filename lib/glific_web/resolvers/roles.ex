@@ -64,8 +64,9 @@ defmodule GlificWeb.Resolvers.Roles do
   @spec delete_role(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
   def delete_role(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, role} <- Repo.fetch_by(Role, %{id: id, organization_id: user.organization_id}) do
-      AccessControls.delete_role(role)
+    with {:ok, role} <- Repo.fetch_by(Role, %{id: id, organization_id: user.organization_id}),
+         {:ok, role} <- AccessControls.delete_role(role) do
+      {:ok, %{access_role: role}}
     end
   end
 end
