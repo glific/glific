@@ -1,4 +1,4 @@
-defmodule Glific.AccessControl do
+defmodule Glific.AccessControls do
   @moduledoc """
   The AccessControl context.
   """

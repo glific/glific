@@ -21,7 +21,7 @@ defmodule Glific.AccessControlFixtures do
         is_reserved: true,
         label: "some label"
       })
-      |> Glific.AccessControl.create_role()
+      |> Glific.AccessControls.create_role()
 
     role
   end
@@ -36,7 +36,7 @@ defmodule Glific.AccessControlFixtures do
       |> Enum.into(%{
         entity: "some entity"
       })
-      |> Glific.AccessControl.create_permission()
+      |> Glific.AccessControls.create_permission()
 
     permission
   end
