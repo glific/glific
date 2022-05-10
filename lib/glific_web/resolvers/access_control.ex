@@ -4,8 +4,6 @@ defmodule GlificWeb.Resolvers.AccessControl do
   This layer basically stiches together one or more calls to resolve the incoming queries.
   """
 
-  # import GlificWeb.Gettext
-
   alias Glific.{
     AccessControl,
     AccessControls,
@@ -41,39 +39,14 @@ defmodule GlificWeb.Resolvers.AccessControl do
   end
 
   @doc """
-  Creates the access_control
+  Updates the control accesses
   """
-  @spec create_access_control(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
-          {:ok, AccessControl.t()} | {:error, any}
-  def create_access_control(_, %{input: params}, _) do
-    with {:ok, access_control} <- AccessControls.create_access_control(params) do
-      {:ok, %{access_control: access_control}}
-    end
-  end
-
-  @doc """
-  Updates the access_control
-  """
-  @spec update_access_control(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
+  @spec update_control_access(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{
           context: map()
         }) ::
           {:ok, any} | {:error, any}
-  def update_access_control(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
-    with {:ok, access_control} <-
-           Repo.fetch_by(AccessControl, %{id: id, organization_id: user.organization_id}),
-         {:ok, access_control} <- AccessControls.update_access_control(access_control, params) do
-      {:ok, %{access_control: access_control}}
-    end
-  end
-
-  @doc false
-  @spec delete_access_control(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def delete_access_control(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, access_control} <-
-           Repo.fetch_by(AccessControl, %{id: id, organization_id: user.organization_id}),
-         {:ok, access_control} <- AccessControls.delete_access_control(access_control) do
-      {:ok, %{access_control: access_control}}
-    end
+  def update_control_access(_, %{input: params}, _) do
+    access_control = AccessControls.update_control_access(params)
+    {:ok, access_control}
   end
 end
