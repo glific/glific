@@ -117,6 +117,7 @@ defmodule Glific.Clients do
   @kef %{
     id: 70,
     name: "Key Education Foundation",
+    gcs_file_name: Glific.Clients.KEF,
     webhook: Glific.Clients.KEF
   }
 
