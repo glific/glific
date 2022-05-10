@@ -8,10 +8,9 @@ defmodule Glific.Repo.Migrations.CreateRoles do
       add :is_reserved, :boolean, default: false, null: false
 
       # foreign key to organization restricting scope of this table to this organization only
-      add(:organization_id, references(:organizations, on_delete: :delete_all),
+      add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "Unique organization ID"
-      )
 
       timestamps()
     end

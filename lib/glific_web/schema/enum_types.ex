@@ -60,6 +60,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Import Contact Types enum"
   enum(:import_contacts_type_enum, values: Glific.Enums.import_contacts_type_const())
 
+  @desc "The Entity Types enum"
+  enum(:entity_type_enum, values: Glific.Enums.entity_type_const())
+
   # doing this in a special way, since values: does not work
   # if we are using default values
   @desc "Enum for ordering results"

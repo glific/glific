@@ -66,6 +66,9 @@ defmodule Glific.Enums.Constants do
       # the different possible types of import contact types
       @import_contacts_type_const [:file_path, :url, :data]
 
+      # the different possible types of entity types
+      @entity_type_const [:flow, :trigger, :search, :template, :interactive_template]
+
       # the possible question type constants
       @question_type_const [:text, :numeric, :date]
 
