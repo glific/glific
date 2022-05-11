@@ -4,6 +4,8 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
+  import GlificWeb.Gettext
+
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
@@ -108,6 +110,19 @@ defmodule GlificWeb.Resolvers.Messages do
          do: {:ok, %{success: true, contact_ids: contact_ids}}
   end
 
+  ## This is just a temparary solution to avoid the
+  ## timeout issue while sending messages to groups.
+  ## For small groups it should be fine.
+  ## For large groups it should be better to use the flows.
+
+  @error_message "There are too many contacts in the group. Please use flows instead of direct messages."
+  @contact_limit_to_send_message_to_group 30
+
+  @spec can_send_message_to_group?(non_neg_integer()) :: boolean()
+  defp can_send_message_to_group?(group_id) do
+    Glific.Groups.contacts_count(%{id: group_id}) <= @contact_limit_to_send_message_to_group
+  end
+
   @doc """
   Create and send message to contacts of a group
   """
@@ -115,8 +130,28 @@ defmodule GlificWeb.Resolvers.Messages do
           {:ok, any} | {:error, any}
   def create_and_send_message_to_group(_, %{input: message_params, group_id: group_id}, %{
         context: %{current_user: current_user}
-      }),
-      do: send_message_to_group(message_params, group_id, current_user, :session)
+      }) do
+    if can_send_message_to_group?(group_id),
+      do: send_message_to_group(message_params, group_id, current_user, :session),
+      else: {:error, dgettext("errors", @error_message)}
+  end
+
+  @doc false
+  @spec send_hsm_message_to_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def send_hsm_message_to_group(_, %{group_id: group_id} = attrs, %{
+        context: %{current_user: user}
+      }) do
+    if can_send_message_to_group?(group_id),
+      do:
+        send_message_to_group(
+          Map.put(attrs, :user_id, user.id),
+          group_id,
+          user,
+          :hsm
+        ),
+      else: {:error, dgettext("errors", @error_message)}
+  end
 
   @doc false
   @spec send_hsm_message(Absinthe.Resolution.t(), map(), %{context: map()}) ::
@@ -128,20 +163,6 @@ defmodule GlificWeb.Resolvers.Messages do
            Messages.create_and_send_hsm_message(Map.put(attrs, :user_id, user.id)),
          do: {:ok, %{message: message}}
   end
-
-  @doc false
-  @spec send_hsm_message_to_group(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-          {:ok, any} | {:error, any}
-  def send_hsm_message_to_group(_, %{group_id: group_id} = attrs, %{
-        context: %{current_user: user}
-      }),
-      do:
-        send_message_to_group(
-          Map.put(attrs, :user_id, user.id),
-          group_id,
-          user,
-          :hsm
-        )
 
   @doc false
   @spec send_session_message(Absinthe.Resolution.t(), %{id: integer, receiver_id: integer}, %{
