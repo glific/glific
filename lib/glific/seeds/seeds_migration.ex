@@ -8,6 +8,7 @@ defmodule Glific.Seeds.SeedsMigration do
   import Ecto.Query
 
   alias Glific.{
+    AccessControl.Role,
     BigQuery,
     Contacts,
     Contacts.Contact,
@@ -51,6 +52,7 @@ defmodule Glific.Seeds.SeedsMigration do
   @doc false
   @spec do_migrate_data(atom(), [Organization.t()]) :: any()
   defp do_migrate_data(:collection, organizations), do: seed_collections(organizations)
+  defp do_migrate_data(:role, organizations), do: seed_roles(organizations)
   defp do_migrate_data(:fix_message_number, organizations), do: fix_message_number(organizations)
   defp do_migrate_data(:optin, organizations), do: optin_data(organizations)
   defp do_migrate_data(:opt_in_out, organizations), do: SeedsFlows.opt_in_out_flows(organizations)
@@ -172,6 +174,45 @@ defmodule Glific.Seeds.SeedsMigration do
     Repo.insert!(%Group{
       label: "Optout contacts",
       is_restricted: false,
+      organization_id: organization.id
+    })
+  end
+
+  @doc false
+  @spec seed_roles([Organization.t()]) :: [Organization.t()]
+  defp seed_roles(organizations) do
+    for org <- organizations,
+        do: create_roles(org)
+
+    organizations
+  end
+
+  defp create_roles(organization) do
+    Repo.insert!(%Role{
+      label: "Admin",
+      description: "Default Admin Role",
+      is_reserved: true,
+      organization_id: organization.id
+    })
+
+    Repo.insert!(%Role{
+      label: "Staff",
+      description: "Default Staff Role",
+      is_reserved: true,
+      organization_id: organization.id
+    })
+
+    Repo.insert!(%Role{
+      label: "Manager",
+      description: "Default Manager Role",
+      is_reserved: true,
+      organization_id: organization.id
+    })
+
+    Repo.insert!(%Role{
+      label: "None",
+      description: "Default Role with no permissions",
+      is_reserved: true,
       organization_id: organization.id
     })
   end
