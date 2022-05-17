@@ -651,7 +651,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type} = action, context, [])
       when type in @wait_for do
-    if(action.wait_time == @default_wait_time) do
+    if action.wait_time == @default_wait_time do
       ## Ideally we should do it by async call
       ## but this is fine as a sort term fix.
       Process.sleep(@sleep_timeout)
