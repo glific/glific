@@ -320,8 +320,8 @@ defmodule Glific.Communications.Message do
 
   defp publish_simulator(message, _type), do: message
 
-  # lets have a default timeout of 3 seconds for each call
-  @timeout 4000
+  # lets have a default timeout of 5 seconds for each call
+  @timeout 5000
 
   @spec error(String.t(), any(), any(), list() | nil) :: nil
   defp error(error, e, r \\ nil, stacktrace \\ nil) do
