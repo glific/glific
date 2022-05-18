@@ -8,6 +8,7 @@ defmodule Glific.Flows do
 
   alias Glific.{
     AccessControl,
+    AccessControl.Role,
     AccessControl.RoleFlow,
     Caches,
     Contacts.Contact,
@@ -155,10 +156,18 @@ defmodule Glific.Flows do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_flow!(integer) :: Flow.t()
+  @spec get_flow!(integer) :: map()
   def get_flow!(id) do
     with flow <- Repo.get!(Flow, id) do
-      get_status_flow(flow)
+      flow = get_status_flow(flow)
+
+      Role
+      |> join(:inner, [c], rf in RoleFlow,
+        as: :rf,
+        on: rf.role_id == c.id and rf.flow_id == ^flow.id
+      )
+      |> Repo.all()
+      |> then(&Map.put(flow, :roles, &1))
     end
   end
 

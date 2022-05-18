@@ -22,9 +22,8 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec flow(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def flow(_, %{id: id}, %{context: %{current_user: user}}) do
-    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
-         do: {:ok, %{flow: flow}}
+  def flow(_, %{id: id}, _) do
+    {:ok, Flows.get_flow!(id)}
   end
 
   @doc """
