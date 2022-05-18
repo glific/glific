@@ -7,6 +7,7 @@ defmodule Glific.Flows do
   require Logger
 
   alias Glific.{
+    AccessControl,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -30,7 +31,10 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    flows = Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+    flows =
+      Repo.list_filter_query(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+      |> AccessControl.check_access(:flow)
+      |> Repo.all()
 
     flows
     # get all the flow ids

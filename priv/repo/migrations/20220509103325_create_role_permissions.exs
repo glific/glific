@@ -7,6 +7,7 @@ defmodule Glific.Repo.Migrations.CreateRolePermissions do
     create_permission()
     create_role_permissions()
     create_role_flows()
+    create_user_roles()
   end
 
   defp create_role() do
@@ -57,5 +58,18 @@ defmodule Glific.Repo.Migrations.CreateRolePermissions do
     end
 
     create unique_index(:role_flows, [:role_id, :flow_id, :organization_id])
+  end
+
+  defp create_user_roles() do
+    create table(:role_users) do
+      add :user_id, references(:users, on_delete: :delete_all), null: false
+      add :role_id, references(:roles, on_delete: :delete_all), null: false
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organization ID"
+    end
+
+    create unique_index(:role_users, [:user_id, :role_id])
   end
 end

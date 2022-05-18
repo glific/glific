@@ -122,9 +122,3 @@ defenum(
   :import_contacts_type_enum,
   Glific.Enums.import_contacts_type_const()
 )
-
-defenum(
-  Glific.Enums.EntityType,
-  :entity_type_enum,
-  Glific.Enums.entity_type_const()
-)

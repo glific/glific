@@ -235,10 +235,28 @@ defmodule Glific.AccessControl do
     Permission.changeset(permission, attrs)
   end
 
-  def update_control_access(attrs) do
-    attrs.entity_type
+  def check_access(entity_list, entity_type) do
+    user = Repo.get_current_user()
+
+    if check_fun_with_flag_toggle?(user.organization_id) and
+         user.roles not in [:admin, :glific_admin, :staff],
+       do: do_check_access(entity_list, entity_type, user),
+       else: entity_list
+  end
+
+  defp check_fun_with_flag_toggle?(organization_id) do
+    FunWithFlags.enabled?(
+      :roles_and_permission,
+      for: %{organization_id: organization_id}
+    )
+  end
+
+  def do_check_access(entity_list, entity_type, user) do
+    # organization_contact_id = Partners.organization_contact_id(user.organization_id)
+
+    entity_type
     |> case do
-      :flow -> RoleFlow.update_control_access(attrs)
+      :flow -> RoleFlow.check_access(entity_list, user)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end

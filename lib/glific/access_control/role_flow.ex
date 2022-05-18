@@ -4,11 +4,15 @@ defmodule Glific.AccessControl.RoleFlow do
   """
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, warn: false
+
   alias __MODULE__
 
   alias Glific.{
     Flows.Flow,
     AccessControl.Role,
+    AccessControl.RoleFlow,
+    AccessControl.RoleUser,
     Partners.Organization,
     Repo
   }
@@ -101,5 +105,21 @@ defmodule Glific.AccessControl.RoleFlow do
   def delete_access_control_by_role_ids(entity_id, role_ids) do
     fields = {{:flow_id, entity_id}, {:role_id, role_ids}}
     Repo.delete_relationships_by_ids(RoleFlow, fields)
+  end
+
+  def check_access(entity_list, user) do
+    IO.inspect(entity_list)
+
+    sub_query =
+      RoleFlow
+      |> select([rf], rf.flow_id)
+      |> join(:inner, [rf], ru in RoleUser, as: :ru, on: ru.role_id == rf.role_id)
+      |> where([rf, ru: ru], ru.user_id == ^user.id)
+
+    entity_list
+    |> where(
+      [f],
+      f.id in subquery(sub_query)
+    )
   end
 end
