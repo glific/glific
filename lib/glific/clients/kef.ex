@@ -186,7 +186,7 @@ defmodule Glific.Clients.KEF do
       helping_hand: %{
         completed: length(uniq_completed_helping_hands),
         list: Enum.join(uniq_completed_helping_hands, ","),
-        total: 3
+        total: 1
       }
     }
   end

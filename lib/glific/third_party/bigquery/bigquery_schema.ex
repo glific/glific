@@ -279,7 +279,13 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-        description: "'Options : Sent, Delivered or Read'",
+        description: "Message status as per the BSP. Options : Sent, Delivered or Read",
+        name: "bsp_status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Errors if any while sending the message",
         name: "errors",
         type: "STRING",
         mode: "NULLABLE"
