@@ -109,6 +109,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.ImportContactsType.__enum_map__()
   Glific.Enums.import_contacts_type_const()
 
+  iex> Glific.Enums.EntityType.__enum_map__()
+  Glific.Enums.entity_type_const()
+
   """
 
   defmacro api_status_const,
@@ -167,4 +170,7 @@ defmodule Glific.Enums do
 
   defmacro import_contacts_type_const,
     do: Macro.expand(@import_contacts_type_const, __CALLER__)
+
+  defmacro entity_type_const,
+    do: Macro.expand(@entity_type_const, __CALLER__)
 end

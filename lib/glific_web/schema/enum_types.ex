@@ -67,4 +67,7 @@ defmodule GlificWeb.Schema.EnumTypes do
     value(:asc)
     value(:desc)
   end
+
+  @desc "The Entity Types enum"
+  enum(:entity_type_enum, values: Glific.Enums.entity_type_const())
 end

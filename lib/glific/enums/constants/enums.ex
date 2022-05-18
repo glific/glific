@@ -94,9 +94,12 @@ defmodule Glific.Enums.Constants do
         :active,
         # organization is suspended and no activity can be performed on that
         :suspended,
-        # admin wants to delete teh organization
+        # admin wants to delete the organization
         :ready_to_delete
       ]
+
+      # the different possible types of entity types
+      @entity_type_const [:flow, :trigger, :search, :template, :interactive_template]
     end
   end
 end
