@@ -48,6 +48,7 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.InteractiveTemplateTypes)
   import_types(__MODULE__.FlowLabelTypes)
   import_types(__MODULE__.RoleTypes)
+  import_types(__MODULE__.AccessControlTypes)
 
   query do
     import_fields(:contact_queries)
@@ -153,6 +154,8 @@ defmodule GlificWeb.Schema do
     import_fields(:interactive_template_mutations)
 
     import_fields(:access_role_mutations)
+
+    import_fields(:access_control_mutations)
   end
 
   subscription do

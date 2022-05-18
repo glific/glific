@@ -4,10 +4,12 @@ defmodule Glific.AccessControl do
   """
 
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
 
   alias Glific.{
     AccessControl.Permission,
     AccessControl.Role,
+    AccessControl.RoleFlow,
     Repo
   }
 
@@ -231,5 +233,13 @@ defmodule Glific.AccessControl do
   @spec change_permission(Permission.t()) :: Ecto.Changeset.t()
   def change_permission(%Permission{} = permission, attrs \\ %{}) do
     Permission.changeset(permission, attrs)
+  end
+
+  def update_control_access(attrs) do
+    attrs.entity_type
+    |> case do
+      :flow -> RoleFlow.update_control_access(attrs)
+      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
+    end
   end
 end
