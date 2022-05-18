@@ -6,6 +6,7 @@ defmodule Glific.Repo.Migrations.CreateRolePermissions do
     create_role()
     create_permission()
     create_role_permissions()
+    create_role_flows()
   end
 
   defp create_role() do
@@ -46,5 +47,15 @@ defmodule Glific.Repo.Migrations.CreateRolePermissions do
     end
 
     create unique_index(:role_permissions, [:role_id, :permission_id, :organization_id])
+  end
+
+  defp create_role_flows() do
+    create table(:role_flows) do
+      add :role_id, references(:roles, on_delete: :delete_all), null: false
+      add :flow_id, references(:flows, on_delete: :delete_all), null: false
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
+    end
+
+    create unique_index(:role_flows, [:role_id, :flow_id, :organization_id])
   end
 end
