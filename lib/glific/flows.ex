@@ -8,6 +8,7 @@ defmodule Glific.Flows do
 
   alias Glific.{
     AccessControl,
+    AccessControl.RoleFlow,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -212,7 +213,14 @@ defmodule Glific.Flows do
 
       flow = get_status_flow(flow)
 
-      {:ok, flow}
+      %{access_controls: access_controls} =
+        attrs
+        |> Map.put(:flow_id, flow.id)
+        |> RoleFlow.update_control_access()
+
+      flow
+      |> Map.put(:roles, access_controls)
+      |> then(&{:ok, &1})
     end
   end
 
@@ -239,9 +247,19 @@ defmodule Glific.Flows do
       attrs
       |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
 
-    flow
-    |> Flow.changeset(attrs)
-    |> Repo.update()
+    with {:ok, flow} <-
+           flow
+           |> Flow.changeset(attrs)
+           |> Repo.update() do
+      %{access_controls: access_controls} =
+        attrs
+        |> Map.put(:flow_id, flow.id)
+        |> RoleFlow.update_control_access()
+
+      flow
+      |> Map.put(:roles, access_controls)
+      |> then(&{:ok, &1})
+    end
   end
 
   @doc """

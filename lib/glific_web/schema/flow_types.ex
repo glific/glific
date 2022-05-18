@@ -36,6 +36,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
+    field :roles, list_of(:access_role)
   end
 
   input_object :flow_input do
@@ -44,6 +45,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_background, :boolean
+    field :add_role_ids, non_null(list_of(:id))
+    field :delete_role_ids, non_null(list_of(:id))
   end
 
   @desc "Filtering options for flows"

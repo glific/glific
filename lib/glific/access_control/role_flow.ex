@@ -73,7 +73,7 @@ defmodule Glific.AccessControl.RoleFlow do
   @spec update_control_access(map()) :: map()
   def update_control_access(
         %{
-          entity_id: entity_id,
+          flow_id: flow_id,
           add_role_ids: add_role_ids,
           delete_role_ids: delete_role_ids
         } = attrs
@@ -83,14 +83,14 @@ defmodule Glific.AccessControl.RoleFlow do
         add_role_ids,
         [],
         fn role_id, acc ->
-          case create_access_control(Map.merge(attrs, %{role_id: role_id, flow_id: entity_id})) do
+          case create_access_control(Map.merge(attrs, %{role_id: role_id, flow_id: flow_id})) do
             {:ok, access_control} -> [access_control | acc]
             _ -> acc
           end
         end
       )
 
-    {number_deleted, _} = delete_access_control_by_role_ids(entity_id, delete_role_ids)
+    {number_deleted, _} = delete_access_control_by_role_ids(flow_id, delete_role_ids)
 
     %{
       number_deleted: number_deleted,
@@ -102,14 +102,12 @@ defmodule Glific.AccessControl.RoleFlow do
   Delete group contacts
   """
   @spec delete_access_control_by_role_ids(integer, list()) :: {integer(), nil | [term()]}
-  def delete_access_control_by_role_ids(entity_id, role_ids) do
-    fields = {{:flow_id, entity_id}, {:role_id, role_ids}}
+  def delete_access_control_by_role_ids(flow_id, role_ids) do
+    fields = {{:flow_id, flow_id}, {:role_id, role_ids}}
     Repo.delete_relationships_by_ids(RoleFlow, fields)
   end
 
   def check_access(entity_list, user) do
-    IO.inspect(entity_list)
-
     sub_query =
       RoleFlow
       |> select([rf], rf.flow_id)
