@@ -7,6 +7,7 @@ defmodule Glific.Flows do
   require Logger
 
   alias Glific.{
+    AccessControls,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -27,12 +28,17 @@ defmodule Glific.Flows do
       iex> list_flows()
       [%Flow{}, ...]
 
+
+      Glific.Flows.list_flows()
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
+
+    IO.inspect(args)
     flows = Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
 
     flows
+    |> AccessControls.check_access(:flow)
     # get all the flow ids
     |> Enum.map(fn f -> f.id end)
     # get their published_draft dates

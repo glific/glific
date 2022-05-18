@@ -6,6 +6,7 @@ defmodule Glific.Users.User do
   alias __MODULE__
 
   alias Glific.{
+    AccessControl.Role,
     Contacts.Contact,
     Enums.UserRoles,
     Groups.Group,
@@ -65,6 +66,7 @@ defmodule Glific.Users.User do
     pow_user_fields()
 
     many_to_many :groups, Group, join_through: "users_groups", on_replace: :delete
+    many_to_many :access_roles, Role, join_through: "users_roles", on_replace: :delete
 
     timestamps()
   end

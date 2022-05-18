@@ -4,11 +4,13 @@ defmodule Glific.AccessControls do
   """
 
   import Ecto.Query, warn: false
+  alias __MODULE__
 
   alias Glific.{
     AccessControl,
     AccessControl.Permission,
     AccessControl.Role,
+    AccessControl.UserRole,
     Repo
   }
 
@@ -353,4 +355,39 @@ defmodule Glific.AccessControls do
   """
   @spec count_access_controls(map()) :: integer
   def count_access_controls(args), do: Repo.count_filter(args, AccessControl, &filter_with/2)
+
+  def check_access(entity_list, entity_type) do
+    user = Repo.get_current_user()
+
+    if check_fun_with_flag_toggle?(user.organization_id) and
+         user.roles not in [:admin, :glific_admin, :manager],
+       do: do_check_access(entity_list, entity_type, user),
+       else: entity_list
+  end
+
+  defp check_fun_with_flag_toggle?(organization_id) do
+    FunWithFlags.enabled?(
+      :roles_and_permission,
+      for: %{organization_id: organization_id}
+    )
+  end
+
+  def do_check_access(entity_list, entity_type, user) do
+    # organization_contact_id = Partners.organization_contact_id(user.organization_id)
+
+    sub_query =
+      AccessControl
+      |> select([ag], ag.entity_id)
+      |> join(:inner, [ag], ur in UserRole, as: :ur, on: ur.role_id == ag.role_id)
+      |> where([ag, ur: ur], ur.user_id == ^user.id and ag.entity_type == ^entity_type)
+
+    entity_list
+    |> IO.inspect()
+    |> where(
+      [f],
+      f.id in subquery(sub_query)
+    )
+    |> Repo.all()
+    |> IO.inspect()
+  end
 end

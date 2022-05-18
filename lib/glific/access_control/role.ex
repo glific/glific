@@ -9,7 +9,8 @@ defmodule Glific.AccessControl.Role do
 
   alias Glific.{
     AccessControl.Permission,
-    Partners.Organization
+    Partners.Organization,
+    Users.User
   }
 
   @type t() :: %__MODULE__{
@@ -30,6 +31,7 @@ defmodule Glific.AccessControl.Role do
 
     belongs_to :organization, Organization
     many_to_many :permissions, Permission, join_through: "role_permissions", on_replace: :delete
+    many_to_many :users, User, join_through: "user_roles", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

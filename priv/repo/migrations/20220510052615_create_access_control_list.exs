@@ -5,6 +5,7 @@ defmodule Glific.Repo.Migrations.CreateAccessControlList do
   def up do
     EntityType.create_type()
     access_control()
+    user_roles()
   end
 
   def down do
@@ -33,5 +34,18 @@ defmodule Glific.Repo.Migrations.CreateAccessControlList do
     end
 
     create unique_index(:access_control, [:role_id, :entity_id, :organization_id])
+  end
+
+  defp user_roles() do
+    create table(:users_roles) do
+      add :user_id, references(:users, on_delete: :delete_all), null: false
+      add :role_id, references(:roles, on_delete: :delete_all), null: false
+      # foreign key to organization restricting scope of this table to this organization only
+      add :organization_id, references(:organizations, on_delete: :delete_all),
+        null: false,
+        comment: "Unique organization ID"
+    end
+
+    create unique_index(:users_roles, [:user_id, :role_id])
   end
 end
