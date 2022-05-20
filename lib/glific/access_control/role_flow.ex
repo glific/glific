@@ -60,15 +60,13 @@ defmodule Glific.AccessControl.RoleFlow do
   """
   @spec create_access_control(map()) :: {:ok, RoleFlow.t()} | {:error, Ecto.Changeset.t()}
   def create_access_control(attrs \\ %{}) do
-    IO.inspect(attrs)
-
     %RoleFlow{}
     |> changeset(attrs)
     |> Repo.insert()
   end
 
   @doc """
-  updates
+  Update flow roles based on add_role_ids and delete_role_ids and return number_deleted as integer and roles added as access_controls
   """
   @spec update_control_access(map()) :: map()
   def update_control_access(
@@ -107,6 +105,10 @@ defmodule Glific.AccessControl.RoleFlow do
     Repo.delete_relationships_by_ids(RoleFlow, fields)
   end
 
+  @doc """
+  Filtering entity object based on user role
+  """
+  @spec check_access(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def check_access(entity_list, user) do
     sub_query =
       RoleFlow

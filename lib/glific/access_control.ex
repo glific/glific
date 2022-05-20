@@ -235,6 +235,10 @@ defmodule Glific.AccessControl do
     Permission.changeset(permission, attrs)
   end
 
+  @doc """
+  Common function to filtering entity objects based on user role, fun_with_flag flag and entity type
+  """
+  @spec check_access(Ecto.Query.t(), atom()) :: Ecto.Query.t()
   def check_access(entity_list, entity_type) do
     user = Repo.get_current_user()
 
@@ -244,6 +248,7 @@ defmodule Glific.AccessControl do
        else: entity_list
   end
 
+  @spec check_fun_with_flag_toggle?(non_neg_integer()) :: boolean()
   defp check_fun_with_flag_toggle?(organization_id) do
     FunWithFlags.enabled?(
       :roles_and_permission,
@@ -251,6 +256,10 @@ defmodule Glific.AccessControl do
     )
   end
 
+  @doc """
+  Common function to filtering entity objects based on user role, fun_with_flag flag and entity type
+  """
+  @spec do_check_access(Ecto.Query.t(), atom(), User.t()) :: Ecto.Query.t() | {:error, String.t()}
   def do_check_access(entity_list, entity_type, user) do
     # organization_contact_id = Partners.organization_contact_id(user.organization_id)
 
