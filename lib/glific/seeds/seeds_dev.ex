@@ -1405,7 +1405,7 @@ if Code.ensure_loaded?(Faker) do
       })
 
       Repo.insert!(%Role{
-        label: "None",
+        label: "No access",
         description: "Default Role with no permissions",
         is_reserved: true,
         organization_id: organization.id

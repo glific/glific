@@ -23,7 +23,14 @@ defmodule Glific.AccessControl do
 
   """
   @spec list_roles(map()) :: [Role.t()]
-  def list_roles(args), do: Repo.list_filter(args, Role, &Repo.opts_with_label/2, &filter_with/2)
+  def list_roles(args) do
+    args =
+      if check_fun_with_flag_toggle?(args.organization_id),
+        do: args,
+        else: Map.put(args, :filter, %{is_reserved: true})
+
+    Repo.list_filter(args, Role, &Repo.opts_with_label/2, &filter_with/2)
+  end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -248,8 +255,11 @@ defmodule Glific.AccessControl do
        else: entity_list
   end
 
+  @doc """
+  check fun_with_flag toggle for an organization and returns boolean value
+  """
   @spec check_fun_with_flag_toggle?(non_neg_integer()) :: boolean()
-  defp check_fun_with_flag_toggle?(organization_id) do
+  def check_fun_with_flag_toggle?(organization_id) do
     FunWithFlags.enabled?(
       :roles_and_permission,
       for: %{organization_id: organization_id}
