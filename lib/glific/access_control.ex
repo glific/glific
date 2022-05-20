@@ -9,7 +9,7 @@ defmodule Glific.AccessControl do
   alias Glific.{
     AccessControl.Permission,
     AccessControl.Role,
-    AccessControl.RoleFlow,
+    AccessControl.FlowRole,
     Repo
   }
 
@@ -265,7 +265,7 @@ defmodule Glific.AccessControl do
 
     entity_type
     |> case do
-      :flow -> RoleFlow.check_access(entity_list, user)
+      :flow -> FlowRole.check_access(entity_list, user)
       _ -> {:error, dgettext("errors", "Invalid BSP provider")}
     end
   end

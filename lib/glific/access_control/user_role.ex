@@ -1,4 +1,4 @@
-defmodule Glific.AccessControl.RoleUser do
+defmodule Glific.AccessControl.UserRole do
   @moduledoc """
   A pipe for managing the user roles
   """
@@ -23,7 +23,7 @@ defmodule Glific.AccessControl.RoleUser do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
-  schema "role_users" do
+  schema "user_roles" do
     belongs_to(:user, User)
     belongs_to(:role, Role)
     belongs_to(:organization, Organization)
@@ -32,7 +32,7 @@ defmodule Glific.AccessControl.RoleUser do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(RoleUser.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(UserRole.t(), map()) :: Ecto.Changeset.t()
   def changeset(user, attrs) do
     user
     |> cast(attrs, @required_fields)

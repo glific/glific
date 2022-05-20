@@ -9,7 +9,7 @@ defmodule Glific.Flows do
   alias Glific.{
     AccessControl,
     AccessControl.Role,
-    AccessControl.RoleFlow,
+    AccessControl.FlowRole,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -162,7 +162,7 @@ defmodule Glific.Flows do
       flow = get_status_flow(flow)
 
       Role
-      |> join(:inner, [c], rf in RoleFlow,
+      |> join(:inner, [c], rf in FlowRole,
         as: :rf,
         on: rf.role_id == c.id and rf.flow_id == ^flow.id
       )
@@ -225,7 +225,7 @@ defmodule Glific.Flows do
       %{access_controls: access_controls} =
         attrs
         |> Map.put(:flow_id, flow.id)
-        |> RoleFlow.update_control_access()
+        |> FlowRole.update_control_access()
 
       flow
       |> Map.put(:roles, access_controls)
@@ -263,7 +263,7 @@ defmodule Glific.Flows do
       %{access_controls: access_controls} =
         attrs
         |> Map.put(:flow_id, flow.id)
-        |> RoleFlow.update_control_access()
+        |> FlowRole.update_control_access()
 
       flow
       |> Map.put(:roles, access_controls)

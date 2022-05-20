@@ -1,4 +1,4 @@
-defmodule Glific.AccessControl.RoleFlow do
+defmodule Glific.AccessControl.FlowRole do
   @moduledoc """
   A pipe for managing the role flows
   """
@@ -11,8 +11,7 @@ defmodule Glific.AccessControl.RoleFlow do
   alias Glific.{
     Flows.Flow,
     AccessControl.Role,
-    AccessControl.RoleFlow,
-    AccessControl.RoleUser,
+    AccessControl.UserRole,
     Partners.Organization,
     Repo
   }
@@ -31,7 +30,7 @@ defmodule Glific.AccessControl.RoleFlow do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
-  schema "role_flows" do
+  schema "flow_roles" do
     belongs_to :role, Role
     belongs_to :flow, Flow
     belongs_to :organization, Organization
@@ -40,7 +39,7 @@ defmodule Glific.AccessControl.RoleFlow do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(RoleFlow.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(FlowRole.t(), map()) :: Ecto.Changeset.t()
   def changeset(role_flow, attrs) do
     role_flow
     |> cast(attrs, @required_fields)
@@ -58,9 +57,9 @@ defmodule Glific.AccessControl.RoleFlow do
       iex> create_access_control(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
   """
-  @spec create_access_control(map()) :: {:ok, RoleFlow.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_access_control(map()) :: {:ok, FlowRole.t()} | {:error, Ecto.Changeset.t()}
   def create_access_control(attrs \\ %{}) do
-    %RoleFlow{}
+    %FlowRole{}
     |> changeset(attrs)
     |> Repo.insert()
   end
@@ -102,7 +101,7 @@ defmodule Glific.AccessControl.RoleFlow do
   @spec delete_access_control_by_role_ids(integer, list()) :: {integer(), nil | [term()]}
   def delete_access_control_by_role_ids(flow_id, role_ids) do
     fields = {{:flow_id, flow_id}, {:role_id, role_ids}}
-    Repo.delete_relationships_by_ids(RoleFlow, fields)
+    Repo.delete_relationships_by_ids(FlowRole, fields)
   end
 
   @doc """
@@ -111,9 +110,9 @@ defmodule Glific.AccessControl.RoleFlow do
   @spec check_access(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
   def check_access(entity_list, user) do
     sub_query =
-      RoleFlow
+      FlowRole
       |> select([rf], rf.flow_id)
-      |> join(:inner, [rf], ru in RoleUser, as: :ru, on: ru.role_id == rf.role_id)
+      |> join(:inner, [rf], ru in UserRole, as: :ru, on: ru.role_id == rf.role_id)
       |> where([rf, ru: ru], ru.user_id == ^user.id)
 
     entity_list
