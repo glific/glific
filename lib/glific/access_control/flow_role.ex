@@ -9,9 +9,9 @@ defmodule Glific.AccessControl.FlowRole do
   alias __MODULE__
 
   alias Glific.{
-    Flows.Flow,
     AccessControl.Role,
     AccessControl.UserRole,
+    Flows.Flow,
     Partners.Organization,
     Repo
   }

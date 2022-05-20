@@ -7,9 +7,9 @@ defmodule Glific.AccessControl do
   import GlificWeb.Gettext
 
   alias Glific.{
+    AccessControl.FlowRole,
     AccessControl.Permission,
     AccessControl.Role,
-    AccessControl.FlowRole,
     Repo
   }
 

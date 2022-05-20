@@ -8,8 +8,8 @@ defmodule Glific.Flows do
 
   alias Glific.{
     AccessControl,
-    AccessControl.Role,
     AccessControl.FlowRole,
+    AccessControl.Role,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -102,11 +102,12 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from f in query,
+        from(f in query,
           where: ^keyword in f.keywords
+        )
 
       {:uuid, uuid}, query ->
-        from q in query, where: q.uuid == ^uuid
+        from(q in query, where: q.uuid == ^uuid)
 
       {:status, status}, query ->
         query
@@ -120,10 +121,10 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from q in query, where: q.is_active == ^is_active
+        from(q in query, where: q.is_active == ^is_active)
 
       {:is_background, is_background}, query ->
-        from q in query, where: q.is_background == ^is_background
+        from(q in query, where: q.is_background == ^is_background)
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
