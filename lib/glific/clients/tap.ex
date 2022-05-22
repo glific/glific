@@ -19,9 +19,9 @@ defmodule Glific.Clients.Tap do
   @props %{
     sheet_links: %{
       activity:
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=89165000&single=true&output=csv",
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-GBWadR2F3QKZ43jaUwS9WYy0QQ5n_AMW4FN5AziwrEuNcfFr5__5zsO1nMNX04M1BmvChBaXTU9r/pub?gid=2079471637&single=true&output=csv",
       quiz:
-        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQPzJ4BruF8RFMB0DwBgM8Rer7MC0fiL_IVC0rrLtZT7rsa3UnGE3ZTVBRtNdZI9zGXGlQevCajwNcn/pub?gid=531803735&single=true&output=csv"
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-GBWadR2F3QKZ43jaUwS9WYy0QQ5n_AMW4FN5AziwrEuNcfFr5__5zsO1nMNX04M1BmvChBaXTU9r/pub?gid=720505613&single=true&output=csv"
     }
   }
 
@@ -70,11 +70,18 @@ defmodule Glific.Clients.Tap do
     |> get_activity_info(fields["date"], fields["type"])
   end
 
+  def webhook("get_quiz_info", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_quiz_info(fields["activity_id"])
+  end
+
   @spec load_activities(non_neg_integer()) :: :ok
   defp load_activities(org_id) do
     ApiClient.get_csv_content(url: @props.sheet_links.activity)
     |> Enum.each(fn {_, row} ->
-      Partners.maybe_insert_organization_data("activities", row, org_id)
+      key = "schedule_" <> row["Schedule"]
+      info = %{row["Activity type"] => row}
+      Partners.maybe_insert_organization_data(key, info, org_id)
     end)
   end
 
@@ -82,7 +89,8 @@ defmodule Glific.Clients.Tap do
   defp load_quizes(org_id) do
     ApiClient.get_csv_content(url: @props.sheet_links.quiz)
     |> Enum.each(fn {_, row} ->
-      Partners.maybe_insert_organization_data("quizes", row, org_id)
+      key = "quiz_" <> row["Activity"]
+      Partners.maybe_insert_organization_data(key, row, org_id)
     end)
   end
 
@@ -90,12 +98,39 @@ defmodule Glific.Clients.Tap do
   defp get_activity_info(org_id, date, type) do
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
-      key: "activities"
+      key: "schedule_" <> date
     })
     |> case do
       {:ok, data} ->
-        data.json[type][date]
+        data.json[type]
         |> clean_map_keys()
+        |> Map.merge(%{
+          is_valid: true,
+          message: "Activity found"
+        })
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Worksheet code not found"
+        }
+    end
+  end
+
+  @spec get_quiz_info(non_neg_integer(), String.t()) :: map()
+  defp get_quiz_info(org_id, activity_id) do
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "quiz_" <> activity_id
+    })
+    |> case do
+      {:ok, data} ->
+        data.json
+        |> clean_map_keys()
+        |> Map.merge(%{
+          is_valid: true,
+          message: "Activity found"
+        })
 
       _ ->
         %{
