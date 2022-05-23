@@ -9,7 +9,8 @@ defmodule Glific.Clients.Tap do
     Partners,
     Partners.OrganizationData,
     Repo,
-    Sheets.ApiClient
+    Sheets.ApiClient,
+    Templates.SessionTemplate
   }
 
   alias Glific.Sheets.ApiClient
@@ -42,6 +43,21 @@ defmodule Glific.Clients.Tap do
     if is_nil(group_name),
       do: media["remote_name"],
       else: group_name <> "/" <> media["remote_name"]
+  end
+
+  @doc """
+  get template form EEx without variables
+  """
+  @spec template(String.t()) :: binary
+  def template(shortcode) do
+    {:ok, template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
+
+    %{
+      uuid: template.uuid,
+      name: "Template",
+      expression: nil
+    }
+    |> Jason.encode!()
   end
 
   @doc """
