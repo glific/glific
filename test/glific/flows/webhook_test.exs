@@ -1,5 +1,6 @@
 defmodule Glific.Flows.WebhookTest do
   use Glific.DataCase, async: true
+  use Oban.Testing, repo: Glific.Repo
 
   alias Glific.Flows.{
     Action,
@@ -25,11 +26,20 @@ defmodule Glific.Flows.WebhookTest do
       "score" => "31",
       "status" => "5"
     }
+    @results_as_list [
+      %{
+        "content" => "Your score: 31 is not divisible by 2, 3, 5 or 7",
+        "score" => "31",
+        "status" => "5"
+      }
+    ]
+
     @action_body %{
       contact: "@contact",
       results: "@results",
       custom_key: "custom_value"
     }
+
     test "execute a webhook for post method should return the response body with results",
          attrs do
       Tesla.Mock.mock(fn
@@ -90,6 +100,38 @@ defmodule Glific.Flows.WebhookTest do
       }
 
       assert Webhook.execute(action, context) == nil
+    end
+
+    test "execute a webhook for post method should not break and update the webhook log in case of array/list reponse",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200,
+            body: Jason.encode!(@results_as_list)
+          }
+      end)
+
+      attrs = %{
+        flow_id: 1,
+        flow_uuid: Ecto.UUID.generate(),
+        contact_id: Fixtures.contact_fixture(attrs).id,
+        organization_id: attrs.organization_id
+      }
+
+      {:ok, context} = FlowContext.create_flow_context(attrs)
+      context = Repo.preload(context, [:contact, :flow])
+
+      action = %Action{
+        headers: %{"Accept" => "application/json"},
+        method: "POST",
+        url: "some url",
+        body: Jason.encode!(@action_body)
+      }
+
+      Webhook.execute(action, context)
+      assert Webhook.execute(action, context) == nil
+      Oban.drain_queue(queue: :webhook)
     end
   end
 
