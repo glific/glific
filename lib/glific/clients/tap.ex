@@ -6,8 +6,6 @@ defmodule Glific.Clients.Tap do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    Contacts,
-    Flows.ContactField,
     Partners,
     Partners.OrganizationData,
     Repo,
