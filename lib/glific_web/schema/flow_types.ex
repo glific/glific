@@ -45,8 +45,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_background, :boolean
-    field :add_role_ids, non_null(list_of(:id))
-    field :delete_role_ids, non_null(list_of(:id))
+    field :add_role_ids, list_of(:id)
+    field :delete_role_ids, list_of(:id)
   end
 
   @desc "Filtering options for flows"
