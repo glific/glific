@@ -6,8 +6,11 @@ defmodule Glific.AccessControl.UserRole do
   alias Glific.{
     AccessControl.Role,
     Partners.Organization,
-    Users.User
+    Users.User,
+    Repo
   }
+
+  alias __MODULE__
 
   use Ecto.Schema
   import Ecto.Changeset

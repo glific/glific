@@ -18,7 +18,6 @@ defmodule GlificWeb.Schema.UserTypes do
     field :id, :id
     field :name, :string
     field :phone, :string
-    field :roles, list_of(:role_label)
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
