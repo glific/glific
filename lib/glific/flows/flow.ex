@@ -10,6 +10,7 @@ defmodule Glific.Flows.Flow do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    AccessControl.Role,
     Enums.FlowType,
     Flows,
     Flows.FlowContext,
@@ -31,7 +32,8 @@ defmodule Glific.Flows.Flow do
     :is_active,
     :is_background,
     :respond_other,
-    :respond_no_response
+    :respond_no_response,
+    :roles
   ]
 
   @type t :: %__MODULE__{
@@ -54,6 +56,7 @@ defmodule Glific.Flows.Flow do
           nodes: [Node.t()] | nil,
           version_number: String.t() | nil,
           revisions: [FlowRevision.t()] | Ecto.Association.NotLoaded.t() | nil,
+          roles: [Role.t()] | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime | nil,
@@ -71,6 +74,7 @@ defmodule Glific.Flows.Flow do
     field :uuid_map, :map, virtual: true
     field :start_node, :map, virtual: true
     field :nodes, :map, virtual: true
+    field :roles, :map, virtual: true
     field :localization, :map, virtual: true
     field :last_published_at, :utc_datetime, virtual: true
     field :last_changed_at, :utc_datetime, virtual: true

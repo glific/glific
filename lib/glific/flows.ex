@@ -223,15 +223,22 @@ defmodule Glific.Flows do
 
       flow = get_status_flow(flow)
 
-      %{access_controls: access_controls} =
-        attrs
-        |> Map.put(:flow_id, flow.id)
-        |> FlowRole.update_flow_roles()
-
-      flow
-      |> Map.put(:roles, access_controls)
-      |> then(&{:ok, &1})
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_flow_roles(attrs, flow),
+        else: {:ok, flow}
     end
+  end
+
+  @spec update_flow_roles(map(), Flow.t()) :: {:ok, Flow.t()}
+  defp update_flow_roles(attrs, flow) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:flow_id, flow.id)
+      |> FlowRole.update_flow_roles()
+
+    flow
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -261,14 +268,7 @@ defmodule Glific.Flows do
            flow
            |> Flow.changeset(attrs)
            |> Repo.update() do
-      %{access_controls: access_controls} =
-        attrs
-        |> Map.put(:flow_id, flow.id)
-        |> FlowRole.update_flow_roles()
-
-      flow
-      |> Map.put(:roles, access_controls)
-      |> then(&{:ok, &1})
+      update_flow_roles(attrs, flow)
     end
   end
 
