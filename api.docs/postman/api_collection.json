@@ -355,8 +355,8 @@
 						"body": {
 							"mode": "graphql",
 							"graphql": {
-								"query": "query contact($id: ID!) {\n  contact(id: $id) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n      lastMessageAt\n      language {\n        label\n      }\n      fields\n      settings\n      history {\n        eventType\n        eventLabel\n        eventMeta\n      }\n    }\n  }\n}",
-								"variables": "{\n  \"id\": 5\n}"
+								"query": "query contactByPhone($phone: String!) {\n  contactByPhone(phone: $phone) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n      lastMessageAt\n      language {\n        label\n      }\n      fields\n      settings\n      history {\n        eventType\n        eventLabel\n        eventMeta\n      }\n    }\n  }\n}",
+								"variables": "{\n  \"phone\": \"9876543210_1\"\n}"
 							}
 						},
 						"url": "{{api_url}}"
