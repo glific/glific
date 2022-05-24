@@ -20,17 +20,24 @@ defmodule Glific.AccessControl do
 
       iex> list_roles()
       [%Role{}, ...]
-
   """
   @spec list_roles(map()) :: [Role.t()]
   def list_roles(args) do
-    args =
-      if check_fun_with_flag_toggle?(args.organization_id),
-        do: args,
-        else: Map.put(args, :filter, %{is_reserved: true})
-
-    Repo.list_filter(args, Role, &Repo.opts_with_label/2, &filter_with/2)
+    check_fun_with_flag_toggle?(args.organization_id)
+    |> hide_organization_roles(args)
+    |> Repo.list_filter(Role, &Repo.opts_with_label/2, &filter_with/2)
   end
+
+  @spec hide_organization_roles(boolean(), map()) :: map()
+  defp hide_organization_roles(true, args), do: args
+
+  defp hide_organization_roles(false, %{filter: _filter} = args) do
+    args.filter
+    |> Map.merge(%{is_reserved: true})
+    |> then(&Map.put(args, :filter, &1))
+  end
+
+  defp hide_organization_roles(false, args), do: Map.put(args, :filter, %{is_reserved: true})
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_with(query, filter) do
@@ -52,7 +59,11 @@ defmodule Glific.AccessControl do
   Return the count of roles, using the same filter as list_roles
   """
   @spec count_access_roles(map()) :: integer
-  def count_access_roles(args), do: Repo.count_filter(args, Role, &filter_with/2)
+  def count_access_roles(args) do
+    check_fun_with_flag_toggle?(args.organization_id)
+    |> hide_organization_roles(args)
+    |> Repo.count_filter(Role, &filter_with/2)
+  end
 
   @doc """
   Gets a single role.
@@ -124,20 +135,6 @@ defmodule Glific.AccessControl do
   @spec delete_role(Role.t()) :: {:ok, Role.t()} | {:error, Ecto.Changeset.t()}
   def delete_role(%Role{} = role) do
     Repo.delete(role)
-  end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking role changes.
-
-  ## Examples
-
-      iex> change_role(role)
-      %Ecto.Changeset{data: %Role{}}
-
-  """
-  @spec change_role(Role.t()) :: Ecto.Changeset.t()
-  def change_role(%Role{} = role, attrs \\ %{}) do
-    Role.changeset(role, attrs)
   end
 
   @doc """
@@ -225,21 +222,6 @@ defmodule Glific.AccessControl do
   @spec delete_permission(Permission.t()) :: {:ok, Permission.t()} | {:error, Ecto.Changeset.t()}
   def delete_permission(%Permission{} = permission) do
     Repo.delete(permission)
-  end
-
-  @doc """
-
-  Returns an `%Ecto.Changeset{}` for tracking permission changes.
-
-  ## Examples
-
-      iex> change_permission(permission)
-      %Ecto.Changeset{data: %Permission{}}
-
-  """
-  @spec change_permission(Permission.t()) :: Ecto.Changeset.t()
-  def change_permission(%Permission{} = permission, attrs \\ %{}) do
-    Permission.changeset(permission, attrs)
   end
 
   @doc """
