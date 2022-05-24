@@ -52,13 +52,13 @@ defmodule Glific.AccessControl.FlowRole do
   @doc """
   Creates a access control.
   ## Examples
-      iex> create_access_control(%{field: value})
-      {:ok, %Role{}}
-      iex> create_access_control(%{field: bad_value})
+      iex> create_flow_role(%{field: value})
+      {:ok, %FlowRole{}}
+      iex> create_flow_role(%{field: bad_value})
       {:error, %Ecto.Changeset{}}
   """
-  @spec create_access_control(map()) :: {:ok, FlowRole.t()} | {:error, Ecto.Changeset.t()}
-  def create_access_control(attrs \\ %{}) do
+  @spec create_flow_role(map()) :: {:ok, FlowRole.t()} | {:error, Ecto.Changeset.t()}
+  def create_flow_role(attrs \\ %{}) do
     %FlowRole{}
     |> changeset(attrs)
     |> Repo.insert()
@@ -67,8 +67,8 @@ defmodule Glific.AccessControl.FlowRole do
   @doc """
   Update flow roles based on add_role_ids and delete_role_ids and return number_deleted as integer and roles added as access_controls
   """
-  @spec update_control_access(map()) :: map()
-  def update_control_access(
+  @spec update_flow_roles(map()) :: map()
+  def update_flow_roles(
         %{
           flow_id: flow_id,
           add_role_ids: add_role_ids,
@@ -80,14 +80,14 @@ defmodule Glific.AccessControl.FlowRole do
         add_role_ids,
         [],
         fn role_id, acc ->
-          case create_access_control(Map.merge(attrs, %{role_id: role_id, flow_id: flow_id})) do
+          case create_flow_role(Map.merge(attrs, %{role_id: role_id, flow_id: flow_id})) do
             {:ok, access_control} -> [access_control | acc]
             _ -> acc
           end
         end
       )
 
-    {number_deleted, _} = delete_access_control_by_role_ids(flow_id, delete_role_ids)
+    {number_deleted, _} = delete_flow_roles_by_role_ids(flow_id, delete_role_ids)
 
     %{
       number_deleted: number_deleted,
@@ -96,10 +96,10 @@ defmodule Glific.AccessControl.FlowRole do
   end
 
   @doc """
-  Delete group contacts
+  Delete flow roles
   """
-  @spec delete_access_control_by_role_ids(integer, list()) :: {integer(), nil | [term()]}
-  def delete_access_control_by_role_ids(flow_id, role_ids) do
+  @spec delete_flow_roles_by_role_ids(integer, list()) :: {integer(), nil | [term()]}
+  def delete_flow_roles_by_role_ids(flow_id, role_ids) do
     fields = {{:flow_id, flow_id}, {:role_id, role_ids}}
     Repo.delete_relationships_by_ids(FlowRole, fields)
   end

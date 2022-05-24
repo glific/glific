@@ -226,7 +226,7 @@ defmodule Glific.Flows do
       %{access_controls: access_controls} =
         attrs
         |> Map.put(:flow_id, flow.id)
-        |> FlowRole.update_control_access()
+        |> FlowRole.update_flow_roles()
 
       flow
       |> Map.put(:roles, access_controls)
@@ -264,7 +264,7 @@ defmodule Glific.Flows do
       %{access_controls: access_controls} =
         attrs
         |> Map.put(:flow_id, flow.id)
-        |> FlowRole.update_control_access()
+        |> FlowRole.update_flow_roles()
 
       flow
       |> Map.put(:roles, access_controls)
