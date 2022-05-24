@@ -10,6 +10,7 @@ defmodule Glific.Users do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    AccessControl.UserRole,
     Repo,
     Settings.Language,
     Users.User
@@ -112,9 +113,19 @@ defmodule Glific.Users do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
 
-    user
-    |> User.update_fields_changeset(attrs)
-    |> Repo.update()
+    with {:ok, user} <-
+           user
+           |> User.update_fields_changeset(attrs)
+           |> Repo.update() do
+      %{access_controls: access_controls} =
+        attrs
+        |> Map.put(:user_id, user.id)
+        |> UserRole.update_user_roles()
+
+      user
+      |> Map.put(:roles, access_controls)
+      |> then(&{:ok, &1})
+    end
   end
 
   @doc """

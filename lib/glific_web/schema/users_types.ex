@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema.UserTypes do
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
+    field :roles, list_of(:access_role)
 
     field :is_restricted, :boolean do
       resolve(fn user, _, %{context: %{current_user: current_user}} ->
@@ -75,6 +76,8 @@ defmodule GlificWeb.Schema.UserTypes do
     field :group_ids, list_of(:id)
     field :is_restricted, :boolean
     field :language_id, :id
+    field :add_role_ids, list_of(:id)
+    field :delete_role_ids, list_of(:id)
   end
 
   object :user_queries do
