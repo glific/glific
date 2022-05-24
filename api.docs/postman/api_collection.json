@@ -333,6 +333,37 @@
 					"response": []
 				},
 				{
+					"name": "Get a specific Contact by phone",
+					"id": "42a066cd-f2ae-41c9-a011-112721b8ad55",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contact($id: ID!) {\n  contact(id: $id) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n      lastMessageAt\n      language {\n        label\n      }\n      fields\n      settings\n      history {\n        eventType\n        eventLabel\n        eventMeta\n      }\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 5\n}"
+							}
+						},
+						"url": "{{api_url}}"
+					},
+					"response": []
+				},
+				{
 					"name": "Get All Blocked Contacts",
 					"id": "736bcdab-9fc1-4392-80b6-985f3869d53c",
 					"protocolProfileBehavior": {
