@@ -160,6 +160,14 @@ defmodule GlificWeb.Schema.ContactTest do
     assert fetched_contact["maskedPhone"] != nil
   end
 
+  test "contact by phone returns error if contact not found", %{manager: user} do
+    result = auth_query_gql_by(:by_phone, user, variables: %{"phone" => "Invalid phone"})
+    assert {:ok, query_data} = result
+    fetched_contact = get_in(query_data, [:data, "contactByPhone", "contact"])
+    assert fetched_contact == nil
+    assert is_list(get_in(query_data, [:data, "contactByPhone", "errors"]))
+  end
+
   test "create a contact and test possible scenarios and errors", %{manager: user} do
     name = "Contact Test Name Uno"
     phone = "1-415-555-1212"
