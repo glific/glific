@@ -47,7 +47,7 @@ defmodule Glific.Flows.Action do
   @required_fields_group [:groups | @required_field_common]
   @required_fields_contact [:contacts, :text | @required_field_common]
   @required_fields_waittime [:delay]
-  @required_fields_interactive_template [:name, :id | @required_field_common]
+  @required_fields_interactive_template [:name | @required_field_common]
 
   @wait_for ["wait_for_time", "wait_for_result"]
 
@@ -77,6 +77,7 @@ defmodule Glific.Flows.Action do
           templating: Templating.t() | nil,
           wait_time: integer() | nil,
           interactive_template_id: integer() | nil,
+          interactive_template_expression: String.t() | nil,
           params_count: String.t() | nil,
           params: list() | nil
         }
@@ -120,8 +121,9 @@ defmodule Glific.Flows.Action do
     field(:enter_flow_name, :string)
     field(:enter_flow_expression, :string)
 
-    field :params, {:array, :string}, default: []
+    field(:params, {:array, :string}, default: [])
     field(:params_count, :string)
+    field(:interactive_template_expression, :string)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -234,7 +236,8 @@ defmodule Glific.Flows.Action do
       interactive_template_id: json["id"],
       labels: json["labels"],
       params: json["params"] || [],
-      params_count: json["paramsCount"] || "0"
+      params_count: json["paramsCount"] || "0",
+      interactive_template_expression: json["expression"] || nil
     })
   end
 
@@ -248,7 +251,7 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  @default_wait_time 5 * 60
+  @default_wait_time -1
   def process(%{"type" => type} = json, uuid_map, node)
       when type in @wait_for do
     Flows.check_required_fields(json, @required_fields_waittime)
@@ -644,19 +647,28 @@ defmodule Glific.Flows.Action do
       else: {:ok, context, []}
   end
 
+  @sleep_timeout 4 * 1000
+
   def execute(%{type: type} = action, context, [])
       when type in @wait_for do
-    {:ok, context} =
-      FlowContext.update_flow_context(
-        context,
-        %{
-          wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
-          is_background_flow: context.flow.is_background,
-          is_await_result: type == "wait_for_result"
-        }
-      )
+    if action.wait_time == @default_wait_time do
+      ## Ideally we should do it by async call
+      ## but this is fine as a sort term fix.
+      Process.sleep(@sleep_timeout)
+      {:ok, context, []}
+    else
+      {:ok, context} =
+        FlowContext.update_flow_context(
+          context,
+          %{
+            wakeup_at: DateTime.add(DateTime.utc_now(), action.wait_time),
+            is_background_flow: context.flow.is_background,
+            is_await_result: type == "wait_for_result"
+          }
+        )
 
-    {:wait, context, []}
+      {:wait, context, []}
+    end
   end
 
   def execute(action, _context, _messages),

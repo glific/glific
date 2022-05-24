@@ -531,8 +531,6 @@ defmodule Glific.Clients.Stir do
     Map.put(%{}, :urls, urls)
   end
 
-  @doc false
-  @spec webhook(String.t(), map()) :: map()
   def webhook("move_mt_to_district_group", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
     {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
