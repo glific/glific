@@ -4,7 +4,8 @@ defmodule GlificWeb.Schema.FlowTypes do
   """
 
   use Absinthe.Schema.Notation
-
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -36,7 +37,10 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
-    field :roles, list_of(:access_role)
+
+    field :roles, list_of(:access_role) do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   input_object :flow_input do

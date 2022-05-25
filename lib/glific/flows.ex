@@ -160,15 +160,7 @@ defmodule Glific.Flows do
   @spec get_flow!(integer) :: map()
   def get_flow!(id) do
     with flow <- Repo.get!(Flow, id) do
-      flow = get_status_flow(flow)
-
-      Role
-      |> join(:inner, [c], rf in FlowRole,
-        as: :rf,
-        on: rf.role_id == c.id and rf.flow_id == ^flow.id
-      )
-      |> Repo.all()
-      |> then(&Map.put(flow, :roles, &1))
+      get_status_flow(flow)
     end
   end
 
