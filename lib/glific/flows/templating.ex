@@ -88,6 +88,8 @@ defmodule Glific.Flows.Templating do
   def execute(templating, _context, _messages), do: templating
 
   defp ensure_template_struct(json_string) do
+    IO.inspect(json_string)
+
     opts =
       Jason.decode!(json_string)
       |> Glific.atomize_keys()

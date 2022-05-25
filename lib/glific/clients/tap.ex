@@ -55,7 +55,8 @@ defmodule Glific.Clients.Tap do
     %{
       uuid: template.uuid,
       name: "Template",
-      expression: nil
+      expression: nil,
+      variables: ["Pankaj"]
     }
     |> Jason.encode!()
   end
@@ -94,7 +95,8 @@ defmodule Glific.Clients.Tap do
     ApiClient.get_csv_content(url: @props.sheet_links.activity)
     |> Enum.each(fn {_, row} ->
       key = "schedule_" <> row["Schedule"]
-      info = %{row["Activity type"] => row}
+      activity_type = Glific.string_clean(row["Activity type"])
+      info = %{activity_type => row}
       Partners.maybe_insert_organization_data(key, info, org_id)
     end)
   end
@@ -110,6 +112,9 @@ defmodule Glific.Clients.Tap do
 
   @spec get_activity_info(non_neg_integer(), String.t(), String.t()) :: map()
   defp get_activity_info(org_id, date, type) do
+    IO.inspect(date)
+    IO.inspect(type)
+
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
       key: "schedule_" <> date
