@@ -22,8 +22,6 @@ defmodule GlificWeb.Schema.UserTypes do
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
-    field :access_roles, list_of(:access_role)
-
     field :is_restricted, :boolean do
       resolve(fn user, _, %{context: %{current_user: current_user}} ->
         if Enum.member?(current_user.roles, :staff),
@@ -41,6 +39,10 @@ defmodule GlificWeb.Schema.UserTypes do
     end
 
     field :groups, list_of(:group) do
+      resolve(dataloader(Repo))
+    end
+
+    field :access_roles, list_of(:access_role) do
       resolve(dataloader(Repo))
     end
 
