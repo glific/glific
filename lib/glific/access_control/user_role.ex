@@ -67,8 +67,7 @@ defmodule Glific.AccessControl.UserRole do
   def update_user_roles(
         %{
           user_id: user_id,
-          add_role_ids: add_role_ids,
-          delete_role_ids: delete_role_ids
+          add_role_ids: add_role_ids
         } = attrs
       ) do
     access_controls =
@@ -83,7 +82,10 @@ defmodule Glific.AccessControl.UserRole do
         end
       )
 
-    {number_deleted, _} = delete_user_roles_by_role_ids(user_id, delete_role_ids)
+    {number_deleted, _} =
+      if Map.has_key?(attrs, :delete_role_ids),
+        do: delete_user_roles_by_role_ids(user_id, attrs.delete_role_ids),
+        else: {0, attrs}
 
     %{
       number_deleted: number_deleted,

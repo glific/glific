@@ -117,15 +117,20 @@ defmodule Glific.Users do
            user
            |> User.update_fields_changeset(attrs)
            |> Repo.update() do
-      %{access_controls: access_controls} =
-        attrs
-        |> Map.put(:user_id, user.id)
-        |> UserRole.update_user_roles()
-
-      user
-      |> Map.put(:roles, access_controls)
-      |> then(&{:ok, &1})
+      update_user_roles(attrs, user)
     end
+  end
+
+  @spec update_user_roles(map(), User.t()) :: {:ok, User.t()}
+  defp update_user_roles(attrs, user) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:user_id, user.id)
+      |> UserRole.update_user_roles()
+
+    user
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
