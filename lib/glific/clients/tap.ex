@@ -49,14 +49,14 @@ defmodule Glific.Clients.Tap do
   get template form EEx without variables
   """
   @spec template(String.t()) :: binary
-  def template(shortcode) do
+  def template(shortcode, meta \\ %{}) do
     {:ok, template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
 
     %{
       uuid: template.uuid,
       name: "Template",
       expression: nil,
-      variables: ["Pankaj"]
+      variables: ["Pankajs"]
     }
     |> Jason.encode!()
   end
@@ -112,9 +112,6 @@ defmodule Glific.Clients.Tap do
 
   @spec get_activity_info(non_neg_integer(), String.t(), String.t()) :: map()
   defp get_activity_info(org_id, date, type) do
-    IO.inspect(date)
-    IO.inspect(type)
-
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
       key: "schedule_" <> date
