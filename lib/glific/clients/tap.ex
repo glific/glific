@@ -5,7 +5,25 @@ defmodule Glific.Clients.Tap do
 
   import Ecto.Query, warn: false
 
-  alias Glific.{Contacts.Contact, Groups.ContactGroup, Groups.Group, Repo}
+  alias Glific.{
+    Contacts.Contact,
+    Groups.ContactGroup,
+    Groups.Group,
+    Partners,
+    Partners.OrganizationData,
+    Repo,
+    Sheets.ApiClient,
+    Templates.SessionTemplate
+  }
+
+  @props %{
+    sheet_links: %{
+      activity:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-GBWadR2F3QKZ43jaUwS9WYy0QQ5n_AMW4FN5AziwrEuNcfFr5__5zsO1nMNX04M1BmvChBaXTU9r/pub?gid=2079471637&single=true&output=csv",
+      quiz:
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vR-GBWadR2F3QKZ43jaUwS9WYy0QQ5n_AMW4FN5AziwrEuNcfFr5__5zsO1nMNX04M1BmvChBaXTU9r/pub?gid=720505613&single=true&output=csv"
+    }
+  }
 
   @doc """
   In the case of TAP we retrive the first group the contact is in and store
@@ -26,5 +44,125 @@ defmodule Glific.Clients.Tap do
     if is_nil(group_name),
       do: media["remote_name"],
       else: group_name <> "/" <> media["remote_name"]
+  end
+
+  @doc """
+  get template form EEx without variables
+  """
+  @spec template(String.t(), String.t()) :: binary
+  def template(shortcode, _json_string \\ "") do
+    {:ok, template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
+
+    %{
+      uuid: template.uuid,
+      name: "Template",
+      expression: nil,
+      variables: Enum.map(1..template.number_parameters, fn i -> "{{ var #{i} }}" end)
+    }
+    |> Jason.encode!()
+  end
+
+  @doc """
+  Create a webhook with different signatures, so we can easily implement
+  additional functionality as needed
+  """
+  @spec webhook(String.t(), map()) :: map()
+  def webhook("load_activities", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_activities()
+
+    fields
+  end
+
+  def webhook("load_quizes", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_quizes()
+
+    fields
+  end
+
+  def webhook("get_activity_info", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_activity_info(fields["date"], fields["type"])
+  end
+
+  def webhook("get_quiz_info", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_quiz_info(fields["activity_id"])
+  end
+
+  def webhook(_, fields), do: fields
+
+  @spec load_activities(non_neg_integer()) :: :ok
+  defp load_activities(org_id) do
+    ApiClient.get_csv_content(url: @props.sheet_links.activity)
+    |> Enum.each(fn {_, row} ->
+      key = "schedule_" <> row["Schedule"]
+      activity_type = Glific.string_clean(row["Activity type"])
+      info = %{activity_type => row}
+      Partners.maybe_insert_organization_data(key, info, org_id)
+    end)
+  end
+
+  @spec load_quizes(non_neg_integer()) :: :ok
+  defp load_quizes(org_id) do
+    ApiClient.get_csv_content(url: @props.sheet_links.quiz)
+    |> Enum.each(fn {_, row} ->
+      key = "quiz_" <> row["Activity"]
+      Partners.maybe_insert_organization_data(key, row, org_id)
+    end)
+  end
+
+  @spec get_activity_info(non_neg_integer(), String.t(), String.t()) :: map()
+  defp get_activity_info(org_id, date, type) do
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "schedule_" <> date
+    })
+    |> case do
+      {:ok, data} ->
+        data.json[type]
+        |> clean_map_keys()
+        |> Map.merge(%{
+          is_valid: true,
+          message: "Activity found"
+        })
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Worksheet code not found"
+        }
+    end
+  end
+
+  @spec get_quiz_info(non_neg_integer(), String.t()) :: map()
+  defp get_quiz_info(org_id, activity_id) do
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "quiz_" <> activity_id
+    })
+    |> case do
+      {:ok, data} ->
+        data.json
+        |> clean_map_keys()
+        |> Map.merge(%{
+          is_valid: true,
+          message: "Activity found"
+        })
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Activity not found"
+        }
+    end
+  end
+
+  @spec clean_map_keys(map()) :: map()
+  defp clean_map_keys(data) do
+    data
+    |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
+    |> Enum.into(%{})
   end
 end
