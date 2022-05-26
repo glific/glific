@@ -49,8 +49,8 @@ defmodule Glific.Clients.Tap do
   @doc """
   get template form EEx without variables
   """
-  @spec template(String.t()) :: binary
-  def template(shortcode, _meta \\ %{}) do
+  @spec template(String.t(), String.t()) :: binary
+  def template(shortcode, _json_string \\ "") do
     {:ok, template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
 
     %{
@@ -90,6 +90,8 @@ defmodule Glific.Clients.Tap do
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> get_quiz_info(fields["activity_id"])
   end
+
+  def webhook(_, fields), do: fields
 
   @spec load_activities(non_neg_integer()) :: :ok
   defp load_activities(org_id) do
