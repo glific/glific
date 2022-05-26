@@ -151,7 +151,7 @@ defmodule Glific.Clients.Tap do
       _ ->
         %{
           is_valid: false,
-          message: "Worksheet code not found"
+          message: "Activity not found"
         }
     end
   end
