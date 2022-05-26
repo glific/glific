@@ -126,11 +126,13 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
+  @spec unprocessed_group_broadcast(non_neg_integer) :: FlowBroadcast.t()
   defp unprocessed_group_broadcast(organization_id) do
     from(fb in FlowBroadcast,
-      as: :flow_broadcast,
-      where: fb.organization_id == ^organization_id,
-      where: is_nil(fb.completed_at),
+      where:
+        fb.organization_id == ^organization_id and
+          is_nil(fb.completed_at),
+      order_by: [desc: fb.inserted_at],
       limit: 1
     )
     |> Repo.one()
