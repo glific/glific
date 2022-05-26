@@ -6,14 +6,15 @@ defmodule Glific.Clients.Tap do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
+    Groups.ContactGroup,
+    Groups.Group,
     Partners,
     Partners.OrganizationData,
     Repo,
     Sheets.ApiClient,
     Templates.SessionTemplate
   }
-
-  alias Glific.Sheets.ApiClient
 
   @props %{
     sheet_links: %{
