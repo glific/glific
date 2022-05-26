@@ -137,7 +137,7 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.preload([:flow])
   end
 
-  @unprocessed_contact_limit 150
+  @unprocessed_contact_limit 100
 
   defp unprocessed_contacts(flow_broadcast) do
     broadcast_contacts_query(flow_broadcast)
@@ -190,6 +190,10 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
+
+          Keyword.get(opts, :flow_broadcast_id, nil)
+          |> mark_flow_broadcast_contact_processed(contact.id, "pending")
+
           response = FlowContext.init_context(flow, contact, @status, opts)
 
           if elem(response, 0) in [:ok, :wait] do
@@ -199,9 +203,6 @@ defmodule Glific.Flows.Broadcast do
             Logger.info("Could not start the flow for the contact.
                Contact id : #{contact.id} opts: #{inspect(opts)}
                response #{inspect(response)}")
-
-            Keyword.get(opts, :flow_broadcast_id, nil)
-            |> mark_flow_broadcast_contact_processed(contact.id, "pending")
           end
 
           :ok
