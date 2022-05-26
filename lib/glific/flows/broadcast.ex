@@ -154,7 +154,7 @@ defmodule Glific.Flows.Broadcast do
     )
     |> where(
       [c, _fbc],
-      c.status != :blocked and c.bsp_status != :invalid and is_nil(c.optout_time)
+      c.status not in [:blocked, :invalid] and is_nil(c.optout_time)
     )
     |> where([_c, fbc], is_nil(fbc.processed_at))
   end
