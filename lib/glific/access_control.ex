@@ -232,9 +232,16 @@ defmodule Glific.AccessControl do
     user = Repo.get_current_user()
 
     if check_fun_with_flag_toggle?(user.organization_id) and
-         user.roles not in [:admin, :glific_admin, :staff],
+         has_minimum_permissions(user),
        do: do_check_access(entity_list, entity_type, user),
        else: entity_list
+  end
+
+  @spec has_minimum_permissions(User.t() | nil) :: boolean()
+  defp has_minimum_permissions(nil), do: false
+
+  defp has_minimum_permissions(user) do
+    !Enum.any?(user.roles, fn role -> role in [:admin, :glific_admin, :staff] end)
   end
 
   @doc """

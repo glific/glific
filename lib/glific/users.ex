@@ -129,7 +129,7 @@ defmodule Glific.Users do
       |> UserRole.update_user_roles()
 
     user
-    |> Map.put(:roles, access_controls)
+    |> Map.put(:access_roles, access_controls)
     |> then(&{:ok, &1})
   end
 
