@@ -6,8 +6,8 @@ defmodule Glific.AccessControl.UserRole do
   alias Glific.{
     AccessControl.Role,
     Partners.Organization,
-    Users.User,
-    Repo
+    Repo,
+    Users.User
   }
 
   alias __MODULE__
