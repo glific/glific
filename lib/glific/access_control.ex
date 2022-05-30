@@ -29,6 +29,14 @@ defmodule Glific.AccessControl do
     |> Repo.list_filter(Role, &Repo.opts_with_label/2, &filter_with/2)
   end
 
+  @doc """
+  Returns the labels of organization roles.
+
+  ## Examples
+
+      iex> organization_roles()
+      ["Teacher", "Mentor"]
+  """
   @spec organization_roles(map()) :: [Role.t()]
   def organization_roles(args) do
     list_roles(%{

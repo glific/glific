@@ -10,8 +10,8 @@ defmodule Glific.Users do
   import Ecto.Query, warn: false
 
   alias Glific.{
-    AccessControl.UserRole,
     AccessControl.Role,
+    AccessControl.UserRole,
     Repo,
     Settings.Language,
     Users.User
@@ -114,11 +114,13 @@ defmodule Glific.Users do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
 
-    with {:ok, user} <-
+    with {:ok, updated_user} <-
            user
            |> User.update_fields_changeset(attrs)
            |> Repo.update() do
-      update_user_roles(attrs, user)
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_user_roles(attrs, updated_user),
+        else: {:ok, updated_user}
     end
   end
 
@@ -219,7 +221,7 @@ defmodule Glific.Users do
 
   defp maybe_promote_user(_list, user), do: user
 
-  defp get_admin_role_id() do
+  defp get_admin_role_id do
     Role
     |> select([r], r.id)
     |> where([r], ilike(r.label, "Admin"))
