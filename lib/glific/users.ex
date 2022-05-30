@@ -11,6 +11,7 @@ defmodule Glific.Users do
 
   alias Glific.{
     AccessControl.UserRole,
+    AccessControl.Role,
     Repo,
     Settings.Language,
     Users.User
@@ -212,9 +213,16 @@ defmodule Glific.Users do
   @spec maybe_promote_user(list(), User.t()) :: User.t()
   defp maybe_promote_user([], user) do
     # this is the first user, since the list of valid org users is empty
-    {:ok, user} = update_user(user, %{roles: [:admin]})
+    {:ok, user} = update_user(user, %{roles: [:admin], add_role_ids: get_admin_role_id()})
     user
   end
 
   defp maybe_promote_user(_list, user), do: user
+
+  defp get_admin_role_id() do
+    Role
+    |> select([r], r.id)
+    |> where([r], ilike(r.label, "Admin"))
+    |> Repo.all()
+  end
 end

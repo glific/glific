@@ -9,7 +9,6 @@ defmodule Glific.Flows do
   alias Glific.{
     AccessControl,
     AccessControl.FlowRole,
-    AccessControl.Role,
     Caches,
     Contacts.Contact,
     Flows.ContactField,

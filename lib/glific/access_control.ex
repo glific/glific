@@ -10,7 +10,8 @@ defmodule Glific.AccessControl do
     AccessControl.FlowRole,
     AccessControl.Permission,
     AccessControl.Role,
-    Repo
+    Repo,
+    Users.User
   }
 
   @doc """
