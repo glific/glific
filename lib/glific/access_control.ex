@@ -28,6 +28,15 @@ defmodule Glific.AccessControl do
     |> Repo.list_filter(Role, &Repo.opts_with_label/2, &filter_with/2)
   end
 
+  @spec organization_roles(map()) :: [Role.t()]
+  def organization_roles(args) do
+    list_roles(%{
+      organization_id: args.organization_id,
+      filter: %{is_reserved: false}
+    })
+    |> Enum.reduce([], &(&2 ++ [&1.label]))
+  end
+
   @spec hide_organization_roles(boolean(), map()) :: map()
   defp hide_organization_roles(true, args), do: args
 
