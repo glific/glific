@@ -13,7 +13,8 @@ defmodule Glific.AccessControl.FlowRole do
     AccessControl.UserRole,
     Flows.Flow,
     Partners.Organization,
-    Repo
+    Repo,
+    Users.User
   }
 
   use Ecto.Schema
