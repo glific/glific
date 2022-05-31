@@ -60,7 +60,7 @@ defmodule GlificWeb.Schema.RoleTypes do
     field :count_access_roles, :integer do
       arg(:filter, :access_role_filter)
       middleware(Authorize, :staff)
-      resolve(&Resolvers.Roles.count_access_roles/3)
+      resolve(&Resolvers.Roles.count_roles/3)
     end
   end
 

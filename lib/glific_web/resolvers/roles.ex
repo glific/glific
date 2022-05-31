@@ -33,9 +33,9 @@ defmodule GlificWeb.Resolvers.Roles do
   @doc """
   Get the list of roles filtered by args
   """
-  @spec count_access_roles(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
-  def count_access_roles(_, args, _) do
-    {:ok, AccessControl.count_access_roles(args)}
+  @spec count_roles(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
+  def count_roles(_, args, _) do
+    {:ok, AccessControl.count_roles(args)}
   end
 
   @doc false

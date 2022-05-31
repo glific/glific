@@ -76,8 +76,8 @@ defmodule Glific.AccessControl do
   @doc """
   Return the count of roles, using the same filter as list_roles
   """
-  @spec count_access_roles(map()) :: integer
-  def count_access_roles(args) do
+  @spec count_roles(map()) :: integer
+  def count_roles(args) do
     check_fun_with_flag_toggle?(args.organization_id)
     |> hide_organization_roles(args)
     |> Repo.count_filter(Role, &filter_with/2)

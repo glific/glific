@@ -10,6 +10,11 @@ defmodule Glific.AccessControlTest do
 
   describe "roles" do
     @invalid_attrs %{description: nil, is_reserved: nil, label: nil}
+    @valid_more_attrs %{
+      description: "some more description",
+      is_reserved: true,
+      label: "some more label"
+    }
 
     test "list_roles/0 returns all roles", attrs do
       role = Fixtures.role_fixture(attrs)
@@ -21,8 +26,13 @@ defmodule Glific.AccessControlTest do
       assert AccessControl.get_role!(role.id) == role
     end
 
-    test "create_role/1 with valid data creates a role" do
-      valid_attrs = %{description: "some description", is_reserved: true, label: "some label"}
+    test "create_role/1 with valid data creates a role", attrs do
+      valid_attrs = %{
+        description: "some description",
+        is_reserved: true,
+        label: "some label",
+        organization_id: attrs.organization_id
+      }
 
       assert {:ok, %Role{} = role} = AccessControl.create_role(valid_attrs)
       assert role.description == "some description"
@@ -59,6 +69,22 @@ defmodule Glific.AccessControlTest do
       role = Fixtures.role_fixture(attrs)
       assert {:ok, %Role{}} = AccessControl.delete_role(role)
       assert_raise Ecto.NoResultsError, fn -> AccessControl.get_role!(role.id) end
+    end
+
+    test "count_roles/1 returns count of all roles",
+         %{organization_id: _organization_id} = attrs do
+      role_count =
+        AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id})
+
+      _ = Fixtures.role_fixture(attrs)
+
+      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
+               role_count + 1
+
+      _ = Fixtures.role_fixture(Map.merge(attrs, @valid_more_attrs))
+
+      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
+               role_count + 2
     end
   end
 

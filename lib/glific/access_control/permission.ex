@@ -16,6 +16,8 @@ defmodule Glific.AccessControl.Permission do
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
+
+  @schema_prefix "global"
   schema "permissions" do
     field :entity, :string
     many_to_many :roles, Role, join_through: "role_permissions", on_replace: :delete
