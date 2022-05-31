@@ -9,6 +9,9 @@ defmodule Glific.Fixtures do
   }
 
   alias Glific.{
+    AccessControl,
+    AccessControl.Permission,
+    AccessControl.Role,
     Contacts,
     Contacts.ContactsField,
     Extensions.Extension,
@@ -906,5 +909,43 @@ defmodule Glific.Fixtures do
       |> MailLog.create_mail_log()
 
     mail_log
+  end
+
+  @doc """
+  Generate a role.
+  """
+  @spec role_fixture(map()) :: Role.t()
+  def role_fixture(attrs) do
+    valid_attrs = %{
+      description: "some description",
+      is_reserved: true,
+      label: "some label"
+    }
+
+    {:ok, role} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:organization_id, attrs.organization_id)
+      |> AccessControl.create_role()
+
+    role
+  end
+
+  @doc """
+  Generate a permission.
+  """
+  @spec permission_fixture(map()) :: Permission.t()
+  def permission_fixture(attrs) do
+    valid_attrs = %{
+      entity: "some entity"
+    }
+
+    {:ok, permission} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:organization_id, attrs.organization_id)
+      |> AccessControl.create_permission()
+
+    permission
   end
 end
