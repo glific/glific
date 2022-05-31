@@ -753,7 +753,7 @@ if Code.ensure_loaded?(Faker) do
     def seed_user_roles(organization \\ nil) do
       organization = get_organization(organization)
 
-      [u1, u2, u3, u4, u5 | _] = Users.list_users(%{filter: %{organization_id: 1}})
+      [u1, u2, u3, u4, u5 | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
 
       [r1, r2, r3 | _] = AccessControl.list_roles(%{organization_id: organization.id})
 
@@ -1423,7 +1423,9 @@ if Code.ensure_loaded?(Faker) do
 
     @doc false
     @spec seed_roles(Organization.t() | nil) :: nil
-    defp seed_roles(organization) do
+    def seed_roles(organization \\ nil) do
+      organization = get_organization(organization)
+
       Repo.insert!(%Role{
         label: "Admin",
         description: "Default Admin Role",

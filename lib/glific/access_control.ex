@@ -247,19 +247,21 @@ defmodule Glific.AccessControl do
   """
   @spec check_access(Ecto.Query.t(), atom()) :: Ecto.Query.t()
   def check_access(entity_list, entity_type) do
-    user = Repo.get_current_user()
+    user = Repo.get_current_user() |> Repo.preload([:access_roles])
 
     if check_fun_with_flag_toggle?(user.organization_id) and
-         has_minimum_permissions(user),
+         is_organization_role?(user),
        do: do_check_access(entity_list, entity_type, user),
        else: entity_list
   end
 
-  @spec has_minimum_permissions(User.t() | nil) :: boolean()
-  defp has_minimum_permissions(nil), do: false
+  @spec is_organization_role?(User.t() | nil) :: boolean()
+  defp is_organization_role?(nil), do: false
 
-  defp has_minimum_permissions(user) do
-    !Enum.any?(user.roles, fn role -> role in [:admin, :glific_admin, :staff] end)
+  defp is_organization_role?(%{access_roles: access_roles} = _user) do
+    !Enum.any?(access_roles, fn access_role ->
+      access_role.label in ["Admin", "Manager", "Staff"]
+    end)
   end
 
   @doc """
