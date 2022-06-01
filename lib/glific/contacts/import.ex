@@ -28,7 +28,8 @@ defmodule Glific.Contacts.Import do
           do: elem(Timex.parse(data["opt_in"], date_format), 1),
           else: nil
         ),
-      delete: data["delete"]
+      delete: data["delete"],
+      contact_fields: Map.drop(data, ["phone", "language", "opt_in", "delete"])
     }
   end
 
@@ -39,6 +40,23 @@ defmodule Glific.Contacts.Import do
       group_id: group_id,
       organization_id: contact.organization_id
     })
+  end
+
+  @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
+  defp add_contact_fields(contact, fields) do
+    Enum.reduce(fields, contact, fn {field, value}, contact ->
+      field = Glific.string_clean(field)
+
+      if value not in [nil, ""],
+        do:
+          ContactField.do_add_contact_field(
+            contact,
+            field,
+            field,
+            value
+          ),
+        else: contact
+    end)
   end
 
   @spec process_data(map(), non_neg_integer) :: Contact.t()
@@ -60,8 +78,9 @@ defmodule Glific.Contacts.Import do
       add_contact_to_group(contact, group_id)
     end
 
-    if contact_attrs[:name] not in [nil, ""],
-      do: ContactField.do_add_contact_field(contact, "name", "name", contact_attrs[:name])
+    if contact_attrs[:contact_fields] not in [%{}] do
+      add_contact_fields(contact, contact_attrs[:contact_fields])
+    end
 
     if should_optin_contact?(contact, contact_attrs) do
       contact_attrs
