@@ -24,7 +24,7 @@ defmodule Glific.AccessControl do
   """
   @spec list_roles(map()) :: [Role.t()]
   def list_roles(args) do
-    check_fun_with_flag_toggle?(args.organization_id)
+    check_roles_and_permission_toggle?(args.organization_id)
     |> hide_organization_roles(args)
     |> Repo.list_filter(Role, &Repo.opts_with_label/2, &filter_with/2)
   end
@@ -78,7 +78,7 @@ defmodule Glific.AccessControl do
   """
   @spec count_roles(map()) :: integer
   def count_roles(args) do
-    check_fun_with_flag_toggle?(args.organization_id)
+    check_roles_and_permission_toggle?(args.organization_id)
     |> hide_organization_roles(args)
     |> Repo.count_filter(Role, &filter_with/2)
   end
@@ -249,7 +249,7 @@ defmodule Glific.AccessControl do
   def check_access(entity_list, entity_type) do
     user = Repo.get_current_user() |> Repo.preload([:access_roles])
 
-    if check_fun_with_flag_toggle?(user.organization_id) and
+    if check_roles_and_permission_toggle?(user.organization_id) and
          is_organization_role?(user),
        do: do_check_access(entity_list, entity_type, user),
        else: entity_list
@@ -267,8 +267,8 @@ defmodule Glific.AccessControl do
   @doc """
   check fun_with_flag toggle for an organization and returns boolean value
   """
-  @spec check_fun_with_flag_toggle?(non_neg_integer()) :: boolean()
-  def check_fun_with_flag_toggle?(organization_id) do
+  @spec check_roles_and_permission_toggle?(non_neg_integer()) :: boolean()
+  def check_roles_and_permission_toggle?(organization_id) do
     FunWithFlags.enabled?(
       :roles_and_permission,
       for: %{organization_id: organization_id}

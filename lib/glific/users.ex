@@ -107,10 +107,16 @@ defmodule Glific.Users do
   @pow_config [otp_app: :glific]
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
+    attrs =
+      attrs
+      |> check_access_role()
+      |> then(&Map.put(attrs, :roles, &1))
+
     # lets invalidate the tokens and socket for this user
     # we do this ONLY if either the role or is_restricted has changed
-    if is_updated?(user.roles, attrs[:roles]) ||
-         is_updated?(user.is_restricted, attrs[:is_restricted]) do
+    if length(attrs.add_role_ids) != 0 ||
+         is_updated?(user.is_restricted, attrs[:is_restricted]) ||
+         length(attrs.delete_role_ids) != 0 do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
 
@@ -121,6 +127,23 @@ defmodule Glific.Users do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_user_roles(attrs, updated_user),
         else: {:ok, updated_user}
+    end
+  end
+
+  @spec check_access_role(map()) :: list()
+  defp check_access_role(%{add_role_ids: add_role_ids} = _attrs) do
+    roles =
+      Role
+      |> select([r], r.label)
+      |> where([r], r.id in ^add_role_ids)
+      |> Repo.all()
+
+    cond do
+      Enum.any?(roles, fn role -> role == "Admin" end) -> ["admin"]
+      Enum.any?(roles, fn role -> role == "Manager" end) -> ["manager"]
+      Enum.any?(roles, fn role -> role == "Staff" end) -> ["staff"]
+      Enum.any?(roles, fn role -> role == "No access" end) -> ["none"]
+      true -> ["manager"]
     end
   end
 
