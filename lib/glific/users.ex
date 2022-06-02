@@ -109,14 +109,14 @@ defmodule Glific.Users do
   def update_user(%User{} = user, attrs) do
     attrs =
       attrs
-      |> check_access_role()
-      |> then(&Map.put(attrs, :roles, &1))
+      |> validate_add_role_ids?()
+      |> check_access_role(attrs)
 
     # lets invalidate the tokens and socket for this user
     # we do this ONLY if either the role or is_restricted has changed
-    if length(attrs.add_role_ids) != 0 ||
+    if validate_add_role_ids?(attrs) ||
          is_updated?(user.is_restricted, attrs[:is_restricted]) ||
-         length(attrs.delete_role_ids) != 0 do
+         validate_delete_role_ids?(attrs) do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
 
@@ -130,21 +130,38 @@ defmodule Glific.Users do
     end
   end
 
-  @spec check_access_role(map()) :: list()
-  defp check_access_role(%{add_role_ids: add_role_ids} = _attrs) do
+  @spec validate_add_role_ids?(map()) :: boolean()
+  defp validate_add_role_ids?(%{add_role_ids: add_role_ids} = _attrs),
+    do: length(add_role_ids) != 0
+
+  defp validate_add_role_ids?(_attrs), do: false
+
+  @spec validate_delete_role_ids?(map()) :: boolean()
+  defp validate_delete_role_ids?(%{delete_role_ids: delete_role_ids} = _attrs),
+    do: length(delete_role_ids) != 0
+
+  defp validate_delete_role_ids?(_attrs), do: false
+
+  @spec check_access_role(boolean(), map()) :: map()
+  defp check_access_role(false, attrs), do: attrs
+
+  defp check_access_role(true, %{add_role_ids: add_role_ids} = attrs) do
     roles =
       Role
       |> select([r], r.label)
       |> where([r], r.id in ^add_role_ids)
       |> Repo.all()
 
-    cond do
-      Enum.any?(roles, fn role -> role == "Admin" end) -> ["admin"]
-      Enum.any?(roles, fn role -> role == "Manager" end) -> ["manager"]
-      Enum.any?(roles, fn role -> role == "Staff" end) -> ["staff"]
-      Enum.any?(roles, fn role -> role == "No access" end) -> ["none"]
-      true -> ["manager"]
-    end
+    role =
+      cond do
+        Enum.any?(roles, fn role -> role == "Admin" end) -> ["admin"]
+        Enum.any?(roles, fn role -> role == "Manager" end) -> ["manager"]
+        Enum.any?(roles, fn role -> role == "Staff" end) -> ["staff"]
+        Enum.any?(roles, fn role -> role == "No access" end) -> ["none"]
+        true -> ["manager"]
+      end
+
+    Map.put(attrs, :roles, role)
   end
 
   @spec update_user_roles(map(), User.t()) :: {:ok, User.t()}
