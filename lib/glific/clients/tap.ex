@@ -121,7 +121,9 @@ defmodule Glific.Clients.Tap do
   defp load_quizes(org_id) do
     ApiClient.get_csv_content(url: @props.sheet_links.quiz)
     |> Enum.each(fn {_, row} ->
-      key = "quiz_" <> row["Activity"]
+      IO.inspect(row["Activity"])
+      question_key = Glific.string_clean(row["Question"])
+      key = "quiz_" <> row["Activity"] <> "_" <> question_key
       Partners.maybe_insert_organization_data(key, row, org_id)
     end)
   end
@@ -151,25 +153,15 @@ defmodule Glific.Clients.Tap do
 
   @spec get_quiz_info(non_neg_integer(), String.t()) :: map()
   defp get_quiz_info(org_id, activity_id) do
-    Repo.fetch_by(OrganizationData, %{
-      organization_id: org_id,
-      key: "quiz_" <> activity_id
-    })
-    |> case do
-      {:ok, data} ->
-        data.json
-        |> clean_map_keys()
-        |> Map.merge(%{
-          is_valid: true,
-          message: "Activity found"
-        })
-
-      _ ->
-        %{
-          is_valid: false,
-          message: "Activity not found"
+    quizes =
+      Partners.list_organization_data(%{
+        organization_id: org_id,
+        filter: %{
+          key: "quiz_" <> activity_id
         }
-    end
+      })
+
+    %{quizes: quizes}
   end
 
   @spec clean_map_keys(map()) :: map()
