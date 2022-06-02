@@ -50,16 +50,29 @@ defmodule Glific.Clients.Tap do
   get template form EEx without variables
   """
   @spec template(String.t(), String.t()) :: binary
-  def template(shortcode, _json_string \\ "") do
+  def template(shortcode, params_staring \\ "") do
     {:ok, template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
 
     %{
       uuid: template.uuid,
       name: "Template",
       expression: nil,
-      variables: Enum.map(1..template.number_parameters, fn i -> "{{ var #{i} }}" end)
+      variables: parse_template_vars(template, params_staring)
     }
     |> Jason.encode!()
+  end
+
+  defp parse_template_vars(template, params_staring) do
+    params = String.split(params_staring || "", "|", trim: true)
+
+    if length(params) == template.number_parameters do
+      params
+    else
+      params_with_missing =
+        params ++ Enum.map(1..template.number_parameters, fn _i -> "{{ missing var  }}" end)
+
+      Enum.take(params_with_missing, template.number_parameters)
+    end
   end
 
   @doc """
