@@ -390,6 +390,7 @@ defmodule Glific.Partners do
       |> set_out_of_office_values()
       |> set_languages()
       |> set_flow_uuid_display()
+      |> set_roles_and_permission()
 
     Caches.set(
       @global_organization_id,
@@ -546,6 +547,22 @@ defmodule Glific.Partners do
       organization,
       :is_flow_uuid_display,
       get_flow_uuid_display(organization)
+    )
+  end
+
+  @doc """
+  Determine if we need to show roles and permission for an organization
+  """
+  @spec get_roles_and_permission(map()) :: boolean
+  def get_roles_and_permission(organization),
+    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
+
+  @spec set_roles_and_permission(map()) :: map()
+  defp set_roles_and_permission(organization) do
+    Map.put(
+      organization,
+      :is_roles_and_permission,
+      FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
     )
   end
 
@@ -1090,7 +1107,8 @@ defmodule Glific.Partners do
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
-      "flow_uuid_display" => get_flow_uuid_display(organization)
+      "flow_uuid_display" => get_flow_uuid_display(organization),
+      "roles_and_permission" => get_roles_and_permission(organization)
     }
 
     Map.put(services, organization_id, service)
