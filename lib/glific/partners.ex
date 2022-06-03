@@ -844,8 +844,35 @@ defmodule Glific.Partners do
     end
 
     credential.organization
-    |> credential_update_callback(credential.provider.shortcode)
+    |> credential_update_callback(credential, credential.provider.shortcode)
   end
+
+   @doc """
+  Updating setup
+  """
+  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) :: {:ok, any} | {:error, any}
+  def credential_update_callback(organization, _credential, "bigquery") do
+    case BigQuery.sync_schema_with_bigquery(organization.id) do
+      {:ok, credential} -> {:ok, credential}
+      {:error, _error} ->  {:error, "Invalid Credentials"}
+    end
+  end
+
+  def credential_update_callback(organization, _credential, "google_cloud_storage") do
+    case GCS.refresh_gcs_setup(organization.id) do
+      {:ok, a} -> {:ok, a}
+      {:error, _error} -> {:error, "Invalid Credentials"}
+    end
+  end
+
+  def credential_update_callback(organization, _credential, "dialogflow") do
+    case Glific.Dialogflow.get_intent_list(organization.id) do
+      {:ok, a} -> {:ok, a}
+      {:error, _error} -> {:error, "Invalid Credentials"}
+    end
+  end
+
+  def credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
   Removing organization and service cache
@@ -964,33 +991,6 @@ defmodule Glific.Partners do
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
   end
-
-  @doc """
-  Updating setup
-  """
-  @spec credential_update_callback(Organization.t(), String.t()) :: {:ok, any} | {:error, any}
-  def credential_update_callback(organization, "bigquery") do
-    case BigQuery.sync_schema_with_bigquery(organization.id) do
-      {:ok, credential} -> {:ok, credential}
-      {:error, _error} ->  {:error, "Something is wrong"}
-    end
-  end
-
-  def credential_update_callback(organization, "google_cloud_storage") do
-    case GCS.refresh_gcs_setup(organization.id) do
-      {:ok, a} -> {:ok, a}
-      {:error, _error} -> {:error, "Something is wrong"}
-    end
-  end
-
-  def credential_update_callback(organization, "dialogflow") do
-    case Glific.Dialogflow.get_intent_list(organization.id) do
-      {:ok, a} -> {:ok, a}
-      {:error, _error} -> {:error, "Something is wrong"}
-    end
-  end
-
-  def credential_update_callback(_organization, _provider), do: {:error, "Something is wrong"}
 
   @doc """
   Check if we can allow attachments for this organization. For now, this is a check to
