@@ -816,7 +816,7 @@ defmodule Glific.Partners do
   """
 
   @spec update_credential(Credential.t(), map()) ::
-          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, any} | {:error, any}
   def update_credential(%Credential{} = credential, attrs) do
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
@@ -845,8 +845,6 @@ defmodule Glific.Partners do
 
     credential.organization
     |> credential_update_callback(credential.provider.shortcode)
-
-    {:ok, credential}
   end
 
   @doc """
@@ -970,23 +968,29 @@ defmodule Glific.Partners do
   @doc """
   Updating setup
   """
-  @spec credential_update_callback(Organization.t(), String.t()) :: :ok
+  @spec credential_update_callback(Organization.t(), String.t()) :: {:ok, any} | {:error, any}
   def credential_update_callback(organization, "bigquery") do
-    BigQuery.sync_schema_with_bigquery(organization.id)
-    :ok
+    case BigQuery.sync_schema_with_bigquery(organization.id) do
+      {:ok, credential} -> {:ok, credential}
+      {:error, _error} ->  {:error, "Something is wrong"}
+    end
   end
 
   def credential_update_callback(organization, "google_cloud_storage") do
-    GCS.refresh_gcs_setup(organization.id)
-    :ok
+    case GCS.refresh_gcs_setup(organization.id) do
+      {:ok, a} -> {:ok, a}
+      {:error, _error} -> {:error, "Something is wrong"}
+    end
   end
 
   def credential_update_callback(organization, "dialogflow") do
-    Glific.Dialogflow.get_intent_list(organization.id)
-    :ok
+    case Glific.Dialogflow.get_intent_list(organization.id) do
+      {:ok, a} -> {:ok, a}
+      {:error, _error} -> {:error, "Something is wrong"}
+    end
   end
 
-  def credential_update_callback(_organization, _provider), do: :ok
+  def credential_update_callback(_organization, _provider), do: {:error, "Something is wrong"}
 
   @doc """
   Check if we can allow attachments for this organization. For now, this is a check to

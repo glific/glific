@@ -32,30 +32,37 @@ defmodule Glific.GCS do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec refresh_gcs_setup(non_neg_integer) :: :ok
+  @spec refresh_gcs_setup(non_neg_integer) :: {:ok, any} | {:error, any}
   def refresh_gcs_setup(organization_id) do
     Logger.info("refresh GCS setup for org_id: #{organization_id}")
 
-    organization_id
-    |> insert_gcs_jobs()
-
-    :ok
+    case insert_gcs_jobs(organization_id) do
+      {:ok, gcs} -> {:ok, gcs}
+      {:error, error} -> {:error, error}
+    end
+    # organization_id
+    # |> insert_gcs_jobs()
   end
 
   @doc false
-  @spec insert_gcs_jobs(non_neg_integer) :: :ok
+  @spec insert_gcs_jobs(non_neg_integer) :: {:ok, any} | {:error, any}
   def insert_gcs_jobs(organization_id) do
     Repo.fetch_by(GcsJob, %{organization_id: organization_id})
     |> case do
       {:ok, gcs_job} ->
-        gcs_job
+        {:ok, gcs_job}
 
       _ ->
-        %GcsJob{organization_id: organization_id}
-        |> Repo.insert!()
-    end
+        case %GcsJob{} |> GcsJob.changeset(organization_id) |> Repo.insert() do
+          {:ok, organization} ->
+            {:ok, organization}
 
-    :ok
+          {:error, error} ->
+            {:error, error}
+        end
+        # %GcsJob{organization_id: organization_id}
+        # |> Repo.insert!()
+    end
   end
 
   @gcs_bucket_key {__MODULE__, :bucket_id}

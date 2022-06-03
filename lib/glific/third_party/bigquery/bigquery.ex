@@ -51,7 +51,7 @@ defmodule Glific.BigQuery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec sync_schema_with_bigquery(non_neg_integer) :: :ok
+  @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
   def sync_schema_with_bigquery(organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -72,15 +72,16 @@ defmodule Glific.BigQuery do
             })
         end
 
-      _ ->
+      {:error, error} ->
+        {:error, error}
+
+      nil ->
         nil
     end
-
-    :ok
   end
 
   @doc false
-  @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
+  @spec fetch_bigquery_credentials(non_neg_integer) :: nil | {:ok, any} | {:error, any}
   def fetch_bigquery_credentials(organization_id) do
     organization = Partners.organization(organization_id)
     org_contact = organization.contact
@@ -91,15 +92,19 @@ defmodule Glific.BigQuery do
         nil
 
       credentials ->
-        {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
-        project_id = service_account["project_id"]
-        token = Partners.get_goth_token(organization_id, "bigquery")
+        case Jason.decode(credentials.secrets["service_account"])  do
+          {:ok, service_account} ->
+            project_id = service_account["project_id"]
+            token = Partners.get_goth_token(organization_id, "bigquery")
 
-        if is_nil(token) do
-          token
-        else
-          conn = Connection.new(token.token)
-          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+            if is_nil(token) do
+              token
+            else
+              conn = Connection.new(token.token)
+              {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
+            end
+
+          {:error, error} -> {:error, error}
         end
     end
   end
