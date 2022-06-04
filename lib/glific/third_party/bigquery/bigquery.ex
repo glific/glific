@@ -92,7 +92,7 @@ defmodule Glific.BigQuery do
         nil
 
       credentials ->
-        case Jason.decode(credentials.secrets["service_account"])  do
+        case Jason.decode(credentials.secrets["service_account"]) do
           {:ok, service_account} ->
             project_id = service_account["project_id"]
             token = Partners.get_goth_token(organization_id, "bigquery")
@@ -104,7 +104,8 @@ defmodule Glific.BigQuery do
               {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
             end
 
-          {:error, error} -> {:error, error}
+          {:error, error} ->
+            {:error, error}
         end
     end
   end

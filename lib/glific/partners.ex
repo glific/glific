@@ -847,14 +847,19 @@ defmodule Glific.Partners do
     |> credential_update_callback(credential, credential.provider.shortcode)
   end
 
-   @doc """
+  @doc """
   Updating setup
   """
-  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) :: {:ok, any} | {:error, any}
+  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
+          {:ok, any} | {:error, any}
   def credential_update_callback(organization, _credential, "bigquery") do
     case BigQuery.sync_schema_with_bigquery(organization.id) do
-      {:ok, credential} -> {:ok, credential}
-      {:error, _error} ->  {:error, "Invalid Credentials"}
+      {:ok, credential} ->
+        {:ok, credential}
+
+      {:error, _error} ->
+        {:error, "Invalid Credentials"}
+
       _ ->
         nil
     end
