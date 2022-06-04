@@ -40,7 +40,8 @@ defmodule Glific.Clients do
   @tap %{
     id: 12,
     name: "The Apprentice Project",
-    gcs_file_name: Glific.Clients.Tap
+    gcs_file_name: Glific.Clients.Tap,
+    webhook: Glific.Clients.Tap
   }
 
   @stir %{
