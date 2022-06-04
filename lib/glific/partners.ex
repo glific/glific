@@ -855,6 +855,8 @@ defmodule Glific.Partners do
     case BigQuery.sync_schema_with_bigquery(organization.id) do
       {:ok, credential} -> {:ok, credential}
       {:error, _error} ->  {:error, "Invalid Credentials"}
+      _ ->
+        nil
     end
   end
 
