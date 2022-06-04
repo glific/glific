@@ -104,6 +104,16 @@ defmodule Glific.Clients.Tap do
     |> get_quiz_info(fields["activity_id"])
   end
 
+  def webhook("get_quiz_question", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_quiz_question(fields["activity_id"], fields["question_id"])
+  end
+
+  def webhook("validate_question_answer", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> get_quiz_question(fields["activity_id"], fields["question_id"])
+  end
+
   def webhook(_, fields), do: fields
 
   @spec load_activities(non_neg_integer()) :: :ok
@@ -121,9 +131,10 @@ defmodule Glific.Clients.Tap do
   defp load_quizes(org_id) do
     ApiClient.get_csv_content(url: @props.sheet_links.quiz)
     |> Enum.each(fn {_, row} ->
-      IO.inspect(row["Activity"])
-      question_key = Glific.string_clean(row["Question"])
+      row = clean_row_values(row)
+      question_key = Glific.string_clean(row["Question Id"])
       key = "quiz_" <> row["Activity"] <> "_" <> question_key
+      row = Map.put(row, "question_key", question_key)
       Partners.maybe_insert_organization_data(key, row, org_id)
     end)
   end
@@ -151,6 +162,70 @@ defmodule Glific.Clients.Tap do
     end
   end
 
+  defp get_quiz_question(org_id, activity_id, question_id) do
+    Repo.fetch_by(OrganizationData, %{
+      organization_id: org_id,
+      key: "quiz_" <> activity_id <> "_" <> question_id
+    })
+    |> case do
+      {:ok, data} ->
+        data.json
+        |> clean_map_keys()
+        |> format_quiz_question("English")
+
+      _ ->
+        %{
+          is_valid: false,
+          message: "Question not found"
+        }
+    end
+  end
+
+  defp format_quiz_question(question_data, langauge_label) do
+    questions_answers =
+      case langauge_label do
+        "English" ->
+          %{
+            valid_answers: question_data["validresponsesenglish"],
+            correct_response: question_data["answerenglish"],
+            question: question_data["questionmessageenglish"]
+          }
+
+        "Hindi" ->
+          %{
+            valid_answers: question_data["validresponseshindi"],
+            correct_response: question_data["answerhindi"],
+            question: question_data["questionmessagehindi"]
+          }
+
+        "Kannada" ->
+          %{
+            valid_answers: question_data["validresponseshindi"],
+            correct_response: question_data["answerhindi"],
+            question: question_data["questionmessagehindi"]
+          }
+
+        _ ->
+          %{}
+      end
+
+    buttons =
+      questions_answers.valid_answers
+      |> String.split("|")
+      |> Enum.with_index()
+      |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", answer} end)
+      |> Enum.into(%{})
+
+    Map.merge(
+      question_data,
+      %{
+        buttons: buttons,
+        button_count: length(Map.keys(buttons))
+      }
+    )
+    |> Map.merge(questions_answers)
+  end
+
   @spec get_quiz_info(non_neg_integer(), String.t()) :: map()
   defp get_quiz_info(org_id, activity_id) do
     quizes =
@@ -161,13 +236,25 @@ defmodule Glific.Clients.Tap do
         }
       })
 
-    %{quizes: quizes}
+    Enum.reduce(quizes, %{}, fn row, acc ->
+      data = row.json
+      Map.put(acc, data["question_key"], clean_map_keys(data))
+    end)
   end
 
   @spec clean_map_keys(map()) :: map()
   defp clean_map_keys(data) do
     data
     |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
+    |> Enum.into(%{})
+  end
+
+  defp clean_row_values(row) do
+    row
+    |> Enum.map(fn
+      {k, v} when is_list(v) -> {k, hd(v)}
+      {k, v} -> {k, v}
+    end)
     |> Enum.into(%{})
   end
 end
