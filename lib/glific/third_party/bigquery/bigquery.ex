@@ -76,7 +76,7 @@ defmodule Glific.BigQuery do
         {:error, error}
 
       _ ->
-        {:error, "Something is wrong"}
+        {:error, "Invalid Credential"}
     end
   end
 
