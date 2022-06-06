@@ -69,6 +69,8 @@ defmodule Glific do
         )
   end
 
+  // funtion to create slug from string
+
   @doc """
   Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
   and not restricting ourselves to alphanumeric
@@ -82,6 +84,21 @@ defmodule Glific do
       |> String.replace(~r/[\p{P}\p{S}\p{Z}\p{C}]+/u, "")
       |> String.downcase()
       |> String.trim()
+
+
+  @doc """
+  Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
+  and not restricting ourselves to alphanumeric
+  """
+  @spec string_snake_case(String.t() | nil) :: String.t() | nil
+  def string_snake_case(str) when is_nil(str) or str == "", do: str
+
+  def string_snake_case(str),
+    do:
+      str
+      |> String.replace(string, ~r/\s+/, "_")
+      |> String.downcase()
+
 
   @doc """
   See if the current time is within the past time units

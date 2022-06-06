@@ -45,17 +45,17 @@ defmodule Glific.Contacts.Import do
   @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
   defp add_contact_fields(contact, fields) do
     Enum.reduce(fields, contact, fn {field, value}, contact ->
-      field = Glific.string_clean(field)
+      field = Glific.string_snake_case(field)
 
-      if value not in [nil, ""],
-        do:
+      if value === "",
+        do: contact,
+        else:
           ContactField.do_add_contact_field(
             contact,
             field,
             field,
             value
-          ),
-        else: contact
+          )
     end)
   end
 
