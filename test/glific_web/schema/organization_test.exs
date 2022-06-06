@@ -114,7 +114,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     shortcode = "org_shortcode"
     email = "test2@glific.org"
 
-    provider_name = "Default Provider"
+    provider_name = "Gupshup Enterprise"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en"
@@ -219,7 +219,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     timezone = "America/Los_Angeles"
     organization = Fixtures.organization_fixture()
 
-    provider_name = "Default Provider"
+    provider_name = "Gupshup Enterprise"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en"
