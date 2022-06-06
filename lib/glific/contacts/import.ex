@@ -47,6 +47,12 @@ defmodule Glific.Contacts.Import do
     Enum.reduce(fields, contact, fn {field, value}, contact ->
       field = Glific.string_snake_case(field)
 
+      ContactField.create_contact_field(%{
+        name: field,
+        shortcode: field,
+        organization_id: contact.organization_id
+      })
+
       if value === "",
         do: contact,
         else:

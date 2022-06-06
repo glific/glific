@@ -93,7 +93,7 @@ defmodule Glific do
   def string_snake_case(str),
     do:
       str
-      |> String.replace(string, ~r/\s+/, "_")
+      |> String.replace(~r/\s+/, "_")
       |> String.downcase()
 
   @doc """
