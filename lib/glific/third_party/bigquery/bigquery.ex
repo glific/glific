@@ -97,6 +97,7 @@ defmodule Glific.BigQuery do
     end
   end
 
+  @spec decode_bigquery(map(), map()) :: {:ok, any} | {:error, any}
   def decode_bigquery(
         credentials,
         %{org_contact: org_contact, organization_id: organization_id} = _info
