@@ -110,8 +110,28 @@ defmodule Glific.Clients.Tap do
   end
 
   def webhook("validate_question_answer", fields) do
-    Glific.parse_maybe_integer!(fields["organization_id"])
-    |> get_quiz_question(fields["activity_id"], fields["question_id"])
+    user_input = Glific.string_clean(fields["user_input"])
+    correct_answer = Glific.string_clean(fields["correct_answer"])
+
+    in_valid_answer_range =
+      fields["valid_answers"]
+      |> String.split("|", trim: true)
+      |> Enum.map(&Glific.string_clean(&1))
+      |> Enum.member?(user_input)
+
+    cond do
+      user_input == correct_answer ->
+        %{status: "correct_response"}
+
+      correct_answer == "allanswers" && in_valid_answer_range ->
+        %{status: "correct_response"}
+
+      in_valid_answer_range ->
+        %{status: "incorrect_response"}
+
+      true ->
+        %{status: "out_of_range"}
+    end
   end
 
   def webhook(_, fields), do: fields
