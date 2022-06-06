@@ -134,7 +134,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  ## later we can have one more column to say that force optin
+  ## create contact fields from sheet header and the first contact
   @spec create_contact_fields(list) :: list
   defp create_contact_fields(contacts) do
     first_contact = Enum.at(contacts, 0)
