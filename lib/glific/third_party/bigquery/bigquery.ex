@@ -85,6 +85,7 @@ defmodule Glific.BigQuery do
   def fetch_bigquery_credentials(organization_id) do
     organization = Partners.organization(organization_id)
     org_contact = organization.contact
+    info = %{org_contact: org_contact, organization_id: organization_id}
 
     organization.services["bigquery"]
     |> case do
@@ -92,21 +93,28 @@ defmodule Glific.BigQuery do
         nil
 
       credentials ->
-        case Jason.decode(credentials.secrets["service_account"]) do
-          {:ok, service_account} ->
-            project_id = service_account["project_id"]
-            token = Partners.get_goth_token(organization_id, "bigquery")
+        decode_bigquery(credentials, info)
+    end
+  end
 
-            if is_nil(token) do
-              token
-            else
-              conn = Connection.new(token.token)
-              {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
-            end
+  def decode_bigquery(
+        credentials,
+        %{org_contact: org_contact, organization_id: organization_id} = _info
+      ) do
+    case Jason.decode(credentials.secrets["service_account"]) do
+      {:ok, service_account} ->
+        project_id = service_account["project_id"]
+        token = Partners.get_goth_token(organization_id, "bigquery")
 
-          {:error, error} ->
-            {:error, error}
+        if is_nil(token) do
+          token
+        else
+          conn = Connection.new(token.token)
+          {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
         end
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
