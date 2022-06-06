@@ -859,9 +859,6 @@ defmodule Glific.Partners do
 
       {:error, _error} ->
         {:error, "Invalid Credentials"}
-
-      _ ->
-        nil
     end
   end
 

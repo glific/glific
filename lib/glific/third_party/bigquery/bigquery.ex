@@ -76,7 +76,7 @@ defmodule Glific.BigQuery do
         {:error, error}
 
       _ ->
-        nil
+        {:error, "Something is wrong"}
     end
   end
 
