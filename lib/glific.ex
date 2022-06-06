@@ -69,8 +69,6 @@ defmodule Glific do
         )
   end
 
-  // funtion to create slug from string
-
   @doc """
   Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
   and not restricting ourselves to alphanumeric
@@ -85,7 +83,6 @@ defmodule Glific do
       |> String.downcase()
       |> String.trim()
 
-
   @doc """
   Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
   and not restricting ourselves to alphanumeric
@@ -98,7 +95,6 @@ defmodule Glific do
       str
       |> String.replace(string, ~r/\s+/, "_")
       |> String.downcase()
-
 
   @doc """
   See if the current time is within the past time units
