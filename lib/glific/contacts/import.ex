@@ -142,7 +142,7 @@ defmodule Glific.Contacts.Import do
     Enum.each(first_contact.contact_fields, fn {field, _value} ->
       field = Glific.string_snake_case(field)
 
-      case Repo.get_by(ContactField, %{shortcode: field},
+      case Repo.get_by(Glific.Contacts.ContactsField, %{shortcode: field},
              organization_id: first_contact.organization_id
            ) do
         nil ->
