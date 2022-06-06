@@ -294,7 +294,7 @@ mutation createOrganization($input:OrganizationInput!) {
         "shortcode": "new_organization",
         "bsp": {
           "id": "1",
-          "name": "Default Provider"
+          "name": "Gupshup"
         }
       }
     }
