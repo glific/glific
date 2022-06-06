@@ -47,12 +47,6 @@ defmodule Glific.Contacts.Import do
     Enum.reduce(fields, contact, fn {field, value}, contact ->
       field = Glific.string_snake_case(field)
 
-      ContactField.create_contact_field(%{
-        name: field,
-        shortcode: field,
-        organization_id: contact.organization_id
-      })
-
       if value === "",
         do: contact,
         else:
@@ -140,6 +134,24 @@ defmodule Glific.Contacts.Import do
     end
   end
 
+  ## later we can have one more column to say that force optin
+  @spec create_contact_fields(list) :: list
+  defp create_contact_fields(contacts) do
+    first_contact = Enum.at(contacts, 0)
+
+    Enum.map(first_contact.contact_fields, fn {field, _value} ->
+      field = Glific.string_snake_case(field)
+
+      ContactField.create_contact_field(%{
+        name: field,
+        shortcode: field,
+        organization_id: first_contact.organization_id
+      })
+    end)
+
+    contacts
+  end
+
   @doc """
   This method allows importing of contacts to a particular organization and group
 
@@ -163,6 +175,7 @@ defmodule Glific.Contacts.Import do
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
         |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
+        |> create_contact_fields()
         |> Enum.map(fn contact -> process_data(contact, group.id) end)
 
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
