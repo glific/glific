@@ -93,12 +93,15 @@ defmodule Glific.BigQuery do
         nil
 
       credentials ->
-        decode_bigquery(credentials, info)
+        decode_bigquery_credential(credentials, info)
     end
   end
 
-  @spec decode_bigquery(map(), map()) :: {:ok, any} | {:error, any}
-  def decode_bigquery(
+  @doc """
+  Decoding the credential for bigquery
+  """
+  @spec decode_bigquery_credential(map(), map()) :: {:ok, any} | {:error, any}
+  def decode_bigquery_credential(
         credentials,
         %{org_contact: org_contact, organization_id: organization_id} = _info
       ) do
