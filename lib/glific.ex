@@ -84,8 +84,7 @@ defmodule Glific do
       |> String.trim()
 
   @doc """
-  Lets get rid of all non valid characters. We are assuming any language and hence using unicode syntax
-  and not restricting ourselves to alphanumeric
+  convert string to snake case
   """
   @spec string_snake_case(String.t() | nil) :: String.t() | nil
   def string_snake_case(str) when is_nil(str) or str == "", do: str
