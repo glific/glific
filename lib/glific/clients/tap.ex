@@ -96,7 +96,7 @@ defmodule Glific.Clients.Tap do
 
   def webhook("get_activity_info", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
-    |> get_activity_info(fields["date"], fields["type"])
+    |> get_activity_info(fields["date"], fields["type"], fields["language_label"])
   end
 
   def webhook("get_quiz_info", fields) do
@@ -106,7 +106,7 @@ defmodule Glific.Clients.Tap do
 
   def webhook("get_quiz_question", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
-    |> get_quiz_question(fields["activity_id"], fields["question_id"])
+    |> get_quiz_question(fields["activity_id"], fields["question_id"], fields["language_label"])
   end
 
   def webhook("validate_question_answer", fields) do
@@ -159,8 +159,8 @@ defmodule Glific.Clients.Tap do
     end)
   end
 
-  @spec get_activity_info(non_neg_integer(), String.t(), String.t()) :: map()
-  defp get_activity_info(org_id, date, type) do
+  @spec get_activity_info(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
+  defp get_activity_info(org_id, date, type, language_label) do
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
       key: "schedule_" <> date
@@ -169,6 +169,7 @@ defmodule Glific.Clients.Tap do
       {:ok, data} ->
         data.json[type]
         |> clean_map_keys()
+        |> format_hsm_templates(language_label)
         |> Map.merge(%{
           is_valid: true,
           message: "Activity found"
@@ -182,7 +183,7 @@ defmodule Glific.Clients.Tap do
     end
   end
 
-  defp get_quiz_question(org_id, activity_id, question_id) do
+  defp get_quiz_question(org_id, activity_id, question_id, language_label) do
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
       key: "quiz_" <> activity_id <> "_" <> question_id
@@ -191,7 +192,7 @@ defmodule Glific.Clients.Tap do
       {:ok, data} ->
         data.json
         |> clean_map_keys()
-        |> format_quiz_question("English")
+        |> format_quiz_question(language_label)
 
       _ ->
         %{
@@ -260,6 +261,76 @@ defmodule Glific.Clients.Tap do
       data = row.json
       Map.put(acc, data["question_key"], clean_map_keys(data))
     end)
+  end
+
+  defp format_hsm_templates(activity_info, langauge_lable) do
+    templates =
+      case langauge_lable do
+        "English" ->
+          %{
+            intro: %{
+              shortcode: activity_info["introtemplateuuidenglish"],
+              params: activity_info["introtemplatevariablesenglish"]
+            },
+            intro_no_response: %{
+              shortcode: activity_info["intronoresponsenudgetemplateuuidenglish"],
+              params: activity_info["intronoresponsenudgetemplatevariablesenglish"]
+            },
+            submission_first_no_response: %{
+              shortcode: activity_info["activitysubmissionfirstnoresponsetemplatemessageenglish"],
+              params: activity_info["activitysubmissionfirstnoresponsetemplatevariablesenglish"]
+            },
+            submission_second_no_response: %{
+              shortcode: activity_info["activitysubmissionsecondnoresponsetemplateuuidenglish"],
+              params: activity_info["activitysubmissionsecondnoresponsetemplatevariablesenglish"]
+            }
+          }
+
+        "Hindi" ->
+          %{
+            intro: %{
+              shortcode: activity_info["introtemplateuuidhindi"],
+              params: activity_info["introtemplatevariableshindi"]
+            },
+            intro_no_response: %{
+              shortcode: activity_info["intronoresponsenudgetemplateuuidhindi"],
+              params: activity_info["intronoresponsenudgetemplatevariableshindi"]
+            },
+            submission_first_no_response: %{
+              shortcode: activity_info["activitysubmissionfirstnoresponsetemplatemessagehindi"],
+              params: activity_info["activitysubmissionfirstnoresponsetemplatevariableshindi"]
+            },
+            submission_second_no_response: %{
+              shortcode: activity_info["activitysubmissionsecondnoresponsetemplateuuidhindi"],
+              params: activity_info["activitysubmissionsecondnoresponsetemplatevariableshindi"]
+            }
+          }
+
+        "Marathi" ->
+          %{
+            intro: %{
+              shortcode: activity_info["introtemplateuuidenglish"],
+              params: activity_info["introtemplatevariablesenglish"]
+            },
+            intro_no_response: %{
+              shortcode: activity_info["intronoresponsenudgetemplateuuidenglish"],
+              params: activity_info["intronoresponsenudgetemplatevariablesenglish"]
+            },
+            submission_first_no_response: %{
+              shortcode: activity_info["activitysubmissionfirstnoresponsetemplatemessageenglish"],
+              params: activity_info["activitysubmissionfirstnoresponsetemplatevariablesenglish"]
+            },
+            submission_second_no_response: %{
+              shortcode: activity_info["activitysubmissionsecondnoresponsetemplateuuidenglish"],
+              params: activity_info["activitysubmissionsecondnoresponsetemplatevariablesenglish"]
+            }
+          }
+
+        _ ->
+          %{}
+      end
+
+    Map.merge(activity_info, templates)
   end
 
   @spec clean_map_keys(map()) :: map()
