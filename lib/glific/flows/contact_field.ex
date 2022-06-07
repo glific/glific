@@ -142,7 +142,7 @@ defmodule Glific.Flows.ContactField do
   @spec maybe_create_contact_field(map()) ::
           {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
   def maybe_create_contact_field(attrs) do
-    case Repo.get_by(Glific.Contacts.ContactsField, %{shortcode: attrs.shortcode},
+    case Repo.get_by(ContactsField, %{shortcode: attrs.shortcode},
            organization_id: attrs.organization_id
          ) do
       nil ->
