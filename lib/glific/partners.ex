@@ -852,7 +852,7 @@ defmodule Glific.Partners do
   """
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
-  def credential_update_callback(organization, _credential, "bigquery") do
+  defp credential_update_callback(organization, _credential, "bigquery") do
     case BigQuery.sync_schema_with_bigquery(organization.id) do
       {:ok, credential} ->
         {:ok, credential}
@@ -862,21 +862,21 @@ defmodule Glific.Partners do
     end
   end
 
-  def credential_update_callback(organization, _credential, "google_cloud_storage") do
+  defp credential_update_callback(organization, _credential, "google_cloud_storage") do
     case GCS.refresh_gcs_setup(organization.id) do
       {:ok, credential} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
 
-  def credential_update_callback(organization, _credential, "dialogflow") do
+  defp credential_update_callback(organization, _credential, "dialogflow") do
     case Glific.Dialogflow.get_intent_list(organization.id) do
       {:ok, credential} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
 
-  def credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
+  defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
   Removing organization and service cache
