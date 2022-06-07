@@ -126,18 +126,20 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
+  @spec unprocessed_group_broadcast(non_neg_integer) :: FlowBroadcast.t()
   defp unprocessed_group_broadcast(organization_id) do
     from(fb in FlowBroadcast,
-      as: :flow_broadcast,
-      where: fb.organization_id == ^organization_id,
-      where: is_nil(fb.completed_at),
+      where:
+        fb.organization_id == ^organization_id and
+          is_nil(fb.completed_at),
+      order_by: [desc: fb.inserted_at],
       limit: 1
     )
     |> Repo.one()
     |> Repo.preload([:flow])
   end
 
-  @unprocessed_contact_limit 150
+  @unprocessed_contact_limit 100
 
   defp unprocessed_contacts(flow_broadcast) do
     broadcast_contacts_query(flow_broadcast)
@@ -152,7 +154,10 @@ defmodule Glific.Flows.Broadcast do
       as: :fbc,
       on: fbc.contact_id == c.id and fbc.flow_broadcast_id == ^flow_broadcast.id
     )
-    |> where([c, _fbc], c.status != :blocked and is_nil(c.optout_time))
+    |> where(
+      [c, _fbc],
+      c.status not in [:blocked, :invalid] and is_nil(c.optout_time)
+    )
     |> where([_c, fbc], is_nil(fbc.processed_at))
   end
 
@@ -179,6 +184,7 @@ defmodule Glific.Flows.Broadcast do
     end)
   end
 
+  @spec flow_tasks(Flow.t(), Contact.t(), Keyword.t()) :: :ok
   defp flow_tasks(flow, contacts, opts) do
     stream =
       Task.Supervisor.async_stream_nolink(
@@ -186,18 +192,19 @@ defmodule Glific.Flows.Broadcast do
         contacts,
         fn contact ->
           Repo.put_process_state(contact.organization_id)
+
+          Keyword.get(opts, :flow_broadcast_id, nil)
+          |> mark_flow_broadcast_contact_processed(contact.id, "pending")
+
           response = FlowContext.init_context(flow, contact, @status, opts)
 
           if elem(response, 0) in [:ok, :wait] do
             Keyword.get(opts, :flow_broadcast_id, nil)
-            |> mark_flow_broadcast_contact_proceesed(contact.id, "processed")
+            |> mark_flow_broadcast_contact_processed(contact.id, "processed")
           else
             Logger.info("Could not start the flow for the contact.
                Contact id : #{contact.id} opts: #{inspect(opts)}
                response #{inspect(response)}")
-
-            Keyword.get(opts, :flow_broadcast_id, nil)
-            |> mark_flow_broadcast_contact_proceesed(contact.id, "pending")
           end
 
           :ok
@@ -231,10 +238,10 @@ defmodule Glific.Flows.Broadcast do
     end
   end
 
-  @spec mark_flow_broadcast_contact_proceesed(integer() | nil, integer(), String.t()) :: :ok
-  defp mark_flow_broadcast_contact_proceesed(nil, _, _status), do: :ok
+  @spec mark_flow_broadcast_contact_processed(integer() | nil, integer(), String.t()) :: :ok
+  defp mark_flow_broadcast_contact_processed(nil, _, _status), do: :ok
 
-  defp mark_flow_broadcast_contact_proceesed(flow_broadcast_id, contact_id, status) do
+  defp mark_flow_broadcast_contact_processed(flow_broadcast_id, contact_id, status) do
     FlowBroadcastContact
     |> where(flow_broadcast_id: ^flow_broadcast_id, contact_id: ^contact_id)
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
@@ -260,6 +267,7 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.query()
   end
 
+  @spec broadcast_stats_base_query(non_neg_integer()) :: String.t()
   defp broadcast_stats_base_query(flow_broadcast_id) do
     """
     SELECT distinct on (flow_broadcast_contacts.contact_id)
@@ -276,7 +284,9 @@ defmodule Glific.Flows.Broadcast do
     """
   end
 
-  @doc false
+  @doc """
+  Get broadcast stats for a flow
+  """
   @spec broadcast_stats(non_neg_integer()) :: {:ok, map()}
   def broadcast_stats(flow_broadcast_id) do
     results =

@@ -189,6 +189,28 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Gets a single contact by phone nunmber.
+
+  Raises `Ecto.NoResultsError` if the Contact does not exist.
+
+  ## Examples
+
+      iex> get_contact_by_phone!("9876543210_1")
+      %Contact{}
+
+      iex> get_contact!("123")
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_contact_by_phone!(String.t()) :: Contact.t()
+  def get_contact_by_phone!(phone) do
+    Contact
+    |> where([c], c.phone == ^phone)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.one!()
+  end
+
+  @doc """
   Creates a contact.
 
   ## Examples
