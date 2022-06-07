@@ -40,9 +40,6 @@ defmodule Glific.GCS do
       {:ok, gcs} -> {:ok, gcs}
       {:error, error} -> {:error, error}
     end
-
-    # organization_id
-    # |> insert_gcs_jobs()
   end
 
   @doc false
@@ -61,9 +58,6 @@ defmodule Glific.GCS do
           {:error, error} ->
             {:error, error}
         end
-
-        # %GcsJob{organization_id: organization_id}
-        # |> Repo.insert!()
     end
   end
 

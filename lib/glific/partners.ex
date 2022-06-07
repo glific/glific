@@ -816,7 +816,7 @@ defmodule Glific.Partners do
   """
 
   @spec update_credential(Credential.t(), map()) ::
-          {:ok, any} | {:error, any}
+          {:ok, Credential.t()} | {:error, any}
   def update_credential(%Credential{} = credential, attrs) do
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
@@ -864,14 +864,14 @@ defmodule Glific.Partners do
 
   def credential_update_callback(organization, _credential, "google_cloud_storage") do
     case GCS.refresh_gcs_setup(organization.id) do
-      {:ok, a} -> {:ok, a}
+      {:ok, credential} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
 
   def credential_update_callback(organization, _credential, "dialogflow") do
     case Glific.Dialogflow.get_intent_list(organization.id) do
-      {:ok, a} -> {:ok, a}
+      {:ok, credential} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end

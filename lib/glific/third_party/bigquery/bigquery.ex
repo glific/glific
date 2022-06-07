@@ -85,7 +85,6 @@ defmodule Glific.BigQuery do
   def fetch_bigquery_credentials(organization_id) do
     organization = Partners.organization(organization_id)
     org_contact = organization.contact
-    info = %{org_contact: org_contact, organization_id: organization_id}
 
     organization.services["bigquery"]
     |> case do
@@ -93,17 +92,18 @@ defmodule Glific.BigQuery do
         nil
 
       credentials ->
-        decode_bigquery_credential(credentials, info)
+        decode_bigquery_credential(credentials, org_contact, organization_id)
     end
   end
 
   @doc """
   Decoding the credential for bigquery
   """
-  @spec decode_bigquery_credential(map(), map()) :: {:ok, any} | {:error, any}
+  @spec decode_bigquery_credential(map(), map(), non_neg_integer) :: {:ok, any} | {:error, any}
   def decode_bigquery_credential(
         credentials,
-        %{org_contact: org_contact, organization_id: organization_id} = _info
+        org_contact,
+        organization_id
       ) do
     case Jason.decode(credentials.secrets["service_account"]) do
       {:ok, service_account} ->
