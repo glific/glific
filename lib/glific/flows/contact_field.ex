@@ -137,6 +137,23 @@ defmodule Glific.Flows.ContactField do
   end
 
   @doc """
+  Create or update contact field
+  """
+  @spec maybe_create_contact_field(map()) ::
+          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_create_contact_field(attrs) do
+    case Repo.get_by(Glific.Contacts.ContactsField, %{shortcode: attrs.shortcode},
+           organization_id: attrs.organization_id
+         ) do
+      nil ->
+        create_contact_field(attrs)
+
+      contact_field ->
+        update_contacts_field(contact_field, attrs)
+    end
+  end
+
+  @doc """
   Updates a contact field.
 
   ## Examples
