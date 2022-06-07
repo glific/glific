@@ -6,9 +6,9 @@ defmodule Glific.ProfilesTest do
   describe "profiles" do
     alias Glific.Profiles.Profile
 
-    import Glific.ProfilesFixtures
+    import Glific.Fixtures
 
-    @invalid_attrs %{name: nil, type: nil}
+    @invalid_attrs %{name: nil, profile_type: 1}
 
     test "list_profiles/0 returns all profiles" do
       profile = profile_fixture()
@@ -21,11 +21,18 @@ defmodule Glific.ProfilesTest do
     end
 
     test "create_profile/1 with valid data creates a profile" do
-      valid_attrs = %{name: "some name", type: "some type"}
+      valid_attrs = %{
+        name: "some name",
+        profile_type: "some type",
+        contact_id: 1,
+        language_id: 1,
+        organization_id: 1
+      }
 
-      assert {:ok, %Profile{} = profile} = Profiles.create_profile(valid_attrs)
+      assert {:ok, profile} = Profiles.create_profile(valid_attrs)
+
       assert profile.name == "some name"
-      assert profile.type == "some type"
+      assert profile.profile_type == "some type"
     end
 
     test "create_profile/1 with invalid data returns error changeset" do
@@ -34,11 +41,11 @@ defmodule Glific.ProfilesTest do
 
     test "update_profile/2 with valid data updates the profile" do
       profile = profile_fixture()
-      update_attrs = %{name: "some updated name", type: "some updated type"}
+      update_attrs = %{name: "some updated name", profile_type: "some updated type"}
 
-      assert {:ok, %Profile{} = profile} = Profiles.update_profile(profile, update_attrs)
+      assert {:ok, profile} = Profiles.update_profile(profile, update_attrs)
       assert profile.name == "some updated name"
-      assert profile.type == "some updated type"
+      assert profile.profile_type == "some updated type"
     end
 
     test "update_profile/2 with invalid data returns error changeset" do

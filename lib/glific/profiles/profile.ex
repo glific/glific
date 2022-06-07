@@ -4,44 +4,51 @@ defmodule Glific.Profiles.Profile do
   """
   use Ecto.Schema
   import Ecto.Changeset
+
   alias Glific.{
     Contacts.Contact,
     Settings.Language,
+    Partners.Organization
   }
 
   @required_fields [
     :contact_id,
-    :language_id
+    :language_id,
+    :organization_id
   ]
 
   @optional_fields [
     :name,
-    :type,
+    :profile_type,
     :profile_registration_fields,
     :contact_profile_fields
   ]
 
   @type t() :: %__MODULE__{
-    __meta__: Ecto.Schema.Metadata.t(),
-    id: non_neg_integer | nil,
-    name: String.t() | nil,
-    type: String.t() | nil,
-    profile_registration_fields: map() | nil,
-    contact_profile_fields: map() | nil,
-    inserted_at: :utc_datetime_usec | nil,
-    updated_at: :utc_datetime_usec | nil
-  }
+          __meta__: Ecto.Schema.Metadata.t(),
+          id: non_neg_integer | nil,
+          name: String.t() | nil,
+          profile_type: String.t() | nil,
+          profile_registration_fields: map() | nil,
+          contact_profile_fields: map() | nil,
+          inserted_at: :utc_datetime | nil,
+          updated_at: :utc_datetime | nil,
+          language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+        }
 
   schema "profiles" do
     field :name, :string
-    field :type, :string
+    field :profile_type, :string
     field :profile_registration_fields, :map, default: %{}
     field :contact_profile_fields, :map, default: %{}
 
     belongs_to :language, Language
     belongs_to :contact, Contact
+    belongs_to :organization, Organization
 
-    timestamps(type: :utc_datetime_usec)
+    timestamps(type: :utc_datetime)
   end
 
   @doc false
