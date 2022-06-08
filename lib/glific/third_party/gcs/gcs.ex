@@ -36,10 +36,7 @@ defmodule Glific.GCS do
   def refresh_gcs_setup(organization_id) do
     Logger.info("refresh GCS setup for org_id: #{organization_id}")
 
-    case insert_gcs_jobs(organization_id) do
-      {:ok, gcs} -> {:ok, gcs}
-      {:error, error} -> {:error, error}
-    end
+    insert_gcs_jobs(organization_id)
   end
 
   @doc false
@@ -51,13 +48,8 @@ defmodule Glific.GCS do
         {:ok, gcs_job}
 
       _ ->
-        case %GcsJob{} |> GcsJob.changeset(organization_id) |> Repo.insert() do
-          {:ok, organization} ->
-            {:ok, organization}
-
-          {:error, error} ->
-            {:error, error}
-        end
+        %GcsJob{organization_id: organization_id}
+        |> Repo.insert()
     end
   end
 
