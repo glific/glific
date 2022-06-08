@@ -847,14 +847,11 @@ defmodule Glific.Partners do
     |> credential_update_callback(credential, credential.provider.shortcode)
   end
 
-  @doc """
-  Updating setup
-  """
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
-  defp credential_update_callback(organization, _credential, "bigquery") do
+  defp credential_update_callback(organization, credential, "bigquery") do
     case BigQuery.sync_schema_with_bigquery(organization.id) do
-      {:ok, credential} ->
+      {:ok, _callback} ->
         {:ok, credential}
 
       {:error, _error} ->
@@ -862,16 +859,16 @@ defmodule Glific.Partners do
     end
   end
 
-  defp credential_update_callback(organization, _credential, "google_cloud_storage") do
+  defp credential_update_callback(organization, credential, "google_cloud_storage") do
     case GCS.refresh_gcs_setup(organization.id) do
-      {:ok, credential} -> {:ok, credential}
+      {:ok, _callback} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
 
-  defp credential_update_callback(organization, _credential, "dialogflow") do
+  defp credential_update_callback(organization, credential, "dialogflow") do
     case Glific.Dialogflow.get_intent_list(organization.id) do
-      {:ok, credential} -> {:ok, credential}
+      {:ok, _callback} -> {:ok, credential}
       {:error, _error} -> {:error, "Invalid Credentials"}
     end
   end
@@ -1152,7 +1149,7 @@ defmodule Glific.Partners do
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:key, key}, query ->
-        from q in query, where: ilike(q.key, ^"%#{key}%")
+        from(q in query, where: ilike(q.key, ^"%#{key}%"))
 
       _, query ->
         query
