@@ -1465,8 +1465,6 @@ if Code.ensure_loaded?(Faker) do
 
       Repo.put_organization_id(organization.id)
 
-      seed_providers()
-
       seed_contacts(organization)
 
       seed_users(organization)
