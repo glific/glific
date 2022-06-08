@@ -50,6 +50,8 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.FlowLabelTypes)
 
   query do
+    import_fields(:profile_queries)
+
     import_fields(:contact_queries)
 
     import_fields(:language_queries)

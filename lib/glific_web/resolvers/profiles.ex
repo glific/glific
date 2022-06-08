@@ -3,10 +3,21 @@ defmodule GlificWeb.Resolvers.Profiles do
   Profile Resolver which sits between the GraphQL schema and Glific Profile Context API.
   This layer basically stiches together one or more calls to resolve the incoming queries.
   """
+  import GlificWeb.Gettext
 
   alias Glific.Profiles
   alias Glific.Profiles.Profile
   alias Glific.Repo
+
+  @doc false
+  @spec profile(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def profile(_, %{id: id}, _context) do
+    {:ok, %{profile: Profiles.get_profile!(id)}}
+  rescue
+    _ ->
+      {:error, ["Profile", dgettext("errors", "Profile not found or permission denied.")]}
+  end
 
   @doc "This method will create a profile"
   @spec create_profile(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

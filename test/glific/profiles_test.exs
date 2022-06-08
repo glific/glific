@@ -24,14 +24,14 @@ defmodule Glific.ProfilesTest do
       assert Profiles.get_profile!(profile.id) == profile
     end
 
-    test "list_contacts/1 with multiple profiles filtered",
-         %{organization_id: _organization_id} = attrs do
-      _p1 = profile_fixture(Map.merge(attrs, @valid_attrs))
-      _p2 = profile_fixture(Map.merge(attrs, @valid_attrs_1))
+    # test "list_contacts/1 with multiple profiles filtered",
+    #      %{organization_id: _organization_id} = attrs do
+    #   _p1 = profile_fixture(Map.merge(attrs, @valid_attrs))
+    #   _p2 = profile_fixture(Map.merge(attrs, @valid_attrs_1))
 
-      profile = Profiles.list_profiles(%{filter: %{contact_id: 2}})
-      IO.inspect(profile)
-    end
+    #   profile = Profiles.list_profiles(%{filter: %{contact_id: 2}})
+    #   IO.inspect(profile)
+    # end
 
     test "create_profile/1 with valid data creates a profile" do
       valid_attrs = %{

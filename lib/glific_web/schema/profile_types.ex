@@ -32,6 +32,15 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :contact_profile_fields, :json
   end
 
+  object :profile_queries do
+    @desc "get the details of one profile"
+    field :profile, :profile_result do
+      arg(:id, non_null(:id))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Profiles.profile/3)
+    end
+  end
+
   object :profile_mutations do
     field :create_profile, :profile_result do
       arg(:input, non_null(:profile_input))

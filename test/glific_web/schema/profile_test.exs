@@ -10,6 +10,7 @@ defmodule GlificWeb.Schema.ProfileTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/profiles/create_profile.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/profiles/delete_profile.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/profiles/update_profile.gql")
+  load_gql(:by_id, GlificWeb.Schema, "assets/gql/profiles/by_id.gql")
 
   setup do
     default_provider = SeedsDev.seed_providers()
@@ -17,6 +18,27 @@ defmodule GlificWeb.Schema.ProfileTest do
     SeedsDev.seed_contacts()
     :ok
   end
+
+  # test "profile by id returns one contact or nil", %{staff: user} do
+  #   name = "NGO Main Account"
+  #   {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
+
+  #   result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
+  #   assert {:ok, query_data} = result
+
+  #   fetched_contact = get_in(query_data, [:data, "contact", "contact"])
+  #   assert fetched_contact["name"] == name
+  #   # staff role should not have access to phone
+  #   assert fetched_contact["phone"] == ""
+  #   assert fetched_contact["maskedPhone"] != contact.phone
+
+  #   result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
+  #   assert {:ok, query_data} = result
+
+  #   message = get_in(query_data, [:data, "contact", "errors", Access.at(0), "message"])
+  #   assert message == "Contact not found or permission denied."
+  # end
+
 
   test "create a profile", %{manager: user} do
     {:ok, contact} =

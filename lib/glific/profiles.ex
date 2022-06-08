@@ -22,6 +22,7 @@ defmodule Glific.Profiles do
   @spec list_profiles(map()) :: [Contact.t()]
   def list_profiles(args) do
     IO.inspect(args)
+
     args
     |> Repo.list_filter_query(Profile, nil, &filter_with/2)
     |> Repo.all()
