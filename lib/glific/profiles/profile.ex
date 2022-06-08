@@ -2,6 +2,7 @@ defmodule Glific.Profiles.Profile do
   @moduledoc """
     The schema for profile
   """
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -58,5 +59,6 @@ defmodule Glific.Profiles.Profile do
     profile
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> foreign_key_constraint([:language_id, :contact_id, :organization_id])
   end
 end
