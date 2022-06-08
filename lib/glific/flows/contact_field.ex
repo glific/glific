@@ -46,6 +46,13 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
+    # create contact fields if not already created
+    maybe_create_contact_field(%{
+      shortcode: field,
+      name: label,
+      organization_id: contact.organization_id
+    })
+
     {:ok, _} =
       Contacts.capture_history(contact, :contact_fields_updated, %{
         event_meta: %{

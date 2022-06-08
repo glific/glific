@@ -94,7 +94,11 @@ defmodule Glific.Contacts.Import do
           %{phone: contact.phone, error: error}
       end
     else
-      %{phone: contact.phone, error: "Could not import. Invalid or opted out contact"}
+      %{
+        phone: contact.phone,
+        error:
+          "Not able to optin the contact. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
+      }
     end
   end
 
@@ -134,24 +138,6 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  ## create contact fields from sheet header and the first contact
-  @spec create_contact_fields(list) :: list
-  defp create_contact_fields(contacts) do
-    first_contact = Enum.at(contacts, 0)
-
-    Enum.each(first_contact.contact_fields, fn {field, _value} ->
-      field = Glific.string_snake_case(field)
-
-      ContactField.maybe_create_contact_field(%{
-        name: field,
-        shortcode: field,
-        organization_id: first_contact.organization_id
-      })
-    end)
-
-    contacts
-  end
-
   @doc """
   This method allows importing of contacts to a particular organization and group
 
@@ -175,14 +161,17 @@ defmodule Glific.Contacts.Import do
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
         |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
-        |> create_contact_fields()
         |> Enum.map(fn contact -> process_data(contact, group.id) end)
 
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
       case errors do
-        [] -> {:ok, %{message: "All contacts added"}}
-        _ -> {:error, %{message: "All contacts could not be added", details: errors}}
+        [] ->
+          {:ok, %{message: "All contacts added"}}
+
+        _ ->
+          {:error,
+           %{message: "All contacts could not be opted in due to some errors", details: errors}}
       end
     else
       {:error, error} ->
