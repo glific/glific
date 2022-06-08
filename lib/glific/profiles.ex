@@ -9,19 +9,6 @@ defmodule Glific.Profiles do
   alias Glific.Profiles.Profile
 
   @doc """
-  Returns the list of profiles.
-
-  ## Examples
-
-      iex> list_profiles()
-      [%Profile{}, ...]
-
-  """
-  def list_profiles do
-    Repo.all(Profile)
-  end
-
-  @doc """
   Gets a single profile.
 
   Raises `Ecto.NoResultsError` if the Profile does not exist.
@@ -35,6 +22,7 @@ defmodule Glific.Profiles do
       ** (Ecto.NoResultsError)
 
   """
+  @spec get_profile!(integer) :: Profile.t()
   def get_profile!(id), do: Repo.get!(Profile, id)
 
   @doc """
@@ -49,6 +37,7 @@ defmodule Glific.Profiles do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec create_profile(map()) :: {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def create_profile(attrs \\ %{}) do
     %Profile{}
     |> Profile.changeset(attrs)
@@ -67,6 +56,8 @@ defmodule Glific.Profiles do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec update_profile(Profile.t(), map()) ::
+          {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def update_profile(%Profile{} = profile, attrs) do
     profile
     |> Profile.changeset(attrs)
@@ -85,6 +76,8 @@ defmodule Glific.Profiles do
       {:error, %Ecto.Changeset{}}
 
   """
+  @spec delete_profile(Profile.t()) ::
+  {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def delete_profile(%Profile{} = profile) do
     Repo.delete(profile)
   end
@@ -98,6 +91,7 @@ defmodule Glific.Profiles do
       %Ecto.Changeset{data: %Profile{}}
 
   """
+  @spec change_profile(Profile.t(), map()) :: Ecto.Changeset.t()
   def change_profile(%Profile{} = profile, attrs \\ %{}) do
     Profile.changeset(profile, attrs)
   end
