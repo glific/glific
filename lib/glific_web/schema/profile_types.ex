@@ -39,6 +39,14 @@ defmodule GlificWeb.Schema.ProfileTypes do
       middleware(Authorize, :staff)
       resolve(&Resolvers.Profiles.profile/3)
     end
+
+    @desc "Get a list of all profiles filtered by various criteria"
+    field :profiles, list_of(:profile) do
+      arg(:filter, :profile_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Profiles.profiles/3)
+    end
   end
 
   object :profile_mutations do

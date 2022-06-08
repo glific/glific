@@ -48,4 +48,11 @@ defmodule GlificWeb.Resolvers.Profiles do
       Profiles.delete_profile(profile)
     end
   end
+
+  @doc false
+  @spec profiles(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, [any]}
+  def profiles(_, args, _) do
+    {:ok, Profiles.list_Profiles(args)}
+  end
 end
