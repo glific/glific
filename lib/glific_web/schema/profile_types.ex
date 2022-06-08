@@ -4,10 +4,6 @@ defmodule GlificWeb.Schema.ProfileTypes do
   """
 
   use Absinthe.Schema.Notation
-  # import Absinthe.Resolution.Helpers, only: [dataloader: 1]
-
-  # alias Glific.Repo
-  # alias Glific.Profiles.Profile
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 

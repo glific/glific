@@ -28,7 +28,6 @@ defmodule GlificWeb.Schema.ProfileTest do
       "contact_id" => contact.id,
       "language_id" => contact.language_id,
       "organization_id" => user.organization_id
-      # "profile_registration_fields" => {"key": "value"}
     }
 
     result = auth_query_gql_by(:create, user, variables: %{"input" => params})
