@@ -77,7 +77,7 @@ defmodule Glific.Profiles do
 
   """
   @spec delete_profile(Profile.t()) ::
-  {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def delete_profile(%Profile{} = profile) do
     Repo.delete(profile)
   end

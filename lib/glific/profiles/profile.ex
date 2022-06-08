@@ -6,6 +6,7 @@ defmodule Glific.Profiles.Profile do
   import Ecto.Changeset
 
   alias Glific.{
+    Profiles.Profile,
     Contacts.Contact,
     Settings.Language,
     Partners.Organization
@@ -52,7 +53,7 @@ defmodule Glific.Profiles.Profile do
   end
 
   @doc false
-  @spec changeset(Contact.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(Profile.t(), map()) :: Ecto.Changeset.t()
   def changeset(profile, attrs) do
     profile
     |> cast(attrs, @required_fields ++ @optional_fields)
