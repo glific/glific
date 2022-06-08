@@ -59,6 +59,8 @@ defmodule Glific.Profiles.Profile do
     profile
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint([:language_id, :contact_id, :organization_id])
+    |> foreign_key_constraint(:language_id)
+    |> foreign_key_constraint(:contact_id)
+    |> foreign_key_constraint(:organization_id)
   end
 end
