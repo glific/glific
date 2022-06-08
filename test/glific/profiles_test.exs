@@ -10,11 +10,6 @@ defmodule Glific.ProfilesTest do
 
     @invalid_attrs %{name: nil, profile_type: 1}
 
-    test "list_profiles/0 returns all profiles" do
-      profile = profile_fixture()
-      assert Profiles.list_profiles() == [profile]
-    end
-
     test "get_profile!/1 returns the profile with given id" do
       profile = profile_fixture()
       assert Profiles.get_profile!(profile.id) == profile
