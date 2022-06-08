@@ -33,7 +33,6 @@ defmodule Glific.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      # test_paths: test_paths(Mix.env()),
       test_coverage: [
         tool: ExCoveralls,
         test_task: :test_full
@@ -75,7 +74,6 @@ defmodule Glific.MixProject do
   # Specifies which paths to compile per environment.
   defp elixirc_paths(env) when env in @test_envs, do: ["lib", "test/support"]
   defp elixirc_paths(_), do: ["lib"]
-  # defp test_paths(_), do: ["test/unit"]
 
   # Specifies your project dependencies.
   #

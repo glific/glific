@@ -116,18 +116,4 @@ defmodule Glific.Profiles do
   def delete_profile(%Profile{} = profile) do
     Repo.delete(profile)
   end
-
-  @doc """
-  Returns an `%Ecto.Changeset{}` for tracking profile changes.
-
-  ## Examples
-
-      iex> change_profile(profile)
-      %Ecto.Changeset{data: %Profile{}}
-
-  """
-  @spec change_profile(Profile.t(), map()) :: Ecto.Changeset.t()
-  def change_profile(%Profile{} = profile, attrs \\ %{}) do
-    Profile.changeset(profile, attrs)
-  end
 end

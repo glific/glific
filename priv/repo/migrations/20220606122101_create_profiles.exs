@@ -9,13 +9,12 @@ defmodule Glific.Repo.Migrations.CreateProfiles do
       add :profile_type, :string
       add :profile_registration_fields, :map
       add :contact_profile_fields, :map
-      add(:contact_id, references(:contacts, on_delete: :delete_all), null: false)
+      add :contact_id, references(:contacts, on_delete: :delete_all), null: false
 
-      add(:language_id, references(:languages, on_delete: :delete_all, prefix: @global_schema),
+      add :language_id, references(:languages, on_delete: :delete_all, prefix: @global_schema),
         null: false
-      )
 
-      add(:organization_id, references(:organizations, on_delete: :delete_all), null: false)
+      add :organization_id, references(:organizations, on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime)
     end
