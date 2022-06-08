@@ -1422,7 +1422,7 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_roles(Organization.t() | nil) :: nil
+    @spec seed_roles(Organization.t() | nil) :: Role.t()
     def seed_roles(organization \\ nil) do
       organization = get_organization(organization)
 
