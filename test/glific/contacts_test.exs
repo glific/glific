@@ -484,7 +484,7 @@ defmodule Glific.ContactsTest do
       {:error, %{message: message, details: _}} =
         Import.import_contacts(1, group.label, file_path: get_tmp_path())
 
-      assert "All contacts could not be added" == message
+      assert "All contacts could not be opted in due to some errors" == message
     end
 
     test "update_contact/2 with valid data updates the contact",
