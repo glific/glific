@@ -19,26 +19,22 @@ defmodule GlificWeb.Schema.ProfileTest do
     :ok
   end
 
-  # test "profile by id returns one contact or nil", %{staff: user} do
-  #   name = "NGO Main Account"
-  #   {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
+  test "profile by id returns one contact or nil", %{staff: user} do
+    name = "user"
+    {:ok, profile} = Repo.fetch_by(Profile, %{name: name, organization_id: user.organization_id})
 
-  #   result = auth_query_gql_by(:by_id, user, variables: %{"id" => contact.id})
-  #   assert {:ok, query_data} = result
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => profile.id})
+    assert {:ok, query_data} = result
 
-  #   fetched_contact = get_in(query_data, [:data, "contact", "contact"])
-  #   assert fetched_contact["name"] == name
-  #   # staff role should not have access to phone
-  #   assert fetched_contact["phone"] == ""
-  #   assert fetched_contact["maskedPhone"] != contact.phone
+    fetched_profile = get_in(query_data, [:data, "profile", "profile"])
+    assert fetched_profile["name"] == name
 
-  #   result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
-  #   assert {:ok, query_data} = result
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
+    assert {:ok, query_data} = result
 
-  #   message = get_in(query_data, [:data, "contact", "errors", Access.at(0), "message"])
-  #   assert message == "Contact not found or permission denied."
-  # end
-
+    message = get_in(query_data, [:data, "profile", "errors", Access.at(0), "message"])
+    assert message == "Profile not found or permission denied."
+  end
 
   test "create a profile", %{manager: user} do
     {:ok, contact} =
