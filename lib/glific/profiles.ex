@@ -8,6 +8,42 @@ defmodule Glific.Profiles do
   alias Glific.{Profiles.Profile, Repo}
 
   @doc """
+  Returns the list of profiles.
+
+  ## Examples
+
+      iex> list_profiles()
+      [%Profile{}, ...]
+
+  Get the list of profiles filtered by various search options
+  Include profiles only if within list of groups
+  Include profiles only if have list of tags
+  """
+  @spec list_profiles(map()) :: [Contact.t()]
+  def list_profiles(args) do
+    IO.inspect(args)
+    args
+    |> Repo.list_filter_query(Profile, nil, &filter_with/2)
+    |> Repo.all()
+  end
+
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    IO.inspect(query)
+
+    Enum.reduce(filter, query, fn
+      {:contact_id, contact_id}, query ->
+        from(q in query, where: q.contact_id == ^contact_id)
+
+      {:organization_id, organization_id}, query ->
+        from(q in query, where: q.organization_id == ^organization_id)
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc """
   Gets a single profile.
 
   Raises `Ecto.NoResultsError` if the Profile does not exist.
