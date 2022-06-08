@@ -4,9 +4,9 @@ defmodule GlificWeb.Resolvers.Profiles do
   This layer basically stiches together one or more calls to resolve the incoming queries.
   """
 
-  alias Glific.Repo
   alias Glific.Profiles
   alias Glific.Profiles.Profile
+  alias Glific.Repo
 
   @doc false
   @spec create_profile(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::

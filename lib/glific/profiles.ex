@@ -4,9 +4,8 @@ defmodule Glific.Profiles do
   """
 
   import Ecto.Query, warn: false
-  alias Glific.Repo
 
-  alias Glific.Profiles.Profile
+  alias Glific.{Profiles.Profile, Repo}
 
   @doc """
   Gets a single profile.

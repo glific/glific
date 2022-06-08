@@ -6,10 +6,10 @@ defmodule Glific.Profiles.Profile do
   import Ecto.Changeset
 
   alias Glific.{
-    Profiles.Profile,
     Contacts.Contact,
-    Settings.Language,
-    Partners.Organization
+    Partners.Organization,
+    Profiles.Profile,
+    Settings.Language
   }
 
   @required_fields [
