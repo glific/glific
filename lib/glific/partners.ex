@@ -1123,6 +1123,35 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  Get a List for org data
+  """
+
+  @spec list_organization_data(map()) :: [Provider.t(), ...]
+  def list_organization_data(args \\ %{}) do
+    Repo.list_filter(
+      args,
+      OrganizationData,
+      &Repo.opts_with_name/2,
+      &filter_organization_data_with/2
+    )
+  end
+
+  @spec filter_organization_data_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
+          Ecto.Queryable.t()
+  defp filter_organization_data_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
+    Enum.reduce(filter, query, fn
+      {:key, key}, query ->
+        from q in query, where: ilike(q.key, ^"%#{key}%")
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc """
   Create a Client Data struct
   """
   @spec create_organization_data(map()) ::
