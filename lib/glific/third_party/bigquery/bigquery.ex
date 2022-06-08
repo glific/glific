@@ -190,7 +190,7 @@ defmodule Glific.BigQuery do
     :ok
   end
 
-  @spec handle_sync_errors(map(), non_neg_integer, map()) :: :ok
+  @spec handle_sync_errors(map(), non_neg_integer, map()) :: {:ok, any()}
   defp handle_sync_errors(response, organization_id, attrs) do
     Jason.decode(response.body)
     |> case do
@@ -201,11 +201,11 @@ defmodule Glific.BigQuery do
           do_refresh_the_schema(organization_id, attrs)
         end
 
+        {:ok, data}
+
       _ ->
         raise("Error while sync data with biquery. #{inspect(response)}")
     end
-
-    :ok
   end
 
   ## Creating a view with unnested fields from contacts
