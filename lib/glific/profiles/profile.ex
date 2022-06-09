@@ -24,7 +24,8 @@ defmodule Glific.Profiles.Profile do
     :profile_type,
     :profile_registration_fields,
     :contact_profile_fields,
-    :active_profile_id
+    :active_profile_id,
+    :contact_profile_fields
   ]
 
   @type t() :: %__MODULE__{
@@ -40,6 +41,7 @@ defmodule Glific.Profiles.Profile do
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           active_profile_id: non_neg_integer | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "profiles" do
@@ -55,6 +57,7 @@ defmodule Glific.Profiles.Profile do
 
     timestamps(type: :utc_datetime)
   end
+
 
   @doc """
   Changeset for the profile. It takes profile struct and attrs to cast and put validation on it.
