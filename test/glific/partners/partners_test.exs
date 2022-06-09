@@ -725,8 +725,7 @@ defmodule Glific.PartnersTest do
         organization_id: organization_id
       }
 
-      credential = Partners.update_credential(credential, valid_update_attrs)
-      assert credential == {:error, "Invalid Credentials"}
+      {:ok, _credential} = Partners.update_credential(credential, valid_update_attrs)
     end
 
     test "get_global_field_map/2 for organization should return global fields map" do
