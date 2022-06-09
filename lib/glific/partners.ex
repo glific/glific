@@ -390,6 +390,7 @@ defmodule Glific.Partners do
       |> set_out_of_office_values()
       |> set_languages()
       |> set_flow_uuid_display()
+      |> set_contact_profile_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -540,12 +541,31 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+  Determine if we need to enable contact profile for an organization
+  """
+  @spec get_contact_profile_enabled(map()) :: boolean
+  def get_contact_profile_enabled(organization) do
+    id = organization.id
+
+    FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: id})
+  end
+
   @spec set_flow_uuid_display(map()) :: map()
   defp set_flow_uuid_display(organization) do
     Map.put(
       organization,
       :is_flow_uuid_display,
       get_flow_uuid_display(organization)
+    )
+  end
+
+  @spec set_contact_profile_enabled(map()) :: map()
+  defp set_contact_profile_enabled(organization) do
+    Map.put(
+      organization,
+      :is_contact_profile_enabled,
+      get_contact_profile_enabled(organization)
     )
   end
 
