@@ -17,7 +17,7 @@ defmodule Glific.Profiles do
 
   Get the list of profiles filtered by various search options
   """
-  @spec list_profiles(map()) :: [Contact.t()]
+  @spec list_profiles(map()) :: [Profile.t()]
   def list_profiles(args) do
     args
     |> Repo.list_filter_query(Profile, nil, &filter_with/2)
