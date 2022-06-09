@@ -67,5 +67,6 @@ defmodule Glific.Profiles.Profile do
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
+    |> foreign_key_constraint(:active_profile_id)
   end
 end
