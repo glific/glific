@@ -51,7 +51,7 @@ defmodule Glific.BigQuery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec sync_schema_with_bigquery(non_neg_integer) :: nil | {:ok, any} | {:error, any}
+  @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
   def sync_schema_with_bigquery(organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
