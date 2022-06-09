@@ -11,6 +11,7 @@ defmodule Glific.Contacts.Contact do
     Enums.ContactStatus,
     Groups.Group,
     Partners.Organization,
+    Profiles.Profile,
     Settings.Language,
     Tags.Tag,
     Users.User
@@ -105,6 +106,7 @@ defmodule Glific.Contacts.Contact do
     field :fields, :map, default: %{}
 
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
+    has_many :profiles, Profile
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
 
