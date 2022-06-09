@@ -23,7 +23,8 @@ defmodule Glific.Profiles.Profile do
     :name,
     :profile_type,
     :profile_registration_fields,
-    :contact_profile_fields
+    :contact_profile_fields,
+    :active_profile_id
   ]
 
   @type t() :: %__MODULE__{
@@ -37,7 +38,8 @@ defmodule Glific.Profiles.Profile do
           updated_at: :utc_datetime | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          active_profile_id: non_neg_integer | nil,
         }
 
   schema "profiles" do
@@ -49,11 +51,14 @@ defmodule Glific.Profiles.Profile do
     belongs_to :language, Language
     belongs_to :contact, Contact
     belongs_to :organization, Organization
+    belongs_to :active_profile, Profile, foreign_key: :active_profile_id
 
     timestamps(type: :utc_datetime)
   end
 
-  @doc false
+  @doc """
+  Changeset for the profile. It takes profile struct and attrs to cast and put validation on it.
+  """
   @spec changeset(Profile.t(), map()) :: Ecto.Changeset.t()
   def changeset(profile, attrs) do
     profile
