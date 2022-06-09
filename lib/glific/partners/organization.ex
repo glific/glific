@@ -13,7 +13,6 @@ defmodule Glific.Partners.Organization do
     Enums.OrganizationStatus,
     Partners.OrganizationSettings.OutOfOffice,
     Partners.Provider,
-    Profiles.Profile,
     Repo,
     Settings.Language
   }
@@ -102,7 +101,6 @@ defmodule Glific.Partners.Organization do
     belongs_to :bsp, Provider, foreign_key: :bsp_id
     belongs_to :contact, Contact
     belongs_to :default_language, Language
-    has_many :profiles, Profile
 
     embeds_one :out_of_office, OutOfOffice, on_replace: :update
 
