@@ -58,7 +58,6 @@ defmodule Glific.Profiles.Profile do
     timestamps(type: :utc_datetime)
   end
 
-
   @doc """
   Changeset for the profile. It takes profile struct and attrs to cast and put validation on it.
   """
