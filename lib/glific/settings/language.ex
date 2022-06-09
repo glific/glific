@@ -7,7 +7,6 @@ defmodule Glific.Settings.Language do
   import Ecto.Changeset
 
   alias Glific.Settings.Language
-  alias Glific.Profiles.Profile
 
   @required_fields [:label, :label_locale, :locale]
   @optional_fields [:description, :is_active, :localized]
@@ -34,7 +33,6 @@ defmodule Glific.Settings.Language do
 
     field :is_active, :boolean, default: true
     field :localized, :boolean, default: false
-    has_many :profiles, Profile
 
     timestamps(type: :utc_datetime)
   end
