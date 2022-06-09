@@ -16,8 +16,6 @@ defmodule Glific.Profiles do
       [%Profile{}, ...]
 
   Get the list of profiles filtered by various search options
-  Include profiles only if within list of groups
-  Include profiles only if have list of tags
   """
   @spec list_profiles(map()) :: [Contact.t()]
   def list_profiles(args) do
