@@ -21,8 +21,6 @@ defmodule Glific.Profiles do
   """
   @spec list_profiles(map()) :: [Contact.t()]
   def list_profiles(args) do
-    IO.inspect(args)
-
     args
     |> Repo.list_filter_query(Profile, nil, &filter_with/2)
     |> Repo.all()
@@ -30,7 +28,6 @@ defmodule Glific.Profiles do
 
   defp filter_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    IO.inspect(query)
 
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->
@@ -38,6 +35,9 @@ defmodule Glific.Profiles do
 
       {:organization_id, organization_id}, query ->
         from(q in query, where: q.organization_id == ^organization_id)
+
+      {:name, name}, query ->
+        from(q in query, where: q.name == ^name)
 
       _, query ->
         query

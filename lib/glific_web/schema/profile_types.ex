@@ -32,6 +32,17 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :contact_profile_fields, :json
   end
 
+  input_object :profile_filter do
+    @desc "Search by organization id"
+    field(:organization_id, :id)
+
+    @desc "Search by contact id"
+    field(:contact_id, :id)
+
+    @desc "search profile by name"
+    field(:name, :string)
+  end
+
   object :profile_queries do
     @desc "get the details of one profile"
     field :profile, :profile_result do
