@@ -90,6 +90,6 @@ defmodule GlificWeb.Schema.CredentialTest do
     assert {:ok, query_data} = result
 
     secrets = get_in(query_data, [:data, "updateCredential", "credential", "secrets"])
-    assert secrets == nil
+    assert secrets == "{}"
   end
 end
