@@ -4,11 +4,23 @@ defmodule GlificWeb.Resolvers.Profiles do
   This layer basically stiches together one or more calls to resolve the incoming queries.
   """
 
+  import GlificWeb.Gettext
+
   alias Glific.{
     Profiles,
     Profiles.Profile,
     Repo
   }
+
+  @doc false
+  @spec profile(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def profile(_, %{id: id}, _context) do
+    {:ok, %{profile: Profiles.get_profile!(id)}}
+  rescue
+    _ ->
+      {:error, ["Profile", dgettext("errors", "Profile not found or permission denied.")]}
+  end
 
   @doc "This method will create a profile"
   @spec create_profile(Absinthe.Resolution.t(), %{input: map()}, %{context: map()}) ::
@@ -38,5 +50,12 @@ defmodule GlificWeb.Resolvers.Profiles do
            Repo.fetch_by(Profile, %{id: id, organization_id: user.organization_id}) do
       Profiles.delete_profile(profile)
     end
+  end
+
+  @doc false
+  @spec profiles(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, [any]}
+  def profiles(_, args, _) do
+    {:ok, Profiles.list_profiles(args)}
   end
 end
