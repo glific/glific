@@ -58,6 +58,7 @@ defmodule Glific.Flows.FlowLabel do
     query =
       FlowLabel
       |> where([m], m.organization_id == ^organization_id)
+      |> select([m], %{uuid: m.uuid, name: m.name})
 
     Repo.all(query)
   end

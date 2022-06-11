@@ -117,9 +117,6 @@ defmodule GlificWeb.Flows.FlowEditorController do
   def labels(conn, _params) do
     flow_list =
       FlowLabel.get_all_flowlabel(conn.assigns[:organization_id])
-      |> Enum.reduce([], fn flow, acc ->
-        [%{uuid: "#{flow.uuid}", name: flow.name} | acc]
-      end)
 
     json(conn, %{results: flow_list})
   end
