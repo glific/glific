@@ -390,6 +390,7 @@ defmodule Glific.Partners do
       |> set_out_of_office_values()
       |> set_languages()
       |> set_flow_uuid_display()
+      |> set_contact_profile_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -540,12 +541,31 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+  Determine if we need to enable contact profile for an organization
+  """
+  @spec get_contact_profile_enabled(map()) :: boolean
+  def get_contact_profile_enabled(organization) do
+    id = organization.id
+
+    FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: id})
+  end
+
   @spec set_flow_uuid_display(map()) :: map()
   defp set_flow_uuid_display(organization) do
     Map.put(
       organization,
       :is_flow_uuid_display,
       get_flow_uuid_display(organization)
+    )
+  end
+
+  @spec set_contact_profile_enabled(map()) :: map()
+  defp set_contact_profile_enabled(organization) do
+    Map.put(
+      organization,
+      :is_contact_profile_enabled,
+      get_contact_profile_enabled(organization)
     )
   end
 
@@ -816,7 +836,7 @@ defmodule Glific.Partners do
   """
 
   @spec update_credential(Credential.t(), map()) ::
-          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Credential.t()} | {:error, any}
   def update_credential(%Credential{} = credential, attrs) do
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
@@ -844,10 +864,36 @@ defmodule Glific.Partners do
     end
 
     credential.organization
-    |> credential_update_callback(credential.provider.shortcode)
-
-    {:ok, credential}
+    |> credential_update_callback(credential, credential.provider.shortcode)
   end
+
+  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
+          {:ok, any} | {:error, any}
+  defp credential_update_callback(organization, credential, "bigquery") do
+    case BigQuery.sync_schema_with_bigquery(organization.id) do
+      {:ok, _callback} ->
+        {:ok, credential}
+
+      {:error, _error} ->
+        {:error, "Invalid Credentials"}
+    end
+  end
+
+  defp credential_update_callback(organization, credential, "google_cloud_storage") do
+    case GCS.refresh_gcs_setup(organization.id) do
+      {:ok, _callback} -> {:ok, credential}
+      {:error, _error} -> {:error, "Invalid Credentials"}
+    end
+  end
+
+  defp credential_update_callback(organization, credential, "dialogflow") do
+    case Glific.Dialogflow.get_intent_list(organization.id) do
+      {:ok, _callback} -> {:ok, credential}
+      {:error, _error} -> {:error, "Invalid Credentials"}
+    end
+  end
+
+  defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
   Removing organization and service cache
@@ -966,27 +1012,6 @@ defmodule Glific.Partners do
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
   end
-
-  @doc """
-  Updating setup
-  """
-  @spec credential_update_callback(Organization.t(), String.t()) :: :ok
-  def credential_update_callback(organization, "bigquery") do
-    BigQuery.sync_schema_with_bigquery(organization.id)
-    :ok
-  end
-
-  def credential_update_callback(organization, "google_cloud_storage") do
-    GCS.refresh_gcs_setup(organization.id)
-    :ok
-  end
-
-  def credential_update_callback(organization, "dialogflow") do
-    Glific.Dialogflow.get_intent_list(organization.id)
-    :ok
-  end
-
-  def credential_update_callback(_organization, _provider), do: :ok
 
   @doc """
   Check if we can allow attachments for this organization. For now, this is a check to
@@ -1120,6 +1145,35 @@ defmodule Glific.Partners do
       )
 
     Map.merge(services, combined)
+  end
+
+  @doc """
+  Get a List for org data
+  """
+
+  @spec list_organization_data(map()) :: [Provider.t(), ...]
+  def list_organization_data(args \\ %{}) do
+    Repo.list_filter(
+      args,
+      OrganizationData,
+      &Repo.opts_with_name/2,
+      &filter_organization_data_with/2
+    )
+  end
+
+  @spec filter_organization_data_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
+          Ecto.Queryable.t()
+  defp filter_organization_data_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
+    Enum.reduce(filter, query, fn
+      {:key, key}, query ->
+        from(q in query, where: ilike(q.key, ^"%#{key}%"))
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """
