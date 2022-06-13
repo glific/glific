@@ -39,6 +39,7 @@ defmodule Glific.Flows.Action do
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
+  @required_fields_set_profile [:value, :field | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields_classifier [:input, :result_name | @required_field_common]
@@ -179,6 +180,17 @@ defmodule Glific.Flows.Action do
       value: json["value"],
       field: %{
         name: name,
+        key: json["field"]["key"]
+      }
+    })
+  end
+
+  def process(%{"type" => "set_contact_profile"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_profile)
+
+    process(json, uuid_map, node, %{
+      value: json["value"],
+      field: %{
         key: json["field"]["key"]
       }
     })
@@ -473,6 +485,27 @@ defmodule Glific.Flows.Action do
       {:ok, context, messages}
     else
       execute(Map.put(action, :type, "set_contact_field_valid"), context, messages)
+    end
+  end
+
+  def execute(%{type: "set_contact_profile_valid"} = action, context, messages) do
+    name = action.field.name
+    key = action.field[:key] || String.downcase(name) |> String.replace(" ", "_")
+    value = ContactField.parse_contact_field_value(context, action.value)
+
+    context =
+      if key == "settings",
+        do: settings(context, value),
+        else: ContactField.add_contact_field(context, key, name, value, "string")
+
+    {:ok, context, messages}
+  end
+
+  def execute(%{type: "set_contact_profile"} = action, context, messages) do
+    if Map.get(action.field, :name) in ["", nil] do
+      {:ok, context, messages}
+    else
+      execute(Map.put(action, :type, "set_contact_profile_valid"), context, messages)
     end
   end
 
