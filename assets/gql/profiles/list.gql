@@ -1,0 +1,9 @@
+query profiles ($filter: ProfileFilter, $opts: Opts) {
+  profiles (filter: $filter, opts: $opts) {
+    id
+    name
+    profile_type
+    profile_registration_fields
+    contact_profile_fields
+  }
+}

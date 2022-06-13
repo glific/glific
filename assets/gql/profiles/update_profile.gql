@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation updateProfile($id: ID!, $input: ProfileInput!) {
+  updateProfile(id: $id, input: $input) {
+    ...ProfileFields
+
+    ...ErrorFields
+  }
+}
