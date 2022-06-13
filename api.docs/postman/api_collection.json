@@ -3494,6 +3494,28 @@
 						"url": "{{api_url}}"
 					},
 					"response": []
+				},
+				{
+					"name": "Setup new organization",
+					"id": "6330aca6-8aaa-4d40-94a6-39babf863e48",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "https://api.glific.test:4001/api/v1/onboard/setup"
+					},
+					"response": []
 				}
 			],
 			"id": "eb583ec8-0ef3-471f-9037-62c42eed0f2d"
