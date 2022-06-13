@@ -120,6 +120,7 @@ defmodule Glific.Clients.KEF do
 
   def webhook("mark_worksheet_completed", fields) do
     worksheet_code = String.trim(fields["worksheet_code"] || "")
+    worksheet_grade = String.trim(fields["worksheet_grade"] || "")
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
 
     completed_worksheet_codes =
@@ -128,7 +129,7 @@ defmodule Glific.Clients.KEF do
     completed_worksheet_codes =
       if completed_worksheet_codes == "",
         do: worksheet_code,
-        else: "#{completed_worksheet_codes}, #{worksheet_code}"
+        else: "#{completed_worksheet_codes}, #{worksheet_code}_#{worksheet_grade}"
 
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field(
@@ -139,7 +140,7 @@ defmodule Glific.Clients.KEF do
 
     %{
       error: false,
-      message: "Worksheet #{worksheet_code} marked as completed"
+      message: "Worksheet #{worksheet_code}_#{worksheet_grade} marked as completed"
     }
   end
 
