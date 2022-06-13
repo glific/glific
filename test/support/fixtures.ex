@@ -30,6 +30,7 @@ defmodule Glific.Fixtures do
     Partners.Billing,
     Partners.Organization,
     Partners.Provider,
+    Profiles.Profile,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -947,5 +948,26 @@ defmodule Glific.Fixtures do
       |> AccessControl.create_permission()
 
     permission
+  end
+
+  @doc """
+  Generate a profile.
+  """
+  @spec profile_fixture(map()) :: Profile.t()
+  def profile_fixture(attrs \\ %{}) do
+    contact = contact_fixture()
+
+    {:ok, profile} =
+      attrs
+      |> Map.put(:contact_id, contact.id)
+      |> Map.put(:organization_id, contact.organization_id)
+      |> Enum.into(%{
+        name: "some name",
+        profile_type: "some type",
+        language_id: 1
+      })
+      |> Glific.Profiles.create_profile()
+
+    profile
   end
 end

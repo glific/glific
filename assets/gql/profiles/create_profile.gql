@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createProfile($input:ProfileInput!) {
+  createProfile(input: $input) {
+    ...ProfileFields
+
+    ...ErrorFields
+  }
+}

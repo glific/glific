@@ -99,6 +99,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
 
     field(:is_flow_uuid_display, :boolean)
     field(:is_roles_and_permission, :boolean)
+    field(:is_contact_profile_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 

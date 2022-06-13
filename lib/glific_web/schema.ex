@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema do
   import_types(Absinthe.Plug.Types)
 
   import_types(__MODULE__.OrganizationTypes)
+  import_types(__MODULE__.ProfileTypes)
   import_types(__MODULE__.ContactTypes)
   import_types(__MODULE__.ContactTagTypes)
   import_types(__MODULE__.EnumTypes)
@@ -50,6 +51,8 @@ defmodule GlificWeb.Schema do
   import_types(__MODULE__.RoleTypes)
 
   query do
+    import_fields(:profile_queries)
+
     import_fields(:contact_queries)
 
     import_fields(:language_queries)
@@ -100,6 +103,8 @@ defmodule GlificWeb.Schema do
   end
 
   mutation do
+    import_fields(:profile_mutations)
+
     import_fields(:contact_mutations)
 
     import_fields(:contact_tag_mutations)

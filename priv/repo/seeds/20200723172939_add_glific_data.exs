@@ -14,6 +14,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Partners.Organization,
     Partners.Provider,
     Partners.Saas,
+    Profiles.Profile,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsFlows,
@@ -54,6 +55,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     admin = contacts(organization, en)
 
+    profiles(organization, admin)
+
     users(admin, organization)
 
     SeedsMigration.migrate_data(:simulator, organization)
@@ -92,11 +95,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       "TRUNCATE contacts_fields CASCADE;",
       "TRUNCATE organizations CASCADE;",
       "TRUNCATE providers CASCADE;",
-      "TRUNCATE languages CASCADE;"
+      "TRUNCATE languages CASCADE;",
+      "TRUNCATE profiles, CASCADE;"
     ]
 
     Enum.each(truncates, fn t -> Repo.query(t) end)
   end
+
+  def utc_now(), do: DateTime.utc_now() |> DateTime.truncate(:second)
 
   def languages(0 = _count_organizations) do
     en =
@@ -129,8 +135,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       {"Sign Language", "ISL", "isl"}
     ]
 
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
-
     languages =
       Enum.map(
         languages,
@@ -139,8 +143,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
             label: label,
             label_locale: label_locale,
             locale: locale,
-            inserted_at: utc_now,
-            updated_at: utc_now
+            inserted_at: utc_now(),
+            updated_at: utc_now()
           }
         end
       )
@@ -333,8 +337,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       }
     ]
 
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
-
     tags =
       Enum.map(
         tags,
@@ -343,8 +345,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           |> Map.put(:organization_id, organization.id)
           |> Map.put(:language_id, en.id)
           |> Map.put(:is_reserved, true)
-          |> Map.put(:inserted_at, utc_now)
-          |> Map.put(:updated_at, utc_now)
+          |> Map.put(:inserted_at, utc_now())
+          |> Map.put(:updated_at, utc_now())
         end
       )
 
@@ -410,20 +412,28 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def contacts(organization, en) do
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
-
     admin =
       Repo.insert!(%Contact{
         phone: admin_phone(organization.id),
         name: "NGO Main Account",
         organization_id: organization.id,
         language_id: en.id,
-        last_message_at: utc_now,
-        last_communication_at: utc_now
+        last_message_at: utc_now(),
+        last_communication_at: utc_now()
       })
 
     Repo.update!(change(organization, contact_id: admin.id))
     admin
+  end
+
+  def profiles(organization, contact) do
+    Repo.insert!(%Profile{
+      name: "user",
+      profile_type: "profile",
+      organization_id: organization.id,
+      contact_id: contact.id,
+      language_id: contact.language_id
+    })
   end
 
   defp create_org(0 = _count_organizations, provider, [en, hi], out_of_office_default_data) do
@@ -543,8 +553,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       %{name: "English"}
     ]
 
-    utc_now = DateTime.utc_now() |> DateTime.truncate(:second)
-
     flow_labels =
       Enum.map(
         flow_labels,
@@ -552,8 +560,8 @@ defmodule Glific.Repo.Seeds.AddGlificData do
           tag
           |> Map.put(:organization_id, organization.id)
           |> Map.put(:uuid, Ecto.UUID.generate())
-          |> Map.put(:inserted_at, utc_now)
-          |> Map.put(:updated_at, utc_now)
+          |> Map.put(:inserted_at, utc_now())
+          |> Map.put(:updated_at, utc_now())
         end
       )
 
