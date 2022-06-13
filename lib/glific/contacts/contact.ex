@@ -127,6 +127,7 @@ defmodule Glific.Contacts.Contact do
     |> validate_required(@required_fields)
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
+    |> foreign_key_constraint(:active_profile_id)
   end
 
   @doc false
