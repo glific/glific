@@ -51,7 +51,7 @@ defmodule GlificWeb.Schema.ProfileTest do
 
     params = %{
       "name" => "user",
-      "profile_type" => "profile",
+      "profileType" => "profile",
       "contact_id" => contact.id,
       "language_id" => contact.language_id,
       "organization_id" => user.organization_id
@@ -61,7 +61,7 @@ defmodule GlificWeb.Schema.ProfileTest do
     assert {:ok, query_data} = result
     profile = get_in(query_data, [:data, "createProfile", "profile"])
     assert Map.get(profile, "name") == "user"
-    assert Map.get(profile, "profile_type") == "profile"
+    assert Map.get(profile, "profileType") == "profile"
   end
 
   @doc """
@@ -99,7 +99,7 @@ defmodule GlificWeb.Schema.ProfileTest do
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => profile.id,
-          "input" => %{"name" => name, "profile_type" => profile_type}
+          "input" => %{"name" => name, "profileType" => profile_type}
         }
       )
 
