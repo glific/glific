@@ -97,6 +97,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:suspended_until, :datetime)
 
     field(:is_flow_uuid_display, :boolean)
+    field(:is_contact_profile_enabled, :boolean)
 
     field(:inserted_at, :datetime)
 
