@@ -39,7 +39,8 @@ defmodule Glific.Contacts.Contact do
     :last_message_at,
     :last_communication_at,
     :settings,
-    :fields
+    :fields,
+    :active_profile_id
   ]
 
   @type t() :: %__MODULE__{
@@ -55,6 +56,8 @@ defmodule Glific.Contacts.Contact do
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
+          active_profile_id: non_neg_integer | nil,
+          active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -109,6 +112,7 @@ defmodule Glific.Contacts.Contact do
     has_many :profiles, Profile
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
+    belongs_to :active_profile, Profile, foreign_key: :active_profile_id
 
     timestamps(type: :utc_datetime_usec)
   end
