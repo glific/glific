@@ -46,6 +46,13 @@ defmodule Glific.Flows.ContactField do
         %{fields: fields}
       )
 
+    # create contact fields if not already created
+    maybe_create_contact_field(%{
+      shortcode: field,
+      name: label,
+      organization_id: contact.organization_id
+    })
+
     {:ok, _} =
       Contacts.capture_history(contact, :contact_fields_updated, %{
         event_meta: %{
@@ -133,6 +140,23 @@ defmodule Glific.Flows.ContactField do
            |> Repo.insert() do
       contacts_field = add_variable_field(contacts_field)
       {:ok, contacts_field}
+    end
+  end
+
+  @doc """
+  Create or update contact field
+  """
+  @spec maybe_create_contact_field(map()) ::
+          {:ok, ContactsField.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_create_contact_field(attrs) do
+    case Repo.get_by(ContactsField, %{shortcode: attrs.shortcode},
+           organization_id: attrs.organization_id
+         ) do
+      nil ->
+        create_contact_field(attrs)
+
+      contact_field ->
+        update_contacts_field(contact_field, attrs)
     end
   end
 
