@@ -630,6 +630,7 @@ defmodule Glific.Flows.FlowContext do
         |> Map.put(:flow, flow)
         |> Map.put(:uuid_map, flow.uuid_map)
         |> Map.put(:node, node)
+        |> set_last_message()
 
       :error ->
         # Seems like the flow changed underneath us
@@ -813,5 +814,15 @@ defmodule Glific.Flows.FlowContext do
     }
 
     MessageVarParser.parse(str, vars)
+  end
+
+  @spec set_last_message(FlowContext.t()) :: FlowContext.t()
+  defp set_last_message(context) do
+    if is_nil(context.last_message) do
+      message = Messages.last_incoming_message(context.contact_id, context.organization_id)
+      Map.put(context, :last_message, message)
+    else
+      context
+    end
   end
 end
