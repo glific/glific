@@ -16,6 +16,7 @@ defmodule Glific.Flows.Action do
     Flows.Flow,
     Groups,
     Groups.Group,
+    Messages,
     Messages.Message,
     Repo
   }
@@ -523,7 +524,11 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchronously
-    Dialogflow.execute(action, context, context.last_message)
+    last_incoming_message =
+      context.last_message ||
+        Messages.last_incoming_message(context.contact_id, context.organization_id)
+
+    Dialogflow.execute(action, context, last_incoming_message)
     # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
   end
