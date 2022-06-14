@@ -483,6 +483,23 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def execute(
+        %{type: "set_contact_profile", profile_type: "Create Profile"} = action,
+        context,
+        messages
+      ) do
+    %{
+      name: action.value["name"],
+      profile_type: action.value["type"],
+      contact_id: context.contact.id,
+      language_id: context.contact.language_id,
+      organization_id: context.contact.organization_id
+    }
+    |> Glific.Profiles.create_profile()
+
+    {:ok, context, messages}
+  end
+
   def execute(%{type: "enter_flow"} = action, context, _messages) do
     flow_uuid = get_flow_uuid(action, context)
 
