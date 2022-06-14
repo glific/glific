@@ -32,6 +32,7 @@ defmodule Glific.Dialogflow do
     %{url: url, id: id, email: email} = project_info(organization_id)
 
     dflow_url = "#{url}/#{id}/locations/global/agent/#{path}"
+    IO.inspect(dflow_url)
 
     method
     |> do_request(dflow_url, body(body), headers(email, organization_id))
@@ -100,7 +101,7 @@ defmodule Glific.Dialogflow do
         service_account = Jason.decode!(credential.secrets["service_account"])
 
         %{
-          url: "https://dialogflow.googleapis.com/v2/projects",
+          url: "https://dialogflow.googleapis.com/v2beta1/projects",
           id: service_account["project_id"],
           email: service_account["client_email"]
         }
