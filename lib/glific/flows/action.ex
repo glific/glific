@@ -16,7 +16,6 @@ defmodule Glific.Flows.Action do
     Flows.Flow,
     Groups,
     Groups.Group,
-    Messages,
     Messages.Message,
     Repo
   }
