@@ -29,7 +29,6 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :language_id, :id
     field :contact_id, :id
     field :organization_id, :id
-    field :active_profile_id, :id
     field :contact_profile_fields, :json
   end
 
