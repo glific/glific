@@ -728,7 +728,7 @@ defmodule Glific.Contacts do
     contact =
       contact_id
       |> Contacts.get_contact!()
-      |> Repo.preload([:language, :groups, :active_profile])
+      |> Repo.preload([:language, :groups])
       |> Map.from_struct()
 
     # we are splliting this up since we need to use contact within the various function
