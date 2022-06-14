@@ -56,6 +56,10 @@ defmodule Glific.Flows.MessageVarParser do
     "#{inspect(get_in(binding, ["contact", "in_groups"]))}"
   end
 
+  defp bound("@contact.profiles", binding) do
+    get_in(binding, ["contact", "profiles"]) || ""
+  end
+
   defp bound(<<_::binary-size(1), var::binary>>, binding) do
     var = String.replace_trailing(var, ".", "")
 

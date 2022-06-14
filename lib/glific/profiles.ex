@@ -6,6 +6,7 @@ defmodule Glific.Profiles do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts.Contact,
     Profiles.Profile,
     Repo
   }
@@ -117,5 +118,10 @@ defmodule Glific.Profiles do
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def delete_profile(%Profile{} = profile) do
     Repo.delete(profile)
+  end
+
+  @spec get_indexed_profile(Contact.t()) :: [{any, integer}]
+  def get_indexed_profile(%{profiles: profiles} = _contact) do
+    Enum.with_index(profiles, 1)
   end
 end

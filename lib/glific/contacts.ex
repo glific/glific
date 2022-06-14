@@ -20,6 +20,7 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Profiles,
     Providers.GupshupContacts,
     Providers.GupshupEnterpriseContacts,
     Repo,
@@ -728,10 +729,10 @@ defmodule Glific.Contacts do
     contact =
       contact_id
       |> Contacts.get_contact!()
-      |> Repo.preload([:language, :groups])
+      |> Repo.preload([:language, :groups, :profiles])
       |> Map.from_struct()
 
-    # we are splliting this up since we need to use contact within the various function
+    # we are spliting this up since we need to use contact within the various function
     # calls and a lot cleaner this way
     contact
     |> put_in(
@@ -746,10 +747,15 @@ defmodule Glific.Contacts do
         fn g, list -> [g.label | list] end
       )
     )
-    ## We change the name of the contact whenever we receive  a message from the contact.
-    ## so the contact name will always be the name contact added in the whatsApp app.
-    ## This is just so that organizations can use the custom name or the name they collected from the
-    ## various surveys in glific flows.
+    |> Map.put(
+      :profiles,
+      Profiles.get_indexed_profile(contact)
+      |> Enum.reduce("", fn {profile, value}, acc -> acc <> " #{value}. #{profile.name} \n" end)
+    )
+    ## We change the name of the contact whenever we receive a message from the contact.
+    ## so the contact name will always be the name contact added in the WhatsApp app.
+    ## This is just so that organizations can use the custom name or the name they collected from
+    ## the various surveys in glific flows.
     |> put_in(
       [:fields, "name"],
       contact.fields["name"] ||
