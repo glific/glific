@@ -40,6 +40,7 @@ defmodule Glific.Flows.Action do
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_profile [:value, :profile_type | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields_classifier [:input, :result_name | @required_field_common]
@@ -166,6 +167,11 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_name"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_name)
     process(json, uuid_map, node, %{value: json["name"]})
+  end
+
+  def process(%{"type" => "set_contact_profile"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_profile)
+    process(json, uuid_map, node, %{profile_type: json["profile_type"], value: json["value"]})
   end
 
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
