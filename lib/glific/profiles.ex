@@ -23,9 +23,7 @@ defmodule Glific.Profiles do
   """
   @spec list_profiles(map()) :: [Profile.t()]
   def list_profiles(args) do
-    args
-    |> Repo.list_filter_query(Profile, nil, &filter_with/2)
-    |> Repo.all()
+    Repo.list_filter(args, Profile, &Repo.opts_with_name/2, &filter_with/2)
   end
 
   defp filter_with(query, filter) do
@@ -34,12 +32,6 @@ defmodule Glific.Profiles do
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
-
-      {:organization_id, organization_id}, query ->
-        from(q in query, where: q.organization_id == ^organization_id)
-
-      {:name, name}, query ->
-        from(q in query, where: q.name == ^name)
 
       _, query ->
         query
@@ -121,7 +113,13 @@ defmodule Glific.Profiles do
   end
 
   @spec get_indexed_profile(Contact.t()) :: [{any, integer}]
-  def get_indexed_profile(%{profiles: profiles} = _contact) do
-    Enum.with_index(profiles, 1)
+  def get_indexed_profile(contact) do
+    %{
+      filter: %{contact_id: contact.id},
+      opts: %{offset: 0, order: :asc},
+      organization_id: contact.organization_id
+    }
+    |> list_profiles()
+    |> Enum.with_index(1)
   end
 end

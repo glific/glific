@@ -36,9 +36,11 @@ defmodule Glific.Profiles.Profile do
           contact_profile_fields: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
+          language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
+          contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
@@ -48,9 +50,9 @@ defmodule Glific.Profiles.Profile do
     field :profile_registration_fields, :map, default: %{}
     field :contact_profile_fields, :map, default: %{}
 
-    belongs_to :language, Language
-    belongs_to :contact, Contact
-    belongs_to :organization, Organization
+    belongs_to :language, Language, foreign_key: :language_id
+    belongs_to :contact, Contact, foreign_key: :contact_id
+    belongs_to :organization, Organization, foreign_key: :organization_id
 
     timestamps(type: :utc_datetime)
   end
