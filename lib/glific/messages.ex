@@ -1270,19 +1270,4 @@ defmodule Glific.Messages do
     |> where([c], c.id == ^contact_id)
     |> Repo.update_all(set: [is_org_read: true])
   end
-
-  @doc """
-  Get last inbound message received by a given contact
-  """
-  @spec last_incoming_message(non_neg_integer, non_neg_integer) :: Message.t() | nil
-  def last_incoming_message(contact_id, organization_id) do
-    Message
-    |> where([m], m.contact_id == ^contact_id)
-    |> where([m], m.organization_id == ^organization_id)
-    |> where([m], m.flow == :inbound)
-    |> order_by([m], desc: m.id)
-    |> limit(1)
-    |> Repo.one()
-    |> Repo.preload(contact: [:language])
-  end
 end

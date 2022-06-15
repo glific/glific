@@ -820,11 +820,24 @@ defmodule Glific.Flows.FlowContext do
 
   @spec set_last_message(FlowContext.t()) :: FlowContext.t()
   defp set_last_message(context) do
-    if is_nil(context.last_message) do
-      message = Messages.last_incoming_message(context.contact_id, context.organization_id)
-      Map.put(context, :last_message, message)
-    else
-      context
+    cond do
+      context.last_message != nil ->
+        context
+
+      context.recent_inbound in [[], nil, %{}] ->
+        context
+
+      hd(context.recent_inbound)["message_id"] == nil ->
+        context
+
+      true ->
+        latest_inbound = hd(context.recent_inbound)
+
+        message =
+          Messages.get_message!(latest_inbound["message_id"])
+          |> Repo.preload(contact: [:language])
+
+        Map.put(context, :last_message, message)
     end
   end
 end
