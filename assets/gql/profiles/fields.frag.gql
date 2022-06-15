@@ -3,8 +3,7 @@ fragment ProfileFields on ProfileResult {
     id
     name
     profileType
-    profileRegistrationFields
-    contactProfileFields
+    fields
   }
 }
 
