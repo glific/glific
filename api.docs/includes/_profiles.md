@@ -8,8 +8,7 @@ query profiles($filter: ProfileFilter, $opts: Opts) {
     id
     name
     profileType
-    profileRegistrationFields
-    contactProfileFields
+    fields
   }
 }
 
@@ -32,10 +31,9 @@ query profiles($filter: ProfileFilter, $opts: Opts) {
   "data": {
     "profiles": [
       {
-        "contactPprofileFields": "{}",
+        "fields": "{}",
         "id": "6",
         "name": "user",
-        "profileRegistrationFields": "{}",
         "profile_type": "profile"
       }
     ]
@@ -69,8 +67,7 @@ mutation createProfile($input:ProfileInput!) {
       id
       name
       profileType
-      profileRegistrationFields
-      contactProfileFields
+      fields
     }
     errors {
       key
@@ -95,10 +92,9 @@ mutation createProfile($input:ProfileInput!) {
      "createProfile": {
        "errors": null,
        "profile": {
-         "contactPprofileFields": "{}",
          "id": "6",
          "name": "user",
-         "profileRegistrationFields": "{}",
+         "fields": "{}",
          "profile_type": "profile"
        }
      }
@@ -127,8 +123,7 @@ mutation updateProfile($input:ProfileInput!) {
       id
       name
       profileType
-      profileRegistrationFields
-      contactProfileFields
+      fields
     }
     errors {
       key
@@ -262,12 +257,7 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>profile_registration_fields</strong></td>
-<td valign="top"><a href="#json">Json</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>contact_profile_fiels</strong></td>
+<td colspan="2" valign="top"><strong>fields</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
@@ -370,12 +360,7 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>profile_registration_fields</strong></td>
-<td valign="top"><a href="#json">Json</a></td>
-<td></td>
-</tr>
-<tr>
-<td colspan="2" valign="top"><strong>contact_profile_fiels</strong></td>
+<td colspan="2" valign="top"><strong>fields</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
 <td></td>
 </tr>
