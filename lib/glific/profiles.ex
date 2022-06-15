@@ -6,6 +6,7 @@ defmodule Glific.Profiles do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Profiles.Profile,
     Repo
@@ -112,6 +113,35 @@ defmodule Glific.Profiles do
     Repo.delete(profile)
   end
 
+  @doc """
+  Switches active profile of a contact
+
+  ## Examples
+
+      iex> switch_profile(contact)
+      {:ok, %Profile{}}
+
+  """
+  @spec switch_profile(Contact.t(), String.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  def switch_profile(contact, profile_index) do
+    index = Glific.parse_maybe_integer!(profile_index)
+
+    {profile, _index} =
+      get_indexed_profile(contact)
+      |> Enum.find(fn {_profile, profile_index} -> profile_index == index end)
+
+    Contacts.update_contact(contact, %{active_profile_id: profile.id})
+  end
+
+  @doc """
+  Get a profile associated with a contact indexed and sorted in ascending order
+
+  ## Examples
+
+      iex> get_indexed_profile(contact)
+      [{%Profile{}, 1}, {%Profile{}, 2}]
+  """
   @spec get_indexed_profile(Contact.t()) :: [{any, integer}]
   def get_indexed_profile(contact) do
     %{

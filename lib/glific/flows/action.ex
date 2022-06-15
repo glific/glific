@@ -18,6 +18,7 @@ defmodule Glific.Flows.Action do
     Groups.Group,
     Messages,
     Messages.Message,
+    Profiles,
     Repo
   }
 
@@ -495,7 +496,17 @@ defmodule Glific.Flows.Action do
       language_id: context.contact.language_id,
       organization_id: context.contact.organization_id
     }
-    |> Glific.Profiles.create_profile()
+    |> Profiles.create_profile()
+
+    {:ok, context, messages}
+  end
+
+  def execute(
+        %{type: "set_contact_profile", profile_type: "Switch Profile"} = action,
+        context,
+        messages
+      ) do
+    Profiles.switch_profile(context.contact, action.value)
 
     {:ok, context, messages}
   end
