@@ -153,6 +153,39 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
+  test "process extracts the right values from json for set_contact_profile action" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_profile",
+      "value" => %{"name" => "John", "type" => "student"},
+      "profile_type" => "Create Profile"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_contact_profile"
+    assert action.node_uuid == node.uuid
+    assert action.value["name"] == "John"
+    assert action.value["type"] == "student"
+    assert action.profile_type == "Create Profile"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_profile", "value" => "Test Value"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_profile",
+      "profile_type" => "Create Profile"
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
   test "process extracts the right values from json for webhook" do
     node = %Node{uuid: "Test UUID"}
 
@@ -563,6 +596,30 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields[action.field.key].value == "field1"
     assert updated_context.contact.fields[action.field.key].type == "string"
     assert updated_context.contact.fields[action.field.key].label == "Not Settings"
+  end
+
+  test "execute an action when type is set_contact_profile to add create new profile", _attrs do
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    action = %{
+      type: "set_contact_profile",
+      value: %{"name" => "John", "type" => "student"},
+      profile_type: "Create Profile"
+    }
+
+    message_stream = []
+
+    result = Action.execute(action, context, message_stream)
+
+    assert {:ok, updated_context, _updated_message_stream} = result
+    contact = Repo.preload(updated_context.contact, [:profiles])
+    [profile | _] = contact.profiles
+    assert profile.name == "John"
+    assert profile.profile_type == "student"
   end
 
   test "execute an action when type is enter_flow", attrs do
