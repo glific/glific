@@ -61,6 +61,9 @@ defmodule Glific.Profiles.Profile do
     profile
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> unique_constraint([:name, :profile_type, :organization_id],
+      message: "Sorry, a profile with same name and type already exists"
+    )
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
