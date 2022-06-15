@@ -50,8 +50,8 @@ defmodule GlificWeb.Schema.ProfileTest do
       Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: user.organization_id})
 
     params = %{
-      "name" => "user",
-      "profileType" => "profile",
+      "name" => "Tom",
+      "profileType" => "student",
       "contact_id" => contact.id,
       "language_id" => contact.language_id,
       "organization_id" => user.organization_id
@@ -60,8 +60,8 @@ defmodule GlificWeb.Schema.ProfileTest do
     result = auth_query_gql_by(:create, user, variables: %{"input" => params})
     assert {:ok, query_data} = result
     profile = get_in(query_data, [:data, "createProfile", "profile"])
-    assert Map.get(profile, "name") == "user"
-    assert Map.get(profile, "profileType") == "profile"
+    assert Map.get(profile, "name") == "Tom"
+    assert Map.get(profile, "profileType") == "student"
   end
 
   @doc """
