@@ -58,6 +58,12 @@ defmodule Glific.Dialogflow.Sessions do
           text: message.body,
           languageCode: language
         }
+      },
+      queryParams: %{
+        timeZone: "Asia/Calcutta",
+        sentimentAnalysisRequestConfig: %{
+          analyzeQueryTextSentiment: true
+        }
       }
     }
 

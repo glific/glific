@@ -227,7 +227,7 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
-    contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    contact = Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
 
     ## we need to clean this code in the future.
@@ -1269,20 +1269,5 @@ defmodule Glific.Messages do
     Contact
     |> where([c], c.id == ^contact_id)
     |> Repo.update_all(set: [is_org_read: true])
-  end
-
-  @doc """
-  Get last inbound message received by a given contact
-  """
-  @spec last_incoming_message(non_neg_integer, non_neg_integer) :: Message.t() | nil
-  def last_incoming_message(contact_id, organization_id) do
-    Message
-    |> where([m], m.contact_id == ^contact_id)
-    |> where([m], m.organization_id == ^organization_id)
-    |> where([m], m.flow == :inbound)
-    |> order_by([m], desc: m.id)
-    |> limit(1)
-    |> Repo.one()
-    |> Repo.preload(contact: [:language])
   end
 end

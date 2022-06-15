@@ -53,7 +53,7 @@ defmodule Glific.Flows.ContactAction do
     ## We might need to think how to send the interactive message to a group
     {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, nil)
-    interactive_template_id = get_interative_template_id(action, context)
+    interactive_template_id = get_interactive_template_id(action, context)
 
     {:ok, interactive_template} =
       Repo.fetch_by(
@@ -110,7 +110,7 @@ defmodule Glific.Flows.ContactAction do
   @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
           {:ok, map(), any()} | {false, FlowContext.t()}
   defp has_loops?(context, body, messages) do
-    {context, count} = update_recent(context, body)
+    {context, count} = check_recent_outbound_count(context, body)
 
     if count <= @max_loop_limit,
       do: {false, context},
@@ -144,11 +144,11 @@ defmodule Glific.Flows.ContactAction do
       }
     }
 
-  @spec update_recent(FlowContext.t(), String.t()) :: {FlowContext.t(), non_neg_integer}
-  defp update_recent(context, body) do
+  @spec check_recent_outbound_count(FlowContext.t(), String.t()) ::
+          {FlowContext.t(), non_neg_integer}
+  defp check_recent_outbound_count(context, body) do
     # we'll mark that we came here and are planning to send it, even if
-    # we dont end up sending it. This allows us to detect and abort infinite loops
-    context = FlowContext.update_recent(context, body, :recent_outbound)
+    # we don't end up sending it. This allows us to detect and abort infinite loops
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
@@ -336,7 +336,8 @@ defmodule Glific.Flows.ContactAction do
 
   defp handle_message_result(result, context, messages, attrs) do
     case result do
-      {:ok, _message} ->
+      {:ok, message} ->
+        context = FlowContext.update_recent(context, message, :recent_outbound)
         {:ok, %{context | delay: context.delay + @min_delay}, messages}
 
       {:error, error} ->
@@ -425,8 +426,8 @@ defmodule Glific.Flows.ContactAction do
     context
   end
 
-  @spec get_interative_template_id(Action.t(), FlowContext.t()) :: integer | nil
-  defp get_interative_template_id(action, context) do
+  @spec get_interactive_template_id(Action.t(), FlowContext.t()) :: integer | nil
+  defp get_interactive_template_id(action, context) do
     if is_nil(action.interactive_template_expression) do
       action.interactive_template_id
     else
