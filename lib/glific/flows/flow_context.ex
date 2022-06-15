@@ -632,6 +632,8 @@ defmodule Glific.Flows.FlowContext do
         |> Map.put(:flow, flow)
         |> Map.put(:uuid_map, flow.uuid_map)
         |> Map.put(:node, node)
+        ## We will refactor it more and use it whenever we need this.
+        ## Currently to restrict the number changes in the context
         |> set_last_message()
 
       :error ->
