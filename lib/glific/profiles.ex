@@ -122,8 +122,7 @@ defmodule Glific.Profiles do
       {:ok, %Profile{}}
 
   """
-  @spec switch_profile(Contact.t(), String.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  @spec switch_profile(Contact.t(), String.t()) :: Contact.t()
   def switch_profile(contact, profile_index) do
     index = Glific.parse_maybe_integer!(profile_index)
 
