@@ -1020,7 +1020,7 @@ defmodule Glific.BigQuery.Schema do
    @doc """
   Schema for profile table
   """
-  @spec stats_schema :: list()
+  @spec profile_schema :: list()
   def profile_schema do
     [
       %{

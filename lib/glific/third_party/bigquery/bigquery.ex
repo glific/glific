@@ -19,6 +19,7 @@ defmodule Glific.BigQuery do
     Messages.MessageMedia,
     Partners,
     Partners.Saas,
+    Profiles.Profile,
     Repo,
     Stats.Stat
   }
@@ -39,7 +40,8 @@ defmodule Glific.BigQuery do
     "stats" => :stats_schema,
     "flow_counts" => :flow_count_schema,
     "messages_media" => :messages_media_schema,
-    "flow_contexts" => :flow_context_schema
+    "flow_contexts" => :flow_context_schema,
+    "profiles" => :profile_schema
   }
 
   defp bigquery_tables(organization_id) do
@@ -131,7 +133,8 @@ defmodule Glific.BigQuery do
     "stats_all" => Stat,
     "flow_counts" => FlowCount,
     "messages_media" => MessageMedia,
-    "flow_contexts" => Flows.FlowContext
+    "flow_contexts" => Flows.FlowContext,
+    "profiles" => Profile
   }
 
   # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
