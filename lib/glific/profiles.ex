@@ -131,7 +131,13 @@ defmodule Glific.Profiles do
       get_indexed_profile(contact)
       |> Enum.find(fn {_profile, profile_index} -> profile_index == index end)
 
-    Contacts.update_contact(contact, %{active_profile_id: profile.id})
+    with {:ok, updated_contact} <-
+           Contacts.update_contact(contact, %{active_profile_id: profile.id}),
+         false <- is_nil(updated_contact.active_profile_id) do
+      updated_contact
+    else
+      _ -> contact
+    end
   end
 
   @doc """

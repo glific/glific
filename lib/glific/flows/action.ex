@@ -506,9 +506,10 @@ defmodule Glific.Flows.Action do
         context,
         messages
       ) do
-    Profiles.switch_profile(context.contact, action.value)
-
-    {:ok, context, messages}
+    with contact <- Profiles.switch_profile(context.contact, action.value),
+         context <- Map.put(context, :contact, contact) do
+      {:ok, context, messages}
+    end
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
