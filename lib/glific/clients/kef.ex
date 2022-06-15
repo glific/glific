@@ -13,10 +13,9 @@ defmodule Glific.Clients.KEF do
     Partners,
     Partners.OrganizationData,
     Repo,
-    Sheets.ApiClient,
-    Settings.Language
+    Settings.Language,
+    Sheets.ApiClient
   }
-
 
   @props %{
     worksheets: %{
