@@ -433,17 +433,6 @@ defmodule Glific.MessagesTest do
                |> Messages.create_message()
     end
 
-    test "last_incomoing_message/2 return a valid message for a contact", attrs do
-      last_message_body = "Last incoming message"
-      message = message_fixture(attrs |> Map.merge(%{body: last_message_body}))
-
-      last_incoming_msg =
-        Messages.last_incoming_message(message.contact_id, message.organization_id)
-
-      assert last_incoming_msg.body == last_message_body
-      assert last_incoming_msg.id == message.id
-    end
-
     test "variable will be replaced in media caption after creating a message", attrs do
       media =
         attrs
