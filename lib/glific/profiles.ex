@@ -8,6 +8,8 @@ defmodule Glific.Profiles do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Flows.FlowContext,
+    Messages,
     Profiles.Profile,
     Repo
   }
@@ -178,5 +180,16 @@ defmodule Glific.Profiles do
     }
     |> list_profiles()
     |> Enum.with_index(1)
+  end
+
+  @doc """
+  Wakes up flow context with success or failure message to move node forward
+  """
+  @spec handle_profile_context(FlowContext.t(), String.t()) :: :ok
+  def handle_profile_context(context, msg) do
+    {context, message} = {context, Messages.create_temp_message(context.organization_id, msg)}
+
+    FlowContext.wakeup_one(context, message)
+    :ok
   end
 end

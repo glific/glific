@@ -489,16 +489,23 @@ defmodule Glific.Flows.Action do
         context,
         messages
       ) do
-    %{
+    attrs = %{
       name: action.value["name"],
       profile_type: action.value["type"],
       contact_id: context.contact.id,
       language_id: context.contact.language_id,
       organization_id: context.contact.organization_id
     }
-    |> Profiles.create_profile()
 
-    {:ok, context, messages}
+    with {:ok, profile} <- Profiles.create_profile(attrs),
+         true <- profile.name == action.value["name"] do
+      Profiles.handle_profile_context(context, "Success")
+    else
+      _ ->
+        Profiles.handle_profile_context(context, "Failure")
+    end
+
+    {:wait, context, messages}
   end
 
   def execute(
@@ -508,8 +515,13 @@ defmodule Glific.Flows.Action do
       ) do
     with contact <- Profiles.switch_profile(context.contact, action.value),
          context <- Map.put(context, :contact, contact) do
-      {:ok, context, messages}
+      Profiles.handle_profile_context(context, "Success")
+    else
+      _ ->
+        Profiles.handle_profile_context(context, "Failure")
     end
+
+    {:wait, context, messages}
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
