@@ -306,8 +306,9 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the recent_* state as we consume or send a message
   """
-  @spec update_recent(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
-  def update_recent(context, body, type) do
+  @spec update_recent(FlowContext.t(), map(), atom()) ::
+          FlowContext.t()
+  def update_recent(context, msg, type) do
     now = DateTime.utc_now()
 
     # since we are storing in DB and want to avoid hassle of atom <-> string conversion
@@ -320,7 +321,8 @@ defmodule Glific.Flows.FlowContext do
             uuid: context.contact_id,
             name: context.contact.name
           },
-          "message" => body,
+          "message" => msg.body,
+          "message_id" => msg.id,
           "date" => now,
           "node_uuid" => context.node_uuid
         }

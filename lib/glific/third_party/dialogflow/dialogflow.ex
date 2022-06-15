@@ -32,7 +32,6 @@ defmodule Glific.Dialogflow do
     %{url: url, id: id, email: email} = project_info(organization_id)
 
     dflow_url = "#{url}/#{id}/locations/global/agent/#{path}"
-    IO.inspect(dflow_url)
 
     method
     |> do_request(dflow_url, body(body), headers(email, organization_id))
