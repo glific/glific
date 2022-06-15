@@ -4,7 +4,7 @@ defmodule GlificWeb.Schema.ContactTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  import Absinthe.Resolution.Helpers
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -47,6 +47,10 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field(:status, :contact_status_enum)
     field(:bsp_status, :contact_provider_status_enum)
+
+    field :active_profile, :profile do
+      resolve(dataloader(Repo))
+    end
 
     field(:is_org_read, :boolean)
     field(:is_org_replied, :boolean)
@@ -150,6 +154,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:status, :contact_status_enum)
     field(:bsp_status, :contact_provider_status_enum)
     field(:language_id, :id)
+    field(:active_profile_id, :id)
     field(:fields, :json)
     field(:settings, :json)
   end

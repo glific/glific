@@ -2,9 +2,8 @@ fragment ProfileFields on ProfileResult {
   profile {
     id
     name
-    profile_type
-    profile_registration_fields
-    contact_profile_fields
+    profileType
+    fields
   }
 }
 

@@ -48,13 +48,15 @@ defmodule Glific.ProfilesTest do
         profile_type: "some type",
         contact_id: 1,
         language_id: 1,
-        organization_id: 1
+        organization_id: 1,
+        fields: %{name: "max"}
       }
 
       assert {:ok, profile} = Profiles.create_profile(valid_attrs)
 
       assert profile.name == "some name"
       assert profile.profile_type == "some type"
+      assert  profile.fields.name == "max"
     end
 
     test "create_profile/1 with invalid data returns error changeset" do
