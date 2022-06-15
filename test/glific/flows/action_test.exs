@@ -153,7 +153,7 @@ defmodule Glific.Flows.ActionTest do
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
   end
 
-  test "process extracts the right values from json for set_contact_profile action" do
+  test "process extracts the right values from json for set_contact_profile action when profile type is Create Profile" do
     node = %Node{uuid: "Test UUID"}
 
     json = %{
@@ -179,6 +179,38 @@ defmodule Glific.Flows.ActionTest do
       "uuid" => "UUID 1",
       "type" => "set_contact_profile",
       "profile_type" => "Create Profile"
+    }
+
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+    json = %{}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+  end
+
+  test "process extracts the right values from json for set_contact_profile action when profile type is Switch Profile" do
+    node = %Node{uuid: "Test UUID"}
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_profile",
+      "value" => "1",
+      "profile_type" => "Switch Profile"
+    }
+
+    {action, _uuid_map} = Action.process(json, %{}, node)
+    assert action.uuid == "UUID 1"
+    assert action.type == "set_contact_profile"
+    assert action.node_uuid == node.uuid
+    assert action.value == "1"
+    assert action.profile_type == "Switch Profile"
+
+    # ensure that not sending either of the required fields, raises an error
+    json = %{"uuid" => "UUID 1", "type" => "set_contact_profile", "value" => "1"}
+    assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
+
+    json = %{
+      "uuid" => "UUID 1",
+      "type" => "set_contact_profile",
+      "profile_type" => "Switch Profile"
     }
 
     assert_raise ArgumentError, fn -> Action.process(json, %{}, node) end
