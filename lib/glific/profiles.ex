@@ -124,18 +124,40 @@ defmodule Glific.Profiles do
   """
   @spec switch_profile(Contact.t(), String.t()) :: Contact.t()
   def switch_profile(contact, profile_index) do
+    contact = Repo.preload(contact, [:active_profile])
+    sync_fields_to_profile(contact, contact.active_profile)
+
     index = Glific.parse_maybe_integer!(profile_index)
 
-    {profile, _index} =
-      get_indexed_profile(contact)
-      |> Enum.find(fn {_profile, profile_index} -> profile_index == index end)
-
-    with {:ok, updated_contact} <-
+    with {profile, _index} <- fetch_indexed_profile(contact, index),
+         {:ok, updated_contact} <-
            Contacts.update_contact(contact, %{active_profile_id: profile.id}),
          false <- is_nil(updated_contact.active_profile_id) do
-      updated_contact
+      sync_fields_from_profile(updated_contact, profile)
     else
       _ -> contact
+    end
+  end
+
+  @spec fetch_indexed_profile(Contact.t(), integer) :: {Profile.t(), integer} | nil
+  defp fetch_indexed_profile(contact, index) do
+    contact
+    |> get_indexed_profile()
+    |> Enum.find(fn {_profile, profile_index} -> profile_index == index end)
+  end
+
+  @spec sync_fields_to_profile(Contact.t(), Profile.t()) :: Contact.t()
+  defp sync_fields_to_profile(contact, nil), do: contact
+
+  defp sync_fields_to_profile(contact, profile) do
+    update_profile(profile, %{fields: contact.fields})
+    contact
+  end
+
+  @spec sync_fields_from_profile(Contact.t(), Profile.t()) :: Contact.t()
+  defp sync_fields_from_profile(contact, profile) do
+    with {:ok, contact} <- Contacts.update_contact(contact, %{fields: profile.fields}) do
+      contact
     end
   end
 
@@ -144,7 +166,7 @@ defmodule Glific.Profiles do
 
   ## Examples
 
-      iex> get_indexed_profile(contact)
+      iex> Glific.Profiles.get_indexed_profile(con)
       [{%Profile{}, 1}, {%Profile{}, 2}]
   """
   @spec get_indexed_profile(Contact.t()) :: [{any, integer}]
