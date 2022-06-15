@@ -1017,6 +1017,51 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
+   @doc """
+  Schema for profile table
+  """
+  @spec stats_schema :: list()
+  def profile_schema do
+    [
+      %{
+        description: "Stats ID",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Profile Name",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Profile Type",
+        name: "profile_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "To sync profile and contact data",
+        name: "fields",
+        type: "RECORD",
+        mode: "Nullable"
+      }
+    ]
+  end
+
   @doc """
   Procedure for flat fields
   """
