@@ -490,19 +490,16 @@ defmodule Glific.Flows.Action do
         messages
       ) do
     attrs = %{
-      name: action.value["name"],
-      profile_type: action.value["type"],
+      name: ContactField.parse_contact_field_value(context, action.value["name"]),
+      profile_type: ContactField.parse_contact_field_value(context, action.value["type"]),
       contact_id: context.contact.id,
       language_id: context.contact.language_id,
       organization_id: context.contact.organization_id
     }
 
-    with {:ok, profile} <- Profiles.create_profile(attrs),
-         true <- profile.name == action.value["name"] do
-      Profiles.handle_profile_context(context, "Success")
-    else
-      _ ->
-        Profiles.handle_profile_context(context, "Failure")
+    case Profiles.create_profile(attrs) do
+      {:ok, _profile} -> Profiles.handle_profile_context(context, "Success")
+      {:error, _error} -> Profiles.handle_profile_context(context, "Failure")
     end
 
     {:wait, context, messages}
@@ -513,7 +510,9 @@ defmodule Glific.Flows.Action do
         context,
         messages
       ) do
-    with contact <- Profiles.switch_profile(context.contact, action.value),
+    value = ContactField.parse_contact_field_value(context, action.value)
+
+    with contact <- Profiles.switch_profile(context.contact, value),
          context <- Map.put(context, :contact, contact) do
       Profiles.handle_profile_context(context, "Success")
     else
