@@ -490,7 +490,7 @@ defmodule Glific.Flows.Action do
       ) do
     attrs = %{
       name: ContactField.parse_contact_field_value(context, action.value["name"]),
-      profile_type: ContactField.parse_contact_field_value(context, action.value["type"]),
+      type: ContactField.parse_contact_field_value(context, action.value["type"]),
       contact_id: context.contact.id,
       language_id: context.contact.language_id,
       organization_id: context.contact.organization_id

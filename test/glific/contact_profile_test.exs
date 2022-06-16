@@ -24,8 +24,8 @@ defmodule Glific.ContactProfilesTest do
        %{organization_id: _organization_id} = attrs do
     {:ok, language} = Repo.fetch_by(Language, %{locale: "hi"})
 
-    profile1 = profile_fixture(%{name: "john", profile_type: "admin"})
-    profile2 = profile_fixture(%{name: "max", profile_type: "staff"})
+    profile1 = profile_fixture(%{name: "john", type: "admin"})
+    profile2 = profile_fixture(%{name: "max", type: "staff"})
 
     attrs =
       attrs

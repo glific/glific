@@ -8,7 +8,7 @@ defmodule Glific.ProfilesTest do
 
     import Glific.Fixtures
 
-    @invalid_attrs %{name: nil, profile_type: 1}
+    @invalid_attrs %{name: nil, type: 1}
 
     @valid_attrs %{
       name: "profile 1",
@@ -45,7 +45,7 @@ defmodule Glific.ProfilesTest do
     test "create_profile/1 with valid data creates a profile" do
       valid_attrs = %{
         name: "some name",
-        profile_type: "some type",
+        type: "some type",
         contact_id: 1,
         language_id: 1,
         organization_id: 1,
@@ -55,7 +55,7 @@ defmodule Glific.ProfilesTest do
       assert {:ok, profile} = Profiles.create_profile(valid_attrs)
 
       assert profile.name == "some name"
-      assert profile.profile_type == "some type"
+      assert profile.type == "some type"
       assert  profile.fields.name == "max"
     end
 
@@ -65,11 +65,11 @@ defmodule Glific.ProfilesTest do
 
     test "update_profile/2 with valid data updates the profile" do
       profile = profile_fixture()
-      update_attrs = %{name: "some updated name", profile_type: "some updated type"}
+      update_attrs = %{name: "some updated name", type: "some updated type"}
 
       assert {:ok, profile} = Profiles.update_profile(profile, update_attrs)
       assert profile.name == "some updated name"
-      assert profile.profile_type == "some updated type"
+      assert profile.type == "some updated type"
     end
 
     test "update_profile/2 with invalid data returns error changeset" do

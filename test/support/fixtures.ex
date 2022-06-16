@@ -922,7 +922,7 @@ defmodule Glific.Fixtures do
       |> Map.put(:organization_id, contact.organization_id)
       |> Enum.into(%{
         name: "some name",
-        profile_type: "some type",
+        type: "some type",
         language_id: 1
       })
       |> Glific.Profiles.create_profile()

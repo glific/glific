@@ -34,7 +34,7 @@ query profiles($filter: ProfileFilter, $opts: Opts) {
         "fields": "{}",
         "id": "6",
         "name": "user",
-        "profile_type": "profile"
+        "type": "profile"
       }
     ]
   }
@@ -79,7 +79,7 @@ mutation createProfile($input:ProfileInput!) {
 {
   "input": {
     "name": "This is a new profile",
-    "profile_type": "profile"
+    "type": "profile"
   }
 }
 ```
@@ -95,7 +95,7 @@ mutation createProfile($input:ProfileInput!) {
          "id": "6",
          "name": "user",
          "fields": "{}",
-         "profile_type": "profile"
+         "type": "profile"
        }
      }
    }

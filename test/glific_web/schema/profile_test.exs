@@ -93,13 +93,13 @@ defmodule GlificWeb.Schema.ProfileTest do
       Repo.fetch_by(Profile, %{name: "user", organization_id: user.organization_id})
 
     name = "another user"
-    profile_type = "user profile"
+    type = "user profile"
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => profile.id,
-          "input" => %{"name" => name, "profileType" => profile_type}
+          "input" => %{"name" => name, "profileType" => type}
         }
       )
 

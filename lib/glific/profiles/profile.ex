@@ -21,7 +21,7 @@ defmodule Glific.Profiles.Profile do
 
   @optional_fields [
     :name,
-    :profile_type,
+    :type,
     :fields
   ]
 
@@ -29,7 +29,7 @@ defmodule Glific.Profiles.Profile do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           name: String.t() | nil,
-          profile_type: String.t() | nil,
+          type: String.t() | nil,
           fields: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
@@ -43,7 +43,7 @@ defmodule Glific.Profiles.Profile do
 
   schema "profiles" do
     field :name, :string
-    field :profile_type, :string
+    field :type, :string
     field :fields, :map, default: %{}
 
     belongs_to :language, Language, foreign_key: :language_id
@@ -61,7 +61,7 @@ defmodule Glific.Profiles.Profile do
     profile
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:name, :profile_type, :organization_id],
+    |> unique_constraint([:name, :type, :organization_id],
       message: "Sorry, a profile with same name and type already exists"
     )
     |> foreign_key_constraint(:language_id)
