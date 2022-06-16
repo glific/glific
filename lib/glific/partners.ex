@@ -1151,7 +1151,6 @@ defmodule Glific.Partners do
   @doc """
   Get a List for org data
   """
-
   @spec list_organization_data(map()) :: [Provider.t(), ...]
   def list_organization_data(args \\ %{}) do
     Repo.list_filter(
