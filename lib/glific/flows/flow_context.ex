@@ -306,8 +306,9 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the recent_* state as we consume or send a message
   """
-  @spec update_recent(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
-  def update_recent(context, body, type) do
+  @spec update_recent(FlowContext.t(), map(), atom()) ::
+          FlowContext.t()
+  def update_recent(context, msg, type) do
     now = DateTime.utc_now()
 
     # since we are storing in DB and want to avoid hassle of atom <-> string conversion
@@ -320,7 +321,8 @@ defmodule Glific.Flows.FlowContext do
             uuid: context.contact_id,
             name: context.contact.name
           },
-          "message" => body,
+          "message" => msg.body,
+          "message_id" => msg.id,
           "date" => now,
           "node_uuid" => context.node_uuid
         }
@@ -630,6 +632,9 @@ defmodule Glific.Flows.FlowContext do
         |> Map.put(:flow, flow)
         |> Map.put(:uuid_map, flow.uuid_map)
         |> Map.put(:node, node)
+        ## We will refactor it more and use it whenever we need this.
+        ## Currently to restrict the number changes in the context
+        |> set_last_message()
 
       :error ->
         # Seems like the flow changed underneath us
@@ -813,5 +818,28 @@ defmodule Glific.Flows.FlowContext do
     }
 
     MessageVarParser.parse(str, vars)
+  end
+
+  @spec set_last_message(FlowContext.t()) :: FlowContext.t()
+  defp set_last_message(context) do
+    cond do
+      context.last_message != nil ->
+        context
+
+      context.recent_inbound in [[], nil, %{}] ->
+        context
+
+      hd(context.recent_inbound)["message_id"] == nil ->
+        context
+
+      true ->
+        latest_inbound = hd(context.recent_inbound)
+
+        message =
+          Messages.get_message!(latest_inbound["message_id"])
+          |> Repo.preload(contact: [:language])
+
+        Map.put(context, :last_message, message)
+    end
   end
 end
