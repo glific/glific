@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.ContactTest do
     Fixtures,
     Flows,
     Messages.Message,
+    Profiles.Profile,
     Repo,
     Seeds.SeedsDev,
     State
@@ -166,6 +167,25 @@ defmodule GlificWeb.Schema.ContactTest do
     fetched_contact = get_in(query_data, [:data, "contactByPhone", "contact"])
     assert fetched_contact == nil
     assert is_list(get_in(query_data, [:data, "contactByPhone", "errors"]))
+  end
+
+  test "create a contact with profile", %{manager: user} do
+    profile = Repo.get_by!(Profile, name: "user")
+
+    name = "Contact Test Name Uno"
+    phone = "1-415-555-1212"
+    active_profile_id = profile.id
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"name" => name, "phone" => phone, "active_profile_id" => active_profile_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact = get_in(query_data, [:data, "createContact", "contact"])
+    assert Map.get(contact, "name") == name
   end
 
   test "create a contact and test possible scenarios and errors", %{manager: user} do

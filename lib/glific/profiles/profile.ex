@@ -22,10 +22,7 @@ defmodule Glific.Profiles.Profile do
   @optional_fields [
     :name,
     :profile_type,
-    :profile_registration_fields,
-    :contact_profile_fields,
-    :active_profile_id,
-    :contact_profile_fields
+    :fields
   ]
 
   @type t() :: %__MODULE__{
@@ -33,27 +30,22 @@ defmodule Glific.Profiles.Profile do
           id: non_neg_integer | nil,
           name: String.t() | nil,
           profile_type: String.t() | nil,
-          profile_registration_fields: map() | nil,
-          contact_profile_fields: map() | nil,
+          fields: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          active_profile_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "profiles" do
     field :name, :string
     field :profile_type, :string
-    field :profile_registration_fields, :map, default: %{}
-    field :contact_profile_fields, :map, default: %{}
+    field :fields, :map, default: %{}
 
     belongs_to :language, Language
     belongs_to :contact, Contact
     belongs_to :organization, Organization
-    belongs_to :active_profile, Profile, foreign_key: :active_profile_id
 
     timestamps(type: :utc_datetime)
   end
@@ -69,6 +61,5 @@ defmodule Glific.Profiles.Profile do
     |> foreign_key_constraint(:language_id)
     |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:organization_id)
-    |> foreign_key_constraint(:active_profile_id)
   end
 end

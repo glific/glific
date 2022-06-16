@@ -84,6 +84,18 @@ defmodule Glific do
       |> String.trim()
 
   @doc """
+  convert string to snake case
+  """
+  @spec string_snake_case(String.t() | nil) :: String.t() | nil
+  def string_snake_case(str) when is_nil(str) or str == "", do: str
+
+  def string_snake_case(str),
+    do:
+      str
+      |> String.replace(~r/\s+/, "_")
+      |> String.downcase()
+
+  @doc """
   See if the current time is within the past time units
   """
   @spec in_past_time(DateTime.t(), atom(), integer) :: boolean
