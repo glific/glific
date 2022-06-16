@@ -7,7 +7,7 @@ query profiles($filter: ProfileFilter, $opts: Opts) {
   profiles(filter: $filter, opts:$opts) {
     id
     name
-    profileType
+    type
     fields
   }
 }
@@ -66,7 +66,7 @@ mutation createProfile($input:ProfileInput!) {
     profile {
       id
       name
-      profileType
+      type
       fields
     }
     errors {
@@ -122,7 +122,7 @@ mutation updateProfile($input:ProfileInput!) {
     profile {
       id
       name
-      profileType
+      type
       fields
     }
     errors {
@@ -136,7 +136,7 @@ mutation updateProfile($input:ProfileInput!) {
   "input": {
     "id": "6",
     "name": "This is a new profile",
-    "profileType": "profile user"
+    "type": "profile user"
   }
 }
 ```
@@ -148,7 +148,7 @@ mutation updateProfile($input:ProfileInput!) {
       "profile": {
         "id": "6",
         "name": "This is a new profile",
-        "profileType": "profile user"
+        "type": "profile user"
       },
       "errors": null
     }
@@ -252,7 +252,7 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>profileType</strong></td>
+<td colspan="2" valign="top"><strong>type</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
@@ -355,7 +355,7 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
-<td colspan="2" valign="top"><strong>profileType</strong></td>
+<td colspan="2" valign="top"><strong>type</strong></td>
 <td valign="top"><a href="#string">String</a></td>
 <td></td>
 </tr>
