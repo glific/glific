@@ -2,6 +2,7 @@ defmodule Glific.ProfilesTest do
   use Glific.DataCase, async: true
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Fixtures,
     Profiles,
@@ -141,7 +142,7 @@ defmodule Glific.ProfilesTest do
       new_profile = Fixtures.profile_fixture(params)
 
       updated_contact =
-        Glific.Contacts.get_contact!(contact.id)
+        Contacts.get_contact!(contact.id)
         |> Profiles.switch_profile("2")
         |> Profiles.switch_profile("1")
         |> Repo.preload([:active_profile])
