@@ -828,7 +828,7 @@ defmodule Glific.Flows.FlowContext do
       context.last_message != nil ->
         context
 
-      recent_inbounds not in [[], nil, %{}] ->
+      recent_inbounds in [[], nil, %{}] ->
         context
 
       hd(recent_inbounds)["message_id"] == nil ->
@@ -845,6 +845,7 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @spec get_recent_inbounds(FlowContext.t()) :: list()
   defp get_recent_inbounds(context) do
     cond do
       context.recent_inbound not in [[], nil, %{}] ->
