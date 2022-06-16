@@ -92,7 +92,11 @@
           "help": "the name of the contact",
           "type": "text"
         },
-
+        {
+          "key": "profiles",
+          "help": "list of profiles associated with the contact",
+          "type": "text"
+        },
         {
           "key": "language",
           "help": "the language of the contact as 3-letter ISO code",
