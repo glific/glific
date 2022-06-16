@@ -175,6 +175,8 @@ defmodule Glific.BigQuery do
   @doc false
   @spec create_bigquery_job(String.t(), non_neg_integer) :: :ok
   defp create_bigquery_job(table_name, organization_id) do
+    IO.inspect(table_name)
+
     Repo.fetch_by(BigQueryJob, %{table: table_name, organization_id: organization_id})
     |> case do
       {:ok, bigquery_job} ->

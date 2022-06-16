@@ -56,7 +56,7 @@ defmodule Glific.ProfilesTest do
 
       assert profile.name == "some name"
       assert profile.profile_type == "some type"
-      assert  profile.fields.name == "max"
+      assert profile.fields.name == "max"
     end
 
     test "create_profile/1 with invalid data returns error changeset" do

@@ -1017,7 +1017,7 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
-   @doc """
+  @doc """
   Schema for profile table
   """
   @spec profile_schema :: list()
@@ -1054,10 +1054,30 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-        description: "To sync profile and contact data",
+        description: "This is a field to sync contact with profile fields",
         name: "fields",
         type: "RECORD",
-        mode: "Nullable"
+        mode: "REPEATED",
+        fields: [
+          %{
+            description: "Name for the profile",
+            name: "name",
+            type: "STRING",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Phone number of the user; primary point of identification",
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Opted language of the user for templates and other communications",
+        name: "language",
+        type: "STRING",
+        mode: "NULLABLE"
       }
     ]
   end

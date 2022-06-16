@@ -169,7 +169,6 @@ defmodule Glific.Clients.KEF do
   end
 
   def webhook("get_reports_info", fields) do
-
     language = get_language(fields["contact"]["id"])
 
     uniq_completed_worksheets =
@@ -384,8 +383,7 @@ defmodule Glific.Clients.KEF do
         end
       end)
 
-      do_get_worksheet_msg(worksheet_count, language.locale)
-
+    do_get_worksheet_msg(worksheet_count, language.locale)
   end
 
   defp do_get_worksheet_msg(worksheet_count, "en") do
@@ -395,6 +393,7 @@ defmodule Glific.Clients.KEF do
     #{worksheet_count.level_3} worksheets for Level 3
     """
   end
+
   defp do_get_worksheet_msg(worksheet_count, "hi") do
     """
     स्तर 1 के #{worksheet_count.level_1} कार्यपत्रक
@@ -402,6 +401,7 @@ defmodule Glific.Clients.KEF do
     स्तर 3 के #{worksheet_count.level_3} कार्यपत्रक
     """
   end
+
   defp do_get_worksheet_msg(worksheet_count, "kn") do
     """
     ಲೆವೆಲ್ 1 #{worksheet_count.level_1} ವರ್ಕ್‌ಶೀಟ್‌ಗಳು
@@ -446,5 +446,4 @@ defmodule Glific.Clients.KEF do
 
     contact.language
   end
-
 end
