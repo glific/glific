@@ -821,13 +821,13 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @spec set_last_message(FlowContext.t()) :: FlowContext.t()
+  defp set_last_message(%{last_message: message} = context) when message not in [%{}, nil, ""],
+    do: context
+
   defp set_last_message(context) do
     recent_inbounds = get_recent_inbounds(context)
 
     cond do
-      context.last_message != nil ->
-        context
-
       recent_inbounds in [[], nil, %{}] ->
         context
 
