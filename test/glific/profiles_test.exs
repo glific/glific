@@ -5,7 +5,8 @@ defmodule Glific.ProfilesTest do
     Contacts.Contact,
     Fixtures,
     Profiles,
-    Profiles.Profile
+    Profiles.Profile,
+    Repo
   }
 
   describe "profiles" do
@@ -99,11 +100,54 @@ defmodule Glific.ProfilesTest do
         "contact_id" => contact.id
       }
 
-      _profile = Fixtures.profile_fixture(params)
+      Fixtures.profile_fixture(params)
 
       profiles_2 = Profiles.get_indexed_profile(contact)
       count_2 = Enum.count(profiles_2)
       assert count_2 > count_1
+    end
+
+    test "switch_profile/2 switches contact's active profile based on index", attrs do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      assert is_nil(contact.active_profile_id) == true
+
+      updated_contact =
+        Profiles.switch_profile(contact, "1")
+        |> Repo.preload([:active_profile, :profiles])
+
+      assert is_nil(updated_contact.active_profile_id) == false
+
+      # updating with wrong index
+      updated_contact =
+        Profiles.switch_profile(contact, "some index")
+        |> Repo.preload([:active_profile, :profiles])
+
+      assert is_nil(updated_contact.active_profile_id) == true
+    end
+
+    test "switch_profile/2 switches contact's active and sync contact fields", attrs do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      # Creating a new profile and switching to second profile
+      params = %{
+        "name" => "Profile 2",
+        "type" => "student",
+        "contact_id" => contact.id
+      }
+
+      new_profile = Fixtures.profile_fixture(params)
+
+      updated_contact =
+        Glific.Contacts.get_contact!(contact.id)
+        |> Profiles.switch_profile("2")
+        |> Profiles.switch_profile("1")
+        |> Repo.preload([:active_profile])
+
+      assert updated_contact.active_profile_id == new_profile.id
+      assert updated_contact.active_profile.name == "Profile 2"
     end
   end
 end

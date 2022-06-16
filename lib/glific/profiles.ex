@@ -129,11 +129,11 @@ defmodule Glific.Profiles do
     contact = Repo.preload(contact, [:active_profile])
     sync_fields_to_profile(contact, contact.active_profile)
 
-    index = Glific.parse_maybe_integer!(profile_index)
-
-    with {profile, _index} <- fetch_indexed_profile(contact, index),
-         {:ok, updated_contact} <-
+    with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
+         {profile, _index} <- fetch_indexed_profile(contact, index),
+         {:ok, _updated_contact} <-
            Contacts.update_contact(contact, %{active_profile_id: profile.id}),
+         updated_contact <- Contacts.get_contact!(contact.id),
          false <- is_nil(updated_contact.active_profile_id) do
       sync_fields_from_profile(updated_contact, profile)
     else
