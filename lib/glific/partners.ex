@@ -1116,6 +1116,7 @@ defmodule Glific.Partners do
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
       "flow_uuid_display" => get_flow_uuid_display(organization)
+      "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
 
     Map.put(services, organization_id, service)
