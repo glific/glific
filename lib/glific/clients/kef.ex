@@ -13,10 +13,9 @@ defmodule Glific.Clients.KEF do
     Partners,
     Partners.OrganizationData,
     Repo,
+    Settings.Language,
     Sheets.ApiClient
   }
-
-  alias Glific.Sheets.ApiClient
 
   @props %{
     worksheets: %{
@@ -120,6 +119,7 @@ defmodule Glific.Clients.KEF do
 
   def webhook("mark_worksheet_completed", fields) do
     worksheet_code = String.trim(fields["worksheet_code"] || "")
+    worksheet_grade = String.trim(fields["worksheet_grade"] || "")
     contact_id = Glific.parse_maybe_integer!(get_in(fields, ["contact", "id"]))
 
     completed_worksheet_codes =
@@ -128,7 +128,7 @@ defmodule Glific.Clients.KEF do
     completed_worksheet_codes =
       if completed_worksheet_codes == "",
         do: worksheet_code,
-        else: "#{completed_worksheet_codes}, #{worksheet_code}"
+        else: "#{completed_worksheet_codes}, #{worksheet_code}_#{worksheet_grade}"
 
     Contacts.get_contact!(contact_id)
     |> ContactField.do_add_contact_field(
@@ -139,7 +139,7 @@ defmodule Glific.Clients.KEF do
 
     %{
       error: false,
-      message: "Worksheet #{worksheet_code} marked as completed"
+      message: "Worksheet #{worksheet_code}_#{worksheet_grade} marked as completed"
     }
   end
 
@@ -169,6 +169,9 @@ defmodule Glific.Clients.KEF do
   end
 
   def webhook("get_reports_info", fields) do
+
+    language = get_language(fields["contact"]["id"])
+
     uniq_completed_worksheets =
       get_in(fields, ["contact", "fields"])
       |> get_completed_worksheets()
@@ -181,7 +184,8 @@ defmodule Glific.Clients.KEF do
       worksheet: %{
         completed: length(uniq_completed_worksheets),
         remaining: 36 - length(uniq_completed_worksheets),
-        list: Enum.join(uniq_completed_worksheets, ",")
+        list: Enum.join(uniq_completed_worksheets, ","),
+        list_message: get_worksheet_msg(uniq_completed_worksheets, language)
       },
       helping_hand: %{
         completed: length(uniq_completed_helping_hands),
@@ -360,6 +364,52 @@ defmodule Glific.Clients.KEF do
     |> Enum.into(%{})
   end
 
+  @spec get_worksheet_msg(list(), Language.t()) :: String.t()
+  defp get_worksheet_msg(completed_worksheets, language) do
+    worksheet_count =
+      completed_worksheets
+      |> Enum.reduce(%{level_1: 0, level_2: 0, level_3: 0}, fn worksheet, acc ->
+        cond do
+          String.contains?(worksheet, "_prekg") ->
+            Map.put(acc, :level_1, acc.level_1 + 1)
+
+          String.contains?(worksheet, "_lkg") ->
+            Map.put(acc, :level_2, acc.level_2 + 1)
+
+          String.contains?(worksheet, "_ukg") ->
+            Map.put(acc, :level_3, acc.level_3 + 1)
+
+          true ->
+            acc
+        end
+      end)
+
+      do_get_worksheet_msg(worksheet_count, language.locale)
+
+  end
+
+  defp do_get_worksheet_msg(worksheet_count, "en") do
+    """
+    #{worksheet_count.level_1} worksheets for Level 1
+    #{worksheet_count.level_2} worksheets for Level 2
+    #{worksheet_count.level_3} worksheets for Level 3
+    """
+  end
+  defp do_get_worksheet_msg(worksheet_count, "hi") do
+    """
+    स्तर 1 के #{worksheet_count.level_1} कार्यपत्रक
+    स्तर 2 के #{worksheet_count.level_2} कार्यपत्रक
+    स्तर 3 के #{worksheet_count.level_3} कार्यपत्रक
+    """
+  end
+  defp do_get_worksheet_msg(worksheet_count, "kn") do
+    """
+    ಲೆವೆಲ್ 1 #{worksheet_count.level_1} ವರ್ಕ್‌ಶೀಟ್‌ಗಳು
+    ಲೆವೆಲ್ 2 #{worksheet_count.level_2} ವರ್ಕ್‌ಶೀಟ್‌ಗಳು
+    ಲೆವೆಲ್ 3 #{worksheet_count.level_3} ವರ್ಕ್‌ಶೀಟ್‌ಗಳು
+    """
+  end
+
   @spec get_completed_worksheets(map()) :: list()
   defp get_completed_worksheets(contact_fields) do
     completed_worksheet_codes =
@@ -385,4 +435,16 @@ defmodule Glific.Clients.KEF do
     code = Glific.string_clean(str)
     "worksheet_code_#{code}"
   end
+
+  defp get_language(contact_id) do
+    contact_id = Glific.parse_maybe_integer!(contact_id)
+
+    contact =
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language])
+
+    contact.language
+  end
+
 end

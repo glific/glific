@@ -227,7 +227,7 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
-    contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    contact = Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
 
     ## we need to clean this code in the future.
