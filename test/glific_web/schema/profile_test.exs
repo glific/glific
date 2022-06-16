@@ -5,7 +5,12 @@ defmodule GlificWeb.Schema.ProfileTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{Contacts.Contact, Profiles.Profile, Repo, Seeds.SeedsDev}
+  alias Glific.{
+    Contacts.Contact,
+    Profiles.Profile,
+    Repo,
+    Seeds.SeedsDev
+  }
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/profiles/create_profile.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/profiles/delete_profile.gql")

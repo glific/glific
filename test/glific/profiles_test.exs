@@ -1,33 +1,35 @@
 defmodule Glific.ProfilesTest do
   use Glific.DataCase, async: true
 
-  alias Glific.Profiles
+  alias Glific.{
+    Contacts.Contact,
+    Fixtures,
+    Profiles,
+    Profiles.Profile
+  }
 
   describe "profiles" do
-    alias Glific.Profiles.Profile
-
     import Glific.Fixtures
 
     @invalid_attrs %{name: nil, type: 1}
 
     @valid_attrs %{
-      name: "profile 1",
-      type: "pro"
+      "name" => "profile 1",
+      "type" => "pro"
     }
 
     @valid_attrs_1 %{
-      name: "profile 2",
-      contact_id: 2
+      "name" => "profile 2",
+      "contact_id" => 2
     }
     test "get_profile!/1 returns the profile with given id" do
       profile = profile_fixture()
       assert Profiles.get_profile!(profile.id) == profile
     end
 
-    test "list_contacts/1 with multiple profiles filtered",
-         %{organization_id: _organization_id} = attrs do
-      _p1 = profile_fixture(Map.merge(attrs, @valid_attrs))
-      _p2 = profile_fixture(Map.merge(attrs, @valid_attrs_1))
+    test "list_contacts/1 with multiple profiles filtered" do
+      _p1 = profile_fixture(@valid_attrs)
+      _p2 = profile_fixture(@valid_attrs_1)
 
       # fliter by name
       [profile | _] = Profiles.list_profiles(%{filter: %{name: "profile 1"}})
@@ -56,7 +58,7 @@ defmodule Glific.ProfilesTest do
 
       assert profile.name == "some name"
       assert profile.type == "some type"
-      assert  profile.fields.name == "max"
+      assert profile.fields.name == "max"
     end
 
     test "create_profile/1 with invalid data returns error changeset" do
@@ -82,6 +84,26 @@ defmodule Glific.ProfilesTest do
       profile = profile_fixture()
       assert {:ok, %Profile{}} = Profiles.delete_profile(profile)
       assert_raise Ecto.NoResultsError, fn -> Profiles.get_profile!(profile.id) end
+    end
+
+    test "get_indexed_profile/1 returns all indexed profile for a contact", attrs do
+      {:ok, contact} =
+        Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: attrs.organization_id})
+
+      profiles = Profiles.get_indexed_profile(contact)
+      count_1 = Enum.count(profiles)
+
+      params = %{
+        "name" => "Profile 2",
+        "type" => "student",
+        "contact_id" => contact.id
+      }
+
+      _profile = Fixtures.profile_fixture(params)
+
+      profiles_2 = Profiles.get_indexed_profile(contact)
+      count_2 = Enum.count(profiles_2)
+      assert count_2 > count_1
     end
   end
 end
