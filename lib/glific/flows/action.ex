@@ -485,46 +485,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(
-        %{type: "set_contact_profile", profile_type: "Create Profile"} = action,
+        %{type: "set_contact_profile", profile_type: profile_type} = action,
         context,
         _messages
       ) do
-    attrs = %{
-      name: ContactField.parse_contact_field_value(context, action.value["name"]),
-      type: ContactField.parse_contact_field_value(context, action.value["type"]),
-      contact_id: context.contact.id,
-      language_id: context.contact.language_id,
-      organization_id: context.contact.organization_id
-    }
-
-    {context, message} =
-      case Profiles.create_profile(attrs) do
-        {:ok, _profile} ->
-          {context, Messages.create_temp_message(context.organization_id, "Success")}
-
-        {:error, _error} ->
-          {context, Messages.create_temp_message(context.organization_id, "Failure")}
-      end
-
-    {:ok, context, [message]}
-  end
-
-  def execute(
-        %{type: "set_contact_profile", profile_type: "Switch Profile"} = action,
-        context,
-        _messages
-      ) do
-    value = ContactField.parse_contact_field_value(context, action.value)
-
-    {context, message} =
-      with contact <- Profiles.switch_profile(context.contact, value),
-           context <- Map.put(context, :contact, contact) do
-        {context, Messages.create_temp_message(context.organization_id, "Success")}
-      else
-        _ ->
-          {context, Messages.create_temp_message(context.organization_id, "Failure")}
-      end
-
+    {context, message} = Profiles.handle_flow_action(context, action, profile_type)
     {:ok, context, [message]}
   end
 

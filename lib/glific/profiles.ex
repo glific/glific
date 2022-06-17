@@ -8,7 +8,11 @@ defmodule Glific.Profiles do
   alias Glific.{
     Contacts,
     Contacts.Contact,
+    Flows.Action,
+    Flows.ContactField,
+    Flows.FlowContext,
     Profiles.Profile,
+    Messages,
     Repo
   }
 
@@ -161,5 +165,40 @@ defmodule Glific.Profiles do
     }
     |> list_profiles()
     |> Enum.with_index(1)
+  end
+
+  @doc """
+    Handles flow action based on type of operation on Profile
+  """
+  @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
+          {FlowContext.t(), Message.t()}
+  def handle_flow_action(context, action, "Switch Profile") do
+    value = ContactField.parse_contact_field_value(context, action.value)
+
+    with contact <- switch_profile(context.contact, value),
+         context <- Map.put(context, :contact, contact) do
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      _ ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
+  end
+
+  def handle_flow_action(context, action, "Create Profile") do
+    attrs = %{
+      name: ContactField.parse_contact_field_value(context, action.value["name"]),
+      type: ContactField.parse_contact_field_value(context, action.value["type"]),
+      contact_id: context.contact.id,
+      language_id: context.contact.language_id,
+      organization_id: context.contact.organization_id
+    }
+
+    case create_profile(attrs) do
+      {:ok, _profile} ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
+      {:error, _error} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
   end
 end
