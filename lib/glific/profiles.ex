@@ -8,8 +8,6 @@ defmodule Glific.Profiles do
   alias Glific.{
     Contacts,
     Contacts.Contact,
-    Flows.FlowContext,
-    Messages,
     Profiles.Profile,
     Repo
   }
