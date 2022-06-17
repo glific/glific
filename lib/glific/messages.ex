@@ -147,8 +147,6 @@ defmodule Glific.Messages do
   """
   @spec create_message(map()) :: {:ok, Message.t()} | {:error, Ecto.Changeset.t()}
   def create_message(attrs) do
-    IO.inspect(attrs)
-
     attrs =
       %{flow: :inbound, status: :enqueued}
       |> Map.merge(attrs)
