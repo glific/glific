@@ -11,8 +11,8 @@ defmodule Glific.Profiles do
     Flows.Action,
     Flows.ContactField,
     Flows.FlowContext,
-    Profiles.Profile,
     Messages,
+    Profiles.Profile,
     Repo
   }
 
@@ -177,6 +177,13 @@ defmodule Glific.Profiles do
 
     with contact <- switch_profile(context.contact, value),
          context <- Map.put(context, :contact, contact) do
+      Contacts.capture_history(context.contact.id, :profile_switched, %{
+        event_label: "contact switched profile to #{contact.active_profile.name}",
+        event_meta: %{
+          method: "switched profile via flow: #{context.flow.name}"
+        }
+      })
+
       {context, Messages.create_temp_message(context.organization_id, "Success")}
     else
       _ ->
