@@ -64,6 +64,7 @@ defmodule Glific.Flows.Action do
           result_name: String.t() | nil,
           body: String.t() | nil,
           type: String.t() | nil,
+          profile_type: String.t() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -102,6 +103,7 @@ defmodule Glific.Flows.Action do
     field(:language, :string)
 
     field(:type, :string)
+    field(:profile_type, :string)
 
     field(:quick_replies, {:array, :string}, default: [])
 
