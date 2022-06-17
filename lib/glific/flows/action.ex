@@ -483,12 +483,8 @@ defmodule Glific.Flows.Action do
     end
   end
 
-  def execute(
-        %{type: "set_contact_profile", profile_type: profile_type} = action,
-        context,
-        _messages
-      ) do
-    {context, message} = Profiles.handle_flow_action(context, action, profile_type)
+  def execute(%{type: "set_contact_profile"} = action, context, _messages) do
+    {context, message} = Profiles.handle_flow_action(context, action, action.profile_type)
     {:ok, context, [message]}
   end
 

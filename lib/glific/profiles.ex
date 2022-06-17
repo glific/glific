@@ -12,6 +12,7 @@ defmodule Glific.Profiles do
     Flows.ContactField,
     Flows.FlowContext,
     Messages,
+    Messages.Message,
     Profiles.Profile,
     Repo
   }
@@ -170,8 +171,7 @@ defmodule Glific.Profiles do
   @doc """
     Handles flow action based on type of operation on Profile
   """
-  @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
-          {FlowContext.t(), Message.t()}
+  @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) :: {FlowContext.t(), Message.t()}
   def handle_flow_action(context, action, "Switch Profile") do
     value = ContactField.parse_contact_field_value(context, action.value)
 
