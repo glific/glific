@@ -168,13 +168,16 @@ defmodule Glific.Flows.ContactField do
   Update profile field if there is an active profile id set
   """
   @spec maybe_update_profile_field(Contact.t(), map()) ::
-          {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
-  def maybe_update_profile_field(%{active_profile_id: active_profile_id} = _contact, fields)
+          Contact.t()
+  def maybe_update_profile_field(%{active_profile_id: active_profile_id} = contact, fields)
       when is_integer(active_profile_id) do
     with profile <- Profiles.get_profile!(active_profile_id) do
       Profiles.update_profile(profile, %{fields: fields})
     end
+    contact
   end
+
+  def maybe_update_profile_field(contact, _fields), do: contact
 
   @doc """
   Updates a contact field.

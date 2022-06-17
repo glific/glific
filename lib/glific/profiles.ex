@@ -130,8 +130,9 @@ defmodule Glific.Profiles do
 
     with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
          {profile, _index} <- fetch_indexed_profile(contact, index),
-         {:ok, updated_contact} <-
-           Contacts.update_contact(contact, %{active_profile_id: profile.id}) do
+         {:ok, _updated_contact} <-
+           Contacts.update_contact(contact, %{active_profile_id: profile.id}),
+         updated_contact <- Contacts.get_contact!(contact.id) do
       updated_contact
     else
       _ -> contact
@@ -162,16 +163,5 @@ defmodule Glific.Profiles do
     }
     |> list_profiles()
     |> Enum.with_index(1)
-  end
-
-  @doc """
-  Wakes up flow context with success or failure message to move node forward
-  """
-  @spec handle_profile_context(FlowContext.t(), String.t()) :: :ok
-  def handle_profile_context(context, msg) do
-    {context, message} = {context, Messages.create_temp_message(context.organization_id, msg)}
-
-    FlowContext.wakeup_one(context, message)
-    :ok
   end
 end

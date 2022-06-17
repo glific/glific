@@ -16,6 +16,7 @@ defmodule Glific.Flows.Action do
     Flows.Flow,
     Groups,
     Groups.Group,
+    Messages,
     Messages.Message,
     Profiles,
     Repo
@@ -486,7 +487,7 @@ defmodule Glific.Flows.Action do
   def execute(
         %{type: "set_contact_profile", profile_type: "Create Profile"} = action,
         context,
-        messages
+        _messages
       ) do
     attrs = %{
       name: ContactField.parse_contact_field_value(context, action.value["name"]),
@@ -496,30 +497,35 @@ defmodule Glific.Flows.Action do
       organization_id: context.contact.organization_id
     }
 
-    case Profiles.create_profile(attrs) do
-      {:ok, _profile} -> Profiles.handle_profile_context(context, "Success")
-      {:error, _error} -> Profiles.handle_profile_context(context, "Failure")
-    end
+    {context, message} =
+      case Profiles.create_profile(attrs) do
+        {:ok, _profile} ->
+          {context, Messages.create_temp_message(context.organization_id, "Success")}
 
-    {:wait, context, messages}
+        {:error, _error} ->
+          {context, Messages.create_temp_message(context.organization_id, "Failure")}
+      end
+
+    {:ok, context, [message]}
   end
 
   def execute(
         %{type: "set_contact_profile", profile_type: "Switch Profile"} = action,
         context,
-        messages
+        _messages
       ) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
-    with contact <- Profiles.switch_profile(context.contact, value),
-         context <- Map.put(context, :contact, contact) do
-      Profiles.handle_profile_context(context, "Success")
-    else
-      _ ->
-        Profiles.handle_profile_context(context, "Failure")
-    end
+    {context, message} =
+      with contact <- Profiles.switch_profile(context.contact, value),
+           context <- Map.put(context, :contact, contact) do
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+      else
+        _ ->
+          {context, Messages.create_temp_message(context.organization_id, "Failure")}
+      end
 
-    {:wait, context, messages}
+    {:ok, context, [message]}
   end
 
   def execute(%{type: "enter_flow"} = action, context, _messages) do
@@ -560,7 +566,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # just call the webhook, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchrnously
+    # we are processing the webhook using Oban and this happens asynchronously
     Webhook.execute(action, context)
     # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
@@ -568,9 +574,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchronously
     Dialogflow.execute(action, context, context.last_message)
-    # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
   end
 
