@@ -70,6 +70,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("flow_counts", organization_id)
       make_job_to_remove_duplicate("messages_media", organization_id)
       make_job_to_remove_duplicate("flow_contexts", organization_id)
+      make_job_to_remove_duplicate("profiles", organization_id)
     end
 
     :ok
@@ -254,7 +255,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  def queue_table_data("profiles", organization_id, attrs) do
+  defp queue_table_data("profiles", organization_id, attrs) do
     Logger.info(
       "fetching data for profiles to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
     )
@@ -263,7 +264,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> Repo.all()
     |> Enum.reduce(
       [],
-      fn row, _acc ->
+      fn row, acc ->
         [
           %{
             id: row.id,
@@ -271,13 +272,22 @@ defmodule Glific.BigQuery.BigQueryWorker do
             profile_type: row.profile_type,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
-            phone: row.contact.phone,
-            language: row.language.label
+            phone: row.phone,
+            language: row.label,
+            fields:
+              Enum.map(row.fields, fn {_key, field} ->
+                %{
+                  label: field["label"],
+                  inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
+                  type: field["type"],
+                  value: field["value"]
+                }
+              end)
           }
+          | acc
         ]
       end
     )
-
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :profiles, organization_id, attrs))
   end
@@ -697,31 +707,22 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
   defp get_query("profiles", organization_id, attrs),
     do:
-      Profile
-      |> where([p], p.organization_id == ^organization_id)
+      from(p in Profile,
+        join: l in assoc(p, :language),
+        join: c in assoc(p, :contact),
+        where: p.organization_id == ^organization_id,
+        select: %{
+          id: p.id,
+          name: p.name,
+          profile_type: p.profile_type,
+          label: l.label,
+          phone: c.phone,
+          inserted_at: p.inserted_at,
+          updated_at: p.updated_at,
+          fields: p.fields
+        }
+      )
       |> apply_action_clause(attrs)
-      |> order_by([p], [p.inserted_at, p.id])
-      |> preload([:language, :contact])
-
-  # defp get_query("profiles", organization_id, attrs) do
-  #   query =
-  #     from(p in Profile,
-  #       join: l in assoc(p, :language),
-  #       join: c in assoc(p, :contact),
-  #       where: p.organization_id == ^organization_id,
-  #       select: %{
-  #         id: p.id,
-  #         name: p.name,
-  #         profile_type: p.profile_type,
-  #         label: l.label,
-  #         phone: c.phone,
-  #         inserted_at: p.inserted_at,
-  #         updated_at: p.updated_at
-  #       }
-  #     )
-
-  #   Repo.all(query)
-  # end
 
   defp get_query("flows", organization_id, attrs),
     do:

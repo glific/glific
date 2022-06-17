@@ -1060,9 +1060,27 @@ defmodule Glific.BigQuery.Schema do
         mode: "REPEATED",
         fields: [
           %{
-            description: "Name for the profile",
-            name: "name",
+            description: "Labels for NGO generated fields for the user",
+            name: "label",
             type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Values of the NGO generated fields (mapped for each user and label)",
+            name: "value",
+            type: "string",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Type of the generated fields; example - string",
+            name: "type",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Time of entry of the recorded field",
+            name: "inserted_at",
+            type: "DATETIME",
             mode: "NULLABLE"
           }
         ]
