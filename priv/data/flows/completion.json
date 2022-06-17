@@ -93,7 +93,7 @@
           "type": "text"
         },
         {
-          "key": "profiles",
+          "key": "list_profiles",
           "help": "list of profiles associated with the contact",
           "type": "text"
         },

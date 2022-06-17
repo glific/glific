@@ -748,9 +748,9 @@ defmodule Glific.Contacts do
       )
     )
     |> Map.put(
-      :profiles,
+      :list_profiles,
       Profiles.get_indexed_profile(contact)
-      |> Enum.reduce("", fn {profile, value}, acc -> acc <> " #{value}. #{profile.name} \n" end)
+      |> Enum.reduce("", fn {profile, index}, acc -> acc <> " #{index}. #{profile.name} \n" end)
     )
     ## We change the name of the contact whenever we receive a message from the contact.
     ## so the contact name will always be the name contact added in the WhatsApp app.
