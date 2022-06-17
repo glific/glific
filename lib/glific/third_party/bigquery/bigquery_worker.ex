@@ -7,6 +7,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
   We centralize both the cron job and the worker job in one module
   """
 
+  @doc """
+  we are using this module to sync the data from the postgres database to bigquery. Before that you need to create a database schema for the query for more info
+  go to bigquery_schema.ex file and create a schema for the table.
+  """
+
   import Ecto.Query
 
   require Logger
@@ -254,6 +259,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
 
     :ok
   end
+
+  @doc """
+  This function will fetch all the profiles from the database and will insert it in bigquery in some chunks.
+  """
 
   defp queue_table_data("profiles", organization_id, attrs) do
     Logger.info(
@@ -704,6 +713,10 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups, :user])
+
+  @doc """
+  We are creating a query here with the fields which are required instead of loading all the data.
+  """
 
   defp get_query("profiles", organization_id, attrs),
     do:
