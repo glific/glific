@@ -10,6 +10,7 @@ defmodule Glific.Flows.ContactField do
     Contacts.ContactsField,
     Flows.FlowContext,
     Flows.MessageVarParser,
+    Profiles,
     Repo
   }
 
@@ -45,6 +46,9 @@ defmodule Glific.Flows.ContactField do
         contact,
         %{fields: fields}
       )
+
+    # update profile fields if active profile is set for a contact
+    maybe_update_profile_field(contact, fields)
 
     # create contact fields if not already created
     maybe_create_contact_field(%{
@@ -157,6 +161,18 @@ defmodule Glific.Flows.ContactField do
 
       contact_field ->
         update_contacts_field(contact_field, attrs)
+    end
+  end
+
+  @doc """
+  Update profile field if there is an active profile id set
+  """
+  @spec maybe_update_profile_field(Contact.t(), map()) ::
+          {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
+  def maybe_update_profile_field(%{active_profile_id: active_profile_id} = _contact, fields)
+      when is_integer(active_profile_id) do
+    with profile <- Profiles.get_profile!(active_profile_id) do
+      Profiles.update_profile(profile, %{fields: fields})
     end
   end
 
