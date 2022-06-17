@@ -2,7 +2,7 @@ fragment ProfileFields on ProfileResult {
   profile {
     id
     name
-    profileType
+    type
     fields
   }
 }

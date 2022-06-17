@@ -17,6 +17,7 @@ defmodule Glific.Flows.Action do
     Groups,
     Groups.Group,
     Messages.Message,
+    Profiles,
     Repo
   }
 
@@ -39,6 +40,7 @@ defmodule Glific.Flows.Action do
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_profile [:value, :profile_type | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields_classifier [:input, :result_name | @required_field_common]
@@ -62,6 +64,7 @@ defmodule Glific.Flows.Action do
           result_name: String.t() | nil,
           body: String.t() | nil,
           type: String.t() | nil,
+          profile_type: String.t() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -100,6 +103,7 @@ defmodule Glific.Flows.Action do
     field(:language, :string)
 
     field(:type, :string)
+    field(:profile_type, :string)
 
     field(:quick_replies, {:array, :string}, default: [])
 
@@ -165,6 +169,11 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_name"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_name)
     process(json, uuid_map, node, %{value: json["name"]})
+  end
+
+  def process(%{"type" => "set_contact_profile"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_profile)
+    process(json, uuid_map, node, %{profile_type: json["profile_type"], value: json["value"]})
   end
 
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
@@ -476,6 +485,11 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def execute(%{type: "set_contact_profile"} = action, context, _messages) do
+    {context, message} = Profiles.handle_flow_action(context, action, action.profile_type)
+    {:ok, context, [message]}
+  end
+
   def execute(%{type: "enter_flow"} = action, context, _messages) do
     flow_uuid = get_flow_uuid(action, context)
 
@@ -514,7 +528,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # just call the webhook, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchrnously
+    # we are processing the webhook using Oban and this happens asynchronously
     Webhook.execute(action, context)
     # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
@@ -522,9 +536,7 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchronously
     Dialogflow.execute(action, context, context.last_message)
-    # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
   end
 
