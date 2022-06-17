@@ -632,9 +632,6 @@ defmodule Glific.Flows.FlowContext do
         |> Map.put(:flow, flow)
         |> Map.put(:uuid_map, flow.uuid_map)
         |> Map.put(:node, node)
-        ## We will refactor it more and use it whenever we need this.
-        ## Currently to restrict the number changes in the context
-        |> set_last_message()
 
       :error ->
         # Seems like the flow changed underneath us
@@ -820,19 +817,23 @@ defmodule Glific.Flows.FlowContext do
     MessageVarParser.parse(str, vars)
   end
 
-  @spec set_last_message(FlowContext.t()) :: FlowContext.t()
-  defp set_last_message(%{last_message: message} = context) when message not in [%{}, nil, ""],
-    do: context
+  @doc """
+  Get last incoming message for a given context
+  """
+  @spec get_last_inbound_message(FlowContext.t()) :: Message.t()
+  def get_last_inbound_message(%{last_message: message} = _context)
+      when message not in [%{}, nil, ""],
+      do: message
 
-  defp set_last_message(context) do
+  def get_last_inbound_message(context) do
     recent_inbounds = get_recent_inbounds(context)
 
     cond do
       recent_inbounds in [[], nil, %{}] ->
-        context
+        nil
 
       hd(recent_inbounds)["message_id"] == nil ->
-        context
+        nil
 
       true ->
         latest_inbound = hd(recent_inbounds)
@@ -841,7 +842,7 @@ defmodule Glific.Flows.FlowContext do
           Messages.get_message!(latest_inbound["message_id"])
           |> Repo.preload(contact: [:language])
 
-        Map.put(context, :last_message, message)
+        message
     end
   end
 

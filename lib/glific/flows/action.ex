@@ -523,7 +523,10 @@ defmodule Glific.Flows.Action do
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchronously
-    Dialogflow.execute(action, context, context.last_message)
+
+    last_message = FlowContext.get_last_inbound_message(context)
+
+    Dialogflow.execute(action, context, last_message)
     # webhooks dont consume a message, so we send it forward
     {:wait, context, messages}
   end
@@ -675,7 +678,12 @@ defmodule Glific.Flows.Action do
     do: raise(UndefinedFunctionError, message: "Unsupported action type #{action.type}")
 
   @spec add_flow_label(FlowContext.t(), String.t()) :: nil
-  defp add_flow_label(%{last_message: nil}, _flow_label), do: nil
+  defp add_flow_label(%{last_message: nil} = context, flow_label) do
+    last_message = FlowContext.get_last_inbound_message(context)
+
+    Map.put(context, :last_message, last_message)
+    |> add_flow_label(flow_label)
+  end
 
   defp add_flow_label(%{last_message: last_message}, flow_label) do
     # there is a chance that:
