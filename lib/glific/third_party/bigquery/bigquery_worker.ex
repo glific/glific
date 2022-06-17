@@ -29,6 +29,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.Message,
     Messages.MessageMedia,
     Partners,
+    Profiles.Profile,
     Repo,
     Stats.Stat
   }
@@ -251,6 +252,34 @@ defmodule Glific.BigQuery.BigQueryWorker do
     |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
 
     :ok
+  end
+
+  def queue_table_data("profiles", organization_id, attrs) do
+    Logger.info(
+      "fetching data for profiles to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("profiles", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, _acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            profile_type: row.profile_type,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            phone: row.contact.phone,
+            language: row.language.label
+          }
+        ]
+      end
+    )
+
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :profiles, organization_id, attrs))
   end
 
   defp queue_table_data("flows", organization_id, attrs) do
@@ -665,6 +694,34 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups, :user])
+
+  defp get_query("profiles", organization_id, attrs),
+    do:
+      Profile
+      |> where([p], p.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([p], [p.inserted_at, p.id])
+      |> preload([:language, :contact])
+
+  # defp get_query("profiles", organization_id, attrs) do
+  #   query =
+  #     from(p in Profile,
+  #       join: l in assoc(p, :language),
+  #       join: c in assoc(p, :contact),
+  #       where: p.organization_id == ^organization_id,
+  #       select: %{
+  #         id: p.id,
+  #         name: p.name,
+  #         profile_type: p.profile_type,
+  #         label: l.label,
+  #         phone: c.phone,
+  #         inserted_at: p.inserted_at,
+  #         updated_at: p.updated_at
+  #       }
+  #     )
+
+  #   Repo.all(query)
+  # end
 
   defp get_query("flows", organization_id, attrs),
     do:
