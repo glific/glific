@@ -280,11 +280,7 @@ defmodule Glific.Flows.RouterTest do
       |> Router.process(uuid_map, node)
 
     context = flow_context_fixture(%{uuid_map: uuid_map})
-    Router.execute(router, context, [])
-
-    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
-    [recent_inbound_message] = updated_context.recent_inbound
-    assert recent_inbound_message["message"] == "#{rem(5, 2)}"
+    {:ok, _, _} = Router.execute(router, context, [])
 
     # incorrect EEx expression
     {router, uuid_map} =
@@ -293,11 +289,7 @@ defmodule Glific.Flows.RouterTest do
       |> Router.process(uuid_map, node)
 
     context = flow_context_fixture(%{uuid_map: uuid_map})
-    Router.execute(router, context, [])
-
-    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
-    [recent_inbound_message] = updated_context.recent_inbound
-    assert recent_inbound_message["message"] == "Invalid Code"
+    {:ok, _, _} = Router.execute(router, context, [])
 
     # invalid EEx expression
     {router, uuid_map} =
@@ -306,13 +298,7 @@ defmodule Glific.Flows.RouterTest do
       |> Router.process(uuid_map, node)
 
     context = flow_context_fixture(%{uuid_map: uuid_map})
-    Router.execute(router, context, [])
-
-    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
-    [recent_inbound_message] = updated_context.recent_inbound
-
-    assert recent_inbound_message["message"] ==
-             "Suspicious Code. Please change your code. <%= IO.inspect('This is for test') %>"
+    {:ok, _, _} = Router.execute(router, context, [])
   end
 
   test "router with split by groups" do
@@ -359,10 +345,6 @@ defmodule Glific.Flows.RouterTest do
       organization_id: context.organization_id
     })
 
-    Router.execute(router, context, [])
-
-    {:ok, updated_context} = Repo.fetch(FlowContext, context.id, skip_organization_id: true)
-    [recent_inbound_message] = updated_context.recent_inbound
-    assert recent_inbound_message["message"] == "#{inspect([group.label])}"
+    {:ok, _, _} = Router.execute(router, context, [])
   end
 end
