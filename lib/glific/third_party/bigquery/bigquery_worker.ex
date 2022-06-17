@@ -260,11 +260,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @doc """
-  This function will fetch all the profiles from the database and will insert it in bigquery in some chunks.
-  """
-
   defp queue_table_data("profiles", organization_id, attrs) do
+    # This function will fetch all the profiles from the database and will insert it in bigquery in some chunks.
     Logger.info(
       "fetching data for profiles to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
     )
@@ -714,11 +711,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups, :user])
 
-  @doc """
-  We are creating a query here with the fields which are required instead of loading all the data.
-  """
-
   defp get_query("profiles", organization_id, attrs),
+  # We are creating a query here with the fields which are required instead of loading all the data.
     do:
       from(p in Profile,
         join: l in assoc(p, :language),
