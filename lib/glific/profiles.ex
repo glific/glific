@@ -174,7 +174,6 @@ defmodule Glific.Profiles do
   @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
           {FlowContext.t(), Message.t()}
   def handle_flow_action(context, action, "Switch Profile") do
-    IO.inspect(action)
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with contact <- switch_profile(context.contact, value),
