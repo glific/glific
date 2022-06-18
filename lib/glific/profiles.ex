@@ -174,6 +174,7 @@ defmodule Glific.Profiles do
   @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
           {FlowContext.t(), Message.t()}
   def handle_flow_action(context, action, "Switch Profile") do
+    IO.inspect(action)
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with contact <- switch_profile(context.contact, value),
@@ -204,8 +205,16 @@ defmodule Glific.Profiles do
     }
 
     case create_profile(attrs) do
-      {:ok, _profile} ->
-        {context, Messages.create_temp_message(context.organization_id, "Success")}
+      {:ok, profile} ->
+        indexed_profile = get_indexed_profile(context.contact)
+
+        {_profile, profile_index} =
+          Enum.find(indexed_profile, fn {index_profile, _index} ->
+            index_profile.id == profile.id
+          end)
+
+        action = Map.put(action, :value, to_string(profile_index))
+        handle_flow_action(context, action, "Switch Profile")
 
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
