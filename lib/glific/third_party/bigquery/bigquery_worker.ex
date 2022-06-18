@@ -191,7 +191,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         row
         |> get_message_row(organization_id)
         |> Map.merge(bq_fields(organization_id))
-        |> BigQuery.format_data_for_bigquery("messages")
+        |> then(&%{json: &1})
         | acc
       ]
     end)
@@ -249,7 +249,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
             }
             |> Map.merge(bq_fields(organization_id))
-            |> BigQuery.format_data_for_bigquery("contacts")
+            |> then(&%{json: &1})
             | acc
           ]
       end
@@ -261,7 +261,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   end
 
   defp queue_table_data("profiles", organization_id, attrs) do
-    # This function will fetch all the profiles from the database and will insert it in bigquery in some chunks.
+    # This function will fetch all the profiles from the database and will insert it in bigquery in chunks of 100.
     Logger.info(
       "fetching data for profiles to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
     )
@@ -278,8 +278,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             type: row.type,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
-            phone: row.phone,
-            language: row.label,
+            phone: row.contact.phone,
+            language: row.language.label,
             fields:
               Enum.map(row.fields, fn {_key, field} ->
                 %{
@@ -290,12 +290,16 @@ defmodule Glific.BigQuery.BigQueryWorker do
                 }
               end)
           }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
           | acc
         ]
       end
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :profiles, organization_id, attrs))
+
+    :ok
   end
 
   defp queue_table_data("flows", organization_id, attrs) do
@@ -320,7 +324,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             revision: BigQuery.format_json(row.definition)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("flows")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -357,7 +361,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               flow_context_id: row.flow_context_id
             }
             |> Map.merge(bq_fields(organization_id))
-            |> BigQuery.format_data_for_bigquery("flow_results")
+            |> then(&%{json: &1})
             | acc
           ]
       end
@@ -392,7 +396,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_milisecond(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("flow_counts")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -425,7 +429,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_milisecond(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("messages_media")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -470,7 +474,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("flow_contexts")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -527,7 +531,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(additional)
-          |> BigQuery.format_data_for_bigquery(stat)
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -712,24 +716,13 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> preload([:language, :tags, :groups, :user])
 
   defp get_query("profiles", organization_id, attrs),
-  # We are creating a query here with the fields which are required instead of loading all the data.
+    # We are creating a query here with the fields which are required instead of loading all the data.
     do:
-      from(p in Profile,
-        join: l in assoc(p, :language),
-        join: c in assoc(p, :contact),
-        where: p.organization_id == ^organization_id,
-        select: %{
-          id: p.id,
-          name: p.name,
-          type: p.type,
-          label: l.label,
-          phone: c.phone,
-          inserted_at: p.inserted_at,
-          updated_at: p.updated_at,
-          fields: p.fields
-        }
-      )
+      Profile
+      |> where([p], p.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
+      |> order_by([p], [p.inserted_at, p.id])
+      |> preload([:language, :contact])
 
   defp get_query("flows", organization_id, attrs),
     do:

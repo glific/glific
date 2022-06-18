@@ -326,13 +326,6 @@ defmodule Glific.BigQuery do
     end
   end
 
-  @doc """
-  Format Data for bigquery
-  """
-  @spec format_data_for_bigquery(map(), String.t()) :: map()
-  def format_data_for_bigquery(data, _table),
-    do: %{json: data}
-
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp create_dataset(conn, project_id, dataset_id) do

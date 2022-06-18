@@ -1024,10 +1024,22 @@ defmodule Glific.BigQuery.Schema do
   def profile_schema do
     [
       %{
-        description: "Stats ID",
+        description: "Unique ID for the profile",
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       },
       %{
         description: "Profile Name",
