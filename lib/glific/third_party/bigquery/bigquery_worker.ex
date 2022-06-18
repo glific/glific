@@ -275,7 +275,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
           %{
             id: row.id,
             name: row.name,
-            profile_type: row.profile_type,
+            type: row.type,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             phone: row.phone,

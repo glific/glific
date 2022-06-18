@@ -59,7 +59,7 @@ defmodule Glific.ProfilesTest do
       assert {:ok, profile} = Profiles.create_profile(valid_attrs)
 
       assert profile.name == "some name"
-      assert profile.profile_type == "some type"
+      assert profile.type == "some type"
       assert profile.fields.name == "max"
     end
 
