@@ -429,7 +429,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def profiles(organization, contact) do
     Repo.insert!(%Profile{
       name: "user",
-      profile_type: "profile",
+      type: "profile",
       organization_id: organization.id,
       contact_id: contact.id,
       language_id: contact.language_id

@@ -15,7 +15,7 @@ defmodule GlificWeb.Schema.ProfileTypes do
   object :profile do
     field :id, :id
     field :name, :string
-    field :profile_type, :string
+    field :type, :string
     field :fields, :json
     field :inserted_at, :datetime
     field :updated_at, :datetime
@@ -23,7 +23,7 @@ defmodule GlificWeb.Schema.ProfileTypes do
 
   input_object :profile_input do
     field :name, :string
-    field :profile_type, :string
+    field :type, :string
     field :fields, :json
     field :language_id, :id
     field :contact_id, :id

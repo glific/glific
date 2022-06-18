@@ -6,6 +6,13 @@ defmodule Glific.Profiles do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    Contacts,
+    Contacts.Contact,
+    Flows.Action,
+    Flows.ContactField,
+    Flows.FlowContext,
+    Messages,
+    Messages.Message,
     Profiles.Profile,
     Repo
   }
@@ -22,9 +29,7 @@ defmodule Glific.Profiles do
   """
   @spec list_profiles(map()) :: [Profile.t()]
   def list_profiles(args) do
-    args
-    |> Repo.list_filter_query(Profile, nil, &filter_with/2)
-    |> Repo.all()
+    Repo.list_filter(args, Profile, &Repo.opts_with_name/2, &filter_with/2)
   end
 
   defp filter_with(query, filter) do
@@ -33,12 +38,6 @@ defmodule Glific.Profiles do
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
-
-      {:organization_id, organization_id}, query ->
-        from(q in query, where: q.organization_id == ^organization_id)
-
-      {:name, name}, query ->
-        from(q in query, where: q.name == ^name)
 
       _, query ->
         query
@@ -117,5 +116,99 @@ defmodule Glific.Profiles do
           {:ok, Profile.t()} | {:error, Ecto.Changeset.t()}
   def delete_profile(%Profile{} = profile) do
     Repo.delete(profile)
+  end
+
+  @doc """
+  Switches active profile of a contact
+
+  ## Examples
+
+      iex> switch_profile(contact)
+      {:ok, %Profile{}}
+
+  """
+  @spec switch_profile(Contact.t(), String.t()) :: Contact.t()
+  def switch_profile(contact, profile_index) do
+    contact = Repo.preload(contact, [:active_profile])
+
+    with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
+         {profile, _index} <- fetch_indexed_profile(contact, index),
+         {:ok, _updated_contact} <-
+           Contacts.update_contact(contact, %{active_profile_id: profile.id}),
+         updated_contact <- Contacts.get_contact!(contact.id) do
+      updated_contact
+    else
+      _ -> contact
+    end
+  end
+
+  @spec fetch_indexed_profile(Contact.t(), integer) :: {Profile.t(), integer} | nil
+  defp fetch_indexed_profile(contact, index) do
+    contact
+    |> get_indexed_profile()
+    |> Enum.find(fn {_profile, profile_index} -> profile_index == index end)
+  end
+
+  @doc """
+  Get a profile associated with a contact indexed and sorted in ascending order
+
+  ## Examples
+
+      iex> Glific.Profiles.get_indexed_profile(con)
+      [{%Profile{}, 1}, {%Profile{}, 2}]
+  """
+  @spec get_indexed_profile(Contact.t()) :: [{any, integer}]
+  def get_indexed_profile(contact) do
+    %{
+      filter: %{contact_id: contact.id},
+      opts: %{offset: 0, order: :asc},
+      organization_id: contact.organization_id
+    }
+    |> list_profiles()
+    |> Enum.with_index(1)
+  end
+
+  @doc """
+    Handles flow action based on type of operation on Profile
+  """
+  @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
+          {FlowContext.t(), Message.t()}
+  def handle_flow_action(context, action, "Switch Profile") do
+    value = ContactField.parse_contact_field_value(context, action.value)
+
+    with contact <- switch_profile(context.contact, value),
+         context <- Map.put(context, :contact, contact) do
+      contact = Repo.preload(contact, [:active_profile])
+
+      Contacts.capture_history(context.contact.id, :profile_switched, %{
+        event_label: "Switched profile to #{contact.active_profile.name}",
+        event_meta: %{
+          method: "switched profile via flow: #{context.flow.name}"
+        }
+      })
+
+      {context, Messages.create_temp_message(context.organization_id, "Success")}
+    else
+      _ ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
+  end
+
+  def handle_flow_action(context, action, "Create Profile") do
+    attrs = %{
+      name: ContactField.parse_contact_field_value(context, action.value["name"]),
+      type: ContactField.parse_contact_field_value(context, action.value["type"]),
+      contact_id: context.contact.id,
+      language_id: context.contact.language_id,
+      organization_id: context.contact.organization_id
+    }
+
+    case create_profile(attrs) do
+      {:ok, _profile} ->
+        {context, Messages.create_temp_message(context.organization_id, "Success")}
+
+      {:error, _error} ->
+        {context, Messages.create_temp_message(context.organization_id, "Failure")}
+    end
   end
 end
