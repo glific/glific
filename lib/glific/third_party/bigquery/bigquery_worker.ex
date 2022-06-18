@@ -721,7 +721,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         select: %{
           id: p.id,
           name: p.name,
-          profile_type: p.profile_type,
+          type: p.type,
           label: l.label,
           phone: c.phone,
           inserted_at: p.inserted_at,

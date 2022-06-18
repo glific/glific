@@ -1037,7 +1037,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "Profile Type",
-        name: "profile_type",
+        name: "type",
         type: "STRING",
         mode: "NULLABLE"
       },
