@@ -1018,6 +1018,101 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for profile table
+  """
+  @spec profile_schema :: list()
+  def profile_schema do
+    [
+      %{
+        description: "Unique ID for the profile",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Profile Name",
+        name: "name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Profile Type",
+        name: "type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "This is a field to sync contact with profile fields",
+        name: "fields",
+        type: "RECORD",
+        mode: "REPEATED",
+        fields: [
+          %{
+            description: "Labels for NGO generated fields for the user",
+            name: "label",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Values of the NGO generated fields (mapped for each user and label)",
+            name: "value",
+            type: "string",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Type of the generated fields; example - string",
+            name: "type",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Time of entry of the recorded field",
+            name: "inserted_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+          }
+        ]
+      },
+      %{
+        description: "Phone number of the user; primary point of identification",
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Opted language of the user for templates and other communications",
+        name: "language",
+        type: "STRING",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
