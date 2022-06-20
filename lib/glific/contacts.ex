@@ -776,12 +776,12 @@ defmodule Glific.Contacts do
   end
 
   @spec get_contact_field_groups(map()) :: map()
-  defp get_contact_field_groups(contact) do
+  defp get_contact_field_groups(field_map) do
     Map.put(
-      contact,
+      field_map,
       :in_groups,
       Enum.reduce(
-        contact.groups,
+        field_map.groups,
         [],
         fn g, list -> [g.label | list] end
       )
