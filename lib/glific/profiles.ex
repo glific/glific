@@ -134,7 +134,9 @@ defmodule Glific.Profiles do
     with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
          {profile, _index} <- fetch_indexed_profile(contact, index),
          {:ok, _updated_contact} <-
-           Contacts.update_contact(contact, %{active_profile_id: profile.id}),
+           Contacts.update_contact(contact, %{
+             active_profile_id: profile.id
+           }),
          updated_contact <- Contacts.get_contact!(contact.id) do
       updated_contact
     else
@@ -171,9 +173,9 @@ defmodule Glific.Profiles do
   @doc """
     Handles flow action based on type of operation on Profile
   """
-  @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
+  @spec handle_flow_action(atom() | nil, FlowContext.t(), Action.t()) ::
           {FlowContext.t(), Message.t()}
-  def handle_flow_action(context, action, "Switch Profile") do
+  def handle_flow_action(:switch_profile, context, action) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with contact <- switch_profile(context.contact, value),
@@ -194,7 +196,7 @@ defmodule Glific.Profiles do
     end
   end
 
-  def handle_flow_action(context, action, "Create Profile") do
+  def handle_flow_action(:create_profile, context, action) do
     attrs = %{
       name: ContactField.parse_contact_field_value(context, action.value["name"]),
       type: ContactField.parse_contact_field_value(context, action.value["type"]),
@@ -204,11 +206,23 @@ defmodule Glific.Profiles do
     }
 
     case create_profile(attrs) do
-      {:ok, _profile} ->
-        {context, Messages.create_temp_message(context.organization_id, "Success")}
+      {:ok, profile} ->
+        indexed_profile = get_indexed_profile(context.contact)
+
+        {_profile, profile_index} =
+          Enum.find(indexed_profile, fn {index_profile, _index} ->
+            index_profile.id == profile.id
+          end)
+
+        action = Map.put(action, :value, to_string(profile_index))
+        handle_flow_action(:switch_profile, context, action)
 
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
+  end
+
+  def handle_flow_action(_profile_type, context, _action) do
+    {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 end
