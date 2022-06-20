@@ -134,7 +134,10 @@ defmodule Glific.Profiles do
     with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
          {profile, _index} <- fetch_indexed_profile(contact, index),
          {:ok, _updated_contact} <-
-           Contacts.update_contact(contact, %{active_profile_id: profile.id}),
+           Contacts.update_contact(contact, %{
+             active_profile_id: profile.id,
+             fields: profile.fields
+           }),
          updated_contact <- Contacts.get_contact!(contact.id) do
       updated_contact
     else
