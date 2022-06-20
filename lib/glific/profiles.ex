@@ -174,9 +174,9 @@ defmodule Glific.Profiles do
   @doc """
     Handles flow action based on type of operation on Profile
   """
-  @spec handle_flow_action(FlowContext.t(), Action.t(), String.t()) ::
+  @spec handle_flow_action(atom() | nil, FlowContext.t(), Action.t()) ::
           {FlowContext.t(), Message.t()}
-  def handle_flow_action(context, action, "Switch Profile") do
+  def handle_flow_action(:switch_profile, context, action) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
     with contact <- switch_profile(context.contact, value),
@@ -197,7 +197,7 @@ defmodule Glific.Profiles do
     end
   end
 
-  def handle_flow_action(context, action, "Create Profile") do
+  def handle_flow_action(:create_profile, context, action) do
     attrs = %{
       name: ContactField.parse_contact_field_value(context, action.value["name"]),
       type: ContactField.parse_contact_field_value(context, action.value["type"]),
@@ -216,10 +216,14 @@ defmodule Glific.Profiles do
           end)
 
         action = Map.put(action, :value, to_string(profile_index))
-        handle_flow_action(context, action, "Switch Profile")
+        handle_flow_action(:switch_profile, context, action)
 
       {:error, _error} ->
         {context, Messages.create_temp_message(context.organization_id, "Failure")}
     end
+  end
+
+  def handle_flow_action(_profile_type, context, _action) do
+    {context, Messages.create_temp_message(context.organization_id, "Failure")}
   end
 end

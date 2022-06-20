@@ -34,6 +34,10 @@ defmodule Glific.Flows.Action do
 
   require Logger
 
+  @contact_profile %{
+    "Switch Profile" => :switch_profile,
+    "Create Profile" => :create_profile
+  }
   @min_delay 2
 
   @required_field_common [:uuid, :type]
@@ -486,7 +490,11 @@ defmodule Glific.Flows.Action do
   end
 
   def execute(%{type: "set_contact_profile"} = action, context, _messages) do
-    {context, message} = Profiles.handle_flow_action(context, action, action.profile_type)
+    {context, message} =
+      @contact_profile
+      |> Map.get(action.profile_type)
+      |> Profiles.handle_flow_action(context, action)
+
     {:ok, context, [message]}
   end
 
