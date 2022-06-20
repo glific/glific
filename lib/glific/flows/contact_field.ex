@@ -174,6 +174,7 @@ defmodule Glific.Flows.ContactField do
     with profile <- Profiles.get_profile!(active_profile_id) do
       Profiles.update_profile(profile, %{fields: fields})
     end
+
     contact
   end
 
