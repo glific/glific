@@ -745,7 +745,7 @@ defmodule Glific.Contacts do
   @spec get_contact_fields(map(), Contact.t()) :: map()
   defp get_contact_fields(field_map, contact) do
     with false <- is_nil(contact.active_profile_id),
-         profile <- Profiles.get_profile!(contact.active_profile_id) do
+         profile <- contact.active_profile do
       Map.put(
         field_map,
         :fields,
@@ -759,7 +759,7 @@ defmodule Glific.Contacts do
   @spec get_contact_fields_language(map(), Contact.t()) :: map()
   defp get_contact_fields_language(field_map, contact) do
     with false <- is_nil(contact.active_profile_id),
-         profile <- Profiles.get_profile!(contact.active_profile_id) |> Repo.preload([:language]) do
+         profile <- contact.active_profile |> Repo.preload([:language]) do
       put_in(
         field_map,
         [:fields, :language],
@@ -805,7 +805,7 @@ defmodule Glific.Contacts do
   @spec get_contact_field_name(map(), Contact.t()) :: map()
   defp get_contact_field_name(field_map, contact) do
     with false <- is_nil(contact.active_profile_id),
-         profile <- Profiles.get_profile!(contact.active_profile_id) do
+         profile <- contact.active_profile do
       put_in(
         field_map,
         [:fields, "name"],
