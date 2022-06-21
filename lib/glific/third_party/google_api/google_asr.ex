@@ -8,22 +8,9 @@ defmodule Glific.GoogleASR do
 
   alias Glific.Partners
 
-  @spec new_client(non_neg_integer) :: Tesla.Client.t()
-  def new_client(org_id) do
-    token = Partners.get_goth_token(org_id, "dialogflow").token
-
-    middleware = [
-      {Tesla.Middleware.BaseUrl, "https://speech.googleapis.com/"},
-      Tesla.Middleware.JSON,
-      {Tesla.Middleware.Headers,
-       [
-         {"Authorization", "Bearer #{token}"},
-         {"Content-Type", "application/json"}
-       ]}
-    ]
-
-    Tesla.client(middleware, @hackney)
-  end
+  @doc """
+  This function will take organization_id and the url for audio.
+  """
 
   @spec speech_to_text(non_neg_integer, String.t()) :: any
   def speech_to_text(org_id, uri) do
@@ -56,5 +43,22 @@ defmodule Glific.GoogleASR do
       res ->
         Logger.info("Oops! Something is wrong, #{inspect(res["message"])}")
     end
+  end
+
+  @spec new_client(non_neg_integer) :: Tesla.Client.t()
+  defp new_client(org_id) do
+    token = Partners.get_goth_token(org_id, "dialogflow").token
+
+    middleware = [
+      {Tesla.Middleware.BaseUrl, "https://speech.googleapis.com/"},
+      Tesla.Middleware.JSON,
+      {Tesla.Middleware.Headers,
+       [
+         {"Authorization", "Bearer #{token}"},
+         {"Content-Type", "application/json"}
+       ]}
+    ]
+
+    Tesla.client(middleware, @hackney)
   end
 end
