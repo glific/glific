@@ -6,10 +6,7 @@ defmodule Glific.GoogleASR do
 
   require Logger
 
-  alias Glific.{
-    Partners
-  }
-
+  alias Glific.Partners
 
   @spec new_client(non_neg_integer) :: Tesla.Client.t()
   def new_client(org_id) do
@@ -20,10 +17,9 @@ defmodule Glific.GoogleASR do
       Tesla.Middleware.JSON,
       {Tesla.Middleware.Headers,
        [
-        {"Authorization", "Bearer #{token}"},
-        {"Content-Type", "application/json"}
-       ]
-    }
+         {"Authorization", "Bearer #{token}"},
+         {"Content-Type", "application/json"}
+       ]}
     ]
 
     Tesla.client(middleware, @hackney)
@@ -32,15 +28,16 @@ defmodule Glific.GoogleASR do
   @spec speech_to_text(non_neg_integer, String.t()) :: any
   def speech_to_text(org_id, uri) do
     url = "v1/speech:recognize"
+
     body = %{
       "config" => %{
-          "encoding" => "OGG_OPUS",
-          "sampleRateHertz" => 16000,
-          "languageCode" => "hi-IN",
-          "profanityFilter" => true
+        "encoding" => "OGG_OPUS",
+        "sampleRateHertz" => 16_000,
+        "languageCode" => "hi-IN",
+        "profanityFilter" => true
       },
       "audio" => %{
-          "uri" => uri
+        "uri" => uri
       }
     }
 
