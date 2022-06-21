@@ -7,6 +7,7 @@ defmodule Glific.Clients.Tap do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.ContactField,
     Groups.ContactGroup,
     Groups.Group,
     Partners,
@@ -132,6 +133,14 @@ defmodule Glific.Clients.Tap do
       true ->
         %{status: "out_of_range"}
     end
+  end
+
+  def webhook("mark_activity_as_complete", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> mark_activity_as_complete(
+      fields["activity_id"],
+      fields["contact"]["id"]
+    )
   end
 
   def webhook(_, fields), do: fields
@@ -338,6 +347,40 @@ defmodule Glific.Clients.Tap do
     data
     |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
     |> Enum.into(%{})
+  end
+
+  @spec mark_activity_as_complete(non_neg_integer(), String.t(), non_neg_integer()) :: map()
+  defp mark_activity_as_complete(_org_id, activity_id, contact_id) do
+    contact = Repo.get!(Contact, contact_id)
+    completed_activities = get_in(contact.fields, ["completed_activities", "value"])
+
+    completed_activities =
+      if is_nil(completed_activities), do: activity_id, else: ", #{activity_id}"
+
+    ContactField.do_add_contact_field(
+      contact,
+      "completed_activities",
+      "completed_activities",
+      completed_activities
+    )
+
+    completed_activities_count =
+      completed_activities
+      |> String.split(",", trim: true)
+      |> Enum.uniq_by(&String.trim(&1))
+      |> length()
+
+    ContactField.do_add_contact_field(
+      contact,
+      "completed_activities_count",
+      "completed_activities_count",
+      completed_activities_count
+    )
+
+    %{
+      completed_activities: completed_activities,
+      completed_activities_count: completed_activities_count
+    }
   end
 
   defp clean_row_values(row) do
