@@ -355,14 +355,17 @@ defmodule Glific.Clients.Tap do
     completed_activities = get_in(contact.fields, ["completed_activities", "value"])
 
     completed_activities =
-      if is_nil(completed_activities), do: activity_id, else: ", #{activity_id}"
+      if is_nil(completed_activities),
+        do: "#{activity_id}",
+        else: "#{completed_activities}, #{activity_id}"
 
-    ContactField.do_add_contact_field(
-      contact,
-      "completed_activities",
-      "completed_activities",
-      completed_activities
-    )
+    contact =
+      ContactField.do_add_contact_field(
+        contact,
+        "completed_activities",
+        "completed_activities",
+        completed_activities
+      )
 
     completed_activities_count =
       completed_activities
