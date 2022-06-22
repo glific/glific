@@ -43,7 +43,7 @@ defmodule Glific.ASR.GoogleASR do
     end
   end
 
-  @spec successful_result_for_speech_to_text(map()) :: map() | {:error, any}
+  @spec successful_result_for_speech_to_text(map()) :: map() | {:error, String.t()}
   defp successful_result_for_speech_to_text(result) do
     case result.body["results"] do
       nil ->
