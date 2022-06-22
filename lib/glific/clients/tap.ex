@@ -96,8 +96,11 @@ defmodule Glific.Clients.Tap do
   end
 
   def webhook("get_activity_info", fields) do
-    Glific.parse_maybe_integer!(fields["organization_id"])
-    |> get_activity_info(fields["date"], fields["type"], fields["language_label"])
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    course = get_in(fields, ["contact", "fields", "course", "value"]) || fields["type"]
+    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || fields["date"]
+
+    get_activity_info(org_id, date, course, fields["language_label"])
   end
 
   def webhook("get_quiz_info", fields) do
@@ -170,6 +173,8 @@ defmodule Glific.Clients.Tap do
 
   @spec get_activity_info(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
   defp get_activity_info(org_id, date, type, language_label) do
+    type = Glific.string_clean(type)
+
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
       key: "schedule_" <> date
