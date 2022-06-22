@@ -1115,7 +1115,8 @@ defmodule Glific.Partners do
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
-      "flow_uuid_display" => get_flow_uuid_display(organization)
+      "flow_uuid_display" => get_flow_uuid_display(organization),
+      "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
 
     Map.put(services, organization_id, service)
@@ -1150,7 +1151,6 @@ defmodule Glific.Partners do
   @doc """
   Get a List for org data
   """
-
   @spec list_organization_data(map()) :: [Provider.t(), ...]
   def list_organization_data(args \\ %{}) do
     Repo.list_filter(

@@ -7,6 +7,7 @@ defmodule Glific.Clients.Tap do
 
   alias Glific.{
     Contacts.Contact,
+    Flows.ContactField,
     Groups.ContactGroup,
     Groups.Group,
     Partners,
@@ -95,8 +96,11 @@ defmodule Glific.Clients.Tap do
   end
 
   def webhook("get_activity_info", fields) do
-    Glific.parse_maybe_integer!(fields["organization_id"])
-    |> get_activity_info(fields["date"], fields["type"], fields["language_label"])
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    course = get_in(fields, ["contact", "fields", "course", "value"]) || fields["type"]
+    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || fields["date"]
+
+    get_activity_info(org_id, date, course, fields["language_label"])
   end
 
   def webhook("get_quiz_info", fields) do
@@ -134,6 +138,14 @@ defmodule Glific.Clients.Tap do
     end
   end
 
+  def webhook("mark_activity_as_complete", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> mark_activity_as_complete(
+      fields["activity_id"],
+      fields["contact"]["id"]
+    )
+  end
+
   def webhook(_, fields), do: fields
 
   @spec load_activities(non_neg_integer()) :: :ok
@@ -161,6 +173,8 @@ defmodule Glific.Clients.Tap do
 
   @spec get_activity_info(non_neg_integer(), String.t(), String.t(), String.t()) :: map()
   defp get_activity_info(org_id, date, type, language_label) do
+    type = Glific.string_clean(type)
+
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
       key: "schedule_" <> date
@@ -338,6 +352,43 @@ defmodule Glific.Clients.Tap do
     data
     |> Enum.map(fn {k, v} -> {Glific.string_clean(k), v} end)
     |> Enum.into(%{})
+  end
+
+  @spec mark_activity_as_complete(non_neg_integer(), String.t(), non_neg_integer()) :: map()
+  defp mark_activity_as_complete(_org_id, activity_id, contact_id) do
+    contact = Repo.get!(Contact, contact_id)
+    completed_activities = get_in(contact.fields, ["completed_activities", "value"])
+
+    completed_activities =
+      if is_nil(completed_activities),
+        do: "#{activity_id}",
+        else: "#{completed_activities}, #{activity_id}"
+
+    contact =
+      ContactField.do_add_contact_field(
+        contact,
+        "completed_activities",
+        "completed_activities",
+        completed_activities
+      )
+
+    completed_activities_count =
+      completed_activities
+      |> String.split(",", trim: true)
+      |> Enum.uniq_by(&String.trim(&1))
+      |> length()
+
+    ContactField.do_add_contact_field(
+      contact,
+      "completed_activities_count",
+      "completed_activities_count",
+      completed_activities_count
+    )
+
+    %{
+      completed_activities: completed_activities,
+      completed_activities_count: completed_activities_count
+    }
   end
 
   defp clean_row_values(row) do

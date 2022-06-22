@@ -192,7 +192,7 @@ defmodule Glific.Flows.Router do
       end
 
     context =
-      if msg.body in @reserved_messages,
+      if msg.body in @reserved_messages or is_nil(msg.id),
         do: context,
         else: FlowContext.update_recent(context, msg, :recent_inbound)
 

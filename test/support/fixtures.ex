@@ -916,15 +916,17 @@ defmodule Glific.Fixtures do
   def profile_fixture(attrs \\ %{}) do
     contact = contact_fixture()
 
+    valid_attrs = %{
+      "contact_id" => contact.id,
+      "organization_id" => contact.organization_id,
+      "name" => "some name",
+      "type" => "some type",
+      "language_id" => 1
+    }
+
     {:ok, profile} =
-      attrs
-      |> Map.put(:contact_id, contact.id)
-      |> Map.put(:organization_id, contact.organization_id)
-      |> Enum.into(%{
-        name: "some name",
-        profile_type: "some type",
-        language_id: 1
-      })
+      valid_attrs
+      |> Map.merge(attrs)
       |> Glific.Profiles.create_profile()
 
     profile

@@ -20,6 +20,7 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Profiles,
     Providers.GupshupContacts,
     Providers.GupshupEnterpriseContacts,
     Repo,
@@ -728,38 +729,106 @@ defmodule Glific.Contacts do
     contact =
       contact_id
       |> Contacts.get_contact!()
-      |> Repo.preload([:language, :groups])
+      |> Repo.preload([:language, :groups, :active_profile])
       |> Map.from_struct()
 
-    # we are splliting this up since we need to use contact within the various function
+    # we are splitting this up since we need to use contact within the various function
     # calls and a lot cleaner this way
     contact
-    |> put_in(
-      [:fields, :language],
-      %{label: contact.language.label}
-    )
-    |> Map.put(
+    |> get_contact_fields(contact)
+    |> get_contact_fields_language(contact)
+    |> get_contact_field_groups()
+    |> get_contact_field_list_profiles(contact)
+    |> get_contact_field_name(contact)
+  end
+
+  @spec get_contact_fields(map(), Contact.t()) :: map()
+  defp get_contact_fields(field_map, contact) do
+    with false <- is_nil(contact.active_profile_id),
+         profile <- contact.active_profile do
+      Map.put(
+        field_map,
+        :fields,
+        profile.fields
+      )
+    else
+      _ -> field_map
+    end
+  end
+
+  @spec get_contact_fields_language(map(), Contact.t()) :: map()
+  defp get_contact_fields_language(field_map, contact) do
+    with false <- is_nil(contact.active_profile_id),
+         profile <- contact.active_profile |> Repo.preload([:language]) do
+      put_in(
+        field_map,
+        [:fields, :language],
+        %{label: profile.language.label}
+      )
+    else
+      _ ->
+        put_in(
+          field_map,
+          [:fields, :language],
+          %{label: contact.language.label}
+        )
+    end
+  end
+
+  @spec get_contact_field_groups(map()) :: map()
+  defp get_contact_field_groups(field_map) do
+    Map.put(
+      field_map,
       :in_groups,
       Enum.reduce(
-        contact.groups,
+        field_map.groups,
         [],
         fn g, list -> [g.label | list] end
       )
     )
-    ## We change the name of the contact whenever we receive  a message from the contact.
-    ## so the contact name will always be the name contact added in the whatsApp app.
-    ## This is just so that organizations can use the custom name or the name they collected from the
-    ## various surveys in glific flows.
-    |> put_in(
-      [:fields, "name"],
-      contact.fields["name"] ||
-        %{
-          "type" => "string",
-          "label" => "Name",
-          "inserted_at" => DateTime.utc_now(),
-          "value" => contact.name
-        }
+  end
+
+  @spec get_contact_field_list_profiles(map(), Contact.t()) :: map()
+  defp get_contact_field_list_profiles(field_map, contact) do
+    Map.put(
+      field_map,
+      :list_profiles,
+      Profiles.get_indexed_profile(contact)
+      |> Enum.reduce("", fn {profile, index}, acc -> acc <> " #{index}. #{profile.name} \n" end)
     )
+  end
+
+  ## We change the name of the contact whenever we receive a message from the contact.
+  ## so the contact name will always be the name contact added in the WhatsApp app.
+  ## This is just so that organizations can use the custom name or the name they collected from
+  ## the various surveys in glific flows.
+  @spec get_contact_field_name(map(), Contact.t()) :: map()
+  defp get_contact_field_name(field_map, contact) do
+    with false <- is_nil(contact.active_profile_id),
+         profile <- contact.active_profile do
+      put_in(
+        field_map,
+        [:fields, "name"],
+        profile.fields["name"] || default_name(contact)
+      )
+    else
+      _ ->
+        put_in(
+          field_map,
+          [:fields, "name"],
+          contact.fields["name"] || default_name(contact)
+        )
+    end
+  end
+
+  @spec default_name(Contact.t()) :: map()
+  defp default_name(contact) do
+    %{
+      "type" => "string",
+      "label" => "Name",
+      "inserted_at" => DateTime.utc_now(),
+      "value" => contact.name
+    }
   end
 
   @simulator_phone_prefix "9876543210"
