@@ -154,8 +154,7 @@ defmodule Glific.MixProject do
       {:exvcr, "~> 0.13", only: @test_envs},
       {:dotenvy, "~> 0.1"},
       {:phoenix_swoosh, "~> 1.0"},
-      {:gen_smtp, "~> 1.1"},
-      {:google_api_speech, "~> 0.26"}
+      {:gen_smtp, "~> 1.1"}
     ]
   end
 

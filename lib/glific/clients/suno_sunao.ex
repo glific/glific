@@ -6,7 +6,7 @@ defmodule Glific.Clients.SunoSunao do
   alias Glific.{GoogleASR}
 
   def webhook("speech_to_text", fields) do
-    Glific.parse_maybe_integer!(fields["organization_id"]) |>
-    GoogleASR.speech_to_text(fields["results"])
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> GoogleASR.speech_to_text(fields["results"])
   end
 end

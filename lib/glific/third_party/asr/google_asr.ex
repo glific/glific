@@ -1,4 +1,4 @@
-defmodule Glific.GoogleASR do
+defmodule Glific.ASR.GoogleASR do
   @moduledoc """
   This is a module to convert speech to text
   """
@@ -13,7 +13,7 @@ defmodule Glific.GoogleASR do
   This function will take organization_id and the url for audio.
   """
 
-  # @spec speech_to_text(non_neg_integer, String.t()) :: any
+  @spec speech_to_text(non_neg_integer, String.t()) :: any
   def speech_to_text(org_id, uri) do
     {:ok, response} = get(uri)
     content = Base.encode64(response.body)
@@ -33,20 +33,24 @@ defmodule Glific.GoogleASR do
     }
 
     {:ok, result} = post(new_client(org_id), url, body)
-    # IO.inspect(result)
 
     case result.body["error"] do
       nil ->
-        case result.body["results"] do
-          nil ->
-            {:error, "audio is not clear! please send it again"}
-
-          res ->
-            res |> get_in([Access.at(0), "alternatives"]) |> List.first()
-        end
+        successful_result_for_speech_to_text(result)
 
       res ->
         Logger.info("Oops! Something is wrong, #{inspect(res["message"])}")
+    end
+  end
+
+  @spec successful_result_for_speech_to_text(map()) :: map() | {:error, any}
+  defp successful_result_for_speech_to_text(result) do
+    case result.body["results"] do
+      nil ->
+        {:error, "Please check the link or Send the audio again"}
+
+      res ->
+        res |> get_in([Access.at(0), "alternatives"]) |> List.first()
     end
   end
 
