@@ -3,6 +3,7 @@ defmodule Glific.GoogleASR do
   This is a module to convert speech to text
   """
   @hackney Tesla.Adapter.Hackney
+  use Tesla
 
   require Logger
 
@@ -12,8 +13,11 @@ defmodule Glific.GoogleASR do
   This function will take organization_id and the url for audio.
   """
 
-  @spec speech_to_text(non_neg_integer, String.t()) :: any
+  # @spec speech_to_text(non_neg_integer, String.t()) :: any
   def speech_to_text(org_id, uri) do
+    {:ok, response} = get(uri)
+    content = Base.encode64(response.body)
+
     url = "v1/speech:recognize"
 
     body = %{
@@ -24,11 +28,11 @@ defmodule Glific.GoogleASR do
         "profanityFilter" => true
       },
       "audio" => %{
-        "uri" => uri
+        "content" => content
       }
     }
 
-    {:ok, result} = Tesla.post(new_client(org_id), url, body)
+    {:ok, result} = post(new_client(org_id), url, body)
     # IO.inspect(result)
 
     case result.body["error"] do
