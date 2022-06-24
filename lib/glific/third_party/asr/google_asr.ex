@@ -33,6 +33,8 @@ defmodule Glific.ASR.GoogleASR do
 
   @spec speech_to_text(non_neg_integer, String.t()) :: any
   def speech_to_text(org_id, uri) do
+    IO.inspect(org_id)
+    IO.inspect(uri, label: "--------------->")
     {:ok, response} = get(uri)
     content = Base.encode64(response.body)
 
@@ -53,6 +55,7 @@ defmodule Glific.ASR.GoogleASR do
     }
 
     {:ok, result} = post(new_client(org_id), url, body)
+    IO.inspect(result)
 
     case result.body["error"] do
       nil ->
@@ -76,8 +79,9 @@ defmodule Glific.ASR.GoogleASR do
 
   @spec new_client(non_neg_integer) :: Tesla.Client.t()
   defp new_client(org_id) do
-    token = Partners.get_goth_token(org_id, "dialogflow").token
+    token = Partners.get_goth_token(org_id, "google_cloud_storage").token
 
+    IO.inspect(token)
     middleware = [
       {Tesla.Middleware.BaseUrl, "https://speech.googleapis.com/"},
       Tesla.Middleware.JSON,

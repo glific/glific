@@ -10,6 +10,7 @@ defmodule Glific.Clients.SunoSunao do
   """
   @spec webhook(String.t(), map()) :: map()
   def webhook("speech_to_text", fields) do
+    IO.inspect(fields)
     Glific.parse_maybe_integer!(fields["organization_id"])
     |> GoogleASR.speech_to_text(fields["results"])
   end
