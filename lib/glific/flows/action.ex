@@ -16,6 +16,7 @@ defmodule Glific.Flows.Action do
     Flows.Flow,
     Groups,
     Groups.Group,
+    Messages,
     Messages.Message,
     Profiles,
     Repo
@@ -62,6 +63,7 @@ defmodule Glific.Flows.Action do
           name: String.t() | nil,
           text: String.t() | nil,
           value: String.t() | nil,
+          input: String.t() | nil,
           url: String.t() | nil,
           headers: map() | nil,
           method: String.t() | nil,
@@ -94,6 +96,7 @@ defmodule Glific.Flows.Action do
     field(:name, :string)
     field(:text, :string)
     field(:value, :string)
+    field(:input, :string)
 
     # various fields for webhooks
     field(:url, :string)
@@ -544,7 +547,24 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
-    Dialogflow.execute(action, context, context.last_message)
+
+    ## Check if we have a different input then last message.
+    ## If yes then pass that string as a message.
+    ## we might need more refactoring here. But this is fine for now.
+
+    message =
+      if action.input in [nil, "@input.text"],
+        do: context.last_message,
+        else:
+          Messages.create_temp_message(
+            context.organization_id,
+            FlowContext.parse_context_string(context, action.input),
+            contact_id: context.contact_id,
+            session_uuid: context.id
+          )
+          |> Repo.preload(contact: [:language])
+
+    Dialogflow.execute(action, context, message)
     {:wait, context, messages}
   end
 
