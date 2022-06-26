@@ -336,4 +336,6 @@ defmodule Glific.Templates.InteractiveTemplates do
     content = Map.merge(interactive_content["content"], %{"url" => url, "type" => type})
     Map.put(interactive_content, "content", content)
   end
+
+  defp process_dynamic_attachments(interactive_content, _attachment_data), do: interactive_content
 end
