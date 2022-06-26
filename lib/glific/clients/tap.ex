@@ -152,6 +152,7 @@ defmodule Glific.Clients.Tap do
   defp load_activities(org_id) do
     ApiClient.get_csv_content(url: @props.sheet_links.activity)
     |> Enum.each(fn {_, row} ->
+      row = clean_row_values(row)
       key = "schedule_" <> row["Schedule"]
       activity_type = Glific.string_clean(row["Activity type"])
       info = %{activity_type => row}
@@ -394,8 +395,8 @@ defmodule Glific.Clients.Tap do
   defp clean_row_values(row) do
     row
     |> Enum.map(fn
-      {k, v} when is_list(v) -> {k, hd(v)}
-      {k, v} -> {k, v}
+      {k, v} when is_list(v) -> {k, String.replace(hd(v), ~r/\n\r\n/, "\n")}
+      {k, v} -> {k, String.replace(v, ~r/\n\r\n/, "\n")}
     end)
     |> Enum.into(%{})
   end
