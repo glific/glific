@@ -290,4 +290,50 @@ defmodule Glific.Templates.InteractiveTemplates do
     media_id = get_media(interactive_content, interactive_template.organization_id)
     {interactive_content, body, media_id}
   end
+
+  @doc """
+    Process dynamic interactive messages.
+  """
+  @spec process_dynamic_interactive_content(map(), list(), map()) :: map()
+  def process_dynamic_interactive_content(
+        %{"type" => "list"} = interactive_content,
+        params,
+        attachment
+      ) do
+    get_in(interactive_content, ["items"])
+    |> hd()
+    |> Map.put("options", build_list_items(params))
+    |> then(&Map.put(interactive_content, "items", [&1]))
+    |> process_dynamic_attachments(attachment)
+  end
+
+  def process_dynamic_interactive_content(
+        %{"type" => "quick_reply"} = interactive_content,
+        params,
+        attachment
+      ) do
+    Map.put(interactive_content, "options", build_list_items(params))
+    |> process_dynamic_attachments(attachment)
+  end
+
+  def process_dynamic_interactive_content(interactive_content, _params, _attachment),
+    do: interactive_content
+
+  @spec build_list_items(list()) :: list()
+  defp build_list_items(params) do
+    Enum.map(params, fn val ->
+      %{
+        "title" => val,
+        "description" => "",
+        "type" => "text"
+      }
+    end)
+  end
+
+  defp process_dynamic_attachments(interactive_content, %{url: url} = attachment_data)
+       when url not in [nil, ""] do
+    {type, url} = Glific.Messages.get_media_type_from_url(attachment_data[:url])
+    content = Map.merge(interactive_content["content"], %{"url" => url, "type" => type})
+    Map.put(interactive_content, "content", content)
+  end
 end
