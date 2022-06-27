@@ -3,7 +3,7 @@ defmodule Glific.Clients.SunoSunao do
   This module will focus on suno sunao usecase
   """
 
-  alias Glific.{Contacts.Contact, ASR.GoogleASR, Repo}
+  alias Glific.{ASR.GoogleASR, Contacts.Contact, Repo}
 
   @doc """
   This is a webhook which will call into google speech to text api
@@ -17,7 +17,7 @@ defmodule Glific.Clients.SunoSunao do
     |> GoogleASR.speech_to_text(fields["results"], contact.language.locale)
   end
 
-  def get_contact_language(contact_id) do
+  defp get_contact_language(contact_id) do
     case Repo.fetch(Contact, contact_id) do
       {:ok, contact} -> contact |> Repo.preload(:language)
       {:error, error} -> error
