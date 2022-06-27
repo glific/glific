@@ -31,10 +31,8 @@ defmodule Glific.ASR.GoogleASR do
      *  enableAutomaticPunctuation:  When you enable this feature, Speech-to-Text automatically infers the presence of periods, commas, and question marks in your audio data and adds them to the transcript.
   """
 
-  @spec speech_to_text(non_neg_integer, String.t()) :: any
-  def speech_to_text(org_id, uri) do
-    IO.inspect(org_id)
-    IO.inspect(uri, label: "--------------->")
+  @spec speech_to_text(non_neg_integer, String.t(), String.t()) :: map()
+  def speech_to_text(org_id, uri, language) do
     {:ok, response} = get(uri)
     content = Base.encode64(response.body)
 
@@ -44,7 +42,7 @@ defmodule Glific.ASR.GoogleASR do
       "config" => %{
         "encoding" => "OGG_OPUS",
         "sampleRateHertz" => 16_000,
-        "languageCode" => "hi-IN",
+        "languageCode" => language,
         "profanityFilter" => true,
         "enableWordConfidence" => true,
         "enableAutomaticPunctuation" => true
@@ -81,7 +79,6 @@ defmodule Glific.ASR.GoogleASR do
   defp new_client(org_id) do
     token = Partners.get_goth_token(org_id, "google_cloud_storage").token
 
-    IO.inspect(token)
     middleware = [
       {Tesla.Middleware.BaseUrl, "https://speech.googleapis.com/"},
       Tesla.Middleware.JSON,
