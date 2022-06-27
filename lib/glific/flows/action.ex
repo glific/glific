@@ -16,6 +16,7 @@ defmodule Glific.Flows.Action do
     Flows.Flow,
     Groups,
     Groups.Group,
+    Messages,
     Messages.Message,
     Profiles,
     Repo
@@ -62,6 +63,7 @@ defmodule Glific.Flows.Action do
           name: String.t() | nil,
           text: String.t() | nil,
           value: String.t() | nil,
+          input: String.t() | nil,
           url: String.t() | nil,
           headers: map() | nil,
           method: String.t() | nil,
@@ -83,10 +85,13 @@ defmodule Glific.Flows.Action do
           node: Node.t() | nil,
           templating: Templating.t() | nil,
           wait_time: integer() | nil,
+          # Interactive messages
           interactive_template_id: integer() | nil,
           interactive_template_expression: String.t() | nil,
           params_count: String.t() | nil,
-          params: list() | nil
+          params: list() | nil,
+          attachment_type: String.t() | nil,
+          attachment_url: String.t() | nil
         }
 
   embedded_schema do
@@ -94,6 +99,7 @@ defmodule Glific.Flows.Action do
     field(:name, :string)
     field(:text, :string)
     field(:value, :string)
+    field(:input, :string)
 
     # various fields for webhooks
     field(:url, :string)
@@ -132,6 +138,8 @@ defmodule Glific.Flows.Action do
     field(:params, {:array, :string}, default: [])
     field(:params_count, :string)
     field(:interactive_template_expression, :string)
+    field(:attachment_type, :string)
+    field(:attachment_url, :string)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -250,6 +258,8 @@ defmodule Glific.Flows.Action do
       labels: json["labels"],
       params: json["params"] || [],
       params_count: json["paramsCount"] || "0",
+      attachment_url: json["attachment_url"],
+      attachment_type: json["attachment_type"],
       interactive_template_expression: json["expression"] || nil
     })
   end
@@ -544,7 +554,24 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
-    Dialogflow.execute(action, context, context.last_message)
+
+    ## Check if we have a different input then last message.
+    ## If yes then pass that string as a message.
+    ## we might need more refactoring here. But this is fine for now.
+
+    message =
+      if action.input in [nil, "@input.text"],
+        do: context.last_message,
+        else:
+          Messages.create_temp_message(
+            context.organization_id,
+            FlowContext.parse_context_string(context, action.input),
+            contact_id: context.contact_id,
+            session_uuid: context.id
+          )
+          |> Repo.preload(contact: [:language])
+
+    Dialogflow.execute(action, context, message)
     {:wait, context, messages}
   end
 

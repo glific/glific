@@ -65,17 +65,19 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-    params_count =
-      action.params_count
-      |> get_params_count(message_vars)
+    params_count = get_params_count(action.params_count, message_vars)
 
     interactive_content =
       if params_count > 0 do
         params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
 
-        process_dynamic_interactive_content(
+        InteractiveTemplates.process_dynamic_interactive_content(
           interactive_content,
-          Enum.take(params, params_count)
+          Enum.take(params, params_count),
+          %{
+            type: MessageVarParser.parse(action.attachment_type, message_vars),
+            url: MessageVarParser.parse(action.attachment_url, message_vars)
+          }
         )
       else
         interactive_content
@@ -448,34 +450,5 @@ defmodule Glific.Flows.ContactAction do
       {:ok, value} -> value
       _ -> 0
     end
-  end
-
-  @spec process_dynamic_interactive_content(map(), list()) :: map()
-  defp process_dynamic_interactive_content(%{"type" => "list"} = interactive_content, params) do
-    get_in(interactive_content, ["items"])
-    |> hd()
-    |> Map.put("options", build_list_items(params))
-    |> then(&Map.put(interactive_content, "items", [&1]))
-  end
-
-  defp process_dynamic_interactive_content(
-         %{"type" => "quick_reply"} = interactive_content,
-         params
-       ) do
-    Map.put(interactive_content, "options", build_list_items(params))
-  end
-
-  defp process_dynamic_interactive_content(interactive_content, _params),
-    do: interactive_content
-
-  @spec build_list_items(list()) :: list()
-  defp build_list_items(params) do
-    Enum.map(params, fn val ->
-      %{
-        "title" => val,
-        "description" => "",
-        "type" => "text"
-      }
-    end)
   end
 end
