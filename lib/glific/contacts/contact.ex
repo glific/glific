@@ -84,10 +84,6 @@ defmodule Glific.Contacts.Contact do
     field :status, ContactStatus
     field :bsp_status, ContactProviderStatus
 
-    belongs_to :language, Language
-    belongs_to :organization, Organization
-    has_one :user, User
-
     field :is_org_read, :boolean, default: true
     field :is_org_replied, :boolean, default: true
     field :is_contact_replied, :boolean, default: true
@@ -108,11 +104,15 @@ defmodule Glific.Contacts.Contact do
     field :settings, :map, default: %{}
     field :fields, :map, default: %{}
 
-    many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
+    belongs_to :active_profile, Profile
+    belongs_to :language, Language
+    belongs_to :organization, Organization
+
+    has_one :user, User
     has_many :profiles, Profile
+    many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
-    belongs_to :active_profile, Profile, foreign_key: :active_profile_id
 
     timestamps(type: :utc_datetime_usec)
   end

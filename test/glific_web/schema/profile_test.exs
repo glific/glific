@@ -5,7 +5,12 @@ defmodule GlificWeb.Schema.ProfileTest do
   use GlificWeb.ConnCase
   use Wormwood.GQLCase
 
-  alias Glific.{Contacts.Contact, Profiles.Profile, Repo, Seeds.SeedsDev}
+  alias Glific.{
+    Contacts.Contact,
+    Profiles.Profile,
+    Repo,
+    Seeds.SeedsDev
+  }
 
   load_gql(:create, GlificWeb.Schema, "assets/gql/profiles/create_profile.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/profiles/delete_profile.gql")
@@ -50,8 +55,8 @@ defmodule GlificWeb.Schema.ProfileTest do
       Repo.fetch_by(Contact, %{name: "NGO Main Account", organization_id: user.organization_id})
 
     params = %{
-      "name" => "user",
-      "profileType" => "profile",
+      "name" => "Tom",
+      "type" => "student",
       "contact_id" => contact.id,
       "language_id" => contact.language_id,
       "organization_id" => user.organization_id
@@ -60,8 +65,8 @@ defmodule GlificWeb.Schema.ProfileTest do
     result = auth_query_gql_by(:create, user, variables: %{"input" => params})
     assert {:ok, query_data} = result
     profile = get_in(query_data, [:data, "createProfile", "profile"])
-    assert Map.get(profile, "name") == "user"
-    assert Map.get(profile, "profileType") == "profile"
+    assert Map.get(profile, "name") == "Tom"
+    assert Map.get(profile, "type") == "student"
   end
 
   @doc """
@@ -93,13 +98,13 @@ defmodule GlificWeb.Schema.ProfileTest do
       Repo.fetch_by(Profile, %{name: "user", organization_id: user.organization_id})
 
     name = "another user"
-    profile_type = "user profile"
+    type = "user profile"
 
     result =
       auth_query_gql_by(:update, user,
         variables: %{
           "id" => profile.id,
-          "input" => %{"name" => name, "profileType" => profile_type}
+          "input" => %{"name" => name, "type" => type}
         }
       )
 

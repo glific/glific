@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:fun_with_flags, :boolean)
     field(:flow_uuid_display, :boolean)
     field(:roles_and_permission, :boolean)
+    field(:contact_profile_enabled, :boolean)
     field(:errors, list_of(:input_error))
   end
 

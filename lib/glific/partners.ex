@@ -1134,6 +1134,7 @@ defmodule Glific.Partners do
       "dialogflow" => organization.services["dialogflow"] != nil,
       "flow_uuid_display" => get_flow_uuid_display(organization),
       "roles_and_permission" => get_roles_and_permission(organization)
+      "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
 
     Map.put(services, organization_id, service)
@@ -1168,7 +1169,6 @@ defmodule Glific.Partners do
   @doc """
   Get a List for org data
   """
-
   @spec list_organization_data(map()) :: [Provider.t(), ...]
   def list_organization_data(args \\ %{}) do
     Repo.list_filter(
