@@ -1133,7 +1133,7 @@ defmodule Glific.Partners do
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
       "flow_uuid_display" => get_flow_uuid_display(organization),
-      "roles_and_permission" => get_roles_and_permission(organization)
+      "roles_and_permission" => get_roles_and_permission(organization),
       "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
 
