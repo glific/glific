@@ -10,6 +10,7 @@ defmodule Glific.BigQuery do
     BigQuery.BigQueryJob,
     BigQuery.Schema,
     Contacts.Contact,
+    Contacts.ContactHistory,
     Flows,
     Flows.FlowCount,
     Flows.FlowResult,
@@ -41,7 +42,8 @@ defmodule Glific.BigQuery do
     "flow_counts" => :flow_count_schema,
     "messages_media" => :messages_media_schema,
     "flow_contexts" => :flow_context_schema,
-    "profiles" => :profile_schema
+    "profiles" => :profile_schema,
+    "contact_histories" => :contact_histories
   }
 
   defp bigquery_tables(organization_id) do

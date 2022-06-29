@@ -1113,6 +1113,83 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for contact history table
+  """
+  @spec contact_history_schema :: list()
+  def contact_history_schema do
+    [
+      %{
+        description: "Unique ID for the contact history",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "event type for the contact history",
+        name: "event_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "event label for the contact history",
+        name: "event_label",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "event datetime for the contact history",
+        name: "event_datetime",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "The meta data for the event that happened.",
+        name: "event_meta",
+        type: "RECORD",
+        mode: "REPEATED",
+        event_meta: [
+          %{
+            description: "Labels for NGO generated fields for the user",
+            name: "label",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Values of the NGO generated fields (mapped for each user and label)",
+            name: "value",
+            type: "string",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Type of the generated fields; example - string",
+            name: "type",
+            type: "STRING",
+            mode: "NULLABLE"
+          },
+          %{
+            description: "Time of entry of the recorded field",
+            name: "inserted_at",
+            type: "DATETIME",
+            mode: "NULLABLE"
+          }
+        ]
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
