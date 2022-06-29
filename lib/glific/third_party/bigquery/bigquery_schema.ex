@@ -1162,26 +1162,20 @@ defmodule Glific.BigQuery.Schema do
         fields: [
           %{
             description: "Labels for NGO generated fields for the user",
-            name: "label",
-            type: "STRING",
+            name: "context_id",
+            type: "Integer",
             mode: "NULLABLE"
           },
           %{
             description: "Values of the NGO generated fields (mapped for each user and label)",
-            name: "value",
+            name: "method",
             type: "string",
             mode: "NULLABLE"
           },
           %{
-            description: "Type of the generated fields; example - string",
-            name: "type",
-            type: "STRING",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Time of entry of the recorded field",
-            name: "inserted_at",
-            type: "DATETIME",
+            description: "Values of the NGO generated fields (mapped for each user and label)",
+            name: "optin_message_id",
+            type: "Integer",
             mode: "NULLABLE"
           }
         ]
