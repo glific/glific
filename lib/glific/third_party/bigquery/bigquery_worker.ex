@@ -49,6 +49,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
+    IO.inspect(organization)
     credential = organization.services["bigquery"]
 
     if credential do
@@ -317,13 +318,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            event_type: row.name,
-            event_label: row.type,
+            event_type: row.event_type,
+            event_label: row.event_label,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
-            event_datetime: BigQuery.format_date(row.updated_at, organization_id),
-            contact_name: row.contact.name,
-            contact_phone: row.contact.phone
+            event_datetime: BigQuery.format_date(row.event_datetime, organization_id),
+            phone: row.contact.phone
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})

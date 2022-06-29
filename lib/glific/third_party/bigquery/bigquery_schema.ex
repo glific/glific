@@ -1185,6 +1185,12 @@ defmodule Glific.BigQuery.Schema do
             mode: "NULLABLE"
           }
         ]
+      },
+      %{
+        description: "Phone number of the user; primary point of identification",
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
       }
     ]
   end
