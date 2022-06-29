@@ -1159,7 +1159,7 @@ defmodule Glific.BigQuery.Schema do
         name: "event_meta",
         type: "RECORD",
         mode: "REPEATED",
-        event_meta: [
+        fields: [
           %{
             description: "Labels for NGO generated fields for the user",
             name: "label",

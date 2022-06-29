@@ -49,7 +49,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
-    IO.inspect(organization)
     credential = organization.services["bigquery"]
 
     if credential do
@@ -323,7 +322,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             event_datetime: BigQuery.format_date(row.event_datetime, organization_id),
-            phone: row.contact.phone
+            phone: row.contact.phone,
+            event_meta: row.event_meta
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -332,7 +332,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       end
     )
     |> Enum.chunk_every(100)
-    |> Enum.each(&make_job(&1, :profiles, organization_id, attrs))
+    |> Enum.each(&make_job(&1, :contact_histories, organization_id, attrs))
 
     :ok
   end
