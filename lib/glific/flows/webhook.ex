@@ -100,6 +100,24 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
+   # method can be either a get or a post. The do_oban function
+  # does the right thing based on if it is a get or post
+  @spec method(Action.t(), FlowContext.t()) :: nil
+  defp method(action, context) do
+    IO.inspect(action, label: "----------------------->>>>>")
+    case create_body(context, action.body) do
+      {:error, message} ->
+        action
+        |> create_log(%{}, action.headers, context)
+        |> update_log(message)
+
+      {map, body} ->
+        do_oban(action, context, {map, body})
+    end
+
+    nil
+  end
+
   @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
   defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
@@ -121,6 +139,7 @@ defmodule Glific.Flows.Webhook do
 
   @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
   defp do_create_body(context, action_body_map) do
+    IO.inspect(action_body_map)
     default_payload = %{
       contact: %{
         id: context.contact.id,
@@ -131,6 +150,7 @@ defmodule Glific.Flows.Webhook do
       results: context.results,
       flow: %{name: context.flow.name, id: context.flow.id}
     }
+    IO.inspect(default_payload, label: "-----default_payload")
 
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
@@ -148,9 +168,12 @@ defmodule Glific.Flows.Webhook do
       |> Enum.into(%{})
       |> Map.put("organization_id", context.organization_id)
 
+    IO.inspect(action_body_map, label: "---------action_body_map")
+
     Jason.encode(action_body_map)
     |> case do
       {:ok, action_body} ->
+        IO.inspect(action_body, label: "sass-------->")
         {action_body_map, action_body}
 
       _ ->
@@ -162,23 +185,6 @@ defmodule Glific.Flows.Webhook do
            "Error in encoding webhook body. Please check the json body in floweditor"
          )}
     end
-  end
-
-  # method can be either a get or a post. The do_oban function
-  # does the right thing based on if it is a get or post
-  @spec method(Action.t(), FlowContext.t()) :: nil
-  defp method(action, context) do
-    case create_body(context, action.body) do
-      {:error, message} ->
-        action
-        |> create_log(%{}, action.headers, context)
-        |> update_log(message)
-
-      {map, body} ->
-        do_oban(action, context, {map, body})
-    end
-
-    nil
   end
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
