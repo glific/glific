@@ -7,6 +7,11 @@ defmodule Glific.BigQuery.BigQueryWorker do
   We centralize both the cron job and the worker job in one module
   """
 
+  @doc """
+  we are using this module to sync the data from the postgres database to bigquery. Before that you need to create a database schema for the query for more info
+  go to bigquery_schema.ex file and create a schema for the table.
+  """
+
   import Ecto.Query
 
   require Logger
@@ -29,6 +34,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Messages.Message,
     Messages.MessageMedia,
     Partners,
+    Profiles.Profile,
     Repo,
     Stats.Stat
   }
@@ -69,6 +75,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("flow_counts", organization_id)
       make_job_to_remove_duplicate("messages_media", organization_id)
       make_job_to_remove_duplicate("flow_contexts", organization_id)
+      make_job_to_remove_duplicate("profiles", organization_id)
     end
 
     :ok
@@ -184,7 +191,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         row
         |> get_message_row(organization_id)
         |> Map.merge(bq_fields(organization_id))
-        |> BigQuery.format_data_for_bigquery("messages")
+        |> then(&%{json: &1})
         | acc
       ]
     end)
@@ -242,13 +249,55 @@ defmodule Glific.BigQuery.BigQueryWorker do
               group_labels: Enum.map_join(row.groups, ",", &Map.get(&1, :label))
             }
             |> Map.merge(bq_fields(organization_id))
-            |> BigQuery.format_data_for_bigquery("contacts")
+            |> then(&%{json: &1})
             | acc
           ]
       end
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contacts, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("profiles", organization_id, attrs) do
+    # This function will fetch all the profiles from the database and will insert it in bigquery in chunks of 100.
+    Logger.info(
+      "fetching data for profiles to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("profiles", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            name: row.name,
+            type: row.type,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            phone: row.contact.phone,
+            language: row.language.label,
+            fields:
+              Enum.map(row.fields, fn {_key, field} ->
+                %{
+                  label: field["label"],
+                  inserted_at: BigQuery.format_date(field["inserted_at"], organization_id),
+                  type: field["type"],
+                  value: field["value"]
+                }
+              end)
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :profiles, organization_id, attrs))
 
     :ok
   end
@@ -275,7 +324,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             revision: BigQuery.format_json(row.definition)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("flows")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -312,7 +361,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               flow_context_id: row.flow_context_id
             }
             |> Map.merge(bq_fields(organization_id))
-            |> BigQuery.format_data_for_bigquery("flow_results")
+            |> then(&%{json: &1})
             | acc
           ]
       end
@@ -347,7 +396,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_milisecond(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("flow_counts")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -380,7 +429,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: format_date_with_milisecond(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("messages_media")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -425,7 +474,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
-          |> BigQuery.format_data_for_bigquery("flow_contexts")
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -482,7 +531,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(additional)
-          |> BigQuery.format_data_for_bigquery(stat)
+          |> then(&%{json: &1})
           | acc
         ]
       end
@@ -529,7 +578,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
         errors: BigQuery.format_json(row.errors),
-        flow_broadcast_id: row.flow_broadcast_id
+        flow_broadcast_id: row.flow_broadcast_id,
+        bsp_status: row.bsp_status
       }
       |> Map.merge(message_media_info(row.media))
       |> Map.merge(message_template_info(row))
@@ -664,6 +714,15 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([:language, :tags, :groups, :user])
+
+  defp get_query("profiles", organization_id, attrs),
+    # We are creating a query here with the fields which are required instead of loading all the data.
+    do:
+      Profile
+      |> where([p], p.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([p], [p.inserted_at, p.id])
+      |> preload([:language, :contact])
 
   defp get_query("flows", organization_id, attrs),
     do:

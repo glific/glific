@@ -9,66 +9,30 @@ defmodule Glific.Clients.DigitalGreen do
 
   alias Glific.{
     Contacts,
+    Contacts.Contact,
     Flows.ContactField,
-    Groups,
-    Groups.Group,
-    Navanatech,
-    Repo
+    Partners,
+    Partners.OrganizationData,
+    Repo,
+    Sheets.ApiClient
   }
 
   alias Glific.Sheets.ApiClient
 
-  @stages %{
-    "stage 1" => %{
-      "group" => "stage 1",
-      "initial_offset" => 17,
-      "threshold" => 31
+  @crp_id_key "dg_crp_ids"
+
+  @geographies %{
+    "en" => %{
+      "database_key" => "geography_en",
+      "sheet_link" =>
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=1669998910&single=true&output=csv"
     },
-    "stage 2" => %{
-      "group" => "stage 2",
-      "initial_offset" => 32,
-      "threshold" => 46
-    },
-    "stage 3" => %{
-      "group" => "stage 3",
-      "initial_offset" => 47,
-      "threshold" => 61
-    },
-    "stage 4" => %{
-      "group" => "stage 4",
-      "initial_offset" => 62,
-      "threshold" => 76
-    },
-    "stage 5" => %{
-      "group" => "stage 5",
-      "initial_offset" => 77,
-      "threshold" => 92
+    "te" => %{
+      "database_key" => "geography_te",
+      "sheet_link" =>
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vTYW2yLqES4FGTIDVDIm21XTWsoOPPDaDR8XO0gv32cgydsjcX1d_AaXCuMTNymJhCPzAU-FT1Mont5/pub?gid=752391516&single=true&output=csv"
     }
   }
-
-  @weather_updates %{
-    "temp_threshold" => 35,
-    "humidity_threshold" => 95,
-    "published_csv" =>
-      "https://docs.google.com/spreadsheets/d/e/2PACX-1vS-GAeslOLrmyeYBTEqcQ3IkOeY85BAAsTaRc9bUxEnzbIf8QAn5_uLjg0zgMgkmqZLt5HSM9BwTEjL/pub?gid=729435971&single=true&output=csv"
-  }
-
-  @villages [
-    "ganapavaram",
-    "jonnalagadda",
-    "solasa",
-    "ipur",
-    "kondapuram",
-    "paladoddi",
-    "mudumala",
-    "erladinne",
-    "pedakurapadu",
-    "adireddipalli",
-    "vonipenta",
-    "mittamanupalli",
-    "pothavaram",
-    "venkatadri_palem"
-  ]
 
   @doc """
   Returns time in second till next defined Timeslot
@@ -107,113 +71,307 @@ defmodule Glific.Clients.DigitalGreen do
   additional functionality as needed
   """
   @spec webhook(String.t(), map()) :: map()
-  def webhook("daily", fields) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+  def webhook("load_crp_ids", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> load_crp_ids()
 
-    ## check if we need to scheduled a flow for the contact tomorrow.
-    check_for_next_scheduled_flow(fields, contact_id, organization_id)
-
-    ## check and update contact stage based on the total days they have.
-    total_days = get_total_stage_days(fields)
-
-    if is_integer(total_days) do
-      update_crop_stage(total_days, contact_id, organization_id)
-    end
-
-    Logger.info(
-      "Daily flow ran successfully for total_days: #{inspect(total_days)} and fields: #{inspect(fields)} "
-    )
-
-    %{status: "successfull"}
+    fields
   end
 
-  def webhook("update_crop_stage", fields) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
-
-    total_days = get_total_stage_days(fields)
-    update_crop_stage(total_days, contact_id, organization_id)
+  def webhook("validate_crp_id", fields) do
+    Glific.parse_maybe_integer!(fields["organization_id"])
+    |> validate_crp_id(fields["crp_id"])
   end
 
-  def webhook("set_crop_stage", fields) do
-    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact_id"])
-    {:ok, organization_id} = Glific.parse_maybe_integer(fields["organization_id"])
+  def webhook("load_geography", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    load_geographies(org_id, @geographies["en"])
+    load_geographies(org_id, @geographies["te"])
 
-    stage =
-      fields["crop_stage"]
-      |> String.downcase()
-      |> String.trim()
-
-    @stages[stage]
-    |> set_initial_crop_state(contact_id, organization_id)
+    fields
   end
 
-  def webhook("decode_message", fields) do
-    params =
-      if Map.has_key?(fields, "media_url"),
-        do: %{
-          media_url: fields["media_url"],
-          case_id: fields["case_id"],
-          organization_id: fields["organization_id"]
-        },
-        else: %{
-          text: validate_text_to_decode(fields["text"]),
-          case_id: fields["case_id"],
-          organization_id: fields["organization_id"]
-        }
+  def webhook("get_district_list", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    region_name = fields["region"]
+    language = get_language(fields["contact"]["id"])
 
-    Navanatech.decode_message(params)
-    |> case do
-      ## We will move these conditions to Navanatech module.
-      {:ok, %{"keywords" => []} = attrs} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(attrs)}"
-        }
-
-      {:ok, %{"keywords" => keywords} = attrs} ->
-        %{
-          decoded_message: hd(keywords),
-          request_data: "Data Decode #{inspect(params)} with response #{inspect(attrs)}"
-        }
-
-      {:ok, message} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"
-        }
-
-      {:error, message} ->
-        %{
-          decoded_message: "could not decode",
-          request_data: "Error in decode #{inspect(params)} with response #{inspect(message)}"
-        }
-    end
+    get_geographies_data(org_id, @geographies[language.locale])
+    |> get_in([region_name])
+    |> geographies_list_results()
   end
 
-  def webhook("weather_updates", fields) do
-    today = Timex.today()
-    village_name = String.downcase(fields["village_name"]) |> String.trim()
+  def webhook("get_division_list", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    language = get_language(fields["contact"]["id"])
+    region_name = fields["region"]
+    district_name = fields["district"]
 
-    opts = [
-      start_date: Timex.beginning_of_week(today, :friday),
-      end_date: Timex.end_of_week(today, :friday),
-      village: village_name
-    ]
+    get_geographies_data(org_id, @geographies[language.locale])
+    |> get_in([region_name, district_name])
+    |> geographies_list_results()
+  end
 
-    if village_name in @villages do
-      ApiClient.get_csv_content(url: @weather_updates["published_csv"])
-      |> Enum.reduce([], fn {_, row}, acc -> filter_weather_records(row, acc, opts) end)
-      |> generate_weather_results(opts)
-      |> Map.put(:is_valid_village, true)
+  def webhook("get_mandal_list", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    language = get_language(fields["contact"]["id"])
+    region_name = fields["region"]
+    district_name = fields["district"]
+    division_name = fields["division"]
+
+    get_geographies_data(org_id, @geographies[language.locale])
+    |> get_in([region_name, district_name, division_name, "mandals"])
+    |> geographies_list_results()
+  end
+
+  def webhook("set_geography", fields) do
+    type = fields["type"]
+    user_input = fields["selected_index"]
+    index_map = Jason.decode!(fields["index_map"])
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+
+    if Map.has_key?(index_map, user_input) do
+      set_geography(type, index_map[user_input], contact_id)
+      %{error: false, message: "Geography set successfully for #{type}"}
     else
-      %{is_valid_village: false}
+      index_map
+      |> Enum.find(fn {_index, value} -> String.downcase(value) == String.downcase(user_input) end)
+      |> case do
+        nil ->
+          %{error: true, message: "Invalid selected index"}
+
+        {index, value} ->
+          set_geography(type, index_map[index], contact_id)
+          %{error: false, message: "Geography set successfully for #{type} and value #{value}"}
+
+        _ ->
+          %{error: true, message: "Invalid selected index"}
+      end
+    end
+  end
+
+  def webhook("push_crop_message", fields) do
+    crop_age = fields["crop_age"]
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: fields["organization_id"],
+        key: fields["crop"]
+      })
+
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
+
+    if template_uuid,
+      do: %{
+        is_valid: true,
+        template_uuid: template_uuid,
+        crop_stage: crop_stage,
+        variables: Jason.encode!(variables)
+      },
+      else: %{is_valid: false}
+  end
+
+  def webhook("set_reminders", fields) do
+    {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact"]["id"])
+
+    with {:ok, contact} <-
+           Repo.fetch_by(Contact, %{
+             organization_id: fields["organization_id"],
+             id: contact_id
+           }) do
+      set_contact_reminder(contact.last_message_at)
     end
   end
 
   def webhook(_, _fields),
     do: %{}
+
+  @spec find_translation(map(), String.t(), String.t()) :: map()
+  defp find_translation(translations, type, value) do
+    geographies = get_in(translations, [type])
+
+    Enum.reduce(geographies, %{found: false}, fn geography, acc ->
+      if geography["telugu"] == value || geography["english"] == value,
+        do: Map.merge(acc, %{found: true, slug: geography["english"]}),
+        else: acc
+    end)
+  end
+
+  @spec set_contact_reminder(DateTime.t() | nil) :: map()
+  defp set_contact_reminder(nil), do: %{is_inactive: false, send_reminder: false}
+
+  defp set_contact_reminder(last_message_at) do
+    days_since_last_message = Timex.diff(Timex.today(), last_message_at, :days)
+    is_inactive = if days_since_last_message >= 7, do: true, else: false
+
+    send_reminder =
+      if days_since_last_message != 0 and rem(days_since_last_message, 7) == 0,
+        do: true,
+        else: false
+
+    %{
+      is_inactive: is_inactive,
+      send_reminder: send_reminder
+    }
+  end
+
+  @spec set_geography(String.t(), String.t(), non_neg_integer()) :: any()
+  defp set_geography(type, value, contact_id) do
+    updated_contact =
+      Contacts.get_contact!(contact_id)
+      |> ContactField.do_add_contact_field(type, type, value)
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: updated_contact.organization_id,
+        key: "ryss_geography_translations"
+      })
+
+    translation = find_translation(organization_data.json, type, value)
+
+    if translation.found,
+      do:
+        ContactField.do_add_contact_field(
+          updated_contact,
+          "#{type}_slug",
+          "#{type}_slug",
+          translation.slug
+        )
+  end
+
+  @spec get_geographies_data(non_neg_integer(), map()) :: map()
+  defp get_geographies_data(org_id, geographies_config) do
+    {:ok, org_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: geographies_config["database_key"]
+      })
+
+    org_data.json
+  end
+
+  @spec geographies_list_results(map() | list()) :: map()
+  defp geographies_list_results(resource_map) when resource_map in [nil, %{}] do
+    %{error: true, message: "Resource not found"}
+  end
+
+  defp geographies_list_results(resource_list) when is_list(resource_list) do
+    {index_map, message_list} = format_geographies_message(resource_list)
+
+    %{
+      error: false,
+      list_message: Enum.join(message_list, "\n"),
+      index_map: Jason.encode!(index_map)
+    }
+    |> Map.merge(convert_to_interactive_message(resource_list))
+  end
+
+  defp geographies_list_results(resource_map) do
+    {index_map, message_list} =
+      Map.keys(resource_map)
+      |> format_geographies_message()
+
+    %{
+      error: false,
+      list_message: Enum.join(message_list, "\n"),
+      index_map: Jason.encode!(index_map)
+    }
+    |> Map.merge(convert_to_interactive_message(Map.keys(resource_map)))
+  end
+
+  @spec format_geographies_message(list()) :: {map(), list()}
+  defp format_geographies_message(districts) do
+    districts
+    |> Enum.with_index(1)
+    |> Enum.reduce({%{}, []}, fn {district, index}, {index_map, message_list} ->
+      {
+        Map.put(index_map, index, district),
+        message_list ++ ["Type *#{index}* for #{district}"]
+      }
+    end)
+  end
+
+  @spec convert_to_interactive_message(list()) :: map()
+  defp convert_to_interactive_message(resource_list) do
+    list_length = length(resource_list)
+
+    if(list_length > 10) do
+      %{
+        is_interative: false,
+        interative_items_count: 0
+      }
+    else
+      %{
+        is_interative: true,
+        interative_items_count: list_length,
+        interative_data:
+          resource_list
+          |> Enum.with_index()
+          |> Enum.map(fn {value, index} -> {index + 1, value} end)
+          |> Enum.into(%{})
+      }
+    end
+  end
+
+  @spec load_crp_ids(any) :: %{status: <<_::88>>}
+  defp load_crp_ids(org_id) do
+    ApiClient.get_csv_content(url: "https://storage.googleapis.com/dg_voicebot/crp_ids.csv")
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      crp_id = row["Employee Id"]
+      if crp_id in [nil, ""], do: acc, else: Map.put(acc, Glific.string_clean(crp_id), row)
+    end)
+    |> then(fn crp_data ->
+      Partners.maybe_insert_organization_data(@crp_id_key, crp_data, org_id)
+    end)
+
+    %{status: "successfull"}
+  end
+
+  defp validate_crp_id(org_id, crp_id) do
+    crp_id = Glific.string_clean(crp_id)
+
+    {:ok, org_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: org_id,
+        key: @crp_id_key
+      })
+
+    %{
+      is_valid: Map.has_key?(org_data.json, crp_id)
+    }
+  end
+
+  defp load_geographies(org_id, geographies_config) do
+    ApiClient.get_csv_content(url: geographies_config["sheet_link"])
+    |> Enum.reduce(%{}, fn {_, row}, acc ->
+      region = row["Region Name"]
+      district = row["Proposed District"]
+      division = row["Proposed Division"]
+      mandal = row["Mandal"]
+
+      region_map = Map.get(acc, region, %{})
+      district_map = Map.get(region_map, district, %{})
+      division_map = Map.get(district_map, division, %{})
+      mandals = Map.get(division_map, "mandals", [])
+
+      division_map = Map.merge(division_map, %{"mandals" => mandals ++ [mandal]})
+
+      district_map = Map.put(district_map, division, division_map)
+
+      region_map = Map.put(region_map, district, district_map)
+
+      Map.put(acc, region, region_map)
+    end)
+    |> then(fn geographies_data ->
+      Partners.maybe_insert_organization_data(
+        geographies_config["database_key"],
+        geographies_data,
+        org_id
+      )
+    end)
+  end
 
   @doc """
   A callback function to support daily tasks for the client
@@ -227,227 +385,27 @@ defmodule Glific.Clients.DigitalGreen do
     :ok
   end
 
-  ## filter record based on the contact village, and current week.
-  @spec filter_weather_records(map(), list(), Keyword.t()) :: list()
-  defp filter_weather_records(row, acc, opts) do
-    village = Keyword.get(opts, :village, "")
-    start_date = Keyword.get(opts, :start_date)
-    end_date = Keyword.get(opts, :end_date)
+  defp get_language(contact_id) do
+    contact_id = Glific.parse_maybe_integer!(contact_id)
 
-    row_village = String.downcase(row["Village"])
+    contact =
+      contact_id
+      |> Contacts.get_contact!()
+      |> Repo.preload([:language])
 
-    row_date =
-      Timex.parse!(row["Date"], "{M}/{D}/{YYYY}")
-      |> Timex.to_date()
-
-    row = Map.put(row, :date_struct, row_date)
-
-    if String.contains?(row_village, village) and
-         Timex.between?(row_date, start_date, end_date, inclusive: true),
-       do: [row] ++ acc,
-       else: acc
+    contact.language
   end
 
-  ## filter record based on the contact village, and current week.
-  @spec generate_weather_results(list(), Keyword.t()) :: map()
-  defp generate_weather_results(rows, opts) do
-    %{message: "", image: "", is_extream_condition: false}
-    |> generate_weather_info(rows, opts)
-    |> check_for_extream_condition(rows)
-  end
-
-  defp generate_weather_info(results, rows, opts) do
-    village = Keyword.get(opts, :village, "")
-
-    message =
-      Enum.map_join(rows, "\n", fn row -> "Date: #{row["Date"]} Summery: #{row["Summary"]}" end)
-
-    image = "https://storage.googleapis.com/dg-weather/#{village}.png"
-
-    results
-    |> Map.put(:message, message)
-    |> Map.put(:image, image)
-  end
-
-  @spec check_for_extream_condition(map(), list()) :: map()
-  defp check_for_extream_condition(results, rows) do
-    {tempratures, humidity} =
-      Enum.reduce(rows, {[], []}, fn row, {t, h} ->
-        tempratures = t ++ [clean_weather_record(row["Temperature"])]
-        humidity = h ++ [clean_weather_record(row["Relative humidity"])]
-        {tempratures, humidity}
-      end)
-
-    extream_condition = extream_condition_type(tempratures, humidity)
-
-    results
-    |> Map.put(:is_extream_condition, extream_condition in ["temp", "humidity"])
-    |> Map.put(:extream_condition_type, extream_condition)
-  end
-
-  @spec extream_condition_type(list(), list()) :: String.t()
-  defp extream_condition_type(tempratures, humidity) do
-    is_high_temp = Enum.any?(tempratures, fn t -> t >= @weather_updates["temp_threshold"] end)
-
-    is_high_humidity =
-      Enum.any?(humidity, fn h -> h >= @weather_updates["humidity_threshold"] end)
-
-    cond do
-      is_high_temp -> "temp"
-      is_high_humidity -> "humidity"
-      true -> "none"
-    end
-  end
-
-  @spec clean_weather_record(String.t()) :: String.t()
-  defp clean_weather_record(record) when is_binary(record) do
-    record
-    |> String.replace(["°C", "%", "C", "°"], "")
-    |> String.trim()
-    |> Glific.parse_maybe_integer()
-    |> elem(1)
-  end
-
-  defp clean_weather_record(str), do: str
-
-  @spec set_initial_crop_state(map() | nil, non_neg_integer(), non_neg_integer()) :: map()
-  defp set_initial_crop_state(stage, contact_id, organization_id) when is_map(stage) do
-    Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field(
-      "initial_crop_day",
-      "initial_crop_day",
-      stage["initial_offset"],
-      "string"
-    )
-    |> ContactField.do_add_contact_field("enrolled_day", "enrolled_day", Timex.today(), "string")
-
-    update_crop_stage(stage["initial_offset"], contact_id, organization_id)
-  end
-
-  defp set_initial_crop_state(stage, contact_id, _organization_id) do
-    Logger.error(
-      "Not able to set initail days for DG Beneficiary. #{inspect(stage)} and contact id: #{contact_id}"
-    )
-
-    %{}
-  end
-
-  @spec update_crop_stage(non_neg_integer() | nil, non_neg_integer(), non_neg_integer()) :: map()
-  defp update_crop_stage(total_days, contact_id, organization_id) do
-    current_stage =
-      Map.values(@stages)
-      |> Enum.find(
-        # return stage 1 as default if we dont find any
-        @stages["stage 1"],
-        fn stage -> total_days in stage["initial_offset"]..stage["threshold"] end
-      )
-
-    Logger.info(
-      "update crop stage for contact id: #{contact_id} and data #{inspect(current_stage)}"
-    )
-
-    {:ok, stage_group} =
-      Repo.fetch_by(Group, %{label: current_stage["group"], organization_id: organization_id})
-
-    Groups.create_contact_group(%{
-      contact_id: contact_id,
-      group_id: stage_group.id,
-      organization_id: organization_id
-    })
-
-    Contacts.get_contact!(contact_id)
-    |> ContactField.do_add_contact_field(
-      "crop_stage",
-      "crop_stage",
-      current_stage["group"],
-      "string"
-    )
-    |> ContactField.do_add_contact_field("total_days", "total_days", total_days, "string")
-
-    current_stage
-  end
-
-  @spec get_total_stage_days(map()) :: integer() | nil
-  defp get_total_stage_days(fields) do
-    {:ok, initial_crop_day} =
-      get_in(fields, ["contact", "fields", "initial_crop_day", "value"])
-      |> Glific.parse_maybe_integer()
-
-    enrolled_date =
-      get_in(fields, ["contact", "fields", "enrolled_day", "value"])
-      |> format_date()
-
-    days_since_enrolled = Timex.diff(Timex.today(), enrolled_date, :days)
-
-    cond do
-      is_integer(days_since_enrolled) && is_integer(initial_crop_day) ->
-        days_since_enrolled + initial_crop_day
-
-      is_integer(days_since_enrolled) ->
-        days_since_enrolled
-
-      true ->
-        get_in(fields, ["contact", "fields", "total_days", "value"])
-    end
-  end
-
-  @spec check_for_next_scheduled_flow(map(), non_neg_integer(), non_neg_integer()) :: :ok
-  defp check_for_next_scheduled_flow(fields, contact_id, organization_id) do
-    contact_fields = get_in(fields, ["contact", "fields"])
-    next_flow = get_in(contact_fields, ["next_flow", "value"])
-    next_flow_at = get_in(contact_fields, ["next_flow_at", "value"])
-
-    if is_binary(next_flow_at) do
-      next_flow_date =
-        String.trim(next_flow_at)
-        |> format_date
-
-      ## first check if we need to run the flow today for this contact.
-      add_to_next_flow_group(next_flow, next_flow_date, contact_id, organization_id)
-    end
-
-    :ok
-  end
-
-  @spec add_to_next_flow_group(String.t(), Date.t(), non_neg_integer(), non_neg_integer()) :: :ok
-  defp add_to_next_flow_group(next_flow, next_flow_at, contact_id, organization_id) do
-    with 0 <- Timex.diff(Timex.today(), next_flow_at, :days),
-         {:ok, next_flow_group} <-
-           Repo.fetch_by(Group, %{label: next_flow, organization_id: organization_id}) do
-      Logger.info(
-        "Date: #{inspect(Timex.now())} Adding Contact to #{next_flow} and next flow at: #{inspect(next_flow_at)}"
-      )
-
-      Groups.create_contact_group(%{
-        contact_id: contact_id,
-        group_id: next_flow_group.id,
-        organization_id: organization_id
-      })
-    end
-
-    :ok
-  end
-
-  @spec format_date(String.t()) :: Date.t()
-  defp format_date(nil), do: nil
-
-  defp format_date(date) do
-    date
-    |> Timex.parse!("{YYYY}-{0M}-{D}")
-    |> Timex.to_date()
-  end
-
-  @spec validate_text_to_decode(String.t()) :: String.t() | nil
-  defp validate_text_to_decode(str) do
-    cond do
-      str in [""] ->
-        nil
-
-      String.starts_with?(str, "http") ->
-        nil
-
-      true ->
-        str
-    end
+  @doc """
+    get template for IEX
+  """
+  @spec send_template(String.t(), list()) :: binary
+  def send_template(uuid, variables) do
+    %{
+      uuid: uuid,
+      variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
   end
 end

@@ -18,6 +18,16 @@ defmodule GlificWeb.Resolvers.Contacts do
   end
 
   @doc false
+  @spec contact_by_phone(Absinthe.Resolution.t(), %{phone: String.t()}, %{context: map()}) ::
+          {:ok, any} | {:error, any}
+  def contact_by_phone(_, %{phone: phone}, _context) do
+    {:ok, %{contact: Contacts.get_contact_by_phone!(phone)}}
+  rescue
+    _ ->
+      {:error, ["Contact", dgettext("errors", "Contact not found or permission denied.")]}
+  end
+
+  @doc false
   @spec contacts(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
   def contacts(_, args, _) do

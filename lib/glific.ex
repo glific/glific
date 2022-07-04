@@ -22,7 +22,7 @@ defmodule Glific do
   @doc """
   Wrapper to return :ok/:error when parsing strings to potential integers
   """
-  @spec parse_maybe_integer(String.t() | integer) :: {:ok, integer} | :error
+  @spec parse_maybe_integer(String.t() | integer) :: {:ok, integer} | {:ok, nil} | :error
   def parse_maybe_integer(value) when is_integer(value),
     do: {:ok, value}
 
@@ -82,6 +82,18 @@ defmodule Glific do
       |> String.replace(~r/[\p{P}\p{S}\p{Z}\p{C}]+/u, "")
       |> String.downcase()
       |> String.trim()
+
+  @doc """
+  convert string to snake case
+  """
+  @spec string_snake_case(String.t() | nil) :: String.t() | nil
+  def string_snake_case(str) when is_nil(str) or str == "", do: str
+
+  def string_snake_case(str),
+    do:
+      str
+      |> String.replace(~r/\s+/, "_")
+      |> String.downcase()
 
   @doc """
   See if the current time is within the past time units
@@ -159,7 +171,7 @@ defmodule Glific do
     do: String.contains?(code, @not_allowed)
 
   @doc """
-    execute string in eex
+  execute string in eex
   """
   @spec execute_eex(String.t()) :: String.t()
   def execute_eex(content) do
@@ -167,7 +179,9 @@ defmodule Glific do
       Logger.error("EEx suspicious code: #{content}")
       "Suspicious Code. Please change your code. #{content}"
     else
-      EEx.eval_string(content)
+      content
+      |> EEx.eval_string()
+      |> String.trim()
     end
   rescue
     EEx.SyntaxError ->

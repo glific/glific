@@ -450,23 +450,25 @@ defmodule Glific.Templates do
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   defp do_update_hsm(template, db_templates) do
     current_template = db_templates[template["bsp_id"]]
-    update_attrs = %{status: template["status"]}
 
     update_attrs =
       if current_template.status != template["status"],
-        do:
-          Map.put(
-            update_attrs,
-            :is_active,
-            template["status"] in ["APPROVED"]
-          ),
-        else: update_attrs
+        do: do_update_attrs(template["status"], template),
+        else: %{status: template["status"]}
 
-    {:ok, _} =
-      db_templates[template["bsp_id"]]
-      |> SessionTemplate.changeset(update_attrs)
-      |> Repo.update()
+    db_templates[template["bsp_id"]]
+    |> SessionTemplate.changeset(update_attrs)
+    |> Repo.update()
   end
+
+  @spec do_update_attrs(String.t(), map()) :: map()
+  defp do_update_attrs("APPROVED", _template),
+    do: %{status: "APPROVED", is_active: true}
+
+  defp do_update_attrs("REJECTED", template),
+    do: %{status: "REJECTED", reason: template["reason"]}
+
+  defp do_update_attrs(status, _template), do: %{status: status}
 
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}

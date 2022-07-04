@@ -27,6 +27,7 @@ defmodule Glific.Fixtures do
     Partners.Billing,
     Partners.Organization,
     Partners.Provider,
+    Profiles.Profile,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -906,5 +907,28 @@ defmodule Glific.Fixtures do
       |> MailLog.create_mail_log()
 
     mail_log
+  end
+
+  @doc """
+  Generate a profile.
+  """
+  @spec profile_fixture(map()) :: Profile.t()
+  def profile_fixture(attrs \\ %{}) do
+    contact = contact_fixture()
+
+    valid_attrs = %{
+      "contact_id" => contact.id,
+      "organization_id" => contact.organization_id,
+      "name" => "some name",
+      "type" => "some type",
+      "language_id" => 1
+    }
+
+    {:ok, profile} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Glific.Profiles.create_profile()
+
+    profile
   end
 end

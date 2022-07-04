@@ -41,26 +41,26 @@ defmodule Glific.Flows.Router do
         }
 
   schema "routers" do
-    field :type, :string
-    field :operand, :string
-    field :result_name, :string
-    field :wait_type, :string
+    field(:type, :string)
+    field(:operand, :string)
+    field(:result_name, :string)
+    field(:wait_type, :string)
 
-    field :default_category_uuid, Ecto.UUID
-    embeds_one :default_category, Category
+    field(:default_category_uuid, Ecto.UUID)
+    embeds_one(:default_category, Category)
 
-    embeds_one :wait, Wait
+    embeds_one(:wait, Wait)
 
-    field :node_uuid, Ecto.UUID
-    embeds_one :node, Node
+    field(:node_uuid, Ecto.UUID)
+    embeds_one(:node, Node)
 
-    embeds_many :cases, Case
-    embeds_many :categories, Category
+    embeds_many(:cases, Case)
+    embeds_many(:categories, Category)
 
     # in case we need to figure out the node for other/no response
     # lets cache the exit uuids
-    field :other_exit_uuid, Ecto.UUID
-    field :no_response_exit_uuid, Ecto.UUID
+    field(:other_exit_uuid, Ecto.UUID)
+    field(:no_response_exit_uuid, Ecto.UUID)
   end
 
   @doc """
@@ -164,6 +164,8 @@ defmodule Glific.Flows.Router do
       else: errors
   end
 
+  @reserved_messages ["No Response", "Exit Loop", "Success", "Failure"]
+
   @doc """
   Execute a router, given a message stream.
   Consume the message stream as processing occurs
@@ -189,7 +191,10 @@ defmodule Glific.Flows.Router do
         {msg, rest}
       end
 
-    context = FlowContext.update_recent(context, msg.body, :recent_inbound)
+    context =
+      if msg.body in @reserved_messages or is_nil(msg.id),
+        do: context,
+        else: FlowContext.update_recent(context, msg, :recent_inbound)
 
     {category_uuid, is_checkbox} = find_category(router, context, msg)
 
@@ -262,7 +267,7 @@ defmodule Glific.Flows.Router do
   # return the right category but also return if it is a "checkbox" related category
   @spec find_category(Router.t(), FlowContext.t(), Message.t()) :: {Ecto.UUID.t() | nil, boolean}
   defp find_category(router, _context, %{body: body, extra: %{intent: intent}} = _msg)
-       when body in ["No Response", "Exit Loop", "Success", "Failure"] and is_nil(intent) do
+       when body in @reserved_messages and is_nil(intent) do
     # Find the category with above name
     category = Enum.find(router.categories, fn c -> c.name == body end)
 

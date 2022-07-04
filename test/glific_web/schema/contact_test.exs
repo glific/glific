@@ -8,6 +8,7 @@ defmodule GlificWeb.Schema.ContactTest do
     Fixtures,
     Flows,
     Messages.Message,
+    Profiles.Profile,
     Repo,
     Seeds.SeedsDev,
     State
@@ -24,6 +25,7 @@ defmodule GlificWeb.Schema.ContactTest do
   load_gql(:count, GlificWeb.Schema, "assets/gql/contacts/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/contacts/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/contacts/by_id.gql")
+  load_gql(:by_phone, GlificWeb.Schema, "assets/gql/contacts/by_phone.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/contacts/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/contacts/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/contacts/delete.gql")
@@ -145,6 +147,45 @@ defmodule GlificWeb.Schema.ContactTest do
     fetched_contact = get_in(query_data, [:data, "contact", "contact"])
     assert fetched_contact["phone"] == contact.phone
     assert fetched_contact["maskedPhone"] != nil
+  end
+
+  test "contact by phone returns one contact for manager/admin role", %{manager: user} do
+    name = "NGO Main Account"
+    {:ok, contact} = Repo.fetch_by(Contact, %{name: name, organization_id: user.organization_id})
+
+    result = auth_query_gql_by(:by_phone, user, variables: %{"phone" => contact.phone})
+    assert {:ok, query_data} = result
+
+    fetched_contact = get_in(query_data, [:data, "contactByPhone", "contact"])
+    assert fetched_contact["id"] == "#{contact.id}"
+    assert fetched_contact["maskedPhone"] != nil
+  end
+
+  test "contact by phone returns error if contact not found", %{manager: user} do
+    result = auth_query_gql_by(:by_phone, user, variables: %{"phone" => "Invalid phone"})
+    assert {:ok, query_data} = result
+    fetched_contact = get_in(query_data, [:data, "contactByPhone", "contact"])
+    assert fetched_contact == nil
+    assert is_list(get_in(query_data, [:data, "contactByPhone", "errors"]))
+  end
+
+  test "create a contact with profile", %{manager: user} do
+    profile = Repo.get_by!(Profile, name: "user")
+
+    name = "Contact Test Name Uno"
+    phone = "1-415-555-1212"
+    active_profile_id = profile.id
+
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{"name" => name, "phone" => phone, "active_profile_id" => active_profile_id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact = get_in(query_data, [:data, "createContact", "contact"])
+    assert Map.get(contact, "name") == name
   end
 
   test "create a contact and test possible scenarios and errors", %{manager: user} do

@@ -1,23 +1,17 @@
 
-<!--
-  Thanks for submitting a pull request!
-  We appreciate you spending the time to work on these changes. Please provide enough information so that others can review your pull request.
-
-  Before submitting a pull request, please make sure the following is done:
-
-  1. Fork [the repository](https://github.com/glific/glific) and create your branch from `master`.
-  2. Run `mix setup` in the repository root.
-  3. If you've fixed a bug or added code that should be tested, add tests!
-  4. Ensure the CI Checks passes. Tip: `mix check` is helpful in development.
-  5. Please ensure coding standard and conventions are followed. You can find the details at https://docs.google.com/document/d/1rfU33IjS-ioiIH0TBWpxoLsdyyYdI1tDrqr5HCRIb98/edit?usp=sharing
-  6. Please insure that you updated the documentaion for your feature.
-
--->
 
 ## Summary
+ Target issue is #_PLEASE_TYPE_ISSUE_NUMBER_  
+ Explain the **motivation** for making this change. What existing problem does the pull request solve?
 
-<!-- Explain the **motivation** for making this change. What existing problem does the pull request solve? -->
+## Checklist
+  Before submitting a pull request, please ensure that you mark these task.
 
-## Test Plan
+- [ ] Ran `mix setup` in the repository root and test.
+- [ ] If you've fixed a bug or added code that is tested and has test cases. 
+- [ ] In the case of adding a new API, you added a **postman** request for that.
+- [ ] Coding standard and conventions are followed. https://docs.google.com/document/d/1rfU33IjS-ioiIH0TBWpxoLsdyyYdI1tDrqr5HCRIb98/edit?usp=sharing
 
-<!-- Demonstrate the code is solid. Example: The exact commands you ran and their output, screenshots / videos if the pull request changes the user interface. -->
+
+## Notes
+ Please add here if any other information is required for the reviewer. 

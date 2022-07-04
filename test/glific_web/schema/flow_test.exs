@@ -6,7 +6,9 @@ defmodule GlificWeb.Schema.FlowTest do
     Contacts,
     Fixtures,
     Flows,
+    Flows.Broadcast,
     Flows.Flow,
+    Flows.FlowBroadcast,
     Flows.FlowRevision,
     Groups,
     Repo,
@@ -33,6 +35,7 @@ defmodule GlificWeb.Schema.FlowTest do
   load_gql(:copy, GlificWeb.Schema, "assets/gql/flows/copy.gql")
   load_gql(:flow_get, GlificWeb.Schema, "assets/gql/flows/flow_get.gql")
   load_gql(:flow_rel, GlificWeb.Schema, "assets/gql/flows/flow_release.gql")
+  load_gql(:broadcast_stats, GlificWeb.Schema, "assets/gql/flows/broadcast_stats.gql")
 
   load_gql(
     :terminate_contact_flows,
@@ -445,5 +448,58 @@ defmodule GlificWeb.Schema.FlowTest do
              get_in(query_data, [:data, "flowGet", "flow", "name"]),
              "Help Workflow"
            )
+  end
+
+  test "flow broadcast stats", %{glific_admin: glific_admin} = attrs do
+    [flow | _tail] = Flows.list_flows(%{filter: attrs})
+    group = Fixtures.group_fixture()
+
+    [contact, contact2 | _] =
+      Contacts.list_contacts(%{
+        filter: %{organization_id: attrs.organization_id, name: "Glific Simulator"}
+      })
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    })
+
+    Groups.create_contact_group(%{
+      group_id: group.id,
+      contact_id: contact2.id,
+      organization_id: attrs.organization_id
+    })
+
+    {:ok, flow} = Flows.start_group_flow(flow, group)
+
+    assert {:ok, flow_broadcast} =
+             Repo.fetch_by(FlowBroadcast, %{
+               group_id: group.id,
+               flow_id: flow.id
+             })
+
+    assert flow_broadcast.completed_at == nil
+
+    # lets sleep for 3 seconds, to ensure that messages have been delivered
+    Broadcast.execute_group_broadcasts(attrs.organization_id)
+    Process.sleep(3_000)
+
+    result =
+      auth_query_gql_by(:broadcast_stats, glific_admin,
+        variables: %{
+          "flowBroadcastId" => flow_broadcast.id
+        }
+      )
+
+    # testcase should be checking the message categories as well
+    # but currently as bsp_status is returning null, msg_categories is not populated. Will come back at later time
+    assert {:ok, query_data} = result
+    broadcast_stats = get_in(query_data, [:data, "broadcastStats"])
+    broadcast_map = Jason.decode!(broadcast_stats)
+    assert true == Map.has_key?(broadcast_map, "failed")
+    assert true == Map.has_key?(broadcast_map, "msg_categories")
+    assert true == Map.has_key?(broadcast_map, "pending")
+    assert true == Map.has_key?(broadcast_map, "success")
   end
 end

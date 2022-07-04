@@ -408,8 +408,8 @@ In case of errors, all the above functions return an error object like the below
 
 ### Return Parameters
 
-| Type                                               | Description                      |
-| -------------------------------------------------- | -------------------------------- |
+| Type                                 | Description                      |
+| ------------------------------------ | -------------------------------- |
 | <a href="#flowresult">FlowResult</a> | An error object or response true |
 
 ## Start flow for a contact
@@ -471,8 +471,8 @@ In case of errors, all the above functions return an error object like the below
 
 ### Return Parameters
 
-| Type                                           | Description                              |
-| ---------------------------------------------- | ---------------------------------------- |
+| Type                                 | Description                              |
+| ------------------------------------ | ---------------------------------------- |
 | <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Resume flow for a contact
@@ -528,16 +528,16 @@ In case of errors, all the above functions return an error object like the below
 
 ### Query Parameters
 
-| Parameter | Type                  | Default  | Description |
-| --------- | --------------------- | -------- | ----------- |
-| flowId    | <a href="#id">ID</a>! | required |             |
-| contactId | <a href="#id">ID</a>! | required |             |
-| result | <a href="#json">JSON</a>! | required |             |
+| Parameter | Type                      | Default  | Description |
+| --------- | ------------------------- | -------- | ----------- |
+| flowId    | <a href="#id">ID</a>!     | required |             |
+| contactId | <a href="#id">ID</a>!     | required |             |
+| result    | <a href="#json">JSON</a>! | required |             |
 
 ### Return Parameters
 
-| Type                                           | Description                              |
-| ---------------------------------------------- | ---------------------------------------- |
+| Type                                 | Description                              |
+| ------------------------------------ | ---------------------------------------- |
 | <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Start flow for a group contacts
@@ -599,8 +599,8 @@ In case of errors, all the above functions return an error object like the below
 
 ### Return Parameters
 
-| Type                                           | Description                              |
-| ---------------------------------------------- | ---------------------------------------- |
+| Type                                 | Description                              |
+| ------------------------------------ | ---------------------------------------- |
 | <a href="#flowresult">FlowResult</a> | An error object or success response true |
 
 ## Copy a Flow
@@ -699,8 +699,8 @@ mutation ($flow: JSON!) {
 
 ### Return Parameters
 
-| Type                                             | Description                      |
-| ------------------------------------------------ | -------------------------------- |
+| Type                                 | Description                      |
+| ------------------------------------ | -------------------------------- |
 | <a href="#flowresult">FlowResult</a> | The imported flow success status |
 
 ## Export a Flow
@@ -825,6 +825,34 @@ query flowRelease {
 
 | Type | Description |
 | ---- | ----------- |
+
+## Get Flow broadcast Stats by ID
+
+```graphql
+query broadcastStats($flowBroadcastId: ID!) {
+  broadcastStats(flowBroadcastId: $flowBroadcastId)
+}
+
+{
+  "flowBroadcastId": 2
+}
+```
+
+> The above query returns JSON structured like this:
+
+```json
+{
+  "data": {
+    "broadcastStats": "{\"success\":0,\"pending\":0,\"msg_categories\":{\"sent\":7,\"read\":0,\"opted_out\":0,\"error\":0,\"enqueued\":7,\"delivered\":0},\"failed\":0}"
+  }
+}
+```
+
+### Return Parameters
+
+| Type                       | Description                            |
+| -------------------------- | -------------------------------------- |
+| <a href="#json"> JSON </a> | returns JSON with flow broadcast stats |
 
 ## Flow Objects
 
@@ -1059,18 +1087,16 @@ mutation terminateContactFlows($contactId: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-ID  | <a href="#id">ID</a> | nil | Contact ID|
-
-
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     | Contact ID  |
 
 ### Return Parameters
 
-| Field | Type | Description |
-| ---- | ---- | ----------- |
-errors | [<a href="#inputerror">InputError</a>]| |
-success| <a href="#boolean">Boolean</a>| |
+| Field   | Type                                   | Description |
+| ------- | -------------------------------------- | ----------- |
+| errors  | [<a href="#inputerror">InputError</a>] |             |
+| success | <a href="#boolean">Boolean</a>         |             |
 
 ## Reset flow counts for a specific flow
 
@@ -1099,16 +1125,13 @@ mutation resetFlowCount($flowId: ID!) {
 
 ### Query Parameters
 
-| Parameter | Type | Default | Description |
-| --------- | ---- | ------- | ----------- |
-ID  | <a href="#id">ID</a> | nil | Flow ID|
-
-
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| ID        | <a href="#id">ID</a> | nil     | Flow ID     |
 
 ### Return Parameters
 
-| Field | Type | Description |
-| ---- | ---- | ----------- |
-errors | [<a href="#inputerror">InputError</a>]| |
-success| <a href="#boolean">Boolean</a>| |
-
+| Field   | Type                                   | Description |
+| ------- | -------------------------------------- | ----------- |
+| errors  | [<a href="#inputerror">InputError</a>] |             |
+| success | <a href="#boolean">Boolean</a>         |             |

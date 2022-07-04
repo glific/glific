@@ -227,10 +227,10 @@ defmodule Glific.Messages do
   @doc false
   @spec create_and_send_message(map()) :: {:ok, Message.t()} | {:error, atom() | String.t()}
   def create_and_send_message(attrs) do
-    contact = Glific.Contacts.get_contact!(attrs.receiver_id)
+    contact = Contacts.get_contact!(attrs.receiver_id)
     attrs = Map.put(attrs, :receiver, contact)
 
-    ## we need to clean this bit more.
+    ## we need to clean this code in the future.
     attrs = check_for_interactive(attrs, contact.language_id)
 
     check_for_hsm_message(attrs, contact)
@@ -248,22 +248,22 @@ defmodule Glific.Messages do
          %{interactive_template_id: interactive_template_id} = attrs,
          language_id
        ) do
-    with {:ok, interactive_template} <-
-           Repo.fetch(
-             InteractiveTemplate,
-             interactive_template_id
-           ),
-         interactive_content <-
-           InteractiveTemplates.translated_content(interactive_template, language_id),
-         body <- InteractiveTemplates.get_interactive_body(interactive_content),
-         media_id <- InteractiveTemplates.get_media(interactive_content, attrs.organization_id) do
-      Map.merge(attrs, %{
-        body: body,
-        interactive_content: interactive_content,
-        type: interactive_content["type"],
-        media_id: media_id
-      })
-    end
+    {:ok, interactive_template} = Repo.fetch(InteractiveTemplate, interactive_template_id)
+
+    # Check if this is coming form a flow
+    {interactive_content, body, media_id} =
+      if attrs[:interactive_content] in [nil, %{}] do
+        InteractiveTemplates.formatted_data(interactive_template, language_id)
+      else
+        {attrs[:interactive_content], attrs[:body], attrs[:media_id]}
+      end
+
+    Map.merge(attrs, %{
+      body: body,
+      interactive_content: interactive_content,
+      type: interactive_content["type"],
+      media_id: media_id
+    })
   end
 
   defp check_for_interactive(attrs, _language_id), do: attrs

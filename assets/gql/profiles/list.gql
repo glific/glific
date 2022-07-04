@@ -1,0 +1,7 @@
+query profiles ($filter: ProfileFilter, $opts: Opts) {
+  profiles (filter: $filter, opts: $opts) {
+    id
+    name
+    fields
+  }
+}

@@ -11,6 +11,7 @@ defmodule Glific.Contacts.Contact do
     Enums.ContactStatus,
     Groups.Group,
     Partners.Organization,
+    Profiles.Profile,
     Settings.Language,
     Tags.Tag,
     Users.User
@@ -38,7 +39,8 @@ defmodule Glific.Contacts.Contact do
     :last_message_at,
     :last_communication_at,
     :settings,
-    :fields
+    :fields,
+    :active_profile_id
   ]
 
   @type t() :: %__MODULE__{
@@ -53,6 +55,8 @@ defmodule Glific.Contacts.Contact do
           is_org_replied: boolean,
           is_contact_replied: boolean,
           user: User.t() | Ecto.Association.NotLoaded.t() | nil,
+          active_profile_id: non_neg_integer | nil,
+          active_profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           language_id: non_neg_integer | nil,
           language: Language.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -80,10 +84,6 @@ defmodule Glific.Contacts.Contact do
     field :status, ContactStatus
     field :bsp_status, ContactProviderStatus
 
-    belongs_to :language, Language
-    belongs_to :organization, Organization
-    has_one :user, User
-
     field :is_org_read, :boolean, default: true
     field :is_org_replied, :boolean, default: true
     field :is_contact_replied, :boolean, default: true
@@ -104,6 +104,12 @@ defmodule Glific.Contacts.Contact do
     field :settings, :map, default: %{}
     field :fields, :map, default: %{}
 
+    belongs_to :active_profile, Profile
+    belongs_to :language, Language
+    belongs_to :organization, Organization
+
+    has_one :user, User
+    has_many :profiles, Profile
     many_to_many :tags, Tag, join_through: "contacts_tags", on_replace: :delete
 
     many_to_many :groups, Group, join_through: "contacts_groups", on_replace: :delete
@@ -121,6 +127,7 @@ defmodule Glific.Contacts.Contact do
     |> validate_required(@required_fields)
     |> unique_constraint([:phone, :organization_id])
     |> foreign_key_constraint(:language_id)
+    |> foreign_key_constraint(:active_profile_id)
   end
 
   @doc false

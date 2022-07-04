@@ -166,10 +166,15 @@ defmodule Glific.Communications.Message do
     from(m in Message, where: m.bsp_message_id == ^bsp_message_id)
     |> Repo.update_all(set: [bsp_status: :error, errors: errors, updated_at: DateTime.utc_now()])
 
-    {:ok, message} = Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
-    publish_message_status(message)
+    Repo.fetch_by(Message, %{bsp_message_id: bsp_message_id})
+    |> case do
+      {:ok, message} ->
+        publish_message_status(message)
+        process_errors(message, errors, errors["payload"]["payload"]["code"])
 
-    process_errors(message, errors, errors["payload"]["payload"]["code"])
+      error ->
+        Logger.error("Could not update message status: #{inspect(error)}")
+    end
   end
 
   def update_bsp_status(bsp_message_id, bsp_status, _params) do
@@ -315,8 +320,8 @@ defmodule Glific.Communications.Message do
 
   defp publish_simulator(message, _type), do: message
 
-  # lets have a default timeout of 3 seconds for each call
-  @timeout 4000
+  # lets have a default timeout of 5 seconds for each call
+  @timeout 5000
 
   @spec error(String.t(), any(), any(), list() | nil) :: nil
   defp error(error, e, r \\ nil, stacktrace \\ nil) do

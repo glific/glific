@@ -175,6 +175,19 @@ defmodule GlificWeb.Resolvers.Partners do
   end
 
   @doc """
+  Get the quality rating details of provider
+  """
+  @spec quality_rating(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+          {:ok, map()} | {:error, any()}
+  def quality_rating(_, _, %{context: %{current_user: user}}) do
+    Partners.get_quality_rating(user.organization_id)
+    |> case do
+      {:ok, data} -> {:ok, data}
+      _ -> {:error, dgettext("errors", "Error while fetching Quality Rating details")}
+    end
+  end
+
+  @doc """
   Get a specific bsp balance by organization id
   """
   @spec bspbalance(Absinthe.Resolution.t(), %{id: integer}, %{context: map()}) ::

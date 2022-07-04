@@ -18,7 +18,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
   use Tesla
   plug(Tesla.Middleware.Logger)
 
-  plug(Tesla.Middleware.FormUrlencoded,
+  plug(Tesla.Middleware.EncodeFormUrlencoded,
     encode: &Query.encode/1
   )
 
@@ -166,8 +166,8 @@ defmodule Glific.Providers.Gupshup.Enterprise.ApiClient do
       |> Map.merge(@default_optin_params)
       |> then(
         &gupshup_post(@gupshup_enterprise_url, &1, %{
-          "userid" => credentials.two_way_user_id,
-          "password" => credentials.two_way_password
+          "userid" => credentials.hsm_user_id,
+          "password" => credentials.hsm_password
         })
       )
     end

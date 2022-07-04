@@ -53,21 +53,38 @@ defmodule Glific.Flows.ContactAction do
     ## We might need to think how to send the interactive message to a group
     {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, nil)
+    interactive_template_id = get_interactive_template_id(action, context)
 
     {:ok, interactive_template} =
       Repo.fetch_by(
         InteractiveTemplate,
-        %{id: action.interactive_template_id, organization_id: context.organization_id}
+        %{id: interactive_template_id, organization_id: context.organization_id}
       )
 
-    interactive_content =
+    {interactive_content, body, media_id} =
       interactive_template
-      |> InteractiveTemplates.translated_content(context.contact.language_id)
-      |> MessageVarParser.parse_map(message_vars)
+      |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-    body = InteractiveTemplates.get_interactive_body(interactive_content)
+    params_count = get_params_count(action.params_count, message_vars)
 
-    media_id = InteractiveTemplates.get_media(interactive_content, context.organization_id)
+    interactive_content =
+      if params_count > 0 do
+        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+
+        InteractiveTemplates.process_dynamic_interactive_content(
+          interactive_content,
+          Enum.take(params, params_count),
+          %{
+            type: MessageVarParser.parse(action.attachment_type, message_vars),
+            url: MessageVarParser.parse(action.attachment_url, message_vars)
+          }
+        )
+      else
+        interactive_content
+      end
+
+    ## since we have flow context here, we have to replace parse the results as well.
+    interactive_content = MessageVarParser.parse_map(interactive_content, message_vars)
 
     with {false, context} <- has_loops?(context, body, messages) do
       attrs = %{
@@ -81,7 +98,7 @@ defmodule Glific.Flows.ContactAction do
         flow_broadcast_id: context.flow_broadcast_id,
         send_at: DateTime.add(DateTime.utc_now(), context.delay),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
-        interactive_template_id: action.interactive_template_id,
+        interactive_template_id: interactive_template_id,
         interactive_content: interactive_content,
         media_id: media_id
       }
@@ -95,7 +112,7 @@ defmodule Glific.Flows.ContactAction do
   @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
           {:ok, map(), any()} | {false, FlowContext.t()}
   defp has_loops?(context, body, messages) do
-    {context, count} = update_recent(context, body)
+    {context, count} = check_recent_outbound_count(context, body)
 
     if count <= @max_loop_limit,
       do: {false, context},
@@ -129,11 +146,11 @@ defmodule Glific.Flows.ContactAction do
       }
     }
 
-  @spec update_recent(FlowContext.t(), String.t()) :: {FlowContext.t(), non_neg_integer}
-  defp update_recent(context, body) do
+  @spec check_recent_outbound_count(FlowContext.t(), String.t()) ::
+          {FlowContext.t(), non_neg_integer}
+  defp check_recent_outbound_count(context, body) do
     # we'll mark that we came here and are planning to send it, even if
-    # we dont end up sending it. This allows us to detect and abort infinite loops
-    context = FlowContext.update_recent(context, body, :recent_outbound)
+    # we don't end up sending it. This allows us to detect and abort infinite loops
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
@@ -321,7 +338,8 @@ defmodule Glific.Flows.ContactAction do
 
   defp handle_message_result(result, context, messages, attrs) do
     case result do
-      {:ok, _message} ->
+      {:ok, message} ->
+        context = FlowContext.update_recent(context, message, :recent_outbound)
         {:ok, %{context | delay: context.delay + @min_delay}, messages}
 
       {:error, error} ->
@@ -408,5 +426,29 @@ defmodule Glific.Flows.ContactAction do
     )
 
     context
+  end
+
+  @spec get_interactive_template_id(Action.t(), FlowContext.t()) :: integer | nil
+  defp get_interactive_template_id(action, context) do
+    if is_nil(action.interactive_template_expression) do
+      action.interactive_template_id
+    else
+      FlowContext.parse_context_string(context, action.interactive_template_expression)
+      |> Glific.execute_eex()
+      # We will only allow id to be dynamic for now.
+      |> Glific.parse_maybe_integer!()
+    end
+  end
+
+  @spec get_params_count(String.t(), map()) :: integer
+  defp get_params_count(params_count, message_vars) do
+    params_count
+    |> MessageVarParser.parse(message_vars)
+    |> Glific.parse_maybe_integer()
+    |> case do
+      {:ok, nil} -> 0
+      {:ok, value} -> value
+      _ -> 0
+    end
   end
 end

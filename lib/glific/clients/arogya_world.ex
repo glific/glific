@@ -146,7 +146,7 @@ defmodule Glific.Clients.ArogyaWorld do
     Logger.info("Ran hourly tasks for organization #{org_id}")
 
     sharing_file_time = Timex.now().hour === 13
-    current_week = get_current_week(org_id)
+    current_week = Glific.parse_maybe_integer!(get_current_week(org_id))
 
     get_week_day_number()
     |> do_hourly_tasks(sharing_file_time, org_id, current_week)
@@ -565,7 +565,7 @@ defmodule Glific.Clients.ArogyaWorld do
     |> Enum.each(&IO.write(file, &1))
 
     # Upload the file to GCS
-    GcsWorker.upload_media(temp_path, "participant_responses_week_#{week}.csv", org_id)
+    GcsWorker.upload_media(temp_path, "participant_responses_week_#{previous_week}.csv", org_id)
     |> case do
       {:ok, gcs_url} -> %{url: gcs_url, error: nil}
       {:error, error} -> %{url: nil, error: error}
@@ -584,7 +584,7 @@ defmodule Glific.Clients.ArogyaWorld do
       end)
 
     # send 0 as response code when the contact did not answer instead of blank
-    get_in(contact, ["Q_response"]) || 0
+    get_in(contact, ["Q_response"]) || "0"
   end
 
   @doc """

@@ -1,0 +1,5240 @@
+{
+	"info": {
+		"_postman_id": "477071b2-2c6a-4ced-b2f2-39fe474ab27f",
+		"name": "Glific backend APis",
+		"description": "Glific is purely APIs based. We try to create an API endpoint for all the features. Our frontend is just a user of Glific APIs.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "8640961"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/session",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"session"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send an OTP request to verify a phone number",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/session",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"session"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send an OTP request to verify a phone number of existing user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/session",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"session"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"name\": \"Test User\",\n        \"phone\": \"911234554321\",\n        \"password\": \"secret1234\",\n        \"otp\": \"321721\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/registration",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"registration"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a new session for an existing user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"phone\": \"917834811114\",\n        \"password\": \"secret1234\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/session",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"session"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Renew an existing session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"data\":\n  {\n    \"data\": {\n          \"access_token\": \"AUTH_TOKEN\",\n          \"token_expiry_time\": \"2020-07-13T16:22:53.678465Z\",\n          \"renewal_token\": \"RENEW_TOKEN\"\n      }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/session/renew",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"session",
+								"renew"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete an existing session",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"data\":\n  {\n    \"data\": {\n          \"access_token\": \"AUTH_TOKEN\",\n          \"token_expiry_time\": \"2020-07-13T16:22:53.678465Z\",\n          \"renewal_token\": \"RENEW_TOKEN\"\n      }\n  }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/session/renew",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"session",
+								"renew"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"user\": {\n        \"phone\": \"911234554321\",\n        \"password\": \"secret1234\",\n        \"otp\": \"321721\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{api_url}}/v1/registration/reset-password",
+							"host": [
+								"{{api_url}}"
+							],
+							"path": [
+								"v1",
+								"registration",
+								"reset-password"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contacts",
+			"item": [
+				{
+					"name": "Get All Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts:$opts) {\n    id\n    name\n    optinTime\n    optoutTime\n    optinMethod\n    optoutMethod\n    phone\n    maskedPhone\n    bspStatus\n    status\n    tags {\n      id\n      label\n    }\n    groups {\n      id\n      label\n    }\n  }\n}",
+								"variables": "{\n  \"filter\": {\n    \"name\": \"Default Receiver\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Other filters on Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts: $opts) {\n    id\n    name\n    groups {\n      id\n    }\n    tags {\n      id\n    }\n  }\n}",
+								"variables": "{\n  \"filter\": {\n    \"includeGroups\": [\n      1,\n      2\n    ],\n    \"includeTags\": [\n      1\n    ]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Contact by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contact($id: ID!) {\n  contact(id: $id) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n      lastMessageAt\n      language {\n        label\n      }\n      fields\n      settings\n      history {\n        eventType\n        eventLabel\n        eventMeta\n      }\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 5\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Contact by phone",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contactByPhone($phone: String!) {\n  contactByPhone(phone: $phone) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n      lastMessageAt\n      language {\n        label\n      }\n      fields\n      settings\n      history {\n        eventType\n        eventLabel\n        eventMeta\n      }\n    }\n  }\n}",
+								"variables": "{\n  \"phone\": \"9876543210_1\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Blocked Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contacts($filter: ContactFilter, $opts: Opts) {\n  contacts(filter: $filter, opts:$opts) {\n    id\n    phone\n    status\n  }\n}\n",
+								"variables": "{\n  \"filter\": {\n    \"status\": \"BLOCKED\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countContacts($filter: ContactFilter) {\n  countContacts(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"status\": \"VALID\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createContact($input:ContactInput!) {\n  createContact(input: $input) {\n    contact {\n      id\n      name\n      optinTime\n      optoutTime\n      phone\n      bspStatus\n      status\n      tags {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"name\": \"This is a new contact for this example\",\n    \"phone\": \"9876543232\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateContact($id: ID!, $input:ContactInput!) {\n  updateContact(id: $id, input: $input) {\n    contact {\n      id\n      name\n      bspStatus\n      status\n      fields\n      settings\n      language{\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"name\": \"This is a updated contact for this example\",\n    \"fields\": \"{\\\"name\\\":{\\\"value\\\":\\\"Vikrant Wadekar\\\",\\\"type\\\":\\\"string\\\",\\\"inserted_at\\\":\\\"2020-08-29T05:35:38.298593Z\\\"},\\\"age_group\\\":{\\\"value\\\":\\\"19 or above\\\",\\\"type\\\":\\\"string\\\",\\\"inserted_at\\\":\\\"2020-08-29T05:35:46.623892Z\\\"}}\",\n    \"languageId\": 2\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Block a Contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateContact($id: ID!, $input:ContactInput!) {\n  updateContact(id: $id, input: $input) {\n    contact {\n      id\n      phone\n      status\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"status\": \"BLOCKED\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UnBlock a Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateContact($id: ID!, $input:ContactInput!) {\n  updateContact(id: $id, input: $input) {\n    contact {\n      id\n      phone\n      status\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"5\",\n  \"input\": {\n    \"status\": \"VALID\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteContact($id: ID!) {\n  deleteContact(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Contact's Location",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query contactLocation($id: ID!) {\n  contactLocation(id: $id) {\n    latitude\n    longitude\n  }\n}\n",
+								"variables": "{\n  \"id\": \"1975\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Optin a Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation optinContact($phone: String!, $name: String) {\n  optinContact(phone: $phone, name: $name) {\n    contact {\n      id\n      phone\n      name\n      lastMessageAt\n      optinTime\n      bspStatus\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+								"variables": "{\n  \"phone\": \"917834811119\",\n  \"name\": \"contact name\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a Simulator Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query simulatorGet() {\n  simulatorGet {\n    id\n    name\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Release a Simulator Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query simulatorRelease {\n  simulatorRelease {\n    id\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Contact History",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query ContactHistory($filter: ContactsHistoryFilter, $opts: Opts) {\n    contactHistory(filter: $filter, opts: $opts) {\n      eventDatetime\n      eventLabel\n      eventMeta\n      eventType\n      id\n      insertedAt\n      updatedAt\n    }\n  }\n",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"contactId\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count All Contact History",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countContactHistory($filter: ContactsHistoryFilter) {\n  countContactHistory(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"contact_id\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "Contact Tag",
+			"item": [
+				{
+					"name": "Create Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Contact with tags to be added and tags to be deleted",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Create Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Delete Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Contact Group",
+			"item": [
+				{
+					"name": "Create Contact Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createContactGroup($input: ContactGroupInput!) {\n  createContactGroup(input: $input) {\n    contactGroup {\n      id\n      contact {\n        id\n        name\n      }\n      group {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"groupId\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Group with contacts to be added and contacts to be deleted",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateGroupContacts($input: GroupContactsInput!) {\n  updateGroupContacts(input: $input) {\n    groupContacts {\n      id\n      group {\n        label\n      }\n      contact {\n        name\n      }\n    }\n    numberDeleted\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"groupId\": 2,\n    \"addContactIds\": [1, 2],\n    \"deleteContactIds\": [3, 8]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update groups to be added and groups to be deleted to a Contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateContactGroups($input: ContactGroupsInput!) {\n  updateContactGroups(input: $input) {\n    contactGroups {\n      id\n      group {\n        label\n      }\n      contact {\n        name\n      }\n    }\n    numberDeleted\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addGroupIds\": [1],\n    \"deleteGroupIds\": [2, 3]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Flows",
+			"item": [
+				{
+					"name": "Get All Flows",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query flows($filter: FlowFilter, $opts: Opts) {\n  flows(filter: $filter, opts: $opts) {\n    id\n    uuid\n    name\n    versionNumber\n    flowType\n    keywords\n    lastPublishedAt\n    lastChangedAt\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"limit\": 2,\n    \"offset\": 0,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Workflow\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Flow by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query flow($id: ID!) {\n  flow(id: $id) {\n    flow {\n      id\n      name\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 1\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Flows",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countFlows($filter: FlowFilter) {\n  countFlows(filter: $filter)\n}",
+								"variables": "{\n  \"id\": 1\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ($input: FlowInput!) {\n  createFlow(input: $input) {\n    flow {\n      id\n      name\n      keywords\n      isActive\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"keywords\": [\n      \"tests\",\n      \"testing\"\n    ],\n    \"name\": \"test workflow\",\n    \"isActive\": true\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateFlow($id: ID!, $input:FlowInput!) {\n  updateFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"1975\",\n  \"input\": {\n    \"name\": \"updated name\",\n    \"keywords\": [\"testing\"]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Publish a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation publishFlow($uuid: UUID4!) {\n  publishFlow(uuid: $uuid) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"uuid\": \"3fa22108-f464-41e5-81d9-d8a298854429\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Start flow for a contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation startContactFlow($flowId: ID!, $contactId: ID!) {\n  startContactFlow(flowId: $flowId, contactId: $contactId) {\n    success\n    errors {\n        key\n        message\n    }\n  }\n}",
+								"variables": "{\n  \"flowId\": \"1\",\n  \"contactId\": \"2\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Resume flow for a contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation resumeContactFlow($flowId: ID!, $contactId: ID!, $result: JSON!) {\n  resumeContactFlow(flowId: $flowId, contactId: $contactId, result: $result) {\n    success\n    errors {\n        key\n        message\n    }\n  }\n}",
+								"variables": "{\n  \"flowId\": \"1\",\n  \"contactId\": \"2\"\n  \"result\": {\"one\": 1, \"two\": 2, \"three\": 3}\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Start flow for a group contacts",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation startGroupFlow($flowId: ID!, $groupId: ID!) {\n  startGroupFlow(flowId: $flowId, groupId: $groupId) {\n    success\n    errors {\n        key\n        message\n    }\n  }\n}",
+								"variables": "{\n  \"flowId\": \"1\",\n  \"groupId\": \"1\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Copy a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation copyFlow($id: ID!, $input:FlowInput!) {\n  copyFlow(id: $id, input: $input) {\n    flow {\n      id\n      name\n      keywords\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"new name\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Import a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation ($flow: JSON!) {\n  importFlow(flow: $flow){\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"{\\\"flows\\\":[{\\\"keywords\\\":[\\\"hello\\\"],\\\"definition\\\":{\\\"vars\\\":[\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\"],\\\"uuid\\\":\\\"a941004f-adc8-43f2-b819-68eec8d1e912\\\",\\\"type\\\":\\\"messaging\\\",\\\"spec_version\\\":\\\"13.1.0\\\",\\\"revision\\\":1,\\\"nodes\\\":[{\\\"uuid\\\":\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\",\\\"exits\\\":[{\\\"uuid\\\":\\\"49d2775d-a658-4c74-be10-b7d605b4ea6f\\\",\\\"destination_uuid\\\":null}],\\\"actions\\\":[{\\\"uuid\\\":\\\"4d4dc0f1-9056-4bf1-a58e-df26b861088e\\\",\\\"type\\\":\\\"send_msg\\\",\\\"text\\\":\\\"hehlo\\\",\\\"quick_replies\\\":[],\\\"attachments\\\":[]}]}],\\\"name\\\":\\\"hello\\\",\\\"localization\\\":{},\\\"language\\\":\\\"base\\\",\\\"expire_after_minutes\\\":10080,\\\"_ui\\\":{\\\"nodes\\\":{\\\"59c67035-59ab-47fa-a1fd-a50978aa78c5\\\":{\\\"type\\\":\\\"execute_actions\\\",\\\"position\\\":{\\\"top\\\":0,\\\"left\\\":0}}}}}}],\\\"contact_field\\\":[],\\\"collections\\\":[]}\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Export a Flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation exportFlow($id: ID!) {\n  publishFlow(id: $id) {\n    export_data\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 10\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Release a flow contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query flowGet($id: ID!) {\n  flowGet(id: $id) {\n    id\n    name\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Terminate flows for a contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation terminateContactFlows($contactId: ID!) {\n  terminateContactFlows(contactId: $contactId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset flow counts for a specific flow",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation resetFlowCount($flowId: ID!) {\n  resetFlowCount(flowId: $flowId) {\n    errors {\n      key\n      value\n    }\n    success\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Groups",
+			"item": [
+				{
+					"name": "Get All Groups",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query groups($filter: GroupFilter, $opts: Opts) {\n  groups(filter: $filter, opts:$opts) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}\n",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Organization Groups",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {\n  organization_groups(filter: $filter, opts: $opts, id:$id) {\n    id\n    label\n    isRestricted\n    contactsCount\n    usersCount\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"label\": \"Group\"\n  },\n  \"id\": \"1\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a Group by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query group($id: ID!) {\n  group(id: $id) {\n    group {\n      id\n      label\n      isRestricted\n      contacts{\n        name\n      }\n      users{\n        name\n      }\n    }\n  }\n}",
+								"variables": "{\n    \"id\": 1\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Group Information for a Group by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query groupInfo($id: ID!) {\n    groupInfo(id: $id)\n}",
+								"variables": "{\n  \"id\": \"2\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createGroup($input: GroupInput!) {\n  createGroup(input: $input) {\n    group {\n      id\n      label\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"label\": \"My First Group\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateGroup($id: ID!, $input: GroupInput!) {\n  updateGroup(id: $id, input: $input) {\n    group {\n      id\n      label\n      isRestricted\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2,\n    \"input\": {\n    \"label\": \"My First Updated non-Restricted Group\",\n    \"isRestricted\": false\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteGroup($id: ID!) {\n  deleteGroup(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Glific Contact Import",
+			"item": [
+				{
+					"name": "Import Contacts API",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation importContacts($group_label : String, $data : String) {\n  importContacts(group_label: $group_label, data: $data) {\n      status\n\n      errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Languages",
+			"item": [
+				{
+					"name": "Get All Languages",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query messagesMedia($opts: Opts) {\n  messagesMedia(filter: $filter, opts:$opts) {\n    id\n    url\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific language by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Languages",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Language",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query language($id: ID!) {\n  language(id: $id) {\n    language {\n      id\n      label\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Language",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteLanguage($id: ID!) {\n  deleteLanguage(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Message Group",
+			"item": [
+				{
+					"name": "Create Message Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createMessageGroup($input: MessageGroupInput!) {\n  createMessageGroup(input: $input) {\n    messageGroup {\n      id\n      message {\n        id\n        name\n      }\n      group {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"messageId\": 2,\n    \"groupId\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a MessageGroup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteMessageGroup($id: ID!) {\n  deleteMessageGroup(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 1\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Message Media",
+			"item": [
+				{
+					"name": "Media Management",
+					"item": [
+						{
+							"name": "Upload a file",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "mutation uploadMedia($media: Upload!, $extension: String!) {\n  uploadMedia(media: $media, extension: $extension)\n}",
+										"variables": ""
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Upload a buffer",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "mutation uploadBlob($media: String!, $extension: String!) {\n  uploadBlob(media: $media, extension: $extension)\n}",
+										"variables": "{\n  \"input\": {\n    \"media\": \"W29iamVjdCBCbG9iXQ==\",\n    \"extension\": \"wav\"\n  }\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get all message media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query messagesMedia($opts: Opts) {\n  messagesMedia(filter: $filter, opts:$opts) {\n    id\n    url\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Message Media by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query messageMedia($id: ID!) {\n  messageMedia(id: $id) {\n    messageMedia {\n      id\n      url\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Message Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countMessagesMedia {\n  countMessagesMedia\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Validate a Media URL and type",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query validateMedia($url: String!, $type: String!) {\n  validateMedia(url: $url, type: $type)\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Message Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createMessageMedia($input:MessageMediaInput!) {\n  createMessageMedia(input: $input) {\n    messageMedia {\n      id\n      url\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"source_url\": \"http://robohash.org/set_set3/bgset_bg1/ClrvA\",\n    \"caption\": \"This is a caption\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Message Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateMessageMedia($id: ID!, $input:MessageMediaInput!) {\n  updateMessageMedia(id: $id, input: $input) {\n    messageMedia {\n      id\n      url\n      caption\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"url\": \"http://robohash.org/set_set1/bgset_bg1/b7FBMrsOQbn8EJ\",\n    \"caption\": \"This is a caption\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Message Media",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteMessageMedia($id: ID!) {\n  deleteMessageMedia(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messages",
+			"item": [
+				{
+					"name": "Get All Messages",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Message by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query messages($filter: MessageFilter, $opts: Opts) {\n  messages(filter: $filter, opts:$opts) {\n    id\n    body\n    type\n    sender {\n        id,\n        name\n    }\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"body\": \"Hello\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Messages",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countMessages($filter: MessageFilter) {\n  countMessages(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"body\": \"hello\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateMessage($id: ID!, $input:MessageInput!) {\n  updateMessage(id: $id, input: $input) {\n    message {\n      id\n      body\n      sender {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"body\": \"It is the east, and Juliet is the sun.\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Messages of a contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation clearMessages($contactId: ID!) {\n  clearMessages(contactId: $contactId) {\n    success\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"contactId\": \"26\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create and send Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 2\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create and send SessionTemplate",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      receiver {\n        id\n        name\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1,\n    \"receiverId\": 11,\n    \"isHsm\": true,\n    \"params\": [\"Fifty\", \"Next Week\"],\n    \"templateId\": 32\n\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create and send Scheduled Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createAndSendMessage($input: MessageInput!) {\n  createAndSendMessage(input: $input) {\n    message {\n      id\n      body\n      insertedAt\n      sendAt\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"body\": \"This message should reach at 21:00 (India)\",\n    \"flow\": \"OUTBOUND\",\n    \"receiverId\": 7,\n    \"sendAt\": \"2020-07-10T03:30:00Z\",\n    \"senderId\": 1,\n    \"type\": \"TEXT\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create and send Session Message to contacts of a collection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createAndSendMessageToGroup($input: MessageInput!, $groupId: ID!) {\n  createAndSendMessageToGroup(input: $input, groupId: $groupId) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"body\": \"Test message\",\n    \"flow\": \"OUTBOUND\",\n    \"type\": \"TEXT\",\n    \"senderId\": 1\n  },\n  \"groupId\": 1\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send HSM Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation sendHsmMessage($templateId: ID!, $receiverId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"templateId\": 34,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send HSM Message to contacts of a collection",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation sendHsmMessageToGroup($templateId: ID!, $groupId: ID!, $parameters: [String]) {\n  sendHsmMessage(templateId: $templateId, groupId: $groupId, parameters: $parameters) {\n    success\n    contactIds\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"templateId\": 34,\n  \"groupId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Send Media HSM Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createAndSendMessage($templateId: ID!, $mediaId: ID!, $receiverId: ID!, $parameters: [String]) {\n  createAndSendMessage(templateId: $templateId, mediaId: $mediaId, receiverId: $receiverId, parameters: $parameters) {\n    message{\n      id\n      body\n      isHsm\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"templateId\": 34,\n  \"mediaId\": 3,\n  \"receiverId\": 5,\n  \"parameters\": [\n    \"100\",\n    \"30 Oct\"\n  ]\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Sent Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  sentMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Update Message Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  update_message_status() {\n    id\n    body\n    flow\n    type\n    status\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Sent Group Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  sent_group_message() {\n    id\n    body\n    flow\n    type\n    status\n    group_id\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Cleared Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  cleared_messages() {\n    id\n    phone\n    name\n    lastMessageAt\n    optinTime\n    bspStatus\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Received Message",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  receivedMessage() {\n    id\n    body\n    flow\n    type\n    receiver {\n        id\n        phone\n    }\n\n    sender {\n        id\n        phone\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Messages Tags",
+			"item": [
+				{
+					"name": "Create Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createContactTag($input: ContactTagInput!) {\n  createContactTag(input: $input) {\n    contactTag {\n      id\n      contact {\n        id\n        name\n      }\n      tag {\n        id\n        label\n        parent {\n          id\n          label\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"tagId\": 20\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Contact with tags to be added and tags to be deleted",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateContactTags($input: ContactTagsInput!) {\n  updateContactTags(input: $input) {\n    contactTags {\n      id\n      contact {\n        name\n      }\n      tag {\n        label\n      }\n    }\n    numberDeleted\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"contactId\": 2,\n    \"addTagIds\": [3, 6],\n    \"deleteTagIds\": [7, 8]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Create Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  createdContactTag {\n    contact{\n      id\n    }\n    tag{\n      id\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Delete Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Organizations",
+			"item": [
+				{
+					"name": "Get All Organizations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query organizations($filter: OrganizationFilter, $opts: Opts) {\n  organizations(filter: $filter, opts: $opts) {\n    id\n    name\n    defaultLanguage {\n      id\n      label\n    }\n    activeLanguages {\n      id\n      label\n    }\n    isActive\n    timezone\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"defaultLanguage\": \"Hindi\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Organization by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query organization($id: ID) {\n  organization(id: $id) {\n    organization {\n      id\n      name\n      isActive\n      timezone\n      defaultLanguage {\n        id\n        label\n      }\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Organization Services",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "\nquery organizationServices() {\n  bigquery\n  dialogflow\n  googleCloudStorage\n  funWithFlags\n  flowUuidDisplay\n  errors {\n    key\n    message\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Organizations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countOrganizations($filter: OrganizationFilter) {\n  countOrganizations(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"language\": \"Hindi\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create an Organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createOrganization($input:OrganizationInput!) {\n  createOrganization(input: $input) {\n    organization {\n      id\n      name\n      shortcode\n      contact {\n        id\n      }\n      email\n      bsp {\n        id\n        name\n      }\n      defaultLanguage {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"shortcode\": \"new_organization\",\n    \"name\": \"new organization\",\n    \"contactId\": 1,\n    \"email\": \"test@test.com\",\n    \"bspId\": 1,\n    \"defaultLanguageId\": 1,\n    \"activeLanguageIds\": [1]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update an Organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateOrganization($id: ID!, $input: OrganizationInput!) {\n  updateOrganization(id: $id, input: $input) {\n    organization {\n      id\n      name\n      shortcode\n      sessionLimit\n      outOfOffice {\n        enabled\n        startTime\n        endTime\n        flowId\n        enabledDays {\n          id\n          enabled\n        }\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"updated organization display name\",\n    \"sessionLimit\": 180,\n    \"outOfOffice\": {\n      \"enabled\": true,\n      \"enabledDays\": [\n        {\n          \"enabled\": true,\n          \"id\": 1\n        },\n        {\n          \"enabled\": true,\n          \"id\": 2\n        },\n        {\n          \"enabled\": true,\n          \"id\": 3\n        },\n        {\n          \"enabled\": true,\n          \"id\": 4\n        },\n        {\n          \"enabled\": true,\n          \"id\": 5\n        },\n        {\n          \"enabled\": false,\n          \"id\": 6\n        },\n        {\n          \"enabled\": false,\n          \"id\": 7\n        }\n      ],\n      \"endTime\": \"T19:00:00\",\n      \"flowId\": 1,\n      \"defaultFlowId\": 1,\n      \"startTime\": \"T09:00:00\"\n    }\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete an Organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteOrganization($id: ID!) {\n  deleteOrganization(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"3\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check for attachment support for the given user",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get List of Timezones",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query attachmentsEnabled {\n  attachmentsEnabled\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get List of Organization Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query organizationStatus {\n  organizationStatus\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Wallet Balance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription organization_subscriptions {\n  bsp_balance(organizationId: \"1\")\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Collection Count",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription organization_subscriptions {\n  collection_count(organizationId: \"1\")\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Simulator release",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Simulator release Copy",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription organization_subscriptions {\n  simulator_release(organizationId: \"1\")\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Providers",
+			"item": [
+				{
+					"name": "Get All Providers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query providers($filter: ProviderFilter, $opts: Opts) {\n  providers(filter: $filter, opts: $opts) {\n    id\n    name\n    shortcode\n    keys\n    secrets\n    group\n    description\n    isRequired\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"limit\": 10,\n    \"offset\": 1,\n    \"order\": \"ASC\"\n  },\n  \"filter\": {\n    \"name\": \"Default\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Provider by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query provider($id: ID!) {\n  provider(id: $id) {\n    provider {\n      id\n      name\n      shortcode\n      keys\n      secrets\n      group\n      isRequired\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Providers",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countProviders($filter: ProviderFilter) {\n  countProviders(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get BSP balance for an organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query provider_queries {\n  bspbalance\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Provider",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createProvider($input:ProviderInput!) {\n  createProvider(input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"name\": \"new_provider\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Provider",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateProvider($id: ID!, $input:ProviderInput!) {\n  updateProvider(id: $id, input: $input) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "\n{\n  \"id\": \"1\",\n  \"input\": {\n    \"name\": \"Updated Provider\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Provider",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteProvider($id: ID!) {\n  deleteProvider(id: $id) {\n    provider {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"3\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Search",
+			"item": [
+				{
+					"name": "Search Contacts and Conversations",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query search(  $saveSearchInput: SaveSearchInput,\n  $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {\n\n  search(filter: $searchFilter, saveSearchInput: $saveSearchInput, contactOpts: $contactOpts, messageOpts: $messageOpts) {\n\n    messages {\n      id,\n      body,\n      tags{\n        label\n      }\n    }\n\n    contact {\n      name\n    }\n  }\n}",
+								"variables": "{\n  \"saveSearchInput\": {\n      \"label\": \"Save with this name\",\n      \"shortcode\": \"SaveName\"\n  },\n\n  \"searchFilter\": {\n    \"includeTags\": [\"17\"],\n    \"includeGroups\": [\"1\"],\n    \"includeUsers\": [\"1\"],\n    \"term\": \"def\",\n    \"dateRange\": {\n      \"to\": \"2020-08-10\",\n      \"from\": \"2020-08-12\"\n    }\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Search for a multiple section based on term",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query searchMulti( $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {\n\n  searchMulti(filter: $searchFilter, contactOpts: $contactOpts, messageOpts: $messageOpts) {\n    contacts {\n        body\n        contact {\n            name\n        }\n      }\n      messages {\n        body\n        contact {\n            name\n        }\n      }\n\n      tags {\n        body\n        contact {\n            name\n        }\n\n        tag {\n          label\n        }\n      }\n  }\n}",
+								"variables": "{\n  \"searchFilter\": {\n    \"term\": \"def\"\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Saved Search Execution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query search(\n  $searchFilter: SearchFilter!, $contactOpts: Opts!, $messageOpts: Opts!) {\n\n  search(filter: $searchFilter, contactOpts: $contactOpts, messageOpts: $messageOpts) {\n\n    messages {\n      id,\n      body,\n      tags{\n        label\n      }\n    }\n\n    contact {\n      name\n    }\n  }\n}",
+								"variables": "{\n  \"searchFilter\": {\n    \"savedSearchID\": \"17\",\n    \"term\": \"def\"\n  },\n  \"messageOpts\": {\n    \"limit\": 3,\n    \"order\": \"ASC\"\n  },\n  \"contactOpts\": {\n    \"order\": \"DESC\",\n    \"limit\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Saved Search Count",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query savedSearchCount($id: ID!, $term: String) {\n  savedSearchCount(id: $id, term: $term)\n}\n",
+								"variables": "{\n  \"id\": 4\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Saved Searches",
+			"item": [
+				{
+					"name": "Session Template",
+					"item": [
+						{
+							"name": "Get All Session Templates",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "query sessionTemplates($filter: SessionTemplateFilter, $opts: Opts) {\n  sessionTemplates(filter: $filter, opts:$opts) {\n    id\n    body\n    label\n    shortcode\n    isHsm\n    type\n    isActive\n    translation\n    isReserved\n    isSource\n    parent {\n      id\n      label\n    }\n    language {\n      id\n      label\n    }\n    messageMedia {\n      id\n      caption\n    }\n  }\n}",
+										"variables": "{\n  \"filter\": {\n    \"body\": \"template\",\n    \"term\": \"label\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get a specific SessionTemplate by ID",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "query sessionTemplate($id: ID!) {\n  sessionTemplate(id: $id) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      translation\n      type\n      language {\n        id\n        label\n      }\n    }\n  }\n}",
+										"variables": "{\n  \"id\": 1\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Count all Session Templates",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "query countSessionTemplates($filter: SessionTemplateFilter) {\n  countSessionTemplates(filter: $filter)\n}",
+										"variables": "{\n  \"filter\":  {\n    \"language\": \"Hindi\"\n  }\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get List of Whatsapp HSM categories",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "query {\n  whatsappHsmCategories\n}",
+										"variables": ""
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Create a Session Template",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "mutation createSessionTemplate($input:SessionTemplateInput!) {\n  createSessionTemplate(input: $input) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      type\n    }\n    errors{\n            key\n      message\n    }\n  }\n}",
+										"variables": "{\n  \"input\": {\n    \"body\": \"Test template\",\n    \"label\": \"Test label\",\n    \"languageId\": 1,\n    \"translations\": \"{\\\"2\\\":{\\\"number_parameters\\\":0,\\\"language_id\\\":2,\\\"body\\\":\\\"पूर्व उपस्थित नमूना\\\"}}\",\n    \"type\": \"TEXT\"\n  }\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Update a SessionTemplate",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "mutation updateSessionTemplate($id: ID!, $input:SessionTemplateInput!) {\n  updateSessionTemplate(id: $id, input: $input) {\n    sessionTemplate {\n      id\n      body\n      label\n      shortcode\n      translation\n      type\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+										"variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"body\": \"Test template\"\n  }\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete a SessionTemplate",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "authorization",
+										"value": "{{auth_token}}",
+										"type": "text"
+									},
+									{
+										"key": "Content-Type",
+										"value": "application/json",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "graphql",
+									"graphql": {
+										"query": "mutation deleteSessionTemplate($id: ID!) {\n  deleteSessionTemplate(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+										"variables": "{\n  \"id\": \"3\"\n}"
+									}
+								},
+								"url": {
+									"raw": "{{api_url}}",
+									"host": [
+										"{{api_url}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Get All Saved Searches",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query savedSearches($filter: SavedSearchFilter!, $opts: Opts) {\n  savedSearches(filter: $filter, opts: $opts) {\n    id\n    label\n    shortcode\n    args\n    count\n  }\n}",
+								"variables": "{\n  \"filter\": {\n    \"label\": \"conv\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"offset\": 0,\n    \"limit\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Saved Searches",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countSavedSearches($filter: SavedSearchFilter) {\n  countSavedSearches(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"label\": \"Conversations read but not replied\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Saved Search by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query savedSearch($id: ID!) {\n  savedSearch(id: $id) {\n    savedSearch {\n      id\n      label\n      count\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a Collection Count Stats for organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query search_queries {\n  collectionStats(organizationId: \"1\")\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Save a Search",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createSavedSearch($input: SavedSearchInput!) {\n  createSavedSearch(input: $input) {\n    savedSearch {\n      id\n      label\n      shortcode\n      args\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"label\": \"This is a saved search\",\n    \"shortcode\": \"Save Search\",\n    \"args\": \"{'term': 'Save this search'}\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Saved Search",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateSavedSearch($id: ID!, $input:SavedSearchInput!) {\n  updateSavedSearch(id: $id, input: $input) {\n    savedSearch {\n      id\n      label\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a updated saved search\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a SavedSearch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteSavedSearch($id: ID!) {\n  deleteSavedSearch(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "SaaS",
+			"item": [
+				{
+					"name": "Create an organization, organization contact and BSP credentials",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Organization Status IsActive or IsApproved",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateOrganizationStatus($updateOrganizationid: ID!, $isActive: Boolean, $isApproved: Boolean) {\n  updateOrganizationStatus($updateOrganizationid: updateOrganizationid, $isActive: isActive, $isApproved: isApproved) {}\n    organization {\n      email\n      isActive\n      isApproved\n      name\n      shortcode\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"isActive\": true,\n  \"isApproved\": true,\n  \"updateOrganizationId\": 1\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Organization with status as inactive",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteInactiveOrganization($deleteOrganizationID: ID!, $isConfirmed: Boolean) {}\n  deleteInactiveOrganization(\n    deleteOrganizationID: $deleteOrganizationID,\n    isConfirmed: $isConfirmed) {\n    organization {\n      email\n      isActive\n      isApproved\n      name\n      shortcode\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"1\",\n  \"input\": {\n    \"isConfirmed\": true,\n    \"deleteOrganizationId\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Reset selected tables from Organization",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation resetOrganization($resetOrganizationID: ID!, $isConfirmed: Boolean) {}\n  resetOrganization(\n    resetOrganizationID: $resetOrganizationID,\n    isConfirmed: $isConfirmed)\n}\n",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Tags",
+			"item": [
+				{
+					"name": "Get All Tags",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query tags($filter: TagFilter, $opts: Opts) {\n  tags(filter: $filter, opts:$opts) {\n    id\n    label\n    language {\n      id\n      label\n    }\n  }\n}",
+								"variables": "{\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  },\n  \"filter\": {\n    \"languageId\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific Tag by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query tag($id: ID!) {\n  tag(id: $id) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Tags",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countTags($filter: TagFilter) {\n  countTags(filter: $filter)\n}",
+								"variables": "{\n  \"filter\": {\n    \"languageId\": 2\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create a Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createTag($input:TagInput!) {\n  createTag(input: $input) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n      description\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"label\": \"This is a new tag for this example\",\n    \"shortcode\": \"new-tag\",\n    \"description\": \"This is a cool description\",\n    \"languageId\": \"1\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateTag($id: ID!, $input:TagInput!) {\n  updateTag(id: $id, input: $input) {\n    tag {\n      id\n      label\n      language {\n        id\n        label\n      }\n      description\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"26\",\n  \"input\": {\n    \"label\": \"This is a update tag for this example\",\n    \"description\": \"This is a updated cool description\",\n    \"languageId\": \"2\"\n  }\n}\n"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteTag($id: ID!) {\n  deleteTag(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"3\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove unread status from contact",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation markContactMessagesAsRead($contactId : Gid!) {\n  markContactMessagesAsRead(contactId: $contactId)\n}",
+								"variables": "{\n  \"contactId\": \"26\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get All Roles",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query {\n  roles\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query users($filter: UserFilter, $opts: Opts) {\n  users(filter: $filter, opts:$opts) {\n    id\n    name\n    phone\n    roles\n    groups {\n      label\n    }\n  }\n}",
+								"variables": "{\n  \"filter\": {\n    \"name\": \"Doe\"\n  },\n  \"opts\": {\n    \"order\": \"ASC\",\n    \"limit\": 10,\n    \"offset\": 0\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get a specific User by ID",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query provider($id: ID!) {\n  provider(id: $id) {\n    provider {\n      id\n      name\n      shortcode\n      keys\n      secrets\n      group\n      isRequired\n    }\n  }\n}",
+								"variables": "{\n  \"id\": 2\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query currentUser {\n  currentUser {\n    user {\n      id\n      name\n      phone\n      roles\n      organization {\n        activeLanguages {\n          label\n        }\n      }\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Count all Users",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "query countUsers($filter: UserFilter) {\n  countUsers(filter: $filter)\n}\n",
+								"variables": "{\n  \"filter\": {\n    \"name\": \"John\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateUser($id: ID!, $input: UserInput!) {\n  updateUser(id: $id, input: $input) {\n    user {\n      id\n      name\n      phone\n      roles\n      groups {\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"2\",\n  \"input\": {\n    \"name\": \"Updated Name\",\n    \"roles\": [\n      \"admin\"\n    ],\n    \"groupIds\": [\n      1,\n      2\n    ]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Current User Details",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateCurrentUser($input:CurrentUserInput!) {\n  updateCurrentUser(input: $input) {\n    user {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"name\": \"Updated Name\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Current User Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateCurrentUser($input:CurrentUserInput!) {\n  updateCurrentUser(input: $input) {\n    user {\n      id\n      name\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"name\": \"Updated Name\",\n    \"otp\": \"340606\",\n    \"password\": \"new_password\"\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete a User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation deleteUser($id: ID!) {\n  deleteUser(id: $id) {\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"id\": \"2\"\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "User Group",
+			"item": [
+				{
+					"name": "Create User Group",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation createUserGroup($input: UserGroupInput!) {\n  createUserGroup(input: $input) {\n    userGroup {\n      id\n      user {\n        id\n        name\n      }\n      group {\n        id\n        label\n      }\n    }\n    errors {\n      key\n      message\n    }\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"userId\": 2,\n    \"groupId\": 1\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update a Group with users to be added and users to be deleted",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateGroupUsers($input: GroupUsersInput!) {\n  updateGroupUsers(input: $input) {\n    groupUsers {\n      id\n      group {\n        label\n      }\n      user {\n        name\n      }\n    }\n    numberDeleted\n  }\n}\n",
+								"variables": "{\n  \"input\": {\n    \"groupId\": 2,\n    \"addUserIds\": [1, 2],\n    \"deleteUserIds\": [3, 8]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update groups to be added and groups to be deleted to a User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "mutation updateUserGroups($input: UserGroupsInput!) {\n  updateUserGroups(input: $input) {\n    userGroups {\n      id\n      group {\n        label\n      }\n      user {\n        name\n      }\n    }\n    numberDeleted\n  }\n}",
+								"variables": "{\n  \"input\": {\n    \"userId\": 2,\n    \"addGroupIds\": [1],\n    \"deleteGroupIds\": [2, 3]\n  }\n}"
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Subscription for Delete Contact Tag",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "authorization",
+								"value": "{{auth_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "graphql",
+							"graphql": {
+								"query": "subscription {\n  deletedContactTag: {\n    contact:{\n      id\n    },\n    tag:{\n      id\n    }\n  }\n}",
+								"variables": ""
+							}
+						},
+						"url": {
+							"raw": "{{api_url}}",
+							"host": [
+								"{{api_url}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

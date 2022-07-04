@@ -19,6 +19,7 @@ defmodule Glific.BigQuery do
     Messages.MessageMedia,
     Partners,
     Partners.Saas,
+    Profiles.Profile,
     Repo,
     Stats.Stat
   }
@@ -39,7 +40,8 @@ defmodule Glific.BigQuery do
     "stats" => :stats_schema,
     "flow_counts" => :flow_count_schema,
     "messages_media" => :messages_media_schema,
-    "flow_contexts" => :flow_context_schema
+    "flow_contexts" => :flow_context_schema,
+    "profiles" => :profile_schema
   }
 
   defp bigquery_tables(organization_id) do
@@ -51,7 +53,7 @@ defmodule Glific.BigQuery do
   @doc """
   Creating a dataset with messages and contacts as tables
   """
-  @spec sync_schema_with_bigquery(non_neg_integer) :: :ok
+  @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
   def sync_schema_with_bigquery(organization_id) do
     fetch_bigquery_credentials(organization_id)
     |> case do
@@ -72,15 +74,16 @@ defmodule Glific.BigQuery do
             })
         end
 
-      _ ->
-        nil
-    end
+      {:error, error} ->
+        {:error, error}
 
-    :ok
+      _ ->
+        {:ok, "bigquery is not active"}
+    end
   end
 
   @doc false
-  @spec fetch_bigquery_credentials(non_neg_integer) :: nil | tuple
+  @spec fetch_bigquery_credentials(non_neg_integer) :: nil | {:ok, any} | {:error, any}
   def fetch_bigquery_credentials(organization_id) do
     organization = Partners.organization(organization_id)
     org_contact = organization.contact
@@ -91,7 +94,21 @@ defmodule Glific.BigQuery do
         nil
 
       credentials ->
-        {:ok, service_account} = Jason.decode(credentials.secrets["service_account"])
+        decode_bigquery_credential(credentials, org_contact, organization_id)
+    end
+  end
+
+  @doc """
+  Decoding the credential for bigquery
+  """
+  @spec decode_bigquery_credential(map(), map(), non_neg_integer) :: {:ok, any} | {:error, any}
+  def decode_bigquery_credential(
+        credentials,
+        org_contact,
+        organization_id
+      ) do
+    case Jason.decode(credentials.secrets["service_account"]) do
+      {:ok, service_account} ->
         project_id = service_account["project_id"]
         token = Partners.get_goth_token(organization_id, "bigquery")
 
@@ -101,6 +118,9 @@ defmodule Glific.BigQuery do
           conn = Connection.new(token.token)
           {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
         end
+
+      {:error, error} ->
+        {:error, error}
     end
   end
 
@@ -113,7 +133,8 @@ defmodule Glific.BigQuery do
     "stats_all" => Stat,
     "flow_counts" => FlowCount,
     "messages_media" => MessageMedia,
-    "flow_contexts" => Flows.FlowContext
+    "flow_contexts" => Flows.FlowContext,
+    "profiles" => Profile
   }
 
   # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
@@ -172,7 +193,7 @@ defmodule Glific.BigQuery do
     :ok
   end
 
-  @spec handle_sync_errors(map(), non_neg_integer, map()) :: :ok
+  @spec handle_sync_errors(map(), non_neg_integer, map()) :: {:ok, any()}
   defp handle_sync_errors(response, organization_id, attrs) do
     Jason.decode(response.body)
     |> case do
@@ -183,11 +204,11 @@ defmodule Glific.BigQuery do
           do_refresh_the_schema(organization_id, attrs)
         end
 
+        {:ok, data}
+
       _ ->
         raise("Error while sync data with biquery. #{inspect(response)}")
     end
-
-    :ok
   end
 
   ## Creating a view with unnested fields from contacts
@@ -304,13 +325,6 @@ defmodule Glific.BigQuery do
       _ -> nil
     end
   end
-
-  @doc """
-  Format Data for bigquery
-  """
-  @spec format_data_for_bigquery(map(), String.t()) :: map()
-  def format_data_for_bigquery(data, _table),
-    do: %{json: data}
 
   @spec create_dataset(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Dataset.t()} | {:ok, Tesla.Env.t()} | {:error, any()}

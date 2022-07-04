@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.MukkaMaar,
+    webhook: Glific.Clients.SunoSunao,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -40,7 +40,8 @@ defmodule Glific.Clients do
   @tap %{
     id: 12,
     name: "The Apprentice Project",
-    gcs_file_name: Glific.Clients.Tap
+    gcs_file_name: Glific.Clients.Tap,
+    webhook: Glific.Clients.Tap
   }
 
   @stir %{
@@ -83,6 +84,15 @@ defmodule Glific.Clients do
     daily_tasks: Glific.Clients.DigitalGreen
   }
 
+  # Currently we need same functionality
+  # on both DG platforms.
+  @digitalgreen_ryss %{
+    id: 68,
+    name: "Digitalgreen RYSS",
+    webhook: Glific.Clients.DigitalGreen,
+    daily_tasks: Glific.Clients.DigitalGreen
+  }
+
   @nayi_disha %{
     id: 22,
     name: "Nayi Disha",
@@ -105,6 +115,14 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.Bandhu
   }
 
+  @kef %{
+    id: 70,
+    name: "Key Education Foundation",
+    gcs_file_name: Glific.Clients.KEF,
+    webhook: Glific.Clients.KEF
+  }
+
+  ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
     @avanti[:id] => @avanti,
@@ -117,7 +135,9 @@ defmodule Glific.Clients do
     @digital_green[:id] => @digital_green,
     @nayi_disha[:id] => @nayi_disha,
     @arogyaworld[:id] => @arogyaworld,
-    @bandhu[:id] => @bandhu
+    @bandhu[:id] => @bandhu,
+    @digitalgreen_ryss[:id] => @digitalgreen_ryss,
+    @kef[:id] => @kef
   }
 
   @spec env(atom() | nil) :: atom()
