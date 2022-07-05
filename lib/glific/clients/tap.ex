@@ -255,13 +255,11 @@ defmodule Glific.Clients.Tap do
       |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", answer} end)
       |> Enum.into(%{})
 
-    Map.merge(
-      question_data,
-      %{
-        buttons: buttons,
-        button_count: length(Map.keys(buttons))
-      }
-    )
+    Map.merge(question_data, %{
+      buttons: buttons,
+      button_count: length(Map.keys(buttons)),
+      is_valid: true
+    })
     |> Map.merge(questions_answers)
   end
 
