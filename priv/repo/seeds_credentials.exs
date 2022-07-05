@@ -34,7 +34,7 @@ defmodule Glific.Seeds.Credentials do
 
   def insert_dialogflow_credentials(nil = _dflow, _organization_id), do: nil
 
-  def insert_dialogflow_credentials(dflow, organization_id) do
+  def insert_google_asr_credentials(dflow, organization_id) do
     {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
 
     Repo.insert!(%Credential{
@@ -51,6 +51,28 @@ defmodule Glific.Seeds.Credentials do
       }
     })
   end
+
+
+  def insert_google_asr_credentials(nil = _dflow, _organization_id), do: nil
+
+  def insert_google_asr_credentials(g_asr, organization_id) do
+    {:ok, google_asr} = Repo.fetch_by(Provider, %{shortcode: "google_asr"})
+
+    Repo.insert!(%Credential{
+      organization_id: organization_id,
+      provider_id: google_asr.id,
+      is_active: true,
+      keys: %{
+        url: Keyword.get(g_asr, :url)
+      },
+      secrets: %{
+        project_id: Keyword.get(g_asr, :project_id),
+        project_email: Keyword.get(g_asr, :project_email),
+        service_account: Keyword.get(g_asr, :service_account)
+      }
+    })
+  end
+
 
   def insert_goth_credentials(nil = _goth, _organization_id), do: nil
 
@@ -88,23 +110,23 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
-  def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
+  # def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
 
-  def insert_gcs_credentials(gcs, organization_id) do
-    {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+  # def insert_gcs_credentials(gcs, organization_id) do
+  #   {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
-    Repo.insert!(%Credential{
-      organization_id: organization_id,
-      provider_id: gcs_db.id,
-      is_active: true,
-      keys: %{},
-      secrets: %{
-        email: Keyword.get(gcs, :email),
-        bucket: Keyword.get(gcs, :bucket),
-        service_account: Keyword.get(gcs, :service_account)
-      }
-    })
-  end
+  #   Repo.insert!(%Credential{
+  #     organization_id: organization_id,
+  #     provider_id: gcs_db.id,
+  #     is_active: true,
+  #     keys: %{},
+  #     secrets: %{
+  #       email: Keyword.get(gcs, :email),
+  #       bucket: Keyword.get(gcs, :bucket),
+  #       service_account: Keyword.get(gcs, :service_account)
+  #     }
+  #   })
+  # end
 
   @organization_id 1
 
