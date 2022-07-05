@@ -938,9 +938,10 @@ defmodule Glific.Partners do
 
         if config != :error do
           Goth.Config.add_config(config)
+          Enum.map(config, fn {k, v} -> Goth.Config.set(k, v) end)
 
-          {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-          |> Goth.Token.for_scope()
+          config
+          |> Goth.Token.fetch()
           |> case do
             {:ok, token} ->
               token
@@ -950,7 +951,7 @@ defmodule Glific.Partners do
                 "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
               )
 
-              handle_token_error(organization_id, provider_shortcode, error)
+              handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
           end
         else
           error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"
