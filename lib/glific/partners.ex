@@ -938,10 +938,15 @@ defmodule Glific.Partners do
 
         if config != :error do
           Goth.Config.add_config(config)
+
+          IO.inspect("config")
+          IO.inspect(config)
+
           _ = Enum.map(config, fn {k, v} -> Goth.Config.set(k, v) end)
 
           config
           |> Goth.Token.fetch()
+          |> IO.inspect()
           |> case do
             {:ok, token} ->
               token
