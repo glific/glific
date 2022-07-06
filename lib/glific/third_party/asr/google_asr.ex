@@ -53,7 +53,6 @@ defmodule Glific.ASR.GoogleASR do
     }
 
     {:ok, result} = post(new_client(org_id), url, body)
-    IO.inspect(result)
 
     case result.body["error"] do
       nil ->
