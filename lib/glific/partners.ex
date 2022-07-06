@@ -850,6 +850,7 @@ defmodule Glific.Partners do
 
     # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
+    IO.inspect(credential)
 
     if valid_bsp?(credential) do
       credential.provider.shortcode

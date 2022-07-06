@@ -34,7 +34,7 @@ defmodule Glific.Seeds.Credentials do
 
   def insert_dialogflow_credentials(nil = _dflow, _organization_id), do: nil
 
-  def insert_google_asr_credentials(dflow, organization_id) do
+  def insert_dialogflow_credentials(dflow, organization_id) do
     {:ok, dialogflow} = Repo.fetch_by(Provider, %{shortcode: "dialogflow"})
 
     Repo.insert!(%Credential{
@@ -52,8 +52,7 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
-
-  def insert_google_asr_credentials(nil = _dflow, _organization_id), do: nil
+  def insert_google_asr_credentials(nil = _g_asr, _organization_id), do: nil
 
   def insert_google_asr_credentials(g_asr, organization_id) do
     {:ok, google_asr} = Repo.fetch_by(Provider, %{shortcode: "google_asr"})
@@ -72,7 +71,6 @@ defmodule Glific.Seeds.Credentials do
       }
     })
   end
-
 
   def insert_goth_credentials(nil = _goth, _organization_id), do: nil
 
@@ -110,23 +108,23 @@ defmodule Glific.Seeds.Credentials do
     })
   end
 
-  # def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
+  def insert_gcs_credentials(nil = _gcs, _organization_id), do: nil
 
-  # def insert_gcs_credentials(gcs, organization_id) do
-  #   {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
+  def insert_gcs_credentials(gcs, organization_id) do
+    {:ok, gcs_db} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
-  #   Repo.insert!(%Credential{
-  #     organization_id: organization_id,
-  #     provider_id: gcs_db.id,
-  #     is_active: true,
-  #     keys: %{},
-  #     secrets: %{
-  #       email: Keyword.get(gcs, :email),
-  #       bucket: Keyword.get(gcs, :bucket),
-  #       service_account: Keyword.get(gcs, :service_account)
-  #     }
-  #   })
-  # end
+    Repo.insert!(%Credential{
+      organization_id: organization_id,
+      provider_id: gcs_db.id,
+      is_active: true,
+      keys: %{},
+      secrets: %{
+        email: Keyword.get(gcs, :email),
+        bucket: Keyword.get(gcs, :bucket),
+        service_account: Keyword.get(gcs, :service_account)
+      }
+    })
+  end
 
   @organization_id 1
 
@@ -136,6 +134,7 @@ defmodule Glific.Seeds.Credentials do
     secrets = get_secrets()
     update_gupshup_credentials(Keyword.get(secrets, :gupshup), @organization_id)
     insert_dialogflow_credentials(Keyword.get(secrets, :dialogflow), @organization_id)
+    insert_google_asr_credentials(Keyword.get(secrets, :google_asr), @organization_id)
     insert_goth_credentials(Keyword.get(secrets, :goth), @organization_id)
     insert_biqquery_credentials(Keyword.get(secrets, :bigquery), @organization_id)
     insert_gcs_credentials(Keyword.get(secrets, :gcs), @organization_id)
