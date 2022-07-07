@@ -32,7 +32,7 @@ defmodule Glific.ASR.GoogleASR do
   """
 
   @spec speech_to_text(non_neg_integer, String.t(), String.t()) :: map()
-  def speech_to_text(org_id, uri, _language) do
+  def speech_to_text(org_id, uri, language) do
     {:ok, response} = get(uri)
     content = Base.encode64(response.body)
 
@@ -42,7 +42,7 @@ defmodule Glific.ASR.GoogleASR do
       "config" => %{
         "encoding" => "OGG_OPUS",
         "sampleRateHertz" => 16_000,
-        "languageCode" => "hi",
+        "languageCode" => language,
         "profanityFilter" => true,
         "enableWordConfidence" => true,
         "enableAutomaticPunctuation" => true
