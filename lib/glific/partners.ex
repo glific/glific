@@ -15,7 +15,6 @@ defmodule Glific.Partners do
     BigQuery,
     Caches,
     Contacts.Contact,
-    Dialogflow,
     Flags,
     GCS,
     Notifications,
@@ -26,7 +25,6 @@ defmodule Glific.Partners do
     Providers.Gupshup.GupshupWallet,
     Providers.Gupshup.PartnerAPI,
     Providers.GupshupContacts,
-    ASR.GoogleASR,
     Repo,
     Settings.Language,
     Users.User
