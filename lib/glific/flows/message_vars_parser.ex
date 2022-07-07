@@ -21,6 +21,8 @@ defmodule Glific.Flows.MessageVarParser do
   def parse(input, binding) when is_map(binding) == false, do: input
 
   def parse(input, binding) do
+    IO.inspect(input, label: "------------------>>>>>>>llllllaaaabbbbrrrrllllll--------->>")
+    IO.inspect(binding, label: "------sdasd--------sdasd-------sdas-d------>>>>>>>>>>")
     binding =
       binding
       |> Map.put(
