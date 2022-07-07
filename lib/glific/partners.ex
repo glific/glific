@@ -937,16 +937,9 @@ defmodule Glific.Partners do
         config = config(credentials)
 
         if config != :error do
-          Goth.Config.add_config(config)
+          # We need to cache this token and set the TTL as the token expires in
 
-          IO.inspect("config")
-          IO.inspect(config)
-
-          _ = Enum.map(config, fn {k, v} -> Goth.Config.set(k, v) end)
-
-          config
-          |> Goth.Token.fetch()
-          |> IO.inspect()
+          Goth.Token.fetch(source: {:service_account, config})
           |> case do
             {:ok, token} ->
               token

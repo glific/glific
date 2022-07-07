@@ -125,7 +125,7 @@ defmodule Glific.MixProject do
       {:cors_plug, "~> 3.0"},
       {:ex_check, "~> 0.12", only: [:dev | @test_envs], runtime: false},
       {:sobelow, "~> 0.8", only: [:dev | @test_envs]},
-      {:goth, "~> 1.2"},
+      {:goth, "~> 1.3"},
       {:wormwood, "~> 0.1"},
       {:timex, "~> 3.0"},
       {:slugify, "~> 1.3"},
