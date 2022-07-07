@@ -819,17 +819,21 @@ defmodule Glific.PartnersTest do
 
     test "get_token/1 should return goth token for gcs",
          %{organization_id: organization_id} = _attrs do
-      with_mocks([
-        {
-          Goth.Token,
-          [:passthrough],
-          [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
-        }
-      ]) do
+      with_mock(
+        Goth.Token,
+        [],
+        fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+      ) do
         valid_attrs = %{
           shortcode: "google_cloud_storage",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
@@ -850,7 +854,7 @@ defmodule Glific.PartnersTest do
           Goth.Token,
           [:passthrough],
           [
-            for_scope: fn _url ->
+            fetch: fn _url ->
               {:error,
                "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
             end
@@ -860,7 +864,13 @@ defmodule Glific.PartnersTest do
         valid_attrs = %{
           shortcode: "google_cloud_storage",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
@@ -880,30 +890,6 @@ defmodule Glific.PartnersTest do
       end
     end
 
-    test "get_token/1 on return any other error in goth token should return nil",
-         %{organization_id: organization_id} = _attrs do
-      with_mock(Goth.Token, [],
-        for_scope: fn _url ->
-          {:error, %HTTPoison.Error{id: nil, reason: :connect_timeout}}
-        end
-      ) do
-        valid_attrs = %{
-          shortcode: "google_cloud_storage",
-          secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
-          },
-          is_active: true,
-          organization_id: organization_id
-        }
-
-        {:ok, _credential} = Partners.create_credential(valid_attrs)
-
-        assert_raise RuntimeError, fn ->
-          Partners.get_goth_token(organization_id, "google_cloud_storage")
-        end
-      end
-    end
-
     test "get_token/1 on return error in goth token should disable BigQuery",
          %{organization_id: organization_id} = _attrs do
       with_mocks([
@@ -911,7 +897,7 @@ defmodule Glific.PartnersTest do
           Goth.Token,
           [:passthrough],
           [
-            for_scope: fn _url ->
+            fetch: fn _url ->
               {:error,
                "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
             end
@@ -921,7 +907,13 @@ defmodule Glific.PartnersTest do
         valid_attrs = %{
           shortcode: "bigquery",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
