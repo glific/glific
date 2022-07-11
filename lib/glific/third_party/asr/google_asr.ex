@@ -76,7 +76,7 @@ defmodule Glific.ASR.GoogleASR do
 
   @spec new_client(non_neg_integer) :: Tesla.Client.t()
   defp new_client(org_id) do
-    token = Partners.get_goth_token(org_id, "google_cloud_storage").token
+    token = Partners.get_goth_token(org_id, "google_asr").token
 
     middleware = [
       {Tesla.Middleware.BaseUrl, "https://speech.googleapis.com/"},
