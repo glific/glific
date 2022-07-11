@@ -576,8 +576,10 @@ defmodule Glific.Flows do
   @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
           {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status})
-    process_contact_flow([contact], flow, @status)
+    case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
+      {:ok, flow} -> process_contact_flow([contact], flow, @status)
+      {:error, error} -> {:error, error}
+    end
   end
 
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
