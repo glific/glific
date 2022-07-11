@@ -571,7 +571,7 @@ defmodule Glific.Flows do
   @status "published"
 
   @doc """
-  Start flow for a contact
+  Start flow for a contact and cache the result
   """
   @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
           {:ok, Flow.t()} | {:error, String.t()}
