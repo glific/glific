@@ -90,7 +90,7 @@ defmodule Glific.Clients.Tap do
 
   def webhook("load_quizes", fields) do
     Glific.parse_maybe_integer!(fields["organization_id"])
-    |> load_quizes()
+    |> load_quizzes()
 
     fields
   end
@@ -160,8 +160,8 @@ defmodule Glific.Clients.Tap do
     end)
   end
 
-  @spec load_quizes(non_neg_integer()) :: :ok
-  defp load_quizes(org_id) do
+  @spec load_quizzes(non_neg_integer()) :: :ok
+  defp load_quizzes(org_id) do
     ApiClient.get_csv_content(url: @props.sheet_links.quiz)
     |> Enum.each(fn {_, row} ->
       row = clean_row_values(row)
@@ -217,28 +217,31 @@ defmodule Glific.Clients.Tap do
     end
   end
 
-  defp format_quiz_question(question_data, langauge_label) do
+  defp format_quiz_question(question_data, language_label) do
     questions_answers =
-      case langauge_label do
+      case language_label do
         "English" ->
           %{
             valid_answers: question_data["validresponsesenglish"],
             correct_response: question_data["answerenglish"],
-            question: question_data["questionmessageenglish"]
+            question: question_data["questionmessageenglish"],
+            attachment_url: question_data["attachmentenglish"]
           }
 
         "Hindi" ->
           %{
             valid_answers: question_data["validresponseshindi"],
             correct_response: question_data["answerhindi"],
-            question: question_data["questionmessagehindi"]
+            question: question_data["questionmessagehindi"],
+            attachment_url: question_data["attachmenthindi"]
           }
 
         "Kannada" ->
           %{
             valid_answers: question_data["validresponseshindi"],
             correct_response: question_data["answerhindi"],
-            question: question_data["questionmessagehindi"]
+            question: question_data["questionmessagehindi"],
+            attachment_url: question_data["attachmentenglish"]
           }
 
         _ ->
@@ -252,19 +255,17 @@ defmodule Glific.Clients.Tap do
       |> Enum.map(fn {answer, index} -> {"button_#{index + 1}", answer} end)
       |> Enum.into(%{})
 
-    Map.merge(
-      question_data,
-      %{
-        buttons: buttons,
-        button_count: length(Map.keys(buttons))
-      }
-    )
+    Map.merge(question_data, %{
+      buttons: buttons,
+      button_count: length(Map.keys(buttons)),
+      is_valid: true
+    })
     |> Map.merge(questions_answers)
   end
 
   @spec get_quiz_info(non_neg_integer(), String.t()) :: map()
   defp get_quiz_info(org_id, activity_id) do
-    quizes =
+    quizzes =
       Partners.list_organization_data(%{
         organization_id: org_id,
         filter: %{
@@ -272,15 +273,15 @@ defmodule Glific.Clients.Tap do
         }
       })
 
-    Enum.reduce(quizes, %{}, fn row, acc ->
+    Enum.reduce(quizzes, %{}, fn row, acc ->
       data = row.json
       Map.put(acc, data["question_key"], clean_map_keys(data))
     end)
   end
 
-  defp format_hsm_templates(activity_info, langauge_lable) do
+  defp format_hsm_templates(activity_info, language_label) do
     templates =
-      case langauge_lable do
+      case language_label do
         "English" ->
           %{
             intro: %{

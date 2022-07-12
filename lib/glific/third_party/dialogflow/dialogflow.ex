@@ -135,6 +135,9 @@ defmodule Glific.Dialogflow do
 
       sync_with_db(response, organization_id)
       response
+    else
+      true ->
+        {:ok, "no token found"}
     end
   end
 
