@@ -642,7 +642,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "templates" => [
                   %{
-                    "category" => "ALERT_UPDATE",
+                    "category" => "TRANSACTIONAL",
                     "createdOn" => 1_595_904_220_466,
                     "data" =>
                       "Hey {{1}}, Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]",
@@ -692,7 +692,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "templates" => [
                   %{
-                    "category" => "ALERT_UPDATE",
+                    "category" => "TRANSACTIONAL",
                     "createdOn" => 1_595_904_220_466,
                     "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
                     "elementName" => "status_response",
@@ -874,7 +874,7 @@ defmodule Glific.TemplatesTest do
         body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
         shortcode: "common_otp",
         is_hsm: true,
-        category: "ALERT_UPDATE",
+        category: "OTP",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
         language_id: language_id,
@@ -1023,7 +1023,7 @@ defmodule Glific.TemplatesTest do
       assert imported_template.status == "APPROVED"
       assert imported_template.shortcode == "2meq_payment_link"
       assert imported_template.language_id == 1
-      assert imported_template.category == "ALERT_UPDATE"
+      assert imported_template.category == "TRANSACTIONAL"
 
       assert imported_template.example ==
                "Your OTP for [sample text 1] is [sample text 2]. This is valid for [sample text 3]."
