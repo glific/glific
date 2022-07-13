@@ -954,10 +954,9 @@ defmodule Glific.Partners do
         config = config(credentials)
 
         if config != :error do
-          Goth.Config.add_config(config)
+          # We need to cache this token and set the TTL as the token expires in
 
-          {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-          |> Goth.Token.for_scope()
+          Goth.Token.fetch(source: {:service_account, config})
           |> case do
             {:ok, token} ->
               token
@@ -967,7 +966,7 @@ defmodule Glific.Partners do
                 "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
               )
 
-              handle_token_error(organization_id, provider_shortcode, error)
+              handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
           end
         else
           error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"

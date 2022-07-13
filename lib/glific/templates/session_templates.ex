@@ -180,17 +180,9 @@ defmodule Glific.Templates.SessionTemplate do
   @spec list_whatsapp_hsm_categories() :: [String.t()]
   def list_whatsapp_hsm_categories do
     [
-      "ALERT_UPDATE",
-      "ISSUE_RESOLUTION",
-      "AUTO_REPLY",
-      "ACCOUNT_UPDATE",
-      "PAYMENT_UPDATE",
-      "PERSONAL_FINANCE_UPDATE",
-      "SHIPPING_UPDATE",
-      "RESERVATION_UPDATE",
-      "APPOINTMENT_UPDATE",
-      "TRANSPORTATION_UPDATE",
-      "TICKET_UPDATE"
+      "TRANSACTIONAL",
+      "MARKETING",
+      "OTP"
     ]
   end
 end

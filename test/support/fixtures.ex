@@ -569,7 +569,7 @@ defmodule Glific.Fixtures do
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       shortcode: "common_otp",
       is_hsm: true,
-      category: "ALERT_UPDATE",
+      category: "OTP",
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       language_id: organization_fixture().default_language_id
     })

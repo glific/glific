@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.Tap,
+    webhook: Glific.Clients.SunoSunao,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -122,6 +122,12 @@ defmodule Glific.Clients do
     webhook: Glific.Clients.KEF
   }
 
+  @sunosunao %{
+    id: 93,
+    name: "Suno Sunao",
+    webhook: Glific.Clients.SunoSunao
+  }
+
   ## we should move this also to databases.
   @plugins %{
     @sol[:id] => @sol,
@@ -137,7 +143,8 @@ defmodule Glific.Clients do
     @arogyaworld[:id] => @arogyaworld,
     @bandhu[:id] => @bandhu,
     @digitalgreen_ryss[:id] => @digitalgreen_ryss,
-    @kef[:id] => @kef
+    @kef[:id] => @kef,
+    @sunosunao[:id] => @sunosunao
   }
 
   @spec env(atom() | nil) :: atom()
