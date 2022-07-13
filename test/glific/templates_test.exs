@@ -642,7 +642,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "templates" => [
                   %{
-                    "category" => "TRANSACTIONAL",
+                    "category" => "MARKETING",
                     "createdOn" => 1_595_904_220_466,
                     "data" =>
                       "Hey {{1}}, Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]",
