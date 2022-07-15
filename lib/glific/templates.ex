@@ -338,10 +338,10 @@ defmodule Glific.Templates do
     example =
       case Jason.decode(template["meta"] || "{}") do
         {:ok, meta} ->
-          meta["example"]
+          meta["example"] || "NA"
 
         _ ->
-          nil
+          "NA"
       end
 
     if example,
