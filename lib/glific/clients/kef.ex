@@ -288,7 +288,7 @@ defmodule Glific.Clients.KEF do
           |> Enum.find(fn {k, _v} ->
             k
             |> Glific.string_clean()
-            |> String.ends_with?(school_id)
+            |> String.equivalent?(school_id)
           end) || {nil, nil}
 
         %{
