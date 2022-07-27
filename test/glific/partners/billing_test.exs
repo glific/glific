@@ -153,7 +153,6 @@ defmodule Glific.BillingTest do
       end
     end
 
-    @tag :pending
     test "update_monthly_usage/1 should update usage of metered subscription item", %{
       organization_id: organization_id
     } do
@@ -165,7 +164,8 @@ defmodule Glific.BillingTest do
           price_1IgS7dEMShkCsLFnvIpyy5mL: "test_monthly_id",
           price_1IgS5DEMShkCsLFne4pOqxqB: "si_test_subscription_id",
           price_1IdZe5EMShkCsLFncGatvTCk: "si_test_consulting_id",
-          price_1IdZdTEMShkCsLFnPAf9zzym: "si_test_message_id"
+          price_1IdZdTEMShkCsLFnPAf9zzym: "si_test_message_id",
+          price_1IdZehEMShkCsLFnyYhuDu6p: "si_test_user_id"
         }
       })
       |> Fixtures.billing_fixture()
