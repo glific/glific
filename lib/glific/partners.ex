@@ -303,6 +303,7 @@ defmodule Glific.Partners do
     |> Repo.update(skip_organization_id: true)
   end
 
+  @spec maybe_pin_newcontact_flow(Ecto.Changeset.t(), Organization.t()) :: Ecto.Changeset.t()
   defp maybe_pin_newcontact_flow(
          %{changes: %{newcontact_flow_id: newcontact_flow_id}} = changeset,
          organization
