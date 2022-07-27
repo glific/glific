@@ -136,7 +136,8 @@ defmodule Glific.Profiles do
          {:ok, _updated_contact} <-
            Contacts.update_contact(contact, %{
              active_profile_id: profile.id,
-             language_id: profile.language_id
+             language_id: profile.language_id,
+             fields: profile.fields
            }) do
       Contacts.get_contact!(contact.id)
     else
