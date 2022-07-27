@@ -204,10 +204,18 @@ defmodule Glific.BigQuery do
           do_refresh_the_schema(organization_id, attrs)
         end
 
+        if(error["status"] == "PERMISSION_DENIED") do
+          Partners.disable_credential(
+            organization_id,
+            "bigquery",
+            "Account does not have sufficient permissions to create data set to BigQuery."
+          )
+        end
+
         {:ok, data}
 
       _ ->
-        raise("Error while sync data with biquery. #{inspect(response)}")
+        raise("Error while sync data with bigquery. #{inspect(response)}")
     end
   end
 
