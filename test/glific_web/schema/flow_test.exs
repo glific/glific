@@ -118,7 +118,7 @@ defmodule GlificWeb.Schema.FlowTest do
     result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"isPinned" => true}})
     assert {:ok, query_data} = result
     flows = get_in(query_data, [:data, "flows"])
-    assert length(flows) == 1
+    assert length(flows) == 2
   end
 
   test "flow field id returns one flow or nil", %{staff: user} do
