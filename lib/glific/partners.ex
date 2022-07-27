@@ -16,6 +16,7 @@ defmodule Glific.Partners do
     Caches,
     Contacts.Contact,
     Flags,
+    Flows,
     GCS,
     Notifications,
     Partners.Credential,
@@ -298,8 +299,23 @@ defmodule Glific.Partners do
 
     organization
     |> Organization.changeset(attrs)
+    |> maybe_pin_newcontact_flow(organization)
     |> Repo.update(skip_organization_id: true)
   end
+
+  defp maybe_pin_newcontact_flow(
+         %{changes: %{newcontact_flow_id: newcontact_flow_id}} = changeset,
+         organization
+       ) do
+    with {:ok, flow} <- Flows.fetch_flow(organization.newcontact_flow_id),
+         {:ok, _updated_flow} <- Flows.update_flow(flow, %{is_pinned: false}),
+         {:ok, new_newcontact_flow} <- Flows.fetch_flow(newcontact_flow_id),
+         {:ok, _updated_flow} <- Flows.update_flow(new_newcontact_flow, %{is_pinned: true}) do
+      changeset
+    end
+  end
+
+  defp maybe_pin_newcontact_flow(changeset, _organization), do: changeset
 
   @doc """
   Deletes an Orgsanization.
