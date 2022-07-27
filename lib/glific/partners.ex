@@ -306,14 +306,26 @@ defmodule Glific.Partners do
   @spec maybe_pin_newcontact_flow(Ecto.Changeset.t(), Organization.t()) :: Ecto.Changeset.t()
   defp maybe_pin_newcontact_flow(
          %{changes: %{newcontact_flow_id: newcontact_flow_id}} = changeset,
+         _organization
+       )
+       when is_nil(newcontact_flow_id) do
+    changeset
+  end
+
+  defp maybe_pin_newcontact_flow(
+         %{changes: %{newcontact_flow_id: newcontact_flow_id}} = changeset,
          organization
        ) do
-    with {:ok, flow} <- Flows.fetch_flow(organization.newcontact_flow_id),
-         {:ok, _updated_flow} <- Flows.update_flow(flow, %{is_pinned: false}),
-         {:ok, new_newcontact_flow} <- Flows.fetch_flow(newcontact_flow_id),
-         {:ok, _updated_flow} <- Flows.update_flow(new_newcontact_flow, %{is_pinned: true}) do
-      changeset
+    with false <- is_nil(organization.newcontact_flow_id),
+         {:ok, flow} <- Flows.fetch_flow(organization.newcontact_flow_id) do
+      Flows.update_flow(flow, %{is_pinned: false})
     end
+
+    with {:ok, new_newcontact_flow} <- Flows.fetch_flow(newcontact_flow_id) do
+      Flows.update_flow(new_newcontact_flow, %{is_pinned: true})
+    end
+
+    changeset
   end
 
   defp maybe_pin_newcontact_flow(changeset, _organization), do: changeset
