@@ -746,11 +746,7 @@ defmodule Glific.Contacts do
   defp get_contact_fields(field_map, contact) do
     with false <- is_nil(contact.active_profile_id),
          profile <- contact.active_profile do
-      Map.put(
-        field_map,
-        :fields,
-        profile.fields
-      )
+      Map.put(field_map, :fields, profile.fields)
     else
       _ -> field_map
     end
@@ -790,12 +786,22 @@ defmodule Glific.Contacts do
 
   @spec get_contact_field_list_profiles(map(), Contact.t()) :: map()
   defp get_contact_field_list_profiles(field_map, contact) do
-    Map.put(
-      field_map,
-      :list_profiles,
-      Profiles.get_indexed_profile(contact)
-      |> Enum.reduce("", fn {profile, index}, acc -> acc <> " #{index}. #{profile.name} \n" end)
-    )
+    if is_nil(contact.active_profile_id) do
+      field_map
+    else
+      Map.put(
+        field_map,
+        :list_profiles,
+        Profiles.get_indexed_profile(contact)
+        |> Enum.reduce("", fn {profile, index}, acc -> acc <> " #{index}. #{profile.name} \n" end)
+      )
+      |> Map.put(:has_multiple_profile, %{
+        "type" => "string",
+        "label" => "has_multiple_profile",
+        "inserted_at" => DateTime.utc_now(),
+        "value" => true
+      })
+    end
   end
 
   ## We change the name of the contact whenever we receive a message from the contact.
