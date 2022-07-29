@@ -236,7 +236,7 @@ defmodule Glific.Flows do
 
     attrs =
       attrs
-      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
+      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
 
     flow
     |> Flow.changeset(attrs)
