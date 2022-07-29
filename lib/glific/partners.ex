@@ -17,6 +17,7 @@ defmodule Glific.Partners do
     Contacts.Contact,
     Flags,
     Flows,
+    Flows.Flow,
     GCS,
     Notifications,
     Partners.Credential,
