@@ -102,7 +102,7 @@ defmodule Glific.Seeds.SeedsMigration do
       label: "common_otp",
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       type: :text,
-      category: "ALERT_UPDATE",
+      category: "OTP",
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       is_active: true,
       is_source: false,

@@ -45,6 +45,11 @@ config :phoenix, :json_library, Jason
 
 config :pow, Pow.Ecto.Schema.Password, iterations: 1
 
+config :appsignal, :config,
+  otp_app: :glific,
+  active: false,
+  env: :test
+
 # There is an issue with CI, Will move this to test.secret.exs in the future
 # import_config "test.secret.exs"
 config :glific,
