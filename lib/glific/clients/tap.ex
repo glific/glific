@@ -52,7 +52,10 @@ defmodule Glific.Clients.Tap do
   """
   @spec template(String.t(), String.t()) :: binary
   def template(shortcode, params_staring \\ "") do
-    {:ok, template} = Repo.fetch_by(SessionTemplate, %{shortcode: shortcode})
+    [template | _tail] =
+      SessionTemplate
+      |> where([st], st.shortcode == ^shortcode)
+      |> Repo.all()
 
     %{
       uuid: template.uuid,
@@ -153,8 +156,9 @@ defmodule Glific.Clients.Tap do
     ApiClient.get_csv_content(url: @props.sheet_links.activity)
     |> Enum.each(fn {_, row} ->
       row = clean_row_values(row)
-      key = "schedule_" <> row["Schedule"]
       activity_type = Glific.string_clean(row["Activity type"])
+      key = "schedule_" <> row["Schedule"] <> "_" <> activity_type
+
       info = %{activity_type => row}
       Partners.maybe_insert_organization_data(key, info, org_id)
     end)
@@ -176,9 +180,11 @@ defmodule Glific.Clients.Tap do
   defp get_activity_info(org_id, date, type, language_label) do
     type = Glific.string_clean(type)
 
+    key = "schedule_" <> date <> "_" <> type
+
     Repo.fetch_by(OrganizationData, %{
       organization_id: org_id,
-      key: "schedule_" <> date
+      key: key
     })
     |> case do
       {:ok, data} ->
