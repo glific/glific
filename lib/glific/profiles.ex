@@ -135,10 +135,11 @@ defmodule Glific.Profiles do
          {profile, _index} <- fetch_indexed_profile(contact, index),
          {:ok, _updated_contact} <-
            Contacts.update_contact(contact, %{
-             active_profile_id: profile.id
-           }),
-         updated_contact <- Contacts.get_contact!(contact.id) do
-      updated_contact
+             active_profile_id: profile.id,
+             language_id: profile.language_id,
+             fields: profile.fields
+           }) do
+      Contacts.get_contact!(contact.id)
     else
       _ -> contact
     end
