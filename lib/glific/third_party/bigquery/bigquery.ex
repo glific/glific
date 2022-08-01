@@ -144,7 +144,7 @@ defmodule Glific.BigQuery do
     do: Map.fetch!(@table_lookup, table_name)
 
   @doc """
-  Refresh the biquery schema and update all the older versions.
+  Refresh the bigquery schema and update all the older versions.
   """
   @spec do_refresh_the_schema(non_neg_integer, map()) ::
           {:error, Tesla.Env.t()} | {:ok, Tesla.Env.t()}
@@ -204,25 +204,33 @@ defmodule Glific.BigQuery do
           do_refresh_the_schema(organization_id, attrs)
         end
 
+        if error["status"] == "PERMISSION_DENIED",
+          do:
+            Partners.disable_credential(
+              organization_id,
+              "bigquery",
+              "Account does not have sufficient permissions to create data set to BigQuery."
+            )
+
         {:ok, data}
 
       _ ->
-        raise("Error while sync data with biquery. #{inspect(response)}")
+        raise("Error while sync data with bigquery. #{inspect(response)}")
     end
   end
 
-  ## Creating a view with unnested fields from contacts
+  ## Creating a view with un nested fields from contacts
   @spec flat_fields_procedure(Tesla.Client.t(), String.t(), String.t()) ::
           {:ok, GoogleApi.BigQuery.V2.Model.Table.t()} | {:ok, Tesla.Env.t()} | {:error, any()}
   defp flat_fields_procedure(conn, dataset_id, project_id) do
     routine_id = "flat_fields"
-    defination = Schema.flat_fields_procedure(project_id, dataset_id)
+    definition = Schema.flat_fields_procedure(project_id, dataset_id)
 
     {:ok, _res} =
       create_or_update_procedure(
         %{conn: conn, dataset_id: dataset_id, project_id: project_id},
         routine_id,
-        defination
+        definition
       )
   end
 
@@ -231,13 +239,13 @@ defmodule Glific.BigQuery do
   defp create_or_update_procedure(
          %{conn: conn, dataset_id: dataset_id, project_id: project_id} = _cred,
          routine_id,
-         defination
+         definition
        ) do
     body = [
       body: %{
         routineReference: %{routineId: routine_id, datasetId: dataset_id, projectId: project_id},
         routineType: "PROCEDURE",
-        definitionBody: defination
+        definitionBody: definition
       }
     ]
 
@@ -465,7 +473,7 @@ defmodule Glific.BigQuery do
   end
 
   @doc """
-    Insert rows in the biqquery
+    Insert rows in the bigquery
   """
   @spec make_insert_query(map() | list, String.t(), non_neg_integer, Keyword.t()) :: :ok
   def make_insert_query(%{json: data}, _table, _organization_id, _max_id)
@@ -609,7 +617,7 @@ defmodule Glific.BigQuery do
 
         sql = generate_duplicate_removal_query(table, credentials, organization_id)
 
-        ## timeout takes some time to delete the old records. So incresing the timeout limit.
+        ## timeout takes some time to delete the old records. So increasing the timeout limit.
         GoogleApi.BigQuery.V2.Api.Jobs.bigquery_jobs_query(conn, project_id,
           body: %{query: sql, useLegacySql: false, timeoutMs: 120_000}
         )
@@ -645,7 +653,7 @@ defmodule Glific.BigQuery do
         "duplicate entries have been removed from #{table} on bigquery for org_id: #{organization_id}"
       )
 
-  ## Since we don't care about the delete query results, let's skip notifing this to appsignal.
+  ## Since we don't care about the delete query results, let's skip notifying this to AppSignal.
   defp handle_duplicate_removal_job_error({:error, error}, table, _, _) do
     Logger.error(
       "Error while removing duplicate entries from the table #{table} on bigquery. #{inspect(error)}"

@@ -285,10 +285,10 @@ defmodule Glific.Clients.KEF do
       {:ok, data} ->
         {key, value} =
           data.json
-          |> Enum.find(fn {k, _v} ->
-            k
+          |> Enum.find(fn {_k, v} ->
+            v["userinputcorrectcode"]
             |> Glific.string_clean()
-            |> String.equivalent?(school_id)
+            |> String.equivalent?(Glific.string_clean(school_id))
           end) || {nil, nil}
 
         %{
