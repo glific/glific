@@ -37,10 +37,10 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
-
     field :roles, list_of(:access_role) do
       resolve(dataloader(Repo, use_parent: true))
     end
+    field :is_pinned, :boolean
   end
 
   input_object :flow_input do
@@ -51,6 +51,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :is_background, :boolean
     field :add_role_ids, list_of(:id)
     field :delete_role_ids, list_of(:id)
+    field :is_pinned, :boolean
   end
 
   @desc "Filtering options for flows"
@@ -75,6 +76,9 @@ defmodule GlificWeb.Schema.FlowTypes do
 
     @desc "Match the is_background flag of flow"
     field :is_background, :boolean
+
+    @desc "Match the is_pinned flag of flow"
+    field :is_pinned, :boolean
   end
 
   object :flow_queries do

@@ -125,6 +125,9 @@ defmodule Glific.Flows do
       {:is_background, is_background}, query ->
         from(q in query, where: q.is_background == ^is_background)
 
+      {:is_pinned, is_pinned}, query ->
+        from q in query, where: q.is_pinned == ^is_pinned
+
       {:name_or_keyword, name_or_keyword}, query ->
         query
         |> where([fr], ilike(fr.name, ^"%#{name_or_keyword}%"))
@@ -253,7 +256,7 @@ defmodule Glific.Flows do
 
     attrs =
       attrs
-      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
+      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
 
     with {:ok, updated_flow} <-
            flow
