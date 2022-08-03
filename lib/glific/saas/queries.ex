@@ -47,6 +47,15 @@ defmodule Glific.Saas.Queries do
     |> validate_phone(params["phone"])
   end
 
+  @doc """
+  Seed data for organization
+  """
+  @spec seed_data(map()) :: map()
+  def seed_data(%{organization: organization} = results) do
+    Glific.Seeds.Seeder.seed(tenant: organization.shortcode, tenant_id: organization.id)
+    results
+  end
+
   @spec organization(map(), map()) :: map()
   defp organization(%{is_valid: false} = result, _params), do: result
 

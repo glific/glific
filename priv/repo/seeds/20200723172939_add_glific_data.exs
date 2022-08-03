@@ -32,9 +32,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp admin_phone(organization_id),
     do: (String.to_integer(@admin_phone) + organization_id) |> Integer.to_string()
 
-  def up(_repo, _opts) do
+  def up(_repo, opts) do
     # check if this is the first organization that we are adding
     # to the DB
+
+    tenant_id = Keyword.get(opts, :tenant_id, nil)
 
     count_organizations = Partners.count_organizations()
 
@@ -42,7 +44,16 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     provider = providers(count_organizations)
 
-    organization = organization(count_organizations, provider, [en, hi])
+    organization =
+      if is_nil(tenant_id),
+        do: organization(count_organizations, provider),
+        else: Partners.organization(tenant_id)
+
+    set_organization_language(organization, [en, hi])
+
+    set_out_of_office(organization)
+
+    set_bsp_id(organization, provider)
 
     ## Added organization id in the query
     Glific.Repo.put_organization_id(organization.id)
@@ -50,20 +61,23 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # Add the SaaS row
     saas(count_organizations, organization)
 
-    # calling it gtags, since tags is a macro in philcolumns
-    gtags(organization, en)
+    ## check for tenant_id
+    admin =
+      if is_nil(tenant_id),
+        do: contacts(organization, en),
+        else: Repo.get!(Contact, organization.contact_id)
 
-    admin = contacts(organization, en)
+    if is_nil(tenant_id), do: users(admin, organization)
 
     profiles(organization, admin)
-
-    users(admin, organization)
 
     SeedsMigration.migrate_data(:simulator, organization)
 
     SeedsMigration.migrate_data(:collection, organization)
 
     SeedsMigration.migrate_data(:localized_language, organization)
+
+    SeedsMigration.migrate_data(:user_default_language, organization)
 
     SeedsMigration.migrate_data(:user_default_language, organization)
 
@@ -191,169 +205,6 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       inactive: "price_1ImvA9EMShkCsLFnTtiXOslM"
     ]
 
-  def gtags(organization, en) do
-    # seed tags
-    message_tags_mt =
-      Repo.insert!(%Tag{
-        label: "Messages",
-        shortcode: "messages",
-        description: "A default message tag",
-        is_reserved: true,
-        language_id: en.id,
-        organization_id: organization.id
-      })
-
-    message_tags_ct =
-      Repo.insert!(%Tag{
-        label: "Contacts",
-        shortcode: "contacts",
-        description: "A contact tag for users that are marked as contacts",
-        is_reserved: true,
-        language_id: en.id,
-        organization_id: organization.id
-      })
-
-    tags = [
-      # Intent of message
-      %{
-        label: "Good Bye",
-        shortcode: "goodbye",
-        description:
-          "Marking message as good wishes when parting or at the end of a conversation",
-        parent_id: message_tags_mt.id,
-        keywords: ["bye", "byebye", "goodbye", "goodnight", "goodnite"]
-      },
-      %{
-        label: "Greeting",
-        shortcode: "greeting",
-        parent_id: message_tags_mt.id,
-        description: "Marking message as a sign of welcome",
-        keywords: ["hello", "goodmorning", "hi", "hey"]
-      },
-      %{
-        label: "Thank You",
-        shortcode: "thankyou",
-        description: "Marking message as a expression of thanks",
-        parent_id: message_tags_mt.id,
-        keywords: ["thanks", "thankyou", "awesome", "great"]
-      },
-
-      # Status of Message
-      %{
-        label: "Important",
-        shortcode: "important",
-        description: "Marking message as of great significance or value",
-        parent_id: message_tags_mt.id
-      },
-      %{
-        label: "New Contact",
-        shortcode: "newcontact",
-        description: "Marking message as came from a new contact",
-        parent_id: message_tags_mt.id
-      },
-      %{
-        label: "Spam",
-        shortcode: "spam",
-        description: "Marking message as irrelevant or unsolicited message",
-        parent_id: message_tags_mt.id
-      },
-
-      # Languages
-      %{
-        label: "Language",
-        shortcode: "language",
-        description: "Marking message as a name of a language",
-        parent_id: message_tags_mt.id,
-        keywords: ["hindi", "english", "हिंदी", "अंग्रेज़ी"]
-      },
-
-      # Optout
-      %{
-        label: "Optout",
-        shortcode: "optout",
-        description: "Marking message as a sign of opting out",
-        parent_id: message_tags_mt.id,
-        keywords: ["stop", "unsubscribe", "halt", "सदस्यता समाप्त"]
-      },
-
-      # Help
-      %{
-        label: "Help",
-        shortcode: "help",
-        description: "Marking message as a sign of requiring assistance",
-        parent_id: message_tags_mt.id,
-        keywords: ["help", "मदद"]
-      },
-
-      # Tags with Value
-      %{
-        label: "Numeric",
-        shortcode: "numeric",
-        description: "Marking message as a numeric type",
-        parent_id: message_tags_mt.id,
-        is_value: true
-      },
-
-      # Intent of message
-      %{
-        label: "Yes",
-        shortcode: "yes",
-        description: "Marking message as an affirmative response",
-        parent_id: message_tags_mt.id,
-        keywords: ["yes", "yeah", "okay", "ok"]
-      },
-      %{
-        label: "No",
-        shortcode: "no",
-        description: "Marking message as a negative response",
-        parent_id: message_tags_mt.id,
-        keywords: ["no", "nope", "nay"]
-      },
-
-      # Type of Contact
-      %{
-        label: "Child",
-        shortcode: "child",
-        description: "Marking message as a child of a parent",
-        parent_id: message_tags_ct.id
-      },
-      %{
-        label: "Parent",
-        shortcode: "parent",
-        description: "Marking message as a parent of a child",
-        parent_id: message_tags_ct.id
-      },
-      %{
-        label: "Participant",
-        shortcode: "participant",
-        description: "Marking message as a participant",
-        parent_id: message_tags_ct.id
-      },
-      %{
-        label: "Staff",
-        shortcode: "staff",
-        description: "Marking message sent from a member of staff",
-        parent_id: message_tags_ct.id
-      }
-    ]
-
-    tags =
-      Enum.map(
-        tags,
-        fn tag ->
-          tag
-          |> Map.put(:organization_id, organization.id)
-          |> Map.put(:language_id, en.id)
-          |> Map.put(:is_reserved, true)
-          |> Map.put(:inserted_at, utc_now())
-          |> Map.put(:updated_at, utc_now())
-        end
-      )
-
-    # seed multiple tags
-    Repo.insert_all(Tag, tags)
-  end
-
   def providers(0 = _count_organizations) do
     default =
       Repo.insert!(%Provider{
@@ -436,41 +287,13 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     })
   end
 
-  defp create_org(0 = _count_organizations, provider, [en, hi], out_of_office_default_data) do
-    Repo.insert!(%Organization{
-      name: "Glific",
-      shortcode: "glific",
-      email: "ADMIN@REPLACE_ME.NOW",
-      bsp_id: provider.id,
-      active_language_ids: [en.id, hi.id],
-      default_language_id: en.id,
-      out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!",
-      is_active: true,
-      is_approved: true,
-      status: :active
-    })
+  defp set_organization_language(organization, [en, hi]) do
+    organization
+    |> change(%{active_language_ids: [en.id, hi.id], default_language_id: en.id})
+    |> Repo.update!()
   end
 
-  defp create_org(count_organizations, provider, [en, hi], out_of_office_default_data) do
-    org_uniq_id = Integer.to_string(count_organizations + 1)
-
-    Repo.insert!(%Organization{
-      name: "New Seeded Organization " <> org_uniq_id,
-      shortcode: "shortcode " <> org_uniq_id,
-      email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
-      bsp_id: provider.id,
-      active_language_ids: [en.id, hi.id],
-      default_language_id: en.id,
-      out_of_office: out_of_office_default_data,
-      signature_phrase: "Please change me, NOW!",
-      is_active: true,
-      is_approved: true,
-      status: :active
-    })
-  end
-
-  def organization(count_organization, provider, [en, hi]) do
+  defp set_out_of_office(organization) do
     out_of_office_default_data = %{
       enabled: true,
       start_time: elem(Time.new(9, 0, 0), 1),
@@ -486,7 +309,50 @@ defmodule Glific.Repo.Seeds.AddGlificData do
       ]
     }
 
-    create_org(count_organization, provider, [en, hi], out_of_office_default_data)
+    organization
+    |> change(%{out_of_office: out_of_office_default_data})
+    |> Repo.update!()
+  end
+
+  def set_bsp_id(organization, provider) do
+    organization
+    |> change(%{bsp_id: provider.id})
+    |> Repo.update!()
+  end
+
+  @default_language_id 1
+  defp create_org(0 = _count_organizations, provider) do
+    Repo.insert!(%Organization{
+      name: "Glific",
+      shortcode: "glific",
+      email: "ADMIN@REPLACE_ME.NOW",
+      default_language_id: @default_language_id,
+      bsp_id: provider.id,
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true,
+      status: :active
+    })
+  end
+
+  defp create_org(count_organizations, provider) do
+    org_uniq_id = Integer.to_string(count_organizations + 1)
+
+    Repo.insert!(%Organization{
+      name: "New Seeded Organization " <> org_uniq_id,
+      shortcode: "shortcode " <> org_uniq_id,
+      email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
+      default_language_id: @default_language_id,
+      bsp_id: provider.id,
+      signature_phrase: "Please change me, NOW!",
+      is_active: true,
+      is_approved: true,
+      status: :active
+    })
+  end
+
+  def organization(count_organization, provider) do
+    create_org(count_organization, provider)
   end
 
   def users(admin, organization) do
