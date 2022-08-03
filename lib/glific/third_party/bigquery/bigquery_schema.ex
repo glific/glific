@@ -1155,36 +1155,22 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-        description: "The meta data for the event that happened.",
-        name: "event_meta",
-        type: "RECORD",
-        mode: "REPEATED",
-        fields: [
-          %{
-            description: "Labels for NGO generated fields for the user",
-            name: "context_id",
-            type: "Integer",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Values of the NGO generated fields (mapped for each user and label)",
-            name: "method",
-            type: "string",
-            mode: "NULLABLE"
-          },
-          %{
-            description: "Values of the NGO generated fields (mapped for each user and label)",
-            name: "optin_message_id",
-            type: "Integer",
-            mode: "NULLABLE"
-          }
-        ]
-      },
-      %{
         description: "Phone number of the user; primary point of identification",
         name: "phone",
         type: "STRING",
         mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end

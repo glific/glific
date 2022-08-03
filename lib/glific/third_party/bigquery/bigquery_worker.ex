@@ -322,8 +322,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             event_datetime: BigQuery.format_date(row.event_datetime, organization_id),
-            phone: row.contact.phone,
-            event_meta: row.event_meta
+            phone: row.contact.phone
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
