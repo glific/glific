@@ -581,12 +581,18 @@ defmodule Glific.Flows do
   def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
       {:ok, flow} -> process_contact_flow([contact], flow, @status)
-      {:error, error} -> {:error, error}
+      {:error, _error} -> {:error, "Flow not found"}
     end
   end
 
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
     do: start_contact_flow(flow.id, contact)
+
+  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, _status) do
+    Broadcast.broadcast_contacts(flow, contacts)
+    {:ok, flow}
+  end
 
   @doc """
   Start flow for contacts of a group
@@ -638,12 +644,6 @@ defmodule Glific.Flows do
           organization_id: flow_copy.organization_id
         })
     end
-  end
-
-  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, _status) do
-    Broadcast.broadcast_contacts(flow, contacts)
-    {:ok, flow}
   end
 
   @doc """
