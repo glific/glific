@@ -484,7 +484,7 @@ defmodule Glific.Templates do
     language_id = languages[template["languageCode"]] || organization.default_language_id
 
     example =
-      case Jason.decode(template["meta"]) do
+      case Jason.decode(template["meta"] || "{}") do
         {:ok, meta} ->
           meta["example"]
 
