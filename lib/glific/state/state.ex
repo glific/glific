@@ -59,7 +59,12 @@ defmodule Glific.State do
   @impl true
   @doc false
   def handle_call({:get_flow, params}, _from, state) do
-    {flow, state} = Flow.get_flow(params.user, params.flow_id, state)
+    {flow, state} =
+      Flow.get_flow(
+        %{user: params.user, flow_id: params.flow_id, is_forced: params.is_forced},
+        state
+      )
+
     {:reply, flow, state, :hibernate}
   end
 
@@ -91,8 +96,8 @@ defmodule Glific.State do
   end
 
   @doc false
-  def get_flow(user, flow_id) do
-    GenServer.call(__MODULE__, {:get_flow, %{user: user, flow_id: flow_id}})
+  def get_flow(user, flow_id, is_forced) do
+    GenServer.call(__MODULE__, {:get_flow, %{user: user, flow_id: flow_id, is_forced: is_forced}})
   end
 
   @doc false
@@ -143,7 +148,7 @@ defmodule Glific.State do
 
     org_state =
       get_state(state, organization_id)
-      |> free_entity(type, user)
+      |> free_entity(type, %{user: user, is_forced: false})
 
     Map.put(state, organization_id, org_state)
   end
@@ -151,15 +156,21 @@ defmodule Glific.State do
   @doc """
   Free the entity after holding an entity period is over
   """
-  @spec free_entity(map(), atom(), User.t()) :: map()
+  @spec free_entity(map(), atom(), map()) :: map()
   def free_entity(
         %{
           flow: %{free: free_flows, busy: busy_flows}
         } = state,
         :flows,
-        user
+        %{user: user, is_forced: is_forced}
       ) do
-    {free, busy} = do_free_entity(free_flows, busy_flows, user, :flows)
+    {free, busy} =
+      do_free_entity(free_flows, busy_flows, %{
+        user: user,
+        is_forced: is_forced,
+        entity_type: :flows
+      })
+
     update_state(state, :flow, free, busy)
   end
 
@@ -168,9 +179,15 @@ defmodule Glific.State do
           simulator: %{free: free_simulators, busy: busy_simulators}
         } = state,
         :simulators,
-        user
+        %{user: user, is_forced: is_forced}
       ) do
-    {free, busy} = do_free_entity(free_simulators, busy_simulators, user, :simulators)
+    {free, busy} =
+      do_free_entity(free_simulators, busy_simulators, %{
+        user: user,
+        is_forced: false,
+        entity_type: :simulators
+      })
+
     update_state(state, :simulator, free, busy)
   end
 
@@ -181,8 +198,31 @@ defmodule Glific.State do
 
   # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10
-  @spec do_free_entity(map(), map(), User.t() | nil, atom()) :: {map(), map()}
-  defp do_free_entity(free, busy, user, entity_type) do
+  @spec do_free_entity(map(), map(), %{
+          user: User.t() | nil,
+          is_forced: boolean(),
+          entity_type: atom()
+        }) :: {map(), map()}
+  defp do_free_entity(free, busy, %{user: user, is_forced: true, entity_type: entity_type}) do
+    Enum.reduce(
+      busy,
+      {free, busy},
+      fn {{id, fingerprint}, {entity, _time}}, {free, busy} ->
+        Logger.info(
+          "Releasing entity: #{inspect(entity)} for user: #{user.name} of org_id: #{user.organization_id} by force."
+        )
+
+        publish_data(entity.organization_id, id, entity_type)
+
+        {
+          [entity | free],
+          Map.delete(busy, {id, fingerprint})
+        }
+      end
+    )
+  end
+
+  defp do_free_entity(free, busy, %{user: user, is_forced: _is_forced, entity_type: entity_type}) do
     expiry_time = DateTime.utc_now() |> DateTime.add(-1 * @cache_time * 60, :second)
 
     Enum.reduce(
