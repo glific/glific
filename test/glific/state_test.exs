@@ -127,6 +127,22 @@ defmodule Glific.StateTest do
     assert cache == State.state(1)
   end
 
+  test "Ensure we can force request and get same flow, for same user id, different fingerprint",
+       %{organization_id: organization_id} = _attrs do
+    user = %User{
+      organization_id: organization_id,
+      id: 6,
+      fingerprint: Ecto.UUID.generate()
+    }
+
+    flow_1 = State.get_flow(user, 1, false)
+    assert flow_1 != nil
+
+    flow_2 = State.get_flow(Map.put(user, :fingerprint, Ecto.UUID.generate()), 1, true)
+    assert flow_2 != nil
+    assert flow_2 == flow_1
+  end
+
   test "Ensure we can request and get different flow, for same user id, different fingerprint",
        %{organization_id: organization_id} = _attrs do
     user = %User{
