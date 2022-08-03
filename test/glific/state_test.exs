@@ -119,7 +119,7 @@ defmodule Glific.StateTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    contact_1 = State.get_flow(user, 1)
+    contact_1 = State.get_flow(user, 1, false)
     assert contact_1 != nil
 
     State.release_flow(user)
@@ -135,10 +135,10 @@ defmodule Glific.StateTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    flow_1 = State.get_flow(user, 1)
+    flow_1 = State.get_flow(user, 1, false)
     assert flow_1 != nil
 
-    flow_2 = State.get_flow(Map.put(user, :fingerprint, Ecto.UUID.generate()), 2)
+    flow_2 = State.get_flow(Map.put(user, :fingerprint, Ecto.UUID.generate()), 2, false)
     assert flow_2 != nil
 
     assert flow_2 != flow_1
@@ -152,10 +152,10 @@ defmodule Glific.StateTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    flow_1 = State.get_flow(user, 1)
+    flow_1 = State.get_flow(user, 1, false)
     assert flow_1 != nil
 
-    flow_2 = State.get_flow(user, 1)
+    flow_2 = State.get_flow(user, 1, false)
     assert flow_2 != nil
 
     assert flow_2 == flow_1
@@ -169,10 +169,10 @@ defmodule Glific.StateTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    flow_1 = State.get_flow(user, 1)
+    flow_1 = State.get_flow(user, 1, false)
     assert flow_1 != nil
 
-    flow_2 = State.get_flow(user, 2)
+    flow_2 = State.get_flow(user, 2, false)
     assert flow_2 != nil
 
     %{flow: %{free: free_flows}} = State.state(1)
@@ -190,7 +190,7 @@ defmodule Glific.StateTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    flow_1 = State.get_flow(user_1, 1)
+    flow_1 = State.get_flow(user_1, 1, false)
     assert flow_1 != nil
 
     user_2 = %User{
@@ -199,7 +199,7 @@ defmodule Glific.StateTest do
       fingerprint: Ecto.UUID.generate()
     }
 
-    flow_2 = State.get_flow(user_2, 2)
+    flow_2 = State.get_flow(user_2, 2, false)
     assert flow_2 != nil
 
     State.release_flow(user_1)
