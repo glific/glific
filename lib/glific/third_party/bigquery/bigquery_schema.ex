@@ -1113,6 +1113,69 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for contact history table
+  """
+  @spec contact_history_schema :: list()
+  def contact_history_schema do
+    [
+      %{
+        description: "Unique ID for the contact history",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "event type for the contact history",
+        name: "event_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "event label for the contact history",
+        name: "event_label",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "event datetime for the contact history",
+        name: "event_datetime",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Phone number of the user; primary point of identification",
+        name: "phone",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
