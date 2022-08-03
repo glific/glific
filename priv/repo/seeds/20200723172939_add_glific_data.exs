@@ -32,7 +32,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp admin_phone(organization_id),
     do: (String.to_integer(@admin_phone) + organization_id) |> Integer.to_string()
 
-  def up(_repo) do
+  def up(_repo, _opts) do
     # check if this is the first organization that we are adding
     # to the DB
 
