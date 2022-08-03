@@ -690,7 +690,10 @@ defmodule Glific.Flows.Action do
   def execute(%{type: type} = _action, context, [msg])
       when type in @wait_for do
     if msg.body != "No Response",
-      do: Glific.log_error("Unexpected message #{msg.body} received", false),
+      do:
+        Logger.info(
+          "Message #{msg.body} with context (#{context.id}) received while waiting for time"
+        ),
       else: {:ok, context, []}
   end
 
