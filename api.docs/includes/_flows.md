@@ -753,8 +753,8 @@ mutation exportFlow($id: ID!) {
 Gets a flow for the logged in user.
 
 ```graphql
-query flowGet($id: ID!) {
-  flowGet(id: $id) {
+query flowGet($id: ID!, $isForced: Boolean!) {
+  flowGet(id: $id,$isForced: $isForced) {
     id
     name
   }
