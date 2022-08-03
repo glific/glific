@@ -120,6 +120,8 @@ defmodule Glific.Providers.Gupshup.Message do
   @doc false
   @impl Glific.Providers.MessageBehaviour
   @spec receive_text(payload :: map()) :: map()
+  def receive_text(%{"sender" => %{"phone" => ""}}), do: {:error, "Phone number is blank"}
+
   def receive_text(params) do
     payload = params["payload"]
     message_payload = payload["payload"]
