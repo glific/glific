@@ -179,7 +179,7 @@ defmodule Glific.State do
           simulator: %{free: free_simulators, busy: busy_simulators}
         } = state,
         :simulators,
-        %{user: user, is_forced: is_forced}
+        %{user: user}
       ) do
     {free, busy} =
       do_free_entity(free_simulators, busy_simulators, %{
@@ -198,11 +198,7 @@ defmodule Glific.State do
 
   # we'll assign the simulator and flows for 10 minute intervals
   @cache_time 10
-  @spec do_free_entity(map(), map(), %{
-          user: User.t() | nil,
-          is_forced: boolean(),
-          entity_type: atom()
-        }) :: {map(), map()}
+  @spec do_free_entity(map(), map(), map()) :: {map(), map()}
   defp do_free_entity(free, busy, %{user: user, is_forced: true, entity_type: entity_type}) do
     Enum.reduce(
       busy,
