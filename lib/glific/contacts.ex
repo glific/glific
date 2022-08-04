@@ -305,8 +305,11 @@ defmodule Glific.Contacts do
     end
   end
 
+  @doc """
+  Checks if the contact passed in argument is organization root contact or not
+  """
   @spec is_org_root_contact?(Contact.t()) :: boolean()
-  defp is_org_root_contact?(contact) do
+  def is_org_root_contact?(contact) do
     organization = Partners.organization(contact.organization_id)
     if contact.id == organization.contact.id, do: true, else: false
   end
