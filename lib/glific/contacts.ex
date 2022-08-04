@@ -293,10 +293,19 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    if has_permission?(contact.id),
-      do: Repo.delete(contact),
-      else: raise("Permission denied")
+    with true <- has_permission?(contact.id),
+         organization <- Partners.organization(contact.organization_id) do
+      String.equivalent?(organization.contact.phone, contact.phone)
+      |> check_and_delete_contact(contact)
+    else
+      _ -> raise("Permission denied")
+    end
   end
+
+  @spec check_and_delete_contact(boolean(), Contact.t()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
+  defp check_and_delete_contact(true, _contact), do: {:error, "Cannot delete Organization phone"}
+  defp check_and_delete_contact(false, contact), do: Repo.delete(contact)
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking contact changes.
