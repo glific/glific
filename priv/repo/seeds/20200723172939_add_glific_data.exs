@@ -1,6 +1,7 @@
 defmodule Glific.Repo.Seeds.AddGlificData do
   use Glific.Seeds.Seed
   import Ecto.Changeset, only: [change: 2]
+  import Ecto.Query
 
   envs([:dev, :test, :prod])
 
@@ -122,54 +123,64 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   def utc_now(), do: DateTime.utc_now() |> DateTime.truncate(:second)
 
   def languages(0 = _count_organizations) do
-    en =
-      Repo.insert!(%Language{
-        label: "English",
-        label_locale: "English",
-        locale: "en"
-      })
+    query =
+      from l in Language,
+        where: l.label == "English"
 
-    hi =
-      Repo.insert!(%Language{
-        label: "Hindi",
-        label_locale: "हिंदी",
-        locale: "hi"
-      })
+    cond do
+      Repo.exists?(query) ->
+        languages(1)
 
-    languages = [
-      {"Tamil", "தமிழ்", "ta"},
-      {"Kannada", "ಕನ್ನಡ", "kn"},
-      {"Malayalam", "മലയാളം", "ml"},
-      {"Telugu", "తెలుగు", "te"},
-      {"Odia", "ଓଡ଼ିଆ", "or"},
-      {"Assamese", "অসমীয়া", "as"},
-      {"Gujarati", "ગુજરાતી", "gu"},
-      {"Bengali", "বাংলা", "bn"},
-      {"Punjabi", "ਪੰਜਾਬੀ", "pa"},
-      {"Marathi", "मराठी", "mr"},
-      {"Urdu", "اردو", "ur"},
-      {"Spanish", "Español", "es"},
-      {"Sign Language", "ISL", "isl"}
-    ]
+      true ->
+        en =
+          Repo.insert!(%Language{
+            label: "English",
+            label_locale: "English",
+            locale: "en"
+          })
 
-    languages =
-      Enum.map(
-        languages,
-        fn {label, label_locale, locale} ->
-          %{
-            label: label,
-            label_locale: label_locale,
-            locale: locale,
-            inserted_at: utc_now(),
-            updated_at: utc_now()
-          }
-        end
-      )
+        hi =
+          Repo.insert!(%Language{
+            label: "Hindi",
+            label_locale: "हिंदी",
+            locale: "hi"
+          })
 
-    # seed languages
-    Repo.insert_all(Language, languages)
+        languages = [
+          {"Tamil", "தமிழ்", "ta"},
+          {"Kannada", "ಕನ್ನಡ", "kn"},
+          {"Malayalam", "മലയാളം", "ml"},
+          {"Telugu", "తెలుగు", "te"},
+          {"Odia", "ଓଡ଼ିଆ", "or"},
+          {"Assamese", "অসমীয়া", "as"},
+          {"Gujarati", "ગુજરાતી", "gu"},
+          {"Bengali", "বাংলা", "bn"},
+          {"Punjabi", "ਪੰਜਾਬੀ", "pa"},
+          {"Marathi", "मराठी", "mr"},
+          {"Urdu", "اردو", "ur"},
+          {"Spanish", "Español", "es"},
+          {"Sign Language", "ISL", "isl"}
+        ]
 
-    [en, hi]
+        languages =
+          Enum.map(
+            languages,
+            fn {label, label_locale, locale} ->
+              %{
+                label: label,
+                label_locale: label_locale,
+                locale: locale,
+                inserted_at: utc_now(),
+                updated_at: utc_now()
+              }
+            end
+          )
+
+        # seed languages
+        Repo.insert_all(Language, languages)
+
+        [en, hi]
+    end
   end
 
   def languages(_count_organizations) do
@@ -323,13 +334,15 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     |> Repo.update!()
   end
 
-  @default_language_id 1
-  defp create_org(0 = _count_organizations, provider) do
+  defp create_org(0 = count_organizations, provider) do
+    [en, hi] = languages(count_organizations)
+
     Repo.insert!(%Organization{
       name: "Glific",
       shortcode: "glific",
       email: "ADMIN@REPLACE_ME.NOW",
-      default_language_id: @default_language_id,
+      default_language_id: en.id,
+      active_language_ids: [en.id, hi.id],
       bsp_id: provider.id,
       signature_phrase: "Please change me, NOW!",
       is_active: true,
@@ -341,11 +354,14 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp create_org(count_organizations, provider) do
     org_uniq_id = Integer.to_string(count_organizations + 1)
 
+    [en, hi] = languages(count_organizations)
+
     Repo.insert!(%Organization{
       name: "New Seeded Organization " <> org_uniq_id,
       shortcode: "shortcode " <> org_uniq_id,
       email: "ADMIN_#{org_uniq_id}@REPLACE_ME.NOW",
-      default_language_id: @default_language_id,
+      active_language_ids: [en.id, hi.id],
+      default_language_id: en.id,
       bsp_id: provider.id,
       signature_phrase: "Please change me, NOW!",
       is_active: true,
