@@ -114,6 +114,7 @@ defmodule GlificWeb.Schema.FlowTypes do
     @desc "Get a flow for this user"
     field :flow_get, :flow_result do
       arg(:id, non_null(:id))
+      arg(:is_forced, :boolean)
       middleware(Authorize, :staff)
       resolve(&Resolvers.Flows.flow_get/3)
     end
