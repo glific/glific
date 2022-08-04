@@ -30,6 +30,7 @@ defmodule Glific.Flows.Flow do
     :ignore_keywords,
     :is_active,
     :is_background,
+    :is_pinned,
     :respond_other,
     :respond_no_response
   ]
@@ -44,6 +45,7 @@ defmodule Glific.Flows.Flow do
           ignore_keywords: boolean() | nil,
           is_active: boolean() | nil,
           is_background: boolean() | nil,
+          is_pinned: boolean() | nil,
           respond_other: boolean() | nil,
           respond_no_response: boolean() | nil,
           flow_type: String.t() | nil,
@@ -84,6 +86,7 @@ defmodule Glific.Flows.Flow do
     field :ignore_keywords, :boolean, default: false
     field :is_active, :boolean, default: true
     field :is_background, :boolean, default: false
+    field :is_pinned, :boolean, default: false
     field :respond_other, :boolean, default: false
     field :respond_no_response, :boolean, default: false
 

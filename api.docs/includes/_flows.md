@@ -920,6 +920,11 @@ query broadcastStats($flowBroadcastId: ID!) {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>isPinned</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -1006,6 +1011,11 @@ query broadcastStats($flowBroadcastId: ID!) {
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isPinned</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -1051,6 +1061,11 @@ Filtering options for flows
 <td colspan="2" valign="top"><strong>isBackground</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td>Match the isBackground flag of flow</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isPinned</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Match the isPinned flag of flow</td>
 </tr>
 <tr>
   <td colspan="2" valign="top"><strong>status</strong></td>

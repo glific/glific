@@ -67,6 +67,21 @@ defmodule Glific.FLowsTest do
       assert length(flows) >= 2
     end
 
+    test "list_flows/1 returns flows filtered by is_pinned", attrs do
+      [predefine_flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+      assert {:ok, %Flow{} = _flow} =
+               @valid_attrs
+               |> Map.merge(%{
+                 organization_id: predefine_flow.organization_id,
+                 is_pinned: true
+               })
+               |> Flows.create_flow()
+
+      flows = Flows.list_flows(%{filter: %{is_pinned: true}})
+      assert length(flows) == 2
+    end
+
     test "list_flows/1 returns flows filtered by name keyword", attrs do
       f0 = flow_fixture(@valid_attrs)
       f1 = flow_fixture(@valid_more_attrs |> Map.merge(%{name: "testkeyword"}))
@@ -335,14 +350,23 @@ defmodule Glific.FLowsTest do
       assert loaded_flow.definition == new_definition
     end
 
-    test "start_contact_flow/2 will setup the flow for a contact", attrs do
+    test "start_cotntact_flow/2 will setup the flow for a contact", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
       contact = Fixtures.contact_fixture(attrs)
+
       {:ok, flow} = Flows.start_contact_flow(flow, contact)
       first_action = hd(hd(flow.nodes).actions)
 
       assert {:ok, _message} =
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
+    end
+
+    test "start_contact_flow/2 if flow is not avialable", attrs do
+      contact = Fixtures.contact_fixture(attrs)
+
+      {:error, error} = Flows.start_contact_flow(9999, contact)
+      assert error == "Flow not found"
     end
 
     test "start_contact_flow/2 will setup the template flow for a contact", attrs do
