@@ -919,7 +919,7 @@ defmodule Glific.Fixtures do
   def role_fixture(attrs) do
     valid_attrs = %{
       description: "some description",
-      is_reserved: true,
+      is_reserved: false,
       label: "some label"
     }
 

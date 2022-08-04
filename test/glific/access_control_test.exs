@@ -22,11 +22,18 @@ defmodule Glific.AccessControlTest do
     }
 
     test "list_roles/0 returns all roles", attrs do
+      FunWithFlags.enable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
       role = Fixtures.role_fixture(attrs)
       assert AccessControl.list_roles(%{organization_id: attrs.organization_id}) == [role]
     end
 
     test "list_roles/0 returns with filtered data", attrs do
+      FunWithFlags.enable(:roles_and_permission,
+      for_actor: %{organization_id: attrs.organization_id}
+    )
       role = Fixtures.role_fixture(attrs)
 
       assert AccessControl.list_roles(%{
@@ -118,6 +125,10 @@ defmodule Glific.AccessControlTest do
       assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
                role_count + 2
     end
+
+    # test "list_flows/1 returns list of flows assigned to user", attrs do
+    #   [flow | _] = Flows.list_flows(%{filter: %{name: "activity"}})
+    # end
   end
 
   describe "permissions" do
