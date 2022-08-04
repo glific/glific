@@ -64,7 +64,9 @@ defmodule Glific.OnboardTest do
 
   test "ensure that sending in valid parameters, update organization status" do
     result = Onboard.setup(@valid_attrs)
-    {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
+
+    {:ok, organization} =
+      Repo.fetch_by(Organization, %{name: result.organization.name}, skip_organization_id: true)
 
     updated_organization = Onboard.status(organization.id, :active)
 
@@ -78,7 +80,10 @@ defmodule Glific.OnboardTest do
   test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",
        attrs do
     use_cassette "update_subscription_inactive_plan" do
-      {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: attrs.organization_id})
+      {:ok, organization} =
+        Repo.fetch_by(Organization, %{organization_id: attrs.organization_id},
+          skip_organization_id: true
+        )
 
       updated_organization = Onboard.status(organization.id, :suspended)
 
