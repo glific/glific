@@ -100,31 +100,13 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-  # method can be either a get or a post. The do_oban function
-  # does the right thing based on if it is a get or post
-  @spec method(Action.t(), FlowContext.t()) :: nil
-  defp method(action, context) do
-    case create_body(action, context, action.body) do
-      {:error, message} ->
-        action
-        |> create_log(%{}, action.headers, context)
-        |> update_log(message)
+  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
+  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
-      {:ok, body} ->
-        do_oban(action, context, body)
-    end
-
-    nil
-  end
-
-  @spec create_body(map(), FlowContext.t(), String.t()) ::
-          {map(), String.t()} | {:error, String.t()}
-  defp create_body(_headers, _context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
-
-  defp create_body(headers, context, action_body) do
+  defp create_body(context, action_body) do
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->
-        do_create_body(headers, context, action_body_map)
+        do_create_body(context, action_body_map)
 
       _ ->
         Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
@@ -137,9 +119,8 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_create_body(map(), FlowContext.t(), map()) ::
-          {map(), String.t()} | {:error, String.t()}
-  defp do_create_body(headers, context, action_body_map) do
+  @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
+  defp do_create_body(context, action_body_map) do
     default_payload = %{
       contact: %{
         id: context.contact.id,
@@ -167,20 +148,10 @@ defmodule Glific.Flows.Webhook do
       |> Enum.into(%{})
       |> Map.put("organization_id", context.organization_id)
 
-    headers =
-      MessageVarParser.parse_map(headers, fields)
-      |> Enum.map(fn
-        {k, "@contact"} -> {k, default_payload.contact}
-        {k, "@results"} -> {k, default_payload.results}
-        {k, v} -> {k, v}
-      end)
-      |> Enum.into(%{})
-
     Jason.encode(action_body_map)
     |> case do
       {:ok, action_body} ->
-        action = %{map: action_body_map, body: action_body, headers: headers}
-        {:ok, action}
+        {action_body_map, action_body}
 
       _ ->
         Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
@@ -193,8 +164,52 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_oban(Action.t(), FlowContext.t(), map()) :: any
-  defp do_oban(action, context, %{map: map, body: body, headers: headers}) do
+  # method can be either a get or a post. The do_oban function
+  # does the right thing based on if it is a get or post
+  @spec method(Action.t(), FlowContext.t()) :: nil
+  defp method(action, context) do
+    case create_body(context, action.body) do
+      {:error, message} ->
+        action
+        |> create_log(%{}, action.headers, context)
+        |> update_log(message)
+
+      {map, body} ->
+        do_oban(action, context, {map, body})
+    end
+
+    nil
+  end
+
+  def create_headers(action, context) do
+    default_payload = %{
+      contact: %{
+        id: context.contact.id,
+        name: context.contact.name,
+        phone: context.contact.phone,
+        fields: context.contact.fields
+      },
+      results: context.results
+    }
+
+    fields = %{
+      "contact" => Contacts.get_contact_field_map(context.contact_id),
+      "results" => context.results,
+      "flow" => %{name: context.flow.name, id: context.flow.id}
+    }
+
+    MessageVarParser.parse_map(action.headers, fields)
+    |> Enum.map(fn
+      {k, "@contact"} -> {k, default_payload.contact}
+      {k, "@results"} -> {k, default_payload.results}
+      {k, v} -> {k, v}
+    end)
+    |> Enum.into(%{})
+  end
+
+  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
+  defp do_oban(action, context, {map, body}) do
+    headers = create_headers(action, context)
     headers =
       if is_nil(headers),
         do: %{},
