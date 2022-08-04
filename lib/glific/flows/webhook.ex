@@ -104,27 +104,26 @@ defmodule Glific.Flows.Webhook do
   # does the right thing based on if it is a get or post
   @spec method(Action.t(), FlowContext.t()) :: nil
   defp method(action, context) do
-    IO.inspect(action, label: "----------------------->>>>>")
-    case create_body(context, action.body) do
+    case create_body(action, context, action.body) do
       {:error, message} ->
         action
         |> create_log(%{}, action.headers, context)
         |> update_log(message)
 
-      {map, body} ->
-        do_oban(action, context, {map, body})
+      {:ok, body} ->
+        do_oban(action, context, body)
     end
 
     nil
   end
 
-  @spec create_body(FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(_context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
+  @spec create_body(map(), FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
+  defp create_body(_action, _context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
-  defp create_body(context, action_body) do
+  defp create_body(action, context, action_body) do
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->
-        do_create_body(context, action_body_map)
+        do_create_body(action, context, action_body_map)
 
       _ ->
         Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
@@ -137,9 +136,8 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_create_body(FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
-  defp do_create_body(context, action_body_map) do
-    IO.inspect(action_body_map)
+  @spec do_create_body(map(), FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
+  defp do_create_body(action, context, action_body_map) do
     default_payload = %{
       contact: %{
         id: context.contact.id,
@@ -150,7 +148,6 @@ defmodule Glific.Flows.Webhook do
       results: context.results,
       flow: %{name: context.flow.name, id: context.flow.id}
     }
-    IO.inspect(default_payload, label: "-----default_payload")
 
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
@@ -168,13 +165,21 @@ defmodule Glific.Flows.Webhook do
       |> Enum.into(%{})
       |> Map.put("organization_id", context.organization_id)
 
-    IO.inspect(action_body_map, label: "---------action_body_map")
+    headers =
+      MessageVarParser.parse_map(action.headers, fields)
+      |> Enum.map(fn
+       {k, "@contact"} -> {k, default_payload.contact}
+       {k, "@results"} -> {k, default_payload.results}
+       {k, v} -> {k, v}
+     end)
+     |> Enum.into(%{})
+
 
     Jason.encode(action_body_map)
     |> case do
       {:ok, action_body} ->
-        IO.inspect(action_body, label: "sass-------->")
-        {action_body_map, action_body}
+        action = %{map: action_body_map, body: action_body, headers: headers}
+        {:ok, action}
 
       _ ->
         Logger.info("Error in encoding webhook body #{inspect(action_body_map)}.")
@@ -187,12 +192,12 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
-  defp do_oban(action, context, {map, body}) do
+  @spec do_oban(Action.t(), FlowContext.t(), map()) :: any
+  defp do_oban(action, context, %{map: map, body: body, headers: headers}) do
     headers =
-      if is_nil(action.headers),
+      if is_nil(headers),
         do: %{},
-        else: action.headers
+        else: headers
 
     headers = add_signature(headers, context.organization_id, body)
     webhook_log = create_log(action, map, headers, context)
