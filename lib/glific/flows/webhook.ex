@@ -184,16 +184,6 @@ defmodule Glific.Flows.Webhook do
   # THis function will create a dynamic headers
   @spec create_headers(Action.t(), FlowContext.t()) :: map()
   defp create_headers(action, context) do
-    default_payload = %{
-      contact: %{
-        id: context.contact.id,
-        name: context.contact.name,
-        phone: context.contact.phone,
-        fields: context.contact.fields
-      },
-      results: context.results
-    }
-
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
       "results" => context.results,
@@ -201,12 +191,6 @@ defmodule Glific.Flows.Webhook do
     }
 
     MessageVarParser.parse_map(action.headers, fields)
-    |> Enum.map(fn
-      {k, "@contact"} -> {k, default_payload.contact}
-      {k, "@results"} -> {k, default_payload.results}
-      {k, v} -> {k, v}
-    end)
-    |> Enum.into(%{})
   end
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
