@@ -5,7 +5,9 @@ defmodule Glific.AccessControlTest do
     AccessControl,
     AccessControl.Permission,
     AccessControl.Role,
-    Fixtures
+    Fixtures,
+    Flows,
+    Seeds.SeedsDev
   }
 
   describe "roles" do
@@ -17,7 +19,7 @@ defmodule Glific.AccessControlTest do
     }
     @valid_more_attrs %{
       description: "some more description",
-      is_reserved: true,
+      is_reserved: false,
       label: "some more label"
     }
 
@@ -32,8 +34,9 @@ defmodule Glific.AccessControlTest do
 
     test "list_roles/0 returns with filtered data", attrs do
       FunWithFlags.enable(:roles_and_permission,
-      for_actor: %{organization_id: attrs.organization_id}
-    )
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
       role = Fixtures.role_fixture(attrs)
 
       assert AccessControl.list_roles(%{
@@ -126,9 +129,19 @@ defmodule Glific.AccessControlTest do
                role_count + 2
     end
 
-    # test "list_flows/1 returns list of flows assigned to user", attrs do
-    #   [flow | _] = Flows.list_flows(%{filter: %{name: "activity"}})
-    # end
+    test "list_flows/1 returns list of flows assigned to user", attrs do
+      default_role = Fixtures.role_fixture(attrs)
+      SeedsDev.seed_test_flows()
+      [flow | _] = Flows.list_flows(%{filter: %{name: "Test Workflow"}})
+      add_role_ids = to_string(default_role.id)
+
+      Flows.update_flow(flow, %{
+        add_role_ids: [add_role_ids],
+        delete_role_ids: [],
+        name: flow.name,
+        organization_id: attrs.organization_id
+      })
+    end
   end
 
   describe "permissions" do
