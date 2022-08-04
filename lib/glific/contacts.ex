@@ -293,19 +293,23 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    with true <- has_permission?(contact.id),
-         organization <- Partners.organization(contact.organization_id) do
-      String.equivalent?(organization.contact.phone, contact.phone)
-      |> check_and_delete_contact(contact)
-    else
-      _ -> raise("Permission denied")
+    cond do
+      has_permission?(contact.id) == false ->
+        raise("Permission denied")
+
+      is_org_root_contact?(contact) == true ->
+        {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
+
+      true ->
+        Repo.delete(contact)
     end
   end
 
-  @spec check_and_delete_contact(boolean(), Contact.t()) ::
-          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp check_and_delete_contact(true, _contact), do: {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
-  defp check_and_delete_contact(false, contact), do: Repo.delete(contact)
+  @spec is_org_root_contact?(Contact.t()) :: boolean()
+  defp is_org_root_contact?(contact) do
+    organization = Partners.organization(contact.organization_id)
+    if contact.id == organization.contact.id, do: true, else: false
+  end
 
   @doc """
   Returns an `%Ecto.Changeset{}` for tracking contact changes.
