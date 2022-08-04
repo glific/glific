@@ -304,7 +304,7 @@ defmodule Glific.Contacts do
 
   @spec check_and_delete_contact(boolean(), Contact.t()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
-  defp check_and_delete_contact(true, _contact), do: {:error, "Cannot delete Organization phone"}
+  defp check_and_delete_contact(true, _contact), do: {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
   defp check_and_delete_contact(false, contact), do: Repo.delete(contact)
 
   @doc """

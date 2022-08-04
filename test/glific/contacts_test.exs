@@ -514,9 +514,9 @@ defmodule Glific.ContactsTest do
 
     test "delete_contact/1 does not deletes the contact when contact is organization contact",
          %{organization_id: organization_id} = _attrs do
-        org = Partners.organization(organization_id)
-        assert {:error, error} = Contacts.delete_contact(org.contact)
-        assert error == "Cannot delete Organization phone"
+      org = Partners.organization(organization_id)
+      assert {:error, error} = Contacts.delete_contact(org.contact)
+      assert error == "Sorry, this is your chatbot number and hence cannot be deleted."
     end
 
     test "change_contact/1 returns a contact changeset",
