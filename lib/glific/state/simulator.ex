@@ -25,13 +25,13 @@ defmodule Glific.State.Simulator do
 
     {org_state, contact} =
       State.get_state(state, organization_id)
-      |> State.free_entity(:simulators, user)
+      |> State.free_entity(:simulators, %{user: user})
       |> get_org_simulator(user)
 
     {contact, Map.put(state, organization_id, org_state)}
   end
 
-  @spec get_org_simulator(map(), User.t()) :: {map, Contact.t()} | nil
+  @spec get_org_simulator(map(), map()) :: {map(), Contact.t()} | {map(), nil}
   defp get_org_simulator(
          %{
            simulator: %{free: free, busy: busy}
