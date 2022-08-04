@@ -512,6 +512,13 @@ defmodule Glific.ContactsTest do
       assert_raise Ecto.NoResultsError, fn -> Contacts.get_contact!(contact.id) end
     end
 
+    test "delete_contact/1 does not deletes the contact when contact is organization contact",
+         %{organization_id: organization_id} = _attrs do
+        org = Partners.organization(organization_id)
+        assert {:error, error} = Contacts.delete_contact(org.contact)
+        assert error == "Cannot delete Organization phone"
+    end
+
     test "change_contact/1 returns a contact changeset",
          %{organization_id: _organization_id} = attrs do
       contact = contact_fixture(attrs)
