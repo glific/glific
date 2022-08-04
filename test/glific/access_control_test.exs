@@ -10,6 +10,11 @@ defmodule Glific.AccessControlTest do
 
   describe "roles" do
     @invalid_attrs %{description: nil, is_reserved: nil, label: nil}
+    @valid_attrs %{
+      description: "some more organization description",
+      is_reserved: false,
+      label: "some more organization label"
+    }
     @valid_more_attrs %{
       description: "some more description",
       is_reserved: true,
@@ -19,6 +24,33 @@ defmodule Glific.AccessControlTest do
     test "list_roles/0 returns all roles", attrs do
       role = Fixtures.role_fixture(attrs)
       assert AccessControl.list_roles(%{organization_id: attrs.organization_id}) == [role]
+    end
+
+    test "list_roles/0 returns with filtered data", attrs do
+      role = Fixtures.role_fixture(attrs)
+
+      assert AccessControl.list_roles(%{
+               organization_id: attrs.organization_id,
+               filter: %{description: role.description}
+             }) == [role]
+
+      assert AccessControl.list_roles(%{
+               organization_id: attrs.organization_id,
+               filter: %{is_reserved: role.is_reserved}
+             }) == [role]
+    end
+
+    test "organization_roles/1 returns all organization roles",
+         %{organization_id: organization_id} = attrs do
+      FunWithFlags.enable(:roles_and_permission, for_actor: %{organization_id: organization_id})
+
+      assert {:ok, _role} =
+               attrs
+               |> Map.merge(@valid_attrs)
+               |> AccessControl.create_role()
+
+      assert ["some more organization label"] =
+               AccessControl.organization_roles(%{organization_id: organization_id})
     end
 
     test "get_role!/1 returns the role with given id", attrs do
