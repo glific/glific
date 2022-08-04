@@ -100,7 +100,7 @@ defmodule Glific.Flows.Webhook do
     |> WebhookLog.update_webhook_log(attrs)
   end
 
-   # method can be either a get or a post. The do_oban function
+  # method can be either a get or a post. The do_oban function
   # does the right thing based on if it is a get or post
   @spec method(Action.t(), FlowContext.t()) :: nil
   defp method(action, context) do
@@ -117,13 +117,14 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  @spec create_body(map(), FlowContext.t(), String.t()) :: {map(), String.t()} | {:error, String.t()}
-  defp create_body(_action, _context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
+  @spec create_body(map(), FlowContext.t(), String.t()) ::
+          {map(), String.t()} | {:error, String.t()}
+  defp create_body(_headers, _context, action_body) when action_body in [nil, ""], do: {%{}, "{}"}
 
-  defp create_body(action, context, action_body) do
+  defp create_body(headers, context, action_body) do
     case Jason.decode(action_body) do
       {:ok, action_body_map} ->
-        do_create_body(action, context, action_body_map)
+        do_create_body(headers, context, action_body_map)
 
       _ ->
         Logger.info("Error in decoding webhook body #{inspect(action_body)}.")
@@ -136,8 +137,9 @@ defmodule Glific.Flows.Webhook do
     end
   end
 
-  @spec do_create_body(map(), FlowContext.t(), map()) :: {map(), String.t()} | {:error, String.t()}
-  defp do_create_body(action, context, action_body_map) do
+  @spec do_create_body(map(), FlowContext.t(), map()) ::
+          {map(), String.t()} | {:error, String.t()}
+  defp do_create_body(headers, context, action_body_map) do
     default_payload = %{
       contact: %{
         id: context.contact.id,
@@ -166,14 +168,13 @@ defmodule Glific.Flows.Webhook do
       |> Map.put("organization_id", context.organization_id)
 
     headers =
-      MessageVarParser.parse_map(action.headers, fields)
+      MessageVarParser.parse_map(headers, fields)
       |> Enum.map(fn
-       {k, "@contact"} -> {k, default_payload.contact}
-       {k, "@results"} -> {k, default_payload.results}
-       {k, v} -> {k, v}
-     end)
-     |> Enum.into(%{})
-
+        {k, "@contact"} -> {k, default_payload.contact}
+        {k, "@results"} -> {k, default_payload.results}
+        {k, v} -> {k, v}
+      end)
+      |> Enum.into(%{})
 
     Jason.encode(action_body_map)
     |> case do
