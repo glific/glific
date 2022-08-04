@@ -16,6 +16,7 @@ defmodule Glific.Saas.Queries do
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
     Repo,
+    Seeds.Seeder,
     Users
   }
 
@@ -51,10 +52,13 @@ defmodule Glific.Saas.Queries do
   Seed data for organization
   """
   @spec seed_data(map()) :: map()
-  def seed_data(%{organization: organization} = results) do
-    Glific.Seeds.Seeder.seed(tenant: organization.shortcode, tenant_id: organization.id)
+
+  def seed_data(%{organization: organization} = results) when is_map(organization) do
+    Seeder.seed(tenant: organization.shortcode, tenant_id: organization.id)
     results
   end
+
+  def seed_data(results), do: results
 
   @spec organization(map(), map()) :: map()
   defp organization(%{is_valid: false} = result, _params), do: result
