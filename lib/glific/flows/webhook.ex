@@ -181,7 +181,9 @@ defmodule Glific.Flows.Webhook do
     nil
   end
 
-  def create_headers(action, context) do
+  # THis function will create a dynamic headers
+  @spec create_headers(Action.t(), FlowContext.t()) :: map()
+  defp create_headers(action, context) do
     default_payload = %{
       contact: %{
         id: context.contact.id,
@@ -209,14 +211,10 @@ defmodule Glific.Flows.Webhook do
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
-    headers = create_headers(action, context)
-    headers =
-      if is_nil(headers),
-        do: %{},
-        else: headers
+    dynamic_headers = create_headers(action, context)
 
-    headers = add_signature(headers, context.organization_id, body)
-    webhook_log = create_log(action, map, headers, context)
+    headers = add_signature(dynamic_headers, context.organization_id, body)
+    webhook_log = create_log(action, map, dynamic_headers, context)
 
     {:ok, _} =
       __MODULE__.new(%{
