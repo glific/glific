@@ -18,13 +18,13 @@ defmodule Glific.State.Flow do
   - If available, return the available flow
   - If none available, return error message along with name of user currently using flow
   """
-  @spec get_flow(User.t(), non_neg_integer, map) :: {Flow.t(), map}
-  def get_flow(user, flow_id, state) do
+  @spec get_flow(map(), map()) :: {Flow.t(), map}
+  def get_flow(%{user: user, flow_id: flow_id, is_forced: is_forced}, state) do
     organization_id = user.organization_id
 
     {org_state, flow} =
       State.get_state(state, organization_id)
-      |> State.free_entity(:flows, user)
+      |> State.free_entity(:flows, %{user: user, is_forced: is_forced})
       |> get_org_flows(user, flow_id)
 
     {flow, Map.put(state, organization_id, org_state)}
@@ -61,7 +61,7 @@ defmodule Glific.State.Flow do
             errors: %{
               key: "error",
               message:
-                "Sorry! You cannot edit the flow right now. It is being edited by \n #{user_name}"
+                "This flow is being edited by #{user_name} right now!"
             }
           }}}
 
