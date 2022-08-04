@@ -14,13 +14,15 @@ defmodule Glific.ContactsTest do
     Partners.Saas,
     Seeds.SeedsDev,
     Settings,
-    Settings.Language
+    Settings.Language,
+    Users
   }
 
   setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_groups()
+    SeedsDev.seed_users()
     :ok
   end
 
@@ -517,6 +519,19 @@ defmodule Glific.ContactsTest do
       org = Partners.organization(organization_id)
       assert {:error, error} = Contacts.delete_contact(org.contact)
       assert error == "Sorry, this is your chatbot number and hence cannot be deleted."
+    end
+
+    test "delete_contact/1 raises error when does not have permission" do
+      with {:ok, user} <- Repo.fetch_by(Users.User, %{name: "NGO Staff"}),
+           {:ok, restricted_user} <- Users.update_user(user, %{is_restricted: true}) do
+        Repo.put_current_user(restricted_user)
+      end
+
+      {:ok, contact} = Repo.fetch_by(Contacts.Contact, %{name: "SaaS Admin"})
+
+      assert_raise RuntimeError, fn ->
+        Contacts.delete_contact(contact)
+      end
     end
 
     test "change_contact/1 returns a contact changeset",
