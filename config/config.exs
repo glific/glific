@@ -62,7 +62,8 @@ oban_plugins = [
   {Oban.Plugins.Cron, crontab: oban_crontab},
   Oban.Pro.Plugins.DynamicLifeline,
   Oban.Web.Plugins.Stats,
-  Oban.Plugins.Gossip
+  Oban.Plugins.Gossip,
+  Oban.Plugins.Reindexer
 ]
 
 config :glific, Oban,

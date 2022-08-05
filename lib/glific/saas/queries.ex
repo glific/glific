@@ -16,6 +16,8 @@ defmodule Glific.Saas.Queries do
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
     Repo,
+    Seeds.Seeder,
+    Seeds.SeedsMigration,
     Users
   }
 
@@ -46,6 +48,30 @@ defmodule Glific.Saas.Queries do
     |> validate_email(params["email"])
     |> validate_phone(params["phone"])
   end
+
+  @doc """
+  Seed data for organization
+  """
+  @spec seed_data(map()) :: map()
+
+  def seed_data(%{organization: organization} = results) when is_map(organization) do
+    Seeder.seed(tenant: organization.shortcode, tenant_id: organization.id)
+    results
+  end
+
+  def seed_data(results), do: results
+
+  @doc """
+  Seed data for organization
+  """
+  @spec sync_templates(map()) :: map()
+  def sync_templates(%{organization: organization} = results) when is_map(organization) do
+    SeedsMigration.migrate_data(:submit_common_otp_template, organization)
+    SeedsMigration.migrate_data(:sync_hsm_templates, organization)
+    results
+  end
+
+  def sync_templates(results), do: results
 
   @spec organization(map(), map()) :: map()
   defp organization(%{is_valid: false} = result, _params), do: result
@@ -133,6 +159,7 @@ defmodule Glific.Saas.Queries do
         "api_key" => params["api_key"],
         "app_name" => params["app_name"]
       },
+      is_active: true,
       organization_id: result.organization.id
     }
 

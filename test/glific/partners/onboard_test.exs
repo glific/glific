@@ -35,19 +35,22 @@ defmodule Glific.OnboardTest do
               "users" => [1, 2, 3]
             })
         }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "ok",
+              "templates" => []
+            })
+        }
     end)
 
     :ok
   end
 
-  test "ensure that sending in valid parameters, creates an organization, contact and credential" do
-    result = Onboard.setup(@valid_attrs)
-
-    assert result.is_valid == true
-    assert result.organization != nil
-    assert result.contact != nil
-    assert result.credential != nil
-
+  test "ensure that validations are applied on params while creating an org" do
     # lets remove a couple and mess up the others to get most of the errors
     attrs =
       @valid_attrs
@@ -59,12 +62,40 @@ defmodule Glific.OnboardTest do
     result = Onboard.setup(attrs)
 
     assert result.is_valid == false
-    assert result.messages != []
+    assert result.messages != %{}
+  end
+
+  test "ensure that sending in valid parameters, creates an organization, contact and credential" do
+    attrs =
+      @valid_attrs
+      |> Map.put("shortcode", "new_glific")
+      |> Map.put("phone", "919917443995")
+
+    result = Onboard.setup(attrs)
+
+    assert result.is_valid == true
+    assert result.messages == %{}
+    assert result.organization != nil
+    assert result.contact != nil
+    assert result.credential != nil
+
+    ## new org will have a common otp template
+    [common_otp_template | _tail] =
+      Glific.Templates.list_session_templates(%{
+        is_hsm: true,
+        organization_id: result.organization.id,
+        shortocode: "common_otp"
+      })
+
+    assert common_otp_template.label == "common_otp"
+    assert common_otp_template.organization_id == result.organization.id
   end
 
   test "ensure that sending in valid parameters, update organization status" do
     result = Onboard.setup(@valid_attrs)
-    {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
+
+    {:ok, organization} =
+      Repo.fetch_by(Organization, %{name: result.organization.name}, skip_organization_id: true)
 
     updated_organization = Onboard.status(organization.id, :active)
 
@@ -78,7 +109,10 @@ defmodule Glific.OnboardTest do
   test "ensure that sending in valid parameters, update organization status as is_active false and change subscription plan",
        attrs do
     use_cassette "update_subscription_inactive_plan" do
-      {:ok, organization} = Repo.fetch_by(Organization, %{organization_id: attrs.organization_id})
+      {:ok, organization} =
+        Repo.fetch_by(Organization, %{organization_id: attrs.organization_id},
+          skip_organization_id: true
+        )
 
       updated_organization = Onboard.status(organization.id, :suspended)
 
@@ -98,7 +132,9 @@ defmodule Glific.OnboardTest do
   test "ensure that sending in valid parameters, delete inactive organization" do
     result = Onboard.setup(@valid_attrs)
 
-    {:ok, organization} = Repo.fetch_by(Organization, %{name: result.organization.name})
+    {:ok, organization} =
+      Repo.fetch_by(Organization, %{name: result.organization.name}, skip_organization_id: true)
+
     Onboard.delete(organization.id, true)
 
     assert {:error, ["Elixir.Glific.Partners.Organization", "Resource not found"]} ==
