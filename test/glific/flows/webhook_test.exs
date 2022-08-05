@@ -96,7 +96,7 @@ defmodule Glific.Flows.WebhookTest do
       action = %Action{
         headers: %{"Accept" => "application/json", "custom_header" => "@contact.id"},
         method: "POST",
-        url: "wrong url",
+        url: "www.one.com/@contact.id",
         body: Jason.encode!(@action_body)
       }
 

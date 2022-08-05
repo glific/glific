@@ -190,20 +190,23 @@ defmodule Glific.Flows.Webhook do
       "flow" => %{name: context.flow.name, id: context.flow.id}
     }
 
-    MessageVarParser.parse_map(action.headers, fields)
+    header = MessageVarParser.parse_map(action.headers, fields)
+    url = MessageVarParser.parse(action.url, fields)
+
+    %{header: header, url: url}
   end
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
     dynamic_headers = create_headers(action, context)
 
-    headers = add_signature(dynamic_headers, context.organization_id, body)
-    webhook_log = create_log(action, map, dynamic_headers, context)
+    headers = add_signature(dynamic_headers.header, context.organization_id, body)
+    webhook_log = create_log(action, map, dynamic_headers.header, context)
 
     {:ok, _} =
       __MODULE__.new(%{
         method: String.downcase(action.method),
-        url: action.url,
+        url: dynamic_headers.url,
         result_name: action.result_name,
         body: body,
         headers: headers,
