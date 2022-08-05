@@ -4,7 +4,6 @@ defmodule Glific.AccessControl do
   """
 
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
 
   alias Glific.{
     AccessControl.FlowRole,
@@ -279,13 +278,8 @@ defmodule Glific.AccessControl do
   Common function to filtering entity objects based on user role, fun_with_flag flag and entity type
   """
   @spec do_check_access(Ecto.Query.t(), atom(), User.t()) :: Ecto.Query.t() | {:error, String.t()}
-  def do_check_access(entity_list, entity_type, user) do
-    # organization_contact_id = Partners.organization_contact_id(user.organization_id)
+  def do_check_access(entity_list, :flow, user), do: FlowRole.check_access(entity_list, user)
 
-    entity_type
-    |> case do
-      :flow -> FlowRole.check_access(entity_list, user)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
-  end
+  def do_check_access(_entity_list, entity_type, _user),
+    do: {:error, "Unknown entity type #{to_string(entity_type)}"}
 end

@@ -24,6 +24,18 @@ defmodule Glific.AccessControlTest do
       label: "some more label"
     }
 
+    test "list_roles/0 returns all reserved roles when flag is disabled", attrs do
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      SeedsDev.seed_roles()
+      Fixtures.role_fixture(attrs)
+
+      assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
+               4
+    end
+
     test "list_roles/0 returns all roles", attrs do
       FunWithFlags.enable(:roles_and_permission,
         for_actor: %{organization_id: attrs.organization_id}
@@ -160,6 +172,12 @@ defmodule Glific.AccessControlTest do
       Repo.put_current_user(user)
       [assigned_flow] = Flows.list_flows(%{})
       assert assigned_flow == flow
+    end
+
+    test "do_check_access/3 should return error tuple when entity type is unknown", _attrs do
+      user = Repo.get_current_user()
+      assert {:error, msg} = AccessControl.do_check_access(%{}, :unknown, user)
+      assert msg == "Unknown entity type unknown"
     end
   end
 
