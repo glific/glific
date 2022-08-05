@@ -128,6 +128,10 @@ defmodule Glific.AccessControlTest do
 
     test "count_roles/1 returns count of all roles",
          %{organization_id: _organization_id} = attrs do
+      FunWithFlags.enable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
       role_count =
         AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id})
 
@@ -143,6 +147,10 @@ defmodule Glific.AccessControlTest do
     end
 
     test "list_flows/1 returns list of flows assigned to user", attrs do
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
       SeedsDev.seed_test_flows()
       default_role = Fixtures.role_fixture(attrs)
       default_role_id = to_string(default_role.id)
