@@ -201,6 +201,7 @@ defmodule Glific.Flows.Webhook do
     dynamic_headers = create_headers(action, context)
 
     headers = add_signature(dynamic_headers.header, context.organization_id, body)
+    action = Map.put(action, :url, dynamic_headers.url)
     webhook_log = create_log(action, map, dynamic_headers.header, context)
 
     {:ok, _} =
