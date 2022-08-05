@@ -7,7 +7,8 @@ defmodule Glific.AccessControlTest do
     AccessControl.Role,
     Fixtures,
     Flows,
-    Seeds.SeedsDev
+    Seeds.SeedsDev,
+    Users
   }
 
   describe "roles" do
@@ -130,17 +131,35 @@ defmodule Glific.AccessControlTest do
     end
 
     test "list_flows/1 returns list of flows assigned to user", attrs do
-      default_role = Fixtures.role_fixture(attrs)
       SeedsDev.seed_test_flows()
+      default_role = Fixtures.role_fixture(attrs)
+      default_role_id = to_string(default_role.id)
+
+      user = Fixtures.user_fixture(%{roles: ["none"]})
+
+      Users.update_user(user, %{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        organization_id: attrs.organization_id
+      })
+
       [flow | _] = Flows.list_flows(%{filter: %{name: "Test Workflow"}})
-      add_role_ids = to_string(default_role.id)
+
+      FunWithFlags.enable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
 
       Flows.update_flow(flow, %{
-        add_role_ids: [add_role_ids],
+        add_role_ids: [default_role_id],
         delete_role_ids: [],
         name: flow.name,
         organization_id: attrs.organization_id
       })
+
+      assert [] == Flows.list_flows(%{})
+      Repo.put_current_user(user)
+      [assigned_flow] = Flows.list_flows(%{})
+      assert assigned_flow == flow
     end
   end
 
