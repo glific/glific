@@ -12,7 +12,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     Repo
   }
 
-  def up(_repo) do
+  def up(_repo, _opts) do
     update_exisiting_providers()
 
     add_providers()

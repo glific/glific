@@ -101,7 +101,7 @@ defmodule Glific.Clients.Tap do
   def webhook("get_activity_info", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     course = get_in(fields, ["contact", "fields", "course", "value"]) || fields["type"]
-    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || fields["date"]
+    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || "2022-08-04"
 
     get_activity_info(org_id, date, course, fields["language_label"])
   end

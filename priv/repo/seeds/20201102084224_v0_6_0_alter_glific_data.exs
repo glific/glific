@@ -8,7 +8,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_6_0 do
     Settings.Language
   }
 
-  def up(_repo) do
+  def up(_repo, _opts) do
     add_languages()
   end
 

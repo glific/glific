@@ -23,6 +23,8 @@ defmodule Glific.Saas.Onboard do
     %{is_valid: true, messages: %{}}
     |> Queries.validate(params)
     |> Queries.setup(params)
+    |> Queries.seed_data()
+    |> Queries.sync_templates()
     |> format_results()
     |> notify_saas_team()
   end
