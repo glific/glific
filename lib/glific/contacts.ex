@@ -293,9 +293,25 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    if has_permission?(contact.id),
-      do: Repo.delete(contact),
-      else: raise("Permission denied")
+    cond do
+      has_permission?(contact.id) == false ->
+        raise("Permission denied")
+
+      is_org_root_contact?(contact) == true ->
+        {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
+
+      true ->
+        Repo.delete(contact)
+    end
+  end
+
+  @doc """
+  Checks if the contact passed in argument is organization root contact or not
+  """
+  @spec is_org_root_contact?(Contact.t()) :: boolean()
+  def is_org_root_contact?(contact) do
+    organization = Partners.organization(contact.organization_id)
+    if contact.id == organization.contact.id, do: true, else: false
   end
 
   @doc """

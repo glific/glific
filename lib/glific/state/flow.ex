@@ -60,8 +60,7 @@ defmodule Glific.State.Flow do
           %{
             errors: %{
               key: "error",
-              message:
-                "This flow is being edited by #{user_name} right now!"
+              message: "This flow is being edited by #{user_name} right now!"
             }
           }}}
 
