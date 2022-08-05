@@ -102,7 +102,9 @@ defmodule Glific.Flows.WebhookTest do
 
       assert Webhook.execute(action, context) == nil
       webhook_log = List.first(WebhookLog.list_webhook_logs(%{filter: attrs}))
+
       assert webhook_log.request_headers["custom_header"] == Integer.to_string(contact_id)
+      assert webhook_log.url == "www.one.com/#{contact_id}"
     end
 
     test "execute a webhook for post method should not break and update the webhook log in case of array/list reponse",
