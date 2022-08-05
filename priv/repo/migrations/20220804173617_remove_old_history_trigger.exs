@@ -3,21 +3,17 @@ defmodule Glific.Repo.Migrations.RemoveOldHistoryTrigger do
 
   def up do
     execute """
-    CREATE OR REPLACE FUNCTION remove_old_history()
-      RETURNS trigger AS $$
-
+    CREATE OR REPLACE FUNCTION remove_old_history() RETURNS trigger AS $$
       BEGIN
-
-        with ranked as (
-          SELECT id, row_number() over (partition by contact_id order by updated_at desc) as rn
-           from contact_histories
-           where id <> NEW.id
-          and contact_id = NEW.contact_id
+        with ranked as (SELECT id, row_number() over (partition by contact_id order by updated_at desc) as rn
+           from contact_histories where id <> NEW.id and contact_id = NEW.contact_id
          )
          delete from contact_histories
          where id in (select id  from ranked where rn >= 100);
 
+         RETURN NEW;
       END;
+
     $$ LANGUAGE plpgsql;
     """
 
