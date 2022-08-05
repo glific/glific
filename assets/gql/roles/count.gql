@@ -1,0 +1,3 @@
+query count_access_roles($filter: AccessRoleFilter) {
+  countAccessRoles(filter: $filter)
+}
