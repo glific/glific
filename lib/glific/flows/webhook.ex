@@ -182,8 +182,8 @@ defmodule Glific.Flows.Webhook do
   end
 
   # THis function will create a dynamic headers
-  @spec create_headers(Action.t(), FlowContext.t()) :: map()
-  defp create_headers(action, context) do
+  @spec parse_header_and_url(Action.t(), FlowContext.t()) :: map()
+  defp parse_header_and_url(action, context) do
     fields = %{
       "contact" => Contacts.get_contact_field_map(context.contact_id),
       "results" => context.results,
@@ -198,16 +198,16 @@ defmodule Glific.Flows.Webhook do
 
   @spec do_oban(Action.t(), FlowContext.t(), tuple()) :: any
   defp do_oban(action, context, {map, body}) do
-    dynamic_headers = create_headers(action, context)
+    parsed_attrs = parse_header_and_url(action, context)
 
-    headers = add_signature(dynamic_headers.header, context.organization_id, body)
-    action = Map.put(action, :url, dynamic_headers.url)
-    webhook_log = create_log(action, map, dynamic_headers.header, context)
+    headers = add_signature(parsed_attrs.header, context.organization_id, body)
+    action = Map.put(action, :url, parsed_attrs.url)
+    webhook_log = create_log(action, map, parsed_attrs.header, context)
 
     {:ok, _} =
       __MODULE__.new(%{
         method: String.downcase(action.method),
-        url: dynamic_headers.url,
+        url: parsed_attrs.url,
         result_name: action.result_name,
         body: body,
         headers: headers,
