@@ -593,6 +593,17 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  check fun_with_flag toggle for an organization and returns boolean value
+  """
+  @spec check_roles_and_permission_toggle?(non_neg_integer()) :: boolean()
+  def check_roles_and_permission_toggle?(organization_id) do
+    FunWithFlags.enabled?(
+      :roles_and_permission,
+      for: %{organization_id: organization_id}
+    )
+  end
+
+  @doc """
   Determine if we need to enable contact profile for an organization
   """
   @spec get_contact_profile_enabled(map()) :: boolean
