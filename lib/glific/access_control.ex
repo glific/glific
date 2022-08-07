@@ -254,13 +254,16 @@ defmodule Glific.AccessControl do
   """
   @spec check_access(Ecto.Query.t(), atom()) :: Ecto.Query.t()
   def check_access(entity_list, entity_type) do
-    user = Repo.get_current_user() |> Repo.preload([:access_roles])
+    user = Repo.get_current_user()
     organization = Partners.organization(user.organization_id)
 
-    if Partners.get_roles_and_permission(organization) and
-         is_organization_role?(user),
-       do: do_check_access(entity_list, entity_type, user),
-       else: entity_list
+    with true <- Partners.get_roles_and_permission(organization),
+         user <- Repo.preload(user, [:access_roles]),
+         true <- is_organization_role?(user) do
+      do_check_access(entity_list, entity_type, user)
+    else
+      _ -> entity_list
+    end
   end
 
   @spec is_organization_role?(User.t() | nil) :: boolean()
