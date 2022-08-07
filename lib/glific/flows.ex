@@ -101,12 +101,11 @@ defmodule Glific.Flows do
 
     Enum.reduce(filter, query, fn
       {:keyword, keyword}, query ->
-        from(f in query,
+        from f in query,
           where: ^keyword in f.keywords
-        )
 
       {:uuid, uuid}, query ->
-        from(q in query, where: q.uuid == ^uuid)
+        from q in query, where: q.uuid == ^uuid
 
       {:status, status}, query ->
         query
@@ -120,10 +119,10 @@ defmodule Glific.Flows do
         )
 
       {:is_active, is_active}, query ->
-        from(q in query, where: q.is_active == ^is_active)
+        from q in query, where: q.is_active == ^is_active
 
       {:is_background, is_background}, query ->
-        from(q in query, where: q.is_background == ^is_background)
+        from q in query, where: q.is_background == ^is_background
 
       {:is_pinned, is_pinned}, query ->
         from q in query, where: q.is_pinned == ^is_pinned
@@ -159,7 +158,7 @@ defmodule Glific.Flows do
       ** (Ecto.NoResultsError)
 
   """
-  @spec get_flow!(integer) :: map()
+  @spec get_flow!(integer) :: Flow.t()
   def get_flow!(id) do
     with flow <- Repo.get!(Flow, id) do
       get_status_flow(flow)
