@@ -595,23 +595,17 @@ defmodule Glific.Partners do
   @doc """
   check fun_with_flag toggle for an organization and returns boolean value
   """
-  @spec get_roles_and_permission(non_neg_integer()) :: boolean()
-  def get_roles_and_permission(organization_id) do
-    FunWithFlags.enabled?(
-      :roles_and_permission,
-      for: %{organization_id: organization_id}
-    )
-  end
+  @spec get_roles_and_permission(Organization.t()) :: boolean()
+  def get_roles_and_permission(organization),
+    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
 
   @doc """
   Determine if we need to enable contact profile for an organization
   """
   @spec get_contact_profile_enabled(map()) :: boolean
-  def get_contact_profile_enabled(organization) do
-    id = organization.id
-
-    FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: id})
-  end
+  def get_contact_profile_enabled(organization),
+    do:
+      FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
   @spec set_flow_uuid_display(map()) :: map()
   defp set_flow_uuid_display(organization) do
@@ -627,7 +621,7 @@ defmodule Glific.Partners do
     Map.put(
       organization,
       :is_roles_and_permission,
-      get_roles_and_permission(organization.id)
+      get_roles_and_permission(organization)
     )
   end
 

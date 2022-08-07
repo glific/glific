@@ -27,7 +27,8 @@ defmodule Glific.AccessControl do
   """
   @spec list_roles(map()) :: [Role.t()]
   def list_roles(args) do
-    Partners.get_roles_and_permission(args.organization_id)
+    Partners.organization(args.organization_id)
+    |> Partners.get_roles_and_permission()
     |> hide_organization_roles(args)
     |> Repo.list_filter(Role, &Repo.opts_with_label/2, &filter_with/2)
   end
@@ -83,7 +84,8 @@ defmodule Glific.AccessControl do
   """
   @spec count_roles(map()) :: integer
   def count_roles(args) do
-    Partners.get_roles_and_permission(args.organization_id)
+    Partners.organization(args.organization_id)
+    |> Partners.get_roles_and_permission()
     |> hide_organization_roles(args)
     |> Repo.count_filter(Role, &filter_with/2)
   end
@@ -253,8 +255,9 @@ defmodule Glific.AccessControl do
   @spec check_access(Ecto.Query.t(), atom()) :: Ecto.Query.t()
   def check_access(entity_list, entity_type) do
     user = Repo.get_current_user() |> Repo.preload([:access_roles])
+    organization = Partners.organization(user.organization_id)
 
-    if Partners.get_roles_and_permission(user.organization_id) and
+    if Partners.get_roles_and_permission(organization) and
          is_organization_role?(user),
        do: do_check_access(entity_list, entity_type, user),
        else: entity_list
