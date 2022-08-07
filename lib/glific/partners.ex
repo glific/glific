@@ -595,8 +595,8 @@ defmodule Glific.Partners do
   @doc """
   check fun_with_flag toggle for an organization and returns boolean value
   """
-  @spec check_roles_and_permission_toggle?(non_neg_integer()) :: boolean()
-  def check_roles_and_permission_toggle?(organization_id) do
+  @spec get_roles_and_permission(non_neg_integer()) :: boolean()
+  def get_roles_and_permission(organization_id) do
     FunWithFlags.enabled?(
       :roles_and_permission,
       for: %{organization_id: organization_id}
@@ -622,19 +622,12 @@ defmodule Glific.Partners do
     )
   end
 
-  @doc """
-  Determine if we need to show roles and permission for an organization
-  """
-  @spec get_roles_and_permission(map()) :: boolean
-  def get_roles_and_permission(organization),
-    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
-
   @spec set_roles_and_permission(map()) :: map()
   defp set_roles_and_permission(organization) do
     Map.put(
       organization,
       :is_roles_and_permission,
-      FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
+      get_roles_and_permission(organization.id)
     )
   end
 
