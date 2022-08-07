@@ -15,6 +15,9 @@ defmodule Glific.AccessControl do
 
   @doc """
   Returns the list of roles.
+  Checks if roles and permission flag is enabled first.
+  If roles and permission is enabled then list all roles
+  If roles and permission is disabled then list only default roles
 
   ## Examples
 
@@ -45,9 +48,11 @@ defmodule Glific.AccessControl do
     |> Enum.reduce([], &(&2 ++ [&1.label]))
   end
 
+  # if true returns all roles for organization
   @spec hide_organization_roles(boolean(), map()) :: map()
   defp hide_organization_roles(true, args), do: args
 
+  # if false returns only reserved roles that are default for an organization
   defp hide_organization_roles(false, %{filter: _filter} = args) do
     args.filter
     |> Map.merge(%{is_reserved: true})
@@ -255,13 +260,13 @@ defmodule Glific.AccessControl do
   end
 
   @spec is_organization_role?(User.t() | nil) :: boolean()
-  defp is_organization_role?(nil), do: false
-
   defp is_organization_role?(%{access_roles: access_roles} = _user) do
     !Enum.any?(access_roles, fn access_role ->
       access_role.label in ["Admin", "Manager", "Staff"]
     end)
   end
+
+  defp is_organization_role?(nil), do: false
 
   @doc """
   check fun_with_flag toggle for an organization and returns boolean value
