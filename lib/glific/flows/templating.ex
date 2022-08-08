@@ -88,12 +88,23 @@ defmodule Glific.Flows.Templating do
   def execute(templating, _context, _messages), do: templating
 
   defp ensure_template_struct(json_string) do
-    opts =
-      Jason.decode!(json_string)
-      |> Glific.atomize_keys()
-      |> update_session_template()
+    Jason.decode(json_string)
+    |> case do
+      {:ok, json} ->
+        opts =
+          json
+          |> Glific.atomize_keys()
+          |> update_session_template()
 
-    struct!(Templating, opts)
+        struct!(Templating, opts)
+
+      {:error, error} ->
+        Logger.error(
+          "Error parsing json string  #{inspect(json_string)} with error: #{inspect(error)}"
+        )
+
+        nil
+    end
   end
 
   @spec update_session_template(map()) :: map()
