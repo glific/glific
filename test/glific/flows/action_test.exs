@@ -451,6 +451,44 @@ defmodule Glific.Flows.ActionTest do
     assert message.flow_label == "Age Group 11 to 14"
   end
 
+  test "Invalid template expression will process the action as empty template", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    message_body_input = "This is a messages with invalid template expression."
+
+    action = %Action{
+      type: "send_msg",
+      text: message_body_input,
+      templating: %{expression: "Invalid json string!"}
+    }
+
+    message_stream = []
+    result = Action.execute(action, context, message_stream)
+    assert {:ok, _updated_context, _updated_message_stream} = result
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == message_body_input
+  end
+
   test "execute an action when type is send_interactive_msg", attrs do
     Partners.organization(attrs.organization_id)
 

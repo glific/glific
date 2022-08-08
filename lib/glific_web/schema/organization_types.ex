@@ -175,7 +175,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     @desc "get the details of one organization"
     field :organization, :organization_result do
       arg(:id, :id)
-      middleware(Authorize, :admin)
+      middleware(Authorize, :staff)
       resolve(&Resolvers.Partners.organization/3)
     end
 
