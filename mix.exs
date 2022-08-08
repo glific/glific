@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "4.5.3",
+      version: "4.5.4",
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -135,7 +135,7 @@ defmodule Glific.MixProject do
       {:passwordless_auth, "~> 0.3.0"},
       {:appsignal_phoenix, "~> 2.1"},
       {:poolboy, "~> 1.5"},
-      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git"},
+      {:phil_columns, git: "https://github.com/glific/phil_columns-ex.git", branch: "dev"},
       {:cloak_ecto, "~> 1.2"},
       {:google_api_big_query, "~> 0.47"},
       {:google_api_dialogflow, "~> 0.62"},

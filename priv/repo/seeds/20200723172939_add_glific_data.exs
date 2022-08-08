@@ -32,9 +32,11 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   defp admin_phone(organization_id),
     do: (String.to_integer(@admin_phone) + organization_id) |> Integer.to_string()
 
-  def up(_repo) do
+  def up(_repo, opts) do
     # check if this is the first organization that we are adding
     # to the DB
+
+    tenant_id = Keyword.get(opts, :tenant_id, nil)
 
     count_organizations = Partners.count_organizations()
 
@@ -42,7 +44,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     provider = providers(count_organizations)
 
-    organization = organization(count_organizations, provider, [en, hi])
+    organization =
+      if is_nil(tenant_id),
+        do: organization(count_organizations, provider, [en, hi]),
+        else: Partners.get_organization!(tenant_id)
 
     ## Added organization id in the query
     Glific.Repo.put_organization_id(organization.id)
@@ -53,11 +58,20 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     # calling it gtags, since tags is a macro in philcolumns
     gtags(organization, en)
 
-    admin = contacts(organization, en)
+    admin =
+      if is_nil(tenant_id),
+        do: contacts(organization, en),
+        else: Repo.get!(Contact, organization.contact_id)
+
+    if not is_nil(tenant_id) do
+      set_organization_language(organization, [en, hi])
+      set_out_of_office(organization)
+      set_bsp_id(organization, provider)
+    end
 
     profiles(organization, admin)
 
-    users(admin, organization)
+    if is_nil(tenant_id), do: users(admin, organization)
 
     SeedsMigration.migrate_data(:simulator, organization)
 
@@ -648,5 +662,38 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
     organization
     |> Partners.update_organization(%{newcontact_flow_id: flow.id})
+  end
+
+  defp set_organization_language(organization, [en, hi]) do
+    organization
+    |> change(%{active_language_ids: [en.id, hi.id], default_language_id: en.id})
+    |> Repo.update!()
+  end
+
+  defp set_out_of_office(organization) do
+    out_of_office_default_data = %{
+      enabled: true,
+      start_time: elem(Time.new(9, 0, 0), 1),
+      end_time: elem(Time.new(20, 0, 0), 1),
+      enabled_days: [
+        %{enabled: true, id: 1},
+        %{enabled: true, id: 2},
+        %{enabled: true, id: 3},
+        %{enabled: true, id: 4},
+        %{enabled: true, id: 5},
+        %{enabled: false, id: 6},
+        %{enabled: false, id: 7}
+      ]
+    }
+
+    organization
+    |> change(%{out_of_office: out_of_office_default_data})
+    |> Repo.update!()
+  end
+
+  defp set_bsp_id(organization, provider) do
+    organization
+    |> change(%{bsp_id: provider.id})
+    |> Repo.update!()
   end
 end

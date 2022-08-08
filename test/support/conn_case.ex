@@ -62,6 +62,7 @@ defmodule GlificWeb.ConnCase do
 
     Glific.Repo.put_organization_id(1)
     Glific.Repo.put_current_user(manager)
+    Code.compiler_options(ignore_module_conflict: true)
 
     {
       :ok,

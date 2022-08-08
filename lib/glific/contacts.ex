@@ -310,8 +310,7 @@ defmodule Glific.Contacts do
   """
   @spec is_org_root_contact?(Contact.t()) :: boolean()
   def is_org_root_contact?(contact) do
-    organization = Partners.organization(contact.organization_id)
-    if contact.id == organization.contact.id, do: true, else: false
+    Partners.organization(contact.organization_id).contact_id == contact.id
   end
 
   @doc """
