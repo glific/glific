@@ -27,6 +27,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/session_templates/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/session_templates/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/session_templates/delete.gql")
+  load_gql(:sync, GlificWeb.Schema, "assets/gql/session_templates/sync.gql")
 
   load_gql(
     :create_from_message,
@@ -48,6 +49,12 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     assert res == "Default Template"
   end
+
+  # test "sync hsm with bsp test", %{staff: user} do
+  #   Fixtures.session_template_fixture(%{label: "AAA"})
+
+  #   result = auth_query_gql_by(:sync, user)
+  # end
 
   test "count returns the number of session templates", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)

@@ -21,6 +21,11 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
     field :errors, list_of(:input_error)
   end
 
+  object :sync_hsm_templates do
+    field :message, :string
+    field :errors, list_of(:input_error)
+  end
+
   object :session_template do
     field :id, :id
     field :label, :string
@@ -131,6 +136,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       resolve(fn _, _, _ ->
         {:ok, SessionTemplate.list_whatsapp_hsm_categories()}
       end)
+    end
+
+    @desc "sync hsm with bsp"
+    field :sync_hsm_template, :sync_hsm_templates do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.sync_hsm_template/3)
     end
 
     @desc "get the details of one session_template"

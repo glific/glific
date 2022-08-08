@@ -1,0 +1,8 @@
+query syncHSMTemplate {
+  syncHSMTemplate {
+    message
+    errors {
+    key
+   }
+  }
+}

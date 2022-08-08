@@ -95,8 +95,13 @@ defmodule GlificWeb.Resolvers.Templates do
   Sync hsm with bsp
   """
 
-  @spec sync_hsm_with_bsp(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  @spec sync_hsm_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
   {:ok, any} | {:error, any}
-  def sync_hsm_with_bsp(_, _, %{context: %{current_user: user}}),
-    do: Templates.sync_hsms_from_bsp(user.organization_id)
+  def sync_hsm_template(_, _, %{context: %{current_user: user}}) do
+    case Templates.sync_hsms_from_bsp(user.organization_id) do
+      :ok -> {:ok, %{message: "successfull"}}
+
+      {:error, error} -> {:error, %{error: error}}
+    end
+  end
 end
