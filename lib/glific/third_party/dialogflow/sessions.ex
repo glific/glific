@@ -146,14 +146,14 @@ defmodule Glific.Dialogflow.Sessions do
 
   ## we don't want to kill the flow in case intent doesn't match or something else goes wrong
   defp handle_response(error, context_id, _) do
-    context = Repo.get!(FlowContext, context_id)
+    context = Repo.get!(FlowContext, context_id) |> Repo.preload(:flow)
     Logger.error("Error while detecting intent:#{inspect(error)}")
 
     message =
       Messages.create_temp_message(context.organization_id, "Failure")
       |> Map.put(:extra, %{
         intent: "Unknown",
-        confidence: 100,
+        confidence: 0,
         response: "#{inspect(error)}",
         inserted_at: DateTime.utc_now()
       })
