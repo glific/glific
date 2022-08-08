@@ -90,4 +90,13 @@ defmodule GlificWeb.Resolvers.Templates do
         }) :: {:ok, any} | {:error, any}
   def import_templates(_, %{data: data}, %{context: %{current_user: user}}),
     do: Templates.import_templates(user.organization_id, data)
+
+  @doc """
+  Sync hsm with bsp
+  """
+
+  @spec sync_hsm_with_bsp(Absinthe.Resolution.t(), map(), %{context: map()}) ::
+  {:ok, any} | {:error, any}
+  def sync_hsm_with_bsp(_, _, %{context: %{current_user: user}}),
+    do: Templates.sync_hsms_from_bsp(user.organization_id)
 end
