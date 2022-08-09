@@ -84,7 +84,11 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
+          ## this is a custom delay in minutes for wait for time nodes. Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
+
+          ## this is a custom delay in seconds before processing for the node. Currently only used for send messages
+          delay: integer() | 0,
           # Interactive messages
           interactive_template_id: integer() | nil,
           interactive_template_expression: String.t() | nil,
@@ -140,6 +144,7 @@ defmodule Glific.Flows.Action do
     field(:interactive_template_expression, :string)
     field(:attachment_type, :string)
     field(:attachment_url, :string)
+    field(:delay, :integer, default: 0)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -151,7 +156,8 @@ defmodule Glific.Flows.Action do
         %Action{
           uuid: json["uuid"],
           node_uuid: node.uuid,
-          type: json["type"]
+          type: json["type"],
+          delay: Glific.parse_maybe_integer!(json["delay"] || 0)
         },
         attrs
       )
