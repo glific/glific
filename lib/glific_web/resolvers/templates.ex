@@ -96,12 +96,11 @@ defmodule GlificWeb.Resolvers.Templates do
   """
 
   @spec sync_hsm_template(Absinthe.Resolution.t(), map(), %{context: map()}) ::
-  {:ok, any} | {:error, any}
+          {:ok, any} | {:error, any}
   def sync_hsm_template(_, _, %{context: %{current_user: user}}) do
     case Templates.sync_hsms_from_bsp(user.organization_id) do
       :ok -> {:ok, %{message: "successfull"}}
-
-      {:error, error} -> {:error, %{error: error}}
+      {:error, error} -> {:error, error}
     end
   end
 end

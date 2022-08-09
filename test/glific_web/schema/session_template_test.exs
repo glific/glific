@@ -21,6 +21,37 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     :ok
   end
 
+  setup do
+    organization = SeedsDev.seed_organizations()
+    SeedsDev.seed_billing(organization)
+    HTTPoison.start()
+    ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "ok",
+              "users" => [1, 2, 3]
+            })
+        }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "ok",
+              "templates" => []
+            })
+        }
+    end)
+
+    :ok
+  end
+
   load_gql(:count, GlificWeb.Schema, "assets/gql/session_templates/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/session_templates/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/session_templates/by_id.gql")
@@ -50,11 +81,16 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     assert res == "Default Template"
   end
 
-  # test "sync hsm with bsp test", %{staff: user} do
-  #   Fixtures.session_template_fixture(%{label: "AAA"})
+  test "sync hsm with bsp if it doesn't estabilish a connection with gupshup test", %{staff: user} do
+    Fixtures.session_template_fixture(%{label: "AAA"})
 
-  #   result = auth_query_gql_by(:sync, user)
-  # end
+    result = auth_query_gql_by(:sync, user)
+    assert {:ok, query_data} = result
+
+    session_templates = get_in(query_data, [:errors])
+    template_error = List.first(session_templates)
+    assert template_error.message ==  "BSP Couldn't connect"
+  end
 
   test "count returns the number of session templates", %{staff: user} do
     {:ok, query_data} = auth_query_gql_by(:count, user)
