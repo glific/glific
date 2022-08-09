@@ -4,6 +4,8 @@ if Code.ensure_loaded?(Faker) do
     Script for populating the database. We can call this from tests and/or /priv/repo
     """
     alias Glific.{
+      AccessControl,
+      AccessControl.Role,
       Contacts,
       Contacts.Contact,
       Contacts.ContactHistory,
@@ -747,6 +749,46 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
+    @spec seed_user_roles(Organization.t() | nil) :: nil
+    def seed_user_roles(organization \\ nil) do
+      organization = get_organization(organization)
+
+      [u1, u2, u3, u4, u5 | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
+
+      [r1, r2, r3 | _] = AccessControl.list_roles(%{organization_id: organization.id})
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u1.id,
+        role_id: r1.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u2.id,
+        role_id: r1.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u3.id,
+        role_id: r2.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u4.id,
+        role_id: r3.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u5.id,
+        role_id: r1.id,
+        organization_id: organization.id
+      })
+    end
+
+    @doc false
     @spec seed_test_flows(Organization.t() | nil) :: nil
     def seed_test_flows(organization \\ nil) do
       organization = get_organization(organization)
@@ -1379,6 +1421,40 @@ if Code.ensure_loaded?(Faker) do
       })
     end
 
+    @doc false
+    @spec seed_roles(Organization.t() | nil) :: Role.t()
+    def seed_roles(organization \\ nil) do
+      organization = get_organization(organization)
+
+      Repo.insert!(%Role{
+        label: "Admin",
+        description: "Default Admin Role",
+        is_reserved: true,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Role{
+        label: "Staff",
+        description: "Default Staff Role",
+        is_reserved: true,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Role{
+        label: "Manager",
+        description: "Default Manager Role",
+        is_reserved: true,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%Role{
+        label: "No access",
+        description: "Default Role with no permissions",
+        is_reserved: true,
+        organization_id: organization.id
+      })
+    end
+
     @doc """
     Function to populate some basic data that we need for the system to operate. We will
     split this function up into multiple different ones for test, dev and production
@@ -1422,6 +1498,10 @@ if Code.ensure_loaded?(Faker) do
       seed_interactives(organization)
 
       seed_contact_history(organization)
+
+      seed_roles(organization)
+
+      seed_user_roles(organization)
     end
   end
 end

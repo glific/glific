@@ -21,6 +21,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:dialogflow, :boolean)
     field(:fun_with_flags, :boolean)
     field(:flow_uuid_display, :boolean)
+    field(:roles_and_permission, :boolean)
     field(:contact_profile_enabled, :boolean)
     field(:errors, list_of(:input_error))
   end
@@ -98,6 +99,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:suspended_until, :datetime)
 
     field(:is_flow_uuid_display, :boolean)
+    field(:is_roles_and_permission, :boolean)
     field(:is_contact_profile_enabled, :boolean)
 
     field(:inserted_at, :datetime)

@@ -6,6 +6,7 @@ defmodule Glific.Users.User do
   alias __MODULE__
 
   alias Glific.{
+    AccessControl.Role,
     Contacts.Contact,
     Enums.UserRoles,
     Groups.Group,
@@ -65,17 +66,9 @@ defmodule Glific.Users.User do
     pow_user_fields()
 
     many_to_many :groups, Group, join_through: "users_groups", on_replace: :delete
+    many_to_many :access_roles, Role, join_through: "user_roles", on_replace: :delete
 
     timestamps()
-  end
-
-  @doc """
-  A constant function to get list of roles
-  """
-  @spec get_roles_list :: list()
-  def get_roles_list do
-    # keeping the order alphabetical ASC for frontend dropdown display
-    ["Admin", "Glific admin", "Manager", "No access", "Staff"]
   end
 
   @doc """

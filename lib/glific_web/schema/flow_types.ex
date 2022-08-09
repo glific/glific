@@ -4,7 +4,8 @@ defmodule GlificWeb.Schema.FlowTypes do
   """
 
   use Absinthe.Schema.Notation
-
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  alias Glific.Repo
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
 
@@ -36,6 +37,9 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :last_published_at, :datetime
     field :last_changed_at, :datetime
     field :is_background, :boolean
+    field :roles, list_of(:access_role) do
+      resolve(dataloader(Repo, use_parent: true))
+    end
     field :is_pinned, :boolean
   end
 
@@ -45,6 +49,8 @@ defmodule GlificWeb.Schema.FlowTypes do
     field :ignore_keywords, :boolean
     field :is_active, :boolean
     field :is_background, :boolean
+    field :add_role_ids, list_of(:id)
+    field :delete_role_ids, list_of(:id)
     field :is_pinned, :boolean
   end
 
