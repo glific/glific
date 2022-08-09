@@ -270,7 +270,8 @@ defmodule Glific.Flows.FlowContext do
         )
 
         ## add delay so that it does not execute the message before sub flows
-        ## adding this line saprately so that we can easily identify this in different cases.
+        ## adding this line separately so that we can easily identify this in different cases.
+
         parent = Map.put(parent, :delay, max(context.delay + @min_delay, @min_delay))
 
         parent
