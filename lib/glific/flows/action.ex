@@ -39,7 +39,6 @@ defmodule Glific.Flows.Action do
     "Switch Profile" => :switch_profile,
     "Create Profile" => :create_profile
   }
-  @min_delay 2
 
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
@@ -84,10 +83,12 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
-          ## this is a custom delay in minutes for wait for time nodes. Currently we use this only for the wait for time node.
+          ## this is a custom delay in minutes for wait for time nodes.
+          ## Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
 
-          ## this is a custom delay in seconds before processing for the node. Currently only used for send messages
+          ## this is a custom delay in seconds before processing for the node.
+          ## Currently only used for send messages
           delay: integer() | 0,
           # Interactive messages
           interactive_template_id: integer() | nil,
@@ -534,13 +535,11 @@ defmodule Glific.Flows.Action do
           do: {FlowContext.reset_one_context(context), context.parent_id},
           else: {context, context.id}
 
-      # we start off a new context here and dont really modify the current context
+      # we start off a new context here and don't really modify the current context
       # hence ignoring the return value of start_sub_flow
       # for now, we'll just delay by at least min_delay second
-      context =
-        context
-        |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
-        |> Map.update!(:uuids_seen, &Map.put(&1, flow_uuid, 1))
+
+      context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
 
       Flow.start_sub_flow(context, flow_uuid, parent_id)
 
