@@ -311,6 +311,9 @@ defmodule Glific.Flows.Webhook do
   defp handle(result, context_data, result_name) do
     context_id = context_data["id"]
 
+    ## In case the context already carries a delay before webhook,
+    ## we are going to use that.
+
     context =
       Repo.get!(FlowContext, context_id)
       |> Repo.preload(:flow)
