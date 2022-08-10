@@ -325,7 +325,7 @@ to update your codebase from the glific repository.
 
 ## Documentation
 
-- [Postman API docs](https://postman.glific.com/)
+- [Postman API docs](https://api.glific.com/)
 - [GraphQL API docs](https://glific.github.io/slate/)
 - [Code Documentation](https://glific.github.io/glific/doc/readme.html#documentation)
 - [User Guide](https://docs.glific.com)
