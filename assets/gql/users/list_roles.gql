@@ -1,3 +1,8 @@
-query roles {
-  roles
+query access_roles($filter: AccessRoleFilter, $opts: Opts) {
+  access_roles(filter: $filter, opts: $opts) {
+    id
+    label
+    isReserved
+    description
+  }
 }

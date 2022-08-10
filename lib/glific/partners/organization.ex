@@ -139,6 +139,9 @@ defmodule Glific.Partners.Organization do
     # the display of node uuids. We need an NGO friendly way to do this globally
     field :is_flow_uuid_display, :boolean, default: false, virtual: true
 
+    # virtual field for roles and permission
+    field :is_roles_and_permission, :boolean, default: false, virtual: true
+
     # A virtual field for now to conditionally enable contact profile feature for an organization
     field :is_contact_profile_enabled, :boolean, default: false, virtual: true
 

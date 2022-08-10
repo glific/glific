@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation createAccessRole($input: AccessRoleInput!) {
+  createAccessRole(input: $input) {
+    ...AccessRoleFields
+
+    ...ErrorFields
+  }
+}

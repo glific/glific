@@ -8,6 +8,7 @@ defmodule Glific.Seeds.SeedsMigration do
   import Ecto.Query
 
   alias Glific.{
+    AccessControl.Role,
     BigQuery,
     Contacts,
     Contacts.Contact,
@@ -19,6 +20,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
+    Seeds.SeedsDev,
     Seeds.SeedsFlows,
     Seeds.SeedsStats,
     Settings,
@@ -80,6 +82,9 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:set_newcontact_flow_id, organizations),
     do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
 
+  defp do_migrate_data(:set_default_organization_roles, organizations),
+    do: Enum.map(organizations, fn org -> set_default_organization_roles(org.id) end)
+
   @doc false
   @spec add_simulators(list()) :: :ok
   def add_simulators(organizations) do
@@ -90,6 +95,16 @@ defmodule Glific.Seeds.SeedsMigration do
     |> seed_users(en)
 
     :ok
+  end
+
+  @doc """
+  Create default organization roles for an organization
+  """
+  @spec set_default_organization_roles(non_neg_integer()) :: Role.t()
+  def set_default_organization_roles(org_id) do
+    org_id
+    |> Partners.get_organization!()
+    |> SeedsDev.seed_roles()
   end
 
   @doc false

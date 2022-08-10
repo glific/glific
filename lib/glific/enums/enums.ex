@@ -108,7 +108,6 @@ defmodule Glific.Enums do
 
   iex> Glific.Enums.ImportContactsType.__enum_map__()
   Glific.Enums.import_contacts_type_const()
-
   """
 
   defmacro api_status_const,

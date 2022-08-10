@@ -17,6 +17,8 @@ defmodule GlificWeb.Schema.UserTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_users()
+    SeedsDev.seed_roles()
+    SeedsDev.seed_user_roles()
     :ok
   end
 
@@ -32,8 +34,7 @@ defmodule GlificWeb.Schema.UserTest do
   test "roles returns list of roles", %{manager: user} do
     result = auth_query_gql_by(:list_roles, user)
     assert {:ok, query_data} = result
-
-    roles = get_in(query_data, [:data, "roles"])
+    roles = get_in(query_data, [:data, "access_roles"])
     assert length(roles) >= 4
   end
 

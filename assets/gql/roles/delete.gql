@@ -1,0 +1,9 @@
+#import "./fields.frag.gql"
+
+mutation deleteAccessRole($id: ID!) {
+  deleteAccessRole(id: $id) {
+    ...AccessRoleFields
+
+    ...ErrorFields
+  }
+}

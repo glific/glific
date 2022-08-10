@@ -7,6 +7,8 @@ defmodule Glific.Flows do
   require Logger
 
   alias Glific.{
+    AccessControl,
+    AccessControl.FlowRole,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -30,7 +32,10 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    flows = Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+    flows =
+      Repo.list_filter_query(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+      |> AccessControl.check_access(:flow)
+      |> Repo.all()
 
     flows
     # get all the flow ids
@@ -211,8 +216,22 @@ defmodule Glific.Flows do
 
       flow = get_status_flow(flow)
 
-      {:ok, flow}
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_flow_roles(attrs, flow),
+        else: {:ok, flow}
     end
+  end
+
+  @spec update_flow_roles(map(), Flow.t()) :: {:ok, Flow.t()}
+  defp update_flow_roles(attrs, flow) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:flow_id, flow.id)
+      |> FlowRole.update_flow_roles()
+
+    flow
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -238,9 +257,14 @@ defmodule Glific.Flows do
       attrs
       |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
 
-    flow
-    |> Flow.changeset(attrs)
-    |> Repo.update()
+    with {:ok, updated_flow} <-
+           flow
+           |> Flow.changeset(attrs)
+           |> Repo.update() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_flow_roles(attrs, updated_flow),
+        else: {:ok, updated_flow}
+    end
   end
 
   @doc """

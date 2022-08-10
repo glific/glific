@@ -440,6 +440,7 @@ defmodule Glific.Partners do
       |> set_out_of_office_values()
       |> set_languages()
       |> set_flow_uuid_display()
+      |> set_roles_and_permission()
       |> set_contact_profile_enabled()
 
     Caches.set(
@@ -592,14 +593,19 @@ defmodule Glific.Partners do
   end
 
   @doc """
+  check fun_with_flag toggle for an organization and returns boolean value
+  """
+  @spec get_roles_and_permission(Organization.t()) :: boolean()
+  def get_roles_and_permission(organization),
+    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
+
+  @doc """
   Determine if we need to enable contact profile for an organization
   """
   @spec get_contact_profile_enabled(map()) :: boolean
-  def get_contact_profile_enabled(organization) do
-    id = organization.id
-
-    FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: id})
-  end
+  def get_contact_profile_enabled(organization),
+    do:
+      FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
 
   @spec set_flow_uuid_display(map()) :: map()
   defp set_flow_uuid_display(organization) do
@@ -607,6 +613,15 @@ defmodule Glific.Partners do
       organization,
       :is_flow_uuid_display,
       get_flow_uuid_display(organization)
+    )
+  end
+
+  @spec set_roles_and_permission(map()) :: map()
+  defp set_roles_and_permission(organization) do
+    Map.put(
+      organization,
+      :is_roles_and_permission,
+      get_roles_and_permission(organization)
     )
   end
 
@@ -1170,6 +1185,7 @@ defmodule Glific.Partners do
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
       "flow_uuid_display" => get_flow_uuid_display(organization),
+      "roles_and_permission" => get_roles_and_permission(organization),
       "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
 

@@ -10,6 +10,7 @@ defmodule Glific.Flows.Flow do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    AccessControl.Role,
     Enums.FlowType,
     Flows,
     Flows.FlowContext,
@@ -99,6 +100,7 @@ defmodule Glific.Flows.Flow do
     belongs_to :organization, Organization
 
     has_many :revisions, FlowRevision
+    many_to_many :roles, Role, join_through: "flow_roles", on_replace: :delete
 
     timestamps(type: :utc_datetime_usec)
   end
