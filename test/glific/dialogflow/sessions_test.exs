@@ -63,7 +63,9 @@ defmodule Glific.Dialogflow.SessionsTest do
     with_mock(
       Goth.Token,
       [],
-      fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
     ) do
       message =
         Fixtures.message_fixture(%{body: "Hola", session_uuid: Ecto.UUID.generate()})
