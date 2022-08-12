@@ -1162,8 +1162,8 @@ defmodule Glific.Partners do
       active_organizations([])
       |> Enum.reduce(
         %{},
-        fn {id, _name}, acc ->
-          load_organization_service(id, acc)
+        fn {org_id, _name}, acc ->
+          Map.put(acc, org_id, get_org_services(org_id))
         end
       )
       |> combine_services()
@@ -1171,11 +1171,14 @@ defmodule Glific.Partners do
     {:commit, services}
   end
 
-  @spec load_organization_service(non_neg_integer, map()) :: map()
-  defp load_organization_service(organization_id, services) do
+  @doc """
+    Get all the services and status for a given organization id.
+  """
+  @spec get_org_services(non_neg_integer) :: map()
+  def get_org_services(organization_id) do
     organization = organization(organization_id)
 
-    service = %{
+    %{
       "fun_with_flags" =>
         FunWithFlags.enabled?(
           :enable_out_of_office,
@@ -1188,8 +1191,6 @@ defmodule Glific.Partners do
       "roles_and_permission" => get_roles_and_permission(organization),
       "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
-
-    Map.put(services, organization_id, service)
   end
 
   @spec add_service(map(), String.t(), boolean(), non_neg_integer) :: map()
