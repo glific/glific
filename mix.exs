@@ -29,7 +29,7 @@ defmodule Glific.MixProject do
       ],
       # to avoid compiler iex warning in application.ex
       xref: [exclude: [IEx]],
-      compilers: [:phoenix, :gettext] ++ Mix.compilers(),
+      compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
