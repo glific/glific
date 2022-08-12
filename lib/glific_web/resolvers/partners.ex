@@ -54,7 +54,7 @@ defmodule GlificWeb.Resolvers.Partners do
   def organization_services(_, _, %{context: %{current_user: user}}) do
     services =
       user.organization_id
-      |> Partners.get_org_services()
+      |> Partners.get_org_services_by_id()
       |> Glific.atomize_keys()
 
     {:ok, services}

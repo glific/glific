@@ -1163,7 +1163,7 @@ defmodule Glific.Partners do
       |> Enum.reduce(
         %{},
         fn {org_id, _name}, acc ->
-          Map.put(acc, org_id, get_org_services(org_id))
+          Map.put(acc, org_id, get_org_services_by_id(org_id))
         end
       )
       |> combine_services()
@@ -1174,8 +1174,8 @@ defmodule Glific.Partners do
   @doc """
     Get all the services and status for a given organization id.
   """
-  @spec get_org_services(non_neg_integer) :: map()
-  def get_org_services(organization_id) do
+  @spec get_org_services_by_id(non_neg_integer) :: map()
+  def get_org_services_by_id(organization_id) do
     organization = organization(organization_id)
 
     %{
