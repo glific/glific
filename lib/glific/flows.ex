@@ -447,8 +447,8 @@ defmodule Glific.Flows do
     end
   end
 
-  @spec load_cache(tuple()) :: tuple()
-  defp load_cache(cache_key) do
+  @spec load_flow_cache(tuple()) :: tuple()
+  defp load_flow_cache(cache_key) do
     {organization_id, {key, value, status}} = cache_key
     Repo.put_organization_id(organization_id)
     Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
@@ -471,7 +471,7 @@ defmodule Glific.Flows do
   def get_cached_flow(nil, _key), do: {:ok, nil}
 
   def get_cached_flow(organization_id, key) do
-    case Caches.fetch(organization_id, key, &load_cache/1) do
+    case Caches.fetch(organization_id, key, &load_flow_cache/1) do
       {:error, error} ->
         Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
         {:error, error}

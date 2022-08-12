@@ -996,6 +996,24 @@ defmodule Glific.Partners do
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
+    key = {:provider_shortcode, provider_shortcode}
+
+    case Caches.fetch(organization_id, key, &load_goth_token/1) do
+      {:error, error} ->
+        Logger.info("Failed to retrieve token, #{inspect(key)}, #{error}")
+        {:error, error}
+
+      {_, token} ->
+        IO.inspect("Loaded form cache")
+        IO.inspect(token)
+        token
+    end
+  end
+
+  @spec load_goth_token(tuple()) :: tuple()
+  defp load_goth_token(cache_key) do
+    {organization_id, {:provider_shortcode, provider_shortcode}} = cache_key
+
     organization = organization(organization_id)
 
     organization.services[provider_shortcode]
@@ -1012,7 +1030,11 @@ defmodule Glific.Partners do
           Goth.Token.fetch(source: {:service_account, config})
           |> case do
             {:ok, token} ->
-              token
+              IO.inspect("Fetched token")
+              opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
+              Caches.set(organization_id, {:provider_shortcode, provider_shortcode}, token, opts)
+
+              {:ignore, token}
 
             {:error, error} ->
               Logger.info(
@@ -1020,12 +1042,15 @@ defmodule Glific.Partners do
               )
 
               handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
+
+              {:error, error}
           end
         else
           error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"
           Logger.info(error)
 
           handle_token_error(organization_id, provider_shortcode, error)
+          {:error, error}
         end
     end
   end
