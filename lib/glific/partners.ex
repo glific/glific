@@ -996,37 +996,48 @@ defmodule Glific.Partners do
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
+    key = {:provider_shortcode, provider_shortcode}
     organization = organization(organization_id)
 
-    organization.services[provider_shortcode]
-    |> case do
-      nil ->
-        nil
+    if is_nil(organization.services[provider_shortcode]) do
+      nil
+    else
+      Caches.fetch(organization_id, key, &load_goth_token/1)
+      |> case do
+        {_status, res} when is_map(res) ->
+          res
 
-      credentials ->
-        config = config(credentials)
+        _ ->
+          nil
+      end
+    end
+  end
 
-        if config != :error do
-          # We need to cache this token and set the TTL as the token expires in
+  @spec load_goth_token(tuple()) :: tuple()
+  defp load_goth_token(cache_key) do
+    {organization_id, {:provider_shortcode, provider_shortcode}} = cache_key
 
-          Goth.Token.fetch(source: {:service_account, config})
-          |> case do
-            {:ok, token} ->
-              token
+    organization = organization(organization_id)
+    credentials = organization.services[provider_shortcode] |> config()
 
-            {:error, error} ->
-              Logger.info(
-                "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
-              )
+    if credentials == :error do
+      {:ignore, nil}
+    else
+      Goth.Token.fetch(source: {:service_account, credentials})
+      |> case do
+        {:ok, token} ->
+          opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
+          Caches.set(organization_id, {:provider_shortcode, provider_shortcode}, token, opts)
+          {:ignore, token}
 
-              handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
-          end
-        else
-          error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"
-          Logger.info(error)
+        {:error, error} ->
+          Logger.info(
+            "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
+          )
 
-          handle_token_error(organization_id, provider_shortcode, error)
-        end
+          handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
+          {:ignore, nil}
+      end
     end
   end
 

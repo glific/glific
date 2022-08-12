@@ -22,6 +22,7 @@ defmodule GlificWeb.Schema.UserTypes do
 
     field :inserted_at, :datetime
     field :updated_at, :datetime
+
     field :is_restricted, :boolean do
       resolve(fn user, _, %{context: %{current_user: current_user}} ->
         if Enum.member?(current_user.roles, :staff),

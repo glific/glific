@@ -884,7 +884,9 @@ defmodule Glific.PartnersTest do
       with_mock(
         Goth.Token,
         [],
-        fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
       ) do
         valid_attrs = %{
           shortcode: "bigquery",
@@ -901,6 +903,8 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
         token = Partners.get_goth_token(organization_id, "bigquery")
@@ -914,7 +918,9 @@ defmodule Glific.PartnersTest do
       with_mock(
         Goth.Token,
         [],
-        fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
       ) do
         valid_attrs = %{
           shortcode: "google_cloud_storage",
@@ -930,6 +936,8 @@ defmodule Glific.PartnersTest do
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -967,6 +975,8 @@ defmodule Glific.PartnersTest do
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -1011,9 +1021,12 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        assert true == is_nil(Partners.get_goth_token(organization_id, "bigquery"))
+        assert true ==
+                 is_nil(Partners.get_goth_token(organization_id, "bigquery"))
 
         {:ok, cred} =
           Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})
