@@ -854,12 +854,39 @@ defmodule Glific.PartnersTest do
       assert updated_organization_services[organization_id]["google_cloud_storage"] == false
     end
 
+    test "get_org_services_by_id/1 for organization should return organization services key value pair by id",
+         %{organization_id: organization_id} = _attrs do
+      organization_services = Partners.get_org_services_by_id(organization_id)
+
+      assert organization_services["bigquery"] == false
+      assert organization_services["dialogflow"] == false
+      assert organization_services["fun_with_flags"] == true
+      assert organization_services["google_cloud_storage"] == false
+
+      valid_attrs = %{
+        secrets: %{"service_account" => @default_goth_json},
+        is_active: true,
+        shortcode: "bigquery",
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      updated_organization_services = Partners.get_org_services_by_id(organization_id)
+
+      assert updated_organization_services["bigquery"] == true
+      assert updated_organization_services["dialogflow"] == false
+      assert updated_organization_services["fun_with_flags"] == true
+      assert updated_organization_services["google_cloud_storage"] == false
+    end
+
     test "get_goth_token/2 should return goth token",
          %{organization_id: organization_id} = _attrs do
       with_mock(
         Goth.Token,
         [],
-        fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
       ) do
         valid_attrs = %{
           shortcode: "bigquery",
@@ -876,6 +903,8 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
         token = Partners.get_goth_token(organization_id, "bigquery")
@@ -889,7 +918,9 @@ defmodule Glific.PartnersTest do
       with_mock(
         Goth.Token,
         [],
-        fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
       ) do
         valid_attrs = %{
           shortcode: "google_cloud_storage",
@@ -905,6 +936,8 @@ defmodule Glific.PartnersTest do
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -942,6 +975,8 @@ defmodule Glific.PartnersTest do
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -986,9 +1021,12 @@ defmodule Glific.PartnersTest do
           organization_id: organization_id
         }
 
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        assert true == is_nil(Partners.get_goth_token(organization_id, "bigquery"))
+        assert true ==
+                 is_nil(Partners.get_goth_token(organization_id, "bigquery"))
 
         {:ok, cred} =
           Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})

@@ -16,7 +16,7 @@ if Code.ensure_loaded?(Ecto) do
 
     @repo Config.ecto_repo()
     @mysql_lock_timeout_s 3
-    @table_name Config.ecto_table_name()
+    @table_name Config.ecto_table_name_determined_at_compile_time()
     @prefix_opts [prefix: "global"]
 
     @impl true

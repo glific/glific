@@ -296,7 +296,9 @@ defmodule Glific.BigQueryTest do
     with_mock(
       Goth.Token,
       [],
-      fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
     ) do
       assert {:ok, value} = BigQuery.fetch_bigquery_credentials(attrs.organization_id)
       assert true == is_map(value)
@@ -316,6 +318,7 @@ defmodule Glific.BigQueryTest do
         ]
       }
     ]) do
+      Glific.Caches.remove(attrs.organization_id, [{:provider_shortcode, "bigquery"}])
       assert true = is_nil(BigQuery.fetch_bigquery_credentials(attrs.organization_id))
 
       {:ok, cred} =
