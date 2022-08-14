@@ -260,10 +260,11 @@ defmodule Glific.Users do
   end
 
   defp maybe_promote_user(_list, user) do
-    {:ok, user} = update_user(user, %{roles: [:admin], add_role_ids: get_role_id("No access")})
+    {:ok, user} = update_user(user, %{roles: [:none], add_role_ids: get_role_id("No access")})
     user
   end
 
+  @spec get_role_id(String.t()) :: list()
   defp get_role_id(role) do
     Role
     |> select([r], r.id)
