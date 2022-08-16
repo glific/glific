@@ -4,14 +4,8 @@ defmodule GlificWeb.Schema.RoleTest do
 
   alias Glific.{
     AccessControl.Role,
-    Repo,
-    Seeds.SeedsDev
+    Repo
   }
-
-  setup do
-    SeedsDev.seed_roles()
-    :ok
-  end
 
   load_gql(:list, GlificWeb.Schema, "assets/gql/roles/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/roles/by_id.gql")
