@@ -753,10 +753,10 @@ if Code.ensure_loaded?(Faker) do
     def seed_user_roles(organization \\ nil) do
       organization = get_organization(organization)
 
-      [_u1, _u2, u3, u4, u5 | _] =
+      [_u1, _u2, u3, u4, u5, u6 | _] =
         Users.list_users(%{filter: %{organization_id: organization.id}})
 
-      [r1, r2, r3 | _] = AccessControl.list_roles(%{organization_id: organization.id})
+      [r1, r2, r3, r4 | _] = AccessControl.list_roles(%{organization_id: organization.id})
 
       Repo.insert!(%AccessControl.UserRole{
         user_id: u3.id,
@@ -773,6 +773,12 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%AccessControl.UserRole{
         user_id: u5.id,
         role_id: r1.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u6.id,
+        role_id: r4.id,
         organization_id: organization.id
       })
     end
