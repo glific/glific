@@ -255,12 +255,24 @@ defmodule Glific.Users do
   @spec maybe_promote_user(list(), User.t()) :: User.t()
   defp maybe_promote_user([], user) do
     # this is the first user, since the list of valid org users is empty
-    {:ok, user} = update_user(user, %{roles: [:admin], add_role_ids: get_role_id("Admin")})
+    {:ok, user} =
+      update_user(user, %{
+        roles: [:admin],
+        add_role_ids: get_role_id("Admin"),
+        organization_id: user.organization_id
+      })
+
     user
   end
 
   defp maybe_promote_user(_list, user) do
-    {:ok, user} = update_user(user, %{roles: [:none], add_role_ids: get_role_id("No access")})
+    {:ok, user} =
+      update_user(user, %{
+        roles: [:none],
+        add_role_ids: get_role_id("No access"),
+        organization_id: user.organization_id
+      })
+
     user
   end
 
