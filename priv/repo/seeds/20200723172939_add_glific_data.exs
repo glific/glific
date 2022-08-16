@@ -5,6 +5,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   envs([:dev, :test, :prod])
 
   alias Glific.{
+    AccessControl,
     Contacts.Contact,
     Contacts.ContactsField,
     Flows.Flow,
@@ -17,6 +18,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     Profiles.Profile,
     Repo,
     Searches.SavedSearch,
+    Seeds.SeedsDev,
     Seeds.SeedsFlows,
     Seeds.SeedsMigration,
     Settings.Language,
@@ -86,6 +88,10 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     flow_labels(organization)
 
     flows(organization)
+
+    roles(organization)
+
+    user_roles(organization)
 
     contacts_field(organization)
 
@@ -585,6 +591,27 @@ defmodule Glific.Repo.Seeds.AddGlificData do
 
   def flows(organization),
     do: SeedsFlows.seed([organization])
+
+  def roles(organization),
+    do: SeedsDev.seed_roles([organization])
+
+  def user_roles(organization) do
+    [u1, u2] = Users.list_users(%{filter: %{organization_id: organization.id}})
+
+    [r1 | _] = AccessControl.list_roles(%{organization_id: organization.id})
+
+    Repo.insert!(%AccessControl.UserRole{
+      user_id: u1.id,
+      role_id: r1.id,
+      organization_id: organization.id
+    })
+
+    Repo.insert!(%AccessControl.UserRole{
+      user_id: u2.id,
+      role_id: r1.id,
+      organization_id: organization.id
+    })
+  end
 
   def contacts_field(organization) do
     data = [
