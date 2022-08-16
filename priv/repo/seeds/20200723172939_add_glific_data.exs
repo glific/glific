@@ -593,12 +593,12 @@ defmodule Glific.Repo.Seeds.AddGlificData do
     do: SeedsFlows.seed([organization])
 
   def roles(organization),
-    do: SeedsDev.seed_roles([organization])
+    do: SeedsDev.seed_roles(organization)
 
   def user_roles(organization) do
     [u1, u2] = Users.list_users(%{filter: %{organization_id: organization.id}})
 
-    [r1 | _] = AccessControl.list_roles(%{organization_id: organization.id})
+    {:ok, r1} = Repo.fetch_by(AccessControl.Role, %{label: "Admin"})
 
     Repo.insert!(%AccessControl.UserRole{
       user_id: u1.id,
