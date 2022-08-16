@@ -29,7 +29,6 @@ defmodule Glific.AccessControlTest do
         for_actor: %{organization_id: attrs.organization_id}
       )
 
-      SeedsDev.seed_roles()
       Fixtures.role_fixture(attrs)
 
       assert AccessControl.count_roles(%{filter: attrs, organization_id: attrs.organization_id}) ==
@@ -42,7 +41,12 @@ defmodule Glific.AccessControlTest do
       )
 
       role = Fixtures.role_fixture(attrs)
-      assert AccessControl.list_roles(%{organization_id: attrs.organization_id}) == [role]
+
+      assert Enum.filter(
+               AccessControl.list_roles(%{organization_id: attrs.organization_id}),
+               fn r -> r.label == role.label end
+             ) ==
+               [role]
     end
 
     test "list_roles/0 returns with filtered data", attrs do
