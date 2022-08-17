@@ -10,7 +10,7 @@ defmodule Glific.Clients.ReapBenefit do
     Repo
   }
 
-  @frappe_open_civic_api_url "http://frappe.solveninja.org/api/"
+  @frappe_open_civic_api_url "http://frappe.solveninja.org/api/resource/"
 
   @doc """
   In the case of RB we retrive the flow name of the object (id any)
@@ -43,8 +43,7 @@ defmodule Glific.Clients.ReapBenefit do
     header = get_header(token)
 
     url =
-      @frappe_open_civic_api_url <>
-        "resource/User/" <> fields["contact"]["phone"] <> "@reapbenefit.org"
+      @frappe_open_civic_api_url <> "User/" <> fields["contact"]["phone"] <> "@reapbenefit.org"
 
     Tesla.get(url, headers: header)
     |> case do
@@ -71,7 +70,7 @@ defmodule Glific.Clients.ReapBenefit do
       }
       |> Jason.encode!()
 
-    url = @frappe_open_civic_api_url <> "resource/User"
+    url = @frappe_open_civic_api_url <> "User"
 
     Tesla.post(url, body, headers: header)
     |> case do
@@ -90,7 +89,7 @@ defmodule Glific.Clients.ReapBenefit do
     token = fields["token"]
     header = get_header(token)
     body = Jason.encode!(fields)
-    url = @frappe_open_civic_api_url <> "resource/Locations"
+    url = @frappe_open_civic_api_url <> "Locations"
 
     Tesla.post(url, body, headers: header)
     |> case do
