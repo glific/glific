@@ -102,7 +102,7 @@ defmodule Glific.Notifications do
     We will pick the types from here to keep the consistency
   """
   @spec types :: %{critical: String.t(), warning: String.t(), info: String.t()}
-  def types() do
+  def types do
     %{
       critical: "Critical",
       warning: "Warning",
