@@ -9,6 +9,7 @@ defmodule Glific.Templates do
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
+    Notifications,
     Partners,
     Partners.Organization,
     Providers.Gupshup,
@@ -453,7 +454,7 @@ defmodule Glific.Templates do
 
     update_attrs =
       if current_template.status != template["status"],
-        do: do_update_attrs(template["status"], template),
+        do: change_template_status(template["status"], current_template, template),
         else: %{status: template["status"]}
 
     db_templates[template["bsp_id"]]
@@ -461,14 +462,42 @@ defmodule Glific.Templates do
     |> Repo.update()
   end
 
-  @spec do_update_attrs(String.t(), map()) :: map()
-  defp do_update_attrs("APPROVED", _template),
-    do: %{status: "APPROVED", is_active: true}
+  @spec change_template_status(String.t(), map(), map()) :: map()
+  defp change_template_status("APPROVED", db_template, _bsp_template) do
+    Notifications.create_notification(%{
+      category: "Templates",
+      message: "Template #{db_template.shortcode} has been approved",
+      severity: Notifications.types().info,
+      organization_id: db_template.organization_id,
+      entity: %{
+        id: db_template.id,
+        shortcode: db_template.shortcode,
+        label: db_template.label,
+        uuid: db_template.uuid
+      }
+    })
 
-  defp do_update_attrs("REJECTED", template),
-    do: %{status: "REJECTED", reason: template["reason"]}
+    %{status: "APPROVED", is_active: true}
+  end
 
-  defp do_update_attrs(status, _template), do: %{status: status}
+  defp change_template_status("REJECTED", db_template, bsp_template) do
+    Notifications.create_notification(%{
+      category: "Templates",
+      message: "Template #{db_template.shortcode} has been rejected",
+      severity: Notifications.types().info,
+      organization_id: db_template.organization_id,
+      entity: %{
+        id: db_template.id,
+        shortcode: db_template.shortcode,
+        label: db_template.label,
+        uuid: db_template.uuid
+      }
+    })
+
+    %{status: "REJECTED", reason: bsp_template["reason"]}
+  end
+
+  defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
 
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}

@@ -352,7 +352,7 @@ defmodule Glific.Partners do
   end
 
   @doc """
-  Deletes an Orgsanization.
+  Deletes an Organization.
 
   ## Examples
 
@@ -1078,7 +1078,7 @@ defmodule Glific.Partners do
         Notifications.create_notification(%{
           category: "Partner",
           message: "Disabling #{shortcode}. #{error_message}",
-          severity: "Critical",
+          severity: Notifications.types().critical,
           organization_id: organization_id,
           entity: %{
             id: provider.id,
