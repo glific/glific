@@ -61,7 +61,8 @@ defmodule Glific.Clients do
 
   @reap_benefit %{
     id: 15,
-    name: "Reap Benefit"
+    name: "Reap Benefit",
+    webhook: Glific.Clients.ReapBenefit
     # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
