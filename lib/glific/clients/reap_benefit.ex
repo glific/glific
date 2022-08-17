@@ -10,7 +10,7 @@ defmodule Glific.Clients.ReapBenefit do
     Repo
   }
 
-  @frappe_open_civic_api_url "http://ocb.test:8000/api/"
+  @frappe_open_civic_api_url "http://frappe.solveninja.org/api/"
 
   @doc """
   In the case of RB we retrive the flow name of the object (id any)
