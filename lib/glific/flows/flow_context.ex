@@ -154,7 +154,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Generate a notifcation having all the flow context data.
+  Generate a notification having all the flow context data.
   """
   @spec notification(FlowContext.t(), String.t()) :: nil
   def notification(context, message) do
@@ -165,7 +165,7 @@ defmodule Glific.Flows.FlowContext do
       Notifications.create_notification(%{
         category: "Flow",
         message: message,
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: context.organization_id,
         entity: %{
           contact_id: context.contact_id,

@@ -17,6 +17,7 @@ if Code.ensure_loaded?(Faker) do
       Groups.Group,
       Messages.Message,
       Messages.MessageMedia,
+      Notifications,
       Notifications.Notification,
       Partners.Billing,
       Partners.Organization,
@@ -1097,7 +1098,7 @@ if Code.ensure_loaded?(Faker) do
         category: "Partner",
         message:
           "Disabling bigquery. Account does not have sufficient permissions to insert data to BigQuery.",
-        severity: "Critical",
+        severity: Notifications.types().critical,
         organization_id: organization.id,
         entity: %{
           id: 2,
@@ -1108,7 +1109,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%Notification{
         category: "Message",
         message: "Cannot send session message to contact, invalid bsp status.",
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: organization.id,
         entity: %{
           id: 1,
@@ -1126,7 +1127,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%Notification{
         category: "Flow",
         message: "Cannot send session message to contact, invalid bsp status.",
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: organization.id,
         entity: %{
           flow_id: 3,
