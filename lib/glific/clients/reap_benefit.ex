@@ -132,6 +132,7 @@ defmodule Glific.Clients.ReapBenefit do
     ]
   end
 
+  @spec validate_fetch_attrs(map()) :: map()
   defp validate_fetch_attrs(
          %{
            "doctype" => doctype,
