@@ -74,7 +74,7 @@ defmodule Glific.Clients.ReapBenefit do
 
     Tesla.post(url, body, headers: header)
     |> case do
-      {:ok, %Tesla.Env{status: 200}} ->
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
         |> to_minimal_map("User")
         |> Map.merge(%{is_found: true})
