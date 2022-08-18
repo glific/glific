@@ -150,25 +150,17 @@ defmodule Glific.Clients.ReapBenefit do
   defp validate_fetch_attrs(_fields),
     do: %{is_valid: false, message: "Add Doctype, Doctype_id and Token in body to proceed"}
 
-  defp to_minimal_map(data, "User") do
-    data["data"]
-    |> Map.take(["email", "first_name", "last_name", "gender", "mobile_no"])
-  end
+  defp to_minimal_map(%{"data" => data} = _body, "User"),
+    do: Map.take(data, ["email", "first_name", "last_name", "gender", "mobile_no"])
 
-  defp to_minimal_map(data, "Locations") do
-    data["data"]
-    |> Map.take(["latitude", "longitude", "city", "state", "district"])
-  end
+  defp to_minimal_map(%{"data" => data} = _body, "Locations"),
+    do: Map.take(data, ["latitude", "longitude", "city", "state", "district"])
 
-  defp to_minimal_map(data, "Events") do
-    data["data"]
-    |> Map.take(["title", "type", "status", "category", "subcategory"])
-  end
+  defp to_minimal_map(%{"data" => data} = _body, "Events"),
+    do: Map.take(data, ["title", "type", "status", "category", "subcategory"])
 
-  defp to_minimal_map(data, "Assets") do
-    data["data"]
-    |> Map.take(["title", "type", "status", "category", "subcategory"])
-  end
+  defp to_minimal_map(%{"data" => data} = _body, "Assets"),
+    do: Map.take(data, ["title", "type", "status", "category", "subcategory"])
 
   defp to_minimal_map(_data, _doctype), do: %{}
 end
