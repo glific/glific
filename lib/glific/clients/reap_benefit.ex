@@ -43,7 +43,7 @@ defmodule Glific.Clients.ReapBenefit do
     header = get_header(token)
 
     url =
-      @frappe_open_civic_api_url <> "User/" <> fields["contact"]["phone"] <> "@reapbenefit.org"
+      @frappe_open_civic_api_url <> "User/" <> fields["contact"]["phone"] <> "@solveninja.org"
 
     Tesla.get(url, headers: header)
     |> case do
@@ -65,8 +65,9 @@ defmodule Glific.Clients.ReapBenefit do
 
     body =
       %{
-        "email" => fields["contact"]["phone"] <> "@reapbenefit.org",
-        "first_name" => fields["contact"]["name"]
+        "email" => fields["contact"]["phone"] <> "@solveninja.org ",
+        "first_name" => fields["contact"]["name"],
+        "mobile_no" => fields["contact"]["phone"],
       }
       |> Jason.encode!()
 
