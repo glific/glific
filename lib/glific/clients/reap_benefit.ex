@@ -75,7 +75,9 @@ defmodule Glific.Clients.ReapBenefit do
     Tesla.post(url, body, headers: header)
     |> case do
       {:ok, %Tesla.Env{status: 200}} ->
-        %{is_valid: true, response: "New User created"}
+        Jason.decode!(body)
+        |> to_minimal_map("User")
+        |> Map.merge(%{is_found: true})
 
       {:ok, %Tesla.Env{status: 409}} ->
         %{is_valid: false, response: "Duplicate User"}
@@ -150,8 +152,9 @@ defmodule Glific.Clients.ReapBenefit do
   defp validate_fetch_attrs(_fields),
     do: %{is_valid: false, message: "Add Doctype, Doctype_id and Token in body to proceed"}
 
+  @spec to_minimal_map(map(), String.t()) :: map()
   defp to_minimal_map(%{"data" => data} = _body, "User"),
-    do: Map.take(data, ["email", "first_name", "last_name", "gender", "mobile_no"])
+    do: Map.take(data, ["name", "email", "first_name", "last_name", "gender", "mobile_no"])
 
   defp to_minimal_map(%{"data" => data} = _body, "Locations"),
     do: Map.take(data, ["latitude", "longitude", "city", "state", "district"])
