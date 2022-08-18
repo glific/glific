@@ -109,11 +109,14 @@ defmodule Glific.Clients.ReapBenefit do
 
       Tesla.get(url, headers: header)
       |> case do
-        {:ok, %Tesla.Env{status: 200, body: _body}} ->
-          %{is_found: true, response: "Logged In"}
+        {:ok, %Tesla.Env{status: 200, body: body}} ->
+          Jason.decode!(body)
+          |> to_minimal_map(doctype)
+          |> Map.merge(%{is_found: true})
 
         {:ok, %Tesla.Env{status: 404, body: body}} ->
           error_msg = Jason.decode!(body)
+
           %{is_found: false, response: error_msg["exc_type"]}
 
         {_status, _response} ->
@@ -139,10 +142,33 @@ defmodule Glific.Clients.ReapBenefit do
            "doctype_id" => doctype_id,
            "token" => token
          } = _fields
-       ) do
+       )
+       when doctype in ["User", "Locations", "Events", "Assets"] do
     %{is_valid: true, attrs: {doctype, doctype_id, token}}
   end
 
   defp validate_fetch_attrs(_fields),
     do: %{is_valid: false, message: "Add Doctype, Doctype_id and Token in body to proceed"}
+
+  defp to_minimal_map(data, "User") do
+    data["data"]
+    |> Map.take(["email", "first_name", "last_name", "gender", "mobile_no"])
+  end
+
+  defp to_minimal_map(data, "Locations") do
+    data["data"]
+    |> Map.take(["latitude", "longitude", "city", "state", "district"])
+  end
+
+  defp to_minimal_map(data, "Events") do
+    data["data"]
+    |> Map.take(["title", "type", "status", "category", "subcategory"])
+  end
+
+  defp to_minimal_map(data, "Assets") do
+    data["data"]
+    |> Map.take(["title", "type", "status", "category", "subcategory"])
+  end
+
+  defp to_minimal_map(_data, _doctype), do: %{}
 end
