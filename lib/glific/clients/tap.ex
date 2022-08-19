@@ -101,9 +101,10 @@ defmodule Glific.Clients.Tap do
   def webhook("get_activity_info", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     course = get_in(fields, ["contact", "fields", "course", "value"]) || fields["type"]
-    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || "2022-08-04"
+    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || to_string(Timex.today())
 
     get_activity_info(org_id, date, course, fields["language_label"])
+    |> maybe_add_profile_activity(fields["contact"]["id"], org_id)
   end
 
   def webhook("get_quiz_info", fields) do
@@ -199,14 +200,14 @@ defmodule Glific.Clients.Tap do
         |> clean_map_keys()
         |> format_hsm_templates(language_label)
         |> Map.merge(%{
-          is_valid: true,
-          message: "Activity found"
+          "is_valid" => true,
+          "message" => "Activity found"
         })
 
       _ ->
         %{
-          is_valid: false,
-          message: "Worksheet code not found"
+          "is_valid" => false,
+          "message" => "Worksheet code not found"
         }
     end
   end
@@ -413,6 +414,51 @@ defmodule Glific.Clients.Tap do
       {k, v} -> {k, String.replace(v, ~r/\n\r\n/, "\n")}
     end)
     |> Enum.into(%{})
+  end
+
+  @doc """
+    Check if a contact has more profiles and add that to message.
+  """
+  def maybe_add_profile_activity(activity_info, contact_id, org_id) do
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: org_id})
+
+    profiles =
+      Glific.Profiles.list_profiles(%{filter: %{contact_id: contact.id}, organization_id: org_id})
+
+    profile_activities =
+      Enum.reduce(profiles, %{english_messages: [], hindi_messages: []}, fn profile, acc ->
+        test_date = profile.fields["test_date"]["value"]
+        course = profile.fields["course"]["value"]
+        profile_activity = get_activity_info(org_id, test_date, course, "English")
+        english_messages = Map.get(acc, :english_messages, [])
+        hindi_messages = Map.get(acc, :hindi_messages, [])
+
+        if profile_activity["is_valid"] do
+          english_messages = english_messages ++ [profile_activity["activitymainmessageenglish"]]
+          hindi_messages = hindi_messages ++ [profile_activity["activitymainmessagehindi"]]
+
+          acc
+          |> Map.put(:english_messages, english_messages)
+          |> Map.put(:hindi_messages, hindi_messages)
+        else
+          acc
+        end
+      end)
+
+    if profile_activities[:english_messages] != [] do
+      english_activity_message =
+        Map.get(profile_activities, :english_messages, []) |> Enum.join("\n\n")
+
+      hindi_activity_message =
+        Map.get(profile_activities, :hindi_messages, []) |> Enum.join("\n\n")
+
+      Map.merge(activity_info, %{
+        profiles_activity_message_english: english_activity_message,
+        profiles_activity_message_hindi: hindi_activity_message
+      })
+    else
+      activity_info
+    end
   end
 
   @doc """
