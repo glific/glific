@@ -56,7 +56,7 @@ defmodule GlificWeb.Router do
     live "/liveview", StatsLive
   end
 
-  use GlificWeb.InjectOban
+  # use GlificWeb.InjectOban
 
   # Enables LiveDashboard only for development
   #

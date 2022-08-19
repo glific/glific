@@ -54,22 +54,24 @@ oban_crontab = [
   {"0 21 * * SAT", Glific.Jobs.MinuteWorker, args: %{job: :weekly_tasks}}
 ]
 
-oban_engine = Oban.Pro.Queue.SmartEngine
+# oban_engine = Oban.Pro.Queue.SmartEngine
 
 oban_plugins = [
   # Prune jobs after 5 mins, gives us some time to go investigate if needed
-  {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 5 * 60}, limit: 25_000},
+  # {Oban.Pro.Plugins.DynamicPruner, mode: {:max_age, 5 * 60}, limit: 25_000},
+  {Oban.Plugins.Pruner, [max_age: 5 * 60, limit: 25_000]},
   {Oban.Plugins.Cron, crontab: oban_crontab},
-  Oban.Pro.Plugins.DynamicLifeline,
-  Oban.Web.Plugins.Stats,
-  Oban.Plugins.Gossip,
+  # Oban.Pro.Plugins.DynamicLifeline,
+  Oban.Plugins.Lifeline,
+  # Oban.Web.Plugins.Stats,
+  # Oban.Plugins.Gossip,
   Oban.Plugins.Reindexer
 ]
 
 config :glific, Oban,
   prefix: "global",
   repo: Glific.Repo,
-  engine: oban_engine,
+  # engine: oban_engine,
   queues: oban_queues,
   plugins: oban_plugins
 
