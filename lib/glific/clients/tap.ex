@@ -422,43 +422,45 @@ defmodule Glific.Clients.Tap do
   def maybe_add_profile_activity(activity_info, contact_id, org_id) do
     {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: org_id})
 
-    profiles =
-      Glific.Profiles.list_profiles(%{filter: %{contact_id: contact.id}, organization_id: org_id})
+    if is_nil(contact.active_profile_id) do
+      activity_info
+    else
+      profile_activities =
+        %{filter: %{contact_id: contact.id}, organization_id: org_id}
+        |> Glific.Profiles.list_profiles()
+        |> get_profile_activities(org_id)
 
-    profile_activities =
-      Enum.reduce(profiles, %{english_messages: [], hindi_messages: []}, fn profile, acc ->
-        test_date = profile.fields["test_date"]["value"]
-        course = profile.fields["course"]["value"]
-        profile_activity = get_activity_info(org_id, test_date, course, "English")
-        english_messages = Map.get(acc, :english_messages, [])
-        hindi_messages = Map.get(acc, :hindi_messages, [])
-
-        if profile_activity["is_valid"] do
-          english_messages = english_messages ++ [profile_activity["activitymainmessageenglish"]]
-          hindi_messages = hindi_messages ++ [profile_activity["activitymainmessagehindi"]]
-
-          acc
-          |> Map.put(:english_messages, english_messages)
-          |> Map.put(:hindi_messages, hindi_messages)
-        else
-          acc
-        end
-      end)
-
-    if profile_activities[:english_messages] != [] do
-      english_activity_message =
-        Map.get(profile_activities, :english_messages, []) |> Enum.join("\n\n")
-
-      hindi_activity_message =
-        Map.get(profile_activities, :hindi_messages, []) |> Enum.join("\n\n")
+      activity_msg_eng = Map.get(profile_activities, :english_messages, []) |> Enum.join("\n\n")
+      activity_msg_hin = Map.get(profile_activities, :hindi_messages, []) |> Enum.join("\n\n")
 
       Map.merge(activity_info, %{
-        profiles_activity_message_english: english_activity_message,
-        profiles_activity_message_hindi: hindi_activity_message
+        profiles_activity_message_english: activity_msg_eng,
+        profiles_activity_message_hindi: activity_msg_hin,
+        has_profile_activity_message: activity_msg_eng != ""
       })
-    else
-      activity_info
     end
+  end
+
+  defp get_profile_activities(profiles, org_id) do
+    profiles
+    |> Enum.reduce(%{english_messages: [], hindi_messages: []}, fn profile, acc ->
+      test_date = profile.fields["test_date"]["value"]
+      course = profile.fields["course"]["value"]
+      profile_activity = get_activity_info(org_id, test_date, course, "English")
+      english_messages = Map.get(acc, :english_messages, [])
+      hindi_messages = Map.get(acc, :hindi_messages, [])
+
+      if profile_activity["is_valid"] do
+        english_messages = english_messages ++ [profile_activity["activitymainmessageenglish"]]
+        hindi_messages = hindi_messages ++ [profile_activity["activitymainmessagehindi"]]
+
+        acc
+        |> Map.put(:english_messages, english_messages)
+        |> Map.put(:hindi_messages, hindi_messages)
+      else
+        acc
+      end
+    end)
   end
 
   @doc """
