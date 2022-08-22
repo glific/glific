@@ -198,11 +198,18 @@ defmodule Glific.Providers.Gupshup.Message do
     payload = params["payload"]
     message_payload = payload["payload"]
 
+    ## Gupshup does not send an option id back as a response.
+    ## They just send the postbackText back as the option id.
+    ## formatting that here will help us to keep that consistent.
+    ## We might remove this in the future when gupshup will start sending the option id.
+
+    interactive_content = message_payload |> Map.merge(%{"id" => message_payload["postbackText"]})
+
     %{
       bsp_message_id: payload["id"],
       context_id: context_id(payload),
       body: message_payload["title"],
-      interactive_content: message_payload,
+      interactive_content: interactive_content,
       sender: %{
         phone: payload["sender"]["phone"],
         name: payload["sender"]["name"]

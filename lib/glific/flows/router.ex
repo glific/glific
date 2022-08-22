@@ -329,7 +329,7 @@ defmodule Glific.Flows.Router do
           json =
             default_results
             |> Map.merge(msg.extra)
-            |> Map.put("interactive_content", msg.interactive_content)
+            |> Map.put("interactive", msg.interactive_content)
 
           %{key => json}
 
