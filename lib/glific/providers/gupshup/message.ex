@@ -127,8 +127,7 @@ defmodule Glific.Providers.Gupshup.Message do
     # lets ensure that we have a phone number
     # sometime the gupshup payload has a blank payload
     # or maybe a simulator or some test code
-    if is_nil(payload["sender"]["phone"]) ||
-         String.trim(payload["sender"]["phone"]) == "" do
+    if payload["sender"]["phone"] in [nil, ""] do
       error = "Phone number is blank, #{inspect(payload)}"
       Logger.error(error)
 

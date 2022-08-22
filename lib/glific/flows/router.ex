@@ -355,7 +355,7 @@ defmodule Glific.Flows.Router do
     FlowContext.update_results(context, results)
   end
 
-  ## Format operand and replcae @fields. to @contact.fields. so that system can parse it automatically.
+  ## Format operand and replace @fields. to @contact.fields. so that system can parse it automatically.
   ## for other router operand we are handling everything in a same way.
   @spec format_operand(String.t()) :: String.t()
   defp format_operand(operand) do

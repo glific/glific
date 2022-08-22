@@ -349,7 +349,7 @@ defmodule Glific.Communications.Message do
 
     self = self()
 
-    # We dont want to block the input pipeline, and we are unsure how long the consumer worker
+    # We don't want to block the input pipeline, and we are unsure how long the consumer worker
     # will take. So we run it as a separate task
     # We will also set a short timeout for both the genserver and the poolboy transaction
     Task.start(fn ->
@@ -360,7 +360,12 @@ defmodule Glific.Communications.Message do
             GenServer.call(pid, {message, process_state, self}, @timeout)
           catch
             e, r ->
-              error("poolboy genserver caught error", e, r, __STACKTRACE__)
+              error(
+                "Poolboy genserver caught error while processing the message for flow.",
+                e,
+                r,
+                __STACKTRACE__
+              )
           end
         end
       )
