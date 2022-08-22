@@ -101,9 +101,10 @@ defmodule Glific.Clients.Tap do
   def webhook("get_activity_info", fields) do
     org_id = Glific.parse_maybe_integer!(fields["organization_id"])
     course = get_in(fields, ["contact", "fields", "course", "value"]) || fields["type"]
-    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || "2022-08-04"
+    date = get_in(fields, ["contact", "fields", "test_date", "value"]) || to_string(Timex.today())
 
     get_activity_info(org_id, date, course, fields["language_label"])
+    |> maybe_add_profile_activity(fields["contact"]["id"], org_id)
   end
 
   def webhook("get_quiz_info", fields) do
@@ -149,6 +150,13 @@ defmodule Glific.Clients.Tap do
     )
   end
 
+  def webhook("update_all_profile_fields", fields) do
+    org_id = Glific.parse_maybe_integer!(fields["organization_id"])
+    contact_id = Glific.parse_maybe_integer!(fields["contact"]["id"])
+    update_all_profile_fields(org_id, contact_id, fields["key"], fields["value"])
+    fields
+  end
+
   def webhook(_, fields), do: fields
 
   @spec load_activities(non_neg_integer()) :: :ok
@@ -192,14 +200,14 @@ defmodule Glific.Clients.Tap do
         |> clean_map_keys()
         |> format_hsm_templates(language_label)
         |> Map.merge(%{
-          is_valid: true,
-          message: "Activity found"
+          "is_valid" => true,
+          "message" => "Activity found"
         })
 
       _ ->
         %{
-          is_valid: false,
-          message: "Worksheet code not found"
+          "is_valid" => false,
+          "message" => "Worksheet code not found"
         }
     end
   end
@@ -399,6 +407,7 @@ defmodule Glific.Clients.Tap do
     }
   end
 
+  @spec clean_row_values(map()) :: map()
   defp clean_row_values(row) do
     row
     |> Enum.map(fn
@@ -406,5 +415,129 @@ defmodule Glific.Clients.Tap do
       {k, v} -> {k, String.replace(v, ~r/\n\r\n/, "\n")}
     end)
     |> Enum.into(%{})
+  end
+
+  @doc """
+    Check if a contact has more profiles and add that to message.
+  """
+  @spec maybe_add_profile_activity(map(), non_neg_integer(), non_neg_integer()) :: map()
+  def maybe_add_profile_activity(activity_info, contact_id, org_id) do
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: org_id})
+
+    if is_nil(contact.active_profile_id) do
+      activity_info
+    else
+      profile_activities =
+        %{filter: %{contact_id: contact.id}, organization_id: org_id}
+        |> Glific.Profiles.list_profiles()
+        |> get_profile_activities(org_id)
+
+      activity_msg_eng = Map.get(profile_activities, :english_messages, []) |> Enum.join("\n\n")
+      activity_msg_hin = Map.get(profile_activities, :hindi_messages, []) |> Enum.join("\n\n")
+
+      Map.merge(activity_info, %{
+        profiles_activity_message_english: activity_msg_eng,
+        profiles_activity_message_hindi: activity_msg_hin,
+        has_profile_activity_message: activity_msg_eng != ""
+      })
+    end
+  end
+
+  @spec get_profile_activities(list(), non_neg_integer()) :: map()
+  defp get_profile_activities(profiles, org_id) do
+    profiles
+    |> Enum.reduce(%{english_messages: [], hindi_messages: [], already_processed: []}, fn profile,
+                                                                                          acc ->
+      test_date = profile.fields["test_date"]["value"]
+      course = profile.fields["course"]["value"]
+      already_processed = Map.get(acc, :already_processed, [])
+      english_messages = Map.get(acc, :english_messages, [])
+      hindi_messages = Map.get(acc, :hindi_messages, [])
+
+      profile_activity =
+        if Enum.member?(already_processed, course) == false do
+          get_activity_info(org_id, test_date, course, "English")
+        else
+          %{"is_valid" => false}
+        end
+
+      if profile_activity["is_valid"] do
+        english_messages = english_messages ++ [profile_activity["activitymainmessageenglish"]]
+        hindi_messages = hindi_messages ++ [profile_activity["activitymainmessagehindi"]]
+        already_processed = already_processed ++ [course]
+
+        acc
+        |> Map.put(:english_messages, english_messages)
+        |> Map.put(:hindi_messages, hindi_messages)
+        |> Map.put(:already_processed, already_processed)
+      else
+        acc
+        |> Map.put(:already_processed, already_processed ++ [course])
+      end
+    end)
+  end
+
+  @doc """
+    Update the fields for all the profiles.
+  """
+  @spec update_all_profile_fields(non_neg_integer(), non_neg_integer(), String.t(), String.t()) ::
+          :ok
+  def update_all_profile_fields(org_id, contact_id, key, value) do
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: org_id})
+
+    %{
+      filter: %{contact_id: contact.id},
+      organization_id: org_id
+    }
+    |> Glific.Profiles.list_profiles()
+    |> Enum.each(fn profile ->
+      new_fields = %{
+        key => %{
+          "inserted_at" => DateTime.utc_now(),
+          "value" => value,
+          "type" => "string",
+          "label" => key
+        }
+      }
+
+      fields = Map.merge(profile.fields, new_fields)
+      Glific.Profiles.update_profile(profile, %{fields: fields})
+    end)
+
+    ContactField.do_add_contact_field(contact, key, key, value)
+    :ok
+  end
+
+  @doc """
+  Fix the contact name issue
+  """
+  @spec fix_contact_name :: :ok
+  def fix_contact_name do
+    %{
+      filter: %{},
+      organization_id: 12
+    }
+    |> Glific.Profiles.list_profiles()
+    |> Enum.each(fn profile ->
+      fields = profile.fields
+
+      contact_name = %{
+        "contact_name" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => profile.name,
+          "type" => "string",
+          "label" => "contact name"
+        },
+        "name" => %{
+          "inserted_at" => "2022-08-03T13:43:21.134329Z",
+          "value" => profile.name,
+          "type" => "string",
+          "label" => "Name"
+        }
+      }
+
+      fields = Map.merge(fields, contact_name)
+      Glific.Profiles.update_profile(profile, %{fields: fields})
+    end)
   end
 end
