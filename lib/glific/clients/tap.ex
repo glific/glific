@@ -443,22 +443,33 @@ defmodule Glific.Clients.Tap do
 
   defp get_profile_activities(profiles, org_id) do
     profiles
-    |> Enum.reduce(%{english_messages: [], hindi_messages: []}, fn profile, acc ->
+    |> Enum.reduce(%{english_messages: [], hindi_messages: [], already_processed: []}, fn profile,
+                                                                                          acc ->
       test_date = profile.fields["test_date"]["value"]
       course = profile.fields["course"]["value"]
-      profile_activity = get_activity_info(org_id, test_date, course, "English")
+      already_processed = Map.get(acc, :already_processed, [])
       english_messages = Map.get(acc, :english_messages, [])
       hindi_messages = Map.get(acc, :hindi_messages, [])
+
+      profile_activity =
+        if Enum.member?(already_processed, course) == false do
+          get_activity_info(org_id, test_date, course, "English")
+        else
+          %{"is_valid" => false}
+        end
 
       if profile_activity["is_valid"] do
         english_messages = english_messages ++ [profile_activity["activitymainmessageenglish"]]
         hindi_messages = hindi_messages ++ [profile_activity["activitymainmessagehindi"]]
+        already_processed = already_processed ++ [course]
 
         acc
         |> Map.put(:english_messages, english_messages)
         |> Map.put(:hindi_messages, hindi_messages)
+        |> Map.put(:already_processed, already_processed)
       else
         acc
+        |> Map.put(:already_processed, already_processed ++ [course])
       end
     end)
   end
