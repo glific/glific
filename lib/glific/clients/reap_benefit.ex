@@ -11,6 +11,7 @@ defmodule Glific.Clients.ReapBenefit do
   }
 
   @frappe_open_civic_api_url "http://frappe.solveninja.org/api/resource/"
+  @frappe_open_civic_location_api "http://frappe.solveninja.org/api/method/open_civic_backend.api.location.new"
 
   @doc """
   In the case of RB we retrive the flow name of the object (id any)
@@ -91,12 +92,30 @@ defmodule Glific.Clients.ReapBenefit do
     token = fields["token"]
     header = get_header(token)
     body = Jason.encode!(fields)
-    url = @frappe_open_civic_api_url <> "Locations"
 
+    Tesla.post(@frappe_open_civic_location_api, body, headers: header)
+    |> case do
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> to_minimal_map("Locations")
+        |> Map.merge(%{is_found: true})
+
+      {_status, _response} ->
+        %{is_valid: false, response: "Invalid response"}
+    end
+  end
+
+  def webhook("frappe_add_event", fields) do
+    token = fields["token"]
+    header = get_header(token)
+    body = Jason.encode!(fields)
+    url = @frappe_open_civic_api_url <> "Events"
     Tesla.post(url, body, headers: header)
     |> case do
-      {:ok, %Tesla.Env{status: 200}} ->
-        %{is_valid: true, response: "New Location created"}
+      {:ok, %Tesla.Env{status: 200, body: body}} ->
+        Jason.decode!(body)
+        |> to_minimal_map("Events")
+        |> Map.merge(%{is_found: true})
 
       {_status, _response} ->
         %{is_valid: false, response: "Invalid response"}
@@ -156,14 +175,11 @@ defmodule Glific.Clients.ReapBenefit do
   defp to_minimal_map(%{"data" => data} = _body, "User"),
     do: Map.take(data, ["name", "email", "first_name", "last_name", "gender", "mobile_no"])
 
-  defp to_minimal_map(%{"data" => data} = _body, "Locations"),
-    do: Map.take(data, ["latitude", "longitude", "city", "state", "district"])
+  defp to_minimal_map(%{"message" => message} = _body, "Locations"),
+    do: Map.take(message, ["name", "latitude", "longitude", "city", "state", "district"])
 
   defp to_minimal_map(%{"data" => data} = _body, "Events"),
-    do: Map.take(data, ["title", "type", "status", "category", "subcategory"])
-
-  defp to_minimal_map(%{"data" => data} = _body, "Assets"),
-    do: Map.take(data, ["title", "type", "status", "category", "subcategory"])
+    do: Map.take(data, ["name", "title", "type", "status", "category", "subcategory"])
 
   defp to_minimal_map(_data, _doctype), do: %{}
 end
