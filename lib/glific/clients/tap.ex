@@ -407,6 +407,7 @@ defmodule Glific.Clients.Tap do
     }
   end
 
+  @spec clean_row_values(map()) :: map()
   defp clean_row_values(row) do
     row
     |> Enum.map(fn
@@ -419,6 +420,7 @@ defmodule Glific.Clients.Tap do
   @doc """
     Check if a contact has more profiles and add that to message.
   """
+  @spec maybe_add_profile_activity(map(), non_neg_integer(), non_neg_integer()) :: map()
   def maybe_add_profile_activity(activity_info, contact_id, org_id) do
     {:ok, contact} = Repo.fetch_by(Contact, %{id: contact_id, organization_id: org_id})
 
@@ -441,6 +443,7 @@ defmodule Glific.Clients.Tap do
     end
   end
 
+  @spec get_profile_activities(list(), non_neg_integer()) :: map()
   defp get_profile_activities(profiles, org_id) do
     profiles
     |> Enum.reduce(%{english_messages: [], hindi_messages: [], already_processed: []}, fn profile,
