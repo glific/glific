@@ -427,7 +427,7 @@ defmodule Glific.Repo.Seeds.AddGlificData do
   end
 
   def providers(_count_organizations) do
-    {:ok, default} = Repo.fetch_by(Provider, %{name: "Gupshup"})
+    {:ok, default} = Repo.fetch_by(Provider, %{shortcode: "gupshup"})
     default
   end
 
