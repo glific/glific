@@ -37,7 +37,7 @@ defmodule Glific.Messages.MessageConversation do
           message_id: non_neg_integer | nil,
           message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
-          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
+          organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "messages_conversations" do

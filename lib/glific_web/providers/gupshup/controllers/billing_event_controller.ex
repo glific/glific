@@ -24,10 +24,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   defp handle_billing_event(conn, params) do
     organization_id = conn.assigns[:organization_id]
 
-    params
-    |> MessageConversations.receive_billing_event(organization_id)
-    |> MessageConversations.create_message_conversation()
-
+    MessageConversations.receive_billing_event(params, organization_id)
     handler(conn, params)
   end
 end

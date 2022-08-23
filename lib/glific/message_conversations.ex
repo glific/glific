@@ -113,12 +113,12 @@ defmodule Glific.MessageConversations do
         message_id: message.id,
         organization_id: organization_id
       }
+      |> create_message_conversation()
     else
       _ ->
         Logger.error(
           "Could not find message with id: #{bsp_message_id} and phone #{phone} for org_id: #{organization_id}"
         )
-        %{}
     end
   end
 end
