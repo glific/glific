@@ -56,7 +56,7 @@ defmodule Glific.Messages.MessageConversation do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(MessageConversation.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(any(), map()) :: Ecto.Changeset.t()
   def changeset(message_conversation, attrs) do
     message_conversation
     |> cast(attrs, @required_fields ++ @optional_fields)

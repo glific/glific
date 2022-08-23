@@ -90,7 +90,7 @@ defmodule Glific.MessageConversations do
   @doc """
   Handles incoming billing event
   """
-  @spec receive_billing_event(map(), non_neg_integer()) :: map()
+  @spec receive_billing_event(map(), non_neg_integer()) :: any()
   def receive_billing_event(params, organization_id) do
     references = get_in(params, ["payload", "references"])
     deductions = get_in(params, ["payload", "deductions"])
