@@ -5,7 +5,7 @@ lib/glific/seeds/**
 lib/glific_web/schema/message_tag_types.ex
 lib/glific/groups/contact_group.ex
 lib/glific/groups/user_group.ex
-lib/glific/tags/contact_tag.ex
-lib/glific/tags/message_tag.ex
+lib/glific/tags/*
 lib/glific/flags/ecto.ex
 assets/**
+lib/glific/clients/*
