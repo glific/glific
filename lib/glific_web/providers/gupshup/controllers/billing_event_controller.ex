@@ -20,8 +20,8 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   @spec conversations(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def conversations(conn, params), do: handle_billing_event(conn, params)
 
-  @spec handle_billing_event(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
-  defp handle_billing_event(conn, params, status) do
+  @spec handle_billing_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  defp handle_billing_event(conn, params) do
     organization_id = conn.assigns[:organization_id]
 
     params

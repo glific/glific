@@ -87,6 +87,10 @@ defmodule Glific.MessageConversations do
     Repo.delete(message_conversation)
   end
 
+  @doc """
+  Handles incoming billing event
+  """
+  @spec receive_billing_event(map(), non_neg_integer()) :: map()
   def receive_billing_event(params, organization_id) do
     references = get_in(params, ["payload", "references"])
     deductions = get_in(params, ["payload", "deductions"])
@@ -114,6 +118,7 @@ defmodule Glific.MessageConversations do
         Logger.error(
           "Could not find message with id: #{bsp_message_id} and phone #{phone} for org_id: #{organization_id}"
         )
+        %{}
     end
   end
 end

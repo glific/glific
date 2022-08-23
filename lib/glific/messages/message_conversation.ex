@@ -32,10 +32,12 @@ defmodule Glific.Messages.MessageConversation do
           deduction_type: String.t() | nil,
           is_billable: boolean() | false,
           payload: map() | nil,
+          contact_id: non_neg_integer | nil,
+          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_id: non_neg_integer | nil,
+          message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
-          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
-          message: Message.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "messages_conversations" do
@@ -59,5 +61,8 @@ defmodule Glific.Messages.MessageConversation do
     message_conversation
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
+    |> foreign_key_constraint(:contact_id)
+    |> foreign_key_constraint(:message_id)
+    |> foreign_key_constraint(:organization_id)
   end
 end
