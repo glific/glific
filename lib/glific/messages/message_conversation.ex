@@ -6,8 +6,6 @@ defmodule Glific.Messages.MessageConversation do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias __MODULE__
-
   alias Glific.{
     Contacts.Contact,
     Messages.Message,
