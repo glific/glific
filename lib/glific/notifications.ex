@@ -98,6 +98,18 @@ defmodule Glific.Notifications do
     true
   end
 
+  @doc """
+    We will pick the types from here to keep the consistency
+  """
+  @spec types :: %{critical: String.t(), warning: String.t(), info: String.t()}
+  def types do
+    %{
+      critical: "Critical",
+      warning: "Warning",
+      info: "Information"
+    }
+  end
+
   defp handle_critical_notification(notification) do
     {:ok, _} =
       Partners.organization(notification.organization_id)
