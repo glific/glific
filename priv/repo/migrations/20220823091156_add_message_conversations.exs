@@ -7,9 +7,9 @@ defmodule Glific.Repo.Migrations.AddMessageConversations do
 
   defp create_messages_conversations() do
     create table(:messages_conversations) do
-      add :conversation_id, :string
+      add :conversation_id, :text
       add :deduction_type, :string
-      add :is_billable, :boolean, default: false, null: false
+      add :is_billable, :boolean, default: false
 
       add :message_id, references(:messages, on_delete: :delete_all),
         null: false,

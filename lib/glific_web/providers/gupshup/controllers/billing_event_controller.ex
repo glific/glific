@@ -4,12 +4,13 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   """
 
   use GlificWeb, :controller
+  alias Glific.MessageConversations
 
   @doc """
   Default handle for all billing event callbacks
   """
-  @spec handler(Plug.Conn.t(), map(), String.t()) :: Plug.Conn.t()
-  def handler(conn, _params, _msg) do
+  @spec handler(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def handler(conn, _params) do
     json(conn, nil)
   end
 
@@ -17,20 +18,16 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   Message status when the message has been sent to gupshup
   """
   @spec conversations(Plug.Conn.t(), map()) :: Plug.Conn.t()
-  def conversations(conn, params), do: update_status(conn, params, :enqueued)
+  def conversations(conn, params), do: handle_billing_event(conn, params)
 
-  @spec update_status(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
-  defp update_status(conn, params, status) do
+  @spec handle_billing_event(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
+  defp handle_billing_event(conn, params, status) do
+    organization_id = conn.assigns[:organization_id]
+
     params
-    |> receive_billing_event()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
+    |> MessageConversations.receive_billing_event(organization_id)
+    |> MessageConversations.create_message_conversation()
 
-    handler(conn, params, "Status updated")
-  end
-
-  defp receive_billing_event(params) do
-    references = get_in(params, ["payload", "references"])
-    deductions = get_in(params, ["payload", "deductions"])
-    bsp_message_id = references["gsId"]|| references["id"]
+    handler(conn, params)
   end
 end

@@ -40,8 +40,12 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
   end
 
   @doc false
-  def call(%Conn{params: %{"type" => type, "payload" => %{"deductions" => _deductions}}} = conn, opts) do
+  def call(
+        %Conn{params: %{"type" => type, "payload" => %{"deductions" => _deductions}}} = conn,
+        opts
+      ) do
     organization = build_context(conn)
+
     path =
       ["gupshup"] ++
         if Glific.safe_string_to_atom(organization.status) == :active,
@@ -51,7 +55,6 @@ defmodule GlificWeb.Providers.Gupshup.Plugs.Shunt do
     conn
     |> change_path_info(path)
     |> Router.call(opts)
-
   end
 
   @doc false
