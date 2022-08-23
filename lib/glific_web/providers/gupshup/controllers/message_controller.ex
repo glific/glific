@@ -1,6 +1,6 @@
 defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   @moduledoc """
-  Dedicated controller to handle different types of inbound message form Gupshup
+  Dedicated controller to handle different types of inbound message from Gupshup
   """
 
   use GlificWeb, :controller
@@ -32,25 +32,25 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   end
 
   @doc """
-  Callback for gupshup image images
+  Callback for gupshup image type
   """
   @spec image(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def image(conn, params), do: media(conn, params, :image)
 
   @doc """
-  Callback file gupshup image images
+  Callback for gupshup file type
   """
   @spec file(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def file(conn, params), do: media(conn, params, :document)
 
   @doc """
-  Callback audio gupshup image images
+  Callback for gupshup audio type
   """
   @spec audio(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def audio(conn, params), do: media(conn, params, :audio)
 
   @doc """
-  Callback video gupshup image images
+  Callback for gupshup video type
   """
   @spec video(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def video(conn, params), do: media(conn, params, :video)
@@ -74,7 +74,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   end
 
   @doc """
-  Callback for interactive quick reply
+  Callback for interactive quick reply type
   """
   @spec quick_reply(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def quick_reply(conn, params), do: interactive(conn, params, :quick_reply)
@@ -86,7 +86,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageController do
   def list(conn, params), do: interactive(conn, params, :list)
 
   @doc false
-  # Handle Gupshup media message and convert them into Glific Message struct
+  # Handle Gupshup interactive message and convert them into Glific Message struct
   @spec interactive(Plug.Conn.t(), map(), atom()) :: Plug.Conn.t()
   defp interactive(conn, params, type) do
     params
