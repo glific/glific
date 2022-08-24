@@ -804,12 +804,23 @@ defmodule Glific.Contacts do
     if is_nil(contact.active_profile_id) do
       field_map
     else
+      indexed_profiles = Profiles.get_indexed_profile(contact)
+
+      profile_map =
+        Enum.reduce(indexed_profiles, %{}, fn {profile, index}, acc ->
+          Map.put(acc, "profile_#{index}", %{id: profile.id, name: profile.name, index: index})
+        end)
+        |> Map.put(:count, length(indexed_profiles))
+
       Map.put(
         field_map,
         :list_profiles,
-        Profiles.get_indexed_profile(contact)
-        |> Enum.reduce("", fn {profile, index}, acc -> acc <> " #{index}. #{profile.name} \n" end)
+        indexed_profiles
+        |> Enum.reduce("", fn {profile, index}, acc ->
+          acc <> " #{index}. #{profile.name} \n"
+        end)
       )
+      |> Map.put(:profiles, profile_map)
       |> Map.put(:has_multiple_profile, %{
         "type" => "string",
         "label" => "has_multiple_profile",

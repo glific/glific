@@ -1137,6 +1137,32 @@ if Code.ensure_loaded?(Faker) do
           name: "Preference Workflow"
         }
       })
+
+      Repo.insert!(%Notification{
+        category: "Templates",
+        message: "Template Account balance has been approved",
+        severity: Notifications.types().info,
+        organization_id: organization.id,
+        entity: %{
+          id: 1,
+          shortcode: "account_balance",
+          label: "Account Balance",
+          uuid: "98c7dec4-f05a-4a76-a25a-f7a50d821f27"
+        }
+      })
+
+      Repo.insert!(%Notification{
+        category: "Templates",
+        message: "Template OTP Message has been rejected",
+        severity: Notifications.types().info,
+        organization_id: organization.id,
+        entity: %{
+          id: 9,
+          shortcode: "otp",
+          label: "OTP Message",
+          uuid: "98c7dec4-f05a-4a76-a25a-f7a50d821f27"
+        }
+      })
     end
 
     @doc false
