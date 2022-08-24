@@ -131,6 +131,7 @@ defmodule Glific.Providers.Gupshup.Message do
     if payload["sender"]["phone"] in [nil, ""] do
       error = "Phone number is blank, #{inspect(payload)}"
       Glific.log_error(error)
+      raise(RuntimeError, message: error)
     end
 
     %{
@@ -208,6 +209,7 @@ defmodule Glific.Providers.Gupshup.Message do
       _ ->
         error = "Could not find message with id: #{bsp_message_id} and phone #{phone}"
         Glific.log_error(error)
+        raise(RuntimeError, message: error)
     end
   end
 

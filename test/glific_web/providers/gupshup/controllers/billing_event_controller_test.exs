@@ -61,5 +61,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventControllerTest do
       assert message_conversation.deduction_type == "UIC"
       assert message_conversation.message_id == message.id
     end
+
+    test "Incoming billing event without correct message id should raise exception", %{conn: conn} do
+      assert_raise RuntimeError, fn ->
+        post(conn, "/gupshup", @billing_event_request_params)
+      end
+    end
   end
 end
