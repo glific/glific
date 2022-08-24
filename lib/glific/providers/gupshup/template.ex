@@ -94,7 +94,7 @@ defmodule Glific.Providers.Gupshup.Template do
       :ok
     else
       _ ->
-        {:error, ["BSP", "couldn't connect"]}
+        {:error, "BSP Couldn't connect"}
     end
   end
 
