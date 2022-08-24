@@ -58,11 +58,13 @@ defmodule Glific.Flows.Templating do
     Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
     |> case do
       {:ok, template} ->
+        variables = if is_list(json["variables"]), do: json["variables"], else: []
+
         templating = %Templating{
           uuid: json["uuid"],
           name: json["template"]["name"],
           template: template,
-          variables: json["variables"],
+          variables: Enum.take(variables, template.number_parameters),
           expression: nil,
           localization: json["localization"]
         }

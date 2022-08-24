@@ -17,6 +17,7 @@ if Code.ensure_loaded?(Faker) do
       Groups.Group,
       Messages.Message,
       Messages.MessageMedia,
+      Notifications,
       Notifications.Notification,
       Partners.Billing,
       Partners.Organization,
@@ -753,21 +754,10 @@ if Code.ensure_loaded?(Faker) do
     def seed_user_roles(organization \\ nil) do
       organization = get_organization(organization)
 
-      [u1, u2, u3, u4, u5 | _] = Users.list_users(%{filter: %{organization_id: organization.id}})
+      [_u1, _u2, u3, u4, u5, u6 | _] =
+        Users.list_users(%{filter: %{organization_id: organization.id}})
 
-      [r1, r2, r3 | _] = AccessControl.list_roles(%{organization_id: organization.id})
-
-      Repo.insert!(%AccessControl.UserRole{
-        user_id: u1.id,
-        role_id: r1.id,
-        organization_id: organization.id
-      })
-
-      Repo.insert!(%AccessControl.UserRole{
-        user_id: u2.id,
-        role_id: r1.id,
-        organization_id: organization.id
-      })
+      [r1, r2, r3, r4 | _] = AccessControl.list_roles(%{organization_id: organization.id})
 
       Repo.insert!(%AccessControl.UserRole{
         user_id: u3.id,
@@ -784,6 +774,12 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%AccessControl.UserRole{
         user_id: u5.id,
         role_id: r1.id,
+        organization_id: organization.id
+      })
+
+      Repo.insert!(%AccessControl.UserRole{
+        user_id: u6.id,
+        role_id: r4.id,
         organization_id: organization.id
       })
     end
@@ -1102,7 +1098,7 @@ if Code.ensure_loaded?(Faker) do
         category: "Partner",
         message:
           "Disabling bigquery. Account does not have sufficient permissions to insert data to BigQuery.",
-        severity: "Critical",
+        severity: Notifications.types().critical,
         organization_id: organization.id,
         entity: %{
           id: 2,
@@ -1113,7 +1109,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%Notification{
         category: "Message",
         message: "Cannot send session message to contact, invalid bsp status.",
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: organization.id,
         entity: %{
           id: 1,
@@ -1131,7 +1127,7 @@ if Code.ensure_loaded?(Faker) do
       Repo.insert!(%Notification{
         category: "Flow",
         message: "Cannot send session message to contact, invalid bsp status.",
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: organization.id,
         entity: %{
           flow_id: 3,
@@ -1498,8 +1494,6 @@ if Code.ensure_loaded?(Faker) do
       seed_interactives(organization)
 
       seed_contact_history(organization)
-
-      seed_roles(organization)
 
       seed_user_roles(organization)
     end

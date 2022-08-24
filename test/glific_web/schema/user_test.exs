@@ -17,8 +17,6 @@ defmodule GlificWeb.Schema.UserTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_users()
-    SeedsDev.seed_roles()
-    SeedsDev.seed_user_roles()
     :ok
   end
 
