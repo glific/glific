@@ -63,6 +63,11 @@ defmodule GlificWeb.Providers.Gupshup.Router do
       post("/*unknown", DefaultController, :unknown)
     end
 
+    scope "/billing-event" do
+      post("/conversations", BillingEventController, :conversations)
+      post("/*unknown", DefaultController, :unknown)
+    end
+
     post("/*unknown", DefaultController, :unknown)
   end
 end

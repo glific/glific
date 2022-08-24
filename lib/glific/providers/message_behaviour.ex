@@ -34,4 +34,6 @@ defmodule Glific.Providers.MessageBehaviour do
   @callback receive_location(payload :: map()) :: map()
 
   @callback receive_interactive(payload :: map()) :: map()
+
+  @callback receive_billing_event(payload :: map()) :: map()
 end
