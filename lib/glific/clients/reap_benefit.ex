@@ -110,6 +110,7 @@ defmodule Glific.Clients.ReapBenefit do
     header = get_header(token)
     body = Jason.encode!(fields)
     url = @frappe_open_civic_api_url <> "Events"
+
     Tesla.post(url, body, headers: header)
     |> case do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
