@@ -19,7 +19,7 @@ defmodule Glific.Clients do
     gcs_file_name: Glific.Clients.Tap,
     blocked?: Glific.Clients.Stir,
     broadcast: Glific.Clients.Weunlearn,
-    webhook: Glific.Clients.SunoSunao,
+    webhook: Glific.Clients.ReapBenefit,
     daily_tasks: Glific.Clients.DigitalGreen,
     trigger_condition: Glific.Clients.ArogyaWorld
   }
@@ -61,7 +61,8 @@ defmodule Glific.Clients do
 
   @reap_benefit %{
     id: 15,
-    name: "Reap Benefit"
+    name: "Reap Benefit",
+    webhook: Glific.Clients.ReapBenefit
     # gcs_file_name: Glific.Clients.ReapBenefit
   }
 
