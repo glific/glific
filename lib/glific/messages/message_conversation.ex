@@ -7,7 +7,6 @@ defmodule Glific.Messages.MessageConversation do
   import Ecto.Changeset
 
   alias Glific.{
-    Contacts.Contact,
     Messages.Message,
     Partners.Organization
   }
@@ -16,7 +15,6 @@ defmodule Glific.Messages.MessageConversation do
     :conversation_id,
     :deduction_type,
     :payload,
-    :contact_id,
     :message_id,
     :organization_id
   ]
@@ -30,8 +28,6 @@ defmodule Glific.Messages.MessageConversation do
           deduction_type: String.t() | nil,
           is_billable: boolean() | false,
           payload: map() | nil,
-          contact_id: non_neg_integer | nil,
-          contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           message_id: non_neg_integer | nil,
           message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -44,7 +40,6 @@ defmodule Glific.Messages.MessageConversation do
     field :is_billable, :boolean
     field :payload, :map
 
-    belongs_to :contact, Contact
     belongs_to :message, Message
     belongs_to :organization, Organization
 
@@ -59,7 +54,6 @@ defmodule Glific.Messages.MessageConversation do
     message_conversation
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:contact_id)
     |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:organization_id)
   end

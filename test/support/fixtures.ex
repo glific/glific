@@ -983,7 +983,6 @@ defmodule Glific.Fixtures do
     message = message_fixture(attrs)
 
     valid_attrs = %{
-      "contact_id" => message.sender_id,
       "organization_id" => message.organization_id,
       "message_id" => message.id,
       "conversation_id" => "some conversation id",

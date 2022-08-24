@@ -41,7 +41,6 @@ defmodule Glific.MessageConversationsTest do
       attrs =
         Map.merge(@valid_attrs, %{
           organization_id: organization_id,
-          contact_id: message.sender_id,
           message_id: message.id
         })
 

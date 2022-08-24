@@ -15,10 +15,6 @@ defmodule Glific.Repo.Migrations.AddMessageConversations do
         null: false,
         comment: "reference for the message"
 
-      add :contact_id, references(:contacts, on_delete: :delete_all),
-        null: false,
-        comment: "reference for the contact"
-
       add :organization_id, references(:organizations, on_delete: :delete_all),
         null: false,
         comment: "reference for the organization"
@@ -27,7 +23,6 @@ defmodule Glific.Repo.Migrations.AddMessageConversations do
       timestamps(type: :utc_datetime)
     end
 
-    create index(:messages_conversations, :contact_id)
     create index(:messages_conversations, :message_id)
     create index(:messages_conversations, :organization_id)
   end

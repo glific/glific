@@ -6,7 +6,6 @@ defmodule Glific.MessageConversations do
   require Logger
 
   alias Glific.{
-    Contacts.Contact,
     Messages.Message,
     Messages.MessageConversation,
     Repo
@@ -97,24 +96,22 @@ defmodule Glific.MessageConversations do
     bsp_message_id = references["gsId"] || references["id"]
     phone = references["destination"]
 
-    with {:ok, message} <-
-           Repo.fetch_by(Message, %{
-             bsp_message_id: bsp_message_id,
-             organization_id: organization_id
-           }),
-         {:ok, contact} <-
-           Repo.fetch_by(Contact, %{phone: phone, organization_id: organization_id}) do
-      %{
-        deduction_type: deductions["type"],
-        is_billable: deductions["billable"],
-        conversation_id: references["conversationId"],
-        payload: params,
-        contact_id: contact.id,
-        message_id: message.id,
-        organization_id: organization_id
-      }
-      |> create_message_conversation()
-    else
+    Repo.fetch_by(Message, %{
+      bsp_message_id: bsp_message_id,
+      organization_id: organization_id
+    })
+    |> case do
+      {:ok, message} ->
+        %{
+          deduction_type: deductions["type"],
+          is_billable: deductions["billable"],
+          conversation_id: references["conversationId"],
+          payload: params,
+          message_id: message.id,
+          organization_id: organization_id
+        }
+        |> create_message_conversation()
+
       _ ->
         Logger.error(
           "Could not find message with id: #{bsp_message_id} and phone #{phone} for org_id: #{organization_id}"
