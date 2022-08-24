@@ -9,7 +9,8 @@ defmodule Glific.Providers.Gupshup.Message do
   alias Glific.{
     Communications,
     Messages.Message,
-    Partners
+    Partners,
+    Repo
   }
 
   require Logger
@@ -129,15 +130,7 @@ defmodule Glific.Providers.Gupshup.Message do
     # or maybe a simulator or some test code
     if payload["sender"]["phone"] in [nil, ""] do
       error = "Phone number is blank, #{inspect(payload)}"
-      Logger.error(error)
-
-      stacktrace =
-        self()
-        |> Process.info(:current_stacktrace)
-        |> elem(1)
-
-      Appsignal.send_error(:error, error, stacktrace)
-      raise(RuntimeError, message: error)
+      raise_error_to_appsignal(error)
     end
 
     %{
@@ -188,6 +181,34 @@ defmodule Glific.Providers.Gupshup.Message do
         name: payload["sender"]["name"]
       }
     }
+  end
+
+  @doc false
+  @impl Glific.Providers.MessageBehaviour
+  @spec receive_billing_event(map()) :: map()
+  def receive_billing_event(params) do
+    references = get_in(params, ["payload", "references"])
+    deductions = get_in(params, ["payload", "deductions"])
+    bsp_message_id = references["gsId"] || references["id"]
+    phone = references["destination"]
+
+    Repo.fetch_by(Message, %{
+      bsp_message_id: bsp_message_id
+    })
+    |> case do
+      {:ok, message} ->
+        %{
+          deduction_type: deductions["type"],
+          is_billable: deductions["billable"],
+          conversation_id: references["conversationId"],
+          payload: params,
+          message_id: message.id
+        }
+
+      _ ->
+        error = "Could not find message with id: #{bsp_message_id} and phone #{phone}"
+        raise_error_to_appsignal(error)
+    end
   end
 
   @doc false
@@ -278,5 +299,18 @@ defmodule Glific.Providers.Gupshup.Message do
 
     worker_module.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
+  end
+
+  @spec raise_error_to_appsignal(String.t()) :: any()
+  defp raise_error_to_appsignal(error) do
+    Logger.error(error)
+
+    stacktrace =
+      self()
+      |> Process.info(:current_stacktrace)
+      |> elem(1)
+
+    Appsignal.send_error(:error, error, stacktrace)
+    raise(RuntimeError, message: error)
   end
 end
