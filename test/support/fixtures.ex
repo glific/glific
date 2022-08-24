@@ -22,7 +22,9 @@ defmodule Glific.Fixtures do
     Flows.WebhookLog,
     Groups,
     Mails.MailLog,
+    MessageConversations,
     Messages,
+    Messages.MessageConversation,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -971,5 +973,29 @@ defmodule Glific.Fixtures do
       |> Glific.Profiles.create_profile()
 
     profile
+  end
+
+  @doc """
+  Generate a message conversations.
+  """
+  @spec message_conversations(map()) :: MessageConversation.t()
+  def message_conversations(attrs \\ %{}) do
+    message = message_fixture(attrs)
+
+    valid_attrs = %{
+      "organization_id" => message.organization_id,
+      "message_id" => message.id,
+      "conversation_id" => "some conversation id",
+      "deduction_type" => "some deduction type",
+      "payload" => %{},
+      "is_billable" => false
+    }
+
+    {:ok, message_conversation} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> MessageConversations.create_message_conversation()
+
+    message_conversation
   end
 end
