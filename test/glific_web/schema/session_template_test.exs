@@ -22,7 +22,6 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     :ok
   end
 
-
   load_gql(:count, GlificWeb.Schema, "assets/gql/session_templates/count.gql")
   load_gql(:list, GlificWeb.Schema, "assets/gql/session_templates/list.gql")
   load_gql(:by_id, GlificWeb.Schema, "assets/gql/session_templates/by_id.gql")
@@ -53,38 +52,40 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   end
 
   test "sync hsm with bsp", %{staff: user} do
-      [hsm, hsm2 | _] =
-        Templates.list_session_templates(%{
-          filter: %{organization_id: user.organization_id, is_hsm: true}
-        })
+    [hsm, hsm2 | _] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: user.organization_id, is_hsm: true}
+      })
 
-      Tesla.Mock.mock(fn
-        %{method: :get} ->
-          %Tesla.Env{
-            status: 200,
-            body:
-              Jason.encode!(%{
-                "status" => "success",
-                "templates" => [
-                  %{
-                    "id" => hsm.uuid,
-                    "modifiedOn" =>
-                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
-                    "status" => "APPROVED"
-                  },
-                  %{
-                    "id" => hsm2.uuid,
-                    "modifiedOn" =>
-                      DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
-                    "status" => "PENDING"
-                  }
-                ]
-              })
-          }
-      end)
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "templates" => [
+                %{
+                  "id" => hsm.uuid,
+                  "modifiedOn" =>
+                    DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                  "status" => "APPROVED"
+                },
+                %{
+                  "id" => hsm2.uuid,
+                  "modifiedOn" =>
+                    DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                  "status" => "PENDING"
+                }
+              ]
+            })
+        }
+    end)
 
-      {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} = auth_query_gql_by(:sync, user)
-      assert message == "successfull"
+    {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
+      auth_query_gql_by(:sync, user)
+
+    assert message == "successfull"
   end
 
   test "sync hsm with bsp if it doesn't estabilish a connection with gupshup test", %{staff: user} do
@@ -96,7 +97,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
 
     session_templates = get_in(query_data, [:errors])
     template_error = List.first(session_templates)
-    assert template_error.message ==  "organization_id is not given"
+    assert template_error.message == "organization_id is not given"
   end
 
   test "count returns the number of session templates", %{staff: user} do
