@@ -29,10 +29,11 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.BillingEventController do
   """
   @spec handle_billing_event(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def handle_billing_event(conn, params) do
-    params
-    |> Gupshup.Message.receive_billing_event()
-    |> Map.put(:organization_id, conn.assigns[:organization_id])
-    |> MessageConversations.create_message_conversation()
+    with {:ok, message_conversation} <- Gupshup.Message.receive_billing_event(params) do
+      message_conversation
+      |> Map.put(:organization_id, conn.assigns[:organization_id])
+      |> MessageConversations.create_message_conversation()
+    end
 
     handler(conn, params)
   end
