@@ -130,7 +130,7 @@ defmodule Glific.Providers.Gupshup.Message do
     # or maybe a simulator or some test code
     if payload["sender"]["phone"] in [nil, ""] do
       error = "Phone number is blank, #{inspect(payload)}"
-      raise_error_to_appsignal(error)
+      Glific.log_error(error)
     end
 
     %{
@@ -207,7 +207,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
       _ ->
         error = "Could not find message with id: #{bsp_message_id} and phone #{phone}"
-        raise_error_to_appsignal(error)
+        Glific.log_error(error)
     end
   end
 
@@ -299,18 +299,5 @@ defmodule Glific.Providers.Gupshup.Message do
 
     worker_module.new(worker_args, scheduled_at: message.send_at)
     |> Oban.insert()
-  end
-
-  @spec raise_error_to_appsignal(String.t()) :: any()
-  defp raise_error_to_appsignal(error) do
-    Logger.error(error)
-
-    stacktrace =
-      self()
-      |> Process.info(:current_stacktrace)
-      |> elem(1)
-
-    Appsignal.send_error(:error, error, stacktrace)
-    raise(RuntimeError, message: error)
   end
 end
