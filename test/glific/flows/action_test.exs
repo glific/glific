@@ -669,7 +669,8 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields[action.field.key].label == "Not Settings"
   end
 
-  test "execute an action when type is set_contact_profile to set contact profile", _attrs do
+  test "execute an action when type is set_contact_profile to create and switch profile",
+       _attrs do
     profile = Glific.Fixtures.profile_fixture()
     {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
 
@@ -677,6 +678,7 @@ defmodule Glific.Flows.ActionTest do
       %FlowContext{contact_id: contact.id, flow_id: 1}
       |> Repo.preload([:contact, :flow])
 
+    # Create a profile for a contact
     action = %Action{
       type: "set_contact_profile",
       profile_type: "Create Profile",
@@ -690,6 +692,7 @@ defmodule Glific.Flows.ActionTest do
     {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: "name"})
     assert profile.type == "student"
 
+    # Create a second profile for a contact
     action = %Action{
       type: "set_contact_profile",
       profile_type: "Create Profile",
@@ -704,6 +707,7 @@ defmodule Glific.Flows.ActionTest do
     {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
     assert contact.active_profile_id == profile2.id
 
+    # Switch to first profile for a contact
     action = %Action{
       type: "set_contact_profile",
       profile_type: "Switch Profile",
