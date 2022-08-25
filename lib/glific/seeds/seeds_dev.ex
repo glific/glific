@@ -1226,7 +1226,8 @@ if Code.ensure_loaded?(Faker) do
         "type" => "quick_reply",
         "content" => %{
           "header" => "optin",
-          "text" => "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-
+          "text" =>
+            "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-
 
           Press 👍 to give us permission. We promise to send you amazing content.
           Press 👎 if you'd rather message us when you need information.
