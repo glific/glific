@@ -186,7 +186,7 @@ defmodule Glific.Providers.Gupshup.Message do
 
   @doc false
   @impl Glific.Providers.MessageBehaviour
-  @spec receive_billing_event(map()) :: map()
+  @spec receive_billing_event(map()) :: {:ok, map()} | {:error, String.t()}
   def receive_billing_event(params) do
     references = get_in(params, ["payload", "references"])
     deductions = get_in(params, ["payload", "deductions"])
@@ -198,7 +198,7 @@ defmodule Glific.Providers.Gupshup.Message do
     })
     |> case do
       {:ok, message} ->
-        %{
+        message_conversation = %{
           deduction_type: deductions["type"],
           is_billable: deductions["billable"],
           conversation_id: references["conversationId"],
@@ -206,10 +206,11 @@ defmodule Glific.Providers.Gupshup.Message do
           message_id: message.id
         }
 
+        {:ok, message_conversation}
+
       _ ->
         error = "Could not find message with id: #{bsp_message_id} and phone #{phone}"
-        Glific.log_error(error)
-        raise(RuntimeError, message: error)
+        Glific.log_error(error, false)
     end
   end
 

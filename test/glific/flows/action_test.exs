@@ -6,6 +6,7 @@ defmodule Glific.Flows.ActionTest do
     Groups,
     Groups.ContactGroup,
     Partners,
+    Profiles,
     Seeds.SeedsDev,
     Settings,
     Templates.InteractiveTemplate
@@ -666,6 +667,57 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields[action.field.key].value == "field1"
     assert updated_context.contact.fields[action.field.key].type == "string"
     assert updated_context.contact.fields[action.field.key].label == "Not Settings"
+  end
+
+  test "execute an action when type is set_contact_profile to create and switch profile",
+       _attrs do
+    profile = Glific.Fixtures.profile_fixture()
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    # Create a profile for a contact
+    action = %Action{
+      type: "set_contact_profile",
+      profile_type: "Create Profile",
+      value: %{"name" => "name", "type" => "student"},
+      uuid: "UUID 1"
+    }
+
+    message_stream = []
+
+    Action.execute(action, context, message_stream)
+    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: "name"})
+    assert profile.type == "student"
+
+    # Create a second profile for a contact
+    action = %Action{
+      type: "set_contact_profile",
+      profile_type: "Create Profile",
+      value: %{"name" => "name2", "type" => "student"},
+      uuid: "UUID 2"
+    }
+
+    Action.execute(action, context, message_stream)
+    {:ok, profile2} = Repo.fetch_by(Profiles.Profile, %{name: "name2"})
+    assert profile2.type == "student"
+
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+    assert contact.active_profile_id == profile2.id
+
+    # Switch to first profile for a contact
+    action = %Action{
+      type: "set_contact_profile",
+      profile_type: "Switch Profile",
+      value: "1",
+      uuid: "UUID 3"
+    }
+
+    Action.execute(action, context, message_stream)
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+    assert contact.active_profile_id == profile.id
   end
 
   test "execute an action when type is enter_flow", attrs do

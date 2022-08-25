@@ -35,5 +35,5 @@ defmodule Glific.Providers.MessageBehaviour do
 
   @callback receive_interactive(payload :: map()) :: map()
 
-  @callback receive_billing_event(payload :: map()) :: map()
+  @callback receive_billing_event(payload :: map()) :: {:ok, map()} | {:error, String.t()}
 end
