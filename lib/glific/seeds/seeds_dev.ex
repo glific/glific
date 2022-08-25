@@ -1402,6 +1402,28 @@ if Code.ensure_loaded?(Faker) do
           "1" => interactive_content
         }
       })
+
+      interactive_content = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "text" =>
+            "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us permission to message you\n\nPress 👍 to give us permission. We promise to send you amazing content.\nPress 👎 if you'd rather message us when you need information.",
+          "type" => "text",
+          "header" => "Optin template"
+        },
+        "options" => [%{"type" => "text", "title" => "👍"}, %{"type" => "text", "title" => "👎"}]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content
+        }
+      })
     end
 
     @doc false
