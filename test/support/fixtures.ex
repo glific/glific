@@ -972,6 +972,11 @@ defmodule Glific.Fixtures do
       |> Map.merge(attrs)
       |> Glific.Profiles.create_profile()
 
+    Contacts.update_contact(contact, %{
+      active_profile_id: profile.id,
+      language_id: profile.language_id
+    })
+
     profile
   end
 

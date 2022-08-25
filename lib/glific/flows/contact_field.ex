@@ -171,7 +171,7 @@ defmodule Glific.Flows.ContactField do
           Contact.t()
   def maybe_update_profile_field(%{active_profile_id: active_profile_id} = contact, fields)
       when is_integer(active_profile_id) do
-    with profile <- Profiles.get_profile!(active_profile_id) do
+    with {:ok, profile} <- Repo.fetch_by(Profiles.Profile, %{id: active_profile_id}) do
       Profiles.update_profile(profile, %{fields: fields})
     end
 

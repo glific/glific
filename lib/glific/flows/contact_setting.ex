@@ -8,6 +8,8 @@ defmodule Glific.Flows.ContactSetting do
     Contacts,
     Contacts.Contact,
     Flows.FlowContext,
+    Profiles,
+    Repo,
     Settings
   }
 
@@ -41,12 +43,34 @@ defmodule Glific.Flows.ContactSetting do
             }
           })
 
+        # update profile languange if active profile is set for a contact
+        maybe_update_profile_language(contact, language.id)
+
         Map.put(context, :contact, contact)
 
       [] ->
         raise("Error! No language found with label #{inspect(language)}")
     end
   end
+
+  @doc """
+  Update profile language if there is an active profile id set
+  """
+  @spec maybe_update_profile_language(Contact.t(), non_neg_integer()) ::
+          Contact.t()
+  def maybe_update_profile_language(
+        %{active_profile_id: active_profile_id} = contact,
+        language_id
+      )
+      when is_integer(active_profile_id) do
+    with {:ok, profile} <- Repo.fetch_by(Profiles.Profile, %{id: active_profile_id}) do
+      Profiles.update_profile(profile, %{language_id: language_id})
+    end
+
+    contact
+  end
+
+  def maybe_update_profile_language(contact, _language_id), do: contact
 
   @spec fix_language(String.t()) :: String.t()
   defp fix_language("en_US"), do: "en"
