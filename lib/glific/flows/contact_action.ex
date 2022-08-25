@@ -69,7 +69,11 @@ defmodule Glific.Flows.ContactAction do
 
     interactive_content =
       if params_count > 0 do
-        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+        params =
+          Enum.map(action.params, fn
+            param when is_map(param) -> MessageVarParser.parse_map(param, message_vars)
+            param -> MessageVarParser.parse(param, message_vars)
+          end)
 
         InteractiveTemplates.process_dynamic_interactive_content(
           interactive_content,

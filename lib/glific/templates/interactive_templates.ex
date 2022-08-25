@@ -319,14 +319,26 @@ defmodule Glific.Templates.InteractiveTemplates do
   def process_dynamic_interactive_content(interactive_content, _params, _attachment),
     do: interactive_content
 
+  ## We might need to move this function to gupshup provider
+  ## since this is specific to that only but this is fine for now.
   @spec build_list_items(list()) :: list()
   defp build_list_items(params) do
-    Enum.map(params, fn val ->
-      %{
-        "title" => val,
-        "description" => "",
-        "type" => "text"
-      }
+    Enum.map(params, fn
+      param when is_map(param) ->
+        %{
+          "title" => param["label"],
+          "description" => "",
+          "type" => "text",
+          "id" => param["id"] || "",
+          "postbackText" => param["id"] || ""
+        }
+
+      param ->
+        %{
+          "title" => param,
+          "description" => "",
+          "type" => "text"
+        }
     end)
   end
 

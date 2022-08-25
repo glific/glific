@@ -53,7 +53,7 @@ We tested and developed against the following versions:
 - [Download the latest code from GitHub](https://github.com/glific/glific)
 
 ```bash
-git clone https://github.com/glific/glific_backend
+git clone https://github.com/glific/glific
 ```
 
 DO NOT run mix deps.get until the next steps are completed.
