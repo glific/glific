@@ -1017,8 +1017,6 @@ defmodule Glific.BigQuery.Schema do
     ]
   end
 
-
-
   @doc """
   Schema for profile table
   """
@@ -1180,7 +1178,7 @@ defmodule Glific.BigQuery.Schema do
   @doc """
   Schema for message conversation table
   """
-  @spec profile_schema :: list()
+  @spec message_conversation_schema :: list()
   def message_conversation_schema do
     [
       %{
@@ -1214,12 +1212,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-        description: "organization_id for the message converstation",
-        name: "type",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
         description: "Time when the stats entry was first created for a user",
         name: "inserted_at",
         type: "DATETIME",
@@ -1245,7 +1237,6 @@ defmodule Glific.BigQuery.Schema do
       }
     ]
   end
-
 
   @doc """
   Procedure for flat fields
