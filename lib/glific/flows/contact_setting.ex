@@ -9,6 +9,7 @@ defmodule Glific.Flows.ContactSetting do
     Contacts.Contact,
     Flows.FlowContext,
     Profiles,
+    Repo,
     Settings
   }
 
@@ -62,7 +63,7 @@ defmodule Glific.Flows.ContactSetting do
         language_id
       )
       when is_integer(active_profile_id) do
-    with profile <- Profiles.get_profile!(active_profile_id) do
+    with {:ok, profile} <- Repo.fetch_by(Profiles.Profile, %{id: active_profile_id}) do
       Profiles.update_profile(profile, %{language_id: language_id})
     end
 
