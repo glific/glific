@@ -3,8 +3,10 @@ defmodule Glific.Flows.ContactSettingTest do
 
   alias Glific.{
     Contacts,
+    Fixtures,
     Flows.ContactSetting,
     Flows.FlowContext,
+    Profiles,
     Seeds.SeedsDev,
     Settings.Language
   }
@@ -39,6 +41,26 @@ defmodule Glific.Flows.ContactSettingTest do
     assert_raise RuntimeError, fn ->
       ContactSetting.set_contact_language(flow_context, language_label)
     end
+  end
+
+  test "set contact language for contact with active profile changes profile language and contact language" do
+    profile = Fixtures.profile_fixture()
+    language_label = "Hindi"
+
+    {:ok, language} = Repo.fetch_by(Language, %{label: language_label})
+    {:ok, contact} = Repo.fetch_by(Contacts.Contact, %{id: profile.contact_id})
+
+    # preload contact
+    flow_context =
+      %FlowContext{contact_id: contact.id, flow_id: 1} |> Repo.preload([:contact, :flow])
+
+    ContactSetting.set_contact_language(flow_context, language_label)
+
+    updated_contact = Contacts.get_contact!(contact.id)
+    {:ok, active_profile} = Repo.fetch_by(Profiles.Profile, %{id: profile.id})
+
+    assert updated_contact.language_id == language.id
+    assert active_profile.language_id == language.id
   end
 
   test "set contact name", attrs do
