@@ -1420,6 +1420,7 @@ if Code.ensure_loaded?(Faker) do
         interactive_content: interactive_content,
         organization_id: organization.id,
         language_id: en.id,
+        send_with_title: false,
         translations: %{
           "1" => interactive_content
         }
