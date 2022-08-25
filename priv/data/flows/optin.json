@@ -22,12 +22,12 @@
                         ],
                         "actions": [
                             {
-                                "uuid": "8e91f4bf-7cbb-4575-91d2-bbe225ed2a50",
+                                "uuid": "0407dda1-0aad-4adb-80e0-9c83f54ef352",
                                 "type": "send_interactive_msg",
-                                "text": "{\"content\":{\"header\":\"Optin Interactive message\",\"text\":\"Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-\\n\\n Press 👍 to give us permission. We promise to send you amazing content.\\n Press 👎 if you'd rather message us when you need information.\",\"type\":\"text\"},\"options\":[{\"title\":\"Press 👍\",\"type\":\"text\"},{\"title\":\"Press 👎\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
-                                "name": "Optin Interactive message",
+                                "text": "{\"content\":{\"header\":\"optin\",\"text\":\"Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-\\n\\n          Press 👍 to give us permission. We promise to send you amazing content.\\n          Press 👎 if you'd rather message us when you need information.\\n          \",\"type\":\"text\"},\"options\":[{\"title\":\"👍\",\"type\":\"text\"},{\"title\":\"👎\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+                                "name": "optin",
                                 "labels": [],
-                                "id": 7,
+                                "id": 2,
                                 "attachment_url": "",
                                 "attachment_type": ""
                             }
@@ -75,7 +75,7 @@
                                     "type": "has_only_phrase",
                                     "category_uuid": "cb8b1c19-9ad8-45ba-abf0-cc32c497d720",
                                     "arguments": [
-                                        "Press 👍 "
+                                        "👍"
                                     ]
                                 },
                                 {
@@ -83,7 +83,7 @@
                                     "type": "has_only_phrase",
                                     "category_uuid": "4a36bf06-f316-4f04-9591-31bb8497dcd3",
                                     "arguments": [
-                                        "Press 👎"
+                                        "👎"
                                     ]
                                 }
                             ]

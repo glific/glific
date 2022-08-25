@@ -1222,6 +1222,34 @@ if Code.ensure_loaded?(Faker) do
         }
       })
 
+      interactive_content_optin = %{
+        "type" => "quick_reply",
+        "content" => %{
+          "header" => "optin",
+          "text" => "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-
+
+          Press 👍 to give us permission. We promise to send you amazing content.
+          Press 👎 if you'd rather message us when you need information.
+          ",
+          "type" => "text"
+        },
+        "options" => [
+          %{"type" => "text", "title" => "👍"},
+          %{"type" => "text", "title" => "👎"}
+        ]
+      }
+
+      Repo.insert!(%InteractiveTemplate{
+        label: get_in(interactive_content_optin, ["content", "header"]),
+        type: :quick_reply,
+        interactive_content: interactive_content_optin,
+        organization_id: organization.id,
+        language_id: en.id,
+        translations: %{
+          "1" => interactive_content_optin
+        }
+      })
+
       interactive_content_eng = %{
         "type" => "quick_reply",
         "content" => %{
