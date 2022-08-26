@@ -30,8 +30,8 @@
   },
   "name": "Optin Workflow",
   "type": "messaging",
-  "uuid": "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f",
-  "vars": ["dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"],
+  "uuid": "OPTIN_UUID",
+  "vars": ["OPTIN_UUID"],
   "nodes": [
     {
       "uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93",
@@ -43,7 +43,7 @@
       ],
       "actions": [
         {
-          "id": 7,
+          "id": "optin_template_id",
           "name": "Optin template",
           "text": "{\"content\":{\"header\":\"Optin template\",\"text\":\"Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us permission to message you\\n\\nPress 👍 to give us permission. We promise to send you amazing content.\\nPress 👎 if you'd rather message us when you need information.\",\"type\":\"text\"},\"options\":[{\"title\":\"👍\",\"type\":\"text\"},{\"title\":\"👎\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
           "type": "send_interactive_msg",
@@ -137,7 +137,7 @@
         {
           "type": "add_contact_groups",
           "uuid": "442f03a8-ba8e-4a96-80f8-92dd93929673",
-          "groups": [{ "name": "Optin contacts", "type": "group", "uuid": "1" }]
+          "groups": [{ "name": "Optin contacts", "type": "group", "uuid": "OPTIN_COLLECTION_UUID" }]
         }
       ]
     },

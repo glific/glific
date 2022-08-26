@@ -567,7 +567,7 @@ defmodule Glific.FLowsTest do
 
     state = ConsumerWorker.load_state(organization_id)
 
-    message = Fixtures.message_fixture(%{body: "1", sender_id: contact.id})
+    message = Fixtures.message_fixture(%{body: "👍", sender_id: contact.id})
     ConsumerWorker.process_message(message, state)
 
     message = Fixtures.message_fixture(%{body: "2", sender_id: contact.id})

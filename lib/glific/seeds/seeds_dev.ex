@@ -1188,8 +1188,10 @@ if Code.ensure_loaded?(Faker) do
     end
 
     @doc false
-    @spec seed_interactives(Organization.t()) :: nil
-    def seed_interactives(organization) do
+    @spec seed_interactives(Organization.t() | nil) :: nil
+    def seed_interactives(organization \\ nil) do
+      organization = get_organization(organization)
+
       [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       interactive_content = %{
@@ -1402,6 +1404,13 @@ if Code.ensure_loaded?(Faker) do
           "1" => interactive_content
         }
       })
+    end
+
+    @doc false
+    @spec seed_optin_interactives(Organization.t() | nil) :: nil
+    def seed_optin_interactives(organization \\ nil) do
+      organization = get_organization(organization)
+      [en | _] = Settings.list_languages(%{filter: %{label: "english"}})
 
       interactive_content = %{
         "type" => "quick_reply",
@@ -1535,6 +1544,8 @@ if Code.ensure_loaded?(Faker) do
 
       seed_flow_labels(organization)
 
+      seed_interactives(organization)
+
       seed_flows(organization)
 
       seed_flow_results(organization)
@@ -1554,8 +1565,6 @@ if Code.ensure_loaded?(Faker) do
       hsm_templates(organization)
 
       seed_notification(organization)
-
-      seed_interactives(organization)
 
       seed_contact_history(organization)
 
