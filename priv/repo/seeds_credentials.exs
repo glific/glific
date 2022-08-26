@@ -20,7 +20,8 @@ defmodule Glific.Seeds.Credentials do
   def update_gupshup_credentials(gupshup, organization_id) do
     secrets = %{
       api_key: Keyword.get(gupshup, :api_key),
-      app_name: Keyword.get(gupshup, :app_name)
+      app_name: Keyword.get(gupshup, :app_name),
+      app_id: Keyword.get(gupshup, :app_id) || "NA"
     }
 
     query =

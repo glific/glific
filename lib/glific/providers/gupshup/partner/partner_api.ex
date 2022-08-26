@@ -5,6 +5,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   alias Glific.{
     Caches,
+    Partners,
     Partners.Saas
   }
 
@@ -21,42 +22,73 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @app_url "https://partner.gupshup.io/partner/app/"
   @global_organization_id 0
 
-  @doc """
-  Fetch the stripe tax rates
-  """
-  @spec get_isv_credentials :: map()
-  def get_isv_credentials,
-    do: Saas.isv_credentials()
-
-  # fetches partner token
+  # Get Partner token
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
-    credentials = get_isv_credentials()
-
-    url = @partner_url <> "/login"
-
-    # Using opts as [{refresh_cache: false}] as token expire after 24hrs and we dont want to refresh the cache
+    # disabling the cache refresh because by default whenever
+    # we fetch the info from cache it refreshes the TTL
     {:ok, partner_token} =
       Caches.get(@global_organization_id, "partner_token", refresh_cache: false)
 
     if partner_token,
       do: {:ok, %{partner_token: partner_token}},
-      else: do_get_partner_token(credentials["email"], credentials["password"], url)
+      else: fetch_partner_token()
   end
 
-  @spec do_get_partner_token(String.t(), String.t(), String.t()) :: {:ok, map()} | {:error, any}
-  defp do_get_partner_token(email, password, url) do
-    post(url, %{"email" => email, "password" => password}, headers: [])
-    |> case do
-      {:ok, %Tesla.Env{status: 200, body: body}} ->
-        {:ok, partner_token} =
-          Jason.decode!(body)
-          |> then(&Caches.set(@global_organization_id, "partner_token", &1["token"]))
+  @spec fetch_partner_token :: {:ok, map()} | {:error, any}
+  defp fetch_partner_token do
+    url = @partner_url <> "/login"
+    credentials = Saas.isv_credentials()
+    request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
 
-        {:ok, %{partner_token: partner_token}}
+    post(url, request_params, headers: [])
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        res = Jason.decode!(body)
+
+        {:ok, token} =
+          Caches.set(@global_organization_id, "partner_token", res["token"], ttl: :timer.hours(22))
+
+        {:ok, %{partner_token: token}}
 
       {_status, response} ->
-        {:error, "invalid response #{inspect(response)}"}
+        {:error, "Could not fetch the partner token #{inspect(response)}"}
+    end
+  end
+
+  defp make_request(:post, url, data) do
+    with {:ok, %{partner_token: partner_token}} <- get_partner_token() do
+      default_headers = [{"token", partner_token}]
+
+      post(url, data, headers: default_headers)
+      |> case do
+        {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+          {:ok, Jason.decode!(body)}
+
+        err ->
+          {:error, "#{inspect(err)}"}
+      end
+    end
+  end
+
+  @doc """
+    Fetch App details based on API key and App name
+  """
+  @spec fetch_app_details(non_neg_integer()) :: any()
+  def fetch_app_details(org_id) do
+    organization = Partners.organization(org_id)
+    gupshup_secrets = organization.services["bsp"].secrets
+
+    make_request(:post, @partner_url <> "/api/appLink", %{
+      apiKey: gupshup_secrets["api_key"],
+      appName: gupshup_secrets["app_name"]
+    })
+    |> case do
+      {:ok, res} ->
+        res["partnerApps"]
+
+      error ->
+        error
     end
   end
 
