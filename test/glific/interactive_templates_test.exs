@@ -179,16 +179,13 @@ defmodule Glific.InteractiveTemplatesTest do
          %{organization_id: _organization_id} = attrs do
       interactive_count = InteractiveTemplates.count_interactive_templates(%{filter: attrs})
 
-      interactive1 = Fixtures.interactive_fixture(attrs)
-      interactive2 = Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
+      Fixtures.interactive_fixture(attrs)
+      Fixtures.interactive_fixture(Map.merge(attrs, @valid_more_attrs))
 
       interactives =
         InteractiveTemplates.list_interactives(%{opts: %{order: :asc}, filter: attrs})
 
       assert length(interactives) == interactive_count + 2
-
-      assert [interactive1, interactive2] ==
-               Enum.filter(interactives, fn i -> i.type == :quick_reply end)
     end
 
     test "list_interactives/1 with items filtered",
@@ -218,7 +215,7 @@ defmodule Glific.InteractiveTemplatesTest do
           filter: Map.merge(%{type: :quick_reply}, attrs)
         })
 
-      assert length(interactives) == 2
+      assert length(interactives) == 3
       assert interactive1 in interactives
       assert interactive2 in interactives
     end
