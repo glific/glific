@@ -71,6 +71,24 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @spec app_id(non_neg_integer()) :: {:ok, String.t()} | {:error, String.t()}
+  defp app_id(org_id) do
+    organization = Partners.organization(org_id)
+    gupshup_secrets = organization.services["bsp"].secrets
+
+    if gupshup_secrets["app_id"] not in [nil, ""] do
+      {:ok, gupshup_secrets["app_id"]}
+    else
+      {:error, "App Id not found."}
+    end
+  end
+
+  @spec app_id!(non_neg_integer()) :: String.t()
+  defp app_id!(org_id) do
+    {:ok, app_id} = app_id(org_id)
+    app_id
+  end
+
   @doc """
     Fetch App details based on API key and App name
   """
@@ -92,10 +110,20 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Get the handle id for reusable media
+  """
+  @spec get_media_id(non_neg_integer(), String.t(), String.t()) :: tuple()
+  def get_media_id(org_id, type, file_url) do
+    app_id = app_id!(org_id)
+    url = @app_url <> "#{app_id}/upload/media"
+    make_request(:post, url, %{file: file_url, file_type: type})
+  end
+
   # fetches app id from phone using partner API
   @spec get_apps_details(non_neg_integer(), String.t()) :: {:ok, String.t()} | {:error, any}
   defp get_apps_details(organization_id, phone) do
-    # Need to use Caches.fetch and do_get_apps_details should be used as fallback fn but somehow testcases are failing when used
+    # Need to use Caches.fetch and do_get_apps_details should be used as fallback fn but somehow test cases are failing when used
     {:ok, app_id} = Caches.get(organization_id, {:app_id, phone})
 
     if app_id == false,
