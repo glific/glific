@@ -10,25 +10,25 @@ defmodule Glific.Repo.Migrations.AddProfileIdToFlowTables do
 
   defp add_profile_to_flow_results() do
     alter table(:flow_results) do
-      add :profile_id, references(:profiles, on_delete: :delete_all), null: true
+      add :profile_id, references(:profiles, on_delete: :nilify_all), null: true
     end
   end
 
   defp add_profile_to_flow_contexts() do
     alter table(:flow_contexts) do
-      add :profile_id, references(:profiles, on_delete: :delete_all), null: true
+      add :profile_id, references(:profiles, on_delete: :nilify_all), null: true
     end
   end
 
   defp add_profile_to_contact_histories() do
     alter table(:contact_histories) do
-      add :profile_id, references(:profiles, on_delete: :delete_all), null: true
+      add :profile_id, references(:profiles, on_delete: :nilify_all), null: true
     end
   end
 
-  defp add_profile_to_messages()() do
+  defp add_profile_to_messages() do
     alter table(:messages) do
-      add :profile_id, references(:profiles, on_delete: :delete_all), null: true
+      add :profile_id, references(:profiles, on_delete: :nilify_all), null: true
     end
   end
 end
