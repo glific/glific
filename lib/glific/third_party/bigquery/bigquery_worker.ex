@@ -78,7 +78,6 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("messages_media", organization_id)
       make_job_to_remove_duplicate("flow_contexts", organization_id)
       make_job_to_remove_duplicate("profiles", organization_id)
-      make_job_to_remove_duplicate("message_conversations", organization_id)
     end
 
     :ok
