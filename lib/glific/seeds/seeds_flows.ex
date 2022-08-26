@@ -7,7 +7,9 @@ defmodule Glific.Seeds.SeedsFlows do
     Flows.FlowRevision,
     Groups.Group,
     Partners.Organization,
-    Repo
+    Repo,
+    Seeds.SeedsDev,
+    Templates.InteractiveTemplate
   }
 
   @doc false
@@ -47,7 +49,7 @@ defmodule Glific.Seeds.SeedsFlows do
       Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
 
     {:ok, optout_collection} =
-      Repo.fetch_by(Group, %{label: "Optin contacts", organization_id: organization.id})
+      Repo.fetch_by(Group, %{label: "Optout contacts", organization_id: organization.id})
 
     uuid_map = %{
       optin: generate_uuid(organization, "dd8d0a16-b8c3-4b61-bf8e-e5cad6fa8a2f"),
@@ -115,6 +117,7 @@ defmodule Glific.Seeds.SeedsFlows do
       File.read!(Path.join(:code.priv_dir(:glific), "data/flows/" <> file))
       |> replace_uuids(uuid_map)
       |> replace_label_uuids(id_map)
+      |> replace_interactive_template_id(organization)
       |> Jason.decode!()
       |> Map.merge(%{
         "name" => f.name,
@@ -159,6 +162,28 @@ defmodule Glific.Seeds.SeedsFlows do
           )
         end
       )
+
+  @spec replace_interactive_template_id(String.t(), Organization.t()) :: String.t()
+  defp replace_interactive_template_id(json, organization) do
+    optin_template =
+      Repo.fetch_by(InteractiveTemplate, %{label: "Optin template"})
+      |> case do
+        {:ok, optin_template} -> optin_template
+        {:error, _error} -> SeedsDev.seed_optin_interactives(organization)
+      end
+
+    Enum.reduce(
+      %{"optin_template_id" => optin_template.id},
+      json,
+      fn {_key, id}, acc ->
+        String.replace(
+          acc,
+          "optin_template_id",
+          "#{id}"
+        )
+      end
+    )
+  end
 
   @spec get_data_and_uuid_map(Organization.t()) :: tuple()
   defp get_data_and_uuid_map(organization) do
