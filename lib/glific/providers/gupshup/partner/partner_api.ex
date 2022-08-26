@@ -18,7 +18,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
   @partner_url "https://partner.gupshup.io/partner/account"
   @app_url "https://partner.gupshup.io/partner/app/"
-  @global_organization_id 0
 
   @doc """
     Fetch App details based on API key and App name
@@ -68,7 +67,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
-  # Get Partner token
+  @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
     # disabling the cache refresh because by default whenever
