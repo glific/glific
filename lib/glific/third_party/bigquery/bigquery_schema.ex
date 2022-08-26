@@ -1206,12 +1206,6 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "message_id for the message converstation",
-        name: "type",
-        type: "INTEGER",
-        mode: "REQUIRED"
-      },
-      %{
         description: "Time when the stats entry was first created for a user",
         name: "inserted_at",
         type: "DATETIME",

@@ -774,9 +774,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :template
       ])
 
-  defp get_query("message_converstations", organization_id, attrs),
+  defp get_query("message_conversations", organization_id, attrs),
     do:
-      MessageConverstation
+      MessageConversation
       |> where([m], m.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
