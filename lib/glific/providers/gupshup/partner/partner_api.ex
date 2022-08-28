@@ -10,7 +10,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   }
 
   use Tesla
+
   alias Plug.Conn.Query
+  alias Tesla.Multipart
 
   plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
@@ -64,6 +66,30 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       error ->
         {:error, "Error while getting the ratings. #{inspect(error)}"}
+    end
+  end
+
+  @doc """
+   Get gupshup media handle id based on giving org id and the url
+  """
+  @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
+  def get_media_handle_id(org_id, url, type) do
+    data =
+      Multipart.new()
+      |> Multipart.add_field("file", url)
+      |> Multipart.add_field("file_type", type)
+
+    (@app_url <> app_id!(org_id) <> "/upload/media")
+    |> post_request(data,
+      token_type: :app_token,
+      org_id: org_id
+    )
+    |> case do
+      {:ok, %{"status" => "success", "handleId" => %{"message" => handle_id}} = _res} ->
+        handle_id
+
+      {:error, error} ->
+        raise(error)
     end
   end
 
@@ -132,7 +158,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp headers(:app_token, opts) do
     org_id = Keyword.get(opts, :org_id)
     {:ok, %{partner_app_token: partner_app_token}} = get_partner_app_token(org_id)
-
     [{"token", partner_app_token}, {"Authorization", partner_app_token}]
   end
 

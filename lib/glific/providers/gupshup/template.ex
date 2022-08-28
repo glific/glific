@@ -4,9 +4,12 @@ defmodule Glific.Providers.Gupshup.Template do
   """
 
   alias Glific.{
+    Messages.MessageMedia,
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
+    Providers.Gupshup.PartnerAPI,
+    Repo,
     Templates,
     Templates.SessionTemplate
   }
@@ -121,8 +124,21 @@ defmodule Glific.Providers.Gupshup.Template do
   defp attach_media_params(template_payload, %{type: :text} = _attrs),
     do: template_payload |> Map.merge(%{enableSample: false})
 
-  defp attach_media_params(template_payload, %{type: _type} = _attrs) do
-    template_payload |> Map.merge(%{enableSample: true})
+  defp attach_media_params(template_payload, %{type: _type} = attrs) do
+    {:ok, media} = Repo.fetch_by(MessageMedia, %{id: attrs["message_media_id"]})
+
+    media_handle_id =
+      PartnerAPI.get_media_handle_id(
+        attrs.organization_id,
+        media.url,
+        template_payload.templateType
+      )
+
+    template_payload
+    |> Map.merge(%{
+      enableSample: true,
+      exampleMedia: media_handle_id
+    })
   end
 
   @spec attach_button_param(map(), map()) :: map()
