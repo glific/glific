@@ -220,16 +220,6 @@ defmodule GlificWeb.Schema.ProviderTest do
           status: 200,
           body:
             Jason.encode!(%{
-              "partnerAppsList" => [
-                %{
-                  "id" => "app id 1",
-                  "phone" => "app phone 1"
-                },
-                %{
-                  "id" => "app id 2",
-                  "phone" => "917834811114"
-                }
-              ],
               "token" => %{"token" => "some random app token"},
               "currentLimit" => "Tier100K",
               "oldLimit" => "Tier1K",

@@ -158,7 +158,7 @@ defmodule Glific.Saas.Queries do
       secrets: %{
         "api_key" => params["api_key"],
         "app_name" => params["app_name"],
-        "app_id" => ""
+        "app_id" => params["app_id"] || "NA"
       },
       is_active: true,
       organization_id: result.organization.id
