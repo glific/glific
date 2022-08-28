@@ -125,13 +125,14 @@ defmodule Glific.Providers.Gupshup.Template do
     do: template_payload |> Map.merge(%{enableSample: false})
 
   defp attach_media_params(template_payload, %{type: _type} = attrs) do
-    {:ok, media} = Repo.fetch_by(MessageMedia, %{id: attrs["message_media_id"]})
+    media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
+    {:ok, media} = Repo.fetch_by(MessageMedia, %{id: media_id})
 
     media_handle_id =
       PartnerAPI.get_media_handle_id(
         attrs.organization_id,
         media.url,
-        template_payload.templateType
+        Atom.to_string(attrs.type)
       )
 
     template_payload
