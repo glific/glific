@@ -73,11 +73,11 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
    Get gupshup media handle id based on giving org id and the url
   """
   @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
-  def get_media_handle_id(org_id, url, type) do
+  def get_media_handle_id(org_id, url, _type) do
     data =
       Multipart.new()
       |> Multipart.add_field("file", url)
-      |> Multipart.add_field("file_type", type)
+      |> Multipart.add_field("file_type", MIME.from_path(url))
 
     (@app_url <> app_id!(org_id) <> "/upload/media")
     |> post_request(data,
