@@ -77,7 +77,7 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
 
   defp do_migrate_data(:submit_common_otp_template, organizations),
-    do: Enum.map(organizations, fn org -> submit_opt_template_for_org(org.id) end)
+    do: Enum.map(organizations, fn org -> submit_otp_template_for_org(org.id) end)
 
   defp do_migrate_data(:set_newcontact_flow_id, organizations),
     do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
@@ -108,9 +108,9 @@ defmodule Glific.Seeds.SeedsMigration do
   end
 
   @doc false
-  @spec submit_opt_template_for_org(any) ::
+  @spec submit_otp_template_for_org(any) ::
           {:error, Ecto.Changeset.t()} | {:ok, Templates.SessionTemplate.t()}
-  def submit_opt_template_for_org(org_id) do
+  def submit_otp_template_for_org(org_id) do
     %{
       is_hsm: true,
       shortcode: "common_otp",

@@ -4,9 +4,12 @@ defmodule Glific.Providers.Gupshup.Template do
   """
 
   alias Glific.{
+    Messages.MessageMedia,
     Partners,
     Partners.Organization,
     Providers.Gupshup.ApiClient,
+    Providers.Gupshup.PartnerAPI,
+    Repo,
     Templates,
     Templates.SessionTemplate
   }
@@ -108,19 +111,41 @@ defmodule Glific.Providers.Gupshup.Template do
     %{
       elementName: attrs.shortcode,
       languageCode: language.locale,
-      content: attrs.body,
       category: attrs.category,
       vertical: attrs.label,
       templateType: String.upcase(Atom.to_string(attrs.type)),
+      content: attrs.body,
       example: attrs.example
     }
-    |> update_as_button_template(attrs)
+    |> attach_media_params(attrs)
+    |> attach_button_param(attrs)
   end
 
-  @spec update_as_button_template(map(), map()) :: map()
-  defp update_as_button_template(template_payload, %{has_buttons: true, buttons: buttons}) do
-    template_payload |> Map.merge(%{buttons: Jason.encode!(buttons)})
+  defp attach_media_params(template_payload, %{type: :text} = _attrs),
+    do: template_payload |> Map.merge(%{enableSample: false})
+
+  defp attach_media_params(template_payload, %{type: _type} = attrs) do
+    media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
+    {:ok, media} = Repo.fetch_by(MessageMedia, %{id: media_id})
+
+    media_handle_id =
+      PartnerAPI.get_media_handle_id(
+        attrs.organization_id,
+        media.url,
+        Atom.to_string(attrs.type)
+      )
+
+    template_payload
+    |> Map.merge(%{
+      enableSample: true,
+      exampleMedia: media_handle_id
+    })
   end
 
-  defp update_as_button_template(template_payload, _attrs), do: template_payload
+  @spec attach_button_param(map(), map()) :: map()
+  defp attach_button_param(template_payload, %{has_buttons: true, buttons: buttons}) do
+    Map.merge(template_payload, %{buttons: Jason.encode!(buttons)})
+  end
+
+  defp attach_button_param(template_payload, _attrs), do: template_payload
 end
