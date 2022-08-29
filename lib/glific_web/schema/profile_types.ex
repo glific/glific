@@ -6,6 +6,10 @@ defmodule GlificWeb.Schema.ProfileTypes do
   use Absinthe.Schema.Notation
   alias GlificWeb.Resolvers
   alias GlificWeb.Schema.Middleware.Authorize
+  alias Glific.Repo
+
+  import Ecto.Query, warn: false
+  import Absinthe.Resolution.Helpers
 
   object :profile_result do
     field :profile, :profile
@@ -19,6 +23,10 @@ defmodule GlificWeb.Schema.ProfileTypes do
     field :fields, :json
     field :inserted_at, :datetime
     field :updated_at, :datetime
+
+    field :language, :language do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   input_object :profile_input do
