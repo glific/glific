@@ -10,8 +10,8 @@ defmodule Glific.Flows.FlowResult do
   alias Glific.{
     Contacts.Contact,
     Flows.Flow,
-    Profiles.Profile,
     Partners.Organization,
+    Profiles.Profile,
     Repo
   }
 

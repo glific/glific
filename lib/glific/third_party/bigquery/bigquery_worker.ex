@@ -426,7 +426,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               contact_name: row.contact.name,
               flow_version: row.flow_version,
               flow_context_id: row.flow_context_id,
-              profile_id: row.profile_id,
+              profile_id: row.profile_id
             }
             |> Map.merge(bq_fields(organization_id))
             |> then(&%{json: &1})

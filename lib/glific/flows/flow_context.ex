@@ -24,8 +24,8 @@ defmodule Glific.Flows.FlowContext do
     Messages,
     Messages.Message,
     Notifications,
-    Profiles.Profile,
     Partners.Organization,
+    Profiles.Profile,
     Repo
   }
 

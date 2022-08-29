@@ -8,8 +8,8 @@ defmodule Glific.Contacts.ContactHistory do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactHistory,
-    Profiles.Profile,
-    Partners.Organization
+    Partners.Organization,
+    Profiles.Profile
   }
 
   @required_fields [
