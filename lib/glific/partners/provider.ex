@@ -57,4 +57,26 @@ defmodule Glific.Partners.Provider do
     |> validate_required(@required_fields)
     |> unique_constraint([:name])
   end
+
+  def provider_module(org_id, :template) do
+    organization = Glific.Partners.organization(org_id)
+
+    organization.bsp.shortcode
+    |> case do
+      "gupshup" -> Glific.Providers.Gupshup.Template
+      "gupshup_enterprise" -> Providers.GupshupEnterprise.Template
+      _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
+    end
+  end
+
+  def provider_module(org_id, _) do
+    organization = Glific.Partners.organization(org_id)
+
+    organization.bsp.shortcode
+    |> case do
+      "gupshup" -> Glific.Providers.Gupshup
+      "gupshup_enterprise" -> Providers.GupshupEnterprise
+      _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
+    end
+  end
 end
