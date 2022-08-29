@@ -722,6 +722,17 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
     contact_history = get_in(query_data, [:data, "contactHistory"])
     assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "opts" => %{"order" => "DESC"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [contact_history | _] = get_in(query_data, [:data, "contactHistory"])
+    assert contact_history["eventLabel"] == "Flow Started"
   end
 
   test "count contacts history returns count of contacts history", %{staff: user} = attrs do
