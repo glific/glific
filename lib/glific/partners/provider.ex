@@ -58,7 +58,13 @@ defmodule Glific.Partners.Provider do
     |> unique_constraint([:name])
   end
 
-  def provider_module(org_id, :template) do
+  @doc """
+    A centralize function to get the currently active provider module.
+    As this point of time we can not construct this module name dynamically
+    that's why these are static for now.
+  """
+  @spec bsp_module(binary | non_neg_integer, any) :: any()
+  def bsp_module(org_id, :template) do
     organization = Glific.Partners.organization(org_id)
 
     organization.bsp.shortcode
@@ -69,7 +75,7 @@ defmodule Glific.Partners.Provider do
     end
   end
 
-  def provider_module(org_id, _) do
+  def bsp_module(org_id, _) do
     organization = Glific.Partners.organization(org_id)
 
     organization.bsp.shortcode

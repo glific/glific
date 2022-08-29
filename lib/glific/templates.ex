@@ -167,8 +167,8 @@ defmodule Glific.Templates do
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
     Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
-    provider_module = Provider.provider_module(attrs.organization_id, :template)
-    provider_module.submit_for_approval(attrs)
+    bsp_module = Provider.bsp_module(attrs.organization_id, :template)
+    bsp_module.submit_for_approval(attrs)
   end
 
   @doc """
@@ -176,7 +176,7 @@ defmodule Glific.Templates do
   """
   @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def import_templates(org_id, data) do
-    Provider.provider_module(org_id, :template).import_templates(org_id, data)
+    Provider.bsp_module(org_id, :template).import_templates(org_id, data)
   end
 
   @doc """
@@ -214,10 +214,10 @@ defmodule Glific.Templates do
   @spec delete_session_template(SessionTemplate.t()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
-    if(session_template.is_hsm) do
+    if session_template.is_hsm do
       org_id = session_template.organization_id
-      provider_module = Provider.provider_module(org_id, :template)
-      provider_module.delete(org_id, Map.from_struct(session_template))
+      bsp_module = Provider.bsp_module(org_id, :template)
+      bsp_module.delete(org_id, Map.from_struct(session_template))
     end
 
     Repo.delete(session_template)
@@ -263,8 +263,8 @@ defmodule Glific.Templates do
     do: {:error, "organization_id is not given"}
 
   def sync_hsms_from_bsp(organization_id) do
-    provider_module = Provider.provider_module(organization_id, :template)
-    provider_module.update_hsm_templates(organization_id)
+    bsp_module = Provider.bsp_module(organization_id, :template)
+    bsp_module.update_hsm_templates(organization_id)
   end
 
   @doc false

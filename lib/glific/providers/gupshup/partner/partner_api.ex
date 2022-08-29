@@ -91,6 +91,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Remove hsm template from the waba.
+  """
   @spec delete_hsm_template(non_neg_integer, binary) :: tuple()
   def delete_hsm_template(org_id, element_name) do
     (app_url(org_id) <> "/template/" <> element_name)
