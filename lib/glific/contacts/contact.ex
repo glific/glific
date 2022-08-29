@@ -39,8 +39,7 @@ defmodule Glific.Contacts.Contact do
     :last_message_at,
     :last_communication_at,
     :settings,
-    :fields,
-    :active_profile_id
+    :fields
   ]
 
   @type t() :: %__MODULE__{
