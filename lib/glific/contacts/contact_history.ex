@@ -8,6 +8,7 @@ defmodule Glific.Contacts.ContactHistory do
   alias Glific.{
     Contacts.Contact,
     Contacts.ContactHistory,
+    Profiles.Profile,
     Partners.Organization
   }
 
@@ -18,7 +19,7 @@ defmodule Glific.Contacts.ContactHistory do
     :event_datetime,
     :organization_id
   ]
-  @optional_fields [:event_meta]
+  @optional_fields [:event_meta, :profile_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -32,7 +33,9 @@ defmodule Glific.Contacts.ContactHistory do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
-          updated_at: :utc_datetime_usec | nil
+          updated_at: :utc_datetime_usec | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "contact_histories" do
@@ -42,6 +45,8 @@ defmodule Glific.Contacts.ContactHistory do
     field(:event_meta, :map, default: %{})
     belongs_to(:contact, Contact)
     belongs_to(:organization, Organization)
+    belongs_to :profile, Profile
+
     timestamps(type: :utc_datetime_usec)
   end
 
