@@ -166,6 +166,7 @@ defmodule Glific.Saas.Queries do
 
     case Partners.create_credential(attrs) do
       {:ok, credential} ->
+        Partners.set_bsp_app_id(result.organization, "gupshup")
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
