@@ -4,12 +4,15 @@ defmodule GlificWeb.Schema.ProfileTypes do
   """
 
   use Absinthe.Schema.Notation
-  alias GlificWeb.Resolvers
-  alias GlificWeb.Schema.Middleware.Authorize
+  import Absinthe.Resolution.Helpers
+  import Ecto.Query, warn: false
+
   alias Glific.Repo
 
-  import Ecto.Query, warn: false
-  import Absinthe.Resolution.Helpers
+  alias GlificWeb.{
+    Resolvers,
+    Schema.Middleware.Authorize
+  }
 
   object :profile_result do
     field :profile, :profile
