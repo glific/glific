@@ -33,6 +33,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowRevision,
     Jobs,
     Messages.Message,
+    Messages.MessageConversation,
     Messages.MessageMedia,
     Partners,
     Profiles.Profile,
@@ -331,6 +332,38 @@ defmodule Glific.BigQuery.BigQueryWorker do
     )
     |> Enum.chunk_every(100)
     |> Enum.each(&make_job(&1, :contact_histories, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("message_conversations", organization_id, attrs) do
+    Logger.info(
+      "fetching data for message_conversations to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("message_conversations", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            conversation_id: row.conversation_id,
+            deduction_type: row.deduction_type,
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id),
+            is_billable: row.is_billable,
+            message_id: row.message.id
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :message_conversations, organization_id, attrs))
 
     :ok
   end
@@ -738,6 +771,16 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :flow_object,
         :location,
         :template
+      ])
+
+  defp get_query("message_conversations", organization_id, attrs),
+    do:
+      MessageConversation
+      |> where([m], m.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([m], [m.inserted_at, m.id])
+      |> preload([
+        :message
       ])
 
   defp get_query("contacts", organization_id, attrs),
