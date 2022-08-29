@@ -323,7 +323,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             event_datetime: BigQuery.format_date(row.event_datetime, organization_id),
             phone: row.contact.phone,
-            profile_id: row.profile.id
+            profile_id: row.profile_id
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -426,7 +426,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
               contact_name: row.contact.name,
               flow_version: row.flow_version,
               flow_context_id: row.flow_context_id,
-              profile_id: row.profile.id,
+              profile_id: row.profile_id,
             }
             |> Map.merge(bq_fields(organization_id))
             |> then(&%{json: &1})
@@ -536,7 +536,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             is_background_flow: row.is_background_flow,
             is_await_result: row.is_await_result,
             is_killed: row.is_killed,
-            profile_id: row.profile.id,
+            profile_id: row.profile_id,
             wakeup_at: BigQuery.format_date(row.wakeup_at, organization_id),
             completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
@@ -638,7 +638,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         receiver_phone: row.receiver.phone,
         contact_phone: row.contact.phone,
         contact_name: row.contact.name,
-        profile_id: row.profile.id,
+        profile_id: row.profile_id,
         user_phone: if(!is_nil(row.user), do: row.user.phone),
         user_name: if(!is_nil(row.user), do: row.user.name),
         tags_label: Enum.map_join(row.tags, ", ", fn tag -> tag.label end),
@@ -774,8 +774,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         :media,
         :flow_object,
         :location,
-        :template,
-        :profile_id
+        :template
       ])
 
   defp get_query("message_conversations", organization_id, attrs),
@@ -802,7 +801,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([c], c.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([c], [c.inserted_at, c.id])
-      |> preload([:contact, :profile])
+      |> preload([:contact])
 
   defp get_query("profiles", organization_id, attrs),
     # We are creating a query here with the fields which are required instead of loading all the data.
@@ -828,7 +827,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([:flow, :contact, :profile])
+      |> preload([:flow, :contact])
 
   defp get_query("flow_counts", organization_id, attrs),
     do:
@@ -852,7 +851,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([f], f.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([f], [f.inserted_at, f.id])
-      |> preload([:flow, :contact, :profile])
+      |> preload([:flow, :contact])
 
   defp get_query("stats", organization_id, attrs),
     do:
