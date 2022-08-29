@@ -103,7 +103,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
         {:ok, res}
 
       {:error, error} ->
-        raise("Error while deleting the HSM with name #{element_name}. Error: #{inspect(error)}")
+        {:error, error}
     end
   end
 
