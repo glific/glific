@@ -59,6 +59,14 @@ defmodule Glific.Providers.Gupshup.Template do
     end
   end
 
+  @doc """
+  Delete template from the gupshup
+  """
+  @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}
+  def delete(org_id, attrs) do
+    PartnerAPI.delete_hsm_template(org_id, attrs.shortcode)
+  end
+
   @spec append_buttons(map(), map()) :: map()
   defp append_buttons(template, %{has_buttons: true} = attrs),
     do: template |> Map.merge(%{buttons: attrs.buttons})
