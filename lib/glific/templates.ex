@@ -3,17 +3,14 @@ defmodule Glific.Templates do
   The Templates context.
   """
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
 
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
     Notifications,
-    Partners,
     Partners.Organization,
-    Providers.Gupshup,
-    Providers.GupshupEnterprise,
+    Partners.Provider,
     Repo,
     Settings,
     Tags.Tag,
@@ -170,13 +167,8 @@ defmodule Glific.Templates do
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
     Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
-    organization = Partners.organization(attrs.organization_id)
-
-    organization.bsp.shortcode
-    |> case do
-      "gupshup" -> Gupshup.Template.submit_for_approval(attrs)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    bsp_module = Provider.bsp_module(attrs.organization_id, :template)
+    bsp_module.submit_for_approval(attrs)
   end
 
   @doc """
@@ -184,13 +176,7 @@ defmodule Glific.Templates do
   """
   @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def import_templates(org_id, data) do
-    organization = Partners.organization(org_id)
-
-    organization.bsp.shortcode
-    |> case do
-      "gupshup_enterprise" -> GupshupEnterprise.Template.import_enterprise_templates(org_id, data)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    Provider.bsp_module(org_id, :template).import_templates(org_id, data)
   end
 
   @doc """
@@ -228,6 +214,12 @@ defmodule Glific.Templates do
   @spec delete_session_template(SessionTemplate.t()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
+    if session_template.is_hsm do
+      org_id = session_template.organization_id
+      bsp_module = Provider.bsp_module(org_id, :template)
+      bsp_module.delete(org_id, Map.from_struct(session_template))
+    end
+
     Repo.delete(session_template)
   end
 
@@ -271,13 +263,8 @@ defmodule Glific.Templates do
     do: {:error, "organization_id is not given"}
 
   def sync_hsms_from_bsp(organization_id) do
-    organization = Partners.organization(organization_id)
-
-    organization.bsp.shortcode
-    |> case do
-      "gupshup" -> Gupshup.Template.update_hsm_templates(organization_id)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    bsp_module = Provider.bsp_module(organization_id, :template)
+    bsp_module.update_hsm_templates(organization_id)
   end
 
   @doc false

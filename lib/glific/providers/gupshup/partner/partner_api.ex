@@ -19,7 +19,6 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   )
 
   @partner_url "https://partner.gupshup.io/partner/account"
-  @app_url "https://partner.gupshup.io/partner/app/"
 
   @doc """
     Fetch App details based on API key and App name
@@ -51,9 +50,9 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   for an organization with input app id
   """
   @spec get_quality_rating(non_neg_integer(), String.t()) :: {:error, any} | {:ok, map()}
-  def get_quality_rating(organization_id, _phone) do
-    (@app_url <> app_id!(organization_id) <> "/ratings")
-    |> get_request(token_type: :app_token, org_id: organization_id)
+  def get_quality_rating(org_id, _phone \\ "") do
+    (app_url(org_id) <> "/ratings")
+    |> get_request(org_id: org_id)
     |> case do
       {:ok, res} ->
         {:ok,
@@ -73,15 +72,14 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
    Get gupshup media handle id based on giving org id and the url
   """
   @spec get_media_handle_id(non_neg_integer, binary, any) :: String.t()
-  def get_media_handle_id(org_id, url, _type) do
+  def get_media_handle_id(org_id, url, _type \\ "") do
     data =
       Multipart.new()
       |> Multipart.add_field("file", url)
       |> Multipart.add_field("file_type", MIME.from_path(url))
 
-    (@app_url <> app_id!(org_id) <> "/upload/media")
+    (app_url(org_id) <> "/upload/media")
     |> post_request(data,
-      token_type: :app_token,
       org_id: org_id
     )
     |> case do
@@ -90,6 +88,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
 
       {:error, error} ->
         raise(error)
+    end
+  end
+
+  @doc """
+  Remove hsm template from the waba.
+  """
+  @spec delete_hsm_template(non_neg_integer, binary) :: tuple()
+  def delete_hsm_template(org_id, element_name) do
+    (app_url(org_id) <> "/template/" <> element_name)
+    |> delete_request(org_id: org_id)
+    |> case do
+      {:ok, %{"status" => "success"} = res} ->
+        {:ok, res}
+
+      {:error, error} ->
+        raise("Error while deleting the HSM with name #{element_name}. Error: #{inspect(error)}")
     end
   end
 
@@ -140,7 +154,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   @spec fetch_partner_app_token(non_neg_integer) ::
           {:error, String.t()} | {:ok, %{partner_app_token: any}}
   defp fetch_partner_app_token(org_id) do
-    url = @app_url <> app_id!(org_id) <> "/token"
+    url = app_url(org_id) <> "/token"
 
     get_request(url, token_type: :partner_token)
     |> case do
@@ -167,7 +181,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   defp post_request(url, data, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     post(url, data, headers: req_headers)
     |> case do
@@ -180,9 +194,22 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   defp get_request(url, opts) do
-    req_headers = headers(Keyword.get(opts, :token_type), opts)
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
     get(url, headers: req_headers)
+    |> case do
+      {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
+        {:ok, Jason.decode!(body)}
+
+      err ->
+        {:error, "#{inspect(err)}"}
+    end
+  end
+
+  defp delete_request(url, opts) do
+    req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
+
+    delete(url, headers: req_headers)
     |> case do
       {:ok, %Tesla.Env{status: status, body: body}} when status in 200..299 ->
         {:ok, Jason.decode!(body)}
@@ -209,4 +236,10 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     {:ok, app_id} = app_id(org_id)
     app_id
   end
+
+  @app_url "https://partner.gupshup.io/partner/app/"
+
+  @spec app_url(non_neg_integer()) :: String.t()
+  defp app_url(org_id),
+    do: @app_url <> app_id!(org_id)
 end

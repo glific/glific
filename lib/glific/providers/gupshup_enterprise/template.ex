@@ -17,8 +17,8 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
   """
-  @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any}
-  def import_enterprise_templates(organization_id, data) do
+  @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def import_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
     organization = Partners.organization(organization_id)
 
