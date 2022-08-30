@@ -65,6 +65,14 @@ defmodule Glific.Providers.Gupshup.Template do
   @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}
   def delete(org_id, attrs) do
     PartnerAPI.delete_hsm_template(org_id, attrs.shortcode)
+    |> case do
+      {:ok, res} ->
+        {:ok, res}
+
+      {:error, error} ->
+        Logger.error("Error while deleting the template. #{inspect(error)}")
+        {:error, error}
+    end
   end
 
   @spec append_buttons(map(), map()) :: map()
