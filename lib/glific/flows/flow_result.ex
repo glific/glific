@@ -11,6 +11,7 @@ defmodule Glific.Flows.FlowResult do
     Contacts.Contact,
     Flows.Flow,
     Partners.Organization,
+    Profiles.Profile,
     Repo
   }
 
@@ -22,13 +23,15 @@ defmodule Glific.Flows.FlowResult do
     :flow_version,
     :organization_id
   ]
-  @optional_fields [:results]
+  @optional_fields [:results, :profile_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           results: map() | nil,
           contact_id: non_neg_integer | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_context_id: non_neg_integer | nil,
           flow_id: non_neg_integer | nil,
@@ -55,6 +58,7 @@ defmodule Glific.Flows.FlowResult do
     belongs_to :contact, Contact
     belongs_to :flow, Flow
     belongs_to :organization, Organization
+    belongs_to :profile, Profile
 
     timestamps(type: :utc_datetime_usec)
   end

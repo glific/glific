@@ -35,7 +35,9 @@ defmodule Glific.Contacts.ContactHistory do
           organization_id: non_neg_integer | nil,
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
-          updated_at: :utc_datetime_usec | nil
+          updated_at: :utc_datetime_usec | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
   schema "contact_histories" do
@@ -46,6 +48,8 @@ defmodule Glific.Contacts.ContactHistory do
     belongs_to(:contact, Contact)
     belongs_to(:profile, Profile)
     belongs_to(:organization, Organization)
+    belongs_to :profile, Profile
+
     timestamps(type: :utc_datetime_usec)
   end
 

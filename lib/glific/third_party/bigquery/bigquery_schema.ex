@@ -441,6 +441,12 @@ defmodule Glific.BigQuery.Schema do
         name: "media_id",
         type: "INTEGER",
         mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -709,6 +715,12 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -789,6 +801,12 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "ID of the flow context with which the user is associated to in the flow",
         name: "flow_context_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
       }
@@ -1170,6 +1188,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Time when the record entry was made on bigquery",
         name: "bq_inserted_at",
         type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
         mode: "NULLABLE"
       }
     ]
