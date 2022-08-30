@@ -110,6 +110,9 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:event_datetime, :datetime)
     field(:inserted_at, :datetime)
     field(:updated_at, :datetime)
+    field :profile, :profile do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   @desc "Filtering options for contacts"
@@ -169,6 +172,9 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the event label"
     field(:event_label, :string)
+
+    @desc "profile id"
+    field(:profile_id, :id)
   end
 
   object :contact_queries do

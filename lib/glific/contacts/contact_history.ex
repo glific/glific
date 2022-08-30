@@ -26,6 +26,8 @@ defmodule Glific.Contacts.ContactHistory do
           id: non_neg_integer | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           event_type: String.t() | nil,
           event_label: String.t() | nil,
           event_datetime: :utc_datetime | nil,
@@ -34,7 +36,6 @@ defmodule Glific.Contacts.ContactHistory do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           inserted_at: :utc_datetime_usec | nil,
           updated_at: :utc_datetime_usec | nil,
-          profile_id: non_neg_integer | nil,
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil
         }
 
@@ -44,8 +45,8 @@ defmodule Glific.Contacts.ContactHistory do
     field(:event_datetime, :utc_datetime)
     field(:event_meta, :map, default: %{})
     belongs_to(:contact, Contact)
+    belongs_to(:profile, Profile)
     belongs_to(:organization, Organization)
-    belongs_to :profile, Profile
 
     timestamps(type: :utc_datetime_usec)
   end
@@ -59,5 +60,6 @@ defmodule Glific.Contacts.ContactHistory do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:contact_id)
+    |> foreign_key_constraint(:profile_id)
   end
 end
