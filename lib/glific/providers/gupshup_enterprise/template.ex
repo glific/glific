@@ -31,6 +31,14 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     {:ok, %{message: "All templates have been added"}}
   end
 
+  @doc """
+  Delete template from the gupshup
+  """
+  @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}
+  def delete(_org_id, attrs) do
+    {:ok, attrs}
+  end
+
   @spec import_approved_templates(map()) :: map()
   defp import_approved_templates(template),
     do: %{
