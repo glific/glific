@@ -70,7 +70,7 @@ defmodule Glific.Partners.Provider do
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Glific.Providers.Gupshup.Template
-      "gupshup_enterprise" -> Providers.GupshupEnterprise.Template
+      "gupshup_enterprise" -> Glific.Providers.GupshupEnterprise.Template
       _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
     end
   end
@@ -81,7 +81,7 @@ defmodule Glific.Partners.Provider do
     organization.bsp.shortcode
     |> case do
       "gupshup" -> Glific.Providers.Gupshup
-      "gupshup_enterprise" -> Providers.GupshupEnterprise
+      "gupshup_enterprise" -> Glific.Providers.GupshupEnterprise
       _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
     end
   end
