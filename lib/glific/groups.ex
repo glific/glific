@@ -8,6 +8,7 @@ defmodule Glific.Groups do
 
   alias Glific.{
     AccessControl,
+    AccessControl.GroupRole,
     Contacts.Contact,
     Repo,
     Users.User
@@ -171,9 +172,28 @@ defmodule Glific.Groups do
   """
   @spec create_group(map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def create_group(attrs \\ %{}) do
-    %Group{}
-    |> Group.changeset(attrs)
-    |> Repo.insert()
+    with {:ok, group} <-
+           %Group{}
+           |> Group.changeset(attrs)
+           |> Repo.insert() do
+      update_group_roles(attrs, group)
+
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_group_roles(attrs, group),
+        else: {:ok, group}
+    end
+  end
+
+  @spec update_group_roles(map(), Group.t()) :: {:ok, Group.t()}
+  defp update_group_roles(attrs, group) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:group_id, group.id)
+      |> GroupRole.update_group_roles()
+
+    group
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -191,9 +211,14 @@ defmodule Glific.Groups do
   @spec update_group(Group.t(), map()) :: {:ok, Group.t()} | {:error, Ecto.Changeset.t()}
   def update_group(%Group{} = group, attrs) do
     if has_permission?(group.id) do
-      group
-      |> Group.changeset(attrs)
-      |> Repo.update()
+      with {:ok, updated_group} <-
+             group
+             |> Group.changeset(attrs)
+             |> Repo.update() do
+        if Map.has_key?(attrs, :add_role_ids),
+          do: update_group_roles(attrs, updated_group),
+          else: {:ok, updated_group}
+      end
     else
       raise "Permission denied"
     end
