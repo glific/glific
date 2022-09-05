@@ -350,7 +350,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         [
           %{
             id: row.id,
-            conversation_id: row.conversation_id,
+            conversation_uuid: row.conversation_id,
             deduction_type: row.deduction_type,
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
