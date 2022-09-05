@@ -1215,7 +1215,13 @@ defmodule Glific.BigQuery.Schema do
         description: "Conversation ID for the message",
         name: "conversation_id",
         type: "INTEGER",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Conversation ID for the message",
+        name: "conversation_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
       },
       %{
         description: "deduction_type for the message conversation",
@@ -1251,6 +1257,12 @@ defmodule Glific.BigQuery.Schema do
         description: "Time when the record entry was made on bigquery",
         name: "bq_inserted_at",
         type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Linked message id",
+        name: "message_id",
+        type: "INTEGER",
         mode: "NULLABLE"
       }
     ]
