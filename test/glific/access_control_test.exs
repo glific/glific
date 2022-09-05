@@ -185,6 +185,19 @@ defmodule Glific.AccessControlTest do
       Repo.put_current_user(user)
       [assigned_flow] = Flows.list_flows(%{})
       assert assigned_flow == flow
+
+      # Creating new flow is assigned to same role by default
+      name = "New Test Workflow"
+
+      Flows.create_flow(%{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        name: name,
+        organization_id: attrs.organization_id
+      })
+
+      [_f1, f2 | _] = Flows.list_flows(%{})
+      assert f2.name == name
     end
 
     test "list_groups/1 returns list of flows assigned to user", attrs do
@@ -221,6 +234,19 @@ defmodule Glific.AccessControlTest do
       Repo.put_current_user(user)
       [assigned_group] = Groups.list_groups(%{})
       assert assigned_group == group
+
+      # Creating new collection is assigned to same role by default
+      label = "New Test Collection"
+
+      Groups.create_group(%{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        label: label,
+        organization_id: attrs.organization_id
+      })
+
+      [_g1, g2 | _] = Groups.list_groups(%{})
+      assert g2.label == label
     end
 
     test "do_check_access/3 should return error tuple when entity type is unknown", _attrs do
