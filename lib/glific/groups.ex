@@ -176,8 +176,6 @@ defmodule Glific.Groups do
            %Group{}
            |> Group.changeset(attrs)
            |> Repo.insert() do
-      update_group_roles(attrs, group)
-
       if Map.has_key?(attrs, :add_role_ids),
         do: update_group_roles(attrs, group),
         else: {:ok, group}
