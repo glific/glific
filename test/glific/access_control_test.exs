@@ -7,6 +7,7 @@ defmodule Glific.AccessControlTest do
     AccessControl.Role,
     Fixtures,
     Flows,
+    Groups,
     Seeds.SeedsDev,
     Users
   }
@@ -184,6 +185,42 @@ defmodule Glific.AccessControlTest do
       Repo.put_current_user(user)
       [assigned_flow] = Flows.list_flows(%{})
       assert assigned_flow == flow
+    end
+
+    test "list_groups/1 returns list of flows assigned to user", attrs do
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      SeedsDev.seed_groups()
+      default_role = Fixtures.role_fixture(attrs)
+      default_role_id = to_string(default_role.id)
+
+      user = Fixtures.user_fixture(%{roles: ["none"]})
+
+      Users.update_user(user, %{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        organization_id: attrs.organization_id
+      })
+
+      [group | _] = Groups.list_groups(%{filter: %{label: "Default Group"}})
+
+      FunWithFlags.enable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      Groups.update_group(group, %{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        label: group.label,
+        organization_id: attrs.organization_id
+      })
+
+      assert [] == Groups.list_groups(%{})
+      Repo.put_current_user(user)
+      [assigned_group] = Groups.list_groups(%{})
+      assert assigned_group == group
     end
 
     test "do_check_access/3 should return error tuple when entity type is unknown", _attrs do
