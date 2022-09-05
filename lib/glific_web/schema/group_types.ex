@@ -49,6 +49,10 @@ defmodule GlificWeb.Schema.GroupTypes do
         Resolvers.Groups.users_count(resolution, %{id: group.id}, context)
       end)
     end
+
+    field :roles, list_of(:access_role) do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for groups"
@@ -61,6 +65,8 @@ defmodule GlificWeb.Schema.GroupTypes do
     field :label, :string
     field :description, :string
     field :is_restricted, :boolean
+    field :add_role_ids, list_of(:id)
+    field :delete_role_ids, list_of(:id)
   end
 
   object :group_queries do
