@@ -11,9 +11,9 @@ defmodule Glific.AccessControl.TriggerRole do
   alias Glific.{
     AccessControl.Role,
     AccessControl.UserRole,
-    Triggers.Trigger,
     Partners.Organization,
     Repo,
+    Triggers.Trigger,
     Users.User
   }
 

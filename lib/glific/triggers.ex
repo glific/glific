@@ -9,8 +9,11 @@ defmodule Glific.Triggers do
 
   alias Glific.{
     Flows,
+    Flows.Flow,
     Groups,
+    Partners,
     Repo,
+    Triggers,
     Triggers.Helper,
     Triggers.Trigger
   }
@@ -67,7 +70,7 @@ defmodule Glific.Triggers do
     )
 
     {:ok, trigger} =
-      Trigger.update_trigger(
+      Triggers.update_trigger(
         trigger,
         %{
           is_active: false,
@@ -104,7 +107,7 @@ defmodule Glific.Triggers do
       name: trigger.name
     }
 
-    {:ok, trigger} = Trigger.update_trigger(trigger, attrs)
+    {:ok, trigger} = Triggers.update_trigger(trigger, attrs)
 
     with true <- trigger.is_active,
          false <- is_nil(trigger.next_trigger_at),
@@ -134,5 +137,149 @@ defmodule Glific.Triggers do
       group = Groups.get_group!(trigger.group_id)
       Flows.start_group_flow(flow, group)
     end
+  end
+
+  @doc """
+  Creates a trigger.
+
+  ## Examples
+
+      iex> create_trigger(%{field: value})
+      {:ok, %Trigger{}}
+
+      iex> create_trigger(%{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def create_trigger(attrs) do
+    %Trigger{}
+    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a trigger.
+
+  ## Examples
+
+      iex> update_trigger(trigger, %{field: new_value})
+      {:ok, %Trigger{}}
+
+      iex> update_trigger(trigger, %{field: bad_value})
+      {:error, %Ecto.Changeset{}}
+
+  """
+  @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def update_trigger(%Trigger{} = trigger, attrs) do
+    trigger
+    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Gets a single trigger.
+
+  Raises `Ecto.NoResultsError` if the Trigger does not exist.
+
+  ## Examples
+
+      iex> get_trigger!(123)
+      %Trigger{}
+
+      iex> get_trigger!(456)
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_trigger!(integer) :: Trigger.t()
+  def get_trigger!(id), do: Repo.get!(Trigger, id)
+
+  @doc """
+  Returns the list of triggers filtered by args
+
+  ## Examples
+
+      iex> list_triggers()
+      [%Trigger{}, ...]
+
+  """
+  @spec list_triggers(map()) :: [Trigger.t()]
+  def list_triggers(args) do
+    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
+  end
+
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:flow, flow}, query ->
+        from q in query,
+          join: c in assoc(q, :flow),
+          where: ilike(c.name, ^"%#{flow}%")
+
+      {:group, group}, query ->
+        from q in query,
+          join: g in assoc(q, :group),
+          where: ilike(g.label, ^"%#{group}%")
+
+      _, query ->
+        query
+    end)
+  end
+
+  @doc false
+  @spec delete_trigger(Trigger.t()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
+  def delete_trigger(%Trigger{} = trigger) do
+    trigger
+    |> Trigger.changeset(%{})
+    |> Repo.delete()
+  end
+
+  @doc """
+  Return the count of triggers, using the same filter as list_triggers
+  """
+  @spec count_triggers(map()) :: integer
+  def count_triggers(args),
+    do: Repo.count_filter(args, Trigger, &Repo.filter_with/2)
+
+  @spec start_at(map()) :: DateTime.t()
+  defp start_at(%{start_at: nil} = attrs), do: DateTime.new!(attrs.start_date, attrs.start_time)
+  defp start_at(%{start_at: start_at} = _attrs), do: start_at
+
+  @spec get_name(map()) :: String.t()
+  defp get_name(%{name: name} = _attrs) when not is_nil(name), do: name
+
+  defp get_name(attrs) do
+    with {:ok, flow} <-
+           Repo.fetch_by(Flow, %{id: attrs.flow_id, organization_id: attrs.organization_id}) do
+      tz = Partners.organization_timezone(attrs.organization_id)
+      time = DateTime.new!(attrs.start_date, attrs.start_time)
+      org_time = DateTime.shift_zone!(time, tz)
+      {:ok, date} = Timex.format(org_time, "_{D}/{M}/{YYYY}_{h12}:{0m}{AM}")
+      "#{flow.name}#{date}"
+    end
+  end
+
+  defp get_next_trigger_at(%{next_trigger_at: next_trigger_at} = _attrs, _start_at)
+       when not is_nil(next_trigger_at),
+       do: next_trigger_at
+
+  defp get_next_trigger_at(_attrs, start_at), do: start_at
+
+  @spec fix_attrs(map()) :: map()
+  defp fix_attrs(attrs) do
+    # compute start_at if not set
+    start_at = start_at(attrs)
+
+    attrs
+    |> Map.put(:start_at, start_at)
+    |> Map.put(:name, get_name(attrs))
+
+    # set the last_trigger_at value to nil whenever trigger is updated or new trigger is created
+    |> Map.put(:last_trigger_at, Map.get(attrs, :last_trigger_at, nil))
+
+    # set the initial value of the next firing of the trigger
+    |> Map.put(:next_trigger_at, get_next_trigger_at(attrs, start_at))
   end
 end
