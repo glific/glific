@@ -49,14 +49,15 @@ query groups($filter: GroupFilter, $opts: Opts) {
   }
 }
 ```
+
 This returns all the groups for the organization
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#groupfilter">GroupFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
+| Parameter | Type                                   | Default | Description                         |
+| --------- | -------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#groupfilter">GroupFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>               | nil     | limit / offset / sort order options |
 
 ## Get All Organization Groups
 
@@ -108,15 +109,16 @@ query organization_groups($filter: GroupFilter, $opts: Opts, $id: Id) {
   }
 }
 ```
+
 This returns all the groups for the organization
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-filter | <a href="#groupfilter">GroupFilter</a> | nil | filter the list
-opts | <a href="#opts">Opts</a> | nil | limit / offset / sort order options
-id | <a href="#id">ID</a> | nil | organization id
+| Parameter | Type                                   | Default | Description                         |
+| --------- | -------------------------------------- | ------- | ----------------------------------- |
+| filter    | <a href="#groupfilter">GroupFilter</a> | nil     | filter the list                     |
+| opts      | <a href="#opts">Opts</a>               | nil     | limit / offset / sort order options |
+| id        | <a href="#id">ID</a>                   | nil     | organization id                     |
 
 ## Get a Group by ID
 
@@ -141,6 +143,7 @@ query group($id: ID!) {
     "id": 1
 }
 ```
+
 > The above query returns JSON structured like this:
 
 ```json
@@ -172,9 +175,9 @@ query group($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | nil |
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| id        | <a href="#id">ID</a> | nil     |
 
 ## Get Group Information for a Group by ID
 
@@ -191,6 +194,7 @@ each type: "none", "session", "session_and_hsm", "hsm". If a key is missing, the
 }
 
 ```
+
 > The above query returns JSON structured like this:
 
 ```json
@@ -203,13 +207,12 @@ each type: "none", "session", "session_and_hsm", "hsm". If a key is missing, the
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | nil |
-
-
+| Parameter | Type                 | Default | Description |
+| --------- | -------------------- | ------- | ----------- |
+| id        | <a href="#id">ID</a> | nil     |
 
 ## Create Group
+
 ```graphql
 mutation createGroup($input: GroupInput!) {
   createGroup(input: $input) {
@@ -261,14 +264,15 @@ mutation createGroup($input: GroupInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-input | <a href="#groupinput">GroupInput</a> | required ||
+| Parameter | Type                                 | Default  | Description |
+| --------- | ------------------------------------ | -------- | ----------- |
+| input     | <a href="#groupinput">GroupInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#groupresult">GroupResult</a> | The created group object
+
+| Type                                   | Description              |
+| -------------------------------------- | ------------------------ |
+| <a href="#groupresult">GroupResult</a> | The created group object |
 
 ## Update a Group
 
@@ -315,16 +319,16 @@ mutation updateGroup($id: ID!, $input: GroupInput!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required |
-input | <a href="#groupinput">GroupInput</a> | required ||
+| Parameter | Type                                 | Default  | Description |
+| --------- | ------------------------------------ | -------- | ----------- |
+| id        | <a href="#id">ID</a>                 | required |
+| input     | <a href="#groupinput">GroupInput</a> | required |             |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#groupresult">GroupResult</a> | The updated group object
 
+| Type                                   | Description              |
+| -------------------------------------- | ------------------------ |
+| <a href="#groupresult">GroupResult</a> | The updated group object |
 
 ## Delete a Group
 
@@ -357,15 +361,15 @@ mutation deleteGroup($id: ID!) {
 
 ### Query Parameters
 
-Parameter | Type | Default | Description
---------- | ---- | ------- | -----------
-id | <a href="#id">ID</a> | required |
+| Parameter | Type                 | Default  | Description |
+| --------- | -------------------- | -------- | ----------- |
+| id        | <a href="#id">ID</a> | required |
 
 ### Return Parameters
-Type | Description
-| ---- | -----------
-<a href="#groupresult">GroupResult</a> | An error object or empty
 
+| Type                                   | Description              |
+| -------------------------------------- | ------------------------ |
+| <a href="#groupresult">GroupResult</a> | An error object or empty |
 
 ## Group Objects
 
@@ -481,6 +485,16 @@ Type | Description
 <tr>
 <td colspan="2" valign="top"><strong>description</strong></td>
 <td valign="top"><a href="#string">String</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>addRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>deleteRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>
