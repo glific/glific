@@ -6,7 +6,12 @@ defmodule Glific.Groups do
 
   alias __MODULE__
 
-  alias Glific.{Contacts.Contact, Repo, Users.User}
+  alias Glific.{
+    AccessControl,
+    Contacts.Contact,
+    Repo,
+    Users.User
+  }
 
   alias Glific.Groups.{ContactGroup, Group, UserGroup}
 
@@ -53,6 +58,7 @@ defmodule Glific.Groups do
   def list_groups(args, skip_permission \\ false) do
     args
     |> Repo.list_filter_query(Group, &Repo.opts_with_label/2, &Repo.filter_with/2)
+    |> AccessControl.check_access(:group)
     |> Repo.add_permission(&Groups.add_permission/2, skip_permission)
     |> Repo.all()
   end
