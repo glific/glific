@@ -7,6 +7,7 @@ defmodule Glific.Triggers.Trigger do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    AccessControl.Role,
     Flows.Flow,
     Groups.Group,
     Partners.Organization
@@ -76,6 +77,7 @@ defmodule Glific.Triggers.Trigger do
     field :is_repeating, :boolean, default: false
 
     belongs_to :organization, Organization
+    many_to_many :roles, Role, join_through: "trigger_roles", on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

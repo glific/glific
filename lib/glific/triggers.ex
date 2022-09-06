@@ -9,6 +9,7 @@ defmodule Glific.Triggers do
 
   alias Glific.{
     AccessControl,
+    AccessControl.TriggerRole,
     Flows,
     Flows.Flow,
     Groups,
@@ -154,9 +155,26 @@ defmodule Glific.Triggers do
   """
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
-    %Trigger{}
-    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
-    |> Repo.insert()
+    with {:ok, trigger} <-
+           %Trigger{}
+           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> Repo.insert() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_trigger_roles(attrs, trigger),
+        else: {:ok, trigger}
+    end
+  end
+
+  @spec update_trigger_roles(map(), Trigger.t()) :: {:ok, Trigger.t()}
+  defp update_trigger_roles(attrs, trigger) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:trigger_id, trigger.id)
+      |> TriggerRole.update_trigger_roles()
+
+    trigger
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -173,9 +191,14 @@ defmodule Glific.Triggers do
   """
   @spec update_trigger(Trigger.t(), map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def update_trigger(%Trigger{} = trigger, attrs) do
-    trigger
-    |> Trigger.changeset(attrs |> Map.put_new(:start_at, nil) |> fix_attrs)
-    |> Repo.update()
+    with {:ok, updated_trigger} <-
+           trigger
+           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> Repo.update() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_trigger_roles(attrs, updated_trigger),
+        else: {:ok, updated_trigger}
+    end
   end
 
   @doc """
@@ -208,7 +231,7 @@ defmodule Glific.Triggers do
   def list_triggers(args) do
     Repo.list_filter_query(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
     |> AccessControl.check_access(:trigger)
-    |> Repo.all
+    |> Repo.all()
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
