@@ -683,7 +683,7 @@ defmodule Glific.Messages do
           )
 
     message_params
-    # supress publishing a subscription for group messages
+    # suppress publishing a subscription for group messages
     |> Map.merge(%{
       publish?: false,
       flow_broadcast_id: group_message.flow_broadcast_id,
