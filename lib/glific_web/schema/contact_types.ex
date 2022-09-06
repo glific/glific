@@ -110,6 +110,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field(:event_datetime, :datetime)
     field(:inserted_at, :datetime)
     field(:updated_at, :datetime)
+
     field :profile, :profile do
       resolve(dataloader(Repo, use_parent: true))
     end
