@@ -8,6 +8,7 @@ defmodule Glific.Triggers do
   require Logger
 
   alias Glific.{
+    AccessControl,
     Flows,
     Flows.Flow,
     Groups,
@@ -205,7 +206,9 @@ defmodule Glific.Triggers do
   """
   @spec list_triggers(map()) :: [Trigger.t()]
   def list_triggers(args) do
-    Repo.list_filter(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
+    Repo.list_filter_query(args, Trigger, &Repo.opts_with_name/2, &filter_with/2)
+    |> AccessControl.check_access(:trigger)
+    |> Repo.all
   end
 
   @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
