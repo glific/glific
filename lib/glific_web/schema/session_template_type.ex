@@ -138,12 +138,6 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       end)
     end
 
-    @desc "sync hsm with bsp"
-    field :sync_hsm_template, :sync_hsm_templates do
-      middleware(Authorize, :staff)
-      resolve(&Resolvers.Templates.sync_hsm_template/3)
-    end
-
     @desc "get the details of one session_template"
     field :session_template, :session_template_result do
       arg(:id, non_null(:id))
@@ -172,6 +166,12 @@ defmodule GlificWeb.Schema.SessionTemplateTypes do
       arg(:input, non_null(:session_template_input))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Templates.create_session_template/3)
+    end
+
+    @desc "sync hsm with bsp"
+    field :sync_hsm_template, :sync_hsm_templates do
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Templates.sync_hsm_template/3)
     end
 
     field :update_session_template, :session_template_result do
