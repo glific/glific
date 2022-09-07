@@ -9,6 +9,7 @@ defmodule Glific.AccessControlTest do
     Flows,
     Groups,
     Seeds.SeedsDev,
+    Triggers,
     Users
   }
 
@@ -247,6 +248,81 @@ defmodule Glific.AccessControlTest do
 
       [_g1, g2 | _] = Groups.list_groups(%{})
       assert g2.label == label
+    end
+
+    test "list_triggers/1 returns list of triggers assigned to user", attrs do
+      FunWithFlags.disable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      SeedsDev.seed_test_flows()
+      SeedsDev.seed_groups()
+      Fixtures.trigger_fixture(%{organization_id: attrs.organization_id})
+
+      default_role = Fixtures.role_fixture(attrs)
+      default_role_id = to_string(default_role.id)
+      user = Fixtures.user_fixture(%{roles: ["none"]})
+
+      Users.update_user(user, %{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        organization_id: attrs.organization_id
+      })
+
+      [trigger | _] = Triggers.list_triggers(%{filter: %{name: "test trigger"}})
+
+      FunWithFlags.enable(:roles_and_permission,
+        for_actor: %{organization_id: attrs.organization_id}
+      )
+
+      Triggers.update_trigger(trigger, %{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        start_at: Timex.shift(trigger.start_at, days: 1),
+        name: trigger.name,
+        organization_id: attrs.organization_id
+      })
+
+      assert [] == Triggers.list_triggers(%{})
+      Repo.put_current_user(user)
+      [assigned_trigger] = Triggers.list_triggers(%{})
+      assert assigned_trigger.name == trigger.name
+
+      # Creating new trigger is assigned to same role by default
+      label = "New Test Collection"
+
+      {:ok, group} =
+        Groups.create_group(%{
+          add_role_ids: [default_role_id],
+          delete_role_ids: [],
+          label: label,
+          organization_id: attrs.organization_id
+        })
+
+      name = "New Test Workflow"
+
+      {:ok, flow} =
+        Flows.create_flow(%{
+          add_role_ids: [default_role_id],
+          delete_role_ids: [],
+          name: name,
+          organization_id: attrs.organization_id
+        })
+
+      Triggers.create_trigger(%{
+        add_role_ids: [default_role_id],
+        delete_role_ids: [],
+        frequency: ["daily"],
+        start_date: Date.utc_today(),
+        start_time: Time.add(Time.utc_now(), 200, :second),
+        flow_id: flow.id,
+        group_id: group.id,
+        organization_id: attrs.organization_id
+      })
+
+      [_t1, t2 | _] = Triggers.list_triggers(%{})
+
+      assert t2.frequency == ["daily"]
     end
 
     test "do_check_access/3 should return error tuple when entity type is unknown", _attrs do
