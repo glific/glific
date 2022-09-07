@@ -572,6 +572,18 @@ Match the flow name
 <td></td>
 </tr>
 
+<tr>
+<td colspan="2" valign="top"><strong>addRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>deleteRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+
 </tbody>
 </table>
 
