@@ -1220,6 +1220,7 @@ defmodule Glific.Partners do
   @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
   def set_bsp_app_id(org, shortcode) do
     Task.async(fn ->
+      Repo.put_process_state(org.id)
       # restricting this function  for BSP only
       {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
 
