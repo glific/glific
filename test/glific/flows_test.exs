@@ -6,7 +6,7 @@ defmodule Glific.FLowsTest do
     Flows,
     Flows.Broadcast,
     Flows.Flow,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Flows.FlowContext,
     Flows.FlowRevision,
     Groups,
@@ -408,7 +408,7 @@ defmodule Glific.FLowsTest do
       {:ok, flow} = Flows.start_group_flow(flow, group)
 
       assert {:ok, flow_broadcast} =
-               Repo.fetch_by(FlowBroadcast, %{
+               Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
@@ -430,7 +430,7 @@ defmodule Glific.FLowsTest do
       Broadcast.execute_group_broadcasts(attrs.organization_id)
 
       assert {:ok, flow_broadcast} =
-               Repo.fetch_by(FlowBroadcast, %{
+               Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
