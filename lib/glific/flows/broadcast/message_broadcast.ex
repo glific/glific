@@ -22,7 +22,8 @@ defmodule Glific.Flows.MessageBroadcast do
   @required_fields [:flow_id, :group_id, :message_id, :started_at, :organization_id]
   @optional_fields [
     :user_id,
-    :completed_at
+    :completed_at,
+    :type
   ]
 
   # we store one more than the number of messages specified here
@@ -41,6 +42,7 @@ defmodule Glific.Flows.MessageBroadcast do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           started_at: :utc_datetime | nil,
           completed_at: :utc_datetime | nil,
+          type: String.t() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
@@ -48,6 +50,7 @@ defmodule Glific.Flows.MessageBroadcast do
   schema "message_broadcasts" do
     field(:started_at, :utc_datetime, default: nil)
     field(:completed_at, :utc_datetime, default: nil)
+    field(:type, :string, default: "flow")
 
     belongs_to(:flow, Flow)
     belongs_to(:group, Group)
