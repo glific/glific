@@ -14,9 +14,9 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.Broadcast,
     Flows.FlowContext,
     Flows.MessageVarParser,
-    Groups,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -664,10 +664,9 @@ defmodule Glific.Messages do
   @doc """
   Create and send message to all contacts of a group
   """
-  @spec create_and_send_message_to_group(map(), Group.t(), atom()) :: {:ok, list()}
+  @spec create_and_send_message_to_group(map(), Group.t(), atom()) ::
+          {:ok, any()} | {:error, any()}
   def create_and_send_message_to_group(message_params, group, type) do
-    contact_ids = Groups.contact_ids(group.id)
-
     {:ok, group_message} =
       if type == :session,
         do: create_group_message(Map.put(message_params, :group_id, group.id)),
@@ -682,17 +681,9 @@ defmodule Glific.Messages do
             |> Map.put(:type, :text)
           )
 
-    message_params
-    # suppress publishing a subscription for group messages
-    |> Map.merge(%{
-      publish?: false,
-      message_broadcast_id: group_message.message_broadcast_id,
-      group_id: group.id
-    })
-    |> create_and_send_message_to_contacts(
-      contact_ids,
-      type
-    )
+    Broadcast.broadcast_message_to_group(group_message, group, message_params)
+
+    {:ok, %{success: true, contact_ids: []}}
   end
 
   @doc """

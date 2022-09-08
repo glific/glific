@@ -26,7 +26,8 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_flow_to_group(Flow.t(), Group.t()) :: map()
+  @spec broadcast_flow_to_group(Flow.t(), Group.t()) ::
+          {:ok, MessageBroadcast.t()} | {:error, String.t()}
   def broadcast_flow_to_group(flow, group) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
@@ -39,41 +40,35 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
-    {:ok, message_broadcast} = init_broadcast_group(flow, group, group_message)
-
-    ## let's update the group message with the flow broadcast id to get the stats and everything from that later.
-    {:ok, _} =
-      Messages.update_message(group_message, %{message_broadcast_id: message_broadcast.id})
-
-    ## should we broadcast the first batch here ? It can bring some inconsistency with the cron.
-    flow
+    %{
+      group_id: group.id,
+      message_id: group_message.id,
+      started_at: DateTime.utc_now(),
+      user_id: Repo.get_current_user().id,
+      organization_id: group.organization_id,
+      flow_id: flow.id,
+      type: "flow"
+    }
+    |> init_msg_broadcast(group_message)
   end
 
-  # @doc """
-  # The one simple public interface to broadcast a group
-  # """
-  # @spec broadcast_message_to_group(Flow.t(), Group.t(), map()) :: map()
-  # def broadcast_message_to_group(message, group, attrs) do
-  #   # lets set up the state and then call our helper friend to split group into smaller chunks
-  #   # of contacts
-  #   {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
-
-  #   {:ok, group_message} =
-  #     Messages.create_group_message(%{
-  #       body: "Starting flow: #{flow.name} for group: #{group.label}",
-  #       type: :text,
-  #       group_id: group.id
-  #     })
-
-  #   {:ok, message_broadcast} = init_broadcast_group(flow, group, group_message)
-
-  #   ## let's update the group message with the flow broadcast id to get the stats and everything from that later.
-  #   {:ok, _} =
-  #     Messages.update_message(group_message, %{message_broadcast_id: message_broadcast.id})
-
-  #   ## should we broadcast the first batch here ? It can bring some inconsistency with the cron.
-  #   flow
-  # end
+  @doc """
+  The one simple public interface to broadcast a group
+  """
+  @spec broadcast_message_to_group(Messages.Message.t(), Group.t(), map()) ::
+          {:ok, MessageBroadcast.t()} | {:error, String.t()}
+  def broadcast_message_to_group(group_message, group, message_params) do
+    %{
+      group_id: group.id,
+      message_id: group_message.id,
+      started_at: DateTime.utc_now(),
+      user_id: Repo.get_current_user().id,
+      organization_id: group.organization_id,
+      message_params: message_params,
+      type: "message"
+    }
+    |> init_msg_broadcast(group_message)
+  end
 
   @doc """
   The one simple public interface to execute a group broadcast for an organization
@@ -88,10 +83,43 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @doc """
+  We are using this function from the flows.
+  """
+  @spec broadcast_contacts(atom | %{:organization_id => non_neg_integer, optional(any) => any}, [
+          Glific.Contacts.Contact.t()
+        ]) :: :ok
+  def broadcast_contacts(flow, contacts) do
+    Repo.put_process_state(flow.organization_id)
+    opts = opts(flow.organization_id)
+    broadcast_for_contacts(%{flow: flow, type: :flow}, contacts, opts)
+  end
+
+  @doc """
   Start a  group broadcast for a giving broadcast struct
   """
   @spec process_broadcast_group(MessageBroadcast.t() | nil) :: :ok
   def process_broadcast_group(nil), do: :ok
+
+  def process_broadcast_group(%{type: "message"} = message_broadcast) do
+    Repo.put_process_state(message_broadcast.organization_id)
+    opts = [message_broadcast_id: message_broadcast.id] ++ opts(message_broadcast.organization_id)
+    contacts = unprocessed_contacts(message_broadcast)
+    message_params = Glific.atomize_keys(message_broadcast.message_params)
+    message_type = if Map.has_key?(message_params, :template_id), do: :hsm, else: :session
+
+    message_params =
+      Map.merge(message_params, %{
+        :message_type => message_type,
+        :message_broadcast_id => message_broadcast.id,
+        :organization_id => message_broadcast.organization_id,
+        :group_id => message_broadcast.group_id,
+        :publish? => false
+      })
+
+    broadcast_for_contacts(%{message_params: message_params, type: :message}, contacts, opts)
+
+    :ok
+  end
 
   def process_broadcast_group(message_broadcast) do
     Repo.put_process_state(message_broadcast.organization_id)
@@ -104,7 +132,7 @@ defmodule Glific.Flows.Broadcast do
         {:flow_id, message_broadcast.flow_id, @status}
       )
 
-    broadcast_contacts(flow, contacts, opts)
+    broadcast_for_contacts(%{flow: flow, type: :flow}, contacts, opts)
 
     :ok
   end
@@ -189,27 +217,26 @@ defmodule Glific.Flows.Broadcast do
     |> where([_c, fbc], is_nil(fbc.processed_at))
   end
 
-  @doc """
-  Lets start a bunch of contacts on a flow in parallel
-  """
-  @spec broadcast_contacts(map(), list(Contact.t()), Keyword.t()) :: :ok
-  def broadcast_contacts(flow, contacts, opts \\ []) do
-    opts =
-      if opts == [],
-        do: opts(flow.organization_id),
-        else: opts
-
+  # """
+  # Lets start a bunch of contacts on a flow in parallel
+  # """
+  @spec broadcast_for_contacts(map(), list(Contact.t()), Keyword.t()) :: :ok
+  defp broadcast_for_contacts(attrs, contacts, opts) do
     contacts
     |> Enum.chunk_every(opts[:bsp_limit])
     |> Enum.with_index()
     |> Enum.each(fn {chunk_list, delay_offset} ->
-      flow_tasks(
-        flow,
-        chunk_list,
-        delay: opts[:delay] + delay_offset,
-        message_broadcast_id: opts[:message_broadcast_id]
-      )
+      task_opts = [
+        {:delay, opts[:delay] + delay_offset},
+        {:message_broadcast_id, opts[:message_broadcast_id]}
+      ]
+
+      if attrs.type == :flow,
+        do: flow_tasks(attrs.flow, chunk_list, task_opts),
+        else: message_tasks(attrs.flow.message_params, chunk_list, task_opts)
     end)
+
+    :ok
   end
 
   @spec flow_tasks(Flow.t(), Contact.t(), Keyword.t()) :: :ok
@@ -245,20 +272,56 @@ defmodule Glific.Flows.Broadcast do
     Stream.run(stream)
   end
 
-  @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) ::
+  @spec message_tasks(map(), Contact.t(), Keyword.t()) :: :ok
+  defp message_tasks(message_params, contacts, opts) do
+    stream =
+      Task.Supervisor.async_stream_nolink(
+        Glific.Broadcast.Supervisor,
+        contacts,
+        fn contact ->
+          Repo.put_process_state(contact.organization_id)
+
+          Keyword.get(opts, :message_broadcast_id, nil)
+          |> mark_message_broadcast_contact_processed(contact.id, "pending")
+
+          message_params = Map.put(message_params, :receiver_id, contact.id)
+
+          result =
+            if message_params.message_type == :session,
+              do: Messages.create_and_send_message(message_params),
+              else: Messages.create_and_send_hsm_message(message_params)
+
+          case result do
+            {:ok, _message} ->
+              Keyword.get(opts, :message_broadcast_id, nil)
+              |> mark_message_broadcast_contact_processed(contact.id, "processed")
+
+            {:error, error} ->
+              Logger.info("Could not start the flow for the contact.
+              Contact id : #{contact.id} opts: #{inspect(opts)}
+              error #{inspect(error)}")
+          end
+
+          :ok
+        end,
+        ordered: false,
+        timeout: 5_000,
+        on_timeout: :kill_task
+      )
+
+    Stream.run(stream)
+  end
+
+  @spec init_msg_broadcast(map(), Messages.Message.t()) ::
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
-  defp init_broadcast_group(flow, group, group_message) do
-    # lets create a broadcast entry for this flow
+  defp init_msg_broadcast(broadcast_attrs, group_message) do
     {:ok, message_broadcast} =
-      create_message_broadcast(%{
-        flow_id: flow.id,
-        group_id: group.id,
-        message_id: group_message.id,
-        started_at: DateTime.utc_now(),
-        user_id: Repo.get_current_user().id,
-        type: "flow",
-        organization_id: group.organization_id
-      })
+      broadcast_attrs
+      |> create_message_broadcast()
+
+    {:ok, _} =
+      group_message
+      |> Messages.update_message(%{message_broadcast_id: message_broadcast.id})
 
     populate_message_broadcast_contacts(message_broadcast)
     |> case do

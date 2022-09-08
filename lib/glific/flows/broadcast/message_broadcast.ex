@@ -19,9 +19,10 @@ defmodule Glific.Flows.MessageBroadcast do
     Users.User
   }
 
-  @required_fields [:flow_id, :group_id, :message_id, :started_at, :organization_id]
+  @required_fields [:group_id, :message_id, :started_at, :organization_id]
   @optional_fields [
     :user_id,
+    :flow_id,
     :completed_at,
     :type,
     :message_params
