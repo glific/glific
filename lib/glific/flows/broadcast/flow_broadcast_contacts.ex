@@ -1,4 +1,4 @@
-defmodule Glific.Flows.FlowBroadcastContact do
+defmodule Glific.Flows.MessageBroadcastContact do
   @moduledoc """
   When we are running a flow, we are running it in the context of a
   contact and/or a conversation (or other Glific data types). Let encapsulate
@@ -36,7 +36,7 @@ defmodule Glific.Flows.FlowBroadcastContact do
           updated_at: :utc_datetime | nil
         }
 
-  schema "flow_broadcast_contacts" do
+  schema "message_broadcast_contacts" do
     field :processed_at, :utc_datetime, default: nil
     field :status, :string, default: nil
 
@@ -50,7 +50,7 @@ defmodule Glific.Flows.FlowBroadcastContact do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(FlowBroadcastContact.t(), map()) :: Ecto.Changeset.t()
+  @spec changeset(MessageBroadcastContact.t(), map()) :: Ecto.Changeset.t()
   def changeset(flow_broadcast_contact, attrs) do
     flow_broadcast_contact
     |> cast(attrs, @required_fields ++ @optional_fields)

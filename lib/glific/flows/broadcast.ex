@@ -13,7 +13,7 @@ defmodule Glific.Flows.Broadcast do
     Flows,
     Flows.Flow,
     Flows.MessageBroadcast,
-    Flows.FlowBroadcastContact,
+    Flows.MessageBroadcastContact,
     Flows.FlowContext,
     Groups.Group,
     Messages,
@@ -94,7 +94,7 @@ defmodule Glific.Flows.Broadcast do
       where:
         not exists(
           from(
-            fbc in FlowBroadcastContact,
+            fbc in MessageBroadcastContact,
             where:
               parent_as(:flow_broadcast).id == fbc.flow_broadcast_id and is_nil(fbc.processed_at),
             select: 1
@@ -150,7 +150,7 @@ defmodule Glific.Flows.Broadcast do
 
   defp broadcast_contacts_query(flow_broadcast) do
     Contact
-    |> join(:inner, [c], fbc in FlowBroadcastContact,
+    |> join(:inner, [c], fbc in MessageBroadcastContact,
       as: :fbc,
       on: fbc.contact_id == c.id and fbc.flow_broadcast_id == ^flow_broadcast.id
     )
@@ -242,7 +242,7 @@ defmodule Glific.Flows.Broadcast do
   defp mark_flow_broadcast_contact_processed(nil, _, _status), do: :ok
 
   defp mark_flow_broadcast_contact_processed(flow_broadcast_id, contact_id, status) do
-    FlowBroadcastContact
+    MessageBroadcastContact
     |> where(flow_broadcast_id: ^flow_broadcast_id, contact_id: ^contact_id)
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
@@ -314,7 +314,7 @@ defmodule Glific.Flows.Broadcast do
   @spec count_successful_deliveries(map(), non_neg_integer()) :: map()
   defp count_successful_deliveries(map, flow_broadcast_id) do
     count =
-      FlowBroadcastContact
+      MessageBroadcastContact
       |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
       |> where([fbc], not is_nil(fbc.processed_at))
       |> where([fbc], fbc.status == "processed")
@@ -326,7 +326,7 @@ defmodule Glific.Flows.Broadcast do
   @spec count_failed_deliveries(map(), non_neg_integer()) :: map()
   defp count_failed_deliveries(map, flow_broadcast_id) do
     count =
-      FlowBroadcastContact
+      MessageBroadcastContact
       |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
       |> where([fbc], not is_nil(fbc.processed_at))
       |> where([fbc], fbc.status == "pending")
@@ -338,7 +338,7 @@ defmodule Glific.Flows.Broadcast do
   @spec count_pending_deliveries(map(), non_neg_integer()) :: map()
   defp count_pending_deliveries(map, flow_broadcast_id) do
     count =
-      FlowBroadcastContact
+      MessageBroadcastContact
       |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
       |> where([fbc], is_nil(fbc.processed_at))
       |> Repo.aggregate(:count)
