@@ -17,18 +17,18 @@ defmodule GlificWeb.Schema.ContactTypes do
   alias GlificWeb.Schema.Middleware.Authorize
 
   object :contact_result do
-    field(:contact, :contact)
-    field(:errors, list_of(:input_error))
+    field :contact, :contact
+    field :errors, list_of(:input_error)
   end
 
   object :import_result do
-    field(:status, :string)
-    field(:errors, list_of(:input_error))
+    field :status, :string
+    field :errors, list_of(:input_error)
   end
 
   object :contact do
-    field(:id, :id)
-    field(:name, :string)
+    field :id, :id
+    field :name, :string
 
     field :masked_phone, :string do
       resolve(fn contact, _, _ ->
@@ -45,32 +45,32 @@ defmodule GlificWeb.Schema.ContactTypes do
       end)
     end
 
-    field(:status, :contact_status_enum)
-    field(:bsp_status, :contact_provider_status_enum)
+    field :status, :contact_status_enum
+    field :bsp_status, :contact_provider_status_enum
 
     field :active_profile, :profile do
       resolve(dataloader(Repo))
     end
 
-    field(:is_org_read, :boolean)
-    field(:is_org_replied, :boolean)
-    field(:is_contact_replied, :boolean)
-    field(:last_message_number, :integer)
+    field :is_org_read, :boolean
+    field :is_org_replied, :boolean
+    field :is_contact_replied, :boolean
+    field :last_message_number, :integer
 
-    field(:optin_time, :datetime)
-    field(:optout_time, :datetime)
+    field :optin_time, :datetime
+    field :optout_time, :datetime
 
-    field(:optin_method, :string)
-    field(:optout_method, :string)
+    field :optin_method, :string
+    field :optout_method, :string
 
-    field(:fields, :json)
-    field(:settings, :json)
+    field :fields, :json
+    field :settings, :json
 
-    field(:last_message_at, :datetime)
-    field(:last_communication_at, :datetime)
+    field :last_message_at, :datetime
+    field :last_communication_at, :datetime
 
-    field(:inserted_at, :datetime)
-    field(:updated_at, :datetime)
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
 
     field :language, :language do
       resolve(dataloader(Repo, use_parent: true))
@@ -98,18 +98,18 @@ defmodule GlificWeb.Schema.ContactTypes do
   end
 
   object :location do
-    field(:longitude, :float)
-    field(:latitude, :float)
+    field :longitude, :float
+    field :latitude, :float
   end
 
   object :contact_history do
-    field(:id, :id)
-    field(:event_type, :string)
-    field(:event_label, :string)
-    field(:event_meta, :json)
-    field(:event_datetime, :datetime)
-    field(:inserted_at, :datetime)
-    field(:updated_at, :datetime)
+    field :id, :id
+    field :event_type, :string
+    field :event_label, :string
+    field :event_meta, :json
+    field :event_datetime, :datetime
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
 
     field :profile, :profile do
       resolve(dataloader(Repo, use_parent: true))
@@ -119,63 +119,63 @@ defmodule GlificWeb.Schema.ContactTypes do
   @desc "Filtering options for contacts"
   input_object :contact_filter do
     @desc "Match the name"
-    field(:name, :string)
+    field :name, :string
 
     @desc "Match the phone"
-    field(:phone, :string)
+    field :phone, :string
 
     @desc "Match the status"
-    field(:status, :contact_status_enum)
+    field :status, :contact_status_enum
 
     @desc "Match the bsp provider status"
-    field(:bsp_status, :contact_provider_status_enum)
+    field :bsp_status, :contact_provider_status_enum
 
     @desc "Include contacts with these tags"
-    field(:include_tags, list_of(:id))
+    field :include_tags, list_of(:id)
 
     @desc "Include contacts with in these groups"
-    field(:include_groups, list_of(:id))
+    field :include_groups, list_of(:id)
   end
 
   @desc "Filtering options for search contacts"
   input_object :search_contacts_filter do
     @desc "Match the name"
-    field(:name, :string)
+    field :name, :string
 
     @desc "Match the phone"
-    field(:phone, :string)
+    field :phone, :string
 
     @desc "Include contacts with these tags"
-    field(:include_tags, list_of(:id))
+    field :include_tags, list_of(:id)
 
     @desc "Include contacts with in these groups"
-    field(:include_groups, list_of(:id))
+    field :include_groups, list_of(:id)
   end
 
   input_object :contact_input do
-    field(:name, :string)
-    field(:phone, :string)
-    field(:status, :contact_status_enum)
-    field(:bsp_status, :contact_provider_status_enum)
-    field(:language_id, :id)
-    field(:active_profile_id, :id)
-    field(:fields, :json)
-    field(:settings, :json)
+    field :name, :string
+    field :phone, :string
+    field :status, :contact_status_enum
+    field :bsp_status, :contact_provider_status_enum
+    field :language_id, :id
+    field :active_profile_id, :id
+    field :fields, :json
+    field :settings, :json
   end
 
   @desc "Filtering options for contacts history"
   input_object :contacts_history_filter do
     @desc "contact id"
-    field(:contact_id, :id)
+    field :contact_id, :id
 
     @desc "Match the event type"
-    field(:event_type, :string)
+    field :event_type, :string
 
     @desc "Match the event label"
-    field(:event_label, :string)
+    field :event_label, :string
 
     @desc "profile id"
-    field(:profile_id, :id)
+    field :profile_id, :id
   end
 
   object :contact_queries do
