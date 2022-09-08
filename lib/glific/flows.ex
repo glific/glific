@@ -624,7 +624,7 @@ defmodule Glific.Flows do
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(flow, group) do
     # the flow returned is the expanded version
-    flow = Broadcast.broadcast_group(flow, group)
+    flow = Broadcast.broadcast_flow_to_group(flow, group)
     {:ok, flow}
   end
 

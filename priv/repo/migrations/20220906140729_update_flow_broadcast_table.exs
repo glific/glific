@@ -7,6 +7,10 @@ defmodule Glific.Repo.Migrations.UpdateFlowBroadcastTable do
 
     alter table(:message_broadcasts) do
       add :type, :string, comment: "type of the broadcast."
+
+      add :message_params, :jsonb,
+        null: true,
+        comment: "Messages attrs in case of message broadcast"
     end
 
     alter table(:message_broadcasts) do

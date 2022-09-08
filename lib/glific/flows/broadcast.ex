@@ -26,8 +26,8 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   The one simple public interface to broadcast a group
   """
-  @spec broadcast_group(Flow.t(), Group.t()) :: map()
-  def broadcast_group(flow, group) do
+  @spec broadcast_flow_to_group(Flow.t(), Group.t()) :: map()
+  def broadcast_flow_to_group(flow, group) do
     # lets set up the state and then call our helper friend to split group into smaller chunks
     # of contacts
     {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
@@ -48,6 +48,32 @@ defmodule Glific.Flows.Broadcast do
     ## should we broadcast the first batch here ? It can bring some inconsistency with the cron.
     flow
   end
+
+  # @doc """
+  # The one simple public interface to broadcast a group
+  # """
+  # @spec broadcast_message_to_group(Flow.t(), Group.t(), map()) :: map()
+  # def broadcast_message_to_group(message, group, attrs) do
+  #   # lets set up the state and then call our helper friend to split group into smaller chunks
+  #   # of contacts
+  #   {:ok, flow} = Flows.get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
+
+  #   {:ok, group_message} =
+  #     Messages.create_group_message(%{
+  #       body: "Starting flow: #{flow.name} for group: #{group.label}",
+  #       type: :text,
+  #       group_id: group.id
+  #     })
+
+  #   {:ok, message_broadcast} = init_broadcast_group(flow, group, group_message)
+
+  #   ## let's update the group message with the flow broadcast id to get the stats and everything from that later.
+  #   {:ok, _} =
+  #     Messages.update_message(group_message, %{message_broadcast_id: message_broadcast.id})
+
+  #   ## should we broadcast the first batch here ? It can bring some inconsistency with the cron.
+  #   flow
+  # end
 
   @doc """
   The one simple public interface to execute a group broadcast for an organization
@@ -230,6 +256,7 @@ defmodule Glific.Flows.Broadcast do
         message_id: group_message.id,
         started_at: DateTime.utc_now(),
         user_id: Repo.get_current_user().id,
+        type: "flow",
         organization_id: group.organization_id
       })
 
