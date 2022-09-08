@@ -618,12 +618,15 @@ defmodule Glific.Flows do
     {:ok, flow}
   end
 
+  @status "published"
+
   @doc """
   Start flow for contacts of a group
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(flow, group) do
     # the flow returned is the expanded version
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
     Broadcast.broadcast_flow_to_group(flow, group)
     {:ok, flow}
   end
