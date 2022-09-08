@@ -74,7 +74,7 @@ defmodule GlificWeb.Schema.MessageTypes do
     # basically links to the message which the user
     # replied to
     field :context_id, :string
-    field :flow_broadcast_id, :string
+    field :message_broadcast_id, :string
 
     field :context_message, :message do
       resolve(dataloader(Repo, use_parent: true))

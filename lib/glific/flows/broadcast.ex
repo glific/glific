@@ -39,17 +39,18 @@ defmodule Glific.Flows.Broadcast do
         group_id: group.id
       })
 
-    {:ok, flow_broadcast} = init_broadcast_group(flow, group, group_message)
+    {:ok, message_broadcast} = init_broadcast_group(flow, group, group_message)
 
-    ## let's update the group message with the flow broadcast id to get the stasts and everything from that later.
-    {:ok, _} = Messages.update_message(group_message, %{flow_broadcast_id: flow_broadcast.id})
+    ## let's update the group message with the flow broadcast id to get the stats and everything from that later.
+    {:ok, _} =
+      Messages.update_message(group_message, %{message_broadcast_id: message_broadcast.id})
 
     ## should we broadcast the first batch here ? It can bring some inconsistency with the cron.
     flow
   end
 
   @doc """
-  The one simple public interface to exceute a group broadcast for an organization
+  The one simple public interface to execute a group broadcast for an organization
   """
   @spec execute_group_broadcasts(any) :: :ok
   def execute_group_broadcasts(org_id) do
@@ -66,15 +67,15 @@ defmodule Glific.Flows.Broadcast do
   @spec process_broadcast_group(MessageBroadcast.t() | nil) :: :ok
   def process_broadcast_group(nil), do: :ok
 
-  def process_broadcast_group(flow_broadcast) do
-    Repo.put_process_state(flow_broadcast.organization_id)
-    opts = [flow_broadcast_id: flow_broadcast.id] ++ opts(flow_broadcast.organization_id)
-    contacts = unprocessed_contacts(flow_broadcast)
+  def process_broadcast_group(message_broadcast) do
+    Repo.put_process_state(message_broadcast.organization_id)
+    opts = [message_broadcast_id: message_broadcast.id] ++ opts(message_broadcast.organization_id)
+    contacts = unprocessed_contacts(message_broadcast)
 
     {:ok, flow} =
       Flows.get_cached_flow(
-        flow_broadcast.organization_id,
-        {:flow_id, flow_broadcast.flow_id, @status}
+        message_broadcast.organization_id,
+        {:flow_id, message_broadcast.flow_id, @status}
       )
 
     broadcast_contacts(flow, contacts, opts)
@@ -83,7 +84,7 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @doc """
-  Mark all the proceesed  flow broadcast as completed
+  Mark all the processed  flow broadcast as completed
   """
   @spec mark_flow_broadcast_completed(non_neg_integer()) :: :ok
   def mark_flow_broadcast_completed(org_id) do
@@ -96,7 +97,8 @@ defmodule Glific.Flows.Broadcast do
           from(
             fbc in MessageBroadcastContact,
             where:
-              parent_as(:flow_broadcast).id == fbc.flow_broadcast_id and is_nil(fbc.processed_at),
+              parent_as(:flow_broadcast).id == fbc.message_broadcast_id and
+                is_nil(fbc.processed_at),
             select: 1
           )
         )
@@ -152,7 +154,7 @@ defmodule Glific.Flows.Broadcast do
     Contact
     |> join(:inner, [c], fbc in MessageBroadcastContact,
       as: :fbc,
-      on: fbc.contact_id == c.id and fbc.flow_broadcast_id == ^flow_broadcast.id
+      on: fbc.contact_id == c.id and fbc.message_broadcast_id == ^flow_broadcast.id
     )
     |> where(
       [c, _fbc],
@@ -179,7 +181,7 @@ defmodule Glific.Flows.Broadcast do
         flow,
         chunk_list,
         delay: opts[:delay] + delay_offset,
-        flow_broadcast_id: opts[:flow_broadcast_id]
+        message_broadcast_id: opts[:message_broadcast_id]
       )
     end)
   end
@@ -193,13 +195,13 @@ defmodule Glific.Flows.Broadcast do
         fn contact ->
           Repo.put_process_state(contact.organization_id)
 
-          Keyword.get(opts, :flow_broadcast_id, nil)
+          Keyword.get(opts, :message_broadcast_id, nil)
           |> mark_flow_broadcast_contact_processed(contact.id, "pending")
 
           response = FlowContext.init_context(flow, contact, @status, opts)
 
           if elem(response, 0) in [:ok, :wait] do
-            Keyword.get(opts, :flow_broadcast_id, nil)
+            Keyword.get(opts, :message_broadcast_id, nil)
             |> mark_flow_broadcast_contact_processed(contact.id, "processed")
           else
             Logger.info("Could not start the flow for the contact.
@@ -241,9 +243,9 @@ defmodule Glific.Flows.Broadcast do
   @spec mark_flow_broadcast_contact_processed(integer() | nil, integer(), String.t()) :: :ok
   defp mark_flow_broadcast_contact_processed(nil, _, _status), do: :ok
 
-  defp mark_flow_broadcast_contact_processed(flow_broadcast_id, contact_id, status) do
+  defp mark_flow_broadcast_contact_processed(message_broadcast_id, contact_id, status) do
     MessageBroadcastContact
-    |> where(flow_broadcast_id: ^flow_broadcast_id, contact_id: ^contact_id)
+    |> where(message_broadcast_id: ^message_broadcast_id, contact_id: ^contact_id)
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
@@ -255,32 +257,32 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @spec populate_flow_broadcast_contacts(MessageBroadcast.t()) :: {:ok, any()} | {:error, any()}
-  defp populate_flow_broadcast_contacts(flow_broadcast) do
+  defp populate_flow_broadcast_contacts(message_broadcast) do
     """
     INSERT INTO flow_broadcast_contacts
-    (flow_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
+    (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
 
-    (SELECT #{flow_broadcast.id}, 'pending', #{flow_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
+    (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
       FROM contacts_groups left join contacts on contacts.id = contacts_groups.contact_id
-      WHERE group_id = #{flow_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null))
+      WHERE group_id = #{message_broadcast.group_id} AND (status !=  'blocked') AND (contacts.optout_time is null))
     """
     |> Repo.query()
   end
 
   @spec broadcast_stats_base_query(non_neg_integer()) :: String.t()
-  defp broadcast_stats_base_query(flow_broadcast_id) do
+  defp broadcast_stats_base_query(message_broadcast_id) do
     """
     SELECT distinct on (flow_broadcast_contacts.contact_id)
     messages.id as message_id,
     messages.status,
-    flow_broadcast_contacts.processed_at,
-    flow_broadcast_contacts.status as flow_broadcast_status,
+    message_broadcast_contacts.processed_at,
+    message_broadcast_contacts.status as message_broadcast_status,
     messages.bsp_status,
     messages.errors
-    FROM flow_broadcast_contacts
-    left JOIN messages ON messages.flow_broadcast_id = flow_broadcast_contacts.flow_broadcast_id
-    AND messages.contact_id = flow_broadcast_contacts.contact_id
-    WHERE flow_broadcast_contacts.flow_broadcast_id = #{flow_broadcast_id};
+    FROM message_broadcast_contacts
+    left JOIN messages ON messages.message_broadcast_id = message_broadcast_contacts.message_broadcast_id
+    AND messages.contact_id = message_broadcast_contacts.contact_id
+    WHERE message_broadcast_contacts.message_broadcast_id = #{message_broadcast_id};
     """
   end
 
@@ -288,7 +290,7 @@ defmodule Glific.Flows.Broadcast do
   Get broadcast stats for a flow
   """
   @spec broadcast_stats(non_neg_integer()) :: {:ok, map()}
-  def broadcast_stats(flow_broadcast_id) do
+  def broadcast_stats(message_broadcast_id) do
     results =
       %{
         success: 0,
@@ -303,19 +305,19 @@ defmodule Glific.Flows.Broadcast do
           error: 0
         }
       }
-      |> count_successful_deliveries(flow_broadcast_id)
-      |> count_failed_deliveries(flow_broadcast_id)
-      |> count_pending_deliveries(flow_broadcast_id)
-      |> count_deliveries_by_category(flow_broadcast_id)
+      |> count_successful_deliveries(message_broadcast_id)
+      |> count_failed_deliveries(message_broadcast_id)
+      |> count_pending_deliveries(message_broadcast_id)
+      |> count_deliveries_by_category(message_broadcast_id)
 
     {:ok, results}
   end
 
   @spec count_successful_deliveries(map(), non_neg_integer()) :: map()
-  defp count_successful_deliveries(map, flow_broadcast_id) do
+  defp count_successful_deliveries(map, message_broadcast_id) do
     count =
       MessageBroadcastContact
-      |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
+      |> where([fbc], fbc.message_broadcast_id == ^message_broadcast_id)
       |> where([fbc], not is_nil(fbc.processed_at))
       |> where([fbc], fbc.status == "processed")
       |> Repo.aggregate(:count)
@@ -324,10 +326,10 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @spec count_failed_deliveries(map(), non_neg_integer()) :: map()
-  defp count_failed_deliveries(map, flow_broadcast_id) do
+  defp count_failed_deliveries(map, message_broadcast_id) do
     count =
       MessageBroadcastContact
-      |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
+      |> where([fbc], fbc.message_broadcast_id == ^message_broadcast_id)
       |> where([fbc], not is_nil(fbc.processed_at))
       |> where([fbc], fbc.status == "pending")
       |> Repo.aggregate(:count)
@@ -336,10 +338,10 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @spec count_pending_deliveries(map(), non_neg_integer()) :: map()
-  defp count_pending_deliveries(map, flow_broadcast_id) do
+  defp count_pending_deliveries(map, message_broadcast_id) do
     count =
       MessageBroadcastContact
-      |> where([fbc], fbc.flow_broadcast_id == ^flow_broadcast_id)
+      |> where([fbc], fbc.message_broadcast_id == ^message_broadcast_id)
       |> where([fbc], is_nil(fbc.processed_at))
       |> Repo.aggregate(:count)
 
@@ -347,14 +349,14 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @spec count_deliveries_by_category(map(), non_neg_integer()) :: map()
-  defp count_deliveries_by_category(map, flow_broadcast_id) do
-    Map.put(map, :msg_categories, msg_deliveries_by_category(flow_broadcast_id))
+  defp count_deliveries_by_category(map, message_broadcast_id) do
+    Map.put(map, :msg_categories, msg_deliveries_by_category(message_broadcast_id))
   end
 
   @spec msg_deliveries_by_category(non_neg_integer()) :: map()
-  defp msg_deliveries_by_category(flow_broadcast_id) do
+  defp msg_deliveries_by_category(message_broadcast_id) do
     data =
-      broadcast_stats_base_query(flow_broadcast_id)
+      broadcast_stats_base_query(message_broadcast_id)
       |> Repo.query!()
 
     sent_count =

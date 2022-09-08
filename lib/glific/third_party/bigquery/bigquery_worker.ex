@@ -532,7 +532,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             recent_outbound: BigQuery.format_json(row.recent_outbound),
             status: row.status,
             parent_id: row.parent_id,
-            flow_broadcast_id: row.flow_broadcast_id,
+            message_broadcast_id: row.message_broadcast_id,
             is_background_flow: row.is_background_flow,
             is_await_result: row.is_await_result,
             is_killed: row.is_killed,
@@ -648,7 +648,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         longitude: if(!is_nil(row.location), do: row.location.longitude),
         latitude: if(!is_nil(row.location), do: row.location.latitude),
         errors: BigQuery.format_json(row.errors),
-        flow_broadcast_id: row.flow_broadcast_id,
+        message_broadcast_id: row.message_broadcast_id,
         bsp_status: row.bsp_status
       }
       |> Map.merge(message_media_info(row.media))

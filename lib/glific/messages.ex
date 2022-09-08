@@ -468,7 +468,7 @@ defmodule Glific.Messages do
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       flow_id: args[:flow_id],
-      flow_broadcast_id: args[:flow_broadcast_id],
+      message_broadcast_id: args[:message_broadcast_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
       flow_label: args[:flow_label],
@@ -528,7 +528,7 @@ defmodule Glific.Messages do
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
       flow_label: Map.get(attrs, :flow_label, ""),
-      flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil),
+      message_broadcast_id: Map.get(attrs, :message_broadcast_id, nil),
       user_id: attrs[:user_id],
       flow_id: attrs[:flow_id],
       send_at: attrs[:send_at]
@@ -686,7 +686,7 @@ defmodule Glific.Messages do
     # suppress publishing a subscription for group messages
     |> Map.merge(%{
       publish?: false,
-      flow_broadcast_id: group_message.flow_broadcast_id,
+      message_broadcast_id: group_message.message_broadcast_id,
       group_id: group.id
     })
     |> create_and_send_message_to_contacts(

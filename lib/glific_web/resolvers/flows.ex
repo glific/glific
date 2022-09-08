@@ -240,8 +240,8 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec broadcast_stats(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def broadcast_stats(_, %{flow_broadcast_id: flow_broadcast_id}, _),
-    do: Broadcast.broadcast_stats(flow_broadcast_id)
+  def broadcast_stats(_, %{message_broadcast_id: message_broadcast_id}, _),
+    do: Broadcast.broadcast_stats(message_broadcast_id)
 
   @doc """
   Reset the flow counts for a specific flow

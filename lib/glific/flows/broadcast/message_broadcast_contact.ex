@@ -17,14 +17,14 @@ defmodule Glific.Flows.MessageBroadcastContact do
     Partners.Organization
   }
 
-  @required_fields [:flow_broadcast_id, :contact_id, :organization_id]
+  @required_fields [:message_broadcast_id, :contact_id, :organization_id]
   @optional_fields [:status, :processed_at]
 
   # we store one more than the number of messages specified here
 
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
-          flow_broadcast_id: non_neg_integer | nil,
+          message_broadcast_id: non_neg_integer | nil,
           flow_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
@@ -55,7 +55,7 @@ defmodule Glific.Flows.MessageBroadcastContact do
     flow_broadcast_contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> unique_constraint([:contact_id, :flow_broadcast_id])
+    |> unique_constraint([:contact_id, :message_broadcast_id])
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
   end

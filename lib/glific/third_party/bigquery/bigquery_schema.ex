@@ -432,7 +432,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "flow broadcast id when a flow started for a group",
-        name: "flow_broadcast_id",
+        name: "message_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
@@ -668,8 +668,8 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "flow_broadcast_id refrences to the flow broadcast table",
-        name: "flow_broadcast_id",
+        description: "message_broadcast_id refrences to the flow broadcast table",
+        name: "message_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },

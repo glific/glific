@@ -44,7 +44,7 @@ defmodule Glific.Flows.FlowContext do
     :uuid_map,
     :recent_inbound,
     :recent_outbound,
-    :flow_broadcast_id,
+    :message_broadcast_id,
     :profile_id
   ]
 
@@ -66,8 +66,8 @@ defmodule Glific.Flows.FlowContext do
           status: String.t() | nil,
           parent_id: non_neg_integer | nil,
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
-          flow_broadcast_id: non_neg_integer | nil,
-          flow_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_broadcast_id: non_neg_integer | nil,
+          message_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
           profile_id: non_neg_integer | nil,
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
@@ -120,7 +120,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:parent, FlowContext, foreign_key: :parent_id)
     belongs_to :profile, Profile
     # the originating group message which kicked off this flow if any
-    belongs_to(:flow_broadcast, MessageBroadcast)
+    belongs_to(:message_broadcast, MessageBroadcast)
 
     timestamps(type: :utc_datetime)
   end
@@ -512,7 +512,7 @@ defmodule Glific.Flows.FlowContext do
           {:ok, FlowContext.t()} | {:error, Ecto.Changeset.t()}
   def seed_context(flow, contact, status, opts \\ []) do
     parent_id = Keyword.get(opts, :parent_id)
-    flow_broadcast_id = Keyword.get(opts, :flow_broadcast_id)
+    message_broadcast_id = Keyword.get(opts, :message_broadcast_id)
     delay = Keyword.get(opts, :delay, 0)
     uuids_seen = Keyword.get(opts, :uuids_seen, %{})
     wakeup_at = Keyword.get(opts, :wakeup_at)
@@ -527,7 +527,7 @@ defmodule Glific.Flows.FlowContext do
     create_flow_context(%{
       contact_id: contact.id,
       parent_id: parent_id,
-      flow_broadcast_id: flow_broadcast_id,
+      message_broadcast_id: message_broadcast_id,
       node_uuid: node.uuid,
       flow_uuid: flow.uuid,
       status: status,
