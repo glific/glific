@@ -162,6 +162,17 @@ defmodule Glific.Flows.Broadcast do
     :ok
   end
 
+  @doc """
+  get_broadcast_contact_ids
+  """
+  @spec get_broadcast_contact_ids(MessageBroadcast.t()) :: list()
+  def get_broadcast_contact_ids(message_broadcast) do
+    MessageBroadcastContact
+    |> where([fbc], fbc.message_broadcast_id == ^message_broadcast.id)
+    |> select([fbc], fbc.contact_id)
+    |> Repo.all()
+  end
+
   # function to build the opts values to process a list of contacts
   # or a group
   @spec opts(non_neg_integer) :: Keyword.t()

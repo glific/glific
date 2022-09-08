@@ -681,9 +681,10 @@ defmodule Glific.Messages do
             |> Map.put(:type, :text)
           )
 
-    Broadcast.broadcast_message_to_group(group_message, group, message_params)
+    {:ok, message_broadcast} =
+      Broadcast.broadcast_message_to_group(group_message, group, message_params)
 
-    {:ok, %{success: true, contact_ids: []}}
+    {:ok, Broadcast.get_broadcast_contact_ids(message_broadcast)}
   end
 
   @doc """
