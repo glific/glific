@@ -431,19 +431,19 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "flow broadcast id when a flow started for a group",
+        description: "message broadcast id when a flow started for a group",
         name: "message_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "ID of the message media table refrence to the message media table",
+        description: "ID of the message media table reference to the message media table",
         name: "media_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "ID of the profile table refrence to the profile table",
+        description: "ID of the profile table reference to the profile table",
         name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
