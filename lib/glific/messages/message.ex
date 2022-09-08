@@ -13,6 +13,7 @@ defmodule Glific.Messages.Message do
     Groups.Group,
     Messages.MessageMedia,
     Partners.Organization,
+    Profiles.Profile,
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.SessionTemplate,
@@ -61,6 +62,8 @@ defmodule Glific.Messages.Message do
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
           context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_broadcast_id: non_neg_integer | nil,
           flow_broadcast: FlowBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
@@ -102,7 +105,8 @@ defmodule Glific.Messages.Message do
     :interactive_content,
     :template_id,
     :interactive_template_id,
-    :updated_at
+    :updated_at,
+    :profile_id
   ]
 
   schema "messages" do
@@ -152,6 +156,7 @@ defmodule Glific.Messages.Message do
     belongs_to(:flow_object, Flow, foreign_key: :flow_id)
     belongs_to(:media, MessageMedia)
     belongs_to(:organization, Organization)
+    belongs_to(:profile, Profile)
 
     belongs_to(:group, Group)
     has_one(:location, Location)

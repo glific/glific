@@ -938,6 +938,9 @@ defmodule Glific.Contacts do
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
 
+      {:profile_id, profile_id}, query ->
+        from(q in query, where: q.profile_id == ^profile_id)
+
       {:event_type, event_type}, query ->
         from(q in query, where: ilike(q.event_type, ^"%#{event_type}%"))
 

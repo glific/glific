@@ -67,7 +67,8 @@ defmodule Glific.Clients.ReapBenefit do
       %{
         "email" => fields["contact"]["phone"] <> "@solveninja.org ",
         "first_name" => fields["contact"]["name"],
-        "mobile_no" => fields["contact"]["phone"]
+        "mobile_no" => fields["contact"]["phone"],
+        "username" => fields["contact"]["name"]
       }
       |> Jason.encode!()
 
@@ -78,7 +79,7 @@ defmodule Glific.Clients.ReapBenefit do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
         |> to_minimal_map("User")
-        |> Map.merge(%{is_found: true})
+        |> Map.merge(%{is_valid: true})
 
       {:ok, %Tesla.Env{status: 409}} ->
         %{is_valid: false, response: "Duplicate User"}
@@ -98,7 +99,7 @@ defmodule Glific.Clients.ReapBenefit do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
         |> to_minimal_map("Locations")
-        |> Map.merge(%{is_found: true})
+        |> Map.merge(%{is_valid: true})
 
       {_status, _response} ->
         %{is_valid: false, response: "Invalid response"}
@@ -116,7 +117,7 @@ defmodule Glific.Clients.ReapBenefit do
       {:ok, %Tesla.Env{status: 200, body: body}} ->
         Jason.decode!(body)
         |> to_minimal_map("Events")
-        |> Map.merge(%{is_found: true})
+        |> Map.merge(%{is_valid: true})
 
       {_status, _response} ->
         %{is_valid: false, response: "Invalid response"}
@@ -134,15 +135,15 @@ defmodule Glific.Clients.ReapBenefit do
         {:ok, %Tesla.Env{status: 200, body: body}} ->
           Jason.decode!(body)
           |> to_minimal_map(doctype)
-          |> Map.merge(%{is_found: true})
+          |> Map.merge(%{is_valid: true})
 
         {:ok, %Tesla.Env{status: 404, body: body}} ->
           error_msg = Jason.decode!(body)
 
-          %{is_found: false, response: error_msg["exc_type"]}
+          %{is_valid: false, response: error_msg["exc_type"]}
 
         {_status, _response} ->
-          %{is_found: false, response: "Invalid response"}
+          %{is_valid: false, response: "Invalid response"}
       end
     end
   end

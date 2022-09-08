@@ -25,6 +25,7 @@ defmodule Glific.Flows.FlowContext do
     Messages.Message,
     Notifications,
     Partners.Organization,
+    Profiles.Profile,
     Repo
   }
 
@@ -43,7 +44,8 @@ defmodule Glific.Flows.FlowContext do
     :uuid_map,
     :recent_inbound,
     :recent_outbound,
-    :flow_broadcast_id
+    :flow_broadcast_id,
+    :profile_id
   ]
 
   # we store one more than the number of messages specified here
@@ -66,6 +68,8 @@ defmodule Glific.Flows.FlowContext do
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_broadcast_id: non_neg_integer | nil,
           flow_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
@@ -114,7 +118,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:flow, Flow)
     belongs_to(:organization, Organization)
     belongs_to(:parent, FlowContext, foreign_key: :parent_id)
-
+    belongs_to :profile, Profile
     # the originating group message which kicked off this flow if any
     belongs_to(:flow_broadcast, FlowBroadcast)
 

@@ -684,7 +684,8 @@ defmodule GlificWeb.Schema.ContactTest do
   end
 
   test "contacts history returns list of contacts history in asc order", %{staff: user} = attrs do
-    [contact | _tail] = Contacts.list_contacts(attrs)
+    profile = Fixtures.profile_fixture()
+    contact = Contacts.get_contact!(profile.contact_id)
     [flow | _tail] = Flows.list_flows(attrs)
     {:ok, _flow} = Flows.start_contact_flow(flow, contact)
 
@@ -699,6 +700,39 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, query_data} = result
     contact_history = get_in(query_data, [:data, "contactHistory"])
     assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "filter" => %{"profile_id" => profile.id}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_history = get_in(query_data, [:data, "contactHistory"])
+    assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "filter" => %{"event_label" => "Flow Started"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    contact_history = get_in(query_data, [:data, "contactHistory"])
+    assert length(contact_history) > 0
+
+    result =
+      auth_query_gql_by(:contact_history_list, user,
+        variables: %{
+          "opts" => %{"order" => "DESC"}
+        }
+      )
+
+    assert {:ok, query_data} = result
+    [contact_history | _] = get_in(query_data, [:data, "contactHistory"])
+    assert contact_history["eventLabel"] == "Flow Started"
   end
 
   test "count contacts history returns count of contacts history", %{staff: user} = attrs do
@@ -726,8 +760,6 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert count_from_db == count
-
-    # contact_history = get_in(query_data, [:data, "contactHistory"])
-    # assert length(contact_history) > 0
+    assert get_in(query_data, [:data, "countContactHistory"]) > 0
   end
 end
