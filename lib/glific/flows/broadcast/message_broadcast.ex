@@ -1,4 +1,4 @@
-defmodule Glific.Flows.FlowBroadcast do
+defmodule Glific.Flows.MessageBroadcast do
   @moduledoc """
   When we are running a flow, we are running it in the context of a
   contact and/or a conversation (or other Glific data types). Let encapsulate
@@ -45,15 +45,15 @@ defmodule Glific.Flows.FlowBroadcast do
           updated_at: :utc_datetime | nil
         }
 
-  schema "flow_broadcasts" do
-    field :started_at, :utc_datetime, default: nil
-    field :completed_at, :utc_datetime, default: nil
+  schema "message_broadcasts" do
+    field(:started_at, :utc_datetime, default: nil)
+    field(:completed_at, :utc_datetime, default: nil)
 
-    belongs_to :flow, Flow
-    belongs_to :group, Group
-    belongs_to :message, Message
-    belongs_to :user, User
-    belongs_to :organization, Organization
+    belongs_to(:flow, Flow)
+    belongs_to(:group, Group)
+    belongs_to(:message, Message)
+    belongs_to(:user, User)
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -61,9 +61,9 @@ defmodule Glific.Flows.FlowBroadcast do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(FlowBroadcast.t(), map()) :: Ecto.Changeset.t()
-  def changeset(flow_broadcast, attrs) do
-    flow_broadcast
+  @spec changeset(MessageBroadcast.t(), map()) :: Ecto.Changeset.t()
+  def changeset(message_broadcasts, attrs) do
+    message_broadcasts
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:flow_id)

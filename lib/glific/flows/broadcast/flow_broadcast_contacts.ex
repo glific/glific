@@ -13,7 +13,7 @@ defmodule Glific.Flows.FlowBroadcastContact do
 
   alias Glific.{
     Contacts.Contact,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Partners.Organization
   }
 
@@ -25,7 +25,7 @@ defmodule Glific.Flows.FlowBroadcastContact do
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           flow_broadcast_id: non_neg_integer | nil,
-          flow_broadcast: FlowBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -40,7 +40,7 @@ defmodule Glific.Flows.FlowBroadcastContact do
     field :processed_at, :utc_datetime, default: nil
     field :status, :string, default: nil
 
-    belongs_to :flow_broadcast, FlowBroadcast
+    belongs_to :flow_broadcast, MessageBroadcast
     belongs_to :contact, Contact
     belongs_to :organization, Organization
 

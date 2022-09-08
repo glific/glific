@@ -17,7 +17,7 @@ defmodule Glific.Flows.FlowContext do
     Contacts.Contact,
     Flows,
     Flows.Flow,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Flows.FlowResult,
     Flows.MessageVarParser,
     Flows.Node,
@@ -120,7 +120,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:parent, FlowContext, foreign_key: :parent_id)
     belongs_to :profile, Profile
     # the originating group message which kicked off this flow if any
-    belongs_to(:flow_broadcast, FlowBroadcast)
+    belongs_to(:flow_broadcast, MessageBroadcast)
 
     timestamps(type: :utc_datetime)
   end

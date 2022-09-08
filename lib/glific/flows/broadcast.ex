@@ -12,7 +12,7 @@ defmodule Glific.Flows.Broadcast do
     Contacts.Contact,
     Flows,
     Flows.Flow,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Flows.FlowBroadcastContact,
     Flows.FlowContext,
     Groups.Group,
@@ -63,7 +63,7 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   Start a  group broadcast for a giving broadcast stuct
   """
-  @spec process_broadcast_group(FlowBroadcast.t() | nil) :: :ok
+  @spec process_broadcast_group(MessageBroadcast.t() | nil) :: :ok
   def process_broadcast_group(nil), do: :ok
 
   def process_broadcast_group(flow_broadcast) do
@@ -87,7 +87,7 @@ defmodule Glific.Flows.Broadcast do
   """
   @spec mark_flow_broadcast_completed(non_neg_integer()) :: :ok
   def mark_flow_broadcast_completed(org_id) do
-    from(fb in FlowBroadcast,
+    from(fb in MessageBroadcast,
       as: :flow_broadcast,
       where: fb.organization_id == ^org_id,
       where: is_nil(fb.completed_at),
@@ -126,9 +126,9 @@ defmodule Glific.Flows.Broadcast do
     ]
   end
 
-  @spec unprocessed_group_broadcast(non_neg_integer) :: FlowBroadcast.t()
+  @spec unprocessed_group_broadcast(non_neg_integer) :: MessageBroadcast.t()
   defp unprocessed_group_broadcast(organization_id) do
-    from(fb in FlowBroadcast,
+    from(fb in MessageBroadcast,
       where:
         fb.organization_id == ^organization_id and
           is_nil(fb.completed_at),
@@ -218,7 +218,7 @@ defmodule Glific.Flows.Broadcast do
   end
 
   @spec init_broadcast_group(map(), Group.t(), Messages.Message.t()) ::
-          {:ok, FlowBroadcast.t()} | {:error, String.t()}
+          {:ok, MessageBroadcast.t()} | {:error, String.t()}
   defp init_broadcast_group(flow, group, group_message) do
     # lets create a broadcast entry for this flow
     {:ok, flow_broadcast} =
@@ -247,14 +247,14 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
-  @spec create_flow_broadcast(map()) :: {:ok, FlowBroadcast.t()} | {:error, Ecto.Changeset.t()}
+  @spec create_flow_broadcast(map()) :: {:ok, MessageBroadcast.t()} | {:error, Ecto.Changeset.t()}
   defp create_flow_broadcast(attrs) do
-    %FlowBroadcast{}
-    |> FlowBroadcast.changeset(attrs)
+    %MessageBroadcast{}
+    |> MessageBroadcast.changeset(attrs)
     |> Repo.insert()
   end
 
-  @spec populate_flow_broadcast_contacts(FlowBroadcast.t()) :: {:ok, any()} | {:error, any()}
+  @spec populate_flow_broadcast_contacts(MessageBroadcast.t()) :: {:ok, any()} | {:error, any()}
   defp populate_flow_broadcast_contacts(flow_broadcast) do
     """
     INSERT INTO flow_broadcast_contacts

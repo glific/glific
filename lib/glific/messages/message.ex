@@ -9,7 +9,7 @@ defmodule Glific.Messages.Message do
     Contacts.Contact,
     Contacts.Location,
     Flows.Flow,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Groups.Group,
     Messages.MessageMedia,
     Partners.Organization,
@@ -65,7 +65,7 @@ defmodule Glific.Messages.Message do
           profile_id: non_neg_integer | nil,
           profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_broadcast_id: non_neg_integer | nil,
-          flow_broadcast: FlowBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
+          flow_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
@@ -140,7 +140,7 @@ defmodule Glific.Messages.Message do
     belongs_to(:context_message, Message, foreign_key: :context_message_id)
 
     # the originating group message which kicked off this flow if any
-    belongs_to(:flow_broadcast, FlowBroadcast, foreign_key: :flow_broadcast_id)
+    belongs_to(:flow_broadcast, MessageBroadcast, foreign_key: :flow_broadcast_id)
 
     field(:errors, :map, default: %{})
     field(:send_at, :utc_datetime)
