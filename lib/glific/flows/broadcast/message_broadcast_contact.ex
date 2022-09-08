@@ -25,7 +25,7 @@ defmodule Glific.Flows.MessageBroadcastContact do
   @type t :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
           message_broadcast_id: non_neg_integer | nil,
-          flow_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           contact_id: non_neg_integer | nil,
           contact: Contact.t() | Ecto.Association.NotLoaded.t() | nil,
           organization_id: non_neg_integer | nil,
@@ -37,12 +37,12 @@ defmodule Glific.Flows.MessageBroadcastContact do
         }
 
   schema "message_broadcast_contacts" do
-    field :processed_at, :utc_datetime, default: nil
-    field :status, :string, default: nil
+    field(:processed_at, :utc_datetime, default: nil)
+    field(:status, :string, default: nil)
 
-    belongs_to :flow_broadcast, MessageBroadcast
-    belongs_to :contact, Contact
-    belongs_to :organization, Organization
+    belongs_to(:message_broadcast, MessageBroadcast)
+    belongs_to(:contact, Contact)
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -51,8 +51,8 @@ defmodule Glific.Flows.MessageBroadcastContact do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(MessageBroadcastContact.t(), map()) :: Ecto.Changeset.t()
-  def changeset(flow_broadcast_contact, attrs) do
-    flow_broadcast_contact
+  def changeset(message_broadcast_contact, attrs) do
+    message_broadcast_contact
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:contact_id, :message_broadcast_id])

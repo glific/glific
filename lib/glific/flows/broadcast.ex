@@ -55,14 +55,14 @@ defmodule Glific.Flows.Broadcast do
   @spec execute_group_broadcasts(any) :: :ok
   def execute_group_broadcasts(org_id) do
     # mark all the broadcast as completed if there is no unprocessed contact.
-    mark_flow_broadcast_completed(org_id)
+    mark_message_broadcast_completed(org_id)
 
     unprocessed_group_broadcast(org_id)
     |> process_broadcast_group()
   end
 
   @doc """
-  Start a  group broadcast for a giving broadcast stuct
+  Start a  group broadcast for a giving broadcast struct
   """
   @spec process_broadcast_group(MessageBroadcast.t() | nil) :: :ok
   def process_broadcast_group(nil), do: :ok
@@ -86,10 +86,10 @@ defmodule Glific.Flows.Broadcast do
   @doc """
   Mark all the processed  flow broadcast as completed
   """
-  @spec mark_flow_broadcast_completed(non_neg_integer()) :: :ok
-  def mark_flow_broadcast_completed(org_id) do
+  @spec mark_message_broadcast_completed(non_neg_integer()) :: :ok
+  def mark_message_broadcast_completed(org_id) do
     from(fb in MessageBroadcast,
-      as: :flow_broadcast,
+      as: :message_broadcast,
       where: fb.organization_id == ^org_id,
       where: is_nil(fb.completed_at),
       where:
@@ -97,7 +97,7 @@ defmodule Glific.Flows.Broadcast do
           from(
             fbc in MessageBroadcastContact,
             where:
-              parent_as(:flow_broadcast).id == fbc.message_broadcast_id and
+              parent_as(:message_broadcast).id == fbc.message_broadcast_id and
                 is_nil(fbc.processed_at),
             select: 1
           )
@@ -143,18 +143,18 @@ defmodule Glific.Flows.Broadcast do
 
   @unprocessed_contact_limit 100
 
-  defp unprocessed_contacts(flow_broadcast) do
-    broadcast_contacts_query(flow_broadcast)
+  defp unprocessed_contacts(message_broadcast) do
+    broadcast_contacts_query(message_broadcast)
     |> limit(@unprocessed_contact_limit)
     |> order_by([c, _fbc], asc: c.id)
     |> Repo.all()
   end
 
-  defp broadcast_contacts_query(flow_broadcast) do
+  defp broadcast_contacts_query(message_broadcast) do
     Contact
     |> join(:inner, [c], fbc in MessageBroadcastContact,
       as: :fbc,
-      on: fbc.contact_id == c.id and fbc.message_broadcast_id == ^flow_broadcast.id
+      on: fbc.contact_id == c.id and fbc.message_broadcast_id == ^message_broadcast.id
     )
     |> where(
       [c, _fbc],
@@ -196,13 +196,13 @@ defmodule Glific.Flows.Broadcast do
           Repo.put_process_state(contact.organization_id)
 
           Keyword.get(opts, :message_broadcast_id, nil)
-          |> mark_flow_broadcast_contact_processed(contact.id, "pending")
+          |> mark_message_broadcast_contact_processed(contact.id, "pending")
 
           response = FlowContext.init_context(flow, contact, @status, opts)
 
           if elem(response, 0) in [:ok, :wait] do
             Keyword.get(opts, :message_broadcast_id, nil)
-            |> mark_flow_broadcast_contact_processed(contact.id, "processed")
+            |> mark_message_broadcast_contact_processed(contact.id, "processed")
           else
             Logger.info("Could not start the flow for the contact.
                Contact id : #{contact.id} opts: #{inspect(opts)}
@@ -223,8 +223,8 @@ defmodule Glific.Flows.Broadcast do
           {:ok, MessageBroadcast.t()} | {:error, String.t()}
   defp init_broadcast_group(flow, group, group_message) do
     # lets create a broadcast entry for this flow
-    {:ok, flow_broadcast} =
-      create_flow_broadcast(%{
+    {:ok, message_broadcast} =
+      create_message_broadcast(%{
         flow_id: flow.id,
         group_id: group.id,
         message_id: group_message.id,
@@ -233,33 +233,35 @@ defmodule Glific.Flows.Broadcast do
         organization_id: group.organization_id
       })
 
-    populate_flow_broadcast_contacts(flow_broadcast)
+    populate_message_broadcast_contacts(message_broadcast)
     |> case do
-      {:ok, _} -> {:ok, flow_broadcast}
+      {:ok, _} -> {:ok, message_broadcast}
       _ -> {:error, "could not initiate broadcast"}
     end
   end
 
-  @spec mark_flow_broadcast_contact_processed(integer() | nil, integer(), String.t()) :: :ok
-  defp mark_flow_broadcast_contact_processed(nil, _, _status), do: :ok
+  @spec mark_message_broadcast_contact_processed(integer() | nil, integer(), String.t()) :: :ok
+  defp mark_message_broadcast_contact_processed(nil, _, _status), do: :ok
 
-  defp mark_flow_broadcast_contact_processed(message_broadcast_id, contact_id, status) do
+  defp mark_message_broadcast_contact_processed(message_broadcast_id, contact_id, status) do
     MessageBroadcastContact
     |> where(message_broadcast_id: ^message_broadcast_id, contact_id: ^contact_id)
     |> Repo.update_all(set: [processed_at: DateTime.utc_now(), status: status])
   end
 
-  @spec create_flow_broadcast(map()) :: {:ok, MessageBroadcast.t()} | {:error, Ecto.Changeset.t()}
-  defp create_flow_broadcast(attrs) do
+  @spec create_message_broadcast(map()) ::
+          {:ok, MessageBroadcast.t()} | {:error, Ecto.Changeset.t()}
+  defp create_message_broadcast(attrs) do
     %MessageBroadcast{}
     |> MessageBroadcast.changeset(attrs)
     |> Repo.insert()
   end
 
-  @spec populate_flow_broadcast_contacts(MessageBroadcast.t()) :: {:ok, any()} | {:error, any()}
-  defp populate_flow_broadcast_contacts(message_broadcast) do
+  @spec populate_message_broadcast_contacts(MessageBroadcast.t()) ::
+          {:ok, any()} | {:error, any()}
+  defp populate_message_broadcast_contacts(message_broadcast) do
     """
-    INSERT INTO flow_broadcast_contacts
+    INSERT INTO message_broadcast_contacts
     (message_broadcast_id, status, organization_id, inserted_at, updated_at, contact_id)
 
     (SELECT #{message_broadcast.id}, 'pending', #{message_broadcast.organization_id}, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, contact_id
@@ -272,7 +274,7 @@ defmodule Glific.Flows.Broadcast do
   @spec broadcast_stats_base_query(non_neg_integer()) :: String.t()
   defp broadcast_stats_base_query(message_broadcast_id) do
     """
-    SELECT distinct on (flow_broadcast_contacts.contact_id)
+    SELECT distinct on (message_broadcast_contacts.contact_id)
     messages.id as message_id,
     messages.status,
     message_broadcast_contacts.processed_at,

@@ -407,13 +407,13 @@ defmodule Glific.FLowsTest do
 
       {:ok, flow} = Flows.start_group_flow(flow, group)
 
-      assert {:ok, flow_broadcast} =
+      assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_broadcast.completed_at == nil
+      assert message_broadcast.completed_at == nil
 
       # lets sleep for 3 seconds, to ensure that messages have been delivered
       Broadcast.execute_group_broadcasts(attrs.organization_id)
@@ -429,13 +429,13 @@ defmodule Glific.FLowsTest do
 
       Broadcast.execute_group_broadcasts(attrs.organization_id)
 
-      assert {:ok, flow_broadcast} =
+      assert {:ok, message_broadcast} =
                Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_broadcast.completed_at != nil
+      assert message_broadcast.completed_at != nil
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do

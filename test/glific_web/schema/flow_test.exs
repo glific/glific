@@ -462,7 +462,7 @@ defmodule GlificWeb.Schema.FlowTest do
            )
   end
 
-  test "flow broadcast stats", %{glific_admin: glific_admin} = attrs do
+  test "message broadcast stats", %{glific_admin: glific_admin} = attrs do
     [flow | _tail] = Flows.list_flows(%{filter: attrs})
     group = Fixtures.group_fixture()
 
@@ -485,13 +485,13 @@ defmodule GlificWeb.Schema.FlowTest do
 
     {:ok, flow} = Flows.start_group_flow(flow, group)
 
-    assert {:ok, flow_broadcast} =
+    assert {:ok, message_broadcast} =
              Repo.fetch_by(MessageBroadcast, %{
                group_id: group.id,
                flow_id: flow.id
              })
 
-    assert flow_broadcast.completed_at == nil
+    assert message_broadcast.completed_at == nil
 
     # lets sleep for 3 seconds, to ensure that messages have been delivered
     Broadcast.execute_group_broadcasts(attrs.organization_id)
@@ -500,11 +500,11 @@ defmodule GlificWeb.Schema.FlowTest do
     result =
       auth_query_gql_by(:broadcast_stats, glific_admin,
         variables: %{
-          "flowBroadcastId" => flow_broadcast.id
+          "messageBroadcastId" => message_broadcast.id
         }
       )
 
-    # testcase should be checking the message categories as well
+    # test case should be checking the message categories as well
     # but currently as bsp_status is returning null, msg_categories is not populated. Will come back at later time
     assert {:ok, query_data} = result
     broadcast_stats = get_in(query_data, [:data, "broadcastStats"])
