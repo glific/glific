@@ -244,7 +244,7 @@ defmodule Glific.Flows.Broadcast do
 
       if attrs.type == :flow,
         do: flow_tasks(attrs.flow, chunk_list, task_opts),
-        else: message_tasks(attrs.flow.message_params, chunk_list, task_opts)
+        else: message_tasks(attrs.message_params, chunk_list, task_opts)
     end)
 
     :ok
