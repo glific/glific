@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Triggers — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Triggers — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Triggers</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -126,11 +127,61 @@ within Glific</p>
 
       <div class="summary-row">
         <div class="summary-signature">
+          <a href="#count_triggers/1" translate="no">count_triggers(args)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Return the count of triggers, using the same filter as list_triggers</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#create_trigger/1" translate="no">create_trigger(attrs)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Creates a trigger.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
           <a href="#execute_triggers/2" translate="no">execute_triggers(organization_id, now \\ DateTime.utc_now())</a>
 
         </div>
 
           <div class="summary-synopsis"><p>Periodic call to execute the triggers outstanding for the day</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_trigger!/1" translate="no">get_trigger!(id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Gets a single trigger.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list_triggers/1" translate="no">list_triggers(args)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Returns the list of triggers filtered by args</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update_trigger/2" translate="no">update_trigger(trigger, attrs)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Updates a trigger.</p></div>
 
       </div>
 
@@ -148,6 +199,73 @@ within Glific</p>
 Functions
     </h1>
     <div class="functions-list">
+<section class="detail" id="count_triggers/1">
+
+  <div class="detail-header">
+    <a href="#count_triggers/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">count_triggers(args)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L269" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> count_triggers(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()</pre>
+
+      </div>
+
+<p>Return the count of triggers, using the same filter as list_triggers</p>
+  </section>
+</section>
+<section class="detail" id="create_trigger/1">
+
+  <div class="detail-header">
+    <a href="#create_trigger/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">create_trigger(attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L157" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> create_trigger(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, Glific.Triggers.Trigger.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Creates a trigger.</p><h2 id="create_trigger/1-examples" class="section-heading">
+  <a href="#create_trigger/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_trigger</span><span class="p" data-group-id="5664852096-1">(</span><span class="p" data-group-id="5664852096-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5664852096-2">}</span><span class="p" data-group-id="5664852096-1">)</span><span class="w">
+</span><span class="p" data-group-id="5664852096-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5664852096-4">%</span><span class="nc" data-group-id="5664852096-4">Trigger</span><span class="p" data-group-id="5664852096-4">{</span><span class="p" data-group-id="5664852096-4">}</span><span class="p" data-group-id="5664852096-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_trigger</span><span class="p" data-group-id="5664852096-5">(</span><span class="p" data-group-id="5664852096-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5664852096-6">}</span><span class="p" data-group-id="5664852096-5">)</span><span class="w">
+</span><span class="p" data-group-id="5664852096-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5664852096-8">%</span><span class="nc" data-group-id="5664852096-8">Ecto.Changeset</span><span class="p" data-group-id="5664852096-8">{</span><span class="p" data-group-id="5664852096-8">}</span><span class="p" data-group-id="5664852096-7">}</span></code></pre>
+  </section>
+</section>
 <section class="detail" id="execute_triggers/2">
 
     <span id="execute_triggers/1"></span>
@@ -159,7 +277,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">execute_triggers(organization_id, now \\ DateTime.utc_now())</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L24" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L29" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -180,6 +298,118 @@ Functions
 <p>Periodic call to execute the triggers outstanding for the day</p>
   </section>
 </section>
+<section class="detail" id="get_trigger!/1">
+
+  <div class="detail-header">
+    <a href="#get_trigger!/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_trigger!(id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L219" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_trigger!(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>()) :: Glific.Triggers.Trigger.t()</pre>
+
+      </div>
+
+<p>Gets a single trigger.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Trigger does not exist.</p><h2 id="get_trigger!/1-examples" class="section-heading">
+  <a href="#get_trigger!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_trigger!</span><span class="p" data-group-id="2421350749-1">(</span><span class="mi">123</span><span class="p" data-group-id="2421350749-1">)</span><span class="w">
+</span><span class="p" data-group-id="2421350749-2">%</span><span class="nc" data-group-id="2421350749-2">Trigger</span><span class="p" data-group-id="2421350749-2">{</span><span class="p" data-group-id="2421350749-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_trigger!</span><span class="p" data-group-id="2421350749-3">(</span><span class="mi">456</span><span class="p" data-group-id="2421350749-3">)</span><span class="w">
+</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="list_triggers/1">
+
+  <div class="detail-header">
+    <a href="#list_triggers/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">list_triggers(args)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L231" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> list_triggers(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [Glific.Triggers.Trigger.t()]</pre>
+
+      </div>
+
+<p>Returns the list of triggers filtered by args</p><h2 id="list_triggers/1-examples" class="section-heading">
+  <a href="#list_triggers/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_triggers</span><span class="p" data-group-id="8827480502-1">(</span><span class="p" data-group-id="8827480502-1">)</span><span class="w">
+</span><span class="p" data-group-id="8827480502-2">[</span><span class="p" data-group-id="8827480502-3">%</span><span class="nc" data-group-id="8827480502-3">Trigger</span><span class="p" data-group-id="8827480502-3">{</span><span class="p" data-group-id="8827480502-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="8827480502-2">]</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="update_trigger/2">
+
+  <div class="detail-header">
+    <a href="#update_trigger/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">update_trigger(trigger, attrs)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/triggers.ex#L193" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> update_trigger(Glific.Triggers.Trigger.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
+  {:ok, Glific.Triggers.Trigger.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+
+      </div>
+
+<p>Updates a trigger.</p><h2 id="update_trigger/2-examples" class="section-heading">
+  <a href="#update_trigger/2-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_trigger</span><span class="p" data-group-id="5110883793-1">(</span><span class="n">trigger</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5110883793-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5110883793-2">}</span><span class="p" data-group-id="5110883793-1">)</span><span class="w">
+</span><span class="p" data-group-id="5110883793-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5110883793-4">%</span><span class="nc" data-group-id="5110883793-4">Trigger</span><span class="p" data-group-id="5110883793-4">{</span><span class="p" data-group-id="5110883793-4">}</span><span class="p" data-group-id="5110883793-3">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_trigger</span><span class="p" data-group-id="5110883793-5">(</span><span class="n">trigger</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5110883793-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5110883793-6">}</span><span class="p" data-group-id="5110883793-5">)</span><span class="w">
+</span><span class="p" data-group-id="5110883793-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5110883793-8">%</span><span class="nc" data-group-id="5110883793-8">Ecto.Changeset</span><span class="p" data-group-id="5110883793-8">{</span><span class="p" data-group-id="5110883793-8">}</span><span class="p" data-group-id="5110883793-7">}</span></code></pre>
+  </section>
+</section>
 
     </div>
   </section>
@@ -190,10 +420,10 @@ Functions
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/triggers.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/triggers.ex">(current file)</a>
 
             </span>
 
@@ -204,8 +434,10 @@ Functions
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

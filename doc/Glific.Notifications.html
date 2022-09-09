@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Notifications — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Notifications — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Notifications</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -162,6 +163,16 @@ In future we will put the status as virtual filed in the notifications itself.</
         </div>
 
           <div class="summary-synopsis"><p>Mark all the unread messages as read.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#types/0" translate="no">types()</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  We will pick the types from here to keep the consistency</p></div>
 
       </div>
 
@@ -241,7 +252,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_notification(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Notifications.Notification.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Notifications.Notification.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -306,6 +317,34 @@ In future we will put the status as virtual filed in the notifications itself.</
 <p>Mark all the unread messages as read.</p>
   </section>
 </section>
+<section class="detail" id="types/0">
+
+  <div class="detail-header">
+    <a href="#types/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">types()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/notifications.ex#L105" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> types() :: %{critical: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), warning: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), info: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>  We will pick the types from here to keep the consistency</p>
+  </section>
+</section>
 <section class="detail" id="update_notification/2">
 
   <div class="detail-header">
@@ -328,7 +367,7 @@ In future we will put the status as virtual filed in the notifications itself.</
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_notification(Glific.Notifications.Notification.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Notifications.Notification.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Notifications.Notification.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -345,10 +384,10 @@ In future we will put the status as virtual filed in the notifications itself.</
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/notifications.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/notifications.ex">(current file)</a>
 
             </span>
 
@@ -359,8 +398,10 @@ In future we will put the status as virtual filed in the notifications itself.</
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

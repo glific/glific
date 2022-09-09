@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Searches — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Searches — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Searches</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -283,7 +284,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> add_permission(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> add_permission(<a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
 
       </div>
 
@@ -315,7 +316,7 @@ contact ids where the contact is the main query table</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> change_saved_search(<a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+  <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -325,8 +326,8 @@ contact ids where the contact is the main query table</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_saved_search</span><span class="p" data-group-id="8818878483-1">(</span><span class="n">search</span><span class="p" data-group-id="8818878483-1">)</span><span class="w">
-</span><span class="p" data-group-id="8818878483-2">%</span><span class="nc" data-group-id="8818878483-2">Ecto.Changeset</span><span class="p" data-group-id="8818878483-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8818878483-3">%</span><span class="nc" data-group-id="8818878483-3">Search</span><span class="p" data-group-id="8818878483-3">{</span><span class="p" data-group-id="8818878483-3">}</span><span class="p" data-group-id="8818878483-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_saved_search</span><span class="p" data-group-id="8067075513-1">(</span><span class="n">search</span><span class="p" data-group-id="8067075513-1">)</span><span class="w">
+</span><span class="p" data-group-id="8067075513-2">%</span><span class="nc" data-group-id="8067075513-2">Ecto.Changeset</span><span class="p" data-group-id="8067075513-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8067075513-3">%</span><span class="nc" data-group-id="8067075513-3">Search</span><span class="p" data-group-id="8067075513-3">{</span><span class="p" data-group-id="8067075513-3">}</span><span class="p" data-group-id="8067075513-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="convert_to_atom/1">
@@ -408,7 +409,7 @@ convert the string keys to atoms</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_saved_search(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -418,11 +419,11 @@ convert the string keys to atoms</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="6646896709-1">(</span><span class="p" data-group-id="6646896709-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6646896709-2">}</span><span class="p" data-group-id="6646896709-1">)</span><span class="w">
-</span><span class="p" data-group-id="6646896709-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6646896709-4">%</span><span class="nc" data-group-id="6646896709-4">SavedSearch</span><span class="p" data-group-id="6646896709-4">{</span><span class="p" data-group-id="6646896709-4">}</span><span class="p" data-group-id="6646896709-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="9303969967-1">(</span><span class="p" data-group-id="9303969967-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9303969967-2">}</span><span class="p" data-group-id="9303969967-1">)</span><span class="w">
+</span><span class="p" data-group-id="9303969967-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9303969967-4">%</span><span class="nc" data-group-id="9303969967-4">SavedSearch</span><span class="p" data-group-id="9303969967-4">{</span><span class="p" data-group-id="9303969967-4">}</span><span class="p" data-group-id="9303969967-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="6646896709-5">(</span><span class="p" data-group-id="6646896709-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6646896709-6">}</span><span class="p" data-group-id="6646896709-5">)</span><span class="w">
-</span><span class="p" data-group-id="6646896709-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6646896709-8">%</span><span class="nc" data-group-id="6646896709-8">Ecto.Changeset</span><span class="p" data-group-id="6646896709-8">{</span><span class="p" data-group-id="6646896709-8">}</span><span class="p" data-group-id="6646896709-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_saved_search</span><span class="p" data-group-id="9303969967-5">(</span><span class="p" data-group-id="9303969967-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9303969967-6">}</span><span class="p" data-group-id="9303969967-5">)</span><span class="w">
+</span><span class="p" data-group-id="9303969967-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9303969967-8">%</span><span class="nc" data-group-id="9303969967-8">Ecto.Changeset</span><span class="p" data-group-id="9303969967-8">{</span><span class="p" data-group-id="9303969967-8">}</span><span class="p" data-group-id="9303969967-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_saved_search/1">
@@ -447,7 +448,7 @@ convert the string keys to atoms</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_saved_search(<a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()) ::
-  {:ok, <a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -457,11 +458,11 @@ convert the string keys to atoms</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="1841072215-1">(</span><span class="n">search</span><span class="p" data-group-id="1841072215-1">)</span><span class="w">
-</span><span class="p" data-group-id="1841072215-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1841072215-3">%</span><span class="nc" data-group-id="1841072215-3">SavedSearch</span><span class="p" data-group-id="1841072215-3">{</span><span class="p" data-group-id="1841072215-3">}</span><span class="p" data-group-id="1841072215-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="5599796792-1">(</span><span class="n">search</span><span class="p" data-group-id="5599796792-1">)</span><span class="w">
+</span><span class="p" data-group-id="5599796792-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5599796792-3">%</span><span class="nc" data-group-id="5599796792-3">SavedSearch</span><span class="p" data-group-id="5599796792-3">{</span><span class="p" data-group-id="5599796792-3">}</span><span class="p" data-group-id="5599796792-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="1841072215-4">(</span><span class="n">search</span><span class="p" data-group-id="1841072215-4">)</span><span class="w">
-</span><span class="p" data-group-id="1841072215-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1841072215-6">%</span><span class="nc" data-group-id="1841072215-6">Ecto.Changeset</span><span class="p" data-group-id="1841072215-6">{</span><span class="p" data-group-id="1841072215-6">}</span><span class="p" data-group-id="1841072215-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_saved_search</span><span class="p" data-group-id="5599796792-4">(</span><span class="n">search</span><span class="p" data-group-id="5599796792-4">)</span><span class="w">
+</span><span class="p" data-group-id="5599796792-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5599796792-6">%</span><span class="nc" data-group-id="5599796792-6">Ecto.Changeset</span><span class="p" data-group-id="5599796792-6">{</span><span class="p" data-group-id="5599796792-6">}</span><span class="p" data-group-id="5599796792-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_saved_search!/1">
@@ -489,16 +490,16 @@ convert the string keys to atoms</p>
 
       </div>
 
-<p>Gets a single search.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the SavedSearch does not exist.</p><h2 id="get_saved_search!/1-examples" class="section-heading">
+<p>Gets a single search.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the SavedSearch does not exist.</p><h2 id="get_saved_search!/1-examples" class="section-heading">
   <a href="#get_saved_search!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="3534023492-1">(</span><span class="mi">123</span><span class="p" data-group-id="3534023492-1">)</span><span class="w">
-</span><span class="p" data-group-id="3534023492-2">%</span><span class="nc" data-group-id="3534023492-2">SavedSearch</span><span class="p" data-group-id="3534023492-2">{</span><span class="p" data-group-id="3534023492-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="0874519776-1">(</span><span class="mi">123</span><span class="p" data-group-id="0874519776-1">)</span><span class="w">
+</span><span class="p" data-group-id="0874519776-2">%</span><span class="nc" data-group-id="0874519776-2">SavedSearch</span><span class="p" data-group-id="0874519776-2">{</span><span class="p" data-group-id="0874519776-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="3534023492-3">(</span><span class="mi">456</span><span class="p" data-group-id="3534023492-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_saved_search!</span><span class="p" data-group-id="0874519776-3">(</span><span class="mi">456</span><span class="p" data-group-id="0874519776-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -533,8 +534,8 @@ convert the string keys to atoms</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_saved_searches</span><span class="p" data-group-id="8908005291-1">(</span><span class="p" data-group-id="8908005291-1">)</span><span class="w">
-</span><span class="p" data-group-id="8908005291-2">[</span><span class="p" data-group-id="8908005291-3">%</span><span class="nc" data-group-id="8908005291-3">SavedSearch</span><span class="p" data-group-id="8908005291-3">{</span><span class="p" data-group-id="8908005291-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="8908005291-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_saved_searches</span><span class="p" data-group-id="8045431432-1">(</span><span class="p" data-group-id="8045431432-1">)</span><span class="w">
+</span><span class="p" data-group-id="8045431432-2">[</span><span class="p" data-group-id="8045431432-3">%</span><span class="nc" data-group-id="8045431432-3">SavedSearch</span><span class="p" data-group-id="8045431432-3">{</span><span class="p" data-group-id="8045431432-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="8045431432-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="saved_search_count/1">
@@ -648,7 +649,7 @@ search</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_saved_search(<a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Searches.SavedSearch.html#t:t/0">Glific.Searches.SavedSearch.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -658,11 +659,11 @@ search</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="8978889618-1">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8978889618-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="8978889618-2">}</span><span class="p" data-group-id="8978889618-1">)</span><span class="w">
-</span><span class="p" data-group-id="8978889618-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8978889618-4">%</span><span class="nc" data-group-id="8978889618-4">SavedSearch</span><span class="p" data-group-id="8978889618-4">{</span><span class="p" data-group-id="8978889618-4">}</span><span class="p" data-group-id="8978889618-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="8112932580-1">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8112932580-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="8112932580-2">}</span><span class="p" data-group-id="8112932580-1">)</span><span class="w">
+</span><span class="p" data-group-id="8112932580-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8112932580-4">%</span><span class="nc" data-group-id="8112932580-4">SavedSearch</span><span class="p" data-group-id="8112932580-4">{</span><span class="p" data-group-id="8112932580-4">}</span><span class="p" data-group-id="8112932580-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="8978889618-5">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8978889618-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8978889618-6">}</span><span class="p" data-group-id="8978889618-5">)</span><span class="w">
-</span><span class="p" data-group-id="8978889618-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8978889618-8">%</span><span class="nc" data-group-id="8978889618-8">Ecto.Changeset</span><span class="p" data-group-id="8978889618-8">{</span><span class="p" data-group-id="8978889618-8">}</span><span class="p" data-group-id="8978889618-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_saved_search</span><span class="p" data-group-id="8112932580-5">(</span><span class="n">search</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8112932580-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8112932580-6">}</span><span class="p" data-group-id="8112932580-5">)</span><span class="w">
+</span><span class="p" data-group-id="8112932580-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8112932580-8">%</span><span class="nc" data-group-id="8112932580-8">Ecto.Changeset</span><span class="p" data-group-id="8112932580-8">{</span><span class="p" data-group-id="8112932580-8">}</span><span class="p" data-group-id="8112932580-7">}</span></code></pre>
   </section>
 </section>
 
@@ -675,10 +676,10 @@ search</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/searches.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/searches.ex">(current file)</a>
 
             </span>
 
@@ -689,8 +690,10 @@ search</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

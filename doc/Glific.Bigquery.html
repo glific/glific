@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.BigQuery — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.BigQuery — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.BigQuery</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -136,21 +137,21 @@ if required this function should be called from iex</p></div>
 
       <div class="summary-row">
         <div class="summary-signature">
-          <a href="#do_refresh_the_schema/2" translate="no">do_refresh_the_schema(organization_id, cred)</a>
+          <a href="#decode_bigquery_credential/3" translate="no">decode_bigquery_credential(credentials, org_contact, organization_id)</a>
 
         </div>
 
-          <div class="summary-synopsis"><p>Refresh the biquery schema and update all the older versions.</p></div>
+          <div class="summary-synopsis"><p>Decoding the credential for bigquery</p></div>
 
       </div>
 
       <div class="summary-row">
         <div class="summary-signature">
-          <a href="#format_data_for_bigquery/2" translate="no">format_data_for_bigquery(data, table)</a>
+          <a href="#do_refresh_the_schema/2" translate="no">do_refresh_the_schema(organization_id, cred)</a>
 
         </div>
 
-          <div class="summary-synopsis"><p>Format Data for bigquery</p></div>
+          <div class="summary-synopsis"><p>Refresh the bigquery schema and update all the older versions.</p></div>
 
       </div>
 
@@ -180,7 +181,7 @@ if required this function should be called from iex</p></div>
 
         </div>
 
-          <div class="summary-synopsis"><p>  Insert rows in the biqquery</p></div>
+          <div class="summary-synopsis"><p>  Insert rows in the bigquery</p></div>
 
       </div>
 
@@ -227,7 +228,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">alter_tables(conn, organization_id, dataset_id, project_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L248" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L283" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -247,6 +248,35 @@ Functions
 if required this function should be called from iex</p>
   </section>
 </section>
+<section class="detail" id="decode_bigquery_credential/3">
+
+  <div class="detail-header">
+    <a href="#decode_bigquery_credential/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">decode_bigquery_credential(credentials, org_contact, organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L109" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> decode_bigquery_credential(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
+  {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
+
+      </div>
+
+<p>Decoding the credential for bigquery</p>
+  </section>
+</section>
 <section class="detail" id="do_refresh_the_schema/2">
 
   <div class="detail-header">
@@ -256,7 +286,7 @@ if required this function should be called from iex</p>
     </a>
     <h1 class="signature" translate="no">do_refresh_the_schema(organization_id, cred)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L130" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L157" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -273,35 +303,7 @@ if required this function should be called from iex</p>
 
       </div>
 
-<p>Refresh the biquery schema and update all the older versions.</p>
-  </section>
-</section>
-<section class="detail" id="format_data_for_bigquery/2">
-
-  <div class="detail-header">
-    <a href="#format_data_for_bigquery/2" class="detail-link" title="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature" translate="no">format_data_for_bigquery(data, table)</h1>
-
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L312" class="view-source" rel="help" title="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">@spec</span> format_data_for_bigquery(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
-
-      </div>
-
-<p>Format Data for bigquery</p>
+<p>Refresh the bigquery schema and update all the older versions.</p>
   </section>
 </section>
 <section class="detail" id="format_date/2">
@@ -313,7 +315,7 @@ if required this function should be called from iex</p>
     </a>
     <h1 class="signature" translate="no">format_date(date, organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L274" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L309" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -341,7 +343,7 @@ if required this function should be called from iex</p>
     </a>
     <h1 class="signature" translate="no">format_json(definition)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L298" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L333" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -369,7 +371,7 @@ if required this function should be called from iex</p>
     </a>
     <h1 class="signature" translate="no">make_insert_query(data, table, organization_id, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L457" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L485" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -386,7 +388,7 @@ if required this function should be called from iex</p>
 
       </div>
 
-<p>  Insert rows in the biqquery</p>
+<p>  Insert rows in the bigquery</p>
   </section>
 </section>
 <section class="detail" id="make_job_to_remove_duplicate/2">
@@ -398,7 +400,7 @@ if required this function should be called from iex</p>
     </a>
     <h1 class="signature" translate="no">make_job_to_remove_duplicate(table, organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L588" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L616" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -426,7 +428,7 @@ if required this function should be called from iex</p>
     </a>
     <h1 class="signature" translate="no">sync_schema_with_bigquery(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L55" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/third_party/bigquery/bigquery.ex#L61" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -438,7 +440,7 @@ if required this function should be called from iex</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> sync_schema_with_bigquery(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: :ok</pre>
+          <pre translate="no"><span class="attribute">@spec</span> sync_schema_with_bigquery(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
 
       </div>
 
@@ -455,10 +457,10 @@ if required this function should be called from iex</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/third_party/bigquery/bigquery.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/third_party/bigquery/bigquery.ex">(current file)</a>
 
             </span>
 
@@ -469,8 +471,10 @@ if required this function should be called from iex</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Messages — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Messages — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Messages</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -415,7 +416,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> change_message(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_message(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -425,8 +426,8 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_message</span><span class="p" data-group-id="3276687049-1">(</span><span class="n">message</span><span class="p" data-group-id="3276687049-1">)</span><span class="w">
-</span><span class="p" data-group-id="3276687049-2">%</span><span class="nc" data-group-id="3276687049-2">Ecto.Changeset</span><span class="p" data-group-id="3276687049-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3276687049-3">%</span><span class="nc" data-group-id="3276687049-3">Message</span><span class="p" data-group-id="3276687049-3">{</span><span class="p" data-group-id="3276687049-3">}</span><span class="p" data-group-id="3276687049-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_message</span><span class="p" data-group-id="9655670178-1">(</span><span class="n">message</span><span class="p" data-group-id="9655670178-1">)</span><span class="w">
+</span><span class="p" data-group-id="9655670178-2">%</span><span class="nc" data-group-id="9655670178-2">Ecto.Changeset</span><span class="p" data-group-id="9655670178-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9655670178-3">%</span><span class="nc" data-group-id="9655670178-3">Message</span><span class="p" data-group-id="9655670178-3">{</span><span class="p" data-group-id="9655670178-3">}</span><span class="p" data-group-id="9655670178-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="change_message_media/2">
@@ -440,7 +441,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">change_message_media(message_media, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L812" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L823" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -453,7 +454,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> change_message_media(<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+  <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -463,8 +464,8 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_media</span><span class="p" data-group-id="2244701754-1">(</span><span class="n">message_media</span><span class="p" data-group-id="2244701754-1">)</span><span class="w">
-</span><span class="p" data-group-id="2244701754-2">%</span><span class="nc" data-group-id="2244701754-2">Ecto.Changeset</span><span class="p" data-group-id="2244701754-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2244701754-3">%</span><span class="nc" data-group-id="2244701754-3">MessageMedia</span><span class="p" data-group-id="2244701754-3">{</span><span class="p" data-group-id="2244701754-3">}</span><span class="p" data-group-id="2244701754-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_message_media</span><span class="p" data-group-id="9572834109-1">(</span><span class="n">message_media</span><span class="p" data-group-id="9572834109-1">)</span><span class="w">
+</span><span class="p" data-group-id="9572834109-2">%</span><span class="nc" data-group-id="9572834109-2">Ecto.Changeset</span><span class="p" data-group-id="9572834109-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9572834109-3">%</span><span class="nc" data-group-id="9572834109-3">MessageMedia</span><span class="p" data-group-id="9572834109-3">{</span><span class="p" data-group-id="9572834109-3">}</span><span class="p" data-group-id="9572834109-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="clear_messages/1">
@@ -476,7 +477,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">clear_messages(contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1057" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1068" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -534,7 +535,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">count_messages_media(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L725" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L736" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -591,7 +592,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">create_and_send_message_to_group(message_params, group, type)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L657" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L668" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -658,7 +659,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">create_group_message(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L620" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L631" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -671,7 +672,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_group_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -701,7 +702,7 @@ sent, but is used for display purposes in the group listings</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_message(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -711,11 +712,11 @@ sent, but is used for display purposes in the group listings</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="2705122816-1">(</span><span class="p" data-group-id="2705122816-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2705122816-2">}</span><span class="p" data-group-id="2705122816-1">)</span><span class="w">
-</span><span class="p" data-group-id="2705122816-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2705122816-4">%</span><span class="nc" data-group-id="2705122816-4">Message</span><span class="p" data-group-id="2705122816-4">{</span><span class="p" data-group-id="2705122816-4">}</span><span class="p" data-group-id="2705122816-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="8282075745-1">(</span><span class="p" data-group-id="8282075745-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="8282075745-2">}</span><span class="p" data-group-id="8282075745-1">)</span><span class="w">
+</span><span class="p" data-group-id="8282075745-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8282075745-4">%</span><span class="nc" data-group-id="8282075745-4">Message</span><span class="p" data-group-id="8282075745-4">{</span><span class="p" data-group-id="8282075745-4">}</span><span class="p" data-group-id="8282075745-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="2705122816-5">(</span><span class="p" data-group-id="2705122816-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2705122816-6">}</span><span class="p" data-group-id="2705122816-5">)</span><span class="w">
-</span><span class="p" data-group-id="2705122816-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2705122816-8">%</span><span class="nc" data-group-id="2705122816-8">Ecto.Changeset</span><span class="p" data-group-id="2705122816-8">{</span><span class="p" data-group-id="2705122816-8">}</span><span class="p" data-group-id="2705122816-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message</span><span class="p" data-group-id="8282075745-5">(</span><span class="p" data-group-id="8282075745-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8282075745-6">}</span><span class="p" data-group-id="8282075745-5">)</span><span class="w">
+</span><span class="p" data-group-id="8282075745-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8282075745-8">%</span><span class="nc" data-group-id="8282075745-8">Ecto.Changeset</span><span class="p" data-group-id="8282075745-8">{</span><span class="p" data-group-id="8282075745-8">}</span><span class="p" data-group-id="8282075745-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_message_media/1">
@@ -729,7 +730,7 @@ sent, but is used for display purposes in the group listings</p>
     </a>
     <h1 class="signature" translate="no">create_message_media(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L758" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L769" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -742,7 +743,7 @@ sent, but is used for display purposes in the group listings</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_message_media(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -752,11 +753,11 @@ sent, but is used for display purposes in the group listings</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="2794991216-1">(</span><span class="p" data-group-id="2794991216-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2794991216-2">}</span><span class="p" data-group-id="2794991216-1">)</span><span class="w">
-</span><span class="p" data-group-id="2794991216-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2794991216-4">%</span><span class="nc" data-group-id="2794991216-4">MessageMedia</span><span class="p" data-group-id="2794991216-4">{</span><span class="p" data-group-id="2794991216-4">}</span><span class="p" data-group-id="2794991216-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="2913682542-1">(</span><span class="p" data-group-id="2913682542-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2913682542-2">}</span><span class="p" data-group-id="2913682542-1">)</span><span class="w">
+</span><span class="p" data-group-id="2913682542-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2913682542-4">%</span><span class="nc" data-group-id="2913682542-4">MessageMedia</span><span class="p" data-group-id="2913682542-4">{</span><span class="p" data-group-id="2913682542-4">}</span><span class="p" data-group-id="2913682542-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="2794991216-5">(</span><span class="p" data-group-id="2794991216-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2794991216-6">}</span><span class="p" data-group-id="2794991216-5">)</span><span class="w">
-</span><span class="p" data-group-id="2794991216-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2794991216-8">%</span><span class="nc" data-group-id="2794991216-8">Ecto.Changeset</span><span class="p" data-group-id="2794991216-8">{</span><span class="p" data-group-id="2794991216-8">}</span><span class="p" data-group-id="2794991216-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_message_media</span><span class="p" data-group-id="2913682542-5">(</span><span class="p" data-group-id="2913682542-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2913682542-6">}</span><span class="p" data-group-id="2913682542-5">)</span><span class="w">
+</span><span class="p" data-group-id="2913682542-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2913682542-8">%</span><span class="nc" data-group-id="2913682542-8">Ecto.Changeset</span><span class="p" data-group-id="2913682542-8">{</span><span class="p" data-group-id="2913682542-8">}</span><span class="p" data-group-id="2913682542-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_temp_message/3">
@@ -770,7 +771,7 @@ sent, but is used for display purposes in the group listings</p>
     </a>
     <h1 class="signature" translate="no">create_temp_message(organization_id, body, attrs \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1035" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1046" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -814,7 +815,7 @@ Completed, Failure, Success etc</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_message(Glific.Messages.Message.t()) ::
-  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -824,11 +825,11 @@ Completed, Failure, Success etc</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="1830834635-1">(</span><span class="n">message</span><span class="p" data-group-id="1830834635-1">)</span><span class="w">
-</span><span class="p" data-group-id="1830834635-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1830834635-3">%</span><span class="nc" data-group-id="1830834635-3">Message</span><span class="p" data-group-id="1830834635-3">{</span><span class="p" data-group-id="1830834635-3">}</span><span class="p" data-group-id="1830834635-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="3188550361-1">(</span><span class="n">message</span><span class="p" data-group-id="3188550361-1">)</span><span class="w">
+</span><span class="p" data-group-id="3188550361-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3188550361-3">%</span><span class="nc" data-group-id="3188550361-3">Message</span><span class="p" data-group-id="3188550361-3">{</span><span class="p" data-group-id="3188550361-3">}</span><span class="p" data-group-id="3188550361-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="1830834635-4">(</span><span class="n">message</span><span class="p" data-group-id="1830834635-4">)</span><span class="w">
-</span><span class="p" data-group-id="1830834635-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1830834635-6">%</span><span class="nc" data-group-id="1830834635-6">Ecto.Changeset</span><span class="p" data-group-id="1830834635-6">{</span><span class="p" data-group-id="1830834635-6">}</span><span class="p" data-group-id="1830834635-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message</span><span class="p" data-group-id="3188550361-4">(</span><span class="n">message</span><span class="p" data-group-id="3188550361-4">)</span><span class="w">
+</span><span class="p" data-group-id="3188550361-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3188550361-6">%</span><span class="nc" data-group-id="3188550361-6">Ecto.Changeset</span><span class="p" data-group-id="3188550361-6">{</span><span class="p" data-group-id="3188550361-6">}</span><span class="p" data-group-id="3188550361-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_message_media/1">
@@ -840,7 +841,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature" translate="no">delete_message_media(message_media)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L798" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L809" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -853,7 +854,7 @@ Completed, Failure, Success etc</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_message_media(<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()) ::
-  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -863,11 +864,11 @@ Completed, Failure, Success etc</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="9148610717-1">(</span><span class="n">message_media</span><span class="p" data-group-id="9148610717-1">)</span><span class="w">
-</span><span class="p" data-group-id="9148610717-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9148610717-3">%</span><span class="nc" data-group-id="9148610717-3">MessageMedia</span><span class="p" data-group-id="9148610717-3">{</span><span class="p" data-group-id="9148610717-3">}</span><span class="p" data-group-id="9148610717-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="3913263961-1">(</span><span class="n">message_media</span><span class="p" data-group-id="3913263961-1">)</span><span class="w">
+</span><span class="p" data-group-id="3913263961-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3913263961-3">%</span><span class="nc" data-group-id="3913263961-3">MessageMedia</span><span class="p" data-group-id="3913263961-3">{</span><span class="p" data-group-id="3913263961-3">}</span><span class="p" data-group-id="3913263961-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="9148610717-4">(</span><span class="n">message_media</span><span class="p" data-group-id="9148610717-4">)</span><span class="w">
-</span><span class="p" data-group-id="9148610717-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9148610717-6">%</span><span class="nc" data-group-id="9148610717-6">Ecto.Changeset</span><span class="p" data-group-id="9148610717-6">{</span><span class="p" data-group-id="9148610717-6">}</span><span class="p" data-group-id="9148610717-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_message_media</span><span class="p" data-group-id="3913263961-4">(</span><span class="n">message_media</span><span class="p" data-group-id="3913263961-4">)</span><span class="w">
+</span><span class="p" data-group-id="3913263961-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3913263961-6">%</span><span class="nc" data-group-id="3913263961-6">Ecto.Changeset</span><span class="p" data-group-id="3913263961-6">{</span><span class="p" data-group-id="3913263961-6">}</span><span class="p" data-group-id="3913263961-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_media_type_from_url/1">
@@ -879,7 +880,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature" translate="no">get_media_type_from_url(url)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1236" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1247" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -923,16 +924,16 @@ Completed, Failure, Success etc</p>
 
       </div>
 
-<p>Gets a single message.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message does not exist.</p><h2 id="get_message!/1-examples" class="section-heading">
+<p>Gets a single message.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message does not exist.</p><h2 id="get_message!/1-examples" class="section-heading">
   <a href="#get_message!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="3890847455-1">(</span><span class="mi">123</span><span class="p" data-group-id="3890847455-1">)</span><span class="w">
-</span><span class="p" data-group-id="3890847455-2">%</span><span class="nc" data-group-id="3890847455-2">Message</span><span class="p" data-group-id="3890847455-2">{</span><span class="p" data-group-id="3890847455-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="4321282290-1">(</span><span class="mi">123</span><span class="p" data-group-id="4321282290-1">)</span><span class="w">
+</span><span class="p" data-group-id="4321282290-2">%</span><span class="nc" data-group-id="4321282290-2">Message</span><span class="p" data-group-id="4321282290-2">{</span><span class="p" data-group-id="4321282290-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="3890847455-3">(</span><span class="mi">456</span><span class="p" data-group-id="3890847455-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message!</span><span class="p" data-group-id="4321282290-3">(</span><span class="mi">456</span><span class="p" data-group-id="4321282290-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -945,7 +946,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature" translate="no">get_message_media!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L743" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L754" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -961,16 +962,16 @@ Completed, Failure, Success etc</p>
 
       </div>
 
-<p>Gets a single message media.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message media does not exist.</p><h2 id="get_message_media!/1-examples" class="section-heading">
+<p>Gets a single message media.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Message media does not exist.</p><h2 id="get_message_media!/1-examples" class="section-heading">
   <a href="#get_message_media!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="7647525058-1">(</span><span class="mi">123</span><span class="p" data-group-id="7647525058-1">)</span><span class="w">
-</span><span class="p" data-group-id="7647525058-2">%</span><span class="nc" data-group-id="7647525058-2">MessageMedia</span><span class="p" data-group-id="7647525058-2">{</span><span class="p" data-group-id="7647525058-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="2614375243-1">(</span><span class="mi">123</span><span class="p" data-group-id="2614375243-1">)</span><span class="w">
+</span><span class="p" data-group-id="2614375243-2">%</span><span class="nc" data-group-id="2614375243-2">MessageMedia</span><span class="p" data-group-id="2614375243-2">{</span><span class="p" data-group-id="2614375243-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="7647525058-3">(</span><span class="mi">456</span><span class="p" data-group-id="7647525058-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_message_media!</span><span class="p" data-group-id="2614375243-3">(</span><span class="mi">456</span><span class="p" data-group-id="2614375243-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -985,7 +986,7 @@ Completed, Failure, Success etc</p>
     </a>
     <h1 class="signature" translate="no">list_conversations(args, count \\ false)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L837" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L848" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1037,8 +1038,8 @@ at the beginning of the list</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages</span><span class="p" data-group-id="2233448632-1">(</span><span class="n">map</span><span class="p" data-group-id="2233448632-2">(</span><span class="p" data-group-id="2233448632-2">)</span><span class="p" data-group-id="2233448632-1">)</span><span class="w">
-</span><span class="p" data-group-id="2233448632-3">[</span><span class="p" data-group-id="2233448632-4">%</span><span class="nc" data-group-id="2233448632-4">Message</span><span class="p" data-group-id="2233448632-4">{</span><span class="p" data-group-id="2233448632-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2233448632-3">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages</span><span class="p" data-group-id="5436655088-1">(</span><span class="n">map</span><span class="p" data-group-id="5436655088-2">(</span><span class="p" data-group-id="5436655088-2">)</span><span class="p" data-group-id="5436655088-1">)</span><span class="w">
+</span><span class="p" data-group-id="5436655088-3">[</span><span class="p" data-group-id="5436655088-4">%</span><span class="nc" data-group-id="5436655088-4">Message</span><span class="p" data-group-id="5436655088-4">{</span><span class="p" data-group-id="5436655088-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="5436655088-3">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="list_messages_media/1">
@@ -1052,7 +1053,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature" translate="no">list_messages_media(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L706" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L717" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1074,8 +1075,8 @@ at the beginning of the list</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_media</span><span class="p" data-group-id="3083876026-1">(</span><span class="n">map</span><span class="p" data-group-id="3083876026-2">(</span><span class="p" data-group-id="3083876026-2">)</span><span class="p" data-group-id="3083876026-1">)</span><span class="w">
-</span><span class="p" data-group-id="3083876026-3">[</span><span class="p" data-group-id="3083876026-4">%</span><span class="nc" data-group-id="3083876026-4">MessageMedia</span><span class="p" data-group-id="3083876026-4">{</span><span class="p" data-group-id="3083876026-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="3083876026-3">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_messages_media</span><span class="p" data-group-id="2750344540-1">(</span><span class="n">map</span><span class="p" data-group-id="2750344540-2">(</span><span class="p" data-group-id="2750344540-2">)</span><span class="p" data-group-id="2750344540-1">)</span><span class="w">
+</span><span class="p" data-group-id="2750344540-3">[</span><span class="p" data-group-id="2750344540-4">%</span><span class="nc" data-group-id="2750344540-4">MessageMedia</span><span class="p" data-group-id="2750344540-4">{</span><span class="p" data-group-id="2750344540-4">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2750344540-3">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="mark_contact_messages_as_read/2">
@@ -1087,7 +1088,7 @@ at the beginning of the list</p>
     </a>
     <h1 class="signature" translate="no">mark_contact_messages_as_read(contact_id, organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1268" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L1279" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1146,7 +1147,7 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
     </a>
     <h1 class="signature" translate="no">tag_in_message?(message, tag_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L691" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L702" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1187,7 +1188,7 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_message(Glific.Messages.Message.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Messages.Message.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1197,11 +1198,11 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="2403838304-1">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2403838304-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2403838304-2">}</span><span class="p" data-group-id="2403838304-1">)</span><span class="w">
-</span><span class="p" data-group-id="2403838304-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2403838304-4">%</span><span class="nc" data-group-id="2403838304-4">Message</span><span class="p" data-group-id="2403838304-4">{</span><span class="p" data-group-id="2403838304-4">}</span><span class="p" data-group-id="2403838304-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="5543182164-1">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5543182164-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5543182164-2">}</span><span class="p" data-group-id="5543182164-1">)</span><span class="w">
+</span><span class="p" data-group-id="5543182164-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5543182164-4">%</span><span class="nc" data-group-id="5543182164-4">Message</span><span class="p" data-group-id="5543182164-4">{</span><span class="p" data-group-id="5543182164-4">}</span><span class="p" data-group-id="5543182164-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="2403838304-5">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2403838304-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2403838304-6">}</span><span class="p" data-group-id="2403838304-5">)</span><span class="w">
-</span><span class="p" data-group-id="2403838304-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2403838304-8">%</span><span class="nc" data-group-id="2403838304-8">Ecto.Changeset</span><span class="p" data-group-id="2403838304-8">{</span><span class="p" data-group-id="2403838304-8">}</span><span class="p" data-group-id="2403838304-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message</span><span class="p" data-group-id="5543182164-5">(</span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5543182164-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5543182164-6">}</span><span class="p" data-group-id="5543182164-5">)</span><span class="w">
+</span><span class="p" data-group-id="5543182164-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5543182164-8">%</span><span class="nc" data-group-id="5543182164-8">Ecto.Changeset</span><span class="p" data-group-id="5543182164-8">{</span><span class="p" data-group-id="5543182164-8">}</span><span class="p" data-group-id="5543182164-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_message_media/2">
@@ -1213,7 +1214,7 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
     </a>
     <h1 class="signature" translate="no">update_message_media(message_media, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L778" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/messages.ex#L789" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1226,7 +1227,7 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_message_media(<a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Messages.MessageMedia.html#t:t/0">Glific.Messages.MessageMedia.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1236,11 +1237,11 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="8117093982-1">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8117093982-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="8117093982-2">}</span><span class="p" data-group-id="8117093982-1">)</span><span class="w">
-</span><span class="p" data-group-id="8117093982-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8117093982-4">%</span><span class="nc" data-group-id="8117093982-4">MessageMedia</span><span class="p" data-group-id="8117093982-4">{</span><span class="p" data-group-id="8117093982-4">}</span><span class="p" data-group-id="8117093982-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="1324239669-1">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1324239669-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="1324239669-2">}</span><span class="p" data-group-id="1324239669-1">)</span><span class="w">
+</span><span class="p" data-group-id="1324239669-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1324239669-4">%</span><span class="nc" data-group-id="1324239669-4">MessageMedia</span><span class="p" data-group-id="1324239669-4">{</span><span class="p" data-group-id="1324239669-4">}</span><span class="p" data-group-id="1324239669-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="8117093982-5">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8117093982-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="8117093982-6">}</span><span class="p" data-group-id="8117093982-5">)</span><span class="w">
-</span><span class="p" data-group-id="8117093982-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8117093982-8">%</span><span class="nc" data-group-id="8117093982-8">Ecto.Changeset</span><span class="p" data-group-id="8117093982-8">{</span><span class="p" data-group-id="8117093982-8">}</span><span class="p" data-group-id="8117093982-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_message_media</span><span class="p" data-group-id="1324239669-5">(</span><span class="n">message_media</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1324239669-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1324239669-6">}</span><span class="p" data-group-id="1324239669-5">)</span><span class="w">
+</span><span class="p" data-group-id="1324239669-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1324239669-8">%</span><span class="nc" data-group-id="1324239669-8">Ecto.Changeset</span><span class="p" data-group-id="1324239669-8">{</span><span class="p" data-group-id="1324239669-8">}</span><span class="p" data-group-id="1324239669-7">}</span></code></pre>
   </section>
 </section>
 
@@ -1253,10 +1254,10 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/messages.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/messages.ex">(current file)</a>
 
             </span>
 
@@ -1267,8 +1268,10 @@ Add as much detail, so we can reverse-engineer why the sending failed.</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

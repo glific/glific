@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Groups.Group — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Groups.Group — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Groups.Group</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -171,7 +172,7 @@ Types
     </a>
     <h1 class="signature" translate="no">t()</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups/group.ex#L26" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups/group.ex#L27" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -184,7 +185,7 @@ Types
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@type</span> t() :: %Glific.Groups.Group{
-  __meta__: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
+  __meta__: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
   contacts: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   description: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
@@ -195,8 +196,9 @@ Types
   last_message_number: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">integer</a>(),
   messages: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   organization:
-    <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>() | <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
+    <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>() | <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Association.NotLoaded.html#t:t/0">Ecto.Association.NotLoaded.t</a>() | nil,
   organization_id: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>() | nil,
+  roles: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>(),
   updated_at: :utc_datetime | nil,
   users: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">term</a>()
 }</pre>
@@ -228,7 +230,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">changeset(contact, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups/group.ex#L63" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups/group.ex#L65" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -240,7 +242,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -257,10 +259,10 @@ Functions
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/groups/group.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/groups/group.ex">(current file)</a>
 
             </span>
 
@@ -271,8 +273,10 @@ Functions
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

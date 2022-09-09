@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Clients.Tap — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Clients.Tap — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Clients.Tap</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -125,12 +126,63 @@ Glific
 
       <div class="summary-row">
         <div class="summary-signature">
+          <a href="#fix_contact_name/0" translate="no">fix_contact_name()</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Fix the contact name issue</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
           <a href="#gcs_file_name/1" translate="no">gcs_file_name(media)</a>
 
         </div>
 
           <div class="summary-synopsis"><p>In the case of TAP we retrive the first group the contact is in and store
 and set the remote name to be a sub-directory under that group (if one exists)</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#maybe_add_profile_activity/3" translate="no">maybe_add_profile_activity(activity_info, contact_id, org_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  Check if a contact has more profiles and add that to message.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#template/2" translate="no">template(shortcode, params_staring \\ &quot;&quot;)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>get template form EEx without variables</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#update_all_profile_fields/4" translate="no">update_all_profile_fields(org_id, contact_id, key, value)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  Update the fields for all the profiles.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#webhook/2" translate="no">webhook(arg1, fields)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Create a webhook with different signatures, so we can easily implement
+additional functionality as needed</p></div>
 
       </div>
 
@@ -148,6 +200,34 @@ and set the remote name to be a sub-directory under that group (if one exists)</
 Functions
     </h1>
     <div class="functions-list">
+<section class="detail" id="fix_contact_name/0">
+
+  <div class="detail-header">
+    <a href="#fix_contact_name/0" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">fix_contact_name()</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L515" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> fix_contact_name() :: :ok</pre>
+
+      </div>
+
+<p>Fix the contact name issue</p>
+  </section>
+</section>
 <section class="detail" id="gcs_file_name/1">
 
   <div class="detail-header">
@@ -157,7 +237,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">gcs_file_name(media)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L15" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L34" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -177,6 +257,126 @@ Functions
 and set the remote name to be a sub-directory under that group (if one exists)</p>
   </section>
 </section>
+<section class="detail" id="maybe_add_profile_activity/3">
+
+  <div class="detail-header">
+    <a href="#maybe_add_profile_activity/3" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">maybe_add_profile_activity(activity_info, contact_id, org_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L424" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> maybe_add_profile_activity(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>  Check if a contact has more profiles and add that to message.</p>
+  </section>
+</section>
+<section class="detail" id="template/2">
+
+    <span id="template/1"></span>
+
+  <div class="detail-header">
+    <a href="#template/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">template(shortcode, params_staring \\ &quot;&quot;)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L54" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> template(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">binary</a>()</pre>
+
+      </div>
+
+<p>get template form EEx without variables</p>
+  </section>
+</section>
+<section class="detail" id="update_all_profile_fields/4">
+
+  <div class="detail-header">
+    <a href="#update_all_profile_fields/4" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">update_all_profile_fields(org_id, contact_id, key, value)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L485" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> update_all_profile_fields(
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(),
+  <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()
+) :: :ok</pre>
+
+      </div>
+
+<p>  Update the fields for all the profiles.</p>
+  </section>
+</section>
+<section class="detail" id="webhook/2">
+
+  <div class="detail-header">
+    <a href="#webhook/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">webhook(arg1, fields)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/clients/tap.ex#L87" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> webhook(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>Create a webhook with different signatures, so we can easily implement
+additional functionality as needed</p>
+  </section>
+</section>
 
     </div>
   </section>
@@ -187,10 +387,10 @@ and set the remote name to be a sub-directory under that group (if one exists)</
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/clients/tap.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/clients/tap.ex">(current file)</a>
 
             </span>
 
@@ -201,8 +401,10 @@ and set the remote name to be a sub-directory under that group (if one exists)</
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

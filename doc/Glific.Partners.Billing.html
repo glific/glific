@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Partners.Billing — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Partners.Billing — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Partners.Billing</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -389,7 +390,7 @@ Types
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@type</span> t() :: %Glific.Partners.Billing{
-  __meta__: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
+  __meta__: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Schema.Metadata.html#t:t/0">Ecto.Schema.Metadata.t</a>(),
   currency: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
   deduct_tds: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>() | false,
   email: <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>() | nil,
@@ -451,7 +452,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> changeset(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -480,7 +481,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>() | <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+  {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>() | <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
 
@@ -510,7 +511,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> create_billing(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> create_billing(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -539,7 +540,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_subscription(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="https://hexdocs.pm/stripity_stripe/2.13.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>()} | {:pending, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+  {:ok, <a href="https://hexdocs.pm/stripity_stripe/2.15.1/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>()} | {:pending, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
 
@@ -624,7 +625,7 @@ We'll do updating the card in a seperate function</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> delete_billing(<a href="#t:t/0">t</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> delete_billing(<a href="#t:t/0">t</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -823,8 +824,8 @@ both dates inclusive</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> subscription_created_callback(<a href="https://hexdocs.pm/stripity_stripe/2.13.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
-  :ok | {:error, <a href="https://hexdocs.pm/stripity_stripe/2.13.0/Stripe.Error.html#t:t/0">Stripe.Error.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> subscription_created_callback(<a href="https://hexdocs.pm/stripity_stripe/2.15.1/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
+  :ok | {:error, <a href="https://hexdocs.pm/stripity_stripe/2.15.1/Stripe.Error.html#t:t/0">Stripe.Error.t</a>()}</pre>
 
       </div>
 
@@ -881,7 +882,7 @@ both dates inclusive</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> update_billing(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> update_billing(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -939,7 +940,7 @@ by stripe</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> update_stripe_customer(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/stripity_stripe/2.13.0/Stripe.Error.html#t:t/0">Stripe.Error.t</a>()}</pre>
+          <pre translate="no"><span class="attribute">@spec</span> update_stripe_customer(<a href="#t:t/0">t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: {:ok, <a href="#t:t/0">t</a>()} | {:error, <a href="https://hexdocs.pm/stripity_stripe/2.15.1/Stripe.Error.html#t:t/0">Stripe.Error.t</a>()}</pre>
 
       </div>
 
@@ -997,11 +998,11 @@ by stripe</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_subscription_details(
-  <a href="https://hexdocs.pm/stripity_stripe/2.13.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>(),
+  <a href="https://hexdocs.pm/stripity_stripe/2.15.1/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>(),
   <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(),
   <a href="#t:t/0">t</a>() | nil
 ) ::
-  {:ok, <a href="https://hexdocs.pm/stripity_stripe/2.13.0/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+  {:ok, <a href="https://hexdocs.pm/stripity_stripe/2.15.1/Stripe.Subscription.html#t:t/0">Stripe.Subscription.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
 
@@ -1046,10 +1047,10 @@ by stripe</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/partners/billing.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/partners/billing.ex">(current file)</a>
 
             </span>
 
@@ -1060,8 +1061,10 @@ by stripe</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

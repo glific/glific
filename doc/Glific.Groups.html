@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Groups — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Groups — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Groups</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -369,7 +370,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">add_permission(query, user)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L37" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L43" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -381,7 +382,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> add_permission(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> add_permission(<a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
 
       </div>
 
@@ -400,7 +401,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">change_group(group, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L225" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L254" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -412,7 +413,7 @@ groups that the user can see</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> change_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -422,8 +423,8 @@ groups that the user can see</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_group</span><span class="p" data-group-id="2680805109-1">(</span><span class="n">group</span><span class="p" data-group-id="2680805109-1">)</span><span class="w">
-</span><span class="p" data-group-id="2680805109-2">%</span><span class="nc" data-group-id="2680805109-2">Ecto.Changeset</span><span class="p" data-group-id="2680805109-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2680805109-3">%</span><span class="nc" data-group-id="2680805109-3">Group</span><span class="p" data-group-id="2680805109-3">{</span><span class="p" data-group-id="2680805109-3">}</span><span class="p" data-group-id="2680805109-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_group</span><span class="p" data-group-id="0776525650-1">(</span><span class="n">group</span><span class="p" data-group-id="0776525650-1">)</span><span class="w">
+</span><span class="p" data-group-id="0776525650-2">%</span><span class="nc" data-group-id="0776525650-2">Ecto.Changeset</span><span class="p" data-group-id="0776525650-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0776525650-3">%</span><span class="nc" data-group-id="0776525650-3">Group</span><span class="p" data-group-id="0776525650-3">{</span><span class="p" data-group-id="0776525650-3">}</span><span class="p" data-group-id="0776525650-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="contact_ids/1">
@@ -435,7 +436,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">contact_ids(group_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L287" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L316" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -463,7 +464,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">contacts_count(map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L94" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L101" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -491,7 +492,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">count_groups(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L83" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L90" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -521,7 +522,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">create_contact_group(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L242" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L271" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -534,7 +535,7 @@ groups that the user can see</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_contact_group(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Groups.ContactGroup.html#t:t/0">Glific.Groups.ContactGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Groups.ContactGroup.html#t:t/0">Glific.Groups.ContactGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -544,11 +545,11 @@ groups that the user can see</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_group</span><span class="p" data-group-id="1028088290-1">(</span><span class="p" data-group-id="1028088290-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1028088290-2">}</span><span class="p" data-group-id="1028088290-1">)</span><span class="w">
-</span><span class="p" data-group-id="1028088290-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1028088290-4">%</span><span class="nc" data-group-id="1028088290-4">Contact</span><span class="p" data-group-id="1028088290-4">{</span><span class="p" data-group-id="1028088290-4">}</span><span class="p" data-group-id="1028088290-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_group</span><span class="p" data-group-id="1618248687-1">(</span><span class="p" data-group-id="1618248687-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1618248687-2">}</span><span class="p" data-group-id="1618248687-1">)</span><span class="w">
+</span><span class="p" data-group-id="1618248687-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1618248687-4">%</span><span class="nc" data-group-id="1618248687-4">Contact</span><span class="p" data-group-id="1618248687-4">{</span><span class="p" data-group-id="1618248687-4">}</span><span class="p" data-group-id="1618248687-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_group</span><span class="p" data-group-id="1028088290-5">(</span><span class="p" data-group-id="1028088290-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1028088290-6">}</span><span class="p" data-group-id="1028088290-5">)</span><span class="w">
-</span><span class="p" data-group-id="1028088290-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1028088290-8">%</span><span class="nc" data-group-id="1028088290-8">Ecto.Changeset</span><span class="p" data-group-id="1028088290-8">{</span><span class="p" data-group-id="1028088290-8">}</span><span class="p" data-group-id="1028088290-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact_group</span><span class="p" data-group-id="1618248687-5">(</span><span class="p" data-group-id="1618248687-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1618248687-6">}</span><span class="p" data-group-id="1618248687-5">)</span><span class="w">
+</span><span class="p" data-group-id="1618248687-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1618248687-8">%</span><span class="nc" data-group-id="1618248687-8">Ecto.Changeset</span><span class="p" data-group-id="1618248687-8">{</span><span class="p" data-group-id="1618248687-8">}</span><span class="p" data-group-id="1618248687-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_group/1">
@@ -562,7 +563,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">create_group(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L167" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L174" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -575,7 +576,7 @@ groups that the user can see</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_group(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -585,11 +586,11 @@ groups that the user can see</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_group</span><span class="p" data-group-id="2538501928-1">(</span><span class="p" data-group-id="2538501928-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2538501928-2">}</span><span class="p" data-group-id="2538501928-1">)</span><span class="w">
-</span><span class="p" data-group-id="2538501928-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2538501928-4">%</span><span class="nc" data-group-id="2538501928-4">Group</span><span class="p" data-group-id="2538501928-4">{</span><span class="p" data-group-id="2538501928-4">}</span><span class="p" data-group-id="2538501928-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_group</span><span class="p" data-group-id="4906654456-1">(</span><span class="p" data-group-id="4906654456-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4906654456-2">}</span><span class="p" data-group-id="4906654456-1">)</span><span class="w">
+</span><span class="p" data-group-id="4906654456-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4906654456-4">%</span><span class="nc" data-group-id="4906654456-4">Group</span><span class="p" data-group-id="4906654456-4">{</span><span class="p" data-group-id="4906654456-4">}</span><span class="p" data-group-id="4906654456-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_group</span><span class="p" data-group-id="2538501928-5">(</span><span class="p" data-group-id="2538501928-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2538501928-6">}</span><span class="p" data-group-id="2538501928-5">)</span><span class="w">
-</span><span class="p" data-group-id="2538501928-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2538501928-8">%</span><span class="nc" data-group-id="2538501928-8">Ecto.Changeset</span><span class="p" data-group-id="2538501928-8">{</span><span class="p" data-group-id="2538501928-8">}</span><span class="p" data-group-id="2538501928-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_group</span><span class="p" data-group-id="4906654456-5">(</span><span class="p" data-group-id="4906654456-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4906654456-6">}</span><span class="p" data-group-id="4906654456-5">)</span><span class="w">
+</span><span class="p" data-group-id="4906654456-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4906654456-8">%</span><span class="nc" data-group-id="4906654456-8">Ecto.Changeset</span><span class="p" data-group-id="4906654456-8">{</span><span class="p" data-group-id="4906654456-8">}</span><span class="p" data-group-id="4906654456-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_user_group/1">
@@ -603,7 +604,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">create_user_group(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L330" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L359" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -616,7 +617,7 @@ groups that the user can see</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_user_group(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Groups.UserGroup.html#t:t/0">Glific.Groups.UserGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Groups.UserGroup.html#t:t/0">Glific.Groups.UserGroup.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -626,11 +627,11 @@ groups that the user can see</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_user_group</span><span class="p" data-group-id="9230095821-1">(</span><span class="p" data-group-id="9230095821-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9230095821-2">}</span><span class="p" data-group-id="9230095821-1">)</span><span class="w">
-</span><span class="p" data-group-id="9230095821-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9230095821-4">%</span><span class="nc" data-group-id="9230095821-4">User</span><span class="p" data-group-id="9230095821-4">{</span><span class="p" data-group-id="9230095821-4">}</span><span class="p" data-group-id="9230095821-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_user_group</span><span class="p" data-group-id="0022869079-1">(</span><span class="p" data-group-id="0022869079-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0022869079-2">}</span><span class="p" data-group-id="0022869079-1">)</span><span class="w">
+</span><span class="p" data-group-id="0022869079-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0022869079-4">%</span><span class="nc" data-group-id="0022869079-4">User</span><span class="p" data-group-id="0022869079-4">{</span><span class="p" data-group-id="0022869079-4">}</span><span class="p" data-group-id="0022869079-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_user_group</span><span class="p" data-group-id="9230095821-5">(</span><span class="p" data-group-id="9230095821-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9230095821-6">}</span><span class="p" data-group-id="9230095821-5">)</span><span class="w">
-</span><span class="p" data-group-id="9230095821-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9230095821-8">%</span><span class="nc" data-group-id="9230095821-8">Ecto.Changeset</span><span class="p" data-group-id="9230095821-8">{</span><span class="p" data-group-id="9230095821-8">}</span><span class="p" data-group-id="9230095821-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_user_group</span><span class="p" data-group-id="0022869079-5">(</span><span class="p" data-group-id="0022869079-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0022869079-6">}</span><span class="p" data-group-id="0022869079-5">)</span><span class="w">
+</span><span class="p" data-group-id="0022869079-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0022869079-8">%</span><span class="nc" data-group-id="0022869079-8">Ecto.Changeset</span><span class="p" data-group-id="0022869079-8">{</span><span class="p" data-group-id="0022869079-8">}</span><span class="p" data-group-id="0022869079-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_contact_groups_by_ids/2">
@@ -642,7 +643,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">delete_contact_groups_by_ids(contact_id, group_ids)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L312" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L341" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -670,7 +671,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">delete_group(group)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L209" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L238" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -683,7 +684,7 @@ groups that the user can see</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()) ::
-  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -693,11 +694,11 @@ groups that the user can see</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_group</span><span class="p" data-group-id="1931093288-1">(</span><span class="n">group</span><span class="p" data-group-id="1931093288-1">)</span><span class="w">
-</span><span class="p" data-group-id="1931093288-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1931093288-3">%</span><span class="nc" data-group-id="1931093288-3">Group</span><span class="p" data-group-id="1931093288-3">{</span><span class="p" data-group-id="1931093288-3">}</span><span class="p" data-group-id="1931093288-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_group</span><span class="p" data-group-id="2959783871-1">(</span><span class="n">group</span><span class="p" data-group-id="2959783871-1">)</span><span class="w">
+</span><span class="p" data-group-id="2959783871-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2959783871-3">%</span><span class="nc" data-group-id="2959783871-3">Group</span><span class="p" data-group-id="2959783871-3">{</span><span class="p" data-group-id="2959783871-3">}</span><span class="p" data-group-id="2959783871-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_group</span><span class="p" data-group-id="1931093288-4">(</span><span class="n">group</span><span class="p" data-group-id="1931093288-4">)</span><span class="w">
-</span><span class="p" data-group-id="1931093288-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1931093288-6">%</span><span class="nc" data-group-id="1931093288-6">Ecto.Changeset</span><span class="p" data-group-id="1931093288-6">{</span><span class="p" data-group-id="1931093288-6">}</span><span class="p" data-group-id="1931093288-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_group</span><span class="p" data-group-id="2959783871-4">(</span><span class="n">group</span><span class="p" data-group-id="2959783871-4">)</span><span class="w">
+</span><span class="p" data-group-id="2959783871-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2959783871-6">%</span><span class="nc" data-group-id="2959783871-6">Ecto.Changeset</span><span class="p" data-group-id="2959783871-6">{</span><span class="p" data-group-id="2959783871-6">}</span><span class="p" data-group-id="2959783871-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_group_contacts_by_ids/2">
@@ -709,7 +710,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">delete_group_contacts_by_ids(group_id, contact_ids)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L303" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L332" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -737,7 +738,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">delete_group_users_by_ids(group_id, user_ids)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L340" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L369" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -765,7 +766,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">delete_user_groups_by_ids(user_id, group_ids)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L349" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L378" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -793,7 +794,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">get_group!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L125" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L132" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -809,16 +810,16 @@ groups that the user can see</p>
 
       </div>
 
-<p>Gets a single group.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Group does not exist.</p><h2 id="get_group!/1-examples" class="section-heading">
+<p>Gets a single group.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Group does not exist.</p><h2 id="get_group!/1-examples" class="section-heading">
   <a href="#get_group!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_group!</span><span class="p" data-group-id="8079322188-1">(</span><span class="mi">123</span><span class="p" data-group-id="8079322188-1">)</span><span class="w">
-</span><span class="p" data-group-id="8079322188-2">%</span><span class="nc" data-group-id="8079322188-2">Group</span><span class="p" data-group-id="8079322188-2">{</span><span class="p" data-group-id="8079322188-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_group!</span><span class="p" data-group-id="9385570950-1">(</span><span class="mi">123</span><span class="p" data-group-id="9385570950-1">)</span><span class="w">
+</span><span class="p" data-group-id="9385570950-2">%</span><span class="nc" data-group-id="9385570950-2">Group</span><span class="p" data-group-id="9385570950-2">{</span><span class="p" data-group-id="9385570950-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_group!</span><span class="p" data-group-id="8079322188-3">(</span><span class="mi">456</span><span class="p" data-group-id="8079322188-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_group!</span><span class="p" data-group-id="9385570950-3">(</span><span class="mi">456</span><span class="p" data-group-id="9385570950-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -831,7 +832,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">get_group_ids()</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L148" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L155" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -859,7 +860,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">get_or_create_group_by_label(label, organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L137" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L144" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -889,7 +890,7 @@ Create the group if it does not exist</p>
     </a>
     <h1 class="signature" translate="no">info_group_contacts(group_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L262" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L291" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -920,7 +921,7 @@ and also the total count</p>
     </a>
     <h1 class="signature" translate="no">list_groups(args, skip_permission \\ false)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L53" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L59" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -942,8 +943,8 @@ and also the total count</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_groups</span><span class="p" data-group-id="9895545424-1">(</span><span class="p" data-group-id="9895545424-1">)</span><span class="w">
-</span><span class="p" data-group-id="9895545424-2">[</span><span class="p" data-group-id="9895545424-3">%</span><span class="nc" data-group-id="9895545424-3">Group</span><span class="p" data-group-id="9895545424-3">{</span><span class="p" data-group-id="9895545424-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9895545424-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_groups</span><span class="p" data-group-id="9124774396-1">(</span><span class="p" data-group-id="9124774396-1">)</span><span class="w">
+</span><span class="p" data-group-id="9124774396-2">[</span><span class="p" data-group-id="9124774396-3">%</span><span class="nc" data-group-id="9124774396-3">Group</span><span class="p" data-group-id="9124774396-3">{</span><span class="p" data-group-id="9124774396-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9124774396-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="list_organizations_groups/1">
@@ -955,7 +956,7 @@ and also the total count</p>
     </a>
     <h1 class="signature" translate="no">list_organizations_groups(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L70" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L77" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -977,8 +978,8 @@ and also the total count</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_organizations_groups</span><span class="p" data-group-id="1700864858-1">(</span><span class="p" data-group-id="1700864858-1">)</span><span class="w">
-</span><span class="p" data-group-id="1700864858-2">[</span><span class="p" data-group-id="1700864858-3">%</span><span class="nc" data-group-id="1700864858-3">Group</span><span class="p" data-group-id="1700864858-3">{</span><span class="p" data-group-id="1700864858-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1700864858-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_organizations_groups</span><span class="p" data-group-id="2715848656-1">(</span><span class="p" data-group-id="2715848656-1">)</span><span class="w">
+</span><span class="p" data-group-id="2715848656-2">[</span><span class="p" data-group-id="2715848656-3">%</span><span class="nc" data-group-id="2715848656-3">Group</span><span class="p" data-group-id="2715848656-3">{</span><span class="p" data-group-id="2715848656-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2715848656-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_group/2">
@@ -990,7 +991,7 @@ and also the total count</p>
     </a>
     <h1 class="signature" translate="no">update_group(group, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L186" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L210" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1003,7 +1004,7 @@ and also the total count</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_group(<a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Groups.Group.html#t:t/0">Glific.Groups.Group.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1013,11 +1014,11 @@ and also the total count</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_group</span><span class="p" data-group-id="9666467615-1">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9666467615-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="9666467615-2">}</span><span class="p" data-group-id="9666467615-1">)</span><span class="w">
-</span><span class="p" data-group-id="9666467615-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9666467615-4">%</span><span class="nc" data-group-id="9666467615-4">Group</span><span class="p" data-group-id="9666467615-4">{</span><span class="p" data-group-id="9666467615-4">}</span><span class="p" data-group-id="9666467615-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_group</span><span class="p" data-group-id="1613545333-1">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1613545333-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="1613545333-2">}</span><span class="p" data-group-id="1613545333-1">)</span><span class="w">
+</span><span class="p" data-group-id="1613545333-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1613545333-4">%</span><span class="nc" data-group-id="1613545333-4">Group</span><span class="p" data-group-id="1613545333-4">{</span><span class="p" data-group-id="1613545333-4">}</span><span class="p" data-group-id="1613545333-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_group</span><span class="p" data-group-id="9666467615-5">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9666467615-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9666467615-6">}</span><span class="p" data-group-id="9666467615-5">)</span><span class="w">
-</span><span class="p" data-group-id="9666467615-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9666467615-8">%</span><span class="nc" data-group-id="9666467615-8">Ecto.Changeset</span><span class="p" data-group-id="9666467615-8">{</span><span class="p" data-group-id="9666467615-8">}</span><span class="p" data-group-id="9666467615-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_group</span><span class="p" data-group-id="1613545333-5">(</span><span class="n">group</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1613545333-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1613545333-6">}</span><span class="p" data-group-id="1613545333-5">)</span><span class="w">
+</span><span class="p" data-group-id="1613545333-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1613545333-8">%</span><span class="nc" data-group-id="1613545333-8">Ecto.Changeset</span><span class="p" data-group-id="1613545333-8">{</span><span class="p" data-group-id="1613545333-8">}</span><span class="p" data-group-id="1613545333-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_user_groups/1">
@@ -1029,7 +1030,7 @@ and also the total count</p>
     </a>
     <h1 class="signature" translate="no">update_user_groups(map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L358" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L387" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1057,7 +1058,7 @@ and also the total count</p>
     </a>
     <h1 class="signature" translate="no">users_count(map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L104" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/groups.ex#L111" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1086,10 +1087,10 @@ and also the total count</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/groups.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/groups.ex">(current file)</a>
 
             </span>
 
@@ -1100,8 +1101,10 @@ and also the total count</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

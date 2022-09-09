@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Flows — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Flows — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Flows</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -211,7 +212,7 @@ Router/Cases, and Router/Categories</p></div>
 
         </div>
 
-          <div class="summary-synopsis"><p>  Generate a json map with all the flows related fields.</p></div>
+          <div class="summary-synopsis"><p>Generate a json map with all the flows related fields.</p></div>
 
       </div>
 
@@ -221,7 +222,7 @@ Router/Cases, and Router/Categories</p></div>
 
         </div>
 
-          <div class="summary-synopsis"><p>  process subflows and check if there is more subflows in it.</p></div>
+          <div class="summary-synopsis"><p>Process subflows and check if there is more subflows in it.</p></div>
 
       </div>
 
@@ -322,16 +323,6 @@ It will also set the loaded flow to cache in case it does not exists.</p></div>
 
       <div class="summary-row">
         <div class="summary-signature">
-          <a href="#init_export_flow/2" translate="no">init_export_flow(results, flow_uuid)</a>
-
-        </div>
-
-          <div class="summary-synopsis"><p>  Process the flows and get all the subflow definition.</p></div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
           <a href="#is_media_type?/1" translate="no">is_media_type?(type)</a>
 
         </div>
@@ -378,7 +369,7 @@ Update cached flow definition</p></div>
 
         </div>
 
-          <div class="summary-synopsis"><p>Start flow for a contact</p></div>
+          <div class="summary-synopsis"><p>Start flow for a contact and cache the result</p></div>
 
       </div>
 
@@ -448,7 +439,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">build_flow_objects(json, uuid_map, process_fn, object \\ nil)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L392" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L419" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -486,7 +477,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">change_flow(flow, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L270" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L297" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -498,7 +489,7 @@ Router/Cases, and Router/Categories</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> change_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -508,8 +499,8 @@ Router/Cases, and Router/Categories</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_flow</span><span class="p" data-group-id="6099212768-1">(</span><span class="n">flow</span><span class="p" data-group-id="6099212768-1">)</span><span class="w">
-</span><span class="p" data-group-id="6099212768-2">%</span><span class="nc" data-group-id="6099212768-2">Ecto.Changeset</span><span class="p" data-group-id="6099212768-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6099212768-3">%</span><span class="nc" data-group-id="6099212768-3">Flow</span><span class="p" data-group-id="6099212768-3">{</span><span class="p" data-group-id="6099212768-3">}</span><span class="p" data-group-id="6099212768-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_flow</span><span class="p" data-group-id="1188541798-1">(</span><span class="n">flow</span><span class="p" data-group-id="1188541798-1">)</span><span class="w">
+</span><span class="p" data-group-id="1188541798-2">%</span><span class="nc" data-group-id="1188541798-2">Ecto.Changeset</span><span class="p" data-group-id="1188541798-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1188541798-3">%</span><span class="nc" data-group-id="1188541798-3">Flow</span><span class="p" data-group-id="1188541798-3">{</span><span class="p" data-group-id="1188541798-3">}</span><span class="p" data-group-id="1188541798-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="check_required_fields/2">
@@ -521,7 +512,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">check_required_fields(json, required)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L370" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L397" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -549,7 +540,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">copy_flow(flow, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L600" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L635" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -578,7 +569,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">count_flows(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L136" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L144" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -606,7 +597,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">create_flow(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L191" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L199" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -619,7 +610,7 @@ Router/Cases, and Router/Categories</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -629,11 +620,11 @@ Router/Cases, and Router/Categories</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="4488523719-1">(</span><span class="p" data-group-id="4488523719-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4488523719-2">}</span><span class="p" data-group-id="4488523719-1">)</span><span class="w">
-</span><span class="p" data-group-id="4488523719-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4488523719-4">%</span><span class="nc" data-group-id="4488523719-4">Flow</span><span class="p" data-group-id="4488523719-4">{</span><span class="p" data-group-id="4488523719-4">}</span><span class="p" data-group-id="4488523719-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="3241659218-1">(</span><span class="p" data-group-id="3241659218-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="3241659218-2">}</span><span class="p" data-group-id="3241659218-1">)</span><span class="w">
+</span><span class="p" data-group-id="3241659218-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3241659218-4">%</span><span class="nc" data-group-id="3241659218-4">Flow</span><span class="p" data-group-id="3241659218-4">{</span><span class="p" data-group-id="3241659218-4">}</span><span class="p" data-group-id="3241659218-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="4488523719-5">(</span><span class="p" data-group-id="4488523719-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4488523719-6">}</span><span class="p" data-group-id="4488523719-5">)</span><span class="w">
-</span><span class="p" data-group-id="4488523719-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4488523719-8">%</span><span class="nc" data-group-id="4488523719-8">Ecto.Changeset</span><span class="p" data-group-id="4488523719-8">{</span><span class="p" data-group-id="4488523719-8">}</span><span class="p" data-group-id="4488523719-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_flow</span><span class="p" data-group-id="3241659218-5">(</span><span class="p" data-group-id="3241659218-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3241659218-6">}</span><span class="p" data-group-id="3241659218-5">)</span><span class="w">
+</span><span class="p" data-group-id="3241659218-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3241659218-8">%</span><span class="nc" data-group-id="3241659218-8">Ecto.Changeset</span><span class="p" data-group-id="3241659218-8">{</span><span class="p" data-group-id="3241659218-8">}</span><span class="p" data-group-id="3241659218-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_flow_revision/1">
@@ -645,7 +636,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">create_flow_revision(definition)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L343" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L370" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -673,7 +664,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">delete_flow(flow)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L256" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L283" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -686,7 +677,7 @@ Router/Cases, and Router/Categories</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()) ::
-  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -696,11 +687,11 @@ Router/Cases, and Router/Categories</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="0352186017-1">(</span><span class="n">flow</span><span class="p" data-group-id="0352186017-1">)</span><span class="w">
-</span><span class="p" data-group-id="0352186017-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0352186017-3">%</span><span class="nc" data-group-id="0352186017-3">Flow</span><span class="p" data-group-id="0352186017-3">{</span><span class="p" data-group-id="0352186017-3">}</span><span class="p" data-group-id="0352186017-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="6827324205-1">(</span><span class="n">flow</span><span class="p" data-group-id="6827324205-1">)</span><span class="w">
+</span><span class="p" data-group-id="6827324205-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6827324205-3">%</span><span class="nc" data-group-id="6827324205-3">Flow</span><span class="p" data-group-id="6827324205-3">{</span><span class="p" data-group-id="6827324205-3">}</span><span class="p" data-group-id="6827324205-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="0352186017-4">(</span><span class="n">flow</span><span class="p" data-group-id="0352186017-4">)</span><span class="w">
-</span><span class="p" data-group-id="0352186017-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0352186017-6">%</span><span class="nc" data-group-id="0352186017-6">Ecto.Changeset</span><span class="p" data-group-id="0352186017-6">{</span><span class="p" data-group-id="0352186017-6">}</span><span class="p" data-group-id="0352186017-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_flow</span><span class="p" data-group-id="6827324205-4">(</span><span class="n">flow</span><span class="p" data-group-id="6827324205-4">)</span><span class="w">
+</span><span class="p" data-group-id="6827324205-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6827324205-6">%</span><span class="nc" data-group-id="6827324205-6">Ecto.Changeset</span><span class="p" data-group-id="6827324205-6">{</span><span class="p" data-group-id="6827324205-6">}</span><span class="p" data-group-id="6827324205-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="export_flow/1">
@@ -712,7 +703,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">export_flow(flow_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L851" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L880" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -728,7 +719,7 @@ Router/Cases, and Router/Categories</p>
 
       </div>
 
-<p>  Generate a json map with all the flows related fields.</p>
+<p>Generate a json map with all the flows related fields.</p>
   </section>
 </section>
 <section class="detail" id="export_flow_details/2">
@@ -740,7 +731,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">export_flow_details(flow_uuid, results)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L869" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L893" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -756,7 +747,7 @@ Router/Cases, and Router/Categories</p>
 
       </div>
 
-<p>  process subflows and check if there is more subflows in it.</p>
+<p>Process subflows and check if there is more subflows in it.</p>
   </section>
 </section>
 <section class="detail" id="fetch_flow/1">
@@ -768,7 +759,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">fetch_flow(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L175" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L183" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -790,11 +781,11 @@ Router/Cases, and Router/Categories</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">fetch_interactive_template</span><span class="p" data-group-id="8545327007-1">(</span><span class="mi">123</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="8545327007-1">)</span><span class="w">
-  </span><span class="p" data-group-id="8545327007-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8545327007-3">%</span><span class="nc" data-group-id="8545327007-3">Flow</span><span class="p" data-group-id="8545327007-3">{</span><span class="p" data-group-id="8545327007-3">}</span><span class="p" data-group-id="8545327007-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">fetch_interactive_template</span><span class="p" data-group-id="6928274831-1">(</span><span class="mi">123</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="6928274831-1">)</span><span class="w">
+  </span><span class="p" data-group-id="6928274831-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6928274831-3">%</span><span class="nc" data-group-id="6928274831-3">Flow</span><span class="p" data-group-id="6928274831-3">{</span><span class="p" data-group-id="6928274831-3">}</span><span class="p" data-group-id="6928274831-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">fetch_interactive_template</span><span class="p" data-group-id="8545327007-4">(</span><span class="mi">456</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="8545327007-4">)</span><span class="w">
-  </span><span class="p" data-group-id="8545327007-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8545327007-6">[</span><span class="s">&quot;Elixir.Glific.Flows.Flow&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Resource not found&quot;</span><span class="p" data-group-id="8545327007-6">]</span><span class="p" data-group-id="8545327007-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">fetch_interactive_template</span><span class="p" data-group-id="6928274831-4">(</span><span class="mi">456</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p" data-group-id="6928274831-4">)</span><span class="w">
+  </span><span class="p" data-group-id="6928274831-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6928274831-6">[</span><span class="s">&quot;Elixir.Glific.Flows.Flow&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Resource not found&quot;</span><span class="p" data-group-id="6928274831-6">]</span><span class="p" data-group-id="6928274831-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="flow_activated/3">
@@ -806,7 +797,7 @@ Router/Cases, and Router/Categories</p>
     </a>
     <h1 class="signature" translate="no">flow_activated(flow_id, contact_id, since)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L473" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L500" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -836,7 +827,7 @@ daily/weekly will check since start of day/week, etc</p>
     </a>
     <h1 class="signature" translate="no">flow_keywords_map(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L650" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L679" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -866,7 +857,7 @@ shortcode</p>
     </a>
     <h1 class="signature" translate="no">get_cached_flow(organization_id, key)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L444" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L471" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -896,7 +887,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">get_flow!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L154" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L162" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -912,16 +903,16 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 
       </div>
 
-<p>Gets a single flow.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Flow does not exist.</p><h2 id="get_flow!/1-examples" class="section-heading">
+<p>Gets a single flow.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Flow does not exist.</p><h2 id="get_flow!/1-examples" class="section-heading">
   <a href="#get_flow!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="4698844424-1">(</span><span class="mi">123</span><span class="p" data-group-id="4698844424-1">)</span><span class="w">
-</span><span class="p" data-group-id="4698844424-2">%</span><span class="nc" data-group-id="4698844424-2">Flow</span><span class="p" data-group-id="4698844424-2">{</span><span class="p" data-group-id="4698844424-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="9522480382-1">(</span><span class="mi">123</span><span class="p" data-group-id="9522480382-1">)</span><span class="w">
+</span><span class="p" data-group-id="9522480382-2">%</span><span class="nc" data-group-id="9522480382-2">Flow</span><span class="p" data-group-id="9522480382-2">{</span><span class="p" data-group-id="9522480382-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="4698844424-3">(</span><span class="mi">456</span><span class="p" data-group-id="4698844424-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_flow!</span><span class="p" data-group-id="9522480382-3">(</span><span class="mi">456</span><span class="p" data-group-id="9522480382-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -934,7 +925,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">get_flow_revision(flow_uuid, revision_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L334" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L361" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -962,7 +953,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">get_flow_revision_list(flow_uuid)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L289" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L316" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -990,7 +981,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">get_sub_flows(nodes)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L937" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L966" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1018,7 +1009,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">import_flow(import_flow, organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L763" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L792" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1037,34 +1028,6 @@ It will also set the loaded flow to cache in case it does not exists.</p>
 <p>import a flow from json</p>
   </section>
 </section>
-<section class="detail" id="init_export_flow/2">
-
-  <div class="detail-header">
-    <a href="#init_export_flow/2" class="detail-link" title="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature" translate="no">init_export_flow(results, flow_uuid)</h1>
-
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L862" class="view-source" rel="help" title="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">@spec</span> init_export_flow(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
-
-      </div>
-
-<p>  Process the flows and get all the subflow definition.</p>
-  </section>
-</section>
 <section class="detail" id="is_media_type?/1">
 
   <div class="detail-header">
@@ -1074,7 +1037,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">is_media_type?(type)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L967" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L993" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1102,7 +1065,7 @@ It will also set the loaded flow to cache in case it does not exists.</p>
     </a>
     <h1 class="signature" translate="no">is_optin_flow?(flow)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L756" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L785" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1131,7 +1094,7 @@ checking based on the optin keyword only.</p>
     </a>
     <h1 class="signature" translate="no">list_flows(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L32" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L34" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1153,8 +1116,8 @@ checking based on the optin keyword only.</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_flows</span><span class="p" data-group-id="0588462956-1">(</span><span class="p" data-group-id="0588462956-1">)</span><span class="w">
-</span><span class="p" data-group-id="0588462956-2">[</span><span class="p" data-group-id="0588462956-3">%</span><span class="nc" data-group-id="0588462956-3">Flow</span><span class="p" data-group-id="0588462956-3">{</span><span class="p" data-group-id="0588462956-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0588462956-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_flows</span><span class="p" data-group-id="0809991179-1">(</span><span class="p" data-group-id="0809991179-1">)</span><span class="w">
+</span><span class="p" data-group-id="0809991179-2">[</span><span class="p" data-group-id="0809991179-3">%</span><span class="nc" data-group-id="0809991179-3">Flow</span><span class="p" data-group-id="0809991179-3">{</span><span class="p" data-group-id="0809991179-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="0809991179-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="publish_flow/1">
@@ -1166,7 +1129,7 @@ checking based on the optin keyword only.</p>
     </a>
     <h1 class="signature" translate="no">publish_flow(flow)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L491" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L518" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1196,7 +1159,7 @@ Update cached flow definition</p>
     </a>
     <h1 class="signature" translate="no">start_contact_flow(flow_id, contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L578" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L605" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1216,7 +1179,7 @@ Update cached flow definition</p>
 
       </div>
 
-<p>Start flow for a contact</p>
+<p>Start flow for a contact and cache the result</p>
   </section>
 </section>
 <section class="detail" id="start_group_flow/2">
@@ -1228,7 +1191,7 @@ Update cached flow definition</p>
     </a>
     <h1 class="signature" translate="no">start_group_flow(flow, group)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L590" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L625" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1257,7 +1220,7 @@ Update cached flow definition</p>
     </a>
     <h1 class="signature" translate="no">terminate_contact_flows?(contact_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L974" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L1000" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1285,7 +1248,7 @@ Update cached flow definition</p>
     </a>
     <h1 class="signature" translate="no">update_cached_flow(flow, status)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L462" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L489" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1314,7 +1277,7 @@ via the UI</p>
     </a>
     <h1 class="signature" translate="no">update_flow(flow, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L228" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows.ex#L250" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1327,7 +1290,7 @@ via the UI</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_flow(<a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Flows.Flow.html#t:t/0">Glific.Flows.Flow.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1337,11 +1300,11 @@ via the UI</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="4786161903-1">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4786161903-2">}</span><span class="p" data-group-id="4786161903-1">)</span><span class="w">
-</span><span class="p" data-group-id="4786161903-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-4">%</span><span class="nc" data-group-id="4786161903-4">Flow</span><span class="p" data-group-id="4786161903-4">{</span><span class="p" data-group-id="4786161903-4">}</span><span class="p" data-group-id="4786161903-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="3956967490-1">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3956967490-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3956967490-2">}</span><span class="p" data-group-id="3956967490-1">)</span><span class="w">
+</span><span class="p" data-group-id="3956967490-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3956967490-4">%</span><span class="nc" data-group-id="3956967490-4">Flow</span><span class="p" data-group-id="3956967490-4">{</span><span class="p" data-group-id="3956967490-4">}</span><span class="p" data-group-id="3956967490-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="4786161903-5">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4786161903-6">}</span><span class="p" data-group-id="4786161903-5">)</span><span class="w">
-</span><span class="p" data-group-id="4786161903-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4786161903-8">%</span><span class="nc" data-group-id="4786161903-8">Ecto.Changeset</span><span class="p" data-group-id="4786161903-8">{</span><span class="p" data-group-id="4786161903-8">}</span><span class="p" data-group-id="4786161903-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_flow</span><span class="p" data-group-id="3956967490-5">(</span><span class="n">flow</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3956967490-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3956967490-6">}</span><span class="p" data-group-id="3956967490-5">)</span><span class="w">
+</span><span class="p" data-group-id="3956967490-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3956967490-8">%</span><span class="nc" data-group-id="3956967490-8">Ecto.Changeset</span><span class="p" data-group-id="3956967490-8">{</span><span class="p" data-group-id="3956967490-8">}</span><span class="p" data-group-id="3956967490-7">}</span></code></pre>
   </section>
 </section>
 
@@ -1354,10 +1317,10 @@ via the UI</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/flows.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/flows.ex">(current file)</a>
 
             </span>
 
@@ -1368,8 +1331,10 @@ via the UI</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

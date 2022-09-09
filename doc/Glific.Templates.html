@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Templates — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Templates — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Templates</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -454,7 +455,7 @@ Types
     </a>
     <h1 class="signature" translate="no">option()</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -503,7 +504,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">change_session_template(session_template, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L243" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L238" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -516,7 +517,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> change_session_template(Glific.Templates.SessionTemplate.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+  <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -526,8 +527,8 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_session_template</span><span class="p" data-group-id="7921602815-1">(</span><span class="n">session_template</span><span class="p" data-group-id="7921602815-1">)</span><span class="w">
-</span><span class="p" data-group-id="7921602815-2">%</span><span class="nc" data-group-id="7921602815-2">Ecto.Changeset</span><span class="p" data-group-id="7921602815-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7921602815-3">%</span><span class="nc" data-group-id="7921602815-3">SessionTemplate</span><span class="p" data-group-id="7921602815-3">{</span><span class="p" data-group-id="7921602815-3">}</span><span class="p" data-group-id="7921602815-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_session_template</span><span class="p" data-group-id="4592701597-1">(</span><span class="n">session_template</span><span class="p" data-group-id="4592701597-1">)</span><span class="w">
+</span><span class="p" data-group-id="4592701597-2">%</span><span class="nc" data-group-id="4592701597-2">Ecto.Changeset</span><span class="p" data-group-id="4592701597-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4592701597-3">%</span><span class="nc" data-group-id="4592701597-3">SessionTemplate</span><span class="p" data-group-id="4592701597-3">{</span><span class="p" data-group-id="4592701597-3">}</span><span class="p" data-group-id="4592701597-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="count_session_templates/1">
@@ -539,7 +540,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">count_session_templates(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L42" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L40" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -567,7 +568,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">create_session_template(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L118" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L116" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -580,7 +581,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_session_template(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Templates.SessionTemplate.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Templates.SessionTemplate.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -590,11 +591,11 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_session_template</span><span class="p" data-group-id="5238051341-1">(</span><span class="p" data-group-id="5238051341-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="5238051341-2">}</span><span class="p" data-group-id="5238051341-1">)</span><span class="w">
-</span><span class="p" data-group-id="5238051341-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5238051341-4">%</span><span class="nc" data-group-id="5238051341-4">SessionTemplate</span><span class="p" data-group-id="5238051341-4">{</span><span class="p" data-group-id="5238051341-4">}</span><span class="p" data-group-id="5238051341-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_session_template</span><span class="p" data-group-id="6884512177-1">(</span><span class="p" data-group-id="6884512177-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="6884512177-2">}</span><span class="p" data-group-id="6884512177-1">)</span><span class="w">
+</span><span class="p" data-group-id="6884512177-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6884512177-4">%</span><span class="nc" data-group-id="6884512177-4">SessionTemplate</span><span class="p" data-group-id="6884512177-4">{</span><span class="p" data-group-id="6884512177-4">}</span><span class="p" data-group-id="6884512177-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_session_template</span><span class="p" data-group-id="5238051341-5">(</span><span class="p" data-group-id="5238051341-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5238051341-6">}</span><span class="p" data-group-id="5238051341-5">)</span><span class="w">
-</span><span class="p" data-group-id="5238051341-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5238051341-8">%</span><span class="nc" data-group-id="5238051341-8">Ecto.Changeset</span><span class="p" data-group-id="5238051341-8">{</span><span class="p" data-group-id="5238051341-8">}</span><span class="p" data-group-id="5238051341-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_session_template</span><span class="p" data-group-id="6884512177-5">(</span><span class="p" data-group-id="6884512177-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="6884512177-6">}</span><span class="p" data-group-id="6884512177-5">)</span><span class="w">
+</span><span class="p" data-group-id="6884512177-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6884512177-8">%</span><span class="nc" data-group-id="6884512177-8">Ecto.Changeset</span><span class="p" data-group-id="6884512177-8">{</span><span class="p" data-group-id="6884512177-8">}</span><span class="p" data-group-id="6884512177-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_template_from_message/1">
@@ -606,7 +607,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">create_template_from_message(map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L253" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L248" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -636,7 +637,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">delete!(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -653,11 +654,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete!</span><span class="p" data-group-id="9314271538-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9314271538-1">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9314271538-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9314271538-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9314271538-3">]</span><span class="p" data-group-id="9314271538-2">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9314271538-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9314271538-4">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9314271538-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9314271538-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9314271538-6">]</span><span class="p" data-group-id="9314271538-5">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9314271538-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9314271538-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9314271538-8">}</span><span class="p" data-group-id="9314271538-7">)</span></code></pre>
+<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete!</span><span class="p" data-group-id="4409307047-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4409307047-1">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="4409307047-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4409307047-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4409307047-3">]</span><span class="p" data-group-id="4409307047-2">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="4409307047-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4409307047-4">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="4409307047-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4409307047-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4409307047-6">]</span><span class="p" data-group-id="4409307047-5">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="4409307047-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4409307047-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4409307047-8">}</span><span class="p" data-group-id="4409307047-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete/3">
@@ -669,7 +670,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">delete(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -685,11 +686,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete</span><span class="p" data-group-id="1193513433-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1193513433-1">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1193513433-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1193513433-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1193513433-3">]</span><span class="p" data-group-id="1193513433-2">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1193513433-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1193513433-4">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1193513433-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1193513433-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1193513433-6">]</span><span class="p" data-group-id="1193513433-5">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1193513433-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1193513433-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1193513433-8">}</span><span class="p" data-group-id="1193513433-7">)</span></code></pre>
+<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete</span><span class="p" data-group-id="2012843963-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2012843963-1">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2012843963-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2012843963-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2012843963-3">]</span><span class="p" data-group-id="2012843963-2">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2012843963-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2012843963-4">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2012843963-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2012843963-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2012843963-6">]</span><span class="p" data-group-id="2012843963-5">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="2012843963-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2012843963-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2012843963-8">}</span><span class="p" data-group-id="2012843963-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_session_template/1">
@@ -701,7 +702,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">delete_session_template(session_template)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L229" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L216" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -714,7 +715,7 @@ Body and type will be the message attributes</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_session_template(Glific.Templates.SessionTemplate.t()) ::
-  {:ok, Glific.Templates.SessionTemplate.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Templates.SessionTemplate.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -724,11 +725,11 @@ Body and type will be the message attributes</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_session_template</span><span class="p" data-group-id="3058961582-1">(</span><span class="n">session_template</span><span class="p" data-group-id="3058961582-1">)</span><span class="w">
-</span><span class="p" data-group-id="3058961582-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3058961582-3">%</span><span class="nc" data-group-id="3058961582-3">SessionTemplate</span><span class="p" data-group-id="3058961582-3">{</span><span class="p" data-group-id="3058961582-3">}</span><span class="p" data-group-id="3058961582-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_session_template</span><span class="p" data-group-id="5007497149-1">(</span><span class="n">session_template</span><span class="p" data-group-id="5007497149-1">)</span><span class="w">
+</span><span class="p" data-group-id="5007497149-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5007497149-3">%</span><span class="nc" data-group-id="5007497149-3">SessionTemplate</span><span class="p" data-group-id="5007497149-3">{</span><span class="p" data-group-id="5007497149-3">}</span><span class="p" data-group-id="5007497149-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_session_template</span><span class="p" data-group-id="3058961582-4">(</span><span class="n">session_template</span><span class="p" data-group-id="3058961582-4">)</span><span class="w">
-</span><span class="p" data-group-id="3058961582-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3058961582-6">%</span><span class="nc" data-group-id="3058961582-6">Ecto.Changeset</span><span class="p" data-group-id="3058961582-6">{</span><span class="p" data-group-id="3058961582-6">}</span><span class="p" data-group-id="3058961582-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_session_template</span><span class="p" data-group-id="5007497149-4">(</span><span class="n">session_template</span><span class="p" data-group-id="5007497149-4">)</span><span class="w">
+</span><span class="p" data-group-id="5007497149-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5007497149-6">%</span><span class="nc" data-group-id="5007497149-6">Ecto.Changeset</span><span class="p" data-group-id="5007497149-6">{</span><span class="p" data-group-id="5007497149-6">}</span><span class="p" data-group-id="5007497149-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get!/3">
@@ -740,7 +741,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">get!(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -757,11 +758,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get!</span><span class="p" data-group-id="8196048318-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="8196048318-1">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="8196048318-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8196048318-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8196048318-3">]</span><span class="p" data-group-id="8196048318-2">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="8196048318-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="8196048318-4">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="8196048318-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8196048318-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8196048318-6">]</span><span class="p" data-group-id="8196048318-5">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="8196048318-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8196048318-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8196048318-8">}</span><span class="p" data-group-id="8196048318-7">)</span></code></pre>
+<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get!</span><span class="p" data-group-id="0124631381-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0124631381-1">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0124631381-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0124631381-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0124631381-3">]</span><span class="p" data-group-id="0124631381-2">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0124631381-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0124631381-4">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0124631381-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0124631381-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0124631381-6">]</span><span class="p" data-group-id="0124631381-5">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0124631381-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0124631381-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0124631381-8">}</span><span class="p" data-group-id="0124631381-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get/3">
@@ -773,7 +774,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">get(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -789,11 +790,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get</span><span class="p" data-group-id="6487024647-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6487024647-1">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="6487024647-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6487024647-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6487024647-3">]</span><span class="p" data-group-id="6487024647-2">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="6487024647-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6487024647-4">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="6487024647-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6487024647-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6487024647-6">]</span><span class="p" data-group-id="6487024647-5">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="6487024647-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6487024647-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6487024647-8">}</span><span class="p" data-group-id="6487024647-7">)</span></code></pre>
+<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get</span><span class="p" data-group-id="0422646139-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0422646139-1">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="0422646139-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0422646139-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0422646139-3">]</span><span class="p" data-group-id="0422646139-2">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="0422646139-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0422646139-4">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="0422646139-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0422646139-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0422646139-6">]</span><span class="p" data-group-id="0422646139-5">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="0422646139-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0422646139-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0422646139-8">}</span><span class="p" data-group-id="0422646139-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_session_template!/1">
@@ -805,7 +806,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">get_session_template!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L102" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L100" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -821,16 +822,16 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Gets a single session_template.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the SessionTemplate does not exist.</p><h2 id="get_session_template!/1-examples" class="section-heading">
+<p>Gets a single session_template.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the SessionTemplate does not exist.</p><h2 id="get_session_template!/1-examples" class="section-heading">
   <a href="#get_session_template!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_session_template!</span><span class="p" data-group-id="7329491968-1">(</span><span class="mi">123</span><span class="p" data-group-id="7329491968-1">)</span><span class="w">
-</span><span class="p" data-group-id="7329491968-2">%</span><span class="nc" data-group-id="7329491968-2">SessionTemplate</span><span class="p" data-group-id="7329491968-2">{</span><span class="p" data-group-id="7329491968-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_session_template!</span><span class="p" data-group-id="1420802419-1">(</span><span class="mi">123</span><span class="p" data-group-id="1420802419-1">)</span><span class="w">
+</span><span class="p" data-group-id="1420802419-2">%</span><span class="nc" data-group-id="1420802419-2">SessionTemplate</span><span class="p" data-group-id="1420802419-2">{</span><span class="p" data-group-id="1420802419-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_session_template!</span><span class="p" data-group-id="7329491968-3">(</span><span class="mi">456</span><span class="p" data-group-id="7329491968-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_session_template!</span><span class="p" data-group-id="1420802419-3">(</span><span class="mi">456</span><span class="p" data-group-id="1420802419-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -843,7 +844,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">head!(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -860,11 +861,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head!</span><span class="p" data-group-id="5861966144-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5861966144-1">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5861966144-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5861966144-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5861966144-3">]</span><span class="p" data-group-id="5861966144-2">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5861966144-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5861966144-4">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5861966144-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5861966144-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5861966144-6">]</span><span class="p" data-group-id="5861966144-5">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="5861966144-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5861966144-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5861966144-8">}</span><span class="p" data-group-id="5861966144-7">)</span></code></pre>
+<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head!</span><span class="p" data-group-id="5801828544-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5801828544-1">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="5801828544-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5801828544-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5801828544-3">]</span><span class="p" data-group-id="5801828544-2">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="5801828544-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5801828544-4">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="5801828544-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5801828544-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5801828544-6">]</span><span class="p" data-group-id="5801828544-5">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="5801828544-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5801828544-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5801828544-8">}</span><span class="p" data-group-id="5801828544-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="head/3">
@@ -876,7 +877,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">head(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -892,11 +893,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head</span><span class="p" data-group-id="7039388219-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7039388219-1">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="7039388219-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7039388219-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7039388219-3">]</span><span class="p" data-group-id="7039388219-2">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="7039388219-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7039388219-4">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="7039388219-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7039388219-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7039388219-6">]</span><span class="p" data-group-id="7039388219-5">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="7039388219-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7039388219-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7039388219-8">}</span><span class="p" data-group-id="7039388219-7">)</span></code></pre>
+<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head</span><span class="p" data-group-id="7360495006-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7360495006-1">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="7360495006-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7360495006-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7360495006-3">]</span><span class="p" data-group-id="7360495006-2">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="7360495006-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7360495006-4">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="7360495006-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7360495006-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7360495006-6">]</span><span class="p" data-group-id="7360495006-5">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="7360495006-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7360495006-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7360495006-8">}</span><span class="p" data-group-id="7360495006-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="import_templates/2">
@@ -908,7 +909,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">import_templates(org_id, data)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L185" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L178" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -937,7 +938,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">list_session_templates(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L35" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L33" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -959,8 +960,8 @@ Body and type will be the message attributes</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_session_templates</span><span class="p" data-group-id="2177854937-1">(</span><span class="p" data-group-id="2177854937-1">)</span><span class="w">
-</span><span class="p" data-group-id="2177854937-2">[</span><span class="p" data-group-id="2177854937-3">%</span><span class="nc" data-group-id="2177854937-3">SessionTemplate</span><span class="p" data-group-id="2177854937-3">{</span><span class="p" data-group-id="2177854937-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2177854937-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_session_templates</span><span class="p" data-group-id="9823564861-1">(</span><span class="p" data-group-id="9823564861-1">)</span><span class="w">
+</span><span class="p" data-group-id="9823564861-2">[</span><span class="p" data-group-id="9823564861-3">%</span><span class="nc" data-group-id="9823564861-3">SessionTemplate</span><span class="p" data-group-id="9823564861-3">{</span><span class="p" data-group-id="9823564861-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="9823564861-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="options!/3">
@@ -972,7 +973,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">options!(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -989,11 +990,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options!</span><span class="p" data-group-id="0154511158-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0154511158-1">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0154511158-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0154511158-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0154511158-3">]</span><span class="p" data-group-id="0154511158-2">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0154511158-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0154511158-4">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0154511158-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0154511158-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0154511158-6">]</span><span class="p" data-group-id="0154511158-5">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="0154511158-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0154511158-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0154511158-8">}</span><span class="p" data-group-id="0154511158-7">)</span></code></pre>
+<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options!</span><span class="p" data-group-id="5354406617-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5354406617-1">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="5354406617-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5354406617-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5354406617-3">]</span><span class="p" data-group-id="5354406617-2">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="5354406617-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5354406617-4">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="5354406617-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5354406617-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5354406617-6">]</span><span class="p" data-group-id="5354406617-5">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="5354406617-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5354406617-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5354406617-8">}</span><span class="p" data-group-id="5354406617-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="options/3">
@@ -1005,7 +1006,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">options(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1021,11 +1022,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options</span><span class="p" data-group-id="3155046663-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3155046663-1">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="3155046663-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3155046663-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3155046663-3">]</span><span class="p" data-group-id="3155046663-2">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="3155046663-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3155046663-4">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="3155046663-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3155046663-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3155046663-6">]</span><span class="p" data-group-id="3155046663-5">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="3155046663-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3155046663-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3155046663-8">}</span><span class="p" data-group-id="3155046663-7">)</span></code></pre>
+<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options</span><span class="p" data-group-id="6168890308-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6168890308-1">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="6168890308-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6168890308-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6168890308-3">]</span><span class="p" data-group-id="6168890308-2">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="6168890308-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6168890308-4">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="6168890308-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6168890308-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6168890308-6">]</span><span class="p" data-group-id="6168890308-5">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="6168890308-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6168890308-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6168890308-8">}</span><span class="p" data-group-id="6168890308-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="patch!/4">
@@ -1037,7 +1038,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">patch!(client, url, body, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1054,10 +1055,10 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch!</span><span class="p" data-group-id="5800181719-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5800181719-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5800181719-2">}</span><span class="p" data-group-id="5800181719-1">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="5800181719-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5800181719-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5800181719-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5800181719-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5800181719-5">]</span><span class="p" data-group-id="5800181719-3">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="5800181719-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5800181719-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5800181719-7">}</span><span class="p" data-group-id="5800181719-6">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="5800181719-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5800181719-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5800181719-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5800181719-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5800181719-10">]</span><span class="p" data-group-id="5800181719-8">)</span></code></pre>
+<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch!</span><span class="p" data-group-id="3345767334-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3345767334-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3345767334-2">}</span><span class="p" data-group-id="3345767334-1">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="3345767334-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3345767334-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3345767334-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3345767334-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3345767334-5">]</span><span class="p" data-group-id="3345767334-3">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="3345767334-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3345767334-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3345767334-7">}</span><span class="p" data-group-id="3345767334-6">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="3345767334-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3345767334-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3345767334-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3345767334-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3345767334-10">]</span><span class="p" data-group-id="3345767334-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="patch/4">
@@ -1069,7 +1070,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">patch(client, url, body, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1086,10 +1087,10 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch</span><span class="p" data-group-id="0747661331-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0747661331-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0747661331-2">}</span><span class="p" data-group-id="0747661331-1">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="0747661331-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0747661331-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0747661331-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0747661331-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0747661331-5">]</span><span class="p" data-group-id="0747661331-3">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="0747661331-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0747661331-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0747661331-7">}</span><span class="p" data-group-id="0747661331-6">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="0747661331-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0747661331-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0747661331-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0747661331-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0747661331-10">]</span><span class="p" data-group-id="0747661331-8">)</span></code></pre>
+<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch</span><span class="p" data-group-id="7147196559-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7147196559-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7147196559-2">}</span><span class="p" data-group-id="7147196559-1">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="7147196559-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7147196559-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7147196559-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7147196559-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7147196559-5">]</span><span class="p" data-group-id="7147196559-3">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="7147196559-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7147196559-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7147196559-7">}</span><span class="p" data-group-id="7147196559-6">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="7147196559-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7147196559-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7147196559-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7147196559-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7147196559-10">]</span><span class="p" data-group-id="7147196559-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="post!/4">
@@ -1101,7 +1102,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">post!(client, url, body, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1118,10 +1119,10 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post!</span><span class="p" data-group-id="7351207879-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7351207879-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7351207879-2">}</span><span class="p" data-group-id="7351207879-1">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="7351207879-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7351207879-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7351207879-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7351207879-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7351207879-5">]</span><span class="p" data-group-id="7351207879-3">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="7351207879-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7351207879-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7351207879-7">}</span><span class="p" data-group-id="7351207879-6">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="7351207879-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7351207879-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7351207879-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7351207879-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7351207879-10">]</span><span class="p" data-group-id="7351207879-8">)</span></code></pre>
+<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post!</span><span class="p" data-group-id="2069629028-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2069629028-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2069629028-2">}</span><span class="p" data-group-id="2069629028-1">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="2069629028-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2069629028-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2069629028-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2069629028-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2069629028-5">]</span><span class="p" data-group-id="2069629028-3">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="2069629028-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2069629028-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2069629028-7">}</span><span class="p" data-group-id="2069629028-6">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="2069629028-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2069629028-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2069629028-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2069629028-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2069629028-10">]</span><span class="p" data-group-id="2069629028-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="post/4">
@@ -1133,7 +1134,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">post(client, url, body, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1150,10 +1151,10 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post</span><span class="p" data-group-id="2047511188-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2047511188-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2047511188-2">}</span><span class="p" data-group-id="2047511188-1">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="2047511188-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2047511188-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2047511188-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2047511188-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2047511188-5">]</span><span class="p" data-group-id="2047511188-3">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="2047511188-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2047511188-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2047511188-7">}</span><span class="p" data-group-id="2047511188-6">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="2047511188-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2047511188-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2047511188-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2047511188-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2047511188-10">]</span><span class="p" data-group-id="2047511188-8">)</span></code></pre>
+<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post</span><span class="p" data-group-id="9483208436-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9483208436-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9483208436-2">}</span><span class="p" data-group-id="9483208436-1">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="9483208436-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9483208436-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9483208436-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9483208436-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9483208436-5">]</span><span class="p" data-group-id="9483208436-3">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="9483208436-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9483208436-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9483208436-7">}</span><span class="p" data-group-id="9483208436-6">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="9483208436-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9483208436-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9483208436-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9483208436-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9483208436-10">]</span><span class="p" data-group-id="9483208436-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="put!/4">
@@ -1165,7 +1166,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">put!(client, url, body, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1182,10 +1183,10 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put!</span><span class="p" data-group-id="2544229233-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2544229233-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2544229233-2">}</span><span class="p" data-group-id="2544229233-1">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="2544229233-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2544229233-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2544229233-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2544229233-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2544229233-5">]</span><span class="p" data-group-id="2544229233-3">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="2544229233-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2544229233-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2544229233-7">}</span><span class="p" data-group-id="2544229233-6">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="2544229233-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2544229233-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2544229233-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2544229233-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2544229233-10">]</span><span class="p" data-group-id="2544229233-8">)</span></code></pre>
+<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put!</span><span class="p" data-group-id="8101910906-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8101910906-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8101910906-2">}</span><span class="p" data-group-id="8101910906-1">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="8101910906-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8101910906-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8101910906-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8101910906-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8101910906-5">]</span><span class="p" data-group-id="8101910906-3">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="8101910906-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8101910906-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8101910906-7">}</span><span class="p" data-group-id="8101910906-6">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="8101910906-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8101910906-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8101910906-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8101910906-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8101910906-10">]</span><span class="p" data-group-id="8101910906-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="put/4">
@@ -1197,7 +1198,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">put(client, url, body, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1214,10 +1215,10 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put</span><span class="p" data-group-id="4119580224-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4119580224-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4119580224-2">}</span><span class="p" data-group-id="4119580224-1">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="4119580224-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4119580224-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4119580224-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4119580224-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4119580224-5">]</span><span class="p" data-group-id="4119580224-3">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="4119580224-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4119580224-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4119580224-7">}</span><span class="p" data-group-id="4119580224-6">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="4119580224-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4119580224-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4119580224-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4119580224-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4119580224-10">]</span><span class="p" data-group-id="4119580224-8">)</span></code></pre>
+<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put</span><span class="p" data-group-id="4340311712-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4340311712-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4340311712-2">}</span><span class="p" data-group-id="4340311712-1">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="4340311712-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4340311712-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4340311712-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4340311712-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4340311712-5">]</span><span class="p" data-group-id="4340311712-3">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="4340311712-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4340311712-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4340311712-7">}</span><span class="p" data-group-id="4340311712-6">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="4340311712-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4340311712-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4340311712-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4340311712-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4340311712-10">]</span><span class="p" data-group-id="4340311712-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="request!/2">
@@ -1231,7 +1232,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">request!(client \\ %Tesla.Client{}, options)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1261,7 +1262,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">request(client \\ %Tesla.Client{}, options)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1289,11 +1290,11 @@ Body and type will be the message attributes</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="8179216262-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="8179216262-1">)</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="3777777077-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="3777777077-1">)</span><span class="w">
 
 </span><span class="c1"># use shortcut methods</span><span class="w">
-</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="8179216262-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="8179216262-2">)</span><span class="w">
-</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="8179216262-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8179216262-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8179216262-4">}</span><span class="p" data-group-id="8179216262-3">)</span></code></pre>
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="3777777077-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="3777777077-2">)</span><span class="w">
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="3777777077-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3777777077-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3777777077-4">}</span><span class="p" data-group-id="3777777077-3">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="sync_hsms_from_bsp/1">
@@ -1305,7 +1306,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">sync_hsms_from_bsp(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L269" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L264" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1333,7 +1334,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">template_parameters_count(template)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L522" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L545" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1361,7 +1362,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">trace!(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1378,11 +1379,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace!</span><span class="p" data-group-id="6579846982-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6579846982-1">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="6579846982-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6579846982-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6579846982-3">]</span><span class="p" data-group-id="6579846982-2">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="6579846982-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6579846982-4">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="6579846982-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6579846982-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6579846982-6">]</span><span class="p" data-group-id="6579846982-5">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="6579846982-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6579846982-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6579846982-8">}</span><span class="p" data-group-id="6579846982-7">)</span></code></pre>
+<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace!</span><span class="p" data-group-id="5892058432-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5892058432-1">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="5892058432-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5892058432-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5892058432-3">]</span><span class="p" data-group-id="5892058432-2">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="5892058432-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5892058432-4">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="5892058432-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5892058432-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5892058432-6">]</span><span class="p" data-group-id="5892058432-5">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="5892058432-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5892058432-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5892058432-8">}</span><span class="p" data-group-id="5892058432-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="trace/3">
@@ -1394,7 +1395,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">trace(client, url, opts)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L8" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L7" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1410,11 +1411,11 @@ Body and type will be the message attributes</p>
 
       </div>
 
-<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace</span><span class="p" data-group-id="6252699055-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6252699055-1">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="6252699055-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6252699055-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6252699055-3">]</span><span class="p" data-group-id="6252699055-2">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="6252699055-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6252699055-4">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="6252699055-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6252699055-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6252699055-6">]</span><span class="p" data-group-id="6252699055-5">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="6252699055-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6252699055-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6252699055-8">}</span><span class="p" data-group-id="6252699055-7">)</span></code></pre>
+<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace</span><span class="p" data-group-id="3410463372-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3410463372-1">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="3410463372-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3410463372-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3410463372-3">]</span><span class="p" data-group-id="3410463372-2">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="3410463372-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3410463372-4">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="3410463372-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3410463372-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3410463372-6">]</span><span class="p" data-group-id="3410463372-5">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="3410463372-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3410463372-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3410463372-8">}</span><span class="p" data-group-id="3410463372-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_session_template/2">
@@ -1426,7 +1427,7 @@ Body and type will be the message attributes</p>
     </a>
     <h1 class="signature" translate="no">update_session_template(session_template, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L209" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/templates.ex#L196" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1439,7 +1440,7 @@ Body and type will be the message attributes</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_session_template(Glific.Templates.SessionTemplate.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Templates.SessionTemplate.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Templates.SessionTemplate.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1449,11 +1450,11 @@ Body and type will be the message attributes</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_session_template</span><span class="p" data-group-id="0978899014-1">(</span><span class="n">session_template</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0978899014-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0978899014-2">}</span><span class="p" data-group-id="0978899014-1">)</span><span class="w">
-</span><span class="p" data-group-id="0978899014-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0978899014-4">%</span><span class="nc" data-group-id="0978899014-4">SessionTemplate</span><span class="p" data-group-id="0978899014-4">{</span><span class="p" data-group-id="0978899014-4">}</span><span class="p" data-group-id="0978899014-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_session_template</span><span class="p" data-group-id="5266238402-1">(</span><span class="n">session_template</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5266238402-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="5266238402-2">}</span><span class="p" data-group-id="5266238402-1">)</span><span class="w">
+</span><span class="p" data-group-id="5266238402-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5266238402-4">%</span><span class="nc" data-group-id="5266238402-4">SessionTemplate</span><span class="p" data-group-id="5266238402-4">{</span><span class="p" data-group-id="5266238402-4">}</span><span class="p" data-group-id="5266238402-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_session_template</span><span class="p" data-group-id="0978899014-5">(</span><span class="n">session_template</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0978899014-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0978899014-6">}</span><span class="p" data-group-id="0978899014-5">)</span><span class="w">
-</span><span class="p" data-group-id="0978899014-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0978899014-8">%</span><span class="nc" data-group-id="0978899014-8">Ecto.Changeset</span><span class="p" data-group-id="0978899014-8">{</span><span class="p" data-group-id="0978899014-8">}</span><span class="p" data-group-id="0978899014-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_session_template</span><span class="p" data-group-id="5266238402-5">(</span><span class="n">session_template</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5266238402-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="5266238402-6">}</span><span class="p" data-group-id="5266238402-5">)</span><span class="w">
+</span><span class="p" data-group-id="5266238402-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5266238402-8">%</span><span class="nc" data-group-id="5266238402-8">Ecto.Changeset</span><span class="p" data-group-id="5266238402-8">{</span><span class="p" data-group-id="5266238402-8">}</span><span class="p" data-group-id="5266238402-7">}</span></code></pre>
   </section>
 </section>
 
@@ -1466,10 +1467,10 @@ Body and type will be the message attributes</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/templates.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/templates.ex">(current file)</a>
 
             </span>
 
@@ -1480,8 +1481,10 @@ Body and type will be the message attributes</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

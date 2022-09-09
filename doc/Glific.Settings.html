@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Settings — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Settings — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Settings</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -271,7 +272,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> change_language(<a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_language(<a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -281,8 +282,8 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_language</span><span class="p" data-group-id="0086630500-1">(</span><span class="n">language</span><span class="p" data-group-id="0086630500-1">)</span><span class="w">
-</span><span class="p" data-group-id="0086630500-2">%</span><span class="nc" data-group-id="0086630500-2">Ecto.Changeset</span><span class="p" data-group-id="0086630500-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0086630500-3">%</span><span class="nc" data-group-id="0086630500-3">Language</span><span class="p" data-group-id="0086630500-3">{</span><span class="p" data-group-id="0086630500-3">}</span><span class="p" data-group-id="0086630500-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_language</span><span class="p" data-group-id="4623817385-1">(</span><span class="n">language</span><span class="p" data-group-id="4623817385-1">)</span><span class="w">
+</span><span class="p" data-group-id="4623817385-2">%</span><span class="nc" data-group-id="4623817385-2">Ecto.Changeset</span><span class="p" data-group-id="4623817385-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4623817385-3">%</span><span class="nc" data-group-id="4623817385-3">Language</span><span class="p" data-group-id="4623817385-3">{</span><span class="p" data-group-id="4623817385-3">}</span><span class="p" data-group-id="4623817385-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="count_languages/1">
@@ -339,7 +340,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_language(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -349,11 +350,11 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="1027094445-1">(</span><span class="p" data-group-id="1027094445-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="1027094445-2">}</span><span class="p" data-group-id="1027094445-1">)</span><span class="w">
-</span><span class="p" data-group-id="1027094445-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1027094445-4">%</span><span class="nc" data-group-id="1027094445-4">Language</span><span class="p" data-group-id="1027094445-4">{</span><span class="p" data-group-id="1027094445-4">}</span><span class="p" data-group-id="1027094445-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="3466304316-1">(</span><span class="p" data-group-id="3466304316-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="3466304316-2">}</span><span class="p" data-group-id="3466304316-1">)</span><span class="w">
+</span><span class="p" data-group-id="3466304316-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3466304316-4">%</span><span class="nc" data-group-id="3466304316-4">Language</span><span class="p" data-group-id="3466304316-4">{</span><span class="p" data-group-id="3466304316-4">}</span><span class="p" data-group-id="3466304316-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="1027094445-5">(</span><span class="p" data-group-id="1027094445-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1027094445-6">}</span><span class="p" data-group-id="1027094445-5">)</span><span class="w">
-</span><span class="p" data-group-id="1027094445-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1027094445-8">%</span><span class="nc" data-group-id="1027094445-8">Ecto.Changeset</span><span class="p" data-group-id="1027094445-8">{</span><span class="p" data-group-id="1027094445-8">}</span><span class="p" data-group-id="1027094445-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_language</span><span class="p" data-group-id="3466304316-5">(</span><span class="p" data-group-id="3466304316-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3466304316-6">}</span><span class="p" data-group-id="3466304316-5">)</span><span class="w">
+</span><span class="p" data-group-id="3466304316-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3466304316-8">%</span><span class="nc" data-group-id="3466304316-8">Ecto.Changeset</span><span class="p" data-group-id="3466304316-8">{</span><span class="p" data-group-id="3466304316-8">}</span><span class="p" data-group-id="3466304316-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_language/1">
@@ -378,7 +379,7 @@ Functions
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_language(<a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()) ::
-  {:ok, <a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -388,11 +389,11 @@ Functions
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="1227117441-1">(</span><span class="n">language</span><span class="p" data-group-id="1227117441-1">)</span><span class="w">
-</span><span class="p" data-group-id="1227117441-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1227117441-3">%</span><span class="nc" data-group-id="1227117441-3">Language</span><span class="p" data-group-id="1227117441-3">{</span><span class="p" data-group-id="1227117441-3">}</span><span class="p" data-group-id="1227117441-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="3279058425-1">(</span><span class="n">language</span><span class="p" data-group-id="3279058425-1">)</span><span class="w">
+</span><span class="p" data-group-id="3279058425-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3279058425-3">%</span><span class="nc" data-group-id="3279058425-3">Language</span><span class="p" data-group-id="3279058425-3">{</span><span class="p" data-group-id="3279058425-3">}</span><span class="p" data-group-id="3279058425-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="1227117441-4">(</span><span class="n">language</span><span class="p" data-group-id="1227117441-4">)</span><span class="w">
-</span><span class="p" data-group-id="1227117441-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1227117441-6">%</span><span class="nc" data-group-id="1227117441-6">Ecto.Changeset</span><span class="p" data-group-id="1227117441-6">{</span><span class="p" data-group-id="1227117441-6">}</span><span class="p" data-group-id="1227117441-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_language</span><span class="p" data-group-id="3279058425-4">(</span><span class="n">language</span><span class="p" data-group-id="3279058425-4">)</span><span class="w">
+</span><span class="p" data-group-id="3279058425-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3279058425-6">%</span><span class="nc" data-group-id="3279058425-6">Ecto.Changeset</span><span class="p" data-group-id="3279058425-6">{</span><span class="p" data-group-id="3279058425-6">}</span><span class="p" data-group-id="3279058425-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_language!/1">
@@ -420,16 +421,16 @@ Functions
 
       </div>
 
-<p>Gets a single language.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Language does not exist.</p><h2 id="get_language!/1-examples" class="section-heading">
+<p>Gets a single language.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Language does not exist.</p><h2 id="get_language!/1-examples" class="section-heading">
   <a href="#get_language!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="1724258696-1">(</span><span class="mi">123</span><span class="p" data-group-id="1724258696-1">)</span><span class="w">
-</span><span class="p" data-group-id="1724258696-2">%</span><span class="nc" data-group-id="1724258696-2">Language</span><span class="p" data-group-id="1724258696-2">{</span><span class="p" data-group-id="1724258696-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="1251472174-1">(</span><span class="mi">123</span><span class="p" data-group-id="1251472174-1">)</span><span class="w">
+</span><span class="p" data-group-id="1251472174-2">%</span><span class="nc" data-group-id="1251472174-2">Language</span><span class="p" data-group-id="1251472174-2">{</span><span class="p" data-group-id="1251472174-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="1724258696-3">(</span><span class="mi">456</span><span class="p" data-group-id="1724258696-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_language!</span><span class="p" data-group-id="1251472174-3">(</span><span class="mi">456</span><span class="p" data-group-id="1251472174-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -551,8 +552,8 @@ it returns the existing contact, else it creates a new one</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_languages</span><span class="p" data-group-id="1655618157-1">(</span><span class="p" data-group-id="1655618157-1">)</span><span class="w">
-</span><span class="p" data-group-id="1655618157-2">[</span><span class="p" data-group-id="1655618157-3">%</span><span class="nc" data-group-id="1655618157-3">Language</span><span class="p" data-group-id="1655618157-3">{</span><span class="p" data-group-id="1655618157-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1655618157-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_languages</span><span class="p" data-group-id="2636094999-1">(</span><span class="p" data-group-id="2636094999-1">)</span><span class="w">
+</span><span class="p" data-group-id="2636094999-2">[</span><span class="p" data-group-id="2636094999-3">%</span><span class="nc" data-group-id="2636094999-3">Language</span><span class="p" data-group-id="2636094999-3">{</span><span class="p" data-group-id="2636094999-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2636094999-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="locale_id_map/0">
@@ -605,7 +606,7 @@ it returns the existing contact, else it creates a new one</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_language(<a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Settings.Language.html#t:t/0">Glific.Settings.Language.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -615,11 +616,11 @@ it returns the existing contact, else it creates a new one</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="0067590104-1">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0067590104-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="0067590104-2">}</span><span class="p" data-group-id="0067590104-1">)</span><span class="w">
-</span><span class="p" data-group-id="0067590104-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0067590104-4">%</span><span class="nc" data-group-id="0067590104-4">Language</span><span class="p" data-group-id="0067590104-4">{</span><span class="p" data-group-id="0067590104-4">}</span><span class="p" data-group-id="0067590104-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="4484361855-1">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4484361855-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="4484361855-2">}</span><span class="p" data-group-id="4484361855-1">)</span><span class="w">
+</span><span class="p" data-group-id="4484361855-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4484361855-4">%</span><span class="nc" data-group-id="4484361855-4">Language</span><span class="p" data-group-id="4484361855-4">{</span><span class="p" data-group-id="4484361855-4">}</span><span class="p" data-group-id="4484361855-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="0067590104-5">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0067590104-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0067590104-6">}</span><span class="p" data-group-id="0067590104-5">)</span><span class="w">
-</span><span class="p" data-group-id="0067590104-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0067590104-8">%</span><span class="nc" data-group-id="0067590104-8">Ecto.Changeset</span><span class="p" data-group-id="0067590104-8">{</span><span class="p" data-group-id="0067590104-8">}</span><span class="p" data-group-id="0067590104-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_language</span><span class="p" data-group-id="4484361855-5">(</span><span class="n">language</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4484361855-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4484361855-6">}</span><span class="p" data-group-id="4484361855-5">)</span><span class="w">
+</span><span class="p" data-group-id="4484361855-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4484361855-8">%</span><span class="nc" data-group-id="4484361855-8">Ecto.Changeset</span><span class="p" data-group-id="4484361855-8">{</span><span class="p" data-group-id="4484361855-8">}</span><span class="p" data-group-id="4484361855-7">}</span></code></pre>
   </section>
 </section>
 
@@ -632,10 +633,10 @@ it returns the existing contact, else it creates a new one</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/settings.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/settings.ex">(current file)</a>
 
             </span>
 
@@ -646,8 +647,10 @@ it returns the existing contact, else it creates a new one</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

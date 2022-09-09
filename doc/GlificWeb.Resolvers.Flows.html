@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>GlificWeb.Resolvers.Flows — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>GlificWeb.Resolvers.Flows — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">GlificWeb.Resolvers.Flows</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -166,7 +167,7 @@ This layer basically stiches together one or more calls to resolve the incoming 
 
       <div class="summary-row">
         <div class="summary-signature">
-          <a href="#flow_get/3" translate="no">flow_get(_, map1, map2)</a>
+          <a href="#flow_get/3" translate="no">flow_get(_, params, map)</a>
 
         </div>
 
@@ -277,7 +278,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">broadcast_stats(_, map, _)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L243" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L246" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -306,7 +307,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">copy_flow(_, map, _)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L221" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L224" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -393,9 +394,9 @@ Functions
       <i class="ri-link-m" aria-hidden="true"></i>
       <span class="sr-only">Link to this function</span>
     </a>
-    <h1 class="signature" translate="no">flow_get(_, map1, map2)</h1>
+    <h1 class="signature" translate="no">flow_get(_, params, map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L90" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L93" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -424,7 +425,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">flow_release(_, params, map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L101" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L104" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -482,7 +483,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">publish_flow(_, map, _)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L110" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L113" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -511,7 +512,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">reset_flow_count(_, map, _)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L251" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L254" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -540,7 +541,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">resume_contact_flow(_, map1, map2)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L166" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L169" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -572,7 +573,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">start_contact_flow(_, map1, map2)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L144" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L147" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -604,7 +605,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">start_group_flow(_, map1, map2)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L205" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L208" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -638,7 +639,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">terminate_contact_flows(_, map, context)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L191" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific_web/resolvers/flows.ex#L194" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -671,10 +672,10 @@ Functions
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific_web/resolvers/flows.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific_web/resolvers/flows.ex">(current file)</a>
 
             </span>
 
@@ -685,8 +686,10 @@ Functions
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

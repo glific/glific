@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Contacts — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Contacts — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Contacts</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -334,6 +335,16 @@ Specifically designed for when we are trying to optin an opted out contact</p></
 
       <div class="summary-row">
         <div class="summary-signature">
+          <a href="#get_contact_by_phone!/1" translate="no">get_contact_by_phone!(phone)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Gets a single contact by phone nunmber.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
           <a href="#get_contact_field_map/1" translate="no">get_contact_field_map(contact_id)</a>
 
         </div>
@@ -380,6 +391,16 @@ Specifically designed for when we are trying to optin an opted out contact</p></
 
           <div class="summary-synopsis"><p>Check if this contact id is a new contact.
 In general, we should always retrive as little as possible from the DB</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#is_org_root_contact?/1" translate="no">is_org_root_contact?(contact)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Checks if the contact passed in argument is organization root contact or not</p></div>
 
       </div>
 
@@ -687,7 +708,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">add_permission(query, user)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L35" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L36" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -699,7 +720,7 @@ Functions
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> add_permission(<a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> add_permission(<a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>(), Glific.Users.User.t()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
 
       </div>
 
@@ -716,7 +737,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">can_send_message_to?(contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L506" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L544" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -745,7 +766,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">can_send_message_to?(contact, is_hsm)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L510" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L548" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -774,7 +795,7 @@ groups that the user can see</p>
     </a>
     <h1 class="signature" translate="no">can_send_message_to?(contact, is_hsm, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L561" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L599" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -804,7 +825,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">capture_history(contact_id, event_type, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L760" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L883" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -817,7 +838,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> capture_history(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>() | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.ContactHistory.html#t:t/0">Glific.Contacts.ContactHistory.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.ContactHistory.html#t:t/0">Glific.Contacts.ContactHistory.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -835,7 +856,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">change_contact(contact, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L288" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L326" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -847,7 +868,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> change_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -857,8 +878,8 @@ Specifically designed for when we are trying to optin an opted out contact</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact</span><span class="p" data-group-id="3620940562-1">(</span><span class="n">contact</span><span class="p" data-group-id="3620940562-1">)</span><span class="w">
-</span><span class="p" data-group-id="3620940562-2">%</span><span class="nc" data-group-id="3620940562-2">Ecto.Changeset</span><span class="p" data-group-id="3620940562-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3620940562-3">%</span><span class="nc" data-group-id="3620940562-3">Contact</span><span class="p" data-group-id="3620940562-3">{</span><span class="p" data-group-id="3620940562-3">}</span><span class="p" data-group-id="3620940562-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">change_contact</span><span class="p" data-group-id="7555245581-1">(</span><span class="n">contact</span><span class="p" data-group-id="7555245581-1">)</span><span class="w">
+</span><span class="p" data-group-id="7555245581-2">%</span><span class="nc" data-group-id="7555245581-2">Ecto.Changeset</span><span class="p" data-group-id="7555245581-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7555245581-3">%</span><span class="nc" data-group-id="7555245581-3">Contact</span><span class="p" data-group-id="7555245581-3">{</span><span class="p" data-group-id="7555245581-3">}</span><span class="p" data-group-id="7555245581-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="contact_location/1">
@@ -870,7 +891,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">contact_location(contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L583" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L621" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -901,7 +922,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">contact_opted_in(contact_attrs, organization_id, utc_time, opts \\ [])</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L378" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L416" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -914,7 +935,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> contact_opted_in(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/DateTime.html#t:t/0">DateTime.t</a>(), <a href="https://hexdocs.pm/elixir/Keyword.html#t:t/0">Keyword.t</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -932,7 +953,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">contact_opted_out(phone, organization_id, utc_time, method \\ &quot;Glific Flows&quot;)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L455" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L493" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -961,7 +982,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">count_contact_history(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L806" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L929" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -989,7 +1010,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">count_contacts(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L87" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L88" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1017,7 +1038,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">create_contact(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L204" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L227" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1030,7 +1051,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1040,11 +1061,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="2591764971-1">(</span><span class="p" data-group-id="2591764971-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="2591764971-2">}</span><span class="p" data-group-id="2591764971-1">)</span><span class="w">
-</span><span class="p" data-group-id="2591764971-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2591764971-4">%</span><span class="nc" data-group-id="2591764971-4">Contact</span><span class="p" data-group-id="2591764971-4">{</span><span class="p" data-group-id="2591764971-4">}</span><span class="p" data-group-id="2591764971-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="4378877101-1">(</span><span class="p" data-group-id="4378877101-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="4378877101-2">}</span><span class="p" data-group-id="4378877101-1">)</span><span class="w">
+</span><span class="p" data-group-id="4378877101-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4378877101-4">%</span><span class="nc" data-group-id="4378877101-4">Contact</span><span class="p" data-group-id="4378877101-4">{</span><span class="p" data-group-id="4378877101-4">}</span><span class="p" data-group-id="4378877101-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="2591764971-5">(</span><span class="p" data-group-id="2591764971-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2591764971-6">}</span><span class="p" data-group-id="2591764971-5">)</span><span class="w">
-</span><span class="p" data-group-id="2591764971-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2591764971-8">%</span><span class="nc" data-group-id="2591764971-8">Ecto.Changeset</span><span class="p" data-group-id="2591764971-8">{</span><span class="p" data-group-id="2591764971-8">}</span><span class="p" data-group-id="2591764971-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_contact</span><span class="p" data-group-id="4378877101-5">(</span><span class="p" data-group-id="4378877101-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="4378877101-6">}</span><span class="p" data-group-id="4378877101-5">)</span><span class="w">
+</span><span class="p" data-group-id="4378877101-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4378877101-8">%</span><span class="nc" data-group-id="4378877101-8">Ecto.Changeset</span><span class="p" data-group-id="4378877101-8">{</span><span class="p" data-group-id="4378877101-8">}</span><span class="p" data-group-id="4378877101-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_location/1">
@@ -1058,7 +1079,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">create_location(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L604" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L642" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1071,7 +1092,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_location(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Location.html#t:t/0">Glific.Contacts.Location.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Location.html#t:t/0">Glific.Contacts.Location.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1081,11 +1102,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="3896627439-1">(</span><span class="p" data-group-id="3896627439-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="3896627439-2">}</span><span class="p" data-group-id="3896627439-1">)</span><span class="w">
-</span><span class="p" data-group-id="3896627439-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3896627439-4">%</span><span class="nc" data-group-id="3896627439-4">Glific.Contacts.Location</span><span class="p" data-group-id="3896627439-4">{</span><span class="p" data-group-id="3896627439-4">}</span><span class="p" data-group-id="3896627439-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="9096791974-1">(</span><span class="p" data-group-id="9096791974-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9096791974-2">}</span><span class="p" data-group-id="9096791974-1">)</span><span class="w">
+</span><span class="p" data-group-id="9096791974-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9096791974-4">%</span><span class="nc" data-group-id="9096791974-4">Glific.Contacts.Location</span><span class="p" data-group-id="9096791974-4">{</span><span class="p" data-group-id="9096791974-4">}</span><span class="p" data-group-id="9096791974-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="3896627439-5">(</span><span class="p" data-group-id="3896627439-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3896627439-6">}</span><span class="p" data-group-id="3896627439-5">)</span><span class="w">
-</span><span class="p" data-group-id="3896627439-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3896627439-8">%</span><span class="nc" data-group-id="3896627439-8">Ecto.Changeset</span><span class="p" data-group-id="3896627439-8">{</span><span class="p" data-group-id="3896627439-8">}</span><span class="p" data-group-id="3896627439-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Contacts</span><span class="o">.</span><span class="n">create_location</span><span class="p" data-group-id="9096791974-5">(</span><span class="p" data-group-id="9096791974-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9096791974-6">}</span><span class="p" data-group-id="9096791974-5">)</span><span class="w">
+</span><span class="p" data-group-id="9096791974-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9096791974-8">%</span><span class="nc" data-group-id="9096791974-8">Ecto.Changeset</span><span class="p" data-group-id="9096791974-8">{</span><span class="p" data-group-id="9096791974-8">}</span><span class="p" data-group-id="9096791974-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete!/3">
@@ -1114,11 +1135,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete!</span><span class="p" data-group-id="9816865755-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9816865755-1">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9816865755-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9816865755-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9816865755-3">]</span><span class="p" data-group-id="9816865755-2">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9816865755-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9816865755-4">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9816865755-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9816865755-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9816865755-6">]</span><span class="p" data-group-id="9816865755-5">)</span><span class="w">
-</span><span class="n">delete!</span><span class="p" data-group-id="9816865755-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9816865755-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9816865755-8">}</span><span class="p" data-group-id="9816865755-7">)</span></code></pre>
+<p>Perform a DELETE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete!</span><span class="p" data-group-id="3334237173-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3334237173-1">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3334237173-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3334237173-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3334237173-3">]</span><span class="p" data-group-id="3334237173-2">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3334237173-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3334237173-4">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3334237173-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3334237173-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3334237173-6">]</span><span class="p" data-group-id="3334237173-5">)</span><span class="w">
+</span><span class="n">delete!</span><span class="p" data-group-id="3334237173-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3334237173-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3334237173-8">}</span><span class="p" data-group-id="3334237173-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete/3">
@@ -1146,11 +1167,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete</span><span class="p" data-group-id="1933483533-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1933483533-1">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1933483533-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1933483533-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1933483533-3">]</span><span class="p" data-group-id="1933483533-2">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1933483533-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1933483533-4">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1933483533-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1933483533-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1933483533-6">]</span><span class="p" data-group-id="1933483533-5">)</span><span class="w">
-</span><span class="n">delete</span><span class="p" data-group-id="1933483533-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1933483533-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1933483533-8">}</span><span class="p" data-group-id="1933483533-7">)</span></code></pre>
+<p>Perform a DELETE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">delete</span><span class="p" data-group-id="9288562235-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9288562235-1">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="9288562235-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9288562235-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9288562235-3">]</span><span class="p" data-group-id="9288562235-2">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="9288562235-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9288562235-4">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="9288562235-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9288562235-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9288562235-6">]</span><span class="p" data-group-id="9288562235-5">)</span><span class="w">
+</span><span class="n">delete</span><span class="p" data-group-id="9288562235-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9288562235-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9288562235-8">}</span><span class="p" data-group-id="9288562235-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_contact/1">
@@ -1162,7 +1183,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">delete_contact(contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L272" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L295" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1175,7 +1196,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1185,11 +1206,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="5831932474-1">(</span><span class="n">contact</span><span class="p" data-group-id="5831932474-1">)</span><span class="w">
-</span><span class="p" data-group-id="5831932474-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5831932474-3">%</span><span class="nc" data-group-id="5831932474-3">Contact</span><span class="p" data-group-id="5831932474-3">{</span><span class="p" data-group-id="5831932474-3">}</span><span class="p" data-group-id="5831932474-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="6851709343-1">(</span><span class="n">contact</span><span class="p" data-group-id="6851709343-1">)</span><span class="w">
+</span><span class="p" data-group-id="6851709343-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6851709343-3">%</span><span class="nc" data-group-id="6851709343-3">Contact</span><span class="p" data-group-id="6851709343-3">{</span><span class="p" data-group-id="6851709343-3">}</span><span class="p" data-group-id="6851709343-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="5831932474-4">(</span><span class="n">contact</span><span class="p" data-group-id="5831932474-4">)</span><span class="w">
-</span><span class="p" data-group-id="5831932474-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5831932474-6">%</span><span class="nc" data-group-id="5831932474-6">Ecto.Changeset</span><span class="p" data-group-id="5831932474-6">{</span><span class="p" data-group-id="5831932474-6">}</span><span class="p" data-group-id="5831932474-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_contact</span><span class="p" data-group-id="6851709343-4">(</span><span class="n">contact</span><span class="p" data-group-id="6851709343-4">)</span><span class="w">
+</span><span class="p" data-group-id="6851709343-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6851709343-6">%</span><span class="nc" data-group-id="6851709343-6">Ecto.Changeset</span><span class="p" data-group-id="6851709343-6">{</span><span class="p" data-group-id="6851709343-6">}</span><span class="p" data-group-id="6851709343-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get!/3">
@@ -1218,11 +1239,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get!</span><span class="p" data-group-id="4620846275-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4620846275-1">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="4620846275-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4620846275-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4620846275-3">]</span><span class="p" data-group-id="4620846275-2">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="4620846275-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4620846275-4">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="4620846275-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4620846275-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4620846275-6">]</span><span class="p" data-group-id="4620846275-5">)</span><span class="w">
-</span><span class="n">get!</span><span class="p" data-group-id="4620846275-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4620846275-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4620846275-8">}</span><span class="p" data-group-id="4620846275-7">)</span></code></pre>
+<p>Perform a GET request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get!</span><span class="p" data-group-id="0663344328-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0663344328-1">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0663344328-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0663344328-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0663344328-3">]</span><span class="p" data-group-id="0663344328-2">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0663344328-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0663344328-4">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0663344328-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0663344328-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0663344328-6">]</span><span class="p" data-group-id="0663344328-5">)</span><span class="w">
+</span><span class="n">get!</span><span class="p" data-group-id="0663344328-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0663344328-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0663344328-8">}</span><span class="p" data-group-id="0663344328-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get/3">
@@ -1250,11 +1271,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get</span><span class="p" data-group-id="7254586185-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7254586185-1">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7254586185-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7254586185-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7254586185-3">]</span><span class="p" data-group-id="7254586185-2">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7254586185-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="7254586185-4">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7254586185-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7254586185-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="7254586185-6">]</span><span class="p" data-group-id="7254586185-5">)</span><span class="w">
-</span><span class="n">get</span><span class="p" data-group-id="7254586185-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="7254586185-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="7254586185-8">}</span><span class="p" data-group-id="7254586185-7">)</span></code></pre>
+<p>Perform a GET request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">get</span><span class="p" data-group-id="6933695609-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6933695609-1">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="6933695609-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6933695609-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6933695609-3">]</span><span class="p" data-group-id="6933695609-2">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="6933695609-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6933695609-4">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="6933695609-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6933695609-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6933695609-6">]</span><span class="p" data-group-id="6933695609-5">)</span><span class="w">
+</span><span class="n">get</span><span class="p" data-group-id="6933695609-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6933695609-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6933695609-8">}</span><span class="p" data-group-id="6933695609-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="get_contact!/1">
@@ -1266,7 +1287,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">get_contact!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L184" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L185" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1282,16 +1303,54 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Gets a single contact.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact!/1-examples" class="section-heading">
+<p>Gets a single contact.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact!/1-examples" class="section-heading">
   <a href="#get_contact!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="0413508718-1">(</span><span class="mi">123</span><span class="p" data-group-id="0413508718-1">)</span><span class="w">
-</span><span class="p" data-group-id="0413508718-2">%</span><span class="nc" data-group-id="0413508718-2">Contact</span><span class="p" data-group-id="0413508718-2">{</span><span class="p" data-group-id="0413508718-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="9242455408-1">(</span><span class="mi">123</span><span class="p" data-group-id="9242455408-1">)</span><span class="w">
+</span><span class="p" data-group-id="9242455408-2">%</span><span class="nc" data-group-id="9242455408-2">Contact</span><span class="p" data-group-id="9242455408-2">{</span><span class="p" data-group-id="9242455408-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="0413508718-3">(</span><span class="mi">456</span><span class="p" data-group-id="0413508718-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="9242455408-3">(</span><span class="mi">456</span><span class="p" data-group-id="9242455408-3">)</span><span class="w">
+</span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_contact_by_phone!/1">
+
+  <div class="detail-header">
+    <a href="#get_contact_by_phone!/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_contact_by_phone!(phone)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L207" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_contact_by_phone!(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()</pre>
+
+      </div>
+
+<p>Gets a single contact by phone nunmber.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Contact does not exist.</p><h2 id="get_contact_by_phone!/1-examples" class="section-heading">
+  <a href="#get_contact_by_phone!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
+  <p class="sr-only">examples</p>
+  </a>
+  Examples
+</h2>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_contact_by_phone!</span><span class="p" data-group-id="4672163010-1">(</span><span class="s">&quot;9876543210_1&quot;</span><span class="p" data-group-id="4672163010-1">)</span><span class="w">
+</span><span class="p" data-group-id="4672163010-2">%</span><span class="nc" data-group-id="4672163010-2">Contact</span><span class="p" data-group-id="4672163010-2">{</span><span class="p" data-group-id="4672163010-2">}</span><span class="w">
+
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_contact!</span><span class="p" data-group-id="4672163010-3">(</span><span class="s">&quot;123&quot;</span><span class="p" data-group-id="4672163010-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
   </section>
 </section>
@@ -1304,7 +1363,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">get_contact_field_map(contact_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L705" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L743" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1349,11 +1408,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head!</span><span class="p" data-group-id="9460984375-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9460984375-1">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="9460984375-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9460984375-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9460984375-3">]</span><span class="p" data-group-id="9460984375-2">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="9460984375-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9460984375-4">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="9460984375-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9460984375-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9460984375-6">]</span><span class="p" data-group-id="9460984375-5">)</span><span class="w">
-</span><span class="n">head!</span><span class="p" data-group-id="9460984375-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9460984375-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9460984375-8">}</span><span class="p" data-group-id="9460984375-7">)</span></code></pre>
+<p>Perform a HEAD request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head!</span><span class="p" data-group-id="9057987315-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9057987315-1">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="9057987315-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9057987315-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9057987315-3">]</span><span class="p" data-group-id="9057987315-2">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="9057987315-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9057987315-4">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="9057987315-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9057987315-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9057987315-6">]</span><span class="p" data-group-id="9057987315-5">)</span><span class="w">
+</span><span class="n">head!</span><span class="p" data-group-id="9057987315-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9057987315-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9057987315-8">}</span><span class="p" data-group-id="9057987315-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="head/3">
@@ -1381,11 +1440,11 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 
       </div>
 
-<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head</span><span class="p" data-group-id="0375984437-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0375984437-1">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="0375984437-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0375984437-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0375984437-3">]</span><span class="p" data-group-id="0375984437-2">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="0375984437-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="0375984437-4">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="0375984437-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0375984437-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0375984437-6">]</span><span class="p" data-group-id="0375984437-5">)</span><span class="w">
-</span><span class="n">head</span><span class="p" data-group-id="0375984437-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0375984437-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0375984437-8">}</span><span class="p" data-group-id="0375984437-7">)</span></code></pre>
+<p>Perform a HEAD request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">head</span><span class="p" data-group-id="9886744660-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9886744660-1">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="9886744660-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9886744660-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9886744660-3">]</span><span class="p" data-group-id="9886744660-2">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="9886744660-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="9886744660-4">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="9886744660-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9886744660-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="9886744660-6">]</span><span class="p" data-group-id="9886744660-5">)</span><span class="w">
+</span><span class="n">head</span><span class="p" data-group-id="9886744660-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="9886744660-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="9886744660-8">}</span><span class="p" data-group-id="9886744660-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="is_contact_blocked?/1">
@@ -1397,7 +1456,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">is_contact_blocked?(contact)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L677" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L715" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1425,7 +1484,7 @@ Specifically designed for when we are trying to optin an opted out contact</p>
     </a>
     <h1 class="signature" translate="no">is_new_contact(contact_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L361" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L399" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1445,6 +1504,34 @@ Specifically designed for when we are trying to optin an opted out contact</p>
 In general, we should always retrive as little as possible from the DB</p>
   </section>
 </section>
+<section class="detail" id="is_org_root_contact?/1">
+
+  <div class="detail-header">
+    <a href="#is_org_root_contact?/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">is_org_root_contact?(contact)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L312" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> is_org_root_contact?(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Checks if the contact passed in argument is organization root contact or not</p>
+  </section>
+</section>
 <section class="detail" id="is_simulator_contact?/1">
 
   <div class="detail-header">
@@ -1454,7 +1541,7 @@ In general, we should always retrive as little as possible from the DB</p>
     </a>
     <h1 class="signature" translate="no">is_simulator_contact?(phone)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L753" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L876" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1482,7 +1569,7 @@ In general, we should always retrive as little as possible from the DB</p>
     </a>
     <h1 class="signature" translate="no">list_contact_history(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L792" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L915" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1510,7 +1597,7 @@ In general, we should always retrive as little as possible from the DB</p>
     </a>
     <h1 class="signature" translate="no">list_contacts(args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L64" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L65" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1532,8 +1619,8 @@ In general, we should always retrive as little as possible from the DB</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts</span><span class="p" data-group-id="2345971414-1">(</span><span class="p" data-group-id="2345971414-1">)</span><span class="w">
-</span><span class="p" data-group-id="2345971414-2">[</span><span class="p" data-group-id="2345971414-3">%</span><span class="nc" data-group-id="2345971414-3">Contact</span><span class="p" data-group-id="2345971414-3">{</span><span class="p" data-group-id="2345971414-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="2345971414-2">]</span></code></pre><p>Get the list of contacts filtered by various search options
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_contacts</span><span class="p" data-group-id="1800549554-1">(</span><span class="p" data-group-id="1800549554-1">)</span><span class="w">
+</span><span class="p" data-group-id="1800549554-2">[</span><span class="p" data-group-id="1800549554-3">%</span><span class="nc" data-group-id="1800549554-3">Contact</span><span class="p" data-group-id="1800549554-3">{</span><span class="p" data-group-id="1800549554-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1800549554-2">]</span></code></pre><p>Get the list of contacts filtered by various search options
 Include contacts only if within list of groups
 Include contacts only if have list of tags</p>
   </section>
@@ -1549,7 +1636,7 @@ Include contacts only if have list of tags</p>
     </a>
     <h1 class="signature" translate="no">list_user_contacts(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L75" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L76" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1577,7 +1664,7 @@ Include contacts only if have list of tags</p>
     </a>
     <h1 class="signature" translate="no">maybe_create_contact(sender)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L335" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L373" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1590,7 +1677,7 @@ Include contacts only if have list of tags</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> maybe_create_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1610,7 +1697,7 @@ avoid updating the contact to skip the DB call, and only do so if the name has c
     </a>
     <h1 class="signature" translate="no">number_does_not_exist(contact_id, method \\ &quot;Number does not exist&quot;)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L488" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L526" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1639,7 +1726,7 @@ exisiting or not on whatsapp</p>
     </a>
     <h1 class="signature" translate="no">optin_contact(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L691" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L729" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1653,7 +1740,7 @@ exisiting or not on whatsapp</p>
 
           <pre translate="no"><span class="attribute">@spec</span> optin_contact(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
   {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()}
-  | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}
+  | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}
   | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
 
       </div>
@@ -1687,11 +1774,11 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options!</span><span class="p" data-group-id="6265945490-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6265945490-1">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="6265945490-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6265945490-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6265945490-3">]</span><span class="p" data-group-id="6265945490-2">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="6265945490-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="6265945490-4">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="6265945490-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6265945490-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6265945490-6">]</span><span class="p" data-group-id="6265945490-5">)</span><span class="w">
-</span><span class="n">options!</span><span class="p" data-group-id="6265945490-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6265945490-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6265945490-8">}</span><span class="p" data-group-id="6265945490-7">)</span></code></pre>
+<p>Perform a OPTIONS request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options!</span><span class="p" data-group-id="1067892217-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1067892217-1">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="1067892217-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1067892217-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1067892217-3">]</span><span class="p" data-group-id="1067892217-2">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="1067892217-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="1067892217-4">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="1067892217-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1067892217-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="1067892217-6">]</span><span class="p" data-group-id="1067892217-5">)</span><span class="w">
+</span><span class="n">options!</span><span class="p" data-group-id="1067892217-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="1067892217-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="1067892217-8">}</span><span class="p" data-group-id="1067892217-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="options/3">
@@ -1719,11 +1806,11 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options</span><span class="p" data-group-id="2790834121-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2790834121-1">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="2790834121-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2790834121-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2790834121-3">]</span><span class="p" data-group-id="2790834121-2">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="2790834121-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2790834121-4">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="2790834121-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2790834121-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2790834121-6">]</span><span class="p" data-group-id="2790834121-5">)</span><span class="w">
-</span><span class="n">options</span><span class="p" data-group-id="2790834121-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2790834121-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2790834121-8">}</span><span class="p" data-group-id="2790834121-7">)</span></code></pre>
+<p>Perform a OPTIONS request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">options</span><span class="p" data-group-id="4758935694-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4758935694-1">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="4758935694-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4758935694-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4758935694-3">]</span><span class="p" data-group-id="4758935694-2">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="4758935694-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4758935694-4">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="4758935694-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4758935694-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4758935694-6">]</span><span class="p" data-group-id="4758935694-5">)</span><span class="w">
+</span><span class="n">options</span><span class="p" data-group-id="4758935694-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4758935694-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4758935694-8">}</span><span class="p" data-group-id="4758935694-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="patch!/4">
@@ -1752,10 +1839,10 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch!</span><span class="p" data-group-id="6108261100-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6108261100-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6108261100-2">}</span><span class="p" data-group-id="6108261100-1">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="6108261100-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6108261100-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6108261100-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6108261100-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6108261100-5">]</span><span class="p" data-group-id="6108261100-3">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="6108261100-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6108261100-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6108261100-7">}</span><span class="p" data-group-id="6108261100-6">)</span><span class="w">
-</span><span class="n">patch!</span><span class="p" data-group-id="6108261100-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6108261100-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6108261100-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6108261100-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6108261100-10">]</span><span class="p" data-group-id="6108261100-8">)</span></code></pre>
+<p>Perform a PATCH request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch!</span><span class="p" data-group-id="6552970947-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6552970947-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6552970947-2">}</span><span class="p" data-group-id="6552970947-1">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="6552970947-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6552970947-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6552970947-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6552970947-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6552970947-5">]</span><span class="p" data-group-id="6552970947-3">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="6552970947-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6552970947-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6552970947-7">}</span><span class="p" data-group-id="6552970947-6">)</span><span class="w">
+</span><span class="n">patch!</span><span class="p" data-group-id="6552970947-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="6552970947-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="6552970947-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="6552970947-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="6552970947-10">]</span><span class="p" data-group-id="6552970947-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="patch/4">
@@ -1784,10 +1871,10 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch</span><span class="p" data-group-id="3364399605-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3364399605-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3364399605-2">}</span><span class="p" data-group-id="3364399605-1">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="3364399605-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3364399605-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3364399605-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3364399605-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3364399605-5">]</span><span class="p" data-group-id="3364399605-3">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="3364399605-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3364399605-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3364399605-7">}</span><span class="p" data-group-id="3364399605-6">)</span><span class="w">
-</span><span class="n">patch</span><span class="p" data-group-id="3364399605-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3364399605-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3364399605-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3364399605-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3364399605-10">]</span><span class="p" data-group-id="3364399605-8">)</span></code></pre>
+<p>Perform a PATCH request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">patch</span><span class="p" data-group-id="4392172553-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4392172553-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4392172553-2">}</span><span class="p" data-group-id="4392172553-1">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="4392172553-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4392172553-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4392172553-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4392172553-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4392172553-5">]</span><span class="p" data-group-id="4392172553-3">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="4392172553-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4392172553-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4392172553-7">}</span><span class="p" data-group-id="4392172553-6">)</span><span class="w">
+</span><span class="n">patch</span><span class="p" data-group-id="4392172553-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4392172553-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4392172553-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4392172553-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4392172553-10">]</span><span class="p" data-group-id="4392172553-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="post!/4">
@@ -1816,10 +1903,10 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post!</span><span class="p" data-group-id="0490851761-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0490851761-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0490851761-2">}</span><span class="p" data-group-id="0490851761-1">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="0490851761-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0490851761-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0490851761-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0490851761-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0490851761-5">]</span><span class="p" data-group-id="0490851761-3">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="0490851761-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0490851761-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0490851761-7">}</span><span class="p" data-group-id="0490851761-6">)</span><span class="w">
-</span><span class="n">post!</span><span class="p" data-group-id="0490851761-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0490851761-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="0490851761-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="0490851761-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="0490851761-10">]</span><span class="p" data-group-id="0490851761-8">)</span></code></pre>
+<p>Perform a POST request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post!</span><span class="p" data-group-id="3531209440-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3531209440-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3531209440-2">}</span><span class="p" data-group-id="3531209440-1">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="3531209440-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3531209440-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3531209440-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3531209440-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3531209440-5">]</span><span class="p" data-group-id="3531209440-3">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="3531209440-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3531209440-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3531209440-7">}</span><span class="p" data-group-id="3531209440-6">)</span><span class="w">
+</span><span class="n">post!</span><span class="p" data-group-id="3531209440-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3531209440-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3531209440-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3531209440-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3531209440-10">]</span><span class="p" data-group-id="3531209440-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="post/4">
@@ -1848,10 +1935,10 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post</span><span class="p" data-group-id="4410219404-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4410219404-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4410219404-2">}</span><span class="p" data-group-id="4410219404-1">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="4410219404-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4410219404-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4410219404-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4410219404-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4410219404-5">]</span><span class="p" data-group-id="4410219404-3">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="4410219404-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4410219404-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4410219404-7">}</span><span class="p" data-group-id="4410219404-6">)</span><span class="w">
-</span><span class="n">post</span><span class="p" data-group-id="4410219404-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4410219404-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4410219404-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4410219404-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4410219404-10">]</span><span class="p" data-group-id="4410219404-8">)</span></code></pre>
+<p>Perform a POST request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">post</span><span class="p" data-group-id="3395926691-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3395926691-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3395926691-2">}</span><span class="p" data-group-id="3395926691-1">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="3395926691-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3395926691-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3395926691-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3395926691-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3395926691-5">]</span><span class="p" data-group-id="3395926691-3">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="3395926691-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3395926691-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3395926691-7">}</span><span class="p" data-group-id="3395926691-6">)</span><span class="w">
+</span><span class="n">post</span><span class="p" data-group-id="3395926691-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3395926691-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3395926691-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3395926691-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3395926691-10">]</span><span class="p" data-group-id="3395926691-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="put!/4">
@@ -1880,10 +1967,10 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put!</span><span class="p" data-group-id="4045500702-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4045500702-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4045500702-2">}</span><span class="p" data-group-id="4045500702-1">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="4045500702-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4045500702-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4045500702-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4045500702-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4045500702-5">]</span><span class="p" data-group-id="4045500702-3">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="4045500702-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4045500702-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4045500702-7">}</span><span class="p" data-group-id="4045500702-6">)</span><span class="w">
-</span><span class="n">put!</span><span class="p" data-group-id="4045500702-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="4045500702-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4045500702-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4045500702-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4045500702-10">]</span><span class="p" data-group-id="4045500702-8">)</span></code></pre>
+<p>Perform a PUT request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put!</span><span class="p" data-group-id="3932172572-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3932172572-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3932172572-2">}</span><span class="p" data-group-id="3932172572-1">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="3932172572-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3932172572-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3932172572-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3932172572-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3932172572-5">]</span><span class="p" data-group-id="3932172572-3">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="3932172572-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3932172572-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3932172572-7">}</span><span class="p" data-group-id="3932172572-6">)</span><span class="w">
+</span><span class="n">put!</span><span class="p" data-group-id="3932172572-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3932172572-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3932172572-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3932172572-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3932172572-10">]</span><span class="p" data-group-id="3932172572-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="put/4">
@@ -1912,10 +1999,10 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put</span><span class="p" data-group-id="5797940198-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5797940198-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5797940198-2">}</span><span class="p" data-group-id="5797940198-1">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="5797940198-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5797940198-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5797940198-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5797940198-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5797940198-5">]</span><span class="p" data-group-id="5797940198-3">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="5797940198-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5797940198-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5797940198-7">}</span><span class="p" data-group-id="5797940198-6">)</span><span class="w">
-</span><span class="n">put</span><span class="p" data-group-id="5797940198-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5797940198-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5797940198-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5797940198-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5797940198-10">]</span><span class="p" data-group-id="5797940198-8">)</span></code></pre>
+<p>Perform a PUT request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">put</span><span class="p" data-group-id="8665779880-1">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8665779880-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8665779880-2">}</span><span class="p" data-group-id="8665779880-1">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="8665779880-3">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8665779880-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8665779880-4">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8665779880-5">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8665779880-5">]</span><span class="p" data-group-id="8665779880-3">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="8665779880-6">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8665779880-7">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8665779880-7">}</span><span class="p" data-group-id="8665779880-6">)</span><span class="w">
+</span><span class="n">put</span><span class="p" data-group-id="8665779880-8">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8665779880-9">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8665779880-9">}</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8665779880-10">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="8665779880-10">]</span><span class="p" data-group-id="8665779880-8">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="request!/2">
@@ -1987,11 +2074,11 @@ exisiting or not on whatsapp</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="3103750234-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="3103750234-1">)</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">request</span><span class="p" data-group-id="8859402286-1">(</span><span class="ss">method</span><span class="p">:</span><span class="w"> </span><span class="ss">:get</span><span class="p">,</span><span class="w"> </span><span class="ss">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/users/path&quot;</span><span class="p" data-group-id="8859402286-1">)</span><span class="w">
 
 </span><span class="c1"># use shortcut methods</span><span class="w">
-</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="3103750234-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="3103750234-2">)</span><span class="w">
-</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="3103750234-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3103750234-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3103750234-4">}</span><span class="p" data-group-id="3103750234-3">)</span></code></pre>
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">get</span><span class="p" data-group-id="8859402286-2">(</span><span class="s">&quot;/users/1&quot;</span><span class="p" data-group-id="8859402286-2">)</span><span class="w">
+</span><span class="nc">ExampleApi</span><span class="o">.</span><span class="n">post</span><span class="p" data-group-id="8859402286-3">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8859402286-4">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="8859402286-4">}</span><span class="p" data-group-id="8859402286-3">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="set_session_status/2">
@@ -2003,7 +2090,7 @@ exisiting or not on whatsapp</p>
     </a>
     <h1 class="signature" translate="no">set_session_status(contact, status)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L636" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L674" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -2016,7 +2103,7 @@ exisiting or not on whatsapp</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> set_session_status(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>() | [<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()], <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">atom</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()} | :ok</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()} | :ok</pre>
 
       </div>
 
@@ -2049,11 +2136,11 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace!</span><span class="p" data-group-id="2553129314-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2553129314-1">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="2553129314-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2553129314-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2553129314-3">]</span><span class="p" data-group-id="2553129314-2">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="2553129314-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="2553129314-4">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="2553129314-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2553129314-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="2553129314-6">]</span><span class="p" data-group-id="2553129314-5">)</span><span class="w">
-</span><span class="n">trace!</span><span class="p" data-group-id="2553129314-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2553129314-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="2553129314-8">}</span><span class="p" data-group-id="2553129314-7">)</span></code></pre>
+<p>Perform a TRACE request.</p><p>See <a href="#request!/1"><code class="inline">request!/1</code></a> or <a href="#request!/2"><code class="inline">request!/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace!</span><span class="p" data-group-id="3743292037-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3743292037-1">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="3743292037-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3743292037-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3743292037-3">]</span><span class="p" data-group-id="3743292037-2">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="3743292037-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="3743292037-4">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="3743292037-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3743292037-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="3743292037-6">]</span><span class="p" data-group-id="3743292037-5">)</span><span class="w">
+</span><span class="n">trace!</span><span class="p" data-group-id="3743292037-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="3743292037-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="3743292037-8">}</span><span class="p" data-group-id="3743292037-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="trace/3">
@@ -2081,11 +2168,11 @@ exisiting or not on whatsapp</p>
 
       </div>
 
-<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace</span><span class="p" data-group-id="4849591541-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4849591541-1">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="4849591541-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4849591541-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4849591541-3">]</span><span class="p" data-group-id="4849591541-2">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="4849591541-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="4849591541-4">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="4849591541-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4849591541-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="4849591541-6">]</span><span class="p" data-group-id="4849591541-5">)</span><span class="w">
-</span><span class="n">trace</span><span class="p" data-group-id="4849591541-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="4849591541-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="4849591541-8">}</span><span class="p" data-group-id="4849591541-7">)</span></code></pre>
+<p>Perform a TRACE request.</p><p>See <a href="#request/1"><code class="inline">request/1</code></a> or <a href="#request/2"><code class="inline">request/2</code></a> for options definition.</p><pre><code class="makeup elixir" translate="no"><span class="n">trace</span><span class="p" data-group-id="5526953844-1">(</span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5526953844-1">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="5526953844-2">(</span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5526953844-3">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5526953844-3">]</span><span class="p" data-group-id="5526953844-2">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="5526953844-4">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p" data-group-id="5526953844-4">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="5526953844-5">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">query</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5526953844-6">[</span><span class="ss">scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="p" data-group-id="5526953844-6">]</span><span class="p" data-group-id="5526953844-5">)</span><span class="w">
+</span><span class="n">trace</span><span class="p" data-group-id="5526953844-7">(</span><span class="n">client</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;/users&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">body</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="5526953844-8">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Jon&quot;</span><span class="p" data-group-id="5526953844-8">}</span><span class="p" data-group-id="5526953844-7">)</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_contact/2">
@@ -2097,7 +2184,7 @@ exisiting or not on whatsapp</p>
     </a>
     <h1 class="signature" translate="no">update_contact(contact, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L234" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L257" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -2110,7 +2197,7 @@ exisiting or not on whatsapp</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_contact(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -2120,11 +2207,11 @@ exisiting or not on whatsapp</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="2295414441-1">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2295414441-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2295414441-2">}</span><span class="p" data-group-id="2295414441-1">)</span><span class="w">
-</span><span class="p" data-group-id="2295414441-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2295414441-4">%</span><span class="nc" data-group-id="2295414441-4">Contact</span><span class="p" data-group-id="2295414441-4">{</span><span class="p" data-group-id="2295414441-4">}</span><span class="p" data-group-id="2295414441-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="7383614282-1">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7383614282-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="7383614282-2">}</span><span class="p" data-group-id="7383614282-1">)</span><span class="w">
+</span><span class="p" data-group-id="7383614282-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7383614282-4">%</span><span class="nc" data-group-id="7383614282-4">Contact</span><span class="p" data-group-id="7383614282-4">{</span><span class="p" data-group-id="7383614282-4">}</span><span class="p" data-group-id="7383614282-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="2295414441-5">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2295414441-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2295414441-6">}</span><span class="p" data-group-id="2295414441-5">)</span><span class="w">
-</span><span class="p" data-group-id="2295414441-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2295414441-8">%</span><span class="nc" data-group-id="2295414441-8">Ecto.Changeset</span><span class="p" data-group-id="2295414441-8">{</span><span class="p" data-group-id="2295414441-8">}</span><span class="p" data-group-id="2295414441-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_contact</span><span class="p" data-group-id="7383614282-5">(</span><span class="n">contact</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7383614282-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="7383614282-6">}</span><span class="p" data-group-id="7383614282-5">)</span><span class="w">
+</span><span class="p" data-group-id="7383614282-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="7383614282-8">%</span><span class="nc" data-group-id="7383614282-8">Ecto.Changeset</span><span class="p" data-group-id="7383614282-8">{</span><span class="p" data-group-id="7383614282-8">}</span><span class="p" data-group-id="7383614282-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_contact_status/2">
@@ -2136,7 +2223,7 @@ exisiting or not on whatsapp</p>
     </a>
     <h1 class="signature" translate="no">update_contact_status(organization_id, args)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L619" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L657" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -2167,7 +2254,7 @@ of postgres and how it ties in. For now, lets stick to per organization</p>
     </a>
     <h1 class="signature" translate="no">upsert(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L296" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/contacts.ex#L334" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -2197,10 +2284,10 @@ it returns the existing contact, else it creates a new one</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/contacts.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/contacts.ex">(current file)</a>
 
             </span>
 
@@ -2211,8 +2298,10 @@ it returns the existing contact, else it creates a new one</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

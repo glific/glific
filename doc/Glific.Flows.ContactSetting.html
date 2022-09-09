@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Flows.ContactSetting — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Flows.ContactSetting — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Flows.ContactSetting</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -153,6 +154,16 @@ set the value to false, and hence turn it off</p></div>
         </div>
 
           <div class="summary-synopsis"><p>Get all the preferences for this contact</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#maybe_update_profile_language/2" translate="no">maybe_update_profile_language(contact, language_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Update profile language if there is an active profile id set</p></div>
 
       </div>
 
@@ -222,7 +233,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">add_contact_preference(context, preference, value \\ true)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L97" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L121" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -252,7 +263,7 @@ settings map, with a sub-map of preferences. We expect to get more clarity on th
     </a>
     <h1 class="signature" translate="no">delete_contact_preference(context, preference)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L131" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L155" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -282,7 +293,7 @@ set the value to false, and hence turn it off</p>
     </a>
     <h1 class="signature" translate="no">get_contact_preferences(flow_context)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L139" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L163" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -301,6 +312,35 @@ set the value to false, and hence turn it off</p>
 <p>Get all the preferences for this contact</p>
   </section>
 </section>
+<section class="detail" id="maybe_update_profile_language/2">
+
+  <div class="detail-header">
+    <a href="#maybe_update_profile_language/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">maybe_update_profile_language(contact, language_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L61" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> maybe_update_profile_language(<a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
+  <a href="Glific.Contacts.Contact.html#t:t/0">Glific.Contacts.Contact.t</a>()</pre>
+
+      </div>
+
+<p>Update profile language if there is an active profile id set</p>
+  </section>
+</section>
 <section class="detail" id="reset_contact_preference/1">
 
   <div class="detail-header">
@@ -310,7 +350,7 @@ set the value to false, and hence turn it off</p>
     </a>
     <h1 class="signature" translate="no">reset_contact_preference(context)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L155" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L179" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -339,7 +379,7 @@ set the value to false, and hence turn it off</p>
     </a>
     <h1 class="signature" translate="no">set_contact_language(context, language)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L18" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L20" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -368,7 +408,7 @@ set the value to false, and hence turn it off</p>
     </a>
     <h1 class="signature" translate="no">set_contact_name(context, name)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L59" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L83" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -397,7 +437,7 @@ set the value to false, and hence turn it off</p>
     </a>
     <h1 class="signature" translate="no">set_contact_preference(context, preference)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L86" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/flows/contact_setting.ex#L110" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -428,10 +468,10 @@ indicates to reset the preference</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/flows/contact_setting.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/flows/contact_setting.ex">(current file)</a>
 
             </span>
 
@@ -442,8 +482,10 @@ indicates to reset the preference</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

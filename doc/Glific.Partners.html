@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>Glific.Partners — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>Glific.Partners — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -99,7 +100,7 @@ Glific
     </a>
 
   <span translate="no">Glific.Partners</span> 
-  <small class="app-vsn" translate="no">(Glific v4.3.0)</small>
+  <small class="app-vsn" translate="no">(Glific v4.6.8)</small>
 
 </h1>
 
@@ -238,21 +239,11 @@ to return counts on contact with its variations</p></div>
 
       <div class="summary-row">
         <div class="summary-signature">
-          <a href="#credential_update_callback/2" translate="no">credential_update_callback(organization, arg2)</a>
-
-        </div>
-
-          <div class="summary-synopsis"><p>Updating setup</p></div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
           <a href="#delete_organization/1" translate="no">delete_organization(organization)</a>
 
         </div>
 
-          <div class="summary-synopsis"><p>Deletes an Orgsanization.</p></div>
+          <div class="summary-synopsis"><p>Deletes an Organization.</p></div>
 
       </div>
 
@@ -288,16 +279,6 @@ to return counts on contact with its variations</p></div>
 
       <div class="summary-row">
         <div class="summary-signature">
-          <a href="#fetch_opted_in_contacts/1" translate="no">fetch_opted_in_contacts(attrs)</a>
-
-        </div>
-
-          <div class="summary-synopsis"><p>Fetch opted in contacts data from providers server</p></div>
-
-      </div>
-
-      <div class="summary-row">
-        <div class="summary-signature">
           <a href="#fill_cache/1" translate="no">fill_cache(organization)</a>
 
         </div>
@@ -314,6 +295,16 @@ public so we can call from test harness and avoid SQL Sandbox issues</p></div>
         </div>
 
           <div class="summary-synopsis"><p>Returns bsp balance for an organization</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_contact_profile_enabled/1" translate="no">get_contact_profile_enabled(organization)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Determine if we need to enable contact profile for an organization</p></div>
 
       </div>
 
@@ -359,6 +350,16 @@ public so we can call from test harness and avoid SQL Sandbox issues</p></div>
 
       <div class="summary-row">
         <div class="summary-signature">
+          <a href="#get_org_services_by_id/1" translate="no">get_org_services_by_id(organization_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>  Get all the services and status for a given organization id.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
           <a href="#get_organization!/1" translate="no">get_organization!(id)</a>
 
         </div>
@@ -384,6 +385,36 @@ public so we can call from test harness and avoid SQL Sandbox issues</p></div>
         </div>
 
           <div class="summary-synopsis"><p>Gets a single provider.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_quality_rating/1" translate="no">get_quality_rating(organization_id)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Returns quality rating information for an organization provider</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#get_roles_and_permission/1" translate="no">get_roles_and_permission(organization)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>check fun_with_flag toggle for an organization and returns boolean value</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
+          <a href="#list_organization_data/1" translate="no">list_organization_data(args \\ %{})</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Get a List for org data</p></div>
 
       </div>
 
@@ -513,6 +544,16 @@ as defined by @active_minutes</p></div>
 
       <div class="summary-row">
         <div class="summary-signature">
+          <a href="#set_bsp_app_id/2" translate="no">set_bsp_app_id(org, shortcode)</a>
+
+        </div>
+
+          <div class="summary-synopsis"><p>Set BSP APP id whenever we update the bsp credentials.</p></div>
+
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-signature">
           <a href="#suspend_organization/2" translate="no">suspend_organization(organization, hours \\ 0)</a>
 
         </div>
@@ -598,7 +639,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">active_organizations(orgs, suspended \\ false)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L179" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L182" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -626,7 +667,7 @@ Functions
     </a>
     <h1 class="signature" translate="no">attachments_enabled?(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L978" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1085" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -657,7 +698,7 @@ see if GCS is enabled for this organization</p>
     </a>
     <h1 class="signature" translate="no">change_organization(organization, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L333" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L384" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -670,7 +711,7 @@ see if GCS is enabled for this organization</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> change_organization(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+  <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -680,8 +721,8 @@ see if GCS is enabled for this organization</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">change_organization</span><span class="p" data-group-id="2803730666-1">(</span><span class="n">organization</span><span class="p" data-group-id="2803730666-1">)</span><span class="w">
-</span><span class="p" data-group-id="2803730666-2">%</span><span class="nc" data-group-id="2803730666-2">Ecto.Changeset</span><span class="p" data-group-id="2803730666-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="2803730666-3">%</span><span class="nc" data-group-id="2803730666-3">Glific.Partners.Organization</span><span class="p" data-group-id="2803730666-3">{</span><span class="p" data-group-id="2803730666-3">}</span><span class="p" data-group-id="2803730666-2">}</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">change_organization</span><span class="p" data-group-id="8166665653-1">(</span><span class="n">organization</span><span class="p" data-group-id="8166665653-1">)</span><span class="w">
+</span><span class="p" data-group-id="8166665653-2">%</span><span class="nc" data-group-id="8166665653-2">Ecto.Changeset</span><span class="p" data-group-id="8166665653-2">{</span><span class="ss">data</span><span class="p">:</span><span class="w"> </span><span class="p" data-group-id="8166665653-3">%</span><span class="nc" data-group-id="8166665653-3">Glific.Partners.Organization</span><span class="p" data-group-id="8166665653-3">{</span><span class="p" data-group-id="8166665653-3">}</span><span class="p" data-group-id="8166665653-2">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="change_provider/2">
@@ -695,7 +736,7 @@ see if GCS is enabled for this organization</p>
     </a>
     <h1 class="signature" translate="no">change_provider(provider, attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L151" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L154" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -707,7 +748,7 @@ see if GCS is enabled for this organization</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> change_provider(<a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> change_provider(<a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()</pre>
 
       </div>
 
@@ -730,7 +771,7 @@ see if GCS is enabled for this organization</p>
     </a>
     <h1 class="signature" translate="no">contact_organization_query(org_id_list)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1011" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1118" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -742,7 +783,7 @@ see if GCS is enabled for this organization</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> contact_organization_query(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()) :: <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> contact_organization_query(<a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">list</a>()) :: <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Query.html#t:t/0">Ecto.Query.t</a>()</pre>
 
       </div>
 
@@ -761,7 +802,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">count_organizations(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L202" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L205" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -791,7 +832,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">count_providers(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L57" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L60" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -819,7 +860,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">create_credential(attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L738" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L822" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -850,7 +891,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">create_organization(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L270" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L273" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -863,7 +904,7 @@ to return counts on contact with its variations</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_organization(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -873,11 +914,11 @@ to return counts on contact with its variations</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="9354931238-1">(</span><span class="p" data-group-id="9354931238-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="9354931238-2">}</span><span class="p" data-group-id="9354931238-1">)</span><span class="w">
-</span><span class="p" data-group-id="9354931238-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9354931238-4">%</span><span class="nc" data-group-id="9354931238-4">Glific.Partners.Organization</span><span class="p" data-group-id="9354931238-4">{</span><span class="p" data-group-id="9354931238-4">}</span><span class="p" data-group-id="9354931238-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="3574322682-1">(</span><span class="p" data-group-id="3574322682-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="3574322682-2">}</span><span class="p" data-group-id="3574322682-1">)</span><span class="w">
+</span><span class="p" data-group-id="3574322682-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3574322682-4">%</span><span class="nc" data-group-id="3574322682-4">Glific.Partners.Organization</span><span class="p" data-group-id="3574322682-4">{</span><span class="p" data-group-id="3574322682-4">}</span><span class="p" data-group-id="3574322682-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="9354931238-5">(</span><span class="p" data-group-id="9354931238-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="9354931238-6">}</span><span class="p" data-group-id="9354931238-5">)</span><span class="w">
-</span><span class="p" data-group-id="9354931238-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9354931238-8">%</span><span class="nc" data-group-id="9354931238-8">Ecto.Changeset</span><span class="p" data-group-id="9354931238-8">{</span><span class="p" data-group-id="9354931238-8">}</span><span class="p" data-group-id="9354931238-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">create_organization</span><span class="p" data-group-id="3574322682-5">(</span><span class="p" data-group-id="3574322682-6">%{</span><span class="ss">bad_field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3574322682-6">}</span><span class="p" data-group-id="3574322682-5">)</span><span class="w">
+</span><span class="p" data-group-id="3574322682-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3574322682-8">%</span><span class="nc" data-group-id="3574322682-8">Ecto.Changeset</span><span class="p" data-group-id="3574322682-8">{</span><span class="p" data-group-id="3574322682-8">}</span><span class="p" data-group-id="3574322682-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="create_organization_data/1">
@@ -891,7 +932,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">create_organization_data(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1112" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1278" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -904,7 +945,7 @@ to return counts on contact with its variations</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_organization_data(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -922,7 +963,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">create_provider(attrs \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L96" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L99" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -935,7 +976,7 @@ to return counts on contact with its variations</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> create_provider(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -945,39 +986,11 @@ to return counts on contact with its variations</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="0882459731-1">(</span><span class="p" data-group-id="0882459731-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0882459731-2">}</span><span class="p" data-group-id="0882459731-1">)</span><span class="w">
-</span><span class="p" data-group-id="0882459731-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0882459731-4">%</span><span class="nc" data-group-id="0882459731-4">Provider</span><span class="p" data-group-id="0882459731-4">{</span><span class="p" data-group-id="0882459731-4">}</span><span class="p" data-group-id="0882459731-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="0432833635-1">(</span><span class="p" data-group-id="0432833635-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">value</span><span class="p" data-group-id="0432833635-2">}</span><span class="p" data-group-id="0432833635-1">)</span><span class="w">
+</span><span class="p" data-group-id="0432833635-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0432833635-4">%</span><span class="nc" data-group-id="0432833635-4">Provider</span><span class="p" data-group-id="0432833635-4">{</span><span class="p" data-group-id="0432833635-4">}</span><span class="p" data-group-id="0432833635-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="0882459731-5">(</span><span class="p" data-group-id="0882459731-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0882459731-6">}</span><span class="p" data-group-id="0882459731-5">)</span><span class="w">
-</span><span class="p" data-group-id="0882459731-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0882459731-8">%</span><span class="nc" data-group-id="0882459731-8">Ecto.Changeset</span><span class="p" data-group-id="0882459731-8">{</span><span class="p" data-group-id="0882459731-8">}</span><span class="p" data-group-id="0882459731-7">}</span></code></pre>
-  </section>
-</section>
-<section class="detail" id="credential_update_callback/2">
-
-  <div class="detail-header">
-    <a href="#credential_update_callback/2" class="detail-link" title="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature" translate="no">credential_update_callback(organization, arg2)</h1>
-
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L956" class="view-source" rel="help" title="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">@spec</span> credential_update_callback(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: :ok</pre>
-
-      </div>
-
-<p>Updating setup</p>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">create_provider</span><span class="p" data-group-id="0432833635-5">(</span><span class="p" data-group-id="0432833635-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0432833635-6">}</span><span class="p" data-group-id="0432833635-5">)</span><span class="w">
+</span><span class="p" data-group-id="0432833635-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0432833635-8">%</span><span class="nc" data-group-id="0432833635-8">Ecto.Changeset</span><span class="p" data-group-id="0432833635-8">{</span><span class="p" data-group-id="0432833635-8">}</span><span class="p" data-group-id="0432833635-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_organization/1">
@@ -989,7 +1002,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">delete_organization(organization)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L317" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L368" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1002,21 +1015,21 @@ to return counts on contact with its variations</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_organization(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()) ::
-  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
-<p>Deletes an Orgsanization.</p><h2 id="delete_organization/1-examples" class="section-heading">
+<p>Deletes an Organization.</p><h2 id="delete_organization/1-examples" class="section-heading">
   <a href="#delete_organization/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">delete_organization</span><span class="p" data-group-id="5036956034-1">(</span><span class="n">organization</span><span class="p" data-group-id="5036956034-1">)</span><span class="w">
-</span><span class="p" data-group-id="5036956034-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5036956034-3">%</span><span class="nc" data-group-id="5036956034-3">Glific.Partners.Organization</span><span class="p" data-group-id="5036956034-3">{</span><span class="p" data-group-id="5036956034-3">}</span><span class="p" data-group-id="5036956034-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">delete_organization</span><span class="p" data-group-id="8206802114-1">(</span><span class="n">organization</span><span class="p" data-group-id="8206802114-1">)</span><span class="w">
+</span><span class="p" data-group-id="8206802114-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8206802114-3">%</span><span class="nc" data-group-id="8206802114-3">Glific.Partners.Organization</span><span class="p" data-group-id="8206802114-3">{</span><span class="p" data-group-id="8206802114-3">}</span><span class="p" data-group-id="8206802114-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_organization</span><span class="p" data-group-id="5036956034-4">(</span><span class="n">organization</span><span class="p" data-group-id="5036956034-4">)</span><span class="w">
-</span><span class="p" data-group-id="5036956034-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="5036956034-6">%</span><span class="nc" data-group-id="5036956034-6">Ecto.Changeset</span><span class="p" data-group-id="5036956034-6">{</span><span class="p" data-group-id="5036956034-6">}</span><span class="p" data-group-id="5036956034-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_organization</span><span class="p" data-group-id="8206802114-4">(</span><span class="n">organization</span><span class="p" data-group-id="8206802114-4">)</span><span class="w">
+</span><span class="p" data-group-id="8206802114-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8206802114-6">%</span><span class="nc" data-group-id="8206802114-6">Ecto.Changeset</span><span class="p" data-group-id="8206802114-6">{</span><span class="p" data-group-id="8206802114-6">}</span><span class="p" data-group-id="8206802114-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="delete_organization_data/1">
@@ -1028,7 +1041,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">delete_organization_data(organization_data)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1134" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1300" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1041,7 +1054,7 @@ to return counts on contact with its variations</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_organization_data(Glific.Partners.OrganizationData.t()) ::
-  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1057,7 +1070,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">delete_provider(provider)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L134" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L137" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1070,7 +1083,7 @@ to return counts on contact with its variations</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> delete_provider(<a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()) ::
-  {:ok, <a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1080,11 +1093,11 @@ to return counts on contact with its variations</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="9465460817-1">(</span><span class="n">provider</span><span class="p" data-group-id="9465460817-1">)</span><span class="w">
-</span><span class="p" data-group-id="9465460817-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9465460817-3">%</span><span class="nc" data-group-id="9465460817-3">Provider</span><span class="p" data-group-id="9465460817-3">{</span><span class="p" data-group-id="9465460817-3">}</span><span class="p" data-group-id="9465460817-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="8406453404-1">(</span><span class="n">provider</span><span class="p" data-group-id="8406453404-1">)</span><span class="w">
+</span><span class="p" data-group-id="8406453404-2">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8406453404-3">%</span><span class="nc" data-group-id="8406453404-3">Provider</span><span class="p" data-group-id="8406453404-3">{</span><span class="p" data-group-id="8406453404-3">}</span><span class="p" data-group-id="8406453404-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="9465460817-4">(</span><span class="n">provider</span><span class="p" data-group-id="9465460817-4">)</span><span class="w">
-</span><span class="p" data-group-id="9465460817-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="9465460817-6">%</span><span class="nc" data-group-id="9465460817-6">Ecto.Changeset</span><span class="p" data-group-id="9465460817-6">{</span><span class="p" data-group-id="9465460817-6">}</span><span class="p" data-group-id="9465460817-5">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">delete_provider</span><span class="p" data-group-id="8406453404-4">(</span><span class="n">provider</span><span class="p" data-group-id="8406453404-4">)</span><span class="w">
+</span><span class="p" data-group-id="8406453404-5">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="8406453404-6">%</span><span class="nc" data-group-id="8406453404-6">Ecto.Changeset</span><span class="p" data-group-id="8406453404-6">{</span><span class="p" data-group-id="8406453404-6">}</span><span class="p" data-group-id="8406453404-5">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="disable_credential/3">
@@ -1096,7 +1109,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">disable_credential(organization_id, shortcode, error_message)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L920" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1048" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1116,34 +1129,6 @@ to return counts on contact with its variations</p>
 <p>Disable a specific credential for the organization</p>
   </section>
 </section>
-<section class="detail" id="fetch_opted_in_contacts/1">
-
-  <div class="detail-header">
-    <a href="#fetch_opted_in_contacts/1" class="detail-link" title="Link to this function">
-      <i class="ri-link-m" aria-hidden="true"></i>
-      <span class="sr-only">Link to this function</span>
-    </a>
-    <h1 class="signature" translate="no">fetch_opted_in_contacts(attrs)</h1>
-
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L701" class="view-source" rel="help" title="View Source">
-       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
-       <span class="sr-only">View Source</span>
-     </a>
-
-
-  </div>
-
-  <section class="docstring">
-
-      <div class="specs">
-
-          <pre translate="no"><span class="attribute">@spec</span> fetch_opted_in_contacts(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: :ok | <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
-
-      </div>
-
-<p>Fetch opted in contacts data from providers server</p>
-  </section>
-</section>
 <section class="detail" id="fill_cache/1">
 
   <div class="detail-header">
@@ -1153,7 +1138,7 @@ to return counts on contact with its variations</p>
     </a>
     <h1 class="signature" translate="no">fill_cache(organization)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L362" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L430" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1182,7 +1167,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_bsp_balance(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L341" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L392" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1201,6 +1186,34 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
 <p>Returns bsp balance for an organization</p>
   </section>
 </section>
+<section class="detail" id="get_contact_profile_enabled/1">
+
+  <div class="detail-header">
+    <a href="#get_contact_profile_enabled/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_contact_profile_enabled(organization)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L606" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_contact_profile_enabled(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>Determine if we need to enable contact profile for an organization</p>
+  </section>
+</section>
 <section class="detail" id="get_credential/1">
 
   <div class="detail-header">
@@ -1210,7 +1223,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_credential(map)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L721" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L805" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1239,7 +1252,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_flow_uuid_display(organization)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L505" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L575" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1267,7 +1280,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_global_field_map(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1024" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1131" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1295,7 +1308,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_goth_token(organization_id, provider_shortcode)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L864" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L982" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1307,11 +1320,39 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
 
       <div class="specs">
 
-          <pre translate="no"><span class="attribute">@spec</span> get_goth_token(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: nil | <a href="https://hexdocs.pm/goth/1.2.0/Goth.Token.html#t:t/0">Goth.Token.t</a>()</pre>
+          <pre translate="no"><span class="attribute">@spec</span> get_goth_token(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: nil | <a href="https://hexdocs.pm/goth/1.3.1/Goth.Token.html#t:t/0">Goth.Token.t</a>()</pre>
 
       </div>
 
 <p>Common function to get the goth config</p>
+  </section>
+</section>
+<section class="detail" id="get_org_services_by_id/1">
+
+  <div class="detail-header">
+    <a href="#get_org_services_by_id/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_org_services_by_id(organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1173" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_org_services_by_id(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()</pre>
+
+      </div>
+
+<p>  Get all the services and status for a given organization id.</p>
   </section>
 </section>
 <section class="detail" id="get_organization!/1">
@@ -1323,7 +1364,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_organization!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L255" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L258" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1339,7 +1380,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
 
       </div>
 
-<p>Gets a single organization.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the organization does not exist.</p><h2 id="get_organization!/1-examples" class="section-heading">
+<p>Gets a single organization.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the organization does not exist.</p><h2 id="get_organization!/1-examples" class="section-heading">
   <a href="#get_organization!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
@@ -1359,7 +1400,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_organization_services()</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1030" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1137" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1387,7 +1428,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">get_provider!(id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L81" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L84" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1403,17 +1444,103 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
 
       </div>
 
-<p>Gets a single provider.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Provider does not exist.</p><h2 id="get_provider!/1-examples" class="section-heading">
+<p>Gets a single provider.</p><p>Raises <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.NoResultsError.html"><code class="inline">Ecto.NoResultsError</code></a> if the Provider does not exist.</p><h2 id="get_provider!/1-examples" class="section-heading">
   <a href="#get_provider!/1-examples" class="hover-link"><i class="ri-link-m" aria-hidden="true"></i>
   <p class="sr-only">examples</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="4216406090-1">(</span><span class="mi">123</span><span class="p" data-group-id="4216406090-1">)</span><span class="w">
-</span><span class="p" data-group-id="4216406090-2">%</span><span class="nc" data-group-id="4216406090-2">Provider</span><span class="p" data-group-id="4216406090-2">{</span><span class="p" data-group-id="4216406090-2">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="5515796486-1">(</span><span class="mi">123</span><span class="p" data-group-id="5515796486-1">)</span><span class="w">
+</span><span class="p" data-group-id="5515796486-2">%</span><span class="nc" data-group-id="5515796486-2">Provider</span><span class="p" data-group-id="5515796486-2">{</span><span class="p" data-group-id="5515796486-2">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="4216406090-3">(</span><span class="mi">456</span><span class="p" data-group-id="4216406090-3">)</span><span class="w">
+</span><span class="gp unselectable">iex&gt; </span><span class="n">get_provider!</span><span class="p" data-group-id="5515796486-3">(</span><span class="mi">456</span><span class="p" data-group-id="5515796486-3">)</span><span class="w">
 </span><span class="gt">** (Ecto.NoResultsError)</span></code></pre>
+  </section>
+</section>
+<section class="detail" id="get_quality_rating/1">
+
+  <div class="detail-header">
+    <a href="#get_quality_rating/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_quality_rating(organization_id)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L412" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_quality_rating(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) :: {:ok, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()} | {:error, <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()}</pre>
+
+      </div>
+
+<p>Returns quality rating information for an organization provider</p>
+  </section>
+</section>
+<section class="detail" id="get_roles_and_permission/1">
+
+  <div class="detail-header">
+    <a href="#get_roles_and_permission/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">get_roles_and_permission(organization)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L599" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> get_roles_and_permission(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#built-in-types">boolean</a>()</pre>
+
+      </div>
+
+<p>check fun_with_flag toggle for an organization and returns boolean value</p>
+  </section>
+</section>
+<section class="detail" id="list_organization_data/1">
+
+    <span id="list_organization_data/0"></span>
+
+  <div class="detail-header">
+    <a href="#list_organization_data/1" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">list_organization_data(args \\ %{})</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1249" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> list_organization_data(<a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) :: [<a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>(), ...]</pre>
+
+      </div>
+
+<p>Get a List for org data</p>
   </section>
 </section>
 <section class="detail" id="list_organizations/1">
@@ -1427,7 +1554,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">list_organizations(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L165" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L168" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1449,8 +1576,8 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">list_organizations</span><span class="p" data-group-id="3347441855-1">(</span><span class="p" data-group-id="3347441855-1">)</span><span class="w">
-</span><span class="p" data-group-id="3347441855-2">[</span><span class="p" data-group-id="3347441855-3">%</span><span class="nc" data-group-id="3347441855-3">Glific.Partners.Organization</span><span class="p" data-group-id="3347441855-3">{</span><span class="p" data-group-id="3347441855-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="3347441855-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">list_organizations</span><span class="p" data-group-id="5092757037-1">(</span><span class="p" data-group-id="5092757037-1">)</span><span class="w">
+</span><span class="p" data-group-id="5092757037-2">[</span><span class="p" data-group-id="5092757037-3">%</span><span class="nc" data-group-id="5092757037-3">Glific.Partners.Organization</span><span class="p" data-group-id="5092757037-3">{</span><span class="p" data-group-id="5092757037-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="5092757037-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="list_providers/1">
@@ -1464,7 +1591,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">list_providers(args \\ %{})</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L46" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L49" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1486,8 +1613,8 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_providers</span><span class="p" data-group-id="1572971427-1">(</span><span class="p" data-group-id="1572971427-1">)</span><span class="w">
-</span><span class="p" data-group-id="1572971427-2">[</span><span class="p" data-group-id="1572971427-3">%</span><span class="nc" data-group-id="1572971427-3">Provider</span><span class="p" data-group-id="1572971427-3">{</span><span class="p" data-group-id="1572971427-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="1572971427-2">]</span></code></pre>
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">list_providers</span><span class="p" data-group-id="5076859264-1">(</span><span class="p" data-group-id="5076859264-1">)</span><span class="w">
+</span><span class="p" data-group-id="5076859264-2">[</span><span class="p" data-group-id="5076859264-3">%</span><span class="nc" data-group-id="5076859264-3">Provider</span><span class="p" data-group-id="5076859264-3">{</span><span class="p" data-group-id="5076859264-3">}</span><span class="p">,</span><span class="w"> </span><span class="n">...</span><span class="p" data-group-id="5076859264-2">]</span></code></pre>
   </section>
 </section>
 <section class="detail" id="load_cache/1">
@@ -1499,7 +1626,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">load_cache(cachex_key)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L391" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L461" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1527,7 +1654,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">maybe_insert_organization_data(key, data, org_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1143" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1309" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1540,7 +1667,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> maybe_insert_organization_data(<a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">non_neg_integer</a>()) ::
-  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1556,7 +1683,7 @@ public so we can call from test harness and avoid SQL Sandbox issues</p>
     </a>
     <h1 class="signature" translate="no">org_id_list(list, recent)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L990" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1097" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1585,7 +1712,7 @@ past</p>
     </a>
     <h1 class="signature" translate="no">organization(cache_key)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L421" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L491" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1614,7 +1741,7 @@ past</p>
     </a>
     <h1 class="signature" translate="no">organization_contact_id(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L437" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L507" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1643,7 +1770,7 @@ and the receiver for all inbound messages</p>
     </a>
     <h1 class="signature" translate="no">organization_language_id(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L444" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L514" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1671,7 +1798,7 @@ and the receiver for all inbound messages</p>
     </a>
     <h1 class="signature" translate="no">organization_timezone(organization_id)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L451" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L521" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1701,7 +1828,7 @@ and the receiver for all inbound messages</p>
     </a>
     <h1 class="signature" translate="no">perform_all(handler, handler_args, list, only_recent \\ false)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L651" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L754" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1734,7 +1861,7 @@ list == [ values ] - the actions should be performed only for organizations in t
     </a>
     <h1 class="signature" translate="no">recent_organizations(map, bool)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L686" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L789" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1763,7 +1890,7 @@ as defined by @active_minutes</p>
     </a>
     <h1 class="signature" translate="no">remove_organization_cache(organization_id, shortcode)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L838" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L956" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1782,6 +1909,34 @@ as defined by @active_minutes</p>
 <p>Removing organization and service cache</p>
   </section>
 </section>
+<section class="detail" id="set_bsp_app_id/2">
+
+  <div class="detail-header">
+    <a href="#set_bsp_app_id/2" class="detail-link" title="Link to this function">
+      <i class="ri-link-m" aria-hidden="true"></i>
+      <span class="sr-only">Link to this function</span>
+    </a>
+    <h1 class="signature" translate="no">set_bsp_app_id(org, shortcode)</h1>
+
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1221" class="view-source" rel="help" title="View Source">
+       <i class="ri-code-s-slash-line" aria-hidden="true"></i>
+       <span class="sr-only">View Source</span>
+     </a>
+
+
+  </div>
+
+  <section class="docstring">
+
+      <div class="specs">
+
+          <pre translate="no"><span class="attribute">@spec</span> set_bsp_app_id(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/String.html#t:t/0">String.t</a>()) :: <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()</pre>
+
+      </div>
+
+<p>Set BSP APP id whenever we update the bsp credentials.</p>
+  </section>
+</section>
 <section class="detail" id="suspend_organization/2">
 
     <span id="suspend_organization/1"></span>
@@ -1793,7 +1948,7 @@ as defined by @active_minutes</p>
     </a>
     <h1 class="signature" translate="no">suspend_organization(organization, hours \\ 0)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L590" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L693" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1823,7 +1978,7 @@ as defined by @active_minutes</p>
     </a>
     <h1 class="signature" translate="no">unsuspend_organizations()</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L631" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L734" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1852,7 +2007,7 @@ that are in a suspended state via a cron job</p>
     </a>
     <h1 class="signature" translate="no">update_credential(credential, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L802" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L886" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1865,7 +2020,7 @@ that are in a suspended state via a cron job</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_credential(<a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Credential.html#t:t/0">Glific.Partners.Credential.t</a>()} | {:error, <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">any</a>()}</pre>
 
       </div>
 
@@ -1881,7 +2036,7 @@ that are in a suspended state via a cron job</p>
     </a>
     <h1 class="signature" translate="no">update_organization(organization, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L290" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L293" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1894,7 +2049,7 @@ that are in a suspended state via a cron job</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_organization(<a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Organization.html#t:t/0">Glific.Partners.Organization.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1904,11 +2059,11 @@ that are in a suspended state via a cron job</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="0653427215-1">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0653427215-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">new_name</span><span class="p" data-group-id="0653427215-2">}</span><span class="p" data-group-id="0653427215-1">)</span><span class="w">
-</span><span class="p" data-group-id="0653427215-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0653427215-4">%</span><span class="nc" data-group-id="0653427215-4">Glific.Partners.Organization</span><span class="p" data-group-id="0653427215-4">{</span><span class="p" data-group-id="0653427215-4">}</span><span class="p" data-group-id="0653427215-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="1610338851-1">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1610338851-2">%{</span><span class="ss">name</span><span class="p">:</span><span class="w"> </span><span class="n">new_name</span><span class="p" data-group-id="1610338851-2">}</span><span class="p" data-group-id="1610338851-1">)</span><span class="w">
+</span><span class="p" data-group-id="1610338851-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1610338851-4">%</span><span class="nc" data-group-id="1610338851-4">Glific.Partners.Organization</span><span class="p" data-group-id="1610338851-4">{</span><span class="p" data-group-id="1610338851-4">}</span><span class="p" data-group-id="1610338851-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="0653427215-5">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0653427215-6">%{</span><span class="ss">abc</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="0653427215-6">}</span><span class="p" data-group-id="0653427215-5">)</span><span class="w">
-</span><span class="p" data-group-id="0653427215-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="0653427215-8">%</span><span class="nc" data-group-id="0653427215-8">Ecto.Changeset</span><span class="p" data-group-id="0653427215-8">{</span><span class="p" data-group-id="0653427215-8">}</span><span class="p" data-group-id="0653427215-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="nc">Glific.Partners</span><span class="o">.</span><span class="n">update_organization</span><span class="p" data-group-id="1610338851-5">(</span><span class="nc">Organization</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1610338851-6">%{</span><span class="ss">abc</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="1610338851-6">}</span><span class="p" data-group-id="1610338851-5">)</span><span class="w">
+</span><span class="p" data-group-id="1610338851-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="1610338851-8">%</span><span class="nc" data-group-id="1610338851-8">Ecto.Changeset</span><span class="p" data-group-id="1610338851-8">{</span><span class="p" data-group-id="1610338851-8">}</span><span class="p" data-group-id="1610338851-7">}</span></code></pre>
   </section>
 </section>
 <section class="detail" id="update_organization_data/2">
@@ -1920,7 +2075,7 @@ that are in a suspended state via a cron job</p>
     </a>
     <h1 class="signature" translate="no">update_organization_data(organization_data, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1123" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L1289" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1933,7 +2088,7 @@ that are in a suspended state via a cron job</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_organization_data(Glific.Partners.OrganizationData.t(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, Glific.Partners.OrganizationData.t()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1949,7 +2104,7 @@ that are in a suspended state via a cron job</p>
     </a>
     <h1 class="signature" translate="no">update_provider(provider, attrs)</h1>
 
-      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L115" class="view-source" rel="help" title="View Source">
+      <a href="https://github.com/glific/glific/blob/main/lib/glific/partners.ex#L118" class="view-source" rel="help" title="View Source">
        <i class="ri-code-s-slash-line" aria-hidden="true"></i>
        <span class="sr-only">View Source</span>
      </a>
@@ -1962,7 +2117,7 @@ that are in a suspended state via a cron job</p>
       <div class="specs">
 
           <pre translate="no"><span class="attribute">@spec</span> update_provider(<a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>(), <a href="https://hexdocs.pm/elixir/typespecs.html#basic-types">map</a>()) ::
-  {:ok, <a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.7.2/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
+  {:ok, <a href="Glific.Partners.Provider.html#t:t/0">Glific.Partners.Provider.t</a>()} | {:error, <a href="https://hexdocs.pm/ecto/3.8.4/Ecto.Changeset.html#t:t/0">Ecto.Changeset.t</a>()}</pre>
 
       </div>
 
@@ -1972,11 +2127,11 @@ that are in a suspended state via a cron job</p>
   </a>
   Examples
 </h2>
-<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="3611042887-1">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3611042887-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="3611042887-2">}</span><span class="p" data-group-id="3611042887-1">)</span><span class="w">
-</span><span class="p" data-group-id="3611042887-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3611042887-4">%</span><span class="nc" data-group-id="3611042887-4">Provider</span><span class="p" data-group-id="3611042887-4">{</span><span class="p" data-group-id="3611042887-4">}</span><span class="p" data-group-id="3611042887-3">}</span><span class="w">
+<pre><code class="makeup elixir" translate="no"><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="2714558739-1">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2714558739-2">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">new_value</span><span class="p" data-group-id="2714558739-2">}</span><span class="p" data-group-id="2714558739-1">)</span><span class="w">
+</span><span class="p" data-group-id="2714558739-3">{</span><span class="ss">:ok</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2714558739-4">%</span><span class="nc" data-group-id="2714558739-4">Provider</span><span class="p" data-group-id="2714558739-4">{</span><span class="p" data-group-id="2714558739-4">}</span><span class="p" data-group-id="2714558739-3">}</span><span class="w">
 
-</span><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="3611042887-5">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3611042887-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="3611042887-6">}</span><span class="p" data-group-id="3611042887-5">)</span><span class="w">
-</span><span class="p" data-group-id="3611042887-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="3611042887-8">%</span><span class="nc" data-group-id="3611042887-8">Ecto.Changeset</span><span class="p" data-group-id="3611042887-8">{</span><span class="p" data-group-id="3611042887-8">}</span><span class="p" data-group-id="3611042887-7">}</span></code></pre>
+</span><span class="gp unselectable">iex&gt; </span><span class="n">update_provider</span><span class="p" data-group-id="2714558739-5">(</span><span class="n">provider</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2714558739-6">%{</span><span class="ss">field</span><span class="p">:</span><span class="w"> </span><span class="n">bad_value</span><span class="p" data-group-id="2714558739-6">}</span><span class="p" data-group-id="2714558739-5">)</span><span class="w">
+</span><span class="p" data-group-id="2714558739-7">{</span><span class="ss">:error</span><span class="p">,</span><span class="w"> </span><span class="p" data-group-id="2714558739-8">%</span><span class="nc" data-group-id="2714558739-8">Ecto.Changeset</span><span class="p" data-group-id="2714558739-8">{</span><span class="p" data-group-id="2714558739-8">}</span><span class="p" data-group-id="2714558739-7">}</span></code></pre>
   </section>
 </section>
 
@@ -1989,10 +2144,10 @@ that are in a suspended state via a cron job</p>
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
-                <a href="https://preview.hex.pm/preview/glific/4.3.0/show/lib/glific/partners.ex">(current file)</a>
+                <a href="https://preview.hex.pm/preview/glific/4.6.8/show/lib/glific/partners.ex">(current file)</a>
 
             </span>
 
@@ -2003,8 +2158,10 @@ that are in a suspended state via a cron job</p>
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>

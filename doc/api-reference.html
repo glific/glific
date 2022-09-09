@@ -4,17 +4,17 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="generator" content="ExDoc v0.28.3">
-    <meta name="project" content="Glific v4.3.0">
+    <meta name="generator" content="ExDoc v0.28.4">
+    <meta name="project" content="Glific v4.6.8">
 
-    <title>API Reference — Glific v4.3.0</title>
-    <link rel="stylesheet" href="dist/elixir-d5ff82e6b0f5651c0ac0.css" />
+    <title>API Reference — Glific v4.6.8</title>
+    <link rel="stylesheet" href="dist/elixir-b6f1ed5df9b1d42a7309.css" />
 
     <script src="dist/sidebar_items-45c50d407b.js"></script>
 
       <script src="docs_config.js"></script>
 
-    <script async src="dist/app-a088a6cc33ae3464193e.js"></script>
+    <script async src="dist/app-bd1cb213813bf4825aa2.js"></script>
 
 
   </head>
@@ -66,7 +66,7 @@
 Glific
       </a>
       <strong class="sidebar-projectVersion" translate="no">
-        v4.3.0
+        v4.6.8
       </strong>
     </div>
     <ul class="sidebar-listNav">
@@ -83,6 +83,7 @@ Glific
 </section>
 
 <section class="content">
+  <output role="status" id="toast"></output>
   <div class="content-outer">
     <div id="content" class="content-inner">
 
@@ -93,7 +94,7 @@ Glific
 </button>
 
 
-  <span>API Reference <small class="app-vsn">Glific v4.3.0</small></span>
+  <span>API Reference <small class="app-vsn">Glific v4.6.8</small></span>
 </h1>
 
 
@@ -114,6 +115,78 @@ Glific
 
     <div class="summary-synopsis"><p>Glific keeps the contexts that define your domain
 and business logic.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.ASR.GoogleASR.html" translate="no">Glific.ASR.GoogleASR</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This is a module to convert speech to text</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.html" translate="no">Glific.AccessControl</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The AccessControl context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.FlowRole.html" translate="no">Glific.AccessControl.FlowRole</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A pipe for managing the role flows</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.GroupRole.html" translate="no">Glific.AccessControl.GroupRole</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A pipe for managing the role groups</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.Permission.html" translate="no">Glific.AccessControl.Permission</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The minimal wrapper for the base Access Control Permission structure</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.Role.html" translate="no">Glific.AccessControl.Role</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The minimal wrapper for the base Access Control Role structure</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.TriggerRole.html" translate="no">Glific.AccessControl.TriggerRole</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A pipe for managing the role triggers</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.AccessControl.UserRole.html" translate="no">Glific.AccessControl.UserRole</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A pipe for managing the user roles</p></div>
 
 </div>
 <div class="summary-row">
@@ -290,11 +363,11 @@ in a similar manner to plugins wordpress.</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
-    <a href="Glific.Clients.DigitalGreenDGSeed.html" translate="no">Glific.Clients.DigitalGreenDGSeed</a>
+    <a href="Glific.Clients.KEF.html" translate="no">Glific.Clients.KEF</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>One shot migration of DG data</p></div>
+    <div class="summary-synopsis"><p>Tweak GCS Bucket name based on group that the contact is in (if any)</p></div>
 
 </div>
 <div class="summary-row">
@@ -359,6 +432,15 @@ in a similar manner to plugins wordpress.</p></div>
 
     <div class="summary-synopsis"><p>Example implementation of survey computation for STiR
 Glific.Clients.Stir.compute_art_content(res)</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Clients.SunoSunao.html" translate="no">Glific.Clients.SunoSunao</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>This module will focus on suno sunao usecase</p></div>
 
 </div>
 <div class="summary-row">
@@ -1173,11 +1255,29 @@ the gcs servers</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.MessageConversations.html" translate="no">Glific.MessageConversations</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The Messages Conversations context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Messages.html" translate="no">Glific.Messages</a>
 
   </div>
 
     <div class="summary-synopsis"><p>The Messages context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Messages.MessageConversation.html" translate="no">Glific.Messages.MessageConversation</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Message conversation are mapped with a message</p></div>
 
 </div>
 <div class="summary-row">
@@ -1361,6 +1461,24 @@ later stage</p></div>
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="Glific.Profiles.html" translate="no">Glific.Profiles</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>The Profiles context.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Profiles.Profile.html" translate="no">Glific.Profiles.Profile</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>  The schema for profile</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="Glific.Providers.ContactBehaviour.html" translate="no">Glific.Providers.ContactBehaviour</a>
 
   </div>
@@ -1430,6 +1548,15 @@ or Handle response for simulators</p></div>
   </div>
 
     <div class="summary-synopsis"><p>Message API layer between application and Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="Glific.Providers.Gupshup.PartnerAPI.html" translate="no">Glific.Providers.Gupshup.PartnerAPI</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>A module to handle fetching tier related information like quality rating and app rating using partner API</p></div>
 
 </div>
 <div class="summary-row">
@@ -2085,11 +2212,20 @@ The original copyright and license - MIT belong to the authors and contributors 
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Providers.Gupshup.Controllers.BillingEventController.html" translate="no">GlificWeb.Providers.Gupshup.Controllers.BillingEventController</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Dedicated controller to handle billing events from Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Providers.Gupshup.Controllers.MessageController.html" translate="no">GlificWeb.Providers.Gupshup.Controllers.MessageController</a>
 
   </div>
 
-    <div class="summary-synopsis"><p>Dedicated controller to handle different types of inbound message form Gupshup</p></div>
+    <div class="summary-synopsis"><p>Dedicated controller to handle different types of inbound message from Gupshup</p></div>
 
 </div>
 <div class="summary-row">
@@ -2117,6 +2253,15 @@ The original copyright and license - MIT belong to the authors and contributors 
   </div>
 
     <div class="summary-synopsis"><p>Dedicated controller to handle different types of inbound message form Gupshup</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventController.html" translate="no">GlificWeb.Providers.Gupshup.Enterprise.Controllers.MessageEventController</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Dedicated controller to handle all the message status requests like sent, delivered etc..</p></div>
 
 </div>
 <div class="summary-row">
@@ -2336,6 +2481,26 @@ one or more calls to resolve the incoming queries.</p></div>
 
     <div class="summary-synopsis"><p>Partners Resolver which sits between the GraphQL schema and Glific Partners Context API. This layer basically stiches together
 one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Profiles.html" translate="no">GlificWeb.Resolvers.Profiles</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Profile Resolver which sits between the GraphQL schema and Glific Profile Context API.
+This layer basically stiches together one or more calls to resolve the incoming queries.</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Resolvers.Roles.html" translate="no">GlificWeb.Resolvers.Roles</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>Roles Resolver which sits between the GraphQL schema and Glific role Context API.
+This layer basically stiches together one or more calls to resolve the incoming queries.</p></div>
 
 </div>
 <div class="summary-row">
@@ -2678,11 +2843,29 @@ consumable and displayable to the API user. This version is specifically for que
 </div>
 <div class="summary-row">
   <div class="summary-signature">
+    <a href="GlificWeb.Schema.ProfileTypes.html" translate="no">GlificWeb.Schema.ProfileTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Glific's Profile</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
     <a href="GlificWeb.Schema.ProviderTypes.html" translate="no">GlificWeb.Schema.ProviderTypes</a>
 
   </div>
 
     <div class="summary-synopsis"><p>GraphQL Representation of Glific's Provider DataType</p></div>
+
+</div>
+<div class="summary-row">
+  <div class="summary-signature">
+    <a href="GlificWeb.Schema.RoleTypes.html" translate="no">GlificWeb.Schema.RoleTypes</a>
+
+  </div>
+
+    <div class="summary-synopsis"><p>GraphQL Representation of Role DataType</p></div>
 
 </div>
 <div class="summary-row">
@@ -2844,8 +3027,8 @@ Glific - Two Way Open Source Communication Platform
             On Hex.pm:
 
             <span class="line">
-              <a href="https://hex.pm/packages/glific/4.3.0" class="line footer-hex-package">Package</a>
-              <a href="https://preview.hex.pm/preview/glific/4.3.0" class="line">Preview</a>
+              <a href="https://hex.pm/packages/glific/4.6.8" class="line footer-hex-package">Package</a>
+              <a href="https://preview.hex.pm/preview/glific/4.6.8" class="line">Preview</a>
 
             </span>
 
@@ -2856,8 +3039,10 @@ Glific - Two Way Open Source Communication Platform
 
         <p>
           Built using
-          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.3) for the
-          <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+          <a href="https://github.com/elixir-lang/ex_doc" title="ExDoc" target="_blank" rel="help noopener" translate="no">ExDoc</a> (v0.28.4) for the
+
+            <a href="https://elixir-lang.org" title="Elixir" target="_blank" translate="no">Elixir programming language</a>
+
         </p>
       </footer>
     </div>
