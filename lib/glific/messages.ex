@@ -667,20 +667,22 @@ defmodule Glific.Messages do
   @spec create_and_send_message_to_group(map(), Group.t(), atom()) ::
           {:ok, any()} | {:error, any()}
   def create_and_send_message_to_group(message_params, group, _type) do
-    # this is an exception because of an inconsistency with the key name
-    message_params = Map.put_new(message_params, :parameters, message_params[:params])
+    message_params =
+      message_params
+      |> Map.merge(%{group_id: group.id})
+      # this is an exception because of an inconsistency with the key name
+      |> Map.put_new(:parameters, message_params[:params])
 
     {:ok, group_message} =
-      if message_params[:is_hsm] in [false, nil],
-        do: create_group_message(Map.put(message_params, :group_id, group.id)),
+      if message_params[:is_hsm] in [nil, false],
+        do: create_group_message(message_params |> Map.put(:type, :text)),
         else:
           message_params
-          |> Map.put(:group_id, group.id)
+          |> Map.put(:type, :text)
           |> Map.put(
             :body,
             "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"
           )
-          |> Map.put(:type, :text)
           |> create_group_message()
 
     {:ok, message_broadcast} =

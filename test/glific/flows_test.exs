@@ -271,7 +271,7 @@ defmodule Glific.FLowsTest do
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
 
-    test "get_cached_flow/2 save the flow to cache returns a touple and flow",
+    test "get_cached_flow/2 save the flow to cache returns a tuple and flow",
          %{organization_id: organization_id} = attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
 
@@ -279,14 +279,6 @@ defmodule Glific.FLowsTest do
         Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.nodes != nil
-
-      # Next time Flow will be picked from cache
-      Flows.delete_flow(flow)
-
-      {:ok, loaded_flow_2} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
-
-      assert loaded_flow_2 == loaded_flow
     end
 
     test "update_cached_flow/1 will remove the keys and update the flows" do
