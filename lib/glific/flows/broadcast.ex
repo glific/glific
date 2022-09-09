@@ -105,11 +105,9 @@ defmodule Glific.Flows.Broadcast do
     opts = [message_broadcast_id: message_broadcast.id] ++ opts(message_broadcast.organization_id)
     contacts = unprocessed_contacts(message_broadcast)
     message_params = Glific.atomize_keys(message_broadcast.message_params)
-    message_type = if Map.has_key?(message_params, :template_id), do: :hsm, else: :session
 
     message_params =
       Map.merge(message_params, %{
-        :message_type => message_type,
         :message_broadcast_id => message_broadcast.id,
         :organization_id => message_broadcast.organization_id,
         :group_id => message_broadcast.group_id,
@@ -298,7 +296,7 @@ defmodule Glific.Flows.Broadcast do
           message_params = Map.put(message_params, :receiver_id, contact.id)
 
           result =
-            if message_params.message_type == :session,
+            if message_params[:is_hsm] in [nil, false],
               do: Messages.create_and_send_message(message_params),
               else: Messages.create_and_send_hsm_message(message_params)
 
