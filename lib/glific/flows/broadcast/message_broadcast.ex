@@ -69,8 +69,8 @@ defmodule Glific.Flows.MessageBroadcast do
   Standard changeset pattern we use for all data types
   """
   @spec changeset(MessageBroadcast.t(), map()) :: Ecto.Changeset.t()
-  def changeset(message_broadcasts, attrs) do
-    message_broadcasts
+  def changeset(message_broadcast, attrs) do
+    message_broadcast
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:flow_id)
