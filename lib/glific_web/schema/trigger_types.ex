@@ -35,6 +35,10 @@ defmodule GlificWeb.Schema.TriggerTypes do
     field :group, :group do
       resolve(dataloader(Repo))
     end
+
+    field :roles, list_of(:access_role) do
+      resolve(dataloader(Repo))
+    end
   end
 
   @desc "Filtering options for triggers"
@@ -65,6 +69,8 @@ defmodule GlificWeb.Schema.TriggerTypes do
 
     field :start_at, :datetime
     field :end_date, :date
+    field :add_role_ids, list_of(:id)
+    field :delete_role_ids, list_of(:id)
   end
 
   object :trigger_queries do
