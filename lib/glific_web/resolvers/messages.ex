@@ -4,8 +4,6 @@ defmodule GlificWeb.Resolvers.Messages do
   one or more calls to resolve the incoming queries.
   """
 
-  import GlificWeb.Gettext
-
   alias Glific.{
     Contacts.Contact,
     Groups.Group,
