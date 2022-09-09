@@ -262,6 +262,16 @@ In case of errors, all the above functions return an error object like the below
 <td></td>
 </tr>
 <tr>
+<tr>
+<td colspan="2" valign="top"><strong>language</strong></td>
+<td valign="top"><a href="#language">Language</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contact</strong></td>
+<td valign="top"><a href="#contact">Contact</a></td>
+<td></td>
+</tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -362,6 +372,16 @@ In case of errors, all the above functions return an error object like the below
 <tr>
 <td colspan="2" valign="top"><strong>fields</strong></td>
 <td valign="top"><a href="#json">Json</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>contactId</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
 </tbody>

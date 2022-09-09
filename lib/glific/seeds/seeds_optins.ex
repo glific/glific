@@ -8,7 +8,8 @@ defmodule Glific.Seeds.SeedsOptins do
 
   alias Glific.{
     Contacts,
-    Partners
+    Partners,
+    Providers.GupshupContacts
   }
 
   @spec import_optin_contacts(map(), list()) :: :ok | any
@@ -72,6 +73,6 @@ defmodule Glific.Seeds.SeedsOptins do
       %{organization_id: organization.id, shortcode: "gupshup"}
       |> Partners.get_credential()
 
-    Partners.fetch_opted_in_contacts(credential)
+    GupshupContacts.fetch_opted_in_contacts(credential)
   end
 end

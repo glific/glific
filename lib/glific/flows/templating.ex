@@ -55,22 +55,28 @@ defmodule Glific.Flows.Templating do
     Flows.check_required_fields(json, @required_fields)
     uuid = json["template"]["uuid"]
 
-    if uuid in ["", "false", "nil"] do
-      Logger.info("No template uuid found, skipping templating. #{inspect(json)}")
-      {nil, uuid_map}
-    else
-      {:ok, template} = Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
+    Glific.Repo.fetch_by(SessionTemplate, %{uuid: uuid})
+    |> case do
+      {:ok, template} ->
+        variables = if is_list(json["variables"]), do: json["variables"], else: []
 
-      templating = %Templating{
-        uuid: json["uuid"],
-        name: json["template"]["name"],
-        template: template,
-        variables: json["variables"],
-        expression: nil,
-        localization: json["localization"]
-      }
+        templating = %Templating{
+          uuid: json["uuid"],
+          name: json["template"]["name"],
+          template: template,
+          variables: Enum.take(variables, template.number_parameters),
+          expression: nil,
+          localization: json["localization"]
+        }
 
-      {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
+        {templating, Map.put(uuid_map, templating.uuid, {:templating, templating})}
+
+      error ->
+        Logger.error(
+          "Template not found, skipping templating. #{inspect(json)} and error #{inspect(error)}"
+        )
+
+        {nil, uuid_map}
     end
   end
 
@@ -88,12 +94,23 @@ defmodule Glific.Flows.Templating do
   def execute(templating, _context, _messages), do: templating
 
   defp ensure_template_struct(json_string) do
-    opts =
-      Jason.decode!(json_string)
-      |> Glific.atomize_keys()
-      |> update_session_template()
+    Jason.decode(json_string)
+    |> case do
+      {:ok, json} ->
+        opts =
+          json
+          |> Glific.atomize_keys()
+          |> update_session_template()
 
-    struct!(Templating, opts)
+        struct!(Templating, opts)
+
+      {:error, error} ->
+        Logger.error(
+          "Error parsing json string  #{inspect(json_string)} with error: #{inspect(error)}"
+        )
+
+        nil
+    end
   end
 
   @spec update_session_template(map()) :: map()

@@ -23,6 +23,8 @@ defmodule Glific.Saas.Onboard do
     %{is_valid: true, messages: %{}}
     |> Queries.validate(params)
     |> Queries.setup(params)
+    |> Queries.seed_data()
+    |> Queries.sync_templates()
     |> format_results()
     |> notify_saas_team()
   end
@@ -126,12 +128,20 @@ defmodule Glific.Saas.Onboard do
 
   @spec notify_saas_team(map()) :: map()
   defp notify_saas_team(%{is_valid: true} = results) do
-    {:ok, _} =
-      NewPartnerOnboardedMail.new_mail(results.organization)
-      |> Mailer.send(%{
-        category: "new_partner_onboarded",
-        organization_id: results.organization.id
-      })
+    NewPartnerOnboardedMail.new_mail(results.organization)
+    |> Mailer.send(%{
+      category: "new_partner_onboarded",
+      organization_id: results.organization.id
+    })
+    |> case do
+      {:ok, _} ->
+        results
+
+      error ->
+        Glific.log_error(
+          "Error sending new partner onboarded email #{inspect(error)} for org: #{inspect(results)}"
+        )
+    end
 
     results
   end

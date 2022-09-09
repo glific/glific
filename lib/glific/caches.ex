@@ -9,33 +9,29 @@ defmodule Glific.Caches do
   # set timer limit
   @ttl_limit 24
 
-  @doc """
-  Store all the in cachex :flows_cache. At some point, we will just use this dynamically
-  """
-  @impl Glific.Caches.CacheBehaviour
-  @spec set(non_neg_integer, list(), (any() -> any()), map()) :: {:ok, any()}
-  def set(organization_id, keys, process_fn, args),
-    do: set_to_cache(organization_id, keys, process_fn.(args))
-
   @doc false
   @impl Glific.Caches.CacheBehaviour
-  @spec set(non_neg_integer, any(), any()) :: {:ok, any()}
-  def set(organization_id, keys, value) when is_list(keys),
-    do: set_to_cache(organization_id, keys, value)
+  @spec set(non_neg_integer, any(), any(), Keyword.t()) :: {:ok, any()}
+  def set(organization_id, key, value, opts \\ [])
 
-  @doc false
+  def set(organization_id, keys, value, opts) when is_list(keys),
+    do: set_to_cache(organization_id, keys, value, opts)
+
   @impl Glific.Caches.CacheBehaviour
-  def set(organization_id, key, value), do: set_to_cache(organization_id, [key], value)
+  def set(organization_id, key, value, opts),
+    do: set_to_cache(organization_id, [key], value, opts)
 
   @doc false
-  @spec set_to_cache(non_neg_integer, list(), any) :: {:ok, any()}
-  defp set_to_cache(organization_id, keys, value) do
+  @spec set_to_cache(non_neg_integer, list(), any, Keyword.t()) :: {:ok, any()}
+  defp set_to_cache(organization_id, keys, value, opts) do
     keys = Enum.reduce(keys, [], fn key, acc -> [{{organization_id, key}, value} | acc] end)
 
     # also update the reload key for consumers to refresh caches
     keys = [{{organization_id, :cache_reload_key}, Ecto.UUID.generate()} | keys]
 
-    {:ok, true} = Cachex.put_many(@cache_bucket, keys, ttl: :timer.hours(@ttl_limit))
+    default_opts = [ttl: :timer.hours(@ttl_limit)]
+
+    {:ok, true} = Cachex.put_many(@cache_bucket, keys, Keyword.merge(default_opts, opts))
     {:ok, value}
   end
 

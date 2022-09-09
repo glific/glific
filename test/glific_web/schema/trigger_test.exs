@@ -6,7 +6,7 @@ defmodule GlificWeb.Schema.TriggerTest do
     Fixtures,
     Repo,
     Seeds.SeedsDev,
-    Triggers.Trigger
+    Triggers
   }
 
   setup do
@@ -112,10 +112,10 @@ defmodule GlificWeb.Schema.TriggerTest do
   end
 
   test "count_triggers/0 returns count of all trigger logs", attrs do
-    logs_count = Trigger.count_triggers(%{filter: attrs})
+    logs_count = Triggers.count_triggers(%{filter: attrs})
 
     Fixtures.trigger_fixture(attrs)
-    assert Trigger.count_triggers(%{filter: attrs}) == logs_count + 1
+    assert Triggers.count_triggers(%{filter: attrs}) == logs_count + 1
   end
 
   test "triggers id returns one triggers or nil", %{staff: user} = attrs do
@@ -262,7 +262,7 @@ defmodule GlificWeb.Schema.TriggerTest do
       name: trigger.name
     }
 
-    {:ok, updated_trigger} = Trigger.update_trigger(trigger, update_attrs)
+    {:ok, updated_trigger} = Triggers.update_trigger(trigger, update_attrs)
     assert trigger.name == updated_trigger.name
     assert trigger.next_trigger_at == updated_trigger.next_trigger_at
   end

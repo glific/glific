@@ -12,7 +12,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     Repo
   }
 
-  def up(_repo) do
+  def up(_repo, _opts) do
     update_exisiting_providers()
 
     add_providers()
@@ -69,6 +69,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               label: "App Name",
               default: nil,
               view_only: false
+            },
+            app_id: %{
+              type: :string,
+              label: "App ID",
+              default: "App ID",
+              view_only: true
             }
           }
         }
@@ -101,7 +107,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
             },
             secrets: %{
               api_key: "This is top secret",
-              app_name: "Glific42"
+              app_name: "Glific42",
+              app_id: "Glific42"
             },
             is_active: true
           })
@@ -122,6 +129,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
     add_exotel()
 
     add_gupshup_enterprise()
+
+    add_google_asr()
   end
 
   defp add_dialogflow do
@@ -140,6 +149,36 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_4_1 do
               type: :string,
               label: "Dialogflow API Endpoint",
               default: "https://dialogflow.clients6.google.com/v2beta1/projects/",
+              view_only: true
+            }
+          },
+          secrets: %{
+            service_account: %{
+              type: :string,
+              label: "Goth Credentials ",
+              default: nil,
+              view_only: false
+            }
+          }
+        })
+  end
+
+  defp add_google_asr do
+    query = from p in Provider, where: p.shortcode == "google_asr"
+
+    # add google_asr
+    if !Repo.exists?(query),
+      do:
+        Repo.insert!(%Provider{
+          name: "GoogleASR",
+          shortcode: "google_asr",
+          group: nil,
+          is_required: false,
+          keys: %{
+            url: %{
+              type: :string,
+              label: "Google API Endpoint",
+              default: "https://speech.googleapis.com/v1/speech:recognize",
               view_only: true
             }
           },

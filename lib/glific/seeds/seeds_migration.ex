@@ -8,6 +8,7 @@ defmodule Glific.Seeds.SeedsMigration do
   import Ecto.Query
 
   alias Glific.{
+    AccessControl.Role,
     BigQuery,
     Contacts,
     Contacts.Contact,
@@ -19,6 +20,7 @@ defmodule Glific.Seeds.SeedsMigration do
     Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
+    Seeds.SeedsDev,
     Seeds.SeedsFlows,
     Seeds.SeedsStats,
     Settings,
@@ -75,10 +77,13 @@ defmodule Glific.Seeds.SeedsMigration do
   defp do_migrate_data(:user_default_language, _organizations), do: update_user_default_language()
 
   defp do_migrate_data(:submit_common_otp_template, organizations),
-    do: Enum.map(organizations, fn org -> submit_opt_template_for_org(org.id) end)
+    do: Enum.map(organizations, fn org -> submit_otp_template_for_org(org.id) end)
 
   defp do_migrate_data(:set_newcontact_flow_id, organizations),
     do: Enum.map(organizations, fn org -> set_newcontact_flow_id(org.id) end)
+
+  defp do_migrate_data(:set_default_organization_roles, organizations),
+    do: Enum.map(organizations, fn org -> set_default_organization_roles(org.id) end)
 
   @doc false
   @spec add_simulators(list()) :: :ok
@@ -92,17 +97,27 @@ defmodule Glific.Seeds.SeedsMigration do
     :ok
   end
 
+  @doc """
+  Create default organization roles for an organization
+  """
+  @spec set_default_organization_roles(non_neg_integer()) :: Role.t()
+  def set_default_organization_roles(org_id) do
+    org_id
+    |> Partners.get_organization!()
+    |> SeedsDev.seed_roles()
+  end
+
   @doc false
-  @spec submit_opt_template_for_org(any) ::
+  @spec submit_otp_template_for_org(any) ::
           {:error, Ecto.Changeset.t()} | {:ok, Templates.SessionTemplate.t()}
-  def submit_opt_template_for_org(org_id) do
+  def submit_otp_template_for_org(org_id) do
     %{
       is_hsm: true,
       shortcode: "common_otp",
       label: "common_otp",
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       type: :text,
-      category: "ALERT_UPDATE",
+      category: "OTP",
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       is_active: true,
       is_source: false,

@@ -115,7 +115,7 @@ defmodule GlificWeb.Resolvers.Messages do
   ## For small groups it should be fine.
   ## For large groups it should be better to use the flows.
 
-  @error_message "There are too many contacts in the group. Please use flows instead of direct messages."
+  @error_message "Sorry, the message couldn't be sent. There are too many contacts in this collection. Please try again by starting a flow instead of sending direct message."
   @contact_limit_to_send_message_to_group 30
 
   @spec can_send_message_to_group?(non_neg_integer()) :: boolean()

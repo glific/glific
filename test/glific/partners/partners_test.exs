@@ -322,7 +322,74 @@ defmodule Glific.PartnersTest do
       assert updated_organization.newcontact_flow_id == flow.id
     end
 
-    test "update_organization/2 with oraganization settings" do
+    test "update_organization/2 with organization new contact flow update is_pinned status of flow" do
+      # organization with newcontact flow as nil
+      organization = Fixtures.organization_fixture()
+
+      flow =
+        Fixtures.flow_fixture(%{
+          name: "Test Flow",
+          keywords: ["test_keyword"],
+          flow_type: :message,
+          version_number: "13.1.0"
+        })
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: false
+          },
+          newcontact_flow_id: flow.id
+        })
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, update_org_attrs)
+
+      # organization with newcontact flow same as newly created flow
+      assert organization.newcontact_flow_id == flow.id
+
+      # creating new flow
+      new_flow =
+        Fixtures.flow_fixture(%{
+          name: "Test Flow2",
+          keywords: ["second_test_keyword"],
+          flow_type: :message,
+          version_number: "13.1.0"
+        })
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: false
+          },
+          newcontact_flow_id: new_flow.id
+        })
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, update_org_attrs)
+
+      # organization with newcontact flow same as second newly created flow
+      assert organization.newcontact_flow_id == new_flow.id
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: false
+          },
+          newcontact_flow_id: nil
+        })
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, update_org_attrs)
+
+      # organization with newcontact flow same as nil
+      assert organization.newcontact_flow_id == nil
+    end
+
+    test "update_organization/2 with organization settings" do
       organization = Fixtures.organization_fixture()
       flow_id = 3
 
@@ -340,7 +407,7 @@ defmodule Glific.PartnersTest do
               }
             ],
             flow_id: 3,
-            defualt_flow_id: 1
+            default_flow_id: 1
           }
         })
 
@@ -787,23 +854,56 @@ defmodule Glific.PartnersTest do
       assert updated_organization_services[organization_id]["google_cloud_storage"] == false
     end
 
+    test "get_org_services_by_id/1 for organization should return organization services key value pair by id",
+         %{organization_id: organization_id} = _attrs do
+      organization_services = Partners.get_org_services_by_id(organization_id)
+
+      assert organization_services["bigquery"] == false
+      assert organization_services["dialogflow"] == false
+      assert organization_services["fun_with_flags"] == true
+      assert organization_services["google_cloud_storage"] == false
+
+      valid_attrs = %{
+        secrets: %{"service_account" => @default_goth_json},
+        is_active: true,
+        shortcode: "bigquery",
+        organization_id: organization_id
+      }
+
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
+      updated_organization_services = Partners.get_org_services_by_id(organization_id)
+
+      assert updated_organization_services["bigquery"] == true
+      assert updated_organization_services["dialogflow"] == false
+      assert updated_organization_services["fun_with_flags"] == true
+      assert updated_organization_services["google_cloud_storage"] == false
+    end
+
     test "get_goth_token/2 should return goth token",
          %{organization_id: organization_id} = _attrs do
-      with_mocks([
-        {
-          Goth.Token,
-          [:passthrough],
-          [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
-        }
-      ]) do
+      with_mock(
+        Goth.Token,
+        [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
         valid_attrs = %{
           shortcode: "bigquery",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -815,21 +915,29 @@ defmodule Glific.PartnersTest do
 
     test "get_token/1 should return goth token for gcs",
          %{organization_id: organization_id} = _attrs do
-      with_mocks([
-        {
-          Goth.Token,
-          [:passthrough],
-          [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
-        }
-      ]) do
+      with_mock(
+        Goth.Token,
+        [],
+        fetch: fn _url ->
+          {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+        end
+      ) do
         valid_attrs = %{
           shortcode: "google_cloud_storage",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -846,7 +954,7 @@ defmodule Glific.PartnersTest do
           Goth.Token,
           [:passthrough],
           [
-            for_scope: fn _url ->
+            fetch: fn _url ->
               {:error,
                "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
             end
@@ -856,11 +964,19 @@ defmodule Glific.PartnersTest do
         valid_attrs = %{
           shortcode: "google_cloud_storage",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
         }
+
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "google_cloud_storage"}])
 
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
@@ -876,36 +992,6 @@ defmodule Glific.PartnersTest do
       end
     end
 
-    test "get_token/1 on return any other error in goth token should return nil",
-         %{organization_id: organization_id} = _attrs do
-      with_mocks([
-        {
-          Goth.Token,
-          [:passthrough],
-          [
-            for_scope: fn _url ->
-              {:error, %HTTPoison.Error{id: nil, reason: :connect_timeout}}
-            end
-          ]
-        }
-      ]) do
-        valid_attrs = %{
-          shortcode: "google_cloud_storage",
-          secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
-          },
-          is_active: true,
-          organization_id: organization_id
-        }
-
-        {:ok, _credential} = Partners.create_credential(valid_attrs)
-
-        assert_raise RuntimeError, fn ->
-          Partners.get_goth_token(organization_id, "google_cloud_storage")
-        end
-      end
-    end
-
     test "get_token/1 on return error in goth token should disable BigQuery",
          %{organization_id: organization_id} = _attrs do
       with_mocks([
@@ -913,7 +999,7 @@ defmodule Glific.PartnersTest do
           Goth.Token,
           [:passthrough],
           [
-            for_scope: fn _url ->
+            fetch: fn _url ->
               {:error,
                "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
             end
@@ -923,15 +1009,24 @@ defmodule Glific.PartnersTest do
         valid_attrs = %{
           shortcode: "bigquery",
           secrets: %{
-            "service_account" => "{\"private_key\":\"test\"}"
+            "service_account" =>
+              Jason.encode!(%{
+                project_id: "DEFAULT PROJECT ID",
+                private_key_id: "DEFAULT API KEY",
+                client_email: "DEFAULT CLIENT EMAIL",
+                private_key: "DEFAULT PRIVATE KEY"
+              })
           },
           is_active: true,
           organization_id: organization_id
         }
 
+        Glific.Caches.remove(organization_id, [{:provider_shortcode, "bigquery"}])
+
         {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-        assert true == is_nil(Partners.get_goth_token(organization_id, "bigquery"))
+        assert true ==
+                 is_nil(Partners.get_goth_token(organization_id, "bigquery"))
 
         {:ok, cred} =
           Partners.get_credential(%{organization_id: organization_id, shortcode: "bigquery"})

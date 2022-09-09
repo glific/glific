@@ -5,7 +5,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   """
   import GlificWeb.Gettext
 
-  alias Glific.{Repo, Triggers.Trigger}
+  alias Glific.{Repo, Triggers, Triggers.Trigger}
   require Logger
 
   @doc false
@@ -23,7 +23,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   @spec triggers(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, [any]}
   def triggers(_, args, _) do
-    {:ok, Trigger.list_triggers(args)}
+    {:ok, Triggers.list_triggers(args)}
   end
 
   @doc """
@@ -31,7 +31,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   """
   @spec count_triggers(Absinthe.Resolution.t(), map(), %{context: map()}) :: {:ok, integer}
   def count_triggers(_, args, _) do
-    {:ok, Trigger.count_triggers(args)}
+    {:ok, Triggers.count_triggers(args)}
   end
 
   @doc false
@@ -39,7 +39,7 @@ defmodule GlificWeb.Resolvers.Triggers do
           {:ok, any} | {:error, any}
   def create_trigger(_, %{input: params}, _) do
     # here first we need to create trigger action and trigger condition
-    with {:ok, trigger} <- Trigger.create_trigger(params) do
+    with {:ok, trigger} <- Triggers.create_trigger(params) do
       {:ok, %{trigger: trigger}}
     end
   end
@@ -52,7 +52,7 @@ defmodule GlificWeb.Resolvers.Triggers do
   def update_trigger(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
     with {:ok, trigger} <-
            Repo.fetch_by(Trigger, %{id: id, organization_id: user.organization_id}),
-         {:ok, trigger} <- Trigger.update_trigger(trigger, params) do
+         {:ok, trigger} <- Triggers.update_trigger(trigger, params) do
       {:ok, %{trigger: trigger}}
     else
       _ ->
@@ -71,7 +71,7 @@ defmodule GlificWeb.Resolvers.Triggers do
         "Trigger for org_id: #{user.organization_id} has been deleted by #{user.name} phone: #{user.phone}"
       )
 
-      Trigger.delete_trigger(trigger)
+      Triggers.delete_trigger(trigger)
     end
   end
 end

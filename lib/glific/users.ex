@@ -10,6 +10,8 @@ defmodule Glific.Users do
   import Ecto.Query, warn: false
 
   alias Glific.{
+    AccessControl.Role,
+    AccessControl.UserRole,
     Repo,
     Settings.Language,
     Users.User
@@ -101,20 +103,76 @@ defmodule Glific.Users do
       {:error, %Ecto.Changeset{}}
 
   """
-
   @pow_config [otp_app: :glific]
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do
+    attrs =
+      attrs
+      |> validate_add_role_ids?()
+      |> check_access_role(attrs)
+
     # lets invalidate the tokens and socket for this user
     # we do this ONLY if either the role or is_restricted has changed
-    if is_updated?(user.roles, attrs[:roles]) ||
-         is_updated?(user.is_restricted, attrs[:is_restricted]) do
+    if validate_add_role_ids?(attrs) ||
+         is_updated?(user.is_restricted, attrs[:is_restricted]) ||
+         validate_delete_role_ids?(attrs) do
       GlificWeb.APIAuthPlug.delete_all_user_sessions(@pow_config, user)
     end
 
+    with {:ok, updated_user} <-
+           user
+           |> User.update_fields_changeset(attrs)
+           |> Repo.update() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_user_roles(attrs, updated_user),
+        else: {:ok, updated_user}
+    end
+  end
+
+  @spec validate_add_role_ids?(map()) :: boolean()
+  defp validate_add_role_ids?(%{add_role_ids: add_role_ids} = _attrs),
+    do: length(add_role_ids) != 0
+
+  defp validate_add_role_ids?(_attrs), do: false
+
+  @spec validate_delete_role_ids?(map()) :: boolean()
+  defp validate_delete_role_ids?(%{delete_role_ids: delete_role_ids} = _attrs),
+    do: length(delete_role_ids) != 0
+
+  defp validate_delete_role_ids?(_attrs), do: false
+
+  @spec check_access_role(boolean(), map()) :: map()
+  defp check_access_role(false, attrs), do: attrs
+
+  defp check_access_role(true, %{add_role_ids: add_role_ids} = attrs) do
+    roles =
+      Role
+      |> select([r], r.label)
+      |> where([r], r.id in ^add_role_ids)
+      |> Repo.all()
+
+    role =
+      cond do
+        Enum.any?(roles, fn role -> role == "Admin" end) -> ["admin"]
+        Enum.any?(roles, fn role -> role == "Manager" end) -> ["manager"]
+        Enum.any?(roles, fn role -> role == "Staff" end) -> ["staff"]
+        Enum.any?(roles, fn role -> role == "No access" end) -> ["none"]
+        true -> ["manager"]
+      end
+
+    Map.put(attrs, :roles, role)
+  end
+
+  @spec update_user_roles(map(), User.t()) :: {:ok, User.t()}
+  defp update_user_roles(attrs, user) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:user_id, user.id)
+      |> UserRole.update_user_roles()
+
     user
-    |> User.update_fields_changeset(attrs)
-    |> Repo.update()
+    |> Map.put(:access_roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -196,9 +254,32 @@ defmodule Glific.Users do
   @spec maybe_promote_user(list(), User.t()) :: User.t()
   defp maybe_promote_user([], user) do
     # this is the first user, since the list of valid org users is empty
-    {:ok, user} = update_user(user, %{roles: [:admin]})
+    {:ok, user} =
+      update_user(user, %{
+        roles: [:admin],
+        add_role_ids: get_role_id("Admin"),
+        organization_id: user.organization_id
+      })
+
     user
   end
 
-  defp maybe_promote_user(_list, user), do: user
+  defp maybe_promote_user(_list, user) do
+    {:ok, user} =
+      update_user(user, %{
+        roles: [:none],
+        add_role_ids: get_role_id("No access"),
+        organization_id: user.organization_id
+      })
+
+    user
+  end
+
+  @spec get_role_id(String.t()) :: list()
+  defp get_role_id(role) do
+    Role
+    |> select([r], r.id)
+    |> where([r], ilike(r.label, ^role))
+    |> Repo.all()
+  end
 end

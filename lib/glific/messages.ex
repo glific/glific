@@ -328,7 +328,7 @@ defmodule Glific.Messages do
       Notifications.create_notification(%{
         category: "Message",
         message: reason,
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: attrs.organization_id,
         entity: %{
           id: contact.id,
@@ -543,27 +543,38 @@ defmodule Glific.Messages do
   def create_and_send_hsm_message(
         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
       ) do
-    media_id = Map.get(attrs, :media_id, nil)
-    {:ok, template} = Repo.fetch(SessionTemplate, template_id)
+    Repo.fetch(SessionTemplate, template_id)
+    |> case do
+      {:ok, template} ->
+        media_id = Map.get(attrs, :media_id, nil)
 
-    {is_translated, session_template} = fetch_language_specific_template(template, receiver_id)
+        {is_translated, session_template} =
+          fetch_language_specific_template(template, receiver_id)
 
-    with true <- session_template.number_parameters == length(parameters),
-         {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
-      # Passing uuid to save db call when sending template via provider
-      message_params = hsm_message_params(session_template, attrs, is_translated)
+        with true <- session_template.number_parameters == length(parameters),
+             {"type", true} <- {"type", session_template.type == :text || media_id != nil} do
+          # Passing uuid to save db call when sending template via provider
+          message_params = hsm_message_params(session_template, attrs, is_translated)
 
-      receiver_id
-      |> Glific.Contacts.get_contact!()
-      |> Contacts.can_send_message_to?(true, attrs)
-      |> do_send_message(message_params)
-    else
-      false ->
+          receiver_id
+          |> Glific.Contacts.get_contact!()
+          |> Contacts.can_send_message_to?(true, attrs)
+          |> do_send_message(message_params)
+        else
+          false ->
+            {:error,
+             dgettext(
+               "errors",
+               "Please provide the right number of parameters for the template."
+             )}
+
+          {"type", false} ->
+            {:error, dgettext("errors", "Please provide media for media template.")}
+        end
+
+      {:error, error} ->
         {:error,
-         dgettext("errors", "Please provide the right number of parameters for the template.")}
-
-      {"type", false} ->
-        {:error, dgettext("errors", "Please provide media for media template.")}
+         "Not able to fetch the template with id #{template_id}. ERROR: #{inspect(error)}"}
     end
   end
 

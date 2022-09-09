@@ -753,8 +753,8 @@ mutation exportFlow($id: ID!) {
 Gets a flow for the logged in user.
 
 ```graphql
-query flowGet($id: ID!) {
-  flowGet(id: $id) {
+query flowGet($id: ID!, $isForced: Boolean!) {
+  flowGet(id: $id,$isForced: $isForced) {
     id
     name
   }
@@ -920,6 +920,11 @@ query broadcastStats($flowBroadcastId: ID!) {
 <td></td>
 </tr>
 <tr>
+<td colspan="2" valign="top"><strong>isPinned</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
 <td colspan="2" valign="top"><strong>insertedAt</strong></td>
 <td valign="top"><a href="#datetime">DateTime</a></td>
 <td></td>
@@ -1006,6 +1011,21 @@ query broadcastStats($flowBroadcastId: ID!) {
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>
+<tr>
+<td colspan="2" valign="top"><strong>isPinned</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>addRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>deleteRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
 </tbody>
 </table>
 
@@ -1051,6 +1071,11 @@ Filtering options for flows
 <td colspan="2" valign="top"><strong>isBackground</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td>Match the isBackground flag of flow</td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isPinned</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td>Match the isPinned flag of flow</td>
 </tr>
 <tr>
   <td colspan="2" valign="top"><strong>status</strong></td>

@@ -6,6 +6,7 @@ defmodule Glific.Flows.ActionTest do
     Groups,
     Groups.ContactGroup,
     Partners,
+    Profiles,
     Seeds.SeedsDev,
     Settings,
     Templates.InteractiveTemplate
@@ -451,6 +452,44 @@ defmodule Glific.Flows.ActionTest do
     assert message.flow_label == "Age Group 11 to 14"
   end
 
+  test "Invalid template expression will process the action as empty template", attrs do
+    Partners.organization(attrs.organization_id)
+
+    contact = Repo.get_by(Contact, %{name: "Default receiver"})
+
+    # preload contact
+    attrs = %{
+      flow_id: 1,
+      flow_uuid: Ecto.UUID.generate(),
+      contact_id: contact.id,
+      organization_id: attrs.organization_id
+    }
+
+    # preload contact
+    {:ok, context} = FlowContext.create_flow_context(attrs)
+    context = Repo.preload(context, [:flow, :contact])
+
+    message_body_input = "This is a messages with invalid template expression."
+
+    action = %Action{
+      type: "send_msg",
+      text: message_body_input,
+      templating: %{expression: "Invalid json string!"}
+    }
+
+    message_stream = []
+    result = Action.execute(action, context, message_stream)
+    assert {:ok, _updated_context, _updated_message_stream} = result
+
+    message =
+      Glific.Messages.Message
+      |> where([m], m.contact_id == ^contact.id)
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    assert message.body == message_body_input
+  end
+
   test "execute an action when type is send_interactive_msg", attrs do
     Partners.organization(attrs.organization_id)
 
@@ -628,6 +667,57 @@ defmodule Glific.Flows.ActionTest do
     assert updated_context.contact.fields[action.field.key].value == "field1"
     assert updated_context.contact.fields[action.field.key].type == "string"
     assert updated_context.contact.fields[action.field.key].label == "Not Settings"
+  end
+
+  test "execute an action when type is set_contact_profile to create and switch profile",
+       _attrs do
+    profile = Glific.Fixtures.profile_fixture()
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+
+    context =
+      %FlowContext{contact_id: contact.id, flow_id: 1}
+      |> Repo.preload([:contact, :flow])
+
+    # Create a profile for a contact
+    action = %Action{
+      type: "set_contact_profile",
+      profile_type: "Create Profile",
+      value: %{"name" => "name", "type" => "student"},
+      uuid: "UUID 1"
+    }
+
+    message_stream = []
+
+    Action.execute(action, context, message_stream)
+    {:ok, profile} = Repo.fetch_by(Profiles.Profile, %{name: "name"})
+    assert profile.type == "student"
+
+    # Create a second profile for a contact
+    action = %Action{
+      type: "set_contact_profile",
+      profile_type: "Create Profile",
+      value: %{"name" => "name2", "type" => "student"},
+      uuid: "UUID 2"
+    }
+
+    Action.execute(action, context, message_stream)
+    {:ok, profile2} = Repo.fetch_by(Profiles.Profile, %{name: "name2"})
+    assert profile2.type == "student"
+
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+    assert contact.active_profile_id == profile2.id
+
+    # Switch to first profile for a contact
+    action = %Action{
+      type: "set_contact_profile",
+      profile_type: "Switch Profile",
+      value: "1",
+      uuid: "UUID 3"
+    }
+
+    Action.execute(action, context, message_stream)
+    {:ok, contact} = Repo.fetch_by(Contact, %{id: profile.contact_id})
+    assert contact.active_profile_id == profile.id
   end
 
   test "execute an action when type is enter_flow", attrs do

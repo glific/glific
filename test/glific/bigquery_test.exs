@@ -135,14 +135,24 @@ defmodule Glific.BigQueryTest do
   end
 
   test "make_job_to_remove_duplicate/2 should delete duplicate messages", attrs do
-    Tesla.Mock.mock(fn
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200
-        }
-    end)
+    with_mocks([
+      {
+        Goth.Token,
+        [:passthrough],
+        [
+          fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end
+        ]
+      }
+    ]) do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
 
-    assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+      assert :ok == BigQuery.make_job_to_remove_duplicate("messages", attrs.organization_id)
+    end
   end
 
   test "make_job_to_remove_duplicate/2 should raise info log", attrs do
@@ -157,7 +167,7 @@ defmodule Glific.BigQueryTest do
       {
         Goth.Token,
         [:passthrough],
-        [for_scope: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
+        [fetch: fn _url -> {:ok, %{token: "0xFAKETOKEN_Q="}} end]
       }
     ]) do
       # we'll need to figure out how to check if this did the right thing
@@ -283,8 +293,16 @@ defmodule Glific.BigQueryTest do
   end
 
   test "fetch_bigquery_credentials/2 should return credentials in ok tuple format", attrs do
-    assert {:ok, value} = BigQuery.fetch_bigquery_credentials(attrs.organization_id)
-    assert true == is_map(value)
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      assert {:ok, value} = BigQuery.fetch_bigquery_credentials(attrs.organization_id)
+      assert true == is_map(value)
+    end
   end
 
   test "fetch_bigquery_credentials/2 should return nil and disable credentials", attrs do
@@ -293,13 +311,14 @@ defmodule Glific.BigQueryTest do
         Goth.Token,
         [:passthrough],
         [
-          for_scope: fn _url ->
+          fetch: fn _url ->
             {:error,
              "Could not retrieve token, response: {\"error\":\"invalid_grant\",\"error_description\":\"Invalid grant: account not found\"}"}
           end
         ]
       }
     ]) do
+      Glific.Caches.remove(attrs.organization_id, [{:provider_shortcode, "bigquery"}])
       assert true = is_nil(BigQuery.fetch_bigquery_credentials(attrs.organization_id))
 
       {:ok, cred} =

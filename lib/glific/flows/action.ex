@@ -39,7 +39,6 @@ defmodule Glific.Flows.Action do
     "Switch Profile" => :switch_profile,
     "Create Profile" => :create_profile
   }
-  @min_delay 2
 
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
@@ -84,7 +83,13 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
+          ## this is a custom delay in minutes for wait for time nodes.
+          ## Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
+
+          ## this is a custom delay in seconds before processing for the node.
+          ## Currently only used for send messages
+          delay: integer() | 0,
           # Interactive messages
           interactive_template_id: integer() | nil,
           interactive_template_expression: String.t() | nil,
@@ -140,6 +145,7 @@ defmodule Glific.Flows.Action do
     field(:interactive_template_expression, :string)
     field(:attachment_type, :string)
     field(:attachment_url, :string)
+    field(:delay, :integer, default: 0)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -151,7 +157,8 @@ defmodule Glific.Flows.Action do
         %Action{
           uuid: json["uuid"],
           node_uuid: node.uuid,
-          type: json["type"]
+          type: json["type"],
+          delay: Glific.parse_maybe_integer!(json["delay"] || 0)
         },
         attrs
       )
@@ -528,13 +535,11 @@ defmodule Glific.Flows.Action do
           do: {FlowContext.reset_one_context(context), context.parent_id},
           else: {context, context.id}
 
-      # we start off a new context here and dont really modify the current context
+      # we start off a new context here and don't really modify the current context
       # hence ignoring the return value of start_sub_flow
       # for now, we'll just delay by at least min_delay second
-      context =
-        context
-        |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
-        |> Map.update!(:uuids_seen, &Map.put(&1, flow_uuid, 1))
+
+      context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
 
       Flow.start_sub_flow(context, flow_uuid, parent_id)
 
@@ -548,7 +553,7 @@ defmodule Glific.Flows.Action do
     # just call the webhook, and ask the caller to wait
     # we are processing the webhook using Oban and this happens asynchronously
     Webhook.execute(action, context)
-    # webhooks dont consume a message, so we send it forward
+    # webhooks don't consume a message, so we send it forward
     {:wait, context, messages}
   end
 
@@ -689,9 +694,15 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type} = _action, context, [msg])
       when type in @wait_for do
-    if msg.body != "No Response",
-      do: Glific.log_error("Unexpected message #{msg.body} received", false),
-      else: {:ok, context, []}
+    if msg.body != "No Response" do
+      Logger.info(
+        "Message #{msg.body} with context (#{context.id}) received while waiting for time"
+      )
+
+      {:error, "unexpected message received while waiting for time"}
+    else
+      {:ok, context, []}
+    end
   end
 
   @sleep_timeout 4 * 1000

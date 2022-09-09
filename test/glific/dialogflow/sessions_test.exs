@@ -60,44 +60,43 @@ defmodule Glific.Dialogflow.SessionsTest do
 
   ## We will come back on this one after completing the create credentials funcationality
   test "detect_intent/2 will add the message to queue" do
-    message =
-      Fixtures.message_fixture(%{body: "Hola", session_uuid: Ecto.UUID.generate()})
-      |> Repo.preload(contact: [:language])
+    with_mock(
+      Goth.Token,
+      [],
+      fetch: fn _url ->
+        {:ok, %{token: "0xFAKETOKEN_Q=", expires: System.system_time(:second) + 120}}
+      end
+    ) do
+      message =
+        Fixtures.message_fixture(%{body: "Hola", session_uuid: Ecto.UUID.generate()})
+        |> Repo.preload(contact: [:language])
 
-    valid_attrs = %{
-      secrets: %{"service_account" => @default_goth_json},
-      is_active: true,
-      shortcode: "dialogflow",
-      organization_id: message.organization_id
-    }
-
-    {:ok, _credential} = Partners.create_credential(valid_attrs)
-
-    [flow | _] = Glific.Flows.list_flows(%{organization_id: message.organization_id})
-
-    {:ok, context} =
-      FlowContext.create_flow_context(%{
-        contact_id: message.contact_id,
-        flow_id: flow.id,
-        flow_uuid: flow.uuid,
-        uuid_map: %{},
+      valid_attrs = %{
+        secrets: %{"service_account" => @default_goth_json},
+        is_active: true,
+        shortcode: "dialogflow",
         organization_id: message.organization_id
-      })
+      }
 
-    Sessions.detect_intent(message, context.id, "test_result_name")
+      {:ok, _credential} = Partners.create_credential(valid_attrs)
 
-    assert_enqueued(worker: SessionWorker, prefix: "global")
+      [flow | _] = Glific.Flows.list_flows(%{organization_id: message.organization_id})
 
-    assert %{success: 1, failure: 0, snoozed: 0, discard: 0} ==
-             Oban.drain_queue(queue: :dialogflow)
+      {:ok, context} =
+        FlowContext.create_flow_context(%{
+          contact_id: message.contact_id,
+          flow_id: flow.id,
+          flow_uuid: flow.uuid,
+          uuid_map: %{},
+          organization_id: message.organization_id
+        })
 
-    ## Still need to find out where we are applying the tags.
-    ## could not understand this test case.
+      Sessions.detect_intent(message, context.id, "test_result_name")
 
-    # message =
-    #   Messages.get_message!(message.id)
-    #   |> Repo.preload([:tags])
+      assert_enqueued(worker: SessionWorker, prefix: "global")
 
-    # assert hd(message.tags).label == "Greeting"
+      assert %{success: 1, failure: 0, snoozed: 0, discard: 0, cancelled: 0} ==
+               Oban.drain_queue(queue: :dialogflow)
+    end
   end
 end

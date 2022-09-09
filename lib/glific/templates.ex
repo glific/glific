@@ -3,16 +3,14 @@ defmodule Glific.Templates do
   The Templates context.
   """
   import Ecto.Query, warn: false
-  import GlificWeb.Gettext
 
   use Tesla
   plug(Tesla.Middleware.FormUrlencoded)
 
   alias Glific.{
-    Partners,
+    Notifications,
     Partners.Organization,
-    Providers.Gupshup,
-    Providers.GupshupEnterprise,
+    Partners.Provider,
     Repo,
     Settings,
     Tags.Tag,
@@ -169,13 +167,8 @@ defmodule Glific.Templates do
   @spec submit_for_approval(map()) :: {:ok, SessionTemplate.t()} | {:error, String.t()}
   defp submit_for_approval(attrs) do
     Logger.info("Submitting template for approval with attrs as #{inspect(attrs)}")
-    organization = Partners.organization(attrs.organization_id)
-
-    organization.bsp.shortcode
-    |> case do
-      "gupshup" -> Gupshup.Template.submit_for_approval(attrs)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    bsp_module = Provider.bsp_module(attrs.organization_id, :template)
+    bsp_module.submit_for_approval(attrs)
   end
 
   @doc """
@@ -183,13 +176,7 @@ defmodule Glific.Templates do
   """
   @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any} | {:error, any}
   def import_templates(org_id, data) do
-    organization = Partners.organization(org_id)
-
-    organization.bsp.shortcode
-    |> case do
-      "gupshup_enterprise" -> GupshupEnterprise.Template.import_enterprise_templates(org_id, data)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    Provider.bsp_module(org_id, :template).import_templates(org_id, data)
   end
 
   @doc """
@@ -227,6 +214,14 @@ defmodule Glific.Templates do
   @spec delete_session_template(SessionTemplate.t()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
   def delete_session_template(%SessionTemplate{} = session_template) do
+    if session_template.is_hsm do
+      Task.async(fn ->
+        org_id = session_template.organization_id
+        bsp_module = Provider.bsp_module(org_id, :template)
+        bsp_module.delete(org_id, Map.from_struct(session_template))
+      end)
+    end
+
     Repo.delete(session_template)
   end
 
@@ -266,14 +261,12 @@ defmodule Glific.Templates do
   get and update list of hsm of an organization
   """
   @spec sync_hsms_from_bsp(non_neg_integer()) :: :ok | {:error, String.t()}
-  def sync_hsms_from_bsp(organization_id) do
-    organization = Partners.organization(organization_id)
+  def sync_hsms_from_bsp(organization_id) when is_nil(organization_id),
+    do: {:error, "organization_id is not given"}
 
-    organization.bsp.shortcode
-    |> case do
-      "gupshup" -> Gupshup.Template.update_hsm_templates(organization_id)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+  def sync_hsms_from_bsp(organization_id) do
+    bsp_module = Provider.bsp_module(organization_id, :template)
+    bsp_module.update_hsm_templates(organization_id)
   end
 
   @doc false
@@ -338,10 +331,10 @@ defmodule Glific.Templates do
     example =
       case Jason.decode(template["meta"] || "{}") do
         {:ok, meta} ->
-          meta["example"]
+          meta["example"] || "NA"
 
         _ ->
-          nil
+          "NA"
       end
 
     if example,
@@ -453,7 +446,7 @@ defmodule Glific.Templates do
 
     update_attrs =
       if current_template.status != template["status"],
-        do: do_update_attrs(template["status"], template),
+        do: change_template_status(template["status"], current_template, template),
         else: %{status: template["status"]}
 
     db_templates[template["bsp_id"]]
@@ -461,14 +454,42 @@ defmodule Glific.Templates do
     |> Repo.update()
   end
 
-  @spec do_update_attrs(String.t(), map()) :: map()
-  defp do_update_attrs("APPROVED", _template),
-    do: %{status: "APPROVED", is_active: true}
+  @spec change_template_status(String.t(), map(), map()) :: map()
+  defp change_template_status("APPROVED", db_template, _bsp_template) do
+    Notifications.create_notification(%{
+      category: "Templates",
+      message: "Template #{db_template.shortcode} has been approved",
+      severity: Notifications.types().info,
+      organization_id: db_template.organization_id,
+      entity: %{
+        id: db_template.id,
+        shortcode: db_template.shortcode,
+        label: db_template.label,
+        uuid: db_template.uuid
+      }
+    })
 
-  defp do_update_attrs("REJECTED", template),
-    do: %{status: "REJECTED", reason: template["reason"]}
+    %{status: "APPROVED", is_active: true}
+  end
 
-  defp do_update_attrs(status, _template), do: %{status: status}
+  defp change_template_status("REJECTED", db_template, bsp_template) do
+    Notifications.create_notification(%{
+      category: "Templates",
+      message: "Template #{db_template.shortcode} has been rejected",
+      severity: Notifications.types().info,
+      organization_id: db_template.organization_id,
+      entity: %{
+        id: db_template.id,
+        shortcode: db_template.shortcode,
+        label: db_template.label,
+        uuid: db_template.uuid
+      }
+    })
+
+    %{status: "REJECTED", reason: bsp_template["reason"]}
+  end
+
+  defp change_template_status(status, _db_template, _bsp_template), do: %{status: status}
 
   @spec update_hsm_translation(map(), SessionTemplate.t(), Organization.t(), map()) ::
           {:ok, SessionTemplate.t()} | {:error, Ecto.Changeset.t()}
@@ -484,7 +505,7 @@ defmodule Glific.Templates do
     language_id = languages[template["languageCode"]] || organization.default_language_id
 
     example =
-      case Jason.decode(template["meta"]) do
+      case Jason.decode(template["meta"] || "{}") do
         {:ok, meta} ->
           meta["example"]
 

@@ -69,7 +69,11 @@ defmodule Glific.Flows.ContactAction do
 
     interactive_content =
       if params_count > 0 do
-        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+        params =
+          Enum.map(action.params, fn
+            param when is_map(param) -> MessageVarParser.parse_map(param, message_vars)
+            param -> MessageVarParser.parse(param, message_vars)
+          end)
 
         InteractiveTemplates.process_dynamic_interactive_content(
           interactive_content,
@@ -96,7 +100,7 @@ defmodule Glific.Flows.ContactAction do
         organization_id: context.organization_id,
         flow_id: context.flow_id,
         flow_broadcast_id: context.flow_broadcast_id,
-        send_at: DateTime.add(DateTime.utc_now(), context.delay),
+        send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
         interactive_template_id: interactive_template_id,
         interactive_content: interactive_content,
@@ -257,7 +261,7 @@ defmodule Glific.Flows.ContactAction do
       flow_broadcast_id: context.flow_broadcast_id,
       is_hsm: true,
       flow_label: flow_label,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       params: params
     }
 
@@ -327,7 +331,7 @@ defmodule Glific.Flows.ContactAction do
       flow_label: flow_label,
       flow_id: context.flow_id,
       flow_broadcast_id: context.flow_broadcast_id,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       is_optin_flow: Flows.is_optin_flow?(context.flow)
     }
 
@@ -366,8 +370,6 @@ defmodule Glific.Flows.ContactAction do
     url = String.trim(attachment[type])
 
     {type, url} = handle_attachment_expression(context, type, url)
-
-    %{is_valid: true, message: _message} = Messages.validate_media(url, to_string(type))
 
     type = Glific.safe_string_to_atom(type)
 

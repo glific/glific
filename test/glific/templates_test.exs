@@ -642,7 +642,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "templates" => [
                   %{
-                    "category" => "ALERT_UPDATE",
+                    "category" => "MARKETING",
                     "createdOn" => 1_595_904_220_466,
                     "data" =>
                       "Hey {{1}}, Are you interested in the latest tech stack | [call here,+917302307943] | [visit here,https://github.com/glific]",
@@ -692,7 +692,7 @@ defmodule Glific.TemplatesTest do
                 "status" => "success",
                 "templates" => [
                   %{
-                    "category" => "ALERT_UPDATE",
+                    "category" => "TRANSACTIONAL",
                     "createdOn" => 1_595_904_220_466,
                     "data" => "Hi {{1}}, What is your status | [cold] | [warm]",
                     "elementName" => "status_response",
@@ -874,7 +874,7 @@ defmodule Glific.TemplatesTest do
         body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
         shortcode: "common_otp",
         is_hsm: true,
-        category: "ALERT_UPDATE",
+        category: "OTP",
         example:
           "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
         language_id: language_id,
@@ -1011,11 +1011,11 @@ defmodule Glific.TemplatesTest do
       assert hsm2.is_active == false
     end
 
-    test "import_enterprise_templates/1 should import templates", attrs do
+    test "import_templates/1 should import templates", attrs do
       data =
         "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
 
-      Template.import_enterprise_templates(attrs.organization_id, data)
+      Template.import_templates(attrs.organization_id, data)
 
       assert {:ok, %SessionTemplate{} = imported_template} =
                Repo.fetch_by(SessionTemplate, %{bsp_id: "6122571"})
@@ -1023,7 +1023,7 @@ defmodule Glific.TemplatesTest do
       assert imported_template.status == "APPROVED"
       assert imported_template.shortcode == "2meq_payment_link"
       assert imported_template.language_id == 1
-      assert imported_template.category == "ALERT_UPDATE"
+      assert imported_template.category == "TRANSACTIONAL"
 
       assert imported_template.example ==
                "Your OTP for [sample text 1] is [sample text 2]. This is valid for [sample text 3]."

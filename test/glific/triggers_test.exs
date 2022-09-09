@@ -123,7 +123,7 @@ defmodule Glific.TriggersTest do
 
     test "triggers field returns list of triggers", attrs do
       tr = Fixtures.trigger_fixture(attrs)
-      assert Trigger.get_trigger!(tr.id) == tr
+      assert Triggers.get_trigger!(tr.id) == tr
     end
 
     test "create_trigger/1 with invalid data returns error", attrs do
@@ -142,7 +142,7 @@ defmodule Glific.TriggersTest do
         start_time: Time.utc_now()
       }
 
-      assert {:error, %Ecto.Changeset{}} = Trigger.create_trigger(arc)
+      assert {:error, %Ecto.Changeset{}} = Triggers.create_trigger(arc)
     end
 
     test "execute_triggers/2 should execute a trigger with last_trigger_at not nil", attrs do
@@ -235,7 +235,7 @@ defmodule Glific.TriggersTest do
       Triggers.execute_triggers(attrs.organization_id, start_at)
       msg_count2 = Messages.count_messages(%{filter: attrs})
       assert msg_count2 > msg_count1
-      trigger = Trigger.get_trigger!(trigger.id)
+      trigger = Triggers.get_trigger!(trigger.id)
       assert trigger.next_trigger_at.hour == 9
 
       # Executing trigger at second set time i.e 3PM IST
@@ -243,7 +243,7 @@ defmodule Glific.TriggersTest do
       Triggers.execute_triggers(attrs.organization_id, execute_time)
       msg_count3 = Messages.count_messages(%{filter: attrs})
       assert msg_count3 > msg_count2
-      trigger = Trigger.get_trigger!(trigger.id)
+      trigger = Triggers.get_trigger!(trigger.id)
       assert trigger.next_trigger_at.hour == 15
     end
 
