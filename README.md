@@ -10,24 +10,22 @@
 [![Commits](https://img.shields.io/github/commit-activity/m/glific/glific)](https://img.shields.io/github/commit-activity/m/glific/glific)
 [![Glific](https://img.shields.io/endpoint?url=https://dashboard.cypress.io/badge/simple/ocex65&style=flat&logo=cypress)](https://dashboard.cypress.io/projects/ocex65/runs)
 
-
-
 ## Pre-requisites
 
-There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install npm / yarn and react. 
+There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install npm / yarn and react.
 
 1. Software dependency - Postgres server
 2. Software dependency - Erlang / Elixir
 3. Backend - Download
-4. External service - Gupshup.  <-- Get a Free trial to get API-key
-5. External service - Oban.     <-- Needs 100 Euro per month
+4. External service - Gupshup. <-- Get a Free trial to get API-key
+5. External service - Oban. <-- Needs 100 Euro per month
 6. Backend - Install certificate
 7. Backend - Config
 8. Frontend
 
 ### 1. Software dependency - Postgres server
 
--  Download and start [postgres server](https://www.postgresql.org/download/)
+- Download and start [postgres server](https://www.postgresql.org/download/)
 
 For Postgres, for the development server, we default to using postgres/postgres as the username/password. This is configurable
 
@@ -37,7 +35,8 @@ We tested and developed against the following version:
     - postgres : v13.x
 ```
 
-### 2. Software dependency - Erlang / Elixir 
+### 2. Software dependency - Erlang / Elixir
+
 - [Install Elixir](https://elixir-lang.org/install.html#distributions) (check package versions below)
 
 For Ubuntu users you also need to install the `inotify-tools` package
@@ -45,20 +44,19 @@ For Ubuntu users you also need to install the `inotify-tools` package
 We tested and developed against the following versions:
 
 ```bash
-    - erlang : 24.2.2
-    - elixir : 1.13.3-otp-24
+    - erlang : 24.3.4
+    - elixir : 1.13.4-otp-24
 ```
 
 ### 3. Backend - Download
 
 - [Download the latest code from GitHub](https://github.com/glific/glific)
-  
+
 ```bash
-git clone https://github.com/glific/glific_backend
+git clone https://github.com/glific/glific
 ```
 
 DO NOT run mix deps.get until the next steps are completed.
-
 
 ### 4. External service - Gupshup Create and link your Gupshup Account
 
@@ -66,23 +64,22 @@ DO NOT run mix deps.get until the next steps are completed.
 
 You will need to do the following:
 
--  a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
--  b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
--  c. You can name it `NewNameHere`   "GlificTest <-- Bot Name is already in use, then use anotherone"
--  d. Edit `glific_backend/config/dev.secret.exs` 
--  e. Find your API Key, check top left corner or inside the curl sample message
--  f. Enter your APP name
-
+- a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+- b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
+- c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+- d. Edit `glific_backend/config/dev.secret.exs`
+- e. Find your API Key, check top left corner or inside the curl sample message
+- f. Enter your APP name
 
 ### 5. External service - Oban Pro
 
-[Oban](https://getoban.pro) is a cron-like library. 
-Glific depends 100% on job processing. 
-Oban is **required** before running mix 
-for Glific to operate. 
+[Oban](https://getoban.pro) is a cron-like library.
+Glific depends 100% on job processing.
+Oban is **required** before running mix
+for Glific to operate.
 You **must** purchase license.
 When purchashing you must buy WEB+PRO .
-After you purchased 
+After you purchased
 Go to account and get this information and run this in glific_backend
 
 ```bash
@@ -100,28 +97,32 @@ Make sure your key is in the list
 ```bash
 mix hex.repo list
 ```
+
     Name        URL                             Public key                                          Auth key
     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
 If you see it twice, it will not work and fail, since Oban moved from public repository to private
-this is how an example of failing looks like 
+this is how an example of failing looks like
 
     Name        URL                             Public key                                          Auth key
     hexpm:oban  https://repo.hex.pm/repos/oban  SHA256:abc/edf/gef+aIWPc     abdedcqweasdj__KEY_AUTH__asdafasdf
     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
 
 this is wrong, and you run mix deps.get it will try to fetch from public and ignore private and fail
-simply remove the public one 
+simply remove the public one
+
 ```bash
 mix hex.repo remove hexpm:oban
 ```
+
 Now check again
+
 ```bash
 mix hex.repo list
 ```
+
     Name        URL                             Public key                                          Auth key
     oban        https://getoban.pro/repo        SHA256:4/abc/edf/gef+aIWPc   abdedcqweasdj__KEY_AUTH__asdafasdf
-
 
 ### 6. Install certificate - Use SSL for frontend and backend
 
@@ -134,10 +135,11 @@ Go to glific_backend folder in the terminal console.
 - d. `mkdir priv/cert`
 - e. `mv glific.test* priv/cert`
 - f. `cd priv/cert`
-- g. `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists 
+- g. `ls -1` Check that glific.test+1-key.pem and glific.test+1.pem exists
 
       if not then copy any certificate found in there to the correct names
       for example if I see:
+
 ```bash
       ❯ ls -1
       glific.test+6-key.pem
@@ -149,6 +151,7 @@ Go to glific_backend folder in the terminal console.
 ```
 
       And check again
+
 ```bash
       ❯ ls -1
       glific.test+1-key.pem
@@ -160,58 +163,57 @@ Go to glific_backend folder in the terminal console.
 ```
 
 - h. Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
-- i. Check hosts file `grep glific /etc/hosts` 
+- i. Check hosts file `grep glific /etc/hosts`
 
-      if returns nothing 
-      then make sure hosts file has those names added 
+      if returns nothing
+      then make sure hosts file has those names added
       `sudo bash -c 'echo "127.0.0.1 glific.test api.glific.test" >> /etc/hosts'`
-
 
 ### 7. Backend - Config
 
--  a. Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit 
--  b. Copy the file: `cp config/.env.dev.txt       config/.env.dev`       and edit 
--  c. Run `source config/.env.dev`
--  d. Run `mix deps.get`
-      if this fails try first `mix local.hex --force` then `mix deps.get`
-      
-      if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
+- a. Copy the file: `cp config/dev.secret.exs.txt config/dev.secret.exs` and edit
+- b. Copy the file: `cp config/.env.dev.txt config/.env.dev` and edit
+- c. Run `source config/.env.dev`
+- d. Run `mix deps.get`
+  if this fails try first `mix local.hex --force` then `mix deps.get`
 
-      ❯ mix deps.get
-      Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
-      This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-      Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
-      This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
-      ** (Mix) Unknown package oban_pro in lockfile
+  if you see this error, then Oban key is wrong or failing. Check step 5. Or contact Oban.
 
--  e. Run `mix setup`
--  f. Run `mix phx.server`
--  g. Another tab of terminal - Start the backend server in iex session: `iex -S mix`
--  h. Inside the iex - Update HSM templates: `Glific.Templates.sync_hsms_from_bsp(1)`
+  ❯ mix deps.get
+  Failed to fetch record for 'hexpm:oban/oban_pro' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  Failed to fetch record for 'hexpm:oban/oban_web' from registry (using cache instead)
+  This could be because the package does not exist, it was spelled incorrectly or you don't have permissions to it
+  \*\* (Mix) Unknown package oban_pro in lockfile
 
+- e. Run `mix setup`
+- f. Run `mix phx.server`
+- g. Another tab of terminal - Start the backend server in iex session: `iex -S mix`
+- h. Inside the iex - Update HSM templates: `Glific.Templates.sync_hsms_from_bsp(1)`
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
-
-
-
 
 ### 8. Frontend - Install glific_frontend
 
 You cannot do much from the glific_backend unless you are an API developer. To see Glific in its glory, please
 install [Glific Frontend](https://github.com/glific/glific-frontend/)
+
 ```bash
 git clone https://github.com/glific/glific_frontend
 cd glific_frontend
 ```
+
 open package.json and update start script
+
 ```bash
 nano package.json
 ```
-from 
+
+from
 
     "start": "HTTPS=true SSL_CRT_FILE=../glific/priv/cert/glific.test+1.pem SSL_KEY_FILE=../glific/priv/cert/glific.test+1-key.pem react-scripts start"
 
-to 
+to
 
     "start": "HTTPS=true SSL_CRT_FILE=../glific_backend/priv/cert/glific.test+1.pem SSL_KEY_FILE=../glific_backend/priv/cert/glific.test+1-key.pem react-scripts start"
 
@@ -221,7 +223,8 @@ Copy config file
 cp .env.example .env
 ```
 
-Make sure the .env config file looks like this 
+Make sure the .env config file looks like this
+
 ```bash
 REACT_APP_API_PREFIX="api"
 # localhost
@@ -237,41 +240,48 @@ REACT_APP_RECAPTCHA_CLIENT_KEY="Your recaptch key"
 
 USE Double quotes " " , not single ' ' quotes. And do not leave spaces before or after.
 
-Do not use '' for after the = or leave spaces 
+Do not use '' for after the = or leave spaces
 Broken For example 1
+
 ```bash
 REACT_APP_GLIFIC_BACKEND_URL='gitflic.test'
 ```
+
 this will be read like this by react https://%27gitflic.test%27 . notice the %27 which will fail the connection
 
 Broken For example 2
+
 ```bash
 REACT_APP_GLIFIC_BACKEND_URL= gitflic.test'
 ```
+
 this will be read like this by react https://%32gitflic.test%27 . notice the %32 which will fail the connection
 
 Broken For example 3
+
 ```bash
 REACT_APP_GLIFIC_BACKEND_URL="gitflic.test "
 ```
+
 this will be read like this by react https://gitflic.test%32 . notice the %32 which will fail the connection
 
 Broken For example 4
+
 ```bash
 REACT_APP_GLIFIC_BACKEND_URL="https://gitflic.test"
 ```
+
 this will be read like this by react https://https://gitflic.test . notice the extra https:// which will fail the connection
 
-
 Correct For examples
+
 ```bash
 REACT_APP_GLIFIC_BACKEND_URL="gitflic.test"
 REACT_APP_GLIFIC_BACKEND_URL=gitflic.test
 ```
 
+Now run install
 
-
-Now run install 
 ```bash
 yarn setup
 ```
@@ -284,13 +294,10 @@ yarn start
 
 Go to [`localhost:3000`](http://localhost:3000) from your browser.
 
-
-
 ### Front end credentials
 
 - Phone `917834811114`
 - Password `secret1234`
-
 
 ## Optional - Using NGROK
 
@@ -316,10 +323,9 @@ to update your codebase from the glific repository.
 - Ensure you have not modified any files in this directory, by running: `git status`
 - Run the setup command: `mix setup`
 
-
 ## Documentation
 
-- [Postman API docs](https://postman.glific.com/)
+- [Postman API docs](https://api.glific.com/)
 - [GraphQL API docs](https://glific.github.io/slate/)
 - [Code Documentation](https://glific.github.io/glific/doc/readme.html#documentation)
 - [User Guide](https://docs.glific.com)

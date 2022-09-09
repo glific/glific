@@ -3,7 +3,9 @@ fragment FlowFields on FlowResult {
     id
     name
     keywords
-    flow_type
+    flowType
+    isBackground
+    isPinned
   }
 }
 

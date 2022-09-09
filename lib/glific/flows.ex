@@ -7,6 +7,8 @@ defmodule Glific.Flows do
   require Logger
 
   alias Glific.{
+    AccessControl,
+    AccessControl.FlowRole,
     Caches,
     Contacts.Contact,
     Flows.ContactField,
@@ -30,7 +32,10 @@ defmodule Glific.Flows do
   """
   @spec list_flows(map()) :: [Flow.t()]
   def list_flows(args) do
-    flows = Repo.list_filter(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+    flows =
+      Repo.list_filter_query(args, Flow, &Repo.opts_with_name/2, &filter_with/2)
+      |> AccessControl.check_access(:flow)
+      |> Repo.all()
 
     flows
     # get all the flow ids
@@ -118,6 +123,9 @@ defmodule Glific.Flows do
 
       {:is_background, is_background}, query ->
         from q in query, where: q.is_background == ^is_background
+
+      {:is_pinned, is_pinned}, query ->
+        from q in query, where: q.is_pinned == ^is_pinned
 
       {:name_or_keyword, name_or_keyword}, query ->
         query
@@ -208,8 +216,22 @@ defmodule Glific.Flows do
 
       flow = get_status_flow(flow)
 
-      {:ok, flow}
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_flow_roles(attrs, flow),
+        else: {:ok, flow}
     end
+  end
+
+  @spec update_flow_roles(map(), Flow.t()) :: {:ok, Flow.t()}
+  defp update_flow_roles(attrs, flow) do
+    %{access_controls: access_controls} =
+      attrs
+      |> Map.put(:flow_id, flow.id)
+      |> FlowRole.update_flow_roles()
+
+    flow
+    |> Map.put(:roles, access_controls)
+    |> then(&{:ok, &1})
   end
 
   @doc """
@@ -233,11 +255,16 @@ defmodule Glific.Flows do
 
     attrs =
       attrs
-      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords])})
+      |> Map.merge(%{keywords: sanitize_flow_keywords(attrs[:keywords] || flow.keywords)})
 
-    flow
-    |> Flow.changeset(attrs)
-    |> Repo.update()
+    with {:ok, updated_flow} <-
+           flow
+           |> Flow.changeset(attrs)
+           |> Repo.update() do
+      if Map.has_key?(attrs, :add_role_ids),
+        do: update_flow_roles(attrs, updated_flow),
+        else: {:ok, updated_flow}
+    end
   end
 
   @doc """
@@ -420,8 +447,8 @@ defmodule Glific.Flows do
     end
   end
 
-  @spec load_cache(tuple()) :: tuple()
-  defp load_cache(cache_key) do
+  @spec load_flow_cache(tuple()) :: tuple()
+  defp load_flow_cache(cache_key) do
     {organization_id, {key, value, status}} = cache_key
     Repo.put_organization_id(organization_id)
     Logger.info("Loading flow cache: #{organization_id}, #{inspect(key)}")
@@ -444,7 +471,7 @@ defmodule Glific.Flows do
   def get_cached_flow(nil, _key), do: {:ok, nil}
 
   def get_cached_flow(organization_id, key) do
-    case Caches.fetch(organization_id, key, &load_cache/1) do
+    case Caches.fetch(organization_id, key, &load_flow_cache/1) do
       {:error, error} ->
         Logger.info("Failed to retrieve flow, #{inspect(key)}, #{error}")
         {:error, error}
@@ -571,17 +598,25 @@ defmodule Glific.Flows do
   @status "published"
 
   @doc """
-  Start flow for a contact
+  Start flow for a contact and cache the result
   """
   @spec start_contact_flow(Flow.t() | integer, Contact.t()) ::
           {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
-    {:ok, flow} = get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status})
-    process_contact_flow([contact], flow, @status)
+    case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
+      {:ok, flow} -> process_contact_flow([contact], flow, @status)
+      {:error, _error} -> {:error, "Flow not found"}
+    end
   end
 
   def start_contact_flow(%Flow{} = flow, %Contact{} = contact),
     do: start_contact_flow(flow.id, contact)
+
+  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
+  defp process_contact_flow(contacts, flow, _status) do
+    Broadcast.broadcast_contacts(flow, contacts)
+    {:ok, flow}
+  end
 
   @doc """
   Start flow for contacts of a group
@@ -633,12 +668,6 @@ defmodule Glific.Flows do
           organization_id: flow_copy.organization_id
         })
     end
-  end
-
-  @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
-  defp process_contact_flow(contacts, flow, _status) do
-    Broadcast.broadcast_contacts(flow, contacts)
-    {:ok, flow}
   end
 
   @doc """

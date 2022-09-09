@@ -1,0 +1,17 @@
+fragment AccessRoleFields on AccessRoleResult {
+  accessRole {
+    description
+    id
+    insertedAt
+    isReserved
+    label
+    updatedAt
+  }
+}
+
+fragment ErrorFields on AccessRoleResult {
+  errors {
+    key
+    message
+  }
+}

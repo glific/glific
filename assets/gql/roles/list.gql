@@ -1,0 +1,10 @@
+query accessRoles($filter: AccessRoleFilter) {
+  accessRoles(filter: $filter) {
+    description
+    id
+    isReserved
+    insertedAt
+    label
+    updatedAt
+  }
+}

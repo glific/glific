@@ -1,0 +1,15 @@
+fragment ProfileFields on ProfileResult {
+  profile {
+    id
+    name
+    type
+    fields
+  }
+}
+
+fragment ErrorFields on ProfileResult {
+  errors {
+    key
+    message
+  }
+}

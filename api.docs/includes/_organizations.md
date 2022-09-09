@@ -294,7 +294,7 @@ mutation createOrganization($input:OrganizationInput!) {
         "shortcode": "new_organization",
         "bsp": {
           "id": "1",
-          "name": "Default Provider"
+          "name": "Gupshup"
         }
       }
     }
@@ -582,7 +582,6 @@ query organizationStatus {
 > The above query returns A list of all the organization status:
 
 ```json
-
 {
   "data": {
     "organizationStatus": [
@@ -600,8 +599,8 @@ This returns list of timezones
 
 ### Return Parameters
 
-| Type                           | Description       |
-| ------------------------------ | ----------------- |
+| Type                           | Description    |
+| ------------------------------ | -------------- |
 | [<a href="#string">String</a>] | List of status |
 
 ## Subscription for Wallet Balance
@@ -779,6 +778,11 @@ subscription organization_subscriptions {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>isFlowUuidDisplay</strong></td>
+<td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>isContactProfileEnabled</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
 <td></td>
 </tr>

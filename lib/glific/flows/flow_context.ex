@@ -25,6 +25,7 @@ defmodule Glific.Flows.FlowContext do
     Messages.Message,
     Notifications,
     Partners.Organization,
+    Profiles.Profile,
     Repo
   }
 
@@ -43,7 +44,8 @@ defmodule Glific.Flows.FlowContext do
     :uuid_map,
     :recent_inbound,
     :recent_outbound,
-    :flow_broadcast_id
+    :flow_broadcast_id,
+    :profile_id
   ]
 
   # we store one more than the number of messages specified here
@@ -66,6 +68,8 @@ defmodule Glific.Flows.FlowContext do
           parent: FlowContext.t() | Ecto.Association.NotLoaded.t() | nil,
           flow_broadcast_id: non_neg_integer | nil,
           flow_broadcast: Message.t() | Ecto.Association.NotLoaded.t() | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           delay: integer,
@@ -114,7 +118,7 @@ defmodule Glific.Flows.FlowContext do
     belongs_to(:flow, Flow)
     belongs_to(:organization, Organization)
     belongs_to(:parent, FlowContext, foreign_key: :parent_id)
-
+    belongs_to :profile, Profile
     # the originating group message which kicked off this flow if any
     belongs_to(:flow_broadcast, FlowBroadcast)
 
@@ -154,7 +158,7 @@ defmodule Glific.Flows.FlowContext do
   end
 
   @doc """
-  Generate a notifcation having all the flow context data.
+  Generate a notification having all the flow context data.
   """
   @spec notification(FlowContext.t(), String.t()) :: nil
   def notification(context, message) do
@@ -165,7 +169,7 @@ defmodule Glific.Flows.FlowContext do
       Notifications.create_notification(%{
         category: "Flow",
         message: message,
-        severity: "Warning",
+        severity: Notifications.types().warning,
         organization_id: context.organization_id,
         entity: %{
           contact_id: context.contact_id,
@@ -270,7 +274,8 @@ defmodule Glific.Flows.FlowContext do
         )
 
         ## add delay so that it does not execute the message before sub flows
-        ## adding this line saprately so that we can easily identify this in different cases.
+        ## adding this line separately so that we can easily identify this in different cases.
+
         parent = Map.put(parent, :delay, max(context.delay + @min_delay, @min_delay))
 
         parent
@@ -306,8 +311,9 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Update the recent_* state as we consume or send a message
   """
-  @spec update_recent(FlowContext.t(), String.t(), atom()) :: FlowContext.t()
-  def update_recent(context, body, type) do
+  @spec update_recent(FlowContext.t(), map(), atom()) ::
+          FlowContext.t()
+  def update_recent(context, msg, type) do
     now = DateTime.utc_now()
 
     # since we are storing in DB and want to avoid hassle of atom <-> string conversion
@@ -320,7 +326,8 @@ defmodule Glific.Flows.FlowContext do
             uuid: context.contact_id,
             name: context.contact.name
           },
-          "message" => body,
+          "message" => msg.body,
+          "message_id" => msg.id,
           "date" => now,
           "node_uuid" => context.node_uuid
         }
@@ -630,6 +637,9 @@ defmodule Glific.Flows.FlowContext do
         |> Map.put(:flow, flow)
         |> Map.put(:uuid_map, flow.uuid_map)
         |> Map.put(:node, node)
+        ## We will refactor it more and use it whenever we need this.
+        ## Currently to restrict the number changes in the context
+        |> set_last_message()
 
       :error ->
         # Seems like the flow changed underneath us
@@ -813,5 +823,45 @@ defmodule Glific.Flows.FlowContext do
     }
 
     MessageVarParser.parse(str, vars)
+  end
+
+  @spec set_last_message(FlowContext.t()) :: FlowContext.t()
+  defp set_last_message(%{last_message: message} = context) when message not in [%{}, nil, ""],
+    do: context
+
+  defp set_last_message(context) do
+    recent_inbounds = get_recent_inbounds(context)
+
+    cond do
+      recent_inbounds in [[], nil, %{}] ->
+        context
+
+      hd(recent_inbounds)["message_id"] == nil ->
+        context
+
+      true ->
+        latest_inbound = hd(recent_inbounds)
+
+        message =
+          Messages.get_message!(latest_inbound["message_id"])
+          |> Repo.preload(contact: [:language])
+
+        Map.put(context, :last_message, message)
+    end
+  end
+
+  @spec get_recent_inbounds(FlowContext.t()) :: list()
+  defp get_recent_inbounds(context) do
+    cond do
+      context.recent_inbound not in [[], nil, %{}] ->
+        context.recent_inbound
+
+      is_nil(context.parent_id) ->
+        context.recent_inbound
+
+      true ->
+        context = Repo.preload(context, :parent)
+        get_recent_inbounds(context.parent)
+    end
   end
 end

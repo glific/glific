@@ -1,252 +1,220 @@
 {
-    "_ui": {
-        "nodes": {
-            "17b7c45e-89e6-4196-9250-6943163ab8eb": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 440,
-                    "left": 320
-                }
-            },
-            "21d5cf7e-05ef-4f66-9ff3-39e6fa273484": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 240,
-                    "left": 320
-                }
-            },
-            "314ba365-b8d6-4a76-87ee-809f2eb26f5c": {
-                "type": "wait_for_response",
-                "config": {
-                    "cases": {}
-                },
-                "position": {
-                    "top": 60,
-                    "left": 380
-                }
-            },
-            "9470f4a2-a457-4ba8-81ff-32f1b126325c": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 340,
-                    "left": 320
-                }
-            },
-            "b45e0090-9b37-455c-8ea6-bde17390e80f": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 440,
-                    "left": 620
-                }
-            },
-            "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93": {
-                "type": "execute_actions",
-                "position": {
-                    "top": 0,
-                    "left": 0
-                }
-            }
+  "_ui": {
+    "nodes": {
+      "17b7c45e-89e6-4196-9250-6943163ab8eb": {
+        "type": "execute_actions",
+        "position": { "top": 440, "left": 320 }
+      },
+      "21d5cf7e-05ef-4f66-9ff3-39e6fa273484": {
+        "type": "execute_actions",
+        "position": { "top": 240, "left": 320 }
+      },
+      "314ba365-b8d6-4a76-87ee-809f2eb26f5c": {
+        "type": "wait_for_response",
+        "config": { "cases": {} },
+        "position": { "top": 60, "left": 380 }
+      },
+      "9470f4a2-a457-4ba8-81ff-32f1b126325c": {
+        "type": "execute_actions",
+        "position": { "top": 340, "left": 320 }
+      },
+      "b45e0090-9b37-455c-8ea6-bde17390e80f": {
+        "type": "execute_actions",
+        "position": { "top": 440, "left": 620 }
+      },
+      "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93": {
+        "type": "execute_actions",
+        "position": { "top": 0, "left": 0 }
+      }
+    }
+  },
+  "name": "Optin Workflow",
+  "type": "messaging",
+  "uuid": "OPTIN_UUID",
+  "vars": ["OPTIN_UUID"],
+  "nodes": [
+    {
+      "uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93",
+      "exits": [
+        {
+          "uuid": "d0ea60d2-46be-4e51-bddc-182350f24051",
+          "destination_uuid": "314ba365-b8d6-4a76-87ee-809f2eb26f5c"
         }
+      ],
+      "actions": [
+        {
+          "id": "optin_template_id",
+          "name": "Optin template",
+          "text": "{\"content\":{\"header\":\"Optin template\",\"text\":\"Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us permission to message you\\n\\nPress 👍 to give us permission. We promise to send you amazing content.\\nPress 👎 if you'd rather message us when you need information.\",\"type\":\"text\"},\"options\":[{\"title\":\"👍\",\"type\":\"text\"},{\"title\":\"👎\",\"type\":\"text\"}],\"type\":\"quick_reply\"}",
+          "type": "send_interactive_msg",
+          "uuid": "31b0f397-067e-4759-9cb3-e529751f5132",
+          "labels": [],
+          "attachment_url": "",
+          "attachment_type": ""
+        }
+      ]
     },
-    "name": "Optin",
-    "type": "messaging",
-    "uuid": "OPTIN_UUID",
-    "vars": [
-        "OPTIN_UUID"
-    ],
-    "nodes": [
+    {
+      "uuid": "314ba365-b8d6-4a76-87ee-809f2eb26f5c",
+      "exits": [
         {
-            "uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93",
-            "exits": [
-                {
-                    "uuid": "d0ea60d2-46be-4e51-bddc-182350f24051",
-                    "destination_uuid": "314ba365-b8d6-4a76-87ee-809f2eb26f5c"
-                }
-            ],
-            "actions": [
-                {
-                    "text": "Welcome to our NGO bot. Thank you for contacting us. To stay connected with us, kindly grant us the permission to message you-\n\n*Type 1️⃣* to give us permission. We promise to send you amazing content.\n*Type 2️⃣* if you'd rather message us when you need information.\n\n",
-                    "type": "send_msg",
-                    "uuid": "92d81358-4688-4764-8441-f2836092156b",
-                    "attachments": [],
-                    "quick_replies": []
-                }
-            ]
+          "uuid": "b66a3dc8-2e13-46a2-bc52-271ff0274c5c",
+          "destination_uuid": "21d5cf7e-05ef-4f66-9ff3-39e6fa273484"
         },
         {
-            "uuid": "314ba365-b8d6-4a76-87ee-809f2eb26f5c",
-            "exits": [
-                {
-                    "uuid": "b66a3dc8-2e13-46a2-bc52-271ff0274c5c",
-                    "destination_uuid": "21d5cf7e-05ef-4f66-9ff3-39e6fa273484"
-                },
-                {
-                    "uuid": "7495bea0-aee3-4ae9-a8c6-5f614e74c643",
-                    "destination_uuid": "b45e0090-9b37-455c-8ea6-bde17390e80f"
-                },
-                {
-                    "uuid": "380692fc-58d3-45c6-9a60-ae705b0d6c9e",
-                    "destination_uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93"
-                },
-                {
-                    "uuid": "5440dd95-a02f-4041-bf18-d94aeb5af333",
-                    "destination_uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93"
-                }
-            ],
-            "router": {
-                "type": "switch",
-                "wait": {
-                    "type": "msg",
-                    "timeout": {
-                        "seconds": 300,
-                        "category_uuid": "4e94ea6f-7865-4e29-91b6-9a1004557c4f"
-                    }
-                },
-                "cases": [
-                    {
-                        "type": "has_number_eq",
-                        "uuid": "a6e9db71-9101-4139-9bad-ecd2c26ddedd",
-                        "arguments": [
-                            "1"
-                        ],
-                        "category_uuid": "cb8b1c19-9ad8-45ba-abf0-cc32c497d720"
-                    },
-                    {
-                        "type": "has_number_eq",
-                        "uuid": "258c125f-0524-4c38-8910-8a6e0161aba6",
-                        "arguments": [
-                            "2"
-                        ],
-                        "category_uuid": "4a36bf06-f316-4f04-9591-31bb8497dcd3"
-                    }
-                ],
-                "operand": "@input.text",
-                "categories": [
-                    {
-                        "name": "optin",
-                        "uuid": "cb8b1c19-9ad8-45ba-abf0-cc32c497d720",
-                        "exit_uuid": "b66a3dc8-2e13-46a2-bc52-271ff0274c5c"
-                    },
-                    {
-                        "name": "status quo",
-                        "uuid": "4a36bf06-f316-4f04-9591-31bb8497dcd3",
-                        "exit_uuid": "7495bea0-aee3-4ae9-a8c6-5f614e74c643"
-                    },
-                    {
-                        "name": "Other",
-                        "uuid": "88269c69-4411-4169-832d-b57c0eba38ca",
-                        "exit_uuid": "380692fc-58d3-45c6-9a60-ae705b0d6c9e"
-                    },
-                    {
-                        "name": "No Response",
-                        "uuid": "4e94ea6f-7865-4e29-91b6-9a1004557c4f",
-                        "exit_uuid": "5440dd95-a02f-4041-bf18-d94aeb5af333"
-                    }
-                ],
-                "result_name": "optin",
-                "default_category_uuid": "88269c69-4411-4169-832d-b57c0eba38ca"
-            },
-            "actions": []
+          "uuid": "7495bea0-aee3-4ae9-a8c6-5f614e74c643",
+          "destination_uuid": "b45e0090-9b37-455c-8ea6-bde17390e80f"
         },
         {
-            "uuid": "21d5cf7e-05ef-4f66-9ff3-39e6fa273484",
-            "exits": [
-                {
-                    "uuid": "604047e1-98e2-4265-99f0-4e0aa16e7126",
-                    "destination_uuid": "9470f4a2-a457-4ba8-81ff-32f1b126325c"
-                }
-            ],
-            "actions": [
-                {
-                    "type": "add_contact_groups",
-                    "uuid": "442f03a8-ba8e-4a96-80f8-92dd93929673",
-                    "groups": [
-                        {
-                            "name": "Optin contacts",
-                            "type": "group",
-                            "uuid": "OPTIN_COLLECTION_UUID"
-                        }
-                    ]
-                }
-            ]
+          "uuid": "380692fc-58d3-45c6-9a60-ae705b0d6c9e",
+          "destination_uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93"
         },
         {
-            "uuid": "9470f4a2-a457-4ba8-81ff-32f1b126325c",
-            "exits": [
-                {
-                    "uuid": "9ebdef78-ce2e-4522-be6c-7d2a6add96c2",
-                    "destination_uuid": "17b7c45e-89e6-4196-9250-6943163ab8eb"
-                }
-            ],
-            "actions": [
-                {
-                    "type": "set_contact_field",
-                    "uuid": "90d9edca-76f1-493e-b930-3479674be88f",
-                    "field": {
-                        "key": "settings",
-                        "name": "Settings"
-                    },
-                    "value": "optin"
-                }
-            ]
-        },
-        {
-            "uuid": "17b7c45e-89e6-4196-9250-6943163ab8eb",
-            "exits": [
-                {
-                    "uuid": "e8a0d3fe-588f-4322-b987-33e3f7aeb789",
-                    "destination_uuid": null
-                }
-            ],
-            "actions": [
-                {
-                    "text": "Thank you for giving us the permission. We really appreciate it.",
-                    "type": "send_msg",
-                    "uuid": "852fc451-7482-4c09-b3c6-55cad8546b6b",
-                    "attachments": [],
-                    "quick_replies": []
-                }
-            ]
-        },
-        {
-            "uuid": "b45e0090-9b37-455c-8ea6-bde17390e80f",
-            "exits": [
-                {
-                    "uuid": "5ab78cd1-5375-4a1f-9f47-d7b30652da6e",
-                    "destination_uuid": null
-                }
-            ],
-            "actions": [
-                {
-                    "text": "No worries. You can always change that by sending us *help*.",
-                    "type": "send_msg",
-                    "uuid": "6e3ce9b0-f4a0-4a9d-a182-02647cdbcc80",
-                    "attachments": [],
-                    "quick_replies": []
-                }
-            ]
+          "uuid": "5440dd95-a02f-4041-bf18-d94aeb5af333",
+          "destination_uuid": "ceaecc2a-d76c-4bae-9e73-a0290ee0fe93"
         }
-    ],
-    "language": "base",
-    "localization": {
-        "hi": {
-            "6e3ce9b0-f4a0-4a9d-a182-02647cdbcc80": {
-                "text": [
-                    "चिंता न करें। आप हमेशा मदद मेनू में जाकर उसे बदल सकते हैं। आप अभी भी हमें कभी भी मैसेज कर सकते हैं।"
-                ]
-            },
-            "852fc451-7482-4c09-b3c6-55cad8546b6b": {
-                "text": [
-                    "हमें अनुमति देने के लिए धन्यवाद। हम वास्तव में इसकी बहुत सराहना करते हैं।"
-                ]
-            },
-            "92d81358-4688-4764-8441-f2836092156b": {
-                "text": [
-                    "हमारे NGO बॉट में आपका स्वागत है। हमसे संपर्क करने के लिए धन्यवाद। हमारे साथ जुड़े रहने के लिए, कृपया हमें आपको संदेश भेजने की अनुमति प्रदान करें-\n\n*1 टाइप करें* हमें अनुमति देने के लिए। हम आपको अद्भुत सामग्री भेजने का वादा करते हैं।\n*2 टाइप करें* यदि आप हमें केवल तभी संदेश देंगे जब आपको जानकारी की आवश्यकता होगी।"
-                ]
-            }
-        }
+      ],
+      "router": {
+        "type": "switch",
+        "wait": {
+          "type": "msg",
+          "timeout": {
+            "seconds": 300,
+            "category_uuid": "4e94ea6f-7865-4e29-91b6-9a1004557c4f"
+          }
+        },
+        "cases": [
+          {
+            "type": "has_any_word",
+            "uuid": "a6e9db71-9101-4139-9bad-ecd2c26ddedd",
+            "arguments": ["👍"],
+            "category_uuid": "cb8b1c19-9ad8-45ba-abf0-cc32c497d720"
+          },
+          {
+            "type": "has_any_word",
+            "uuid": "258c125f-0524-4c38-8910-8a6e0161aba6",
+            "arguments": ["👎"],
+            "category_uuid": "4a36bf06-f316-4f04-9591-31bb8497dcd3"
+          }
+        ],
+        "operand": "@input.text",
+        "categories": [
+          {
+            "name": "optin",
+            "uuid": "cb8b1c19-9ad8-45ba-abf0-cc32c497d720",
+            "exit_uuid": "b66a3dc8-2e13-46a2-bc52-271ff0274c5c"
+          },
+          {
+            "name": "status quo",
+            "uuid": "4a36bf06-f316-4f04-9591-31bb8497dcd3",
+            "exit_uuid": "7495bea0-aee3-4ae9-a8c6-5f614e74c643"
+          },
+          {
+            "name": "Other",
+            "uuid": "88269c69-4411-4169-832d-b57c0eba38ca",
+            "exit_uuid": "380692fc-58d3-45c6-9a60-ae705b0d6c9e"
+          },
+          {
+            "name": "No Response",
+            "uuid": "4e94ea6f-7865-4e29-91b6-9a1004557c4f",
+            "exit_uuid": "5440dd95-a02f-4041-bf18-d94aeb5af333"
+          }
+        ],
+        "result_name": "optin",
+        "default_category_uuid": "88269c69-4411-4169-832d-b57c0eba38ca"
+      },
+      "actions": []
     },
-    "spec_version": "13.1.0",
-    "expire_after_minutes": 10080
+    {
+      "uuid": "21d5cf7e-05ef-4f66-9ff3-39e6fa273484",
+      "exits": [
+        {
+          "uuid": "604047e1-98e2-4265-99f0-4e0aa16e7126",
+          "destination_uuid": "9470f4a2-a457-4ba8-81ff-32f1b126325c"
+        }
+      ],
+      "actions": [
+        {
+          "type": "add_contact_groups",
+          "uuid": "442f03a8-ba8e-4a96-80f8-92dd93929673",
+          "groups": [{ "name": "Optin contacts", "type": "group", "uuid": "OPTIN_COLLECTION_UUID" }]
+        }
+      ]
+    },
+    {
+      "uuid": "9470f4a2-a457-4ba8-81ff-32f1b126325c",
+      "exits": [
+        {
+          "uuid": "9ebdef78-ce2e-4522-be6c-7d2a6add96c2",
+          "destination_uuid": "17b7c45e-89e6-4196-9250-6943163ab8eb"
+        }
+      ],
+      "actions": [
+        {
+          "type": "set_contact_field",
+          "uuid": "90d9edca-76f1-493e-b930-3479674be88f",
+          "field": { "key": "settings", "name": "Settings" },
+          "value": "optin"
+        }
+      ]
+    },
+    {
+      "uuid": "17b7c45e-89e6-4196-9250-6943163ab8eb",
+      "exits": [
+        {
+          "uuid": "e8a0d3fe-588f-4322-b987-33e3f7aeb789",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "Thank you for giving us the permission. We really appreciate it.",
+          "type": "send_msg",
+          "uuid": "852fc451-7482-4c09-b3c6-55cad8546b6b",
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    },
+    {
+      "uuid": "b45e0090-9b37-455c-8ea6-bde17390e80f",
+      "exits": [
+        {
+          "uuid": "5ab78cd1-5375-4a1f-9f47-d7b30652da6e",
+          "destination_uuid": null
+        }
+      ],
+      "actions": [
+        {
+          "text": "No worries. You can always change that by sending us *help*.",
+          "type": "send_msg",
+          "uuid": "6e3ce9b0-f4a0-4a9d-a182-02647cdbcc80",
+          "attachments": [],
+          "quick_replies": []
+        }
+      ]
+    }
+  ],
+  "language": "base",
+  "localization": {
+    "hi": {
+      "6e3ce9b0-f4a0-4a9d-a182-02647cdbcc80": {
+        "text": [
+          "चिंता न करें। आप हमेशा मदद मेनू में जाकर उसे बदल सकते हैं। आप अभी भी हमें कभी भी मैसेज कर सकते हैं।"
+        ]
+      },
+      "852fc451-7482-4c09-b3c6-55cad8546b6b": {
+        "text": [
+          "हमें अनुमति देने के लिए धन्यवाद। हम वास्तव में इसकी बहुत सराहना करते हैं।"
+        ]
+      },
+      "92d81358-4688-4764-8441-f2836092156b": {
+        "text": [
+          "हमारे NGO बॉट में आपका स्वागत है। हमसे संपर्क करने के लिए धन्यवाद। हमारे साथ जुड़े रहने के लिए, कृपया हमें आपको संदेश भेजने की अनुमति प्रदान करें-\n\n*1 टाइप करें* हमें अनुमति देने के लिए। हम आपको अद्भुत सामग्री भेजने का वादा करते हैं।\n*2 टाइप करें* यदि आप हमें केवल तभी संदेश देंगे जब आपको जानकारी की आवश्यकता होगी।"
+        ]
+      }
+    }
+  },
+  "spec_version": "13.1.0",
+  "expire_after_minutes": 10080
 }

@@ -4,7 +4,7 @@ defmodule GlificWeb.Schema.ContactTypes do
   """
 
   use Absinthe.Schema.Notation
-  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+  import Absinthe.Resolution.Helpers
   import Ecto.Query, warn: false
 
   alias Glific.{
@@ -47,6 +47,10 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     field :status, :contact_status_enum
     field :bsp_status, :contact_provider_status_enum
+
+    field :active_profile, :profile do
+      resolve(dataloader(Repo))
+    end
 
     field :is_org_read, :boolean
     field :is_org_replied, :boolean
@@ -99,13 +103,17 @@ defmodule GlificWeb.Schema.ContactTypes do
   end
 
   object :contact_history do
-    field(:id, :id)
-    field(:event_type, :string)
-    field(:event_label, :string)
-    field(:event_meta, :json)
-    field(:event_datetime, :datetime)
-    field(:inserted_at, :datetime)
-    field(:updated_at, :datetime)
+    field :id, :id
+    field :event_type, :string
+    field :event_label, :string
+    field :event_meta, :json
+    field :event_datetime, :datetime
+    field :inserted_at, :datetime
+    field :updated_at, :datetime
+
+    field :profile, :profile do
+      resolve(dataloader(Repo, use_parent: true))
+    end
   end
 
   @desc "Filtering options for contacts"
@@ -150,6 +158,7 @@ defmodule GlificWeb.Schema.ContactTypes do
     field :status, :contact_status_enum
     field :bsp_status, :contact_provider_status_enum
     field :language_id, :id
+    field :active_profile_id, :id
     field :fields, :json
     field :settings, :json
   end
@@ -164,6 +173,9 @@ defmodule GlificWeb.Schema.ContactTypes do
 
     @desc "Match the event label"
     field :event_label, :string
+
+    @desc "profile id"
+    field :profile_id, :id
   end
 
   object :contact_queries do
@@ -172,6 +184,13 @@ defmodule GlificWeb.Schema.ContactTypes do
       arg(:id, non_null(:id))
       middleware(Authorize, :staff)
       resolve(&Resolvers.Contacts.contact/3)
+    end
+
+    @desc "Get a contact information by phone"
+    field :contact_by_phone, :contact_result do
+      arg(:phone, non_null(:string))
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Contacts.contact_by_phone/3)
     end
 
     @desc "Get a list of all contacts filtered by various criteria"

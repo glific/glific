@@ -32,8 +32,7 @@ defmodule GlificWeb.Schema.UserTest do
   test "roles returns list of roles", %{manager: user} do
     result = auth_query_gql_by(:list_roles, user)
     assert {:ok, query_data} = result
-
-    roles = get_in(query_data, [:data, "roles"])
+    roles = get_in(query_data, [:data, "access_roles"])
     assert length(roles) >= 4
   end
 

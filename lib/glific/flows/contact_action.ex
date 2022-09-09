@@ -53,7 +53,7 @@ defmodule Glific.Flows.ContactAction do
     ## We might need to think how to send the interactive message to a group
     {context, action} = process_labels(context, action)
     {cid, message_vars} = resolve_cid(context, nil)
-    interactive_template_id = get_interative_template_id(action, context)
+    interactive_template_id = get_interactive_template_id(action, context)
 
     {:ok, interactive_template} =
       Repo.fetch_by(
@@ -65,17 +65,23 @@ defmodule Glific.Flows.ContactAction do
       interactive_template
       |> InteractiveTemplates.formatted_data(context.contact.language_id)
 
-    params_count =
-      action.params_count
-      |> get_params_count(message_vars)
+    params_count = get_params_count(action.params_count, message_vars)
 
     interactive_content =
       if params_count > 0 do
-        params = Enum.map(action.params, &MessageVarParser.parse(&1, message_vars))
+        params =
+          Enum.map(action.params, fn
+            param when is_map(param) -> MessageVarParser.parse_map(param, message_vars)
+            param -> MessageVarParser.parse(param, message_vars)
+          end)
 
-        process_dynamic_interactive_content(
+        InteractiveTemplates.process_dynamic_interactive_content(
           interactive_content,
-          Enum.take(params, params_count)
+          Enum.take(params, params_count),
+          %{
+            type: MessageVarParser.parse(action.attachment_type, message_vars),
+            url: MessageVarParser.parse(action.attachment_url, message_vars)
+          }
         )
       else
         interactive_content
@@ -94,7 +100,7 @@ defmodule Glific.Flows.ContactAction do
         organization_id: context.organization_id,
         flow_id: context.flow_id,
         flow_broadcast_id: context.flow_broadcast_id,
-        send_at: DateTime.add(DateTime.utc_now(), context.delay),
+        send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
         is_optin_flow: Flows.is_optin_flow?(context.flow),
         interactive_template_id: interactive_template_id,
         interactive_content: interactive_content,
@@ -110,7 +116,7 @@ defmodule Glific.Flows.ContactAction do
   @spec has_loops?(FlowContext.t(), String.t(), [Message.t()]) ::
           {:ok, map(), any()} | {false, FlowContext.t()}
   defp has_loops?(context, body, messages) do
-    {context, count} = update_recent(context, body)
+    {context, count} = check_recent_outbound_count(context, body)
 
     if count <= @max_loop_limit,
       do: {false, context},
@@ -144,11 +150,11 @@ defmodule Glific.Flows.ContactAction do
       }
     }
 
-  @spec update_recent(FlowContext.t(), String.t()) :: {FlowContext.t(), non_neg_integer}
-  defp update_recent(context, body) do
+  @spec check_recent_outbound_count(FlowContext.t(), String.t()) ::
+          {FlowContext.t(), non_neg_integer}
+  defp check_recent_outbound_count(context, body) do
     # we'll mark that we came here and are planning to send it, even if
-    # we dont end up sending it. This allows us to detect and abort infinite loops
-    context = FlowContext.update_recent(context, body, :recent_outbound)
+    # we don't end up sending it. This allows us to detect and abort infinite loops
 
     # count the number of times we sent the same message in the recent list
     # in the past 6 hours
@@ -255,7 +261,7 @@ defmodule Glific.Flows.ContactAction do
       flow_broadcast_id: context.flow_broadcast_id,
       is_hsm: true,
       flow_label: flow_label,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       params: params
     }
 
@@ -325,7 +331,7 @@ defmodule Glific.Flows.ContactAction do
       flow_label: flow_label,
       flow_id: context.flow_id,
       flow_broadcast_id: context.flow_broadcast_id,
-      send_at: DateTime.add(DateTime.utc_now(), context.delay),
+      send_at: DateTime.add(DateTime.utc_now(), max(context.delay, action.delay)),
       is_optin_flow: Flows.is_optin_flow?(context.flow)
     }
 
@@ -336,7 +342,8 @@ defmodule Glific.Flows.ContactAction do
 
   defp handle_message_result(result, context, messages, attrs) do
     case result do
-      {:ok, _message} ->
+      {:ok, message} ->
+        context = FlowContext.update_recent(context, message, :recent_outbound)
         {:ok, %{context | delay: context.delay + @min_delay}, messages}
 
       {:error, error} ->
@@ -363,8 +370,6 @@ defmodule Glific.Flows.ContactAction do
     url = String.trim(attachment[type])
 
     {type, url} = handle_attachment_expression(context, type, url)
-
-    %{is_valid: true, message: _message} = Messages.validate_media(url, to_string(type))
 
     type = Glific.safe_string_to_atom(type)
 
@@ -425,8 +430,8 @@ defmodule Glific.Flows.ContactAction do
     context
   end
 
-  @spec get_interative_template_id(Action.t(), FlowContext.t()) :: integer | nil
-  defp get_interative_template_id(action, context) do
+  @spec get_interactive_template_id(Action.t(), FlowContext.t()) :: integer | nil
+  defp get_interactive_template_id(action, context) do
     if is_nil(action.interactive_template_expression) do
       action.interactive_template_id
     else
@@ -447,34 +452,5 @@ defmodule Glific.Flows.ContactAction do
       {:ok, value} -> value
       _ -> 0
     end
-  end
-
-  @spec process_dynamic_interactive_content(map(), list()) :: map()
-  defp process_dynamic_interactive_content(%{"type" => "list"} = interactive_content, params) do
-    get_in(interactive_content, ["items"])
-    |> hd()
-    |> Map.put("options", build_list_items(params))
-    |> then(&Map.put(interactive_content, "items", [&1]))
-  end
-
-  defp process_dynamic_interactive_content(
-         %{"type" => "quick_reply"} = interactive_content,
-         params
-       ) do
-    Map.put(interactive_content, "options", build_list_items(params))
-  end
-
-  defp process_dynamic_interactive_content(interactive_content, _params),
-    do: interactive_content
-
-  @spec build_list_items(list()) :: list()
-  defp build_list_items(params) do
-    Enum.map(params, fn val ->
-      %{
-        "title" => val,
-        "description" => "",
-        "type" => "text"
-      }
-    end)
   end
 end

@@ -49,13 +49,13 @@ defmodule GlificWeb.Schema.ProviderTest do
     assert get_in(query_data, [:data, "countProviders"]) == 0
 
     {:ok, query_data} =
-      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Default Provider"}})
+      auth_query_gql_by(:count, user, variables: %{"filter" => %{"name" => "Gupshup Enterprise"}})
 
     assert get_in(query_data, [:data, "countProviders"]) == 1
   end
 
   test "provider id returns one provider or nil", %{user: user} do
-    name = "Default Provider"
+    name = "Gupshup Enterprise"
     {:ok, provider} = Repo.fetch_by(Provider, %{name: name})
 
     result = auth_query_gql_by(:by_id, user, variables: %{"id" => provider.id})
@@ -119,7 +119,7 @@ defmodule GlificWeb.Schema.ProviderTest do
   end
 
   test "update a provider and test possible scenarios and errors", %{glific_admin: user} do
-    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Default Provider"})
+    {:ok, provider} = Repo.fetch_by(Provider, %{name: "Gupshup Enterprise"})
 
     name = "Provider Test Name"
     shortcode = "providershortcode"
@@ -220,16 +220,6 @@ defmodule GlificWeb.Schema.ProviderTest do
           status: 200,
           body:
             Jason.encode!(%{
-              "partnerAppsList" => [
-                %{
-                  "id" => "app id 1",
-                  "phone" => "app phone 1"
-                },
-                %{
-                  "id" => "app id 2",
-                  "phone" => "917834811114"
-                }
-              ],
               "token" => %{"token" => "some random app token"},
               "currentLimit" => "Tier100K",
               "oldLimit" => "Tier1K",

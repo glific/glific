@@ -16,6 +16,8 @@ defmodule Glific.Partners do
     Caches,
     Contacts.Contact,
     Flags,
+    Flows,
+    Flows.Flow,
     GCS,
     Notifications,
     Partners.Credential,
@@ -47,7 +49,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth", "shortcode"], provider.shortcode)
+      Enum.member?(["goth", "chatbase"], provider.shortcode)
     end)
   end
 
@@ -296,13 +298,61 @@ defmodule Glific.Partners do
     ## We need to think about a better approach to handle this one.
     Caches.remove(organization.id, ["flow_keywords_map"])
 
-    organization
-    |> Organization.changeset(attrs)
-    |> Repo.update(skip_organization_id: true)
+    with {:ok, updated_organization} <-
+           organization
+           |> Organization.changeset(attrs)
+           |> Repo.update(skip_organization_id: true) do
+      maybe_pin_newcontact_flow(
+        updated_organization.newcontact_flow_id,
+        organization.newcontact_flow_id,
+        updated_organization
+      )
+    end
+  end
+
+  @spec maybe_pin_newcontact_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
+          {:ok, Organization.t()}
+  defp maybe_pin_newcontact_flow(nil, old_newcontact_flow_id, organization) do
+    unpin_old_newcontact_flow(old_newcontact_flow_id)
+    {:ok, organization}
+  end
+
+  defp maybe_pin_newcontact_flow(newcontact_flow_id, nil, organization) do
+    pin_new_newcontact_flow(newcontact_flow_id)
+    {:ok, organization}
+  end
+
+  defp maybe_pin_newcontact_flow(newcontact_flow_id, old_newcontact_flow_id, organization)
+       when newcontact_flow_id != old_newcontact_flow_id do
+    unpin_old_newcontact_flow(old_newcontact_flow_id)
+    pin_new_newcontact_flow(newcontact_flow_id)
+    {:ok, organization}
+  end
+
+  defp maybe_pin_newcontact_flow(_newcontact_flow_id, _old_newcontact_flow_id, organization),
+    do: {:ok, organization}
+
+  @spec unpin_old_newcontact_flow(non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
+  defp unpin_old_newcontact_flow(newcontact_flow_id) do
+    with false <- is_nil(newcontact_flow_id),
+         {:ok, flow} <- Flows.fetch_flow(newcontact_flow_id) do
+      Flows.update_flow(flow, %{is_pinned: false})
+    end
+  end
+
+  @spec pin_new_newcontact_flow(non_neg_integer()) ::
+          {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
+  defp pin_new_newcontact_flow(newcontact_flow_id) do
+    with {:ok, new_newcontact_flow} <- Flows.fetch_flow(newcontact_flow_id) do
+      Flows.update_flow(new_newcontact_flow, %{
+        is_pinned: true
+      })
+    end
   end
 
   @doc """
-  Deletes an Orgsanization.
+  Deletes an Organization.
 
   ## Examples
 
@@ -390,6 +440,8 @@ defmodule Glific.Partners do
       |> set_out_of_office_values()
       |> set_languages()
       |> set_flow_uuid_display()
+      |> set_roles_and_permission()
+      |> set_contact_profile_enabled()
 
     Caches.set(
       @global_organization_id,
@@ -540,12 +592,45 @@ defmodule Glific.Partners do
     end
   end
 
+  @doc """
+  check fun_with_flag toggle for an organization and returns boolean value
+  """
+  @spec get_roles_and_permission(Organization.t()) :: boolean()
+  def get_roles_and_permission(organization),
+    do: FunWithFlags.enabled?(:roles_and_permission, for: %{organization_id: organization.id})
+
+  @doc """
+  Determine if we need to enable contact profile for an organization
+  """
+  @spec get_contact_profile_enabled(map()) :: boolean
+  def get_contact_profile_enabled(organization),
+    do:
+      FunWithFlags.enabled?(:is_contact_profile_enabled, for: %{organization_id: organization.id})
+
   @spec set_flow_uuid_display(map()) :: map()
   defp set_flow_uuid_display(organization) do
     Map.put(
       organization,
       :is_flow_uuid_display,
       get_flow_uuid_display(organization)
+    )
+  end
+
+  @spec set_roles_and_permission(map()) :: map()
+  defp set_roles_and_permission(organization) do
+    Map.put(
+      organization,
+      :is_roles_and_permission,
+      get_roles_and_permission(organization)
+    )
+  end
+
+  @spec set_contact_profile_enabled(map()) :: map()
+  defp set_contact_profile_enabled(organization) do
+    Map.put(
+      organization,
+      :is_contact_profile_enabled,
+      get_contact_profile_enabled(organization)
     )
   end
 
@@ -690,7 +775,7 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      "Error occured while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      "Error occurred while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
       |> Glific.log_error()
   end
 
@@ -710,25 +795,6 @@ defmodule Glific.Partners do
         Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
-  end
-
-  @doc """
-  Fetch opted in contacts data from providers server
-  """
-  @spec fetch_opted_in_contacts(map()) :: :ok | any
-  def fetch_opted_in_contacts(attrs) do
-    organization = organization(attrs.organization_id)
-
-    if is_nil(organization.services["bsp"]) do
-      {:error, dgettext("errors", "No active BSP available")}
-    else
-      case organization.bsp.shortcode do
-        "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
-        _ -> raise "Invalid BSP"
-      end
-
-      :ok
-    end
   end
 
   @doc """
@@ -816,7 +882,7 @@ defmodule Glific.Partners do
   """
 
   @spec update_credential(Credential.t(), map()) ::
-          {:ok, Credential.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, Credential.t()} | {:error, any}
   def update_credential(%Credential{} = credential, attrs) do
     # delete the cached organization and associated credentials
     organization = organization(credential.organization_id)
@@ -828,26 +894,60 @@ defmodule Glific.Partners do
       |> Credential.changeset(attrs)
       |> Repo.update()
 
-    # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
-    if valid_bsp?(credential) do
-      credential.provider.shortcode
-      |> case do
-        "gupshup" ->
-          update_organization(organization, %{bsp_id: credential.provider.id})
-          fetch_opted_in_contacts(attrs)
+    credential.organization
+    |> credential_update_callback(credential, credential.provider.shortcode)
+  end
 
-        "gupshup_enterprise" ->
-          update_organization(organization, %{bsp_id: credential.provider.id})
+  @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
+          {:ok, any} | {:error, any}
+  defp credential_update_callback(organization, credential, "bigquery") do
+    case BigQuery.sync_schema_with_bigquery(organization.id) do
+      {:ok, _callback} ->
+        {:ok, credential}
+
+      {:error, _error} ->
+        {:error, "Invalid Credentials"}
+    end
+  end
+
+  defp credential_update_callback(organization, credential, "google_cloud_storage") do
+    case GCS.refresh_gcs_setup(organization.id) do
+      {:ok, _callback} -> {:ok, credential}
+      {:error, _error} -> {:error, "Invalid Credentials"}
+    end
+  end
+
+  defp credential_update_callback(organization, credential, "dialogflow") do
+    case Glific.Dialogflow.get_intent_list(organization.id) do
+      {:ok, _callback} -> {:ok, credential}
+      {:error, _error} -> {:error, "Invalid Credentials"}
+    end
+  end
+
+  defp credential_update_callback(organization, credential, "gupshup") do
+    if valid_bsp?(credential) do
+      update_organization(organization, %{bsp_id: credential.provider.id})
+
+      if credential.is_active do
+        GupshupContacts.fetch_opted_in_contacts(credential)
+        set_bsp_app_id(organization, "gupshup")
       end
     end
 
-    credential.organization
-    |> credential_update_callback(credential.provider.shortcode)
+    {:ok, credential}
+  end
+
+  defp credential_update_callback(organization, credential, "gupshup_enterprise") do
+    if valid_bsp?(credential) do
+      update_organization(organization, %{bsp_id: credential.provider.id})
+    end
 
     {:ok, credential}
   end
+
+  defp credential_update_callback(_organization, credential, _provider), do: {:ok, credential}
 
   @doc """
   Removing organization and service cache
@@ -880,38 +980,48 @@ defmodule Glific.Partners do
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
+    key = {:provider_shortcode, provider_shortcode}
     organization = organization(organization_id)
 
-    organization.services[provider_shortcode]
-    |> case do
-      nil ->
-        nil
+    if is_nil(organization.services[provider_shortcode]) do
+      nil
+    else
+      Caches.fetch(organization_id, key, &load_goth_token/1)
+      |> case do
+        {_status, res} when is_map(res) ->
+          res
 
-      credentials ->
-        config = config(credentials)
+        _ ->
+          nil
+      end
+    end
+  end
 
-        if config != :error do
-          Goth.Config.add_config(config)
+  @spec load_goth_token(tuple()) :: tuple()
+  defp load_goth_token(cache_key) do
+    {organization_id, {:provider_shortcode, provider_shortcode}} = cache_key
 
-          {config["client_email"], "https://www.googleapis.com/auth/cloud-platform"}
-          |> Goth.Token.for_scope()
-          |> case do
-            {:ok, token} ->
-              token
+    organization = organization(organization_id)
+    credentials = organization.services[provider_shortcode] |> config()
 
-            {:error, error} ->
-              Logger.info(
-                "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
-              )
+    if credentials == :error do
+      {:ignore, nil}
+    else
+      Goth.Token.fetch(source: {:service_account, credentials})
+      |> case do
+        {:ok, token} ->
+          opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
+          Caches.set(organization_id, {:provider_shortcode, provider_shortcode}, token, opts)
+          {:ignore, token}
 
-              handle_token_error(organization_id, provider_shortcode, error)
-          end
-        else
-          error = "Error with credentials for: #{provider_shortcode}, org_id: #{organization_id}"
-          Logger.info(error)
+        {:error, error} ->
+          Logger.info(
+            "Error fetching token for: #{provider_shortcode}, error: #{error}, org_id: #{organization_id}"
+          )
 
-          handle_token_error(organization_id, provider_shortcode, error)
-        end
+          handle_token_error(organization_id, provider_shortcode, "#{inspect(error)}")
+          {:ignore, nil}
+      end
     end
   end
 
@@ -952,7 +1062,7 @@ defmodule Glific.Partners do
         Notifications.create_notification(%{
           category: "Partner",
           message: "Disabling #{shortcode}. #{error_message}",
-          severity: "Critical",
+          severity: Notifications.types().critical,
           organization_id: organization_id,
           entity: %{
             id: provider.id,
@@ -966,27 +1076,6 @@ defmodule Glific.Partners do
         {:error, ["shortcode", "Invalid provider shortcode to disable: #{shortcode}."]}
     end
   end
-
-  @doc """
-  Updating setup
-  """
-  @spec credential_update_callback(Organization.t(), String.t()) :: :ok
-  def credential_update_callback(organization, "bigquery") do
-    BigQuery.sync_schema_with_bigquery(organization.id)
-    :ok
-  end
-
-  def credential_update_callback(organization, "google_cloud_storage") do
-    GCS.refresh_gcs_setup(organization.id)
-    :ok
-  end
-
-  def credential_update_callback(organization, "dialogflow") do
-    Glific.Dialogflow.get_intent_list(organization.id)
-    :ok
-  end
-
-  def credential_update_callback(_organization, _provider), do: :ok
 
   @doc """
   Check if we can allow attachments for this organization. For now, this is a check to
@@ -1068,8 +1157,8 @@ defmodule Glific.Partners do
       active_organizations([])
       |> Enum.reduce(
         %{},
-        fn {id, _name}, acc ->
-          load_organization_service(id, acc)
+        fn {org_id, _name}, acc ->
+          Map.put(acc, org_id, get_org_services_by_id(org_id))
         end
       )
       |> combine_services()
@@ -1077,11 +1166,14 @@ defmodule Glific.Partners do
     {:commit, services}
   end
 
-  @spec load_organization_service(non_neg_integer, map()) :: map()
-  defp load_organization_service(organization_id, services) do
+  @doc """
+    Get all the services and status for a given organization id.
+  """
+  @spec get_org_services_by_id(non_neg_integer) :: map()
+  def get_org_services_by_id(organization_id) do
     organization = organization(organization_id)
 
-    service = %{
+    %{
       "fun_with_flags" =>
         FunWithFlags.enabled?(
           :enable_out_of_office,
@@ -1090,10 +1182,10 @@ defmodule Glific.Partners do
       "bigquery" => organization.services["bigquery"] != nil,
       "google_cloud_storage" => organization.services["google_cloud_storage"] != nil,
       "dialogflow" => organization.services["dialogflow"] != nil,
-      "flow_uuid_display" => get_flow_uuid_display(organization)
+      "flow_uuid_display" => get_flow_uuid_display(organization),
+      "roles_and_permission" => get_roles_and_permission(organization),
+      "contact_profile_enabled" => get_contact_profile_enabled(organization)
     }
-
-    Map.put(services, organization_id, service)
   end
 
   @spec add_service(map(), String.t(), boolean(), non_neg_integer) :: map()
@@ -1120,6 +1212,62 @@ defmodule Glific.Partners do
       )
 
     Map.merge(services, combined)
+  end
+
+  @doc """
+  Set BSP APP id whenever we update the bsp credentials.
+  """
+  @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
+  def set_bsp_app_id(org, shortcode) do
+    # restricting this function  for BSP only
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
+
+    {:ok, bsp_cred} =
+      Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
+
+    ## We need to make this dynamic
+    if shortcode == "gupshup" do
+      app_details = PartnerAPI.fetch_app_details(org.id)
+      app_id = if is_map(app_details), do: app_details["id"], else: "NA"
+
+      updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
+      attrs = %{secrets: updated_secrets, organization_id: org.id}
+
+      {:ok, _credential} =
+        bsp_cred
+        |> Credential.changeset(attrs)
+        |> Repo.update()
+    end
+
+    remove_organization_cache(org.id, org.shortcode)
+  end
+
+  @doc """
+  Get a List for org data
+  """
+  @spec list_organization_data(map()) :: [Provider.t(), ...]
+  def list_organization_data(args \\ %{}) do
+    Repo.list_filter(
+      args,
+      OrganizationData,
+      &Repo.opts_with_name/2,
+      &filter_organization_data_with/2
+    )
+  end
+
+  @spec filter_organization_data_with(Ecto.Queryable.t(), %{optional(atom()) => any}) ::
+          Ecto.Queryable.t()
+  defp filter_organization_data_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+    # these filters are specfic to webhook logs only.
+    # We might want to move them in the repo in the future.
+    Enum.reduce(filter, query, fn
+      {:key, key}, query ->
+        from(q in query, where: ilike(q.key, ^"%#{key}%"))
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """

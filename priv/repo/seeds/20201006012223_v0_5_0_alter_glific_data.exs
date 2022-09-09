@@ -8,7 +8,7 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
     Repo
   }
 
-  def up(_repo) do
+  def up(_repo, _opts) do
     update_exisiting_providers()
   end
 
@@ -20,6 +20,8 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
     {:ok, goth} = Repo.fetch_by(Provider, %{shortcode: "goth"})
 
     {:ok, bigquery} = Repo.fetch_by(Provider, %{shortcode: "bigquery"})
+
+    {:ok, google_asr} = Repo.fetch_by(Provider, %{shortcode: "google_asr"})
 
     {:ok, google_cloud_storage} = Repo.fetch_by(Provider, %{shortcode: "google_cloud_storage"})
 
@@ -40,6 +42,12 @@ defmodule Glific.Repo.Seeds.AddGlificData_v0_5_0 do
       Ecto.Changeset.change(gupshup, %{
         description: "Setup for WhatsApp message provider",
         keys: updated_gupshup_keys
+      })
+    )
+
+    Repo.update!(
+      Ecto.Changeset.change(google_asr, %{
+        description: "Setup for GoogleASR"
       })
     )
 

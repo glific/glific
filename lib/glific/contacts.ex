@@ -20,6 +20,7 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Profiles,
     Providers.GupshupContacts,
     Providers.GupshupEnterpriseContacts,
     Repo,
@@ -189,6 +190,28 @@ defmodule Glific.Contacts do
   end
 
   @doc """
+  Gets a single contact by phone nunmber.
+
+  Raises `Ecto.NoResultsError` if the Contact does not exist.
+
+  ## Examples
+
+      iex> get_contact_by_phone!("9876543210_1")
+      %Contact{}
+
+      iex> get_contact!("123")
+      ** (Ecto.NoResultsError)
+
+  """
+  @spec get_contact_by_phone!(String.t()) :: Contact.t()
+  def get_contact_by_phone!(phone) do
+    Contact
+    |> where([c], c.phone == ^phone)
+    |> Repo.add_permission(&Contacts.add_permission/2)
+    |> Repo.one!()
+  end
+
+  @doc """
   Creates a contact.
 
   ## Examples
@@ -270,9 +293,24 @@ defmodule Glific.Contacts do
   """
   @spec delete_contact(Contact.t()) :: {:ok, Contact.t()} | {:error, Ecto.Changeset.t()}
   def delete_contact(%Contact{} = contact) do
-    if has_permission?(contact.id),
-      do: Repo.delete(contact),
-      else: raise("Permission denied")
+    cond do
+      has_permission?(contact.id) == false ->
+        raise("Permission denied")
+
+      is_org_root_contact?(contact) == true ->
+        {:error, "Sorry, this is your chatbot number and hence cannot be deleted."}
+
+      true ->
+        Repo.delete(contact)
+    end
+  end
+
+  @doc """
+  Checks if the contact passed in argument is organization root contact or not
+  """
+  @spec is_org_root_contact?(Contact.t()) :: boolean()
+  def is_org_root_contact?(contact) do
+    Partners.organization(contact.organization_id).contact_id == contact.id
   end
 
   @doc """
@@ -706,38 +744,123 @@ defmodule Glific.Contacts do
     contact =
       contact_id
       |> Contacts.get_contact!()
-      |> Repo.preload([:language, :groups])
+      |> Repo.preload([:language, :groups, :active_profile])
       |> Map.from_struct()
 
-    # we are splliting this up since we need to use contact within the various function
+    # we are splitting this up since we need to use contact within the various function
     # calls and a lot cleaner this way
     contact
-    |> put_in(
-      [:fields, :language],
-      %{label: contact.language.label}
-    )
-    |> Map.put(
+    |> get_contact_fields(contact)
+    |> get_contact_fields_language(contact)
+    |> get_contact_field_groups()
+    |> get_contact_field_list_profiles(contact)
+    |> get_contact_field_name(contact)
+  end
+
+  @spec get_contact_fields(map(), Contact.t()) :: map()
+  defp get_contact_fields(field_map, contact) do
+    with false <- is_nil(contact.active_profile_id),
+         profile <- contact.active_profile do
+      Map.put(field_map, :fields, profile.fields)
+    else
+      _ -> field_map
+    end
+  end
+
+  @spec get_contact_fields_language(map(), Contact.t()) :: map()
+  defp get_contact_fields_language(field_map, contact) do
+    with false <- is_nil(contact.active_profile_id),
+         profile <- contact.active_profile |> Repo.preload([:language]) do
+      put_in(
+        field_map,
+        [:fields, :language],
+        %{label: profile.language.label}
+      )
+    else
+      _ ->
+        put_in(
+          field_map,
+          [:fields, :language],
+          %{label: contact.language.label}
+        )
+    end
+  end
+
+  @spec get_contact_field_groups(map()) :: map()
+  defp get_contact_field_groups(field_map) do
+    Map.put(
+      field_map,
       :in_groups,
       Enum.reduce(
-        contact.groups,
+        field_map.groups,
         [],
         fn g, list -> [g.label | list] end
       )
     )
-    ## We change the name of the contact whenever we receive  a message from the contact.
-    ## so the contact name will always be the name contact added in the whatsApp app.
-    ## This is just so that organizations can use the custom name or the name they collected from the
-    ## various surveys in glific flows.
-    |> put_in(
-      [:fields, "name"],
-      contact.fields["name"] ||
-        %{
-          "type" => "string",
-          "label" => "Name",
-          "inserted_at" => DateTime.utc_now(),
-          "value" => contact.name
-        }
-    )
+  end
+
+  @spec get_contact_field_list_profiles(map(), Contact.t()) :: map()
+  defp get_contact_field_list_profiles(field_map, contact) do
+    if is_nil(contact.active_profile_id) do
+      field_map
+    else
+      indexed_profiles = Profiles.get_indexed_profile(contact)
+
+      profile_map =
+        Enum.reduce(indexed_profiles, %{}, fn {profile, index}, acc ->
+          Map.put(acc, "profile_#{index}", %{id: profile.id, name: profile.name, index: index})
+        end)
+        |> Map.put(:count, length(indexed_profiles))
+
+      Map.put(
+        field_map,
+        :list_profiles,
+        indexed_profiles
+        |> Enum.reduce("", fn {profile, index}, acc ->
+          acc <> " #{index}. #{profile.name} \n"
+        end)
+      )
+      |> Map.put(:profiles, profile_map)
+      |> Map.put(:has_multiple_profile, %{
+        "type" => "string",
+        "label" => "has_multiple_profile",
+        "inserted_at" => DateTime.utc_now(),
+        "value" => true
+      })
+    end
+  end
+
+  ## We change the name of the contact whenever we receive a message from the contact.
+  ## so the contact name will always be the name contact added in the WhatsApp app.
+  ## This is just so that organizations can use the custom name or the name they collected from
+  ## the various surveys in glific flows.
+  @spec get_contact_field_name(map(), Contact.t()) :: map()
+  defp get_contact_field_name(field_map, contact) do
+    with false <- is_nil(contact.active_profile_id),
+         profile <- contact.active_profile do
+      put_in(
+        field_map,
+        [:fields, "name"],
+        profile.fields["name"] || default_name(contact)
+      )
+    else
+      _ ->
+        put_in(
+          field_map,
+          [:fields, "name"],
+          contact.fields["name"] || default_name(contact)
+        )
+    end
+  end
+
+  @spec default_name(Contact.t()) :: map()
+  defp default_name(contact) do
+    %{
+      "type" => "string",
+      "label" => "Name",
+      "inserted_at" => DateTime.utc_now(),
+      "value" => contact.name
+    }
   end
 
   @simulator_phone_prefix "9876543210"
@@ -814,6 +937,9 @@ defmodule Glific.Contacts do
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->
         from(q in query, where: q.contact_id == ^contact_id)
+
+      {:profile_id, profile_id}, query ->
+        from(q in query, where: q.profile_id == ^profile_id)
 
       {:event_type, event_type}, query ->
         from(q in query, where: ilike(q.event_type, ^"%#{event_type}%"))

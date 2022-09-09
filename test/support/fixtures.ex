@@ -9,6 +9,9 @@ defmodule Glific.Fixtures do
   }
 
   alias Glific.{
+    AccessControl,
+    AccessControl.Permission,
+    AccessControl.Role,
     Contacts,
     Contacts.ContactsField,
     Extensions.Extension,
@@ -19,7 +22,9 @@ defmodule Glific.Fixtures do
     Flows.WebhookLog,
     Groups,
     Mails.MailLog,
+    MessageConversations,
     Messages,
+    Messages.MessageConversation,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -27,6 +32,7 @@ defmodule Glific.Fixtures do
     Partners.Billing,
     Partners.Organization,
     Partners.Provider,
+    Profiles.Profile,
     Repo,
     Saas.ConsultingHour,
     Settings,
@@ -35,6 +41,7 @@ defmodule Glific.Fixtures do
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
+    Triggers,
     Triggers.Trigger,
     Users
   }
@@ -565,7 +572,7 @@ defmodule Glific.Fixtures do
       body: "Your OTP for {{1}} is {{2}}. This is valid for {{3}}.",
       shortcode: "common_otp",
       is_hsm: true,
-      category: "ALERT_UPDATE",
+      category: "OTP",
       example: "Your OTP for [adding Anil as a payee] is [1234]. This is valid for [15 minutes].",
       language_id: organization_fixture().default_language_id
     })
@@ -680,7 +687,7 @@ defmodule Glific.Fixtures do
       |> Map.put(:group_id, g1.id)
       |> Map.put(:organization_id, attrs.organization_id)
 
-    {:ok, trigger} = Trigger.create_trigger(valid_attrs)
+    {:ok, trigger} = Triggers.create_trigger(valid_attrs)
 
     trigger
   end
@@ -906,5 +913,95 @@ defmodule Glific.Fixtures do
       |> MailLog.create_mail_log()
 
     mail_log
+  end
+
+  @doc """
+  Generate a role.
+  """
+  @spec role_fixture(map()) :: Role.t()
+  def role_fixture(attrs) do
+    valid_attrs = %{
+      description: "some description",
+      is_reserved: false,
+      label: "some label"
+    }
+
+    {:ok, role} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:organization_id, attrs.organization_id)
+      |> AccessControl.create_role()
+
+    role
+  end
+
+  @doc """
+  Generate a permission.
+  """
+  @spec permission_fixture(map()) :: Permission.t()
+  def permission_fixture(attrs) do
+    valid_attrs = %{
+      entity: "some entity"
+    }
+
+    {:ok, permission} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Map.put(:organization_id, attrs.organization_id)
+      |> AccessControl.create_permission()
+
+    permission
+  end
+
+  @doc """
+  Generate a profile.
+  """
+  @spec profile_fixture(map()) :: Profile.t()
+  def profile_fixture(attrs \\ %{}) do
+    contact = contact_fixture()
+
+    valid_attrs = %{
+      "contact_id" => contact.id,
+      "organization_id" => contact.organization_id,
+      "name" => "some name",
+      "type" => "some type",
+      "language_id" => 1
+    }
+
+    {:ok, profile} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> Glific.Profiles.create_profile()
+
+    Contacts.update_contact(contact, %{
+      active_profile_id: profile.id,
+      language_id: profile.language_id
+    })
+
+    profile
+  end
+
+  @doc """
+  Generate a message conversations.
+  """
+  @spec message_conversations(map()) :: MessageConversation.t()
+  def message_conversations(attrs \\ %{}) do
+    message = message_fixture(attrs)
+
+    valid_attrs = %{
+      "organization_id" => message.organization_id,
+      "message_id" => message.id,
+      "conversation_id" => "some conversation id",
+      "deduction_type" => "some deduction type",
+      "payload" => %{},
+      "is_billable" => false
+    }
+
+    {:ok, message_conversation} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> MessageConversations.create_message_conversation()
+
+    message_conversation
   end
 end

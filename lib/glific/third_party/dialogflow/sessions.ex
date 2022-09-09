@@ -3,6 +3,8 @@ defmodule Glific.Dialogflow.Sessions do
   Helper to help manage intents
   """
 
+  require Logger
+
   alias Glific.{
     Dialogflow,
     Dialogflow.SessionWorker,
@@ -58,6 +60,12 @@ defmodule Glific.Dialogflow.Sessions do
           text: message.body,
           languageCode: language
         }
+      },
+      queryParams: %{
+        timeZone: "Asia/Calcutta",
+        sentimentAnalysisRequestConfig: %{
+          analyzeQueryTextSentiment: true
+        }
       }
     }
 
@@ -71,6 +79,16 @@ defmodule Glific.Dialogflow.Sessions do
         }
       },
       inputAudio: format_audio_file(message)
+    }
+
+  defp request_body(_, _),
+    do: %{
+      queryInput: %{
+        text: %{
+          text: "Unknown",
+          languageCode: "en"
+        }
+      }
     }
 
   defp format_audio_file(message) do
@@ -126,5 +144,21 @@ defmodule Glific.Dialogflow.Sessions do
     :ok
   end
 
-  defp handle_response(error, _, _), do: {:error, error}
+  ## we don't want to kill the flow in case intent doesn't match or something else goes wrong
+  defp handle_response(error, context_id, _) do
+    context = Repo.get!(FlowContext, context_id) |> Repo.preload(:flow)
+    Logger.error("Error while detecting intent:#{inspect(error)}")
+
+    message =
+      Messages.create_temp_message(context.organization_id, "Failure")
+      |> Map.put(:extra, %{
+        intent: "Unknown",
+        confidence: 0,
+        response: "#{inspect(error)}",
+        inserted_at: DateTime.utc_now()
+      })
+
+    FlowContext.wakeup_one(context, message)
+    {:error, error}
+  end
 end

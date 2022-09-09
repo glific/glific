@@ -6,7 +6,7 @@ defmodule Glific.Settings.Language do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Glific.Settings.Language
+  alias __MODULE__
 
   @required_fields [:label, :label_locale, :locale]
   @optional_fields [:description, :is_active, :localized]

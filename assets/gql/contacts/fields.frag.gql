@@ -6,6 +6,9 @@ fragment ContactFields on ContactResult {
     maskedPhone
     fields
     settings
+    active_profile {
+      id
+    }
     language {
       id
     }

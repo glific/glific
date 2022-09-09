@@ -101,6 +101,23 @@ defmodule GlificWeb.Schema.OrganizationTest do
     assert message == "Resource not found"
   end
 
+  test "staff organization test", %{staff: user} do
+    name = "Glific"
+    {:ok, organization} = Repo.fetch_by(Organization, %{name: name})
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => organization.id})
+    assert {:ok, query_data} = result
+
+    organization = get_in(query_data, [:data, "organization", "organization", "name"])
+    assert organization == name
+
+    result = auth_query_gql_by(:by_id, user, variables: %{"id" => 123_456})
+    assert {:ok, query_data} = result
+
+    message = get_in(query_data, [:data, "organization", "errors", Access.at(0), "message"])
+    assert message == "Resource not found"
+  end
+
   test "organization without id returns current user's organization", %{user: user} do
     result = auth_query_gql_by(:by_id, user)
     assert {:ok, query_data} = result
@@ -114,7 +131,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     shortcode = "org_shortcode"
     email = "test2@glific.org"
 
-    provider_name = "Default Provider"
+    provider_name = "Gupshup Enterprise"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en"
@@ -219,7 +236,7 @@ defmodule GlificWeb.Schema.OrganizationTest do
     timezone = "America/Los_Angeles"
     organization = Fixtures.organization_fixture()
 
-    provider_name = "Default Provider"
+    provider_name = "Gupshup Enterprise"
     {:ok, bsp_provider} = Repo.fetch_by(Provider, %{name: provider_name})
 
     language_locale = "en"

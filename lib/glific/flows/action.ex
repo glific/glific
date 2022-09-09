@@ -16,7 +16,9 @@ defmodule Glific.Flows.Action do
     Flows.Flow,
     Groups,
     Groups.Group,
+    Messages,
     Messages.Message,
+    Profiles,
     Repo
   }
 
@@ -33,12 +35,16 @@ defmodule Glific.Flows.Action do
 
   require Logger
 
-  @min_delay 2
+  @contact_profile %{
+    "Switch Profile" => :switch_profile,
+    "Create Profile" => :create_profile
+  }
 
   @required_field_common [:uuid, :type]
   @required_fields_enter_flow [:flow | @required_field_common]
   @required_fields_language [:language | @required_field_common]
   @required_fields_set_contact_field [:value, :field | @required_field_common]
+  @required_fields_set_contact_profile [:value, :profile_type | @required_field_common]
   @required_fields_set_contact_name [:name | @required_field_common]
   @required_fields_webhook [:url, :headers, :method, :result_name | @required_field_common]
   @required_fields_classifier [:input, :result_name | @required_field_common]
@@ -56,12 +62,14 @@ defmodule Glific.Flows.Action do
           name: String.t() | nil,
           text: String.t() | nil,
           value: String.t() | nil,
+          input: String.t() | nil,
           url: String.t() | nil,
           headers: map() | nil,
           method: String.t() | nil,
           result_name: String.t() | nil,
           body: String.t() | nil,
           type: String.t() | nil,
+          profile_type: String.t() | nil,
           field: map() | nil,
           quick_replies: [String.t()],
           enter_flow_uuid: Ecto.UUID.t() | nil,
@@ -75,11 +83,20 @@ defmodule Glific.Flows.Action do
           node_uuid: Ecto.UUID.t() | nil,
           node: Node.t() | nil,
           templating: Templating.t() | nil,
+          ## this is a custom delay in minutes for wait for time nodes.
+          ## Currently we use this only for the wait for time node.
           wait_time: integer() | nil,
+
+          ## this is a custom delay in seconds before processing for the node.
+          ## Currently only used for send messages
+          delay: integer() | 0,
+          # Interactive messages
           interactive_template_id: integer() | nil,
           interactive_template_expression: String.t() | nil,
           params_count: String.t() | nil,
-          params: list() | nil
+          params: list() | nil,
+          attachment_type: String.t() | nil,
+          attachment_url: String.t() | nil
         }
 
   embedded_schema do
@@ -87,6 +104,7 @@ defmodule Glific.Flows.Action do
     field(:name, :string)
     field(:text, :string)
     field(:value, :string)
+    field(:input, :string)
 
     # various fields for webhooks
     field(:url, :string)
@@ -100,6 +118,7 @@ defmodule Glific.Flows.Action do
     field(:language, :string)
 
     field(:type, :string)
+    field(:profile_type, :string)
 
     field(:quick_replies, {:array, :string}, default: [])
 
@@ -124,6 +143,9 @@ defmodule Glific.Flows.Action do
     field(:params, {:array, :string}, default: [])
     field(:params_count, :string)
     field(:interactive_template_expression, :string)
+    field(:attachment_type, :string)
+    field(:attachment_url, :string)
+    field(:delay, :integer, default: 0)
 
     embeds_one(:enter_flow, Flow)
   end
@@ -135,7 +157,8 @@ defmodule Glific.Flows.Action do
         %Action{
           uuid: json["uuid"],
           node_uuid: node.uuid,
-          type: json["type"]
+          type: json["type"],
+          delay: Glific.parse_maybe_integer!(json["delay"] || 0)
         },
         attrs
       )
@@ -165,6 +188,11 @@ defmodule Glific.Flows.Action do
   def process(%{"type" => "set_contact_name"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_set_contact_name)
     process(json, uuid_map, node, %{value: json["name"]})
+  end
+
+  def process(%{"type" => "set_contact_profile"} = json, uuid_map, node) do
+    Flows.check_required_fields(json, @required_fields_set_contact_profile)
+    process(json, uuid_map, node, %{profile_type: json["profile_type"], value: json["value"]})
   end
 
   def process(%{"type" => "set_contact_field"} = json, uuid_map, node) do
@@ -237,6 +265,8 @@ defmodule Glific.Flows.Action do
       labels: json["labels"],
       params: json["params"] || [],
       params_count: json["paramsCount"] || "0",
+      attachment_url: json["attachment_url"],
+      attachment_type: json["attachment_type"],
       interactive_template_expression: json["expression"] || nil
     })
   end
@@ -476,6 +506,15 @@ defmodule Glific.Flows.Action do
     end
   end
 
+  def execute(%{type: "set_contact_profile"} = action, context, _messages) do
+    {context, message} =
+      @contact_profile
+      |> Map.get(action.profile_type)
+      |> Profiles.handle_flow_action(context, action)
+
+    {:ok, context, [message]}
+  end
+
   def execute(%{type: "enter_flow"} = action, context, _messages) do
     flow_uuid = get_flow_uuid(action, context)
 
@@ -496,13 +535,11 @@ defmodule Glific.Flows.Action do
           do: {FlowContext.reset_one_context(context), context.parent_id},
           else: {context, context.id}
 
-      # we start off a new context here and dont really modify the current context
+      # we start off a new context here and don't really modify the current context
       # hence ignoring the return value of start_sub_flow
       # for now, we'll just delay by at least min_delay second
-      context =
-        context
-        |> Map.put(:delay, max(context.delay + @min_delay, @min_delay))
-        |> Map.update!(:uuids_seen, &Map.put(&1, flow_uuid, 1))
+
+      context = Map.update!(context, :uuids_seen, &Map.put(&1, flow_uuid, 1))
 
       Flow.start_sub_flow(context, flow_uuid, parent_id)
 
@@ -514,17 +551,32 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: "call_webhook"} = action, context, messages) do
     # just call the webhook, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchrnously
+    # we are processing the webhook using Oban and this happens asynchronously
     Webhook.execute(action, context)
-    # webhooks dont consume a message, so we send it forward
+    # webhooks don't consume a message, so we send it forward
     {:wait, context, messages}
   end
 
   def execute(%{type: "call_classifier"} = action, context, messages) do
     # just call the classifier, and ask the caller to wait
-    # we are processing the webhook using Oban and this happens asynchronously
-    Dialogflow.execute(action, context, context.last_message)
-    # webhooks dont consume a message, so we send it forward
+
+    ## Check if we have a different input then last message.
+    ## If yes then pass that string as a message.
+    ## we might need more refactoring here. But this is fine for now.
+
+    message =
+      if action.input in [nil, "@input.text"],
+        do: context.last_message,
+        else:
+          Messages.create_temp_message(
+            context.organization_id,
+            FlowContext.parse_context_string(context, action.input),
+            contact_id: context.contact_id,
+            session_uuid: context.id
+          )
+          |> Repo.preload(contact: [:language])
+
+    Dialogflow.execute(action, context, message)
     {:wait, context, messages}
   end
 
@@ -642,9 +694,15 @@ defmodule Glific.Flows.Action do
 
   def execute(%{type: type} = _action, context, [msg])
       when type in @wait_for do
-    if msg.body != "No Response",
-      do: Glific.log_error("Unexpected message #{msg.body} received", false),
-      else: {:ok, context, []}
+    if msg.body != "No Response" do
+      Logger.info(
+        "Message #{msg.body} with context (#{context.id}) received while waiting for time"
+      )
+
+      {:error, "unexpected message received while waiting for time"}
+    else
+      {:ok, context, []}
+    end
   end
 
   @sleep_timeout 4 * 1000

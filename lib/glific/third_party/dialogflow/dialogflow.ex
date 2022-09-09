@@ -100,7 +100,7 @@ defmodule Glific.Dialogflow do
         service_account = Jason.decode!(credential.secrets["service_account"])
 
         %{
-          url: "https://dialogflow.googleapis.com/v2/projects",
+          url: "https://dialogflow.googleapis.com/v2beta1/projects",
           id: service_account["project_id"],
           email: service_account["client_email"]
         }
@@ -135,6 +135,9 @@ defmodule Glific.Dialogflow do
 
       sync_with_db(response, organization_id)
       response
+    else
+      true ->
+        {:ok, "no token found"}
     end
   end
 
