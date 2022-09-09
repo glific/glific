@@ -1,4 +1,4 @@
-query syncHSMTemplate {
+mutation syncHSMTemplate {
   syncHSMTemplate {
     message
     errors {

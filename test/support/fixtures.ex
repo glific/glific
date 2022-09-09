@@ -41,6 +41,7 @@ defmodule Glific.Fixtures do
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
+    Triggers,
     Triggers.Trigger,
     Users
   }
@@ -686,7 +687,7 @@ defmodule Glific.Fixtures do
       |> Map.put(:group_id, g1.id)
       |> Map.put(:organization_id, attrs.organization_id)
 
-    {:ok, trigger} = Trigger.create_trigger(valid_attrs)
+    {:ok, trigger} = Triggers.create_trigger(valid_attrs)
 
     trigger
   end
