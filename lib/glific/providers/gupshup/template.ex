@@ -23,39 +23,29 @@ defmodule Glific.Providers.Gupshup.Template do
   def submit_for_approval(attrs) do
     organization = Partners.organization(attrs.organization_id)
 
-    with {:ok, response} <-
-           ApiClient.submit_template_for_approval(
-             attrs.organization_id,
-             body(attrs, organization)
-           ),
-         {200, _response} <- {response.status, response} do
-      {:ok, response_data} = Jason.decode(response.body)
+    PartnerAPI.apply_for_template(
+      attrs.organization_id,
+      body(attrs, organization)
+    )
+    |> case do
+      {:ok, %{"template" => template} = _response} ->
+        attrs
+        |> Map.merge(%{
+          number_parameters: Templates.template_parameters_count(attrs),
+          uuid: template["id"],
+          bsp_id: template["id"],
+          status: template["status"],
+          is_active: template["status"] == "APPROVED"
+        })
+        |> append_buttons(attrs)
+        |> Templates.do_create_session_template()
 
-      attrs
-      |> Map.merge(%{
-        number_parameters: Templates.template_parameters_count(attrs),
-        uuid: response_data["template"]["id"],
-        bsp_id: response_data["template"]["id"],
-        status: response_data["template"]["status"],
-        is_active:
-          if(response_data["template"]["status"] == "APPROVED",
-            do: true,
-            else: false
-          )
-      })
-      |> append_buttons(attrs)
-      |> Templates.do_create_session_template()
-    else
-      {status, response} ->
-        Logger.info(
-          "Error submitting Template for approval Status: #{inspect(status)} Response: #{inspect(response)} "
-        )
-
-        # structure of response body can be different for different errors
-        {:error, ["BSP response status: #{to_string(status)}", handle_error_response(response)]}
-
-      _ ->
+      {:error, error} ->
+        Logger.error(error)
         {:error, ["BSP", "couldn't submit for approval"]}
+
+      other_response ->
+        other_response
     end
   end
 
@@ -80,20 +70,6 @@ defmodule Glific.Providers.Gupshup.Template do
     do: template |> Map.merge(%{buttons: attrs.buttons})
 
   defp append_buttons(template, _attrs), do: template
-
-  @spec handle_error_response(map() | String.t()) :: String.t()
-  defp handle_error_response(response) when is_binary(response), do: response
-
-  defp handle_error_response(response) do
-    Jason.decode(response.body)
-    |> case do
-      {:ok, data} ->
-        if Map.has_key?(data, "message"), do: data["message"], else: "Something went wrong"
-
-      _ ->
-        "Error in decoding response body"
-    end
-  end
 
   @doc """
   Updating HSM templates for an organization

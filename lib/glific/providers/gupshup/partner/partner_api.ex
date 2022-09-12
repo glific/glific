@@ -107,6 +107,24 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @doc """
+  Remove hsm template from the waba.
+  """
+  @spec apply_for_template(non_neg_integer(), map) :: tuple()
+  def apply_for_template(org_id, payload) do
+    (app_url(org_id) <> "/templates")
+    |> post_request(payload,
+      org_id: org_id
+    )
+    |> case do
+      {:ok, response} ->
+        {:ok, response}
+
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
   @global_organization_id 0
   @spec get_partner_token :: {:ok, map()} | {:error, any}
   defp get_partner_token do
@@ -180,6 +198,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     [{"token", partner_token}, {"Authorization", partner_token}]
   end
 
+  @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
   defp post_request(url, data, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
@@ -193,6 +212,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @spec get_request(String.t(), Keyword.t()) :: tuple()
   defp get_request(url, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
@@ -206,6 +226,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
     end
   end
 
+  @spec delete_request(String.t(), Keyword.t()) :: tuple()
   defp delete_request(url, opts) do
     req_headers = headers(Keyword.get(opts, :token_type, :app_token), opts)
 
