@@ -6,9 +6,9 @@ defmodule Glific.FLowsTest do
     Flows,
     Flows.Broadcast,
     Flows.Flow,
-    Flows.FlowBroadcast,
     Flows.FlowContext,
     Flows.FlowRevision,
+    Flows.MessageBroadcast,
     Groups,
     Messages,
     Messages.Message,
@@ -271,7 +271,7 @@ defmodule Glific.FLowsTest do
       assert_raise ArgumentError, fn -> Flows.check_required_fields(definition, [:name]) end
     end
 
-    test "get_cached_flow/2 save the flow to cache returns a touple and flow",
+    test "get_cached_flow/2 save the flow to cache returns a tuple and flow",
          %{organization_id: organization_id} = attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
 
@@ -279,14 +279,6 @@ defmodule Glific.FLowsTest do
         Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
 
       assert loaded_flow.nodes != nil
-
-      # Next time Flow will be picked from cache
-      Flows.delete_flow(flow)
-
-      {:ok, loaded_flow_2} =
-        Flows.get_cached_flow(organization_id, {:flow_uuid, flow.uuid, "published"})
-
-      assert loaded_flow_2 == loaded_flow
     end
 
     test "update_cached_flow/1 will remove the keys and update the flows" do
@@ -407,13 +399,13 @@ defmodule Glific.FLowsTest do
 
       {:ok, flow} = Flows.start_group_flow(flow, group)
 
-      assert {:ok, flow_broadcast} =
-               Repo.fetch_by(FlowBroadcast, %{
+      assert {:ok, message_broadcast} =
+               Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_broadcast.completed_at == nil
+      assert message_broadcast.completed_at == nil
 
       # lets sleep for 3 seconds, to ensure that messages have been delivered
       Broadcast.execute_group_broadcasts(attrs.organization_id)
@@ -429,13 +421,13 @@ defmodule Glific.FLowsTest do
 
       Broadcast.execute_group_broadcasts(attrs.organization_id)
 
-      assert {:ok, flow_broadcast} =
-               Repo.fetch_by(FlowBroadcast, %{
+      assert {:ok, message_broadcast} =
+               Repo.fetch_by(MessageBroadcast, %{
                  group_id: group.id,
                  flow_id: flow.id
                })
 
-      assert flow_broadcast.completed_at != nil
+      assert message_broadcast.completed_at != nil
     end
 
     test "copy_flow/2 with valid data makes a copy of flow" do
