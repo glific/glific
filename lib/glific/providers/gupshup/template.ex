@@ -113,8 +113,10 @@ defmodule Glific.Providers.Gupshup.Template do
     |> attach_button_param(attrs)
   end
 
-  defp attach_media_params(template_payload, %{type: :text} = _attrs),
-    do: template_payload |> Map.merge(%{enableSample: false})
+  defp attach_media_params(template_payload, %{type: :text} = attrs) do
+    template_payload
+    |> Map.merge(%{enableSample: attrs[:has_buttons] not in [nil, false]})
+  end
 
   defp attach_media_params(template_payload, %{type: _type} = attrs) do
     media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
