@@ -172,7 +172,9 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
 
     flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
+    frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
     assert flow_name == flow.name
+    assert frequency == "none"
 
     ## we are ignoring the enddate's time
     assert get_in(query_data, [:data, "createTrigger", "trigger", "end_date"]) == end_date
@@ -187,6 +189,33 @@ defmodule GlificWeb.Schema.TriggerTest do
     time = DateTime.new!(d, t)
 
     assert time == start_at
+
+    ## Creating a monthly trigger with valid attrs should create a trigger
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [1, 2, 3, 4, 5],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "monthly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    flow_name = get_in(query_data, [:data, "createTrigger", "trigger", "flow", "name"])
+    group_label = get_in(query_data, [:data, "createTrigger", "trigger", "group", "label"])
+    frequency = get_in(query_data, [:data, "createTrigger", "trigger", "frequency"])
+
+    assert flow_name == "Help Workflow"
+    assert group_label == "Optin contacts"
+    assert frequency == "monthly"
 
     ## Creating a monthly trigger without days should raise an error
     result =
