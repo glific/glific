@@ -237,6 +237,72 @@ defmodule GlificWeb.Schema.TriggerTest do
     assert {:ok, query_data} = result
     message = get_in(query_data, [:errors, Access.at(0), :message])
     assert message =~ "Cannot create Trigger with invalid days or hours"
+
+    ## Creating a monthly trigger with invalid days should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [1, 2, 3, 42, 51],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "monthly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message =~ "Cannot create Trigger with invalid days"
+
+    ## Creating a hourly trigger with invalid hours should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "hours" => [1, 42, 51],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "hourly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message =~ "Cannot create Trigger with invalid hours"
+
+    ## Creating a weekly trigger with invalid hours should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "days" => [6, 10],
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "weekly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message =~ "Cannot create Trigger with invalid days"
   end
 
   test "create a trigger with time prior to current timestamp should raise an error",
