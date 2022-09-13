@@ -155,15 +155,62 @@ defmodule Glific.Triggers do
   """
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
-    with {:ok, trigger} <-
+    with {:ok, valid_attrs} <- validate_new_trigger(attrs),
+         {:ok, trigger} <-
            %Trigger{}
-           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
+           |> Trigger.changeset(valid_attrs)
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
         else: {:ok, trigger}
     end
   end
+
+  @spec validate_new_trigger(map()) :: {:ok, map()} | {:error, map()}
+  defp validate_new_trigger(attrs) do
+    attrs
+    |> Map.put_new(:start_at, nil)
+    |> fix_attrs()
+    |> validate_frequency
+  end
+
+  defp validate_frequency(%{frequency: frequency} = attrs)
+       when frequency in [["daily"], ["none"]] do
+    {:ok, Map.merge(attrs, %{days: [], hours: []})}
+  end
+
+  defp validate_frequency(%{frequency: ["hourly"], hours: hours} = attrs) when hours != [] do
+    valid_hours = Enum.reduce(0..23, [], fn hour, acc -> acc ++ [hour] end)
+
+    Enum.all?(hours, fn hour -> hour in valid_hours end)
+    |> case do
+      true -> {:ok, Map.put(attrs, :days, [])}
+      false -> {:error, "Cannot create Trigger with invalid hours"}
+    end
+  end
+
+  defp validate_frequency(%{frequency: ["weekly"], days: days} = attrs) when days != [] do
+    valid_days = Enum.reduce(1..7, [], fn day, acc -> acc ++ [day] end)
+
+    Enum.all?(days, fn day -> day in valid_days end)
+    |> case do
+      true -> {:ok, Map.put(attrs, :hours, [])}
+      false -> {:error, "Cannot create Trigger with invalid days"}
+    end
+  end
+
+  defp validate_frequency(%{frequency: ["monthly"], days: days} = attrs) when days != [] do
+    valid_days = Enum.reduce(1..31, [], fn day, acc -> acc ++ [day] end)
+
+    Enum.all?(days, fn day -> day in valid_days end)
+    |> case do
+      true -> {:ok, Map.put(attrs, :hours, [])}
+      false -> {:error, "Cannot create Trigger with invalid days"}
+    end
+  end
+
+  defp validate_frequency(_attrs),
+    do: {:error, "Cannot create Trigger with invalid days or hours"}
 
   @spec update_trigger_roles(map(), Trigger.t()) :: {:ok, Trigger.t()}
   defp update_trigger_roles(attrs, trigger) do
