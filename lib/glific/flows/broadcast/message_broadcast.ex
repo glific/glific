@@ -1,4 +1,4 @@
-defmodule Glific.Flows.FlowBroadcast do
+defmodule Glific.Flows.MessageBroadcast do
   @moduledoc """
   When we are running a flow, we are running it in the context of a
   contact and/or a conversation (or other Glific data types). Let encapsulate
@@ -19,10 +19,13 @@ defmodule Glific.Flows.FlowBroadcast do
     Users.User
   }
 
-  @required_fields [:flow_id, :group_id, :message_id, :started_at, :organization_id]
+  @required_fields [:group_id, :message_id, :started_at, :organization_id]
   @optional_fields [
     :user_id,
-    :completed_at
+    :flow_id,
+    :completed_at,
+    :type,
+    :message_params
   ]
 
   # we store one more than the number of messages specified here
@@ -41,19 +44,23 @@ defmodule Glific.Flows.FlowBroadcast do
           organization: Organization.t() | Ecto.Association.NotLoaded.t() | nil,
           started_at: :utc_datetime | nil,
           completed_at: :utc_datetime | nil,
+          type: String.t() | nil,
+          message_params: map() | nil,
           inserted_at: :utc_datetime | nil,
           updated_at: :utc_datetime | nil
         }
 
-  schema "flow_broadcasts" do
-    field :started_at, :utc_datetime, default: nil
-    field :completed_at, :utc_datetime, default: nil
+  schema "message_broadcasts" do
+    field(:started_at, :utc_datetime, default: nil)
+    field(:completed_at, :utc_datetime, default: nil)
+    field(:type, :string, default: "flow")
+    field(:message_params, :map, default: %{})
 
-    belongs_to :flow, Flow
-    belongs_to :group, Group
-    belongs_to :message, Message
-    belongs_to :user, User
-    belongs_to :organization, Organization
+    belongs_to(:flow, Flow)
+    belongs_to(:group, Group)
+    belongs_to(:message, Message)
+    belongs_to(:user, User)
+    belongs_to(:organization, Organization)
 
     timestamps(type: :utc_datetime)
   end
@@ -61,9 +68,9 @@ defmodule Glific.Flows.FlowBroadcast do
   @doc """
   Standard changeset pattern we use for all data types
   """
-  @spec changeset(FlowBroadcast.t(), map()) :: Ecto.Changeset.t()
-  def changeset(flow_broadcast, attrs) do
-    flow_broadcast
+  @spec changeset(MessageBroadcast.t(), map()) :: Ecto.Changeset.t()
+  def changeset(message_broadcast, attrs) do
+    message_broadcast
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> foreign_key_constraint(:flow_id)

@@ -1162,7 +1162,7 @@ mutation markContactMessagesAsRead($contactId : Gid!) {
 </tr>
 
 <tr>
-<td colspan="2" valign="top"><strong>FlowBroadcastId</strong></td>
+<td colspan="2" valign="top"><strong>MessageBroadcastId</strong></td>
 <td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>

@@ -14,9 +14,9 @@ defmodule Glific.Messages do
     Contacts,
     Contacts.Contact,
     Conversations.Conversation,
+    Flows.Broadcast,
     Flows.FlowContext,
     Flows.MessageVarParser,
-    Groups,
     Groups.Group,
     Messages.Message,
     Messages.MessageMedia,
@@ -468,7 +468,7 @@ defmodule Glific.Messages do
       receiver_id: args[:receiver_id],
       send_at: args[:send_at],
       flow_id: args[:flow_id],
-      flow_broadcast_id: args[:flow_broadcast_id],
+      message_broadcast_id: args[:message_broadcast_id],
       uuid: args[:uuid],
       is_hsm: Map.get(args, :is_hsm, false),
       flow_label: args[:flow_label],
@@ -528,7 +528,7 @@ defmodule Glific.Messages do
       media_id: media_id,
       is_optin_flow: Map.get(attrs, :is_optin_flow, false),
       flow_label: Map.get(attrs, :flow_label, ""),
-      flow_broadcast_id: Map.get(attrs, :flow_broadcast_id, nil),
+      message_broadcast_id: Map.get(attrs, :message_broadcast_id, nil),
       user_id: attrs[:user_id],
       flow_id: attrs[:flow_id],
       send_at: attrs[:send_at]
@@ -664,35 +664,31 @@ defmodule Glific.Messages do
   @doc """
   Create and send message to all contacts of a group
   """
-  @spec create_and_send_message_to_group(map(), Group.t(), atom()) :: {:ok, list()}
-  def create_and_send_message_to_group(message_params, group, type) do
-    contact_ids = Groups.contact_ids(group.id)
+  @spec create_and_send_message_to_group(map(), Group.t(), atom()) ::
+          {:ok, any()} | {:error, any()}
+  def create_and_send_message_to_group(message_params, group, _type) do
+    message_params =
+      message_params
+      |> Map.merge(%{group_id: group.id})
+      # this is an exception because of an inconsistency with the key name
+      |> Map.put_new(:parameters, message_params[:params])
 
     {:ok, group_message} =
-      if type == :session,
-        do: create_group_message(Map.put(message_params, :group_id, group.id)),
+      if message_params[:is_hsm] in [nil, false],
+        do: create_group_message(message_params |> Map.put(:type, :text)),
         else:
-          create_group_message(
-            message_params
-            |> Map.put(:group_id, group.id)
-            |> Map.put(
-              :body,
-              "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"
-            )
-            |> Map.put(:type, :text)
+          message_params
+          |> Map.put(:type, :text)
+          |> Map.put(
+            :body,
+            "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"
           )
+          |> create_group_message()
 
-    message_params
-    # suppress publishing a subscription for group messages
-    |> Map.merge(%{
-      publish?: false,
-      flow_broadcast_id: group_message.flow_broadcast_id,
-      group_id: group.id
-    })
-    |> create_and_send_message_to_contacts(
-      contact_ids,
-      type
-    )
+    {:ok, message_broadcast} =
+      Broadcast.broadcast_message_to_group(group_message, group, message_params)
+
+    {:ok, Broadcast.get_broadcast_contact_ids(message_broadcast)}
   end
 
   @doc """

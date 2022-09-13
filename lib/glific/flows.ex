@@ -249,9 +249,7 @@ defmodule Glific.Flows do
   @spec update_flow(Flow.t(), map()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def update_flow(%Flow{} = flow, attrs) do
     # first delete the cached flow
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
-    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
-    clean_cached_flow_keywords_map(flow.organization_id)
+    remove_flow_cache(flow)
 
     attrs =
       attrs
@@ -281,6 +279,7 @@ defmodule Glific.Flows do
   """
   @spec delete_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, Ecto.Changeset.t()}
   def delete_flow(%Flow{} = flow) do
+    remove_flow_cache(flow)
     Repo.delete(flow)
   end
 
@@ -618,13 +617,16 @@ defmodule Glific.Flows do
     {:ok, flow}
   end
 
+  @status "published"
+
   @doc """
   Start flow for contacts of a group
   """
   @spec start_group_flow(Flow.t(), Group.t()) :: {:ok, Flow.t()}
   def start_group_flow(flow, group) do
     # the flow returned is the expanded version
-    flow = Broadcast.broadcast_group(flow, group)
+    {:ok, flow} = get_cached_flow(group.organization_id, {:flow_id, flow.id, @status})
+    Broadcast.broadcast_flow_to_group(flow, group)
     {:ok, flow}
   end
 
@@ -999,6 +1001,14 @@ defmodule Glific.Flows do
   @spec terminate_contact_flows?(non_neg_integer) :: :ok
   def terminate_contact_flows?(contact_id) do
     FlowContext.mark_flows_complete(contact_id, false)
+    :ok
+  end
+
+  @spec remove_flow_cache(Flow.t()) :: :ok
+  defp remove_flow_cache(flow) do
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
+    Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "published"))
+    clean_cached_flow_keywords_map(flow.organization_id)
     :ok
   end
 end
