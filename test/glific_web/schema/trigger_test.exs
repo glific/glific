@@ -156,14 +156,15 @@ defmodule GlificWeb.Schema.TriggerTest do
       auth_query_gql_by(:create, user,
         variables: %{
           "input" => %{
-            "days" => 1,
+            "days" => [],
             "flowId" => flow.id,
             "groupId" => group.id,
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
-            "isActive" => false,
-            "isRepeating" => false
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "none"
           }
         }
       )
@@ -186,6 +187,27 @@ defmodule GlificWeb.Schema.TriggerTest do
     time = DateTime.new!(d, t)
 
     assert time == start_at
+
+    ## Creating a monthly trigger without days should raise an error
+    result =
+      auth_query_gql_by(:create, user,
+        variables: %{
+          "input" => %{
+            "flowId" => flow.id,
+            "groupId" => group.id,
+            "startDate" => start_date,
+            "startTime" => start_time,
+            "endDate" => end_date,
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "monthly"
+          }
+        }
+      )
+
+    assert {:ok, query_data} = result
+    message = get_in(query_data, [:errors, Access.at(0), :message])
+    assert message =~ "Cannot create Trigger with invalid days or hours"
   end
 
   test "create a trigger with time prior to current timestamp should raise an error",
