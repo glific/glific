@@ -230,8 +230,9 @@ defmodule GlificWeb.Schema.TriggerTest do
             "startDate" => start_date,
             "startTime" => start_time,
             "endDate" => end_date,
-            "isActive" => false,
-            "isRepeating" => false
+            "isActive" => true,
+            "isRepeating" => false,
+            "frequency" => "none"
           }
         }
       )
