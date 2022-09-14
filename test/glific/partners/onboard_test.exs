@@ -38,28 +38,17 @@ defmodule Glific.OnboardTest do
             })
         }
 
-      %{method: :post, url: url} ->
-        cond do
-          String.contains?(url, @partner_url <> "/login") ->
-            %Tesla.Env{
-              status: 200,
-              body:
-                Jason.encode!(%{
-                  "token" => "ks_test_token"
-                })
-            }
-
-          true ->
-            %Tesla.Env{
-              status: 200,
-              body:
-                Jason.encode!(%{
-                  "status" => "success",
-                  "templates" => [],
-                  "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
-                })
-            }
-        end
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "token" => "ks_test_token",
+              "status" => "success",
+              "templates" => [],
+              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+            })
+        }
     end)
 
     :ok
