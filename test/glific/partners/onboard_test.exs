@@ -19,6 +19,8 @@ defmodule Glific.OnboardTest do
     "shortcode" => "short"
   }
 
+  @partner_url "https://partner.gupshup.io/partner/account"
+
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
@@ -36,15 +38,28 @@ defmodule Glific.OnboardTest do
             })
         }
 
-      %{method: :post} ->
-        %Tesla.Env{
-          status: 200,
-          body:
-            Jason.encode!(%{
-              "status" => "ok",
-              "templates" => []
-            })
-        }
+      %{method: :post, url: url} ->
+        cond do
+          String.contains?(url, @partner_url <> "/login") ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "token" => "ks_test_token"
+                })
+            }
+
+          true ->
+            %Tesla.Env{
+              status: 200,
+              body:
+                Jason.encode!(%{
+                  "status" => "success",
+                  "templates" => [],
+                  "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
+                })
+            }
+        end
     end)
 
     :ok
