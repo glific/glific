@@ -25,7 +25,7 @@ defmodule Glific.OnboardTest do
     HTTPoison.start()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
-    Tesla.Mock.mock(fn
+    Tesla.Mock.mock_global(fn
       %{method: :get} ->
         %Tesla.Env{
           status: 200,
