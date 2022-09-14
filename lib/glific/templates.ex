@@ -266,7 +266,11 @@ defmodule Glific.Templates do
 
   def sync_hsms_from_bsp(organization_id) do
     bsp_module = Provider.bsp_module(organization_id, :template)
-    bsp_module.update_hsm_templates(organization_id)
+    res = bsp_module.update_hsm_templates(organization_id)
+
+    Logger.info(
+      "Templates has been sync for org id: #{organization_id} with response: #{inspect(res)}"
+    )
   end
 
   @doc false
