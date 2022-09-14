@@ -511,12 +511,6 @@ defmodule Glific.Messages do
       |> Templates.parse_buttons(is_translated, session_template.has_buttons)
       |> parse_template_vars(parameters)
 
-    IO.inspect("updated_template")
-    IO.inspect(updated_template)
-
-    IO.inspect("params")
-    IO.inspect(parameters)
-
     %{
       body: updated_template.body,
       type: updated_template.type,
