@@ -271,6 +271,8 @@ defmodule Glific.Templates do
     Logger.info(
       "Templates has been sync for org id: #{organization_id} with response: #{inspect(res)}"
     )
+
+    res
   end
 
   @doc false
