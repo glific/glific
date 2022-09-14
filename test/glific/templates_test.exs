@@ -293,6 +293,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "success",
+                "token" => "new_partner_token",
                 "template" => %{
                   "category" => "ACCOUNT_UPDATE",
                   "createdOn" => 1_595_904_220_495,
