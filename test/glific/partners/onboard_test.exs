@@ -19,8 +19,6 @@ defmodule Glific.OnboardTest do
     "shortcode" => "short"
   }
 
-  @partner_url "https://partner.gupshup.io/partner/account"
-
   setup do
     organization = SeedsDev.seed_organizations()
     SeedsDev.seed_billing(organization)
