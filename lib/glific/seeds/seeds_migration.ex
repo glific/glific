@@ -17,7 +17,6 @@ defmodule Glific.Seeds.SeedsMigration do
     Partners,
     Partners.Organization,
     Partners.Saas,
-    Providers.Gupshup.ApiClient,
     Repo,
     Searches.SavedSearch,
     Seeds.SeedsDev,
@@ -26,7 +25,6 @@ defmodule Glific.Seeds.SeedsMigration do
     Settings,
     Settings.Language,
     Templates,
-    Templates.SessionTemplate,
     Users,
     Users.User
   }

@@ -306,7 +306,7 @@ defmodule Glific.Flows.Broadcast do
               |> mark_message_broadcast_contact_processed(contact.id, "processed")
 
             {:error, error} ->
-              Logger.info("Could not start the flow for the contact.
+              Logger.info("Could not start the message for the contact.
               Contact id : #{contact.id} opts: #{inspect(opts)}
               error #{inspect(error)}")
           end
