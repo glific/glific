@@ -189,6 +189,31 @@ defmodule Glific.MessagesTest do
       assert [] == Messages.list_messages(%{filter: %{receiver: "ABC", organization_id: oid}})
     end
 
+    test "list_messages/1 with flow_id filters", attrs do
+      {:ok, sender} = Contacts.create_contact(Map.merge(attrs, @sender_attrs))
+      {:ok, receiver} = Contacts.create_contact(Map.merge(attrs, @receiver_attrs))
+      flow = Fixtures.flow_fixture(attrs)
+
+      {:ok, message} =
+        @valid_attrs
+        |> Map.merge(%{
+          sender_id: sender.id,
+          receiver_id: receiver.id,
+          organization_id: sender.organization_id,
+          flow_id: flow.id
+        })
+        |> Messages.create_message()
+
+      # we do this to get the session_uuid which is computed by a trigger
+      message = Messages.get_message!(message.id)
+
+      assert [message] ==
+      Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: flow.id})})
+
+      assert [] ==
+      Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: 99})})
+    end
+
     test "list_messages/1 with tags included filters",
          %{organization_id: organization_id} = attrs do
       message_tag = Fixtures.message_tag_fixture(attrs)
