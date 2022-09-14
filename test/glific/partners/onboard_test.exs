@@ -41,8 +41,10 @@ defmodule Glific.OnboardTest do
           status: 200,
           body:
             Jason.encode!(%{
-              "status" => "ok",
-              "templates" => []
+              "token" => "ks_test_token",
+              "status" => "success",
+              "templates" => [],
+              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
             })
         }
     end)
