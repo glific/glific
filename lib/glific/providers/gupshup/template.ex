@@ -107,16 +107,14 @@ defmodule Glific.Providers.Gupshup.Template do
       vertical: attrs.label,
       templateType: String.upcase(Atom.to_string(attrs.type)),
       content: attrs.body,
-      example: attrs.example
+      example: attrs.example,
+      enableSample: true
     }
     |> attach_media_params(attrs)
     |> attach_button_param(attrs)
   end
 
-  defp attach_media_params(template_payload, %{type: :text} = attrs) do
-    template_payload
-    |> Map.merge(%{enableSample: attrs[:has_buttons] not in [nil, false]})
-  end
+  defp attach_media_params(template_payload, %{type: :text} = _attrs), do: template_payload
 
   defp attach_media_params(template_payload, %{type: _type} = attrs) do
     media_id = Glific.parse_maybe_integer!(attrs[:message_media_id])
