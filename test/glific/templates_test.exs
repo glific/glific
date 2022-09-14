@@ -293,6 +293,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "success",
+                "token" => "new_partner_token",
                 "template" => %{
                   "category" => "ACCOUNT_UPDATE",
                   "createdOn" => 1_595_904_220_495,
@@ -422,7 +423,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "error",
-                "message" => "Template Not Supported On Gupshup Platform"
+                "message" => "Something went wrong"
               })
           }
       end)
@@ -440,11 +441,8 @@ defmodule Glific.TemplatesTest do
         organization_id: attrs.organization_id
       }
 
-      assert {:error,
-              [
-                "BSP response status: 400",
-                "Template Not Supported On Gupshup Platform"
-              ]} = Templates.create_session_template(attrs)
+      assert {:error, ["BSP", "couldn't submit for approval"]} =
+               Templates.create_session_template(attrs)
     end
 
     test "update_session_template/2 with valid data updates the session_template", attrs do
@@ -1011,11 +1009,11 @@ defmodule Glific.TemplatesTest do
       assert hsm2.is_active == false
     end
 
-    test "import_enterprise_templates/1 should import templates", attrs do
+    test "import_templates/1 should import templates", attrs do
       data =
         "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
 
-      Template.import_enterprise_templates(attrs.organization_id, data)
+      Template.import_templates(attrs.organization_id, data)
 
       assert {:ok, %SessionTemplate{} = imported_template} =
                Repo.fetch_by(SessionTemplate, %{bsp_id: "6122571"})

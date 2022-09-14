@@ -17,8 +17,8 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
   """
-  @spec import_enterprise_templates(non_neg_integer(), String.t()) :: {:ok, any}
-  def import_enterprise_templates(organization_id, data) do
+  @spec import_templates(non_neg_integer(), String.t()) :: {:ok, any}
+  def import_templates(organization_id, data) do
     {:ok, stream} = StringIO.open(data)
     organization = Partners.organization(organization_id)
 
@@ -29,6 +29,14 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     |> Templates.update_hsms(organization)
 
     {:ok, %{message: "All templates have been added"}}
+  end
+
+  @doc """
+  Delete template from the gupshup
+  """
+  @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}
+  def delete(_org_id, attrs) do
+    {:ok, attrs}
   end
 
   @spec import_approved_templates(map()) :: map()

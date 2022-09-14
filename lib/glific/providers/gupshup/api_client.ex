@@ -10,10 +10,11 @@ defmodule Glific.Providers.Gupshup.ApiClient do
 
   use Tesla
   # you can add , log_level: :debug to the below if you want debugging info
-  plug Tesla.Middleware.Logger
+  plug(Tesla.Middleware.Logger)
 
-  plug Tesla.Middleware.FormUrlencoded,
+  plug(Tesla.Middleware.FormUrlencoded,
     encode: &Query.encode/1
+  )
 
   @doc """
   Making Tesla get call and adding api key in header
@@ -66,8 +67,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   @spec submit_template_for_approval(non_neg_integer(), map()) ::
           Tesla.Env.result() | {:error, any()}
   def submit_template_for_approval(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       template_url = @gupshup_url <> "/template/add/" <> credentials.app_name
       opts = [headers: [{"apikey", credentials.api_key}], opts: [adapter: [recv_timeout: 10_000]]]
@@ -81,8 +80,6 @@ defmodule Glific.Providers.Gupshup.ApiClient do
   """
   @spec send_template(non_neg_integer(), map()) :: Tesla.Env.result() | {:error, String.t()}
   def send_template(org_id, payload) do
-    get_credentials(org_id)
-
     with {:ok, credentials} <- get_credentials(org_id) do
       template_url = @gupshup_url <> "/template/msg"
       gupshup_post(template_url, payload, credentials.api_key)

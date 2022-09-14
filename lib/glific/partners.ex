@@ -775,7 +775,7 @@ defmodule Glific.Partners do
     # If we fail, we need to mark the organization as failed
     # and log the error
     err ->
-      "Error occured while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
+      "Error occurred while executing cron handler for organizations. Error: #{inspect(err)}, handler: #{inspect(handler)}, handler_args: #{inspect(handler_args)}"
       |> Glific.log_error()
   end
 
@@ -795,25 +795,6 @@ defmodule Glific.Partners do
         Timex.diff(DateTime.utc_now(), last_communication_at, :minutes) < @active_minutes
       end
     )
-  end
-
-  @doc """
-  Fetch opted in contacts data from providers server
-  """
-  @spec fetch_opted_in_contacts(map()) :: :ok | any
-  def fetch_opted_in_contacts(attrs) do
-    organization = organization(attrs.organization_id)
-
-    if is_nil(organization.services["bsp"]) do
-      {:error, dgettext("errors", "No active BSP available")}
-    else
-      case organization.bsp.shortcode do
-        "gupshup" -> GupshupContacts.fetch_opted_in_contacts(attrs)
-        _ -> raise "Invalid BSP"
-      end
-
-      :ok
-    end
   end
 
   @doc """
@@ -913,7 +894,6 @@ defmodule Glific.Partners do
       |> Credential.changeset(attrs)
       |> Repo.update()
 
-    # when updating the bsp credentials fetch list of opted in contacts
     credential = credential |> Repo.preload([:provider, :organization])
 
     credential.organization
@@ -949,7 +929,11 @@ defmodule Glific.Partners do
   defp credential_update_callback(organization, credential, "gupshup") do
     if valid_bsp?(credential) do
       update_organization(organization, %{bsp_id: credential.provider.id})
-      fetch_opted_in_contacts(credential)
+
+      if credential.is_active do
+        GupshupContacts.fetch_opted_in_contacts(credential)
+        set_bsp_app_id(organization, "gupshup")
+      end
     end
 
     {:ok, credential}
@@ -1228,6 +1212,34 @@ defmodule Glific.Partners do
       )
 
     Map.merge(services, combined)
+  end
+
+  @doc """
+  Set BSP APP id whenever we update the bsp credentials.
+  """
+  @spec set_bsp_app_id(Organization.t(), String.t()) :: any()
+  def set_bsp_app_id(org, shortcode) do
+    # restricting this function  for BSP only
+    {:ok, provider} = Repo.fetch_by(Provider, %{shortcode: shortcode, group: "bsp"})
+
+    {:ok, bsp_cred} =
+      Repo.fetch_by(Credential, %{provider_id: provider.id, organization_id: org.id})
+
+    ## We need to make this dynamic
+    if shortcode == "gupshup" do
+      app_details = PartnerAPI.fetch_app_details(org.id)
+      app_id = if is_map(app_details), do: app_details["id"], else: "NA"
+
+      updated_secrets = Map.put(bsp_cred.secrets, "app_id", app_id)
+      attrs = %{secrets: updated_secrets, organization_id: org.id}
+
+      {:ok, _credential} =
+        bsp_cred
+        |> Credential.changeset(attrs)
+        |> Repo.update()
+    end
+
+    remove_organization_cache(org.id, org.shortcode)
   end
 
   @doc """

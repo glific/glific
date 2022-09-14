@@ -55,8 +55,11 @@ defmodule GlificWeb.Resolvers.Flows do
   @doc false
   @spec update_flow(Absinthe.Resolution.t(), %{id: integer, input: map()}, %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def update_flow(_, %{id: id, input: params}, _) do
-    do_copy_flow(id, params, &Flows.update_flow/2)
+  def update_flow(_, %{id: id, input: params}, %{context: %{current_user: user}}) do
+    with {:ok, flow} <- Repo.fetch_by(Flow, %{id: id, organization_id: user.organization_id}),
+         {:ok, flow} <- Flows.update_flow(flow, params) do
+      {:ok, %{flow: flow}}
+    end
   end
 
   @doc false
@@ -240,8 +243,8 @@ defmodule GlificWeb.Resolvers.Flows do
   """
   @spec broadcast_stats(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
-  def broadcast_stats(_, %{flow_broadcast_id: flow_broadcast_id}, _),
-    do: Broadcast.broadcast_stats(flow_broadcast_id)
+  def broadcast_stats(_, %{message_broadcast_id: message_broadcast_id}, _),
+    do: Broadcast.broadcast_stats(message_broadcast_id)
 
   @doc """
   Reset the flow counts for a specific flow

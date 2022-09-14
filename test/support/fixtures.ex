@@ -22,7 +22,9 @@ defmodule Glific.Fixtures do
     Flows.WebhookLog,
     Groups,
     Mails.MailLog,
+    MessageConversations,
     Messages,
+    Messages.MessageConversation,
     Messages.MessageMedia,
     Notifications,
     Notifications.Notification,
@@ -39,6 +41,7 @@ defmodule Glific.Fixtures do
     Templates.InteractiveTemplate,
     Templates.InteractiveTemplates,
     Templates.SessionTemplate,
+    Triggers,
     Triggers.Trigger,
     Users
   }
@@ -684,7 +687,7 @@ defmodule Glific.Fixtures do
       |> Map.put(:group_id, g1.id)
       |> Map.put(:organization_id, attrs.organization_id)
 
-    {:ok, trigger} = Trigger.create_trigger(valid_attrs)
+    {:ok, trigger} = Triggers.create_trigger(valid_attrs)
 
     trigger
   end
@@ -970,6 +973,35 @@ defmodule Glific.Fixtures do
       |> Map.merge(attrs)
       |> Glific.Profiles.create_profile()
 
+    Contacts.update_contact(contact, %{
+      active_profile_id: profile.id,
+      language_id: profile.language_id
+    })
+
     profile
+  end
+
+  @doc """
+  Generate a message conversations.
+  """
+  @spec message_conversations(map()) :: MessageConversation.t()
+  def message_conversations(attrs \\ %{}) do
+    message = message_fixture(attrs)
+
+    valid_attrs = %{
+      "organization_id" => message.organization_id,
+      "message_id" => message.id,
+      "conversation_id" => "some conversation id",
+      "deduction_type" => "some deduction type",
+      "payload" => %{},
+      "is_billable" => false
+    }
+
+    {:ok, message_conversation} =
+      valid_attrs
+      |> Map.merge(attrs)
+      |> MessageConversations.create_message_conversation()
+
+    message_conversation
   end
 end

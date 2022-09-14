@@ -431,14 +431,20 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "flow broadcast id when a flow started for a group",
-        name: "flow_broadcast_id",
+        description: "message broadcast id when a flow started for a group",
+        name: "message_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "ID of the message media table refrence to the message media table",
+        description: "ID of the message media table reference to the message media table",
         name: "media_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table reference to the profile table",
+        name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
       }
@@ -656,14 +662,21 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Parent flow context id refrences to the flow context table",
+        description: "Parent flow context id references to the flow context table",
         name: "parent_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
-        description: "flow_broadcast_id refrences to the flow broadcast table",
+        description:
+          "flow broadcast id references to the flow broadcast table, this is an old one. We will remove it in the future",
         name: "flow_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "message broadcast id references to the flow broadcast table",
+        name: "message_broadcast_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
@@ -709,6 +722,12 @@ defmodule Glific.BigQuery.Schema do
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
       }
     ]
   end
@@ -789,6 +808,12 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "ID of the flow context with which the user is associated to in the flow",
         name: "flow_context_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
       }
@@ -1170,6 +1195,81 @@ defmodule Glific.BigQuery.Schema do
         description: "Time when the record entry was made on bigquery",
         name: "bq_inserted_at",
         type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "ID of the profile table refrence to the profile table",
+        name: "profile_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for message conversation table
+  """
+  @spec message_conversation_schema :: list()
+  def message_conversation_schema do
+    [
+      %{
+        description: "Unique ID for the profile",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Conversation ID for the message",
+        name: "conversation_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Conversation ID for the message",
+        name: "conversation_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "deduction_type for the message conversation",
+        name: "deduction_type",
+        type: "STRING",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "is_billable for the message conversation",
+        name: "is_billable",
+        type: "BOOLEAN",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the stats entry was first created for a user",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the stats results entry was last updated for a user",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Linked message id",
+        name: "message_id",
+        type: "INTEGER",
         mode: "NULLABLE"
       }
     ]

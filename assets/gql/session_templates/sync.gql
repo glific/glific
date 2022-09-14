@@ -1,0 +1,8 @@
+mutation syncHSMTemplate {
+  syncHSMTemplate {
+    message
+    errors {
+    message
+   }
+  }
+}

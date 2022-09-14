@@ -16,6 +16,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_contacts()
     SeedsDev.seed_messages()
+    SeedsDev.seed_interactives()
 
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -90,7 +91,7 @@ defmodule Glific.Processor.ConsumerFlowTest do
 
   @checks_1 [
     "optin",
-    "1",
+    "👍",
     "optout",
     "1"
   ]

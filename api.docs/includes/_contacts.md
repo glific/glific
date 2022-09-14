@@ -1024,13 +1024,13 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 </tr>
 <tr>
 <td colspan="2" valign="top"><strong>history</strong></td>
-<td valign="top"><a href="#history">History</a></td>
+<td valign="top"><a href="#contacthistory">History</a></td>
 <td></td>
 </tr>
 </tbody>
 </table>
 
-### History
+### ContactHistory
 
 <table>
 <thead>
@@ -1073,6 +1073,12 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 <td></td>
 </tr>
 
+<tr>
+<td colspan="2" valign="top"><strong>profile</strong></td>
+<td valign="top"><a href="#profile">Profile</a></td>
+<td></td>
+</tr>
+
 </tbody>
 </table>
 
@@ -1091,6 +1097,12 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 
 <tr>
 <td colspan="2" valign="top"><strong>contact_id</strong></td>
+<td valign="top"><a href="#id">ID</a></td>
+<td></td>
+</tr>
+
+<tr>
+<td colspan="2" valign="top"><strong>profile_id</strong></td>
 <td valign="top"><a href="#id">ID</a></td>
 <td></td>
 </tr>
@@ -1150,6 +1162,31 @@ query countContactHistory($filter: ContactsHistoryFilter) {
 <tr>
 <td colspan="2" valign="top"><strong>contact</strong></td>
 <td valign="top"><a href="#contact">Contact</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>errors</strong></td>
+<td valign="top">[<a href="#inputerror">InputError</a>]</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+
+### ContactHistoryResult
+
+<table>
+<thead>
+<tr>
+<th align="left">Field</th>
+<th align="right">Argument</th>
+<th align="left">Type</th>
+<th align="left">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td colspan="2" valign="top"><strong>contactHistory</strong></td>
+<td valign="top"><a href="#contacthistory">ContactHistory</a></td>
 <td></td>
 </tr>
 <tr>

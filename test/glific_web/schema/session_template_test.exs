@@ -7,6 +7,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
     Messages,
     Repo,
     Seeds.SeedsDev,
+    Templates,
     Templates.SessionTemplate
   }
 
@@ -27,6 +28,7 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
   load_gql(:create, GlificWeb.Schema, "assets/gql/session_templates/create.gql")
   load_gql(:update, GlificWeb.Schema, "assets/gql/session_templates/update.gql")
   load_gql(:delete, GlificWeb.Schema, "assets/gql/session_templates/delete.gql")
+  load_gql(:sync, GlificWeb.Schema, "assets/gql/session_templates/sync.gql")
 
   load_gql(
     :create_from_message,
@@ -47,6 +49,55 @@ defmodule GlificWeb.Schema.SessionTemplateTest do
       |> Enum.find(fn x -> x == "Default Template" end)
 
     assert res == "Default Template"
+  end
+
+  test "sync hsm with bsp", %{staff: user} do
+    [hsm, hsm2 | _] =
+      Templates.list_session_templates(%{
+        filter: %{organization_id: user.organization_id, is_hsm: true}
+      })
+
+    Tesla.Mock.mock(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200,
+          body:
+            Jason.encode!(%{
+              "status" => "success",
+              "templates" => [
+                %{
+                  "id" => hsm.uuid,
+                  "modifiedOn" =>
+                    DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                  "status" => "APPROVED"
+                },
+                %{
+                  "id" => hsm2.uuid,
+                  "modifiedOn" =>
+                    DateTime.to_unix(Timex.shift(hsm.updated_at, hours: -1), :millisecond),
+                  "status" => "PENDING"
+                }
+              ]
+            })
+        }
+    end)
+
+    {:ok, %{data: %{"syncHSMTemplate" => %{"message" => message}}}} =
+      auth_query_gql_by(:sync, user)
+
+    assert message == "successfull"
+  end
+
+  test "sync hsm with bsp if it doesn't estabilish a connection with gupshup test", %{staff: user} do
+    user = Map.put(user, :organization_id, nil)
+    Fixtures.session_template_fixture(%{label: "AAA"})
+
+    result = auth_query_gql_by(:sync, user)
+    assert {:ok, query_data} = result
+
+    session_templates = get_in(query_data, [:errors])
+    template_error = List.first(session_templates)
+    assert template_error.message == "organization_id is not given"
   end
 
   test "count returns the number of session templates", %{staff: user} do

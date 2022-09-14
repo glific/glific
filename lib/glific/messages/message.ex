@@ -9,10 +9,11 @@ defmodule Glific.Messages.Message do
     Contacts.Contact,
     Contacts.Location,
     Flows.Flow,
-    Flows.FlowBroadcast,
+    Flows.MessageBroadcast,
     Groups.Group,
     Messages.MessageMedia,
     Partners.Organization,
+    Profiles.Profile,
     Tags.Tag,
     Templates.InteractiveTemplate,
     Templates.SessionTemplate,
@@ -61,8 +62,10 @@ defmodule Glific.Messages.Message do
           context_id: String.t() | nil,
           context_message_id: non_neg_integer | nil,
           context_message: Message.t() | Ecto.Association.NotLoaded.t() | nil,
-          flow_broadcast_id: non_neg_integer | nil,
-          flow_broadcast: FlowBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
+          profile_id: non_neg_integer | nil,
+          profile: Profile.t() | Ecto.Association.NotLoaded.t() | nil,
+          message_broadcast_id: non_neg_integer | nil,
+          message_broadcast: MessageBroadcast.t() | Ecto.Association.NotLoaded.t() | nil,
           send_at: :utc_datetime | nil,
           sent_at: :utc_datetime | nil,
           session_uuid: Ecto.UUID.t() | nil,
@@ -90,7 +93,7 @@ defmodule Glific.Messages.Message do
     :bsp_message_id,
     :context_id,
     :context_message_id,
-    :flow_broadcast_id,
+    :message_broadcast_id,
     :errors,
     :media_id,
     :group_id,
@@ -102,7 +105,8 @@ defmodule Glific.Messages.Message do
     :interactive_content,
     :template_id,
     :interactive_template_id,
-    :updated_at
+    :updated_at,
+    :profile_id
   ]
 
   schema "messages" do
@@ -136,7 +140,7 @@ defmodule Glific.Messages.Message do
     belongs_to(:context_message, Message, foreign_key: :context_message_id)
 
     # the originating group message which kicked off this flow if any
-    belongs_to(:flow_broadcast, FlowBroadcast, foreign_key: :flow_broadcast_id)
+    belongs_to(:message_broadcast, MessageBroadcast, foreign_key: :message_broadcast_id)
 
     field(:errors, :map, default: %{})
     field(:send_at, :utc_datetime)
@@ -152,6 +156,7 @@ defmodule Glific.Messages.Message do
     belongs_to(:flow_object, Flow, foreign_key: :flow_id)
     belongs_to(:media, MessageMedia)
     belongs_to(:organization, Organization)
+    belongs_to(:profile, Profile)
 
     belongs_to(:group, Group)
     has_one(:location, Location)

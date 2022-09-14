@@ -829,12 +829,12 @@ query flowRelease {
 ## Get Flow broadcast Stats by ID
 
 ```graphql
-query broadcastStats($flowBroadcastId: ID!) {
-  broadcastStats(flowBroadcastId: $flowBroadcastId)
+query broadcastStats($messageBroadcastId: ID!) {
+  broadcastStats(messageBroadcastId: $messageBroadcastId)
 }
 
 {
-  "flowBroadcastId": 2
+  "messageBroadcastId": 2
 }
 ```
 
@@ -1014,6 +1014,16 @@ query broadcastStats($flowBroadcastId: ID!) {
 <tr>
 <td colspan="2" valign="top"><strong>isPinned</strong></td>
 <td valign="top"><a href="#boolean">Boolean</a></td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>addRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
+<td></td>
+</tr>
+<tr>
+<td colspan="2" valign="top"><strong>deleteRoleIds</strong></td>
+<td valign="top">[<a href="#id">Id</a>]</td>
 <td></td>
 </tr>
 </tbody>
