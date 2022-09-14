@@ -542,7 +542,7 @@ defmodule Glific.Messages do
         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
       ) do
     contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
-    parsed_params = Enum.map(attrs.params, &MessageVarParser.parse(&1, contact_vars))
+    parsed_params = Enum.map(parameters, &MessageVarParser.parse(&1, contact_vars))
 
     attrs = Map.put(attrs, :parameters, parsed_params)
 
