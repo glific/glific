@@ -12,7 +12,7 @@
 
 ## Pre-requisites
 
-There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install npm / yarn and react.
+There is level of understanding middle to advanced level. It is assumed that you know how to use a terminal, install things and have git; for the backend, and for the frontend use install yarn and react.
 
 1. Software dependency - Postgres server
 2. Software dependency - Erlang / Elixir
