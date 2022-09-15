@@ -21,12 +21,24 @@ defmodule GlificWeb.Schema.GenericTypes do
   end
 
   @desc """
-  A generic status results for calls that dont return a value.
+  A generic status results for calls that don't return a value.
   Typically this is for delete operations
   """
   object :generic_result do
     field :status, non_null(:api_status_enum)
     field :errors, list_of(:input_error)
+  end
+
+  @desc """
+  A generic date range filter where from and to both are inclusive
+  """
+
+  input_object :date_range_input do
+    @desc "Start date for the filter"
+    field :from, :date
+
+    @desc "End date for the filter"
+    field :to, :date
   end
 
   scalar :gid do

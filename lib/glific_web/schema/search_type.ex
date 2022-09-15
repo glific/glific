@@ -51,14 +51,6 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :shortcode, :string
   end
 
-  input_object :date_range_input do
-    @desc "Start date for the filter"
-    field :from, :date
-
-    @desc "End date for the filter"
-    field :to, :date
-  end
-
   input_object :date_expression_input do
     @desc "Start date for the filter"
     field :from_expression, :string

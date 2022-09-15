@@ -239,6 +239,38 @@ defmodule Glific.Repo do
   defp make_like(query, name, str),
     do: from(q in query, where: ilike(field(q, ^name), ^"%#{str}%"))
 
+  @spec end_of_day(DateTime.t()) :: DateTime.t()
+  defp end_of_day(date),
+    do:
+      date
+      |> Timex.to_datetime()
+      |> Timex.end_of_day()
+
+  # Filter based on the date range
+  @spec filter_with_date_range(Ecto.Queryable.t(), DateTime.t() | nil, DateTime.t() | nil) ::
+          Ecto.Queryable.t()
+
+  defp filter_with_date_range(query, from, to) do
+    cond do
+      is_nil(from) && is_nil(to) ->
+        query
+
+      is_nil(from) && not is_nil(to) ->
+        where(query, [m: m], m.updated_at <= ^end_of_day(to))
+
+      not is_nil(from) && is_nil(to) ->
+        where(query, [m: m], m.updated_at >= ^Timex.to_datetime(from))
+
+      true ->
+        where(
+          query,
+          [m: m],
+          m.updated_at >= ^Timex.to_datetime(from) and
+            m.updated_at <= ^end_of_day(to)
+        )
+    end
+  end
+
   # codebeat:disable[ABC, LOC]
   @doc """
   Add all the common filters here, rather than in each file
@@ -279,6 +311,9 @@ defmodule Glific.Repo do
 
       {:parent_id, parent_id}, query ->
         from q in query, where: q.parent_id == ^parent_id
+
+      {:date_range, dates}, query ->
+        filter_with_date_range(query, dates[:from], dates[:to])
 
       _, query ->
         query
