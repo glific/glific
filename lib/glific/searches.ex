@@ -231,7 +231,7 @@ defmodule Glific.Searches do
   end
 
   @doc """
-  Add permissioning specific to searches, in this case we want to restrict the visibility of
+  Add permission specific to searches, in this case we want to restrict the visibility of
   contact ids where the contact is the main query table
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
@@ -269,7 +269,7 @@ defmodule Glific.Searches do
 
   # common function to build query between count and search
   # order by the last time there was communication with this contact
-  # whether inboound or outbound
+  # whether inbound or outbound
   @spec search_query(String.t(), map()) :: Ecto.Query.t()
   defp search_query(term, args) do
     basic_query(args)
@@ -362,7 +362,7 @@ defmodule Glific.Searches do
       |> Repo.all(timeout: 60_000)
       |> get_contact_ids(is_status?)
 
-    # if we dont have any contact ids at this stage
+    # if we don't have any contact ids at this stage
     # it means that the user did not have permission
     if contact_ids == [] do
       if count, do: 0, else: []
@@ -395,7 +395,7 @@ defmodule Glific.Searches do
     contacts = get_filtered_contacts(term, args)
     messages = get_filtered_messages_with_term(term, args)
     tags = get_filtered_tagged_message(term, args)
-    labels = get_filtered_labled_message(term, args)
+    labels = get_filtered_labeled_message(term, args)
     Search.new(contacts, messages, tags, labels)
   end
 
@@ -439,8 +439,8 @@ defmodule Glific.Searches do
     |> Repo.all()
   end
 
-  @spec get_filtered_labled_message(String.t(), map()) :: list()
-  defp get_filtered_labled_message(term, args) do
+  @spec get_filtered_labeled_message(String.t(), map()) :: list()
+  defp get_filtered_labeled_message(term, args) do
     filtered_query(args)
     |> where([m: m], ilike(m.flow_label, ^"%#{term}%"))
     |> order_by([m: m], desc: m.inserted_at)

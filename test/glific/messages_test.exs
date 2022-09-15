@@ -148,6 +148,31 @@ defmodule Glific.MessagesTest do
                  opts: %{order: :asc},
                  filter: Map.merge(attrs, %{bsp_status: message.bsp_status})
                })
+
+      from_date = message.inserted_at |> DateTime.to_date()
+
+      assert [message] ==
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter: Map.merge(attrs, %{date_range: %{from: from_date}})
+               })
+
+      to_date = message.inserted_at |> DateTime.to_date() |> Date.add(2)
+
+      assert [message] ==
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter: Map.merge(attrs, %{date_range: %{to: to_date}})
+               })
+
+      assert [message] ==
+               Messages.list_messages(%{
+                 opts: %{order: :asc},
+                 filter:
+                   Map.merge(attrs, %{
+                     date_range: %{from: from_date, to: to_date, column: "updated_at"}
+                   })
+               })
     end
 
     test "count_messages/1 returns count of all messages", attrs do
