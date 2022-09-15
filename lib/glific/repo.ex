@@ -99,7 +99,7 @@ defmodule Glific.Repo do
 
   @doc """
   This function builds the query, and is used in places where we want to
-  layer permissioning on top of the query
+  layer permission on top of the query
   """
   @spec list_filter_query(
           map(),
@@ -162,7 +162,7 @@ defmodule Glific.Repo do
   def opts_with_nil(query, _opts), do: query
 
   @doc """
-  A funtion which handles the order clause for a data type that has
+  A function which handles the order clause for a data type that has
   a 'name/body/label' in its schema (which is true for a fair number of Glific's
   data types)
   """
@@ -299,8 +299,8 @@ defmodule Glific.Repo do
   end
 
   @doc """
-  Implement permissioning support via groups. This is the basic wrapper, it uses
-  a context specific permissioning wrapper to add the actual clauses
+  Implement permission support via groups. This is the basic wrapper, it uses
+  a context specific permission wrapper to add the actual clauses
   """
   @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t()), boolean()) ::
           Ecto.Query.t()
@@ -355,7 +355,7 @@ defmodule Glific.Repo do
     end
   end
 
-  # lets ignore all subqueries
+  # lets ignore all sub queries
   @spec is_sub_query?(Ecto.Query.t()) :: boolean()
   defp is_sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
   defp is_sub_query?(_query), do: false

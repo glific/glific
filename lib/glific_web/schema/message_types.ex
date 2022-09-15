@@ -111,7 +111,7 @@ defmodule GlificWeb.Schema.MessageTypes do
 
   @desc "Filtering options for messages"
   input_object :message_filter do
-    @desc "Match the namebody"
+    @desc "Match the name body"
     field :body, :string
 
     @desc "Match the sender"
