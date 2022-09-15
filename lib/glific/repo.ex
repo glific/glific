@@ -256,24 +256,25 @@ defmodule Glific.Repo do
           Ecto.Queryable.t()
 
   defp filter_with_date_range(query, from, to, column) do
-    column_name = Glific.safe_string_to_atom(column, :inserted_at)
+    column_name =
+      (column || :inserted_at)
+      |> Glific.safe_string_to_atom(:inserted_at)
 
     cond do
       is_nil(from) && is_nil(to) ->
         query
 
       is_nil(from) && not is_nil(to) ->
-        where(query, [m: m], field(m, ^column_name) <= ^end_of_day(to))
+        from(q in query, where: field(q, ^column_name) <= ^end_of_day(to))
 
       not is_nil(from) && is_nil(to) ->
-        where(query, [m: m], field(m, ^column_name) >= ^Timex.to_datetime(from))
+        from(q in query, where: field(q, ^column_name) >= ^Timex.to_datetime(from))
 
       true ->
-        where(
-          query,
-          [m: m],
-          field(m, ^column_name) >= ^Timex.to_datetime(from) and
-            field(m, ^column_name) <= ^end_of_day(to)
+        from(q in query,
+          where:
+            field(q, ^column_name) >= ^Timex.to_datetime(from) and
+              field(q, ^column_name) <= ^end_of_day(to)
         )
     end
   end
