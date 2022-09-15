@@ -282,7 +282,9 @@ defmodule Glific.AccessControl do
   @spec do_check_access(Ecto.Query.t(), atom(), User.t()) :: Ecto.Query.t() | {:error, String.t()}
   def do_check_access(entity_list, :flow, user), do: FlowRole.check_access(entity_list, user)
   def do_check_access(entity_list, :group, user), do: GroupRole.check_access(entity_list, user)
-  def do_check_access(entity_list, :trigger, user), do: TriggerRole.check_access(entity_list, user)
+
+  def do_check_access(entity_list, :trigger, user),
+    do: TriggerRole.check_access(entity_list, user)
 
   def do_check_access(_entity_list, entity_type, _user),
     do: {:error, "Unknown entity type #{to_string(entity_type)}"}

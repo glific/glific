@@ -32,6 +32,17 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   end
 
   @doc """
+  Updating HSM templates for an organization
+  """
+  @spec update_hsm_templates(non_neg_integer()) :: :ok | {:error, String.t()}
+  def update_hsm_templates(_organization_id) do
+    ## We still need to implement this functionality.
+    ## Currently it's just for the same behaviour perspective
+    ## so that we don't face any issue while fetching the hsm templates
+    :ok
+  end
+
+  @doc """
   Delete template from the gupshup
   """
   @spec delete(non_neg_integer(), map()) :: {:ok, any()} | {:error, any()}
