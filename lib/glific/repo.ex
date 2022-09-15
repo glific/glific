@@ -251,30 +251,27 @@ defmodule Glific.Repo do
           Ecto.Queryable.t(),
           DateTime.t() | nil,
           DateTime.t() | nil,
-          String.t()
+          atom()
         ) ::
           Ecto.Queryable.t()
 
-  defp filter_with_date_range(query, from, to, column) do
-    column_name =
-      (column || :inserted_at)
-      |> Glific.safe_string_to_atom(:inserted_at)
-
+  defp filter_with_date_range(query, from, to, column_name) do
     cond do
       is_nil(from) && is_nil(to) ->
         query
 
       is_nil(from) && not is_nil(to) ->
-        from(q in query, where: field(q, ^column_name) <= ^end_of_day(to))
+        where(query, [q], field(q, ^column_name) <= ^end_of_day(to))
 
       not is_nil(from) && is_nil(to) ->
-        from(q in query, where: field(q, ^column_name) >= ^Timex.to_datetime(from))
+        where(query, [q], field(q, ^column_name) >= ^Timex.to_datetime(from))
 
       true ->
-        from(q in query,
-          where:
-            field(q, ^column_name) >= ^Timex.to_datetime(from) and
-              field(q, ^column_name) <= ^end_of_day(to)
+        where(
+          query,
+          [q],
+          field(q, ^column_name) >= ^Timex.to_datetime(from) and
+            field(q, ^column_name) <= ^end_of_day(to)
         )
     end
   end
@@ -323,7 +320,11 @@ defmodule Glific.Repo do
         from(q in query, where: q.parent_id == ^parent_id)
 
       {:date_range, dates}, query ->
-        filter_with_date_range(query, dates[:from], dates[:to], dates[:column])
+        column_name =
+          (dates[:column] || :inserted_at)
+          |> Glific.safe_string_to_atom(:inserted_at)
+
+        filter_with_date_range(query, dates[:from], dates[:to], column_name)
 
       _, query ->
         query
