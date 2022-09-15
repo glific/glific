@@ -39,6 +39,11 @@ defmodule GlificWeb.Schema.GenericTypes do
 
     @desc "End date for the filter"
     field :to, :date
+
+    @desc """
+      column name where we apply the date range. Default is inserted_at.
+    """
+    field :column, :string
   end
 
   scalar :gid do

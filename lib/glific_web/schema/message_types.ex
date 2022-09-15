@@ -134,6 +134,9 @@ defmodule GlificWeb.Schema.MessageTypes do
 
     @desc "Match the tags excluded"
     field :tags_excluded, list_of(:id)
+
+    @desc "a static date range input field which will apply on updated at column."
+    field :date_range, :date_range_input
   end
 
   input_object :message_input do

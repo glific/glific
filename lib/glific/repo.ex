@@ -247,26 +247,33 @@ defmodule Glific.Repo do
       |> Timex.end_of_day()
 
   # Filter based on the date range
-  @spec filter_with_date_range(Ecto.Queryable.t(), DateTime.t() | nil, DateTime.t() | nil) ::
+  @spec filter_with_date_range(
+          Ecto.Queryable.t(),
+          DateTime.t() | nil,
+          DateTime.t() | nil,
+          String.t()
+        ) ::
           Ecto.Queryable.t()
 
-  defp filter_with_date_range(query, from, to) do
+  defp filter_with_date_range(query, from, to, column) do
+    column_name = Glific.safe_string_to_atom(column, :inserted_at)
+
     cond do
       is_nil(from) && is_nil(to) ->
         query
 
       is_nil(from) && not is_nil(to) ->
-        where(query, [m: m], m.updated_at <= ^end_of_day(to))
+        where(query, [m: m], field(m, ^column_name) <= ^end_of_day(to))
 
       not is_nil(from) && is_nil(to) ->
-        where(query, [m: m], m.updated_at >= ^Timex.to_datetime(from))
+        where(query, [m: m], field(m, ^column_name) >= ^Timex.to_datetime(from))
 
       true ->
         where(
           query,
           [m: m],
-          m.updated_at >= ^Timex.to_datetime(from) and
-            m.updated_at <= ^end_of_day(to)
+          field(m, ^column_name) >= ^Timex.to_datetime(from) and
+            field(m, ^column_name) <= ^end_of_day(to)
         )
     end
   end
@@ -291,29 +298,31 @@ defmodule Glific.Repo do
         make_like(query, :body, body)
 
       {:shortcode, shortcode}, query ->
-        from q in query, where: q.shortcode == ^shortcode
+        from(q in query, where: q.shortcode == ^shortcode)
 
       {:language, language}, query ->
-        from q in query,
+        from(q in query,
           join: l in assoc(q, :language),
           where: ilike(l.label, ^"%#{language}%")
+        )
 
       {:language_id, language_id}, query ->
-        from q in query, where: q.language_id == ^language_id
+        from(q in query, where: q.language_id == ^language_id)
 
       {:organization_id, organization_id}, query ->
-        from q in query, where: q.organization_id == ^organization_id
+        from(q in query, where: q.organization_id == ^organization_id)
 
       {:parent, label}, query ->
-        from q in query,
+        from(q in query,
           join: t in assoc(q, :parent),
           where: ilike(t.label, ^"%#{label}%")
+        )
 
       {:parent_id, parent_id}, query ->
-        from q in query, where: q.parent_id == ^parent_id
+        from(q in query, where: q.parent_id == ^parent_id)
 
       {:date_range, dates}, query ->
-        filter_with_date_range(query, dates[:from], dates[:to])
+        filter_with_date_range(query, dates[:from], dates[:to], dates[:column])
 
       _, query ->
         query
