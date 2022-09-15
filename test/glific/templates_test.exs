@@ -293,6 +293,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "success",
+                "token" => "new_partner_token",
                 "template" => %{
                   "category" => "ACCOUNT_UPDATE",
                   "createdOn" => 1_595_904_220_495,
@@ -422,7 +423,7 @@ defmodule Glific.TemplatesTest do
             body:
               Jason.encode!(%{
                 "status" => "error",
-                "message" => "Template Not Supported On Gupshup Platform"
+                "message" => "Something went wrong"
               })
           }
       end)
@@ -440,11 +441,8 @@ defmodule Glific.TemplatesTest do
         organization_id: attrs.organization_id
       }
 
-      assert {:error,
-              [
-                "BSP response status: 400",
-                "Template Not Supported On Gupshup Platform"
-              ]} = Templates.create_session_template(attrs)
+      assert {:error, ["BSP", "couldn't submit for approval"]} =
+               Templates.create_session_template(attrs)
     end
 
     test "update_session_template/2 with valid data updates the session_template", attrs do

@@ -103,7 +103,6 @@ defmodule Glific.Users do
       {:error, %Ecto.Changeset{}}
 
   """
-
   @pow_config [otp_app: :glific]
   @spec update_user(User.t(), map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def update_user(%User{} = user, attrs) do

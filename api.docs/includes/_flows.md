@@ -829,12 +829,12 @@ query flowRelease {
 ## Get Flow broadcast Stats by ID
 
 ```graphql
-query broadcastStats($flowBroadcastId: ID!) {
-  broadcastStats(flowBroadcastId: $flowBroadcastId)
+query broadcastStats($messageBroadcastId: ID!) {
+  broadcastStats(messageBroadcastId: $messageBroadcastId)
 }
 
 {
-  "flowBroadcastId": 2
+  "messageBroadcastId": 2
 }
 ```
 
