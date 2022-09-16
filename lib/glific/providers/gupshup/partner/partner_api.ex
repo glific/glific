@@ -50,7 +50,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   for an organization with input app id
   """
   @spec get_quality_rating(non_neg_integer(), String.t()) :: {:error, any} | {:ok, map()}
-  def get_quality_rating(org_id, _phone \\ "") do
+  def get_quality_rating(org_id) do
     (app_url(org_id) <> "/ratings")
     |> get_request(org_id: org_id)
     |> case do

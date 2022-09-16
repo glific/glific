@@ -33,16 +33,16 @@ defmodule Glific.Partners.Provider do
 
   @schema_prefix "global"
   schema "providers" do
-    field :name, :string
-    field :shortcode, :string
-    field :group, :string
-    field :description, :string
-    field :is_required, :boolean, default: false
+    field(:name, :string)
+    field(:shortcode, :string)
+    field(:group, :string)
+    field(:description, :string)
+    field(:is_required, :boolean, default: false)
 
-    field :keys, :map
-    field :secrets, :map
-    has_many :organizations, Glific.Partners.Organization, foreign_key: :bsp_id
-    has_one :credential, Glific.Partners.Credential
+    field(:keys, :map)
+    field(:secrets, :map)
+    has_many(:organizations, Glific.Partners.Organization, foreign_key: :bsp_id)
+    has_one(:credential, Glific.Partners.Credential)
 
     timestamps(type: :utc_datetime)
   end
@@ -71,6 +71,18 @@ defmodule Glific.Partners.Provider do
     |> case do
       "gupshup" -> Glific.Providers.Gupshup.Template
       "gupshup_enterprise" -> Glific.Providers.GupshupEnterprise.Template
+      _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
+    end
+  end
+
+  @spec bsp_module(binary | non_neg_integer, any) :: any()
+  def bsp_module(org_id, :contact) do
+    organization = Glific.Partners.organization(org_id)
+
+    organization.bsp.shortcode
+    |> case do
+      "gupshup" -> Glific.Providers.GupshupContacts
+      "gupshup_enterprise" -> Glific.Providers.GupshupEnterpriseContacts
       _ -> raise("#{organization.bsp.shortcode} Provider Not found.")
     end
   end
