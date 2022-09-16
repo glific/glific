@@ -37,7 +37,7 @@ defmodule GlificWeb.Resolvers.Groups do
   end
 
   @doc """
-  Get the list of messages filtered by args
+  Get the list of contact_groups filtered by args
   """
   @spec contact_groups(Absinthe.Resolution.t(), map(), %{context: map()}) ::
           {:ok, any} | {:error, any}
