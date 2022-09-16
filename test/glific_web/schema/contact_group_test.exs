@@ -154,28 +154,56 @@ defmodule GlificWeb.Schema.ContactGroupTest do
   end
 
   test "list contact groups", %{staff: user_auth} do
-    label = "Default Group"
-
-    {:ok, group} =
-      Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
-
     [contact1, contact2 | _] =
       Contacts.list_contacts(%{filter: %{organization_id: user_auth.organization_id}})
 
+    [group1, group2 | _] =
+      Groups.list_groups(%{filter: %{organization_id: user_auth.organization_id}})
+
     Groups.GroupContacts.update_group_contacts(%{
       organization_id: user_auth.organization_id,
-      group_id: group.id,
+      group_id: group1.id,
       add_contact_ids: [contact1.id, contact2.id],
       delete_contact_ids: []
     })
 
+    Groups.GroupContacts.update_group_contacts(%{
+      organization_id: user_auth.organization_id,
+      group_id: group2.id,
+      add_contact_ids: [contact1.id, contact2.id],
+      delete_contact_ids: []
+    })
+
+    limit = 4
+
     ## List contact groups
     result =
-      auth_query_gql_by(:list, user_auth, variables: %{"opts" => %{"limit" => 10, "offset" => 0}})
+      auth_query_gql_by(:list, user_auth,
+        variables: %{"opts" => %{"limit" => limit, "offset" => 0}}
+      )
+
+    assert {:ok, query_data} = result
+    assert length(get_in(query_data, [:data, "contactGroups"])) <= limit
+    assert length(get_in(query_data, [:data, "contactGroups"])) > 0
+
+    ## List with group id filters
+    result =
+      auth_query_gql_by(:list, user_auth, variables: %{"filter" => %{"group_id" => group1.id}})
 
     assert {:ok, query_data} = result
 
-    IO.inspect(query_data)
+    assert length(get_in(query_data, [:data, "contactGroups"])) ==
+             Groups.contacts_count(%{id: group1.id})
+
+    ## List with contact id filters
+    contact1 = Repo.preload(contact1, :groups)
+
+    result =
+      auth_query_gql_by(:list, user_auth, variables: %{"filter" => %{"contact_id" => contact1.id}})
+
+    assert {:ok, query_data} = result
+
+    assert length(get_in(query_data, [:data, "contactGroups"])) == length(contact1.groups)
   end
 
   test "create a contact group and test possible scenarios and errors", %{staff: user_auth} do
