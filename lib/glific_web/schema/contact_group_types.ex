@@ -57,10 +57,10 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
 
   @desc "Filtering options for messages"
   input_object :contact_group_filter do
-    @desc "Match the name body"
+    @desc "Match the contact id"
     field :contact_id, :id
 
-    @desc "Match the sender"
+    @desc "Match the group id"
     field :group_id, :id
 
     @desc "Date range which will apply on date column. Default is inserted at."
