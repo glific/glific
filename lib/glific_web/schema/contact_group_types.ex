@@ -55,6 +55,28 @@ defmodule GlificWeb.Schema.ContactGroupTypes do
     field :contact_groups, list_of(:contact_group)
   end
 
+  @desc "Filtering options for messages"
+  input_object :contact_group_filter do
+    @desc "Match the name body"
+    field :contact_id, :id
+
+    @desc "Match the sender"
+    field :group_id, :id
+
+    @desc "Date range which will apply on date column. Default is inserted at."
+    field :date_range, :date_range_input
+  end
+
+  object :contact_group_queries do
+    @desc "Get a list of all messages filtered by various criteria"
+    field :contact_groups, list_of(:contact_group) do
+      arg(:filter, :contact_group_filter)
+      arg(:opts, :opts)
+      middleware(Authorize, :staff)
+      resolve(&Resolvers.Groups.contact_groups/3)
+    end
+  end
+
   object :contact_group_mutations do
     field :create_contact_group, :contact_group_result do
       arg(:input, non_null(:contact_group_input))

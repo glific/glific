@@ -20,6 +20,7 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     :ok
   end
 
+  load_gql(:list, GlificWeb.Schema, "assets/gql/contact_groups/list.gql")
   load_gql(:create, GlificWeb.Schema, "assets/gql/contact_groups/create.gql")
   load_gql(:info, GlificWeb.Schema, "assets/gql/contact_groups/info.gql")
 
@@ -150,6 +151,31 @@ defmodule GlificWeb.Schema.ContactGroupTest do
     assert {:ok, query_data} = result
     contact_groups = get_in(query_data, [:data, "updateContactGroups", "contactGroups"])
     assert contact_groups == []
+  end
+
+  test "list contact groups", %{staff: user_auth} do
+    label = "Default Group"
+
+    {:ok, group} =
+      Repo.fetch_by(Group, %{label: label, organization_id: user_auth.organization_id})
+
+    [contact1, contact2 | _] =
+      Contacts.list_contacts(%{filter: %{organization_id: user_auth.organization_id}})
+
+    Groups.GroupContacts.update_group_contacts(%{
+      organization_id: user_auth.organization_id,
+      group_id: group.id,
+      add_contact_ids: [contact1.id, contact2.id],
+      delete_contact_ids: []
+    })
+
+    ## List contact groups
+    result =
+      auth_query_gql_by(:list, user_auth, variables: %{"opts" => %{"limit" => 10, "offset" => 0}})
+
+    assert {:ok, query_data} = result
+
+    IO.inspect(query_data)
   end
 
   test "create a contact group and test possible scenarios and errors", %{staff: user_auth} do
