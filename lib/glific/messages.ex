@@ -23,7 +23,6 @@ defmodule Glific.Messages do
     Notifications,
     Partners,
     Repo,
-    Search.Full,
     Tags,
     Tags.MessageTag,
     Tags.Tag,
@@ -114,9 +113,6 @@ defmodule Glific.Messages do
 
       {:flow_id, flow_id}, query ->
         from(q in query, where: q.flow_id == ^flow_id)
-
-      {:date_range, dates}, query ->
-        query |> Full.run_date_range(dates[:from], dates[:to])
 
       _, query ->
         query
