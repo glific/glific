@@ -7,10 +7,12 @@ defmodule Glific.Groups.ContactGroups do
 
   alias Glific.{
     Groups,
-    Groups.ContactGroup
+    Groups.ContactGroup,
+    Repo
   }
 
   use Ecto.Schema
+  import Ecto.Query, warn: false
 
   @primary_key false
 
@@ -21,8 +23,41 @@ defmodule Glific.Groups.ContactGroups do
 
   embedded_schema do
     # the number of contacts we deleted
-    field :number_deleted, :integer, default: 0
+    field(:number_deleted, :integer, default: 0)
     embeds_many(:contact_groups, ContactGroup)
+  end
+
+  @doc """
+  Returns the list of contact groups structs.
+
+  ## Examples
+
+      iex> list_contact_groups()
+      [%ContactGroup{}, ...]
+
+  """
+  @spec list_contact_groups(map()) :: [ContactGroup.t()]
+  def list_contact_groups(args) do
+    args
+    |> Repo.list_filter_query(ContactGroup, &Repo.opts_with_id/2, &filter_with/2)
+    |> Repo.all()
+  end
+
+  # codebeat:disable[ABC, LOC]
+  @spec filter_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
+  defp filter_with(query, filter) do
+    query = Repo.filter_with(query, filter)
+
+    Enum.reduce(filter, query, fn
+      {:group_id, group_id}, query ->
+        where(query, [q], q.group_id == ^group_id)
+
+      {:contact_id, contact_id}, query ->
+        where(query, [q], q.contact_id == ^contact_id)
+
+      _, query ->
+        query
+    end)
   end
 
   @doc """

@@ -534,7 +534,8 @@ defmodule Glific.Partners.Billing do
       when status in [:inactive, :ready_to_delete] do
     ## let's delete the subscription by end of that month and deactivate the
     ## billing when we change the status to inactive and ready to delete.
-    Stripe.Subscription.delete(billing.stripe_customer_id, %{at_period_end: true})
+    ## delete subscription is no longer available.
+    ## Stripe.Subscription.delete(billing.stripe_customer_id, %{at_period_end: true})
     update_billing(billing, %{is_active: false})
     organization
   end

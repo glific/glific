@@ -14,7 +14,7 @@ defmodule Glific.Search.Full do
   @doc """
   Simple wrapper function which calls a helper function after normalizing
   and sanitizing the input. The two functions combined serve to augment
-  the query with the link to the fulltext index
+  the query with the link to the full text index
   """
   @spec run(Ecto.Query.t(), String.t(), map()) :: Ecto.Query.t()
   def run(query, term, args) do

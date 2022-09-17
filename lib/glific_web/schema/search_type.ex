@@ -51,14 +51,6 @@ defmodule GlificWeb.Schema.SearchTypes do
     field :shortcode, :string
   end
 
-  input_object :date_range_input do
-    @desc "Start date for the filter"
-    field :from, :date
-
-    @desc "End date for the filter"
-    field :to, :date
-  end
-
   input_object :date_expression_input do
     @desc "Start date for the filter"
     field :from_expression, :string
@@ -96,7 +88,7 @@ defmodule GlificWeb.Schema.SearchTypes do
     @desc "status of the message, this replaces the unread/not responded tags"
     field :status, :string
 
-    @desc "a static date range input field"
+    @desc "a static date range input field which will apply on updated at column."
     field :date_range, :date_range_input
 
     @desc "a dynamic date expression input field"

@@ -159,7 +159,10 @@ defmodule Glific.Messages do
 
     %Message{}
     |> Message.changeset(attrs)
-    |> Repo.insert(returning: [:message_number, :session_uuid, :context_message_id])
+    |> Repo.insert(
+      returning: [:message_number, :session_uuid, :context_message_id],
+      timeout: 6_000
+    )
   end
 
   @spec put_contact_id(map()) :: map()
@@ -276,11 +279,9 @@ defmodule Glific.Messages do
           {:ok, Message.t()} | {:error, atom() | String.t()}
   defp check_for_hsm_message(attrs, contact) do
     if Map.has_key?(attrs, :template_id) && Map.get(attrs, :is_hsm) do
-      contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
-      parsed_params = Enum.map(attrs.params, &MessageVarParser.parse(&1, contact_vars))
-
       attrs
-      |> Map.put(:parameters, parsed_params)
+      ## We need to fix this inconsistency in the parameter and params name
+      |> Map.put(:parameters, attrs.params)
       |> create_and_send_hsm_message()
     else
       Contacts.can_send_message_to?(contact, Map.get(attrs, :is_hsm, false), attrs)
@@ -546,6 +547,11 @@ defmodule Glific.Messages do
   def create_and_send_hsm_message(
         %{template_id: template_id, receiver_id: receiver_id, parameters: parameters} = attrs
       ) do
+    contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
+    parsed_params = Enum.map(parameters, &MessageVarParser.parse(&1, contact_vars))
+
+    attrs = Map.put(attrs, :parameters, parsed_params)
+
     Repo.fetch(SessionTemplate, template_id)
     |> case do
       {:ok, template} ->
@@ -972,7 +978,7 @@ defmodule Glific.Messages do
 
       # commenting this out since we search for the labels in full.ex
       # and hence want to include the contacts even if the most recent messages
-      # dont fit into the search criteria
+      # don't fit into the search criteria
       # {:include_labels, label_ids}, query ->
       #   include_label_filter(query, label_ids)
 
