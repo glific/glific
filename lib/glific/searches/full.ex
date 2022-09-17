@@ -136,20 +136,19 @@ defmodule Glific.Search.Full do
   # Filter based on the date range
   @spec run_date_range(Ecto.Queryable.t(), DateTime.t() | nil, DateTime.t() | nil) ::
           Ecto.Queryable.t()
-  def run_date_range(query, nil, nil), do: query
+  defp run_date_range(query, nil, nil), do: query
 
-  def run_date_range(query, nil, to) do
+  defp run_date_range(query, nil, to) do
     query
     |> where([m: m], m.inserted_at <= ^end_of_day(to))
   end
 
-  def run_date_range(query, from, nil) do
+  defp run_date_range(query, from, nil) do
     query
     |> where([m: m], m.inserted_at >= ^Timex.to_datetime(from))
   end
 
-  def run_date_range(query, from, to) do
-    IO.inspect(from, label: "---------------->>>>>>>>>.")
+  defp run_date_range(query, from, to) do
     query
     |> where(
       [m: m],
