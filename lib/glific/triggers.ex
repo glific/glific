@@ -155,23 +155,14 @@ defmodule Glific.Triggers do
   """
   @spec create_trigger(map()) :: {:ok, Trigger.t()} | {:error, Ecto.Changeset.t()}
   def create_trigger(attrs) do
-    with {:ok, valid_attrs} <- validate_new_trigger(attrs),
-         {:ok, trigger} <-
+    with {:ok, trigger} <-
            %Trigger{}
-           |> Trigger.changeset(valid_attrs)
+           |> Trigger.changeset(fix_attrs(Map.put_new(attrs, :start_at, nil)))
            |> Repo.insert() do
       if Map.has_key?(attrs, :add_role_ids),
         do: update_trigger_roles(attrs, trigger),
         else: {:ok, trigger}
     end
-  end
-
-  @spec validate_new_trigger(map()) :: {:ok, map()} | {:error, map()}
-  defp validate_new_trigger(attrs) do
-    attrs
-    |> Map.put_new(:start_at, nil)
-    |> fix_attrs()
-    |> validate_frequency
   end
 
   @spec update_trigger_roles(map(), Trigger.t()) :: {:ok, Trigger.t()}
