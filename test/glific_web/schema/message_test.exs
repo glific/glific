@@ -105,6 +105,35 @@ defmodule GlificWeb.Schema.MessageTest do
     assert messages == []
   end
 
+  test "messages with flow_id filters", %{staff: user} = attrs do
+    SeedsDev.seed_test_flows()
+    [flow | _tail] = Glific.Flows.list_flows(%{filter: attrs})
+    contact = Fixtures.contact_fixture(attrs)
+    {:ok, _flow} = Glific.Flows.start_contact_flow(flow, contact)
+
+    message =
+      Message
+      |> Ecto.Query.last()
+      |> Repo.one()
+
+    result =
+      auth_query_gql_by(:list, user, variables: %{"filter" => %{"flowId" => message.flow_id}})
+
+    assert {:ok, query_data} = result
+    messages = get_in(query_data, [:data, "messages"])
+    assert length(messages) > 0
+    [flow_message | _] = messages
+
+    assert String.to_integer(flow_message["id"]) == message.id
+
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"flowId" => 99_999}})
+
+    assert {:ok, query_data} = result
+    messages = get_in(query_data, [:data, "messages"])
+
+    assert messages == []
+  end
+
   test "messages field returns list of messages in desc order", %{staff: user} do
     result = auth_query_gql_by(:list, user, variables: %{"opts" => %{"order" => "DESC"}})
     assert {:ok, query_data} = result
