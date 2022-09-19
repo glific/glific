@@ -13,7 +13,7 @@ defmodule Glific.MixProject do
   def project do
     [
       app: :glific,
-      version: "4.6.8",
+      version: "4.7.1",
       elixir: "~> 1.13",
       elixirc_paths: elixirc_paths(Mix.env()),
       dialyzer: [
@@ -97,7 +97,7 @@ defmodule Glific.MixProject do
       {:floki, ">= 0.27.0", only: @test_envs},
       {:gettext, "~> 0.20"},
       {:decimal, "~> 2.0"},
-      {:jason, "~> 1.2"},
+      {:jason, "~> 1.4"},
       {:plug_cowboy, "~> 2.0"},
       {:ecto_enum, "~> 1.4"},
       {:pow, "~> 1.0.24"},

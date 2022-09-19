@@ -25,7 +25,7 @@ defmodule Glific.OnboardTest do
     HTTPoison.start()
     ExVCR.Config.cassette_library_dir("test/support/ex_vcr")
 
-    Tesla.Mock.mock(fn
+    Tesla.Mock.mock_global(fn
       %{method: :get} ->
         %Tesla.Env{
           status: 200,
@@ -41,8 +41,10 @@ defmodule Glific.OnboardTest do
           status: 200,
           body:
             Jason.encode!(%{
-              "status" => "ok",
-              "templates" => []
+              "token" => "ks_test_token",
+              "status" => "success",
+              "templates" => [],
+              "template" => %{"id" => Ecto.UUID.generate(), "status" => "PENDING"}
             })
         }
     end)

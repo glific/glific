@@ -100,6 +100,8 @@ defmodule GlificWeb.Schema do
     import_fields(:flow_label_queries)
 
     import_fields(:access_role_queries)
+
+    import_fields(:contact_group_queries)
   end
 
   mutation do

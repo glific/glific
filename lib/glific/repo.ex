@@ -99,7 +99,7 @@ defmodule Glific.Repo do
 
   @doc """
   This function builds the query, and is used in places where we want to
-  layer permissioning on top of the query
+  layer permission on top of the query
   """
   @spec list_filter_query(
           map(),
@@ -162,7 +162,7 @@ defmodule Glific.Repo do
   def opts_with_nil(query, _opts), do: query
 
   @doc """
-  A funtion which handles the order clause for a data type that has
+  A function which handles the order clause for a data type that has
   a 'name/body/label' in its schema (which is true for a fair number of Glific's
   data types)
   """
@@ -239,6 +239,43 @@ defmodule Glific.Repo do
   defp make_like(query, name, str),
     do: from(q in query, where: ilike(field(q, ^name), ^"%#{str}%"))
 
+  @spec end_of_day(DateTime.t()) :: DateTime.t()
+  defp end_of_day(date),
+    do:
+      date
+      |> Timex.to_datetime()
+      |> Timex.end_of_day()
+
+  # Filter based on the date range
+  @spec filter_with_date_range(
+          Ecto.Queryable.t(),
+          DateTime.t() | nil,
+          DateTime.t() | nil,
+          atom()
+        ) ::
+          Ecto.Queryable.t()
+
+  defp filter_with_date_range(query, from, to, column_name) do
+    cond do
+      is_nil(from) && is_nil(to) ->
+        query
+
+      is_nil(from) && not is_nil(to) ->
+        where(query, [q], field(q, ^column_name) <= ^end_of_day(to))
+
+      not is_nil(from) && is_nil(to) ->
+        where(query, [q], field(q, ^column_name) >= ^Timex.to_datetime(from))
+
+      true ->
+        where(
+          query,
+          [q],
+          field(q, ^column_name) >= ^Timex.to_datetime(from) and
+            field(q, ^column_name) <= ^end_of_day(to)
+        )
+    end
+  end
+
   # codebeat:disable[ABC, LOC]
   @doc """
   Add all the common filters here, rather than in each file
@@ -259,26 +296,35 @@ defmodule Glific.Repo do
         make_like(query, :body, body)
 
       {:shortcode, shortcode}, query ->
-        from q in query, where: q.shortcode == ^shortcode
+        from(q in query, where: q.shortcode == ^shortcode)
 
       {:language, language}, query ->
-        from q in query,
+        from(q in query,
           join: l in assoc(q, :language),
           where: ilike(l.label, ^"%#{language}%")
+        )
 
       {:language_id, language_id}, query ->
-        from q in query, where: q.language_id == ^language_id
+        from(q in query, where: q.language_id == ^language_id)
 
       {:organization_id, organization_id}, query ->
-        from q in query, where: q.organization_id == ^organization_id
+        from(q in query, where: q.organization_id == ^organization_id)
 
       {:parent, label}, query ->
-        from q in query,
+        from(q in query,
           join: t in assoc(q, :parent),
           where: ilike(t.label, ^"%#{label}%")
+        )
 
       {:parent_id, parent_id}, query ->
-        from q in query, where: q.parent_id == ^parent_id
+        from(q in query, where: q.parent_id == ^parent_id)
+
+      {:date_range, dates}, query ->
+        column_name =
+          (dates[:column] || :inserted_at)
+          |> Glific.safe_string_to_atom(:inserted_at)
+
+        filter_with_date_range(query, dates[:from], dates[:to], column_name)
 
       _, query ->
         query
@@ -299,8 +345,8 @@ defmodule Glific.Repo do
   end
 
   @doc """
-  Implement permissioning support via groups. This is the basic wrapper, it uses
-  a context specific permissioning wrapper to add the actual clauses
+  Implement permission support via groups. This is the basic wrapper, it uses
+  a context specific permission wrapper to add the actual clauses
   """
   @spec add_permission(Ecto.Query.t(), (Ecto.Query.t(), User.t() -> Ecto.Query.t()), boolean()) ::
           Ecto.Query.t()
@@ -355,7 +401,7 @@ defmodule Glific.Repo do
     end
   end
 
-  # lets ignore all subqueries
+  # lets ignore all sub queries
   @spec is_sub_query?(Ecto.Query.t()) :: boolean()
   defp is_sub_query?(%{from: %{source: %Ecto.SubQuery{}}} = _query), do: true
   defp is_sub_query?(_query), do: false

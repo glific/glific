@@ -1,0 +1,14 @@
+query contactGroups($filter: ContactGroupFilter, $opts: Opts) {
+  contactGroups(filter: $filter, opts: $opts) {
+    id
+    contact {
+      id
+      name
+    }
+
+    group {
+      id
+      label
+    }
+  }
+}
