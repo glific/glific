@@ -22,15 +22,13 @@ defmodule Glific.Contacts do
     Partners,
     Partners.Provider,
     Profiles,
-    Providers.GupshupContacts,
-    Providers.GupshupEnterpriseContacts,
     Repo,
     Tags.ContactTag,
     Users.User
   }
 
   @doc """
-  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  Add permission specific to groups, in this case we want to restrict the visibility of
   groups that the user can see
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
