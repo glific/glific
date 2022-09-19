@@ -58,17 +58,11 @@ defmodule Glific.Triggers.Trigger do
 
   schema "triggers" do
     field :trigger_type, :string, default: "scheduled"
-
-    belongs_to :group, Group
-    belongs_to :flow, Flow
-
     field :start_at, :utc_datetime
     field :end_date, :date
     field :name, :string
-
     field :last_trigger_at, :utc_datetime
     field :next_trigger_at, :utc_datetime
-
     field :frequency, {:array, :string}, default: []
     field :days, {:array, :integer}, default: []
     field :hours, {:array, :integer}, default: []
@@ -76,6 +70,8 @@ defmodule Glific.Triggers.Trigger do
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
 
+    belongs_to :group, Group
+    belongs_to :flow, Flow
     belongs_to :organization, Organization
     many_to_many :roles, Role, join_through: "trigger_roles", on_replace: :delete
 
@@ -116,6 +112,7 @@ defmodule Glific.Triggers.Trigger do
 
   defp validate_start_at(changeset), do: changeset
 
+  @spec validate_frequency(Ecto.Changeset.t()) :: Ecto.Changeset.t()
   defp validate_frequency(changeset) do
     do_validate_frequency(changeset.changes)
     |> case do
@@ -131,6 +128,7 @@ defmodule Glific.Triggers.Trigger do
     end
   end
 
+  @spec do_validate_frequency(map()) :: {:ok, map()} | {:error, String.t()}
   defp do_validate_frequency(%{frequency: frequency} = attrs)
        when frequency in [["daily"], ["none"]] do
     {:ok, Map.merge(attrs, %{days: [], hours: []})}
@@ -140,7 +138,7 @@ defmodule Glific.Triggers.Trigger do
     valid_hours = Enum.reduce(0..23, [], fn hour, acc -> acc ++ [hour] end)
 
     with hours <- Map.get(attrs, :hours, []),
-         false <- length(hours) == 0,
+         false <- Enum.empty?(hours),
          true <- Enum.all?(hours, fn hour -> hour in valid_hours end) do
       {:ok, Map.put(attrs, :days, [])}
     else
@@ -152,7 +150,7 @@ defmodule Glific.Triggers.Trigger do
     valid_days = Enum.reduce(1..7, [], fn day, acc -> acc ++ [day] end)
 
     with days <- Map.get(attrs, :days, []),
-         false <- length(days) == 0,
+         false <- Enum.empty?(days),
          true <- Enum.all?(days, fn day -> day in valid_days end) do
       {:ok, Map.put(attrs, :hours, [])}
     else
@@ -164,7 +162,7 @@ defmodule Glific.Triggers.Trigger do
     valid_days = Enum.reduce(1..31, [], fn day, acc -> acc ++ [day] end)
 
     with days <- Map.get(attrs, :days, []),
-         false <- length(days) == 0,
+         false <- Enum.empty?(days),
          true <- Enum.all?(days, fn day -> day in valid_days end) do
       {:ok, Map.put(attrs, :hours, [])}
     else
