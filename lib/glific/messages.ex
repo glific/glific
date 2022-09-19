@@ -111,6 +111,9 @@ defmodule Glific.Messages do
       {:bsp_status, bsp_status}, query ->
         from(q in query, where: q.bsp_status == ^bsp_status)
 
+      {:flow_id, flow_id}, query ->
+        from(q in query, where: q.flow_id == ^flow_id)
+
       _, query ->
         query
     end)
@@ -681,10 +684,10 @@ defmodule Glific.Messages do
 
     {:ok, group_message} =
       if message_params[:is_hsm] in [nil, false],
-        do: create_group_message(message_params |> Map.put(:type, :text)),
+        do: create_group_message(message_params |> Map.put_new(:type, :text)),
         else:
           message_params
-          |> Map.put(:type, :text)
+          |> Map.put_new(:type, :text)
           |> Map.put(
             :body,
             "Sending HSM template #{message_params.template_id}, params: #{message_params.parameters}"

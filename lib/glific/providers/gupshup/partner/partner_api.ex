@@ -49,8 +49,8 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   Fetches Partner token and App Access token to get tier information
   for an organization with input app id
   """
-  @spec get_quality_rating(non_neg_integer(), String.t()) :: {:error, any} | {:ok, map()}
-  def get_quality_rating(org_id, _phone \\ "") do
+  @spec get_quality_rating(non_neg_integer()) :: {:error, any} | {:ok, map()}
+  def get_quality_rating(org_id) do
     (app_url(org_id) <> "/ratings")
     |> get_request(org_id: org_id)
     |> case do

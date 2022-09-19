@@ -58,17 +58,11 @@ defmodule Glific.Triggers.Trigger do
 
   schema "triggers" do
     field :trigger_type, :string, default: "scheduled"
-
-    belongs_to :group, Group
-    belongs_to :flow, Flow
-
     field :start_at, :utc_datetime
     field :end_date, :date
     field :name, :string
-
     field :last_trigger_at, :utc_datetime
     field :next_trigger_at, :utc_datetime
-
     field :frequency, {:array, :string}, default: []
     field :days, {:array, :integer}, default: []
     field :hours, {:array, :integer}, default: []
@@ -76,6 +70,8 @@ defmodule Glific.Triggers.Trigger do
     field :is_active, :boolean, default: true
     field :is_repeating, :boolean, default: false
 
+    belongs_to :group, Group
+    belongs_to :flow, Flow
     belongs_to :organization, Organization
     many_to_many :roles, Role, join_through: "trigger_roles", on_replace: :delete
 
@@ -91,6 +87,7 @@ defmodule Glific.Triggers.Trigger do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> validate_start_at()
+    |> validate_frequency()
     |> foreign_key_constraint(:flow_id)
     |> foreign_key_constraint(:group_id)
     |> foreign_key_constraint(:organization_id)
@@ -114,4 +111,64 @@ defmodule Glific.Triggers.Trigger do
   end
 
   defp validate_start_at(changeset), do: changeset
+
+  @spec validate_frequency(Ecto.Changeset.t()) :: Ecto.Changeset.t()
+  defp validate_frequency(changeset) do
+    do_validate_frequency(changeset.changes)
+    |> case do
+      {:ok, updated_attrs} ->
+        Map.put(changeset, :changes, updated_attrs)
+
+      {:error, error} ->
+        add_error(
+          changeset,
+          :frequency,
+          error
+        )
+    end
+  end
+
+  @spec do_validate_frequency(map()) :: {:ok, map()} | {:error, String.t()}
+  defp do_validate_frequency(%{frequency: frequency} = attrs)
+       when frequency in [["daily"], ["none"]] do
+    {:ok, Map.merge(attrs, %{days: [], hours: []})}
+  end
+
+  defp do_validate_frequency(%{frequency: ["hourly"]} = attrs) do
+    valid_hours = Enum.reduce(0..23, [], fn hour, acc -> acc ++ [hour] end)
+
+    with hours <- Map.get(attrs, :hours, []),
+         false <- Enum.empty?(hours),
+         true <- Enum.all?(hours, fn hour -> hour in valid_hours end) do
+      {:ok, Map.put(attrs, :days, [])}
+    else
+      _ -> {:error, "Cannot create Trigger with invalid hours"}
+    end
+  end
+
+  defp do_validate_frequency(%{frequency: ["weekly"]} = attrs) do
+    valid_days = Enum.reduce(1..7, [], fn day, acc -> acc ++ [day] end)
+
+    with days <- Map.get(attrs, :days, []),
+         false <- Enum.empty?(days),
+         true <- Enum.all?(days, fn day -> day in valid_days end) do
+      {:ok, Map.put(attrs, :hours, [])}
+    else
+      _ -> {:error, "Cannot create Trigger with invalid days"}
+    end
+  end
+
+  defp do_validate_frequency(%{frequency: ["monthly"]} = attrs) do
+    valid_days = Enum.reduce(1..31, [], fn day, acc -> acc ++ [day] end)
+
+    with days <- Map.get(attrs, :days, []),
+         false <- Enum.empty?(days),
+         true <- Enum.all?(days, fn day -> day in valid_days end) do
+      {:ok, Map.put(attrs, :hours, [])}
+    else
+      _ -> {:error, "Cannot create Trigger with invalid days"}
+    end
+  end
+
+  defp do_validate_frequency(attrs), do: {:ok, attrs}
 end
