@@ -10,7 +10,7 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
   }
 
   @message_request_params %{
-    "app" => "GlifMock App",
+    "app" => "Glific Mock App",
     "timestamp" => 1_580_227_766_370,
     "version" => 2,
     "type" => "message",
