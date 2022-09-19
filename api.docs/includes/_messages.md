@@ -1401,7 +1401,7 @@ Match the tags included
 
 <tr>
 <td colspan="2" valign="top"><strong>FlowID</strong></td>
-<td valign="top">[<a href="#gid">Integer</a>]</td>
+<td valign="top">[<a href="#int">Integer</a>]</td>
 <td>
 
 Match the Flow ID
@@ -1490,7 +1490,7 @@ Match the tags excluded
 
 <tr>
 <td colspan="2" valign="top"><strong>flow_id</strong></td>
-<td valign="top"><a href="#datetime">Id</a></td>
+<td valign="top"><a href="#id">Id</a></td>
 <td></td>
 </tr>
 
