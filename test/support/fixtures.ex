@@ -674,7 +674,8 @@ defmodule Glific.Fixtures do
       is_active: true,
       is_repeating: false,
       start_date: Timex.shift(Date.utc_today(), days: 1),
-      start_time: Time.utc_now()
+      start_time: Time.utc_now(),
+      frequency: ["none"]
     }
 
     [g1 | _] = Groups.list_groups(attrs)

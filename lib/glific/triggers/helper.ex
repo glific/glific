@@ -13,6 +13,7 @@ defmodule Glific.Triggers.Helper do
         %{
           frequency: frequency,
           days: days,
+          hours: hours,
           next_trigger_at: next_time
         } = trigger
       ) do
@@ -20,13 +21,10 @@ defmodule Glific.Triggers.Helper do
       "daily" in frequency ->
         Timex.shift(next_time, days: 1) |> Timex.to_datetime()
 
-      # "weekly" in frequency -> Timex.shift(time, days: 7) |> Timex.to_datetime()
       "hourly" in frequency ->
         org = Glific.Partners.organization(trigger.organization_id)
         org_time = DateTime.shift_zone!(next_time, org.timezone)
-
-        Map.get(trigger, :hours, [])
-        |> compute_hourly(org_time)
+        compute_hourly(hours, org_time)
 
       "monthly" in frequency ->
         monthly(next_time, days)
