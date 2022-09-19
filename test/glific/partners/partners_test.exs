@@ -389,6 +389,51 @@ defmodule Glific.PartnersTest do
       assert organization.newcontact_flow_id == nil
     end
 
+    test "update_organization/2 with organization default office flow update is_pinned status of flow" do
+      # organization with newcontact flow as nil
+      organization = Fixtures.organization_fixture()
+
+      flow =
+        Fixtures.flow_fixture(%{
+          name: "Test Flow",
+          keywords: ["test_keyword"],
+          flow_type: :message,
+          version_number: "13.1.0"
+        })
+
+      update_org_attrs =
+        @update_org_attrs
+        |> Map.merge(%{
+          out_of_office: %{
+            enabled: true,
+            default_flow_id: flow.id
+          },
+          newcontact_flow_id: flow.id
+        })
+
+      assert {:ok, %Organization{} = organization} =
+               Partners.update_organization(organization, update_org_attrs)
+
+      # organization with newcontact flow same as newly created flow
+      assert organization.out_of_office.default_flow_id == flow.id
+
+      update_org_attrs =
+      @update_org_attrs
+      |> Map.merge(%{
+        out_of_office: %{
+          default_flow_id: nil,
+          enabled: false
+        },
+        newcontact_flow_id: nil
+      })
+
+    assert {:ok, %Organization{} = organization} =
+             Partners.update_organization(organization, update_org_attrs)
+
+    # organization with newcontact flow same as nil
+    assert organization.out_of_office.default_flow_id == nil
+    end
+
     test "update_organization/2 with organization settings" do
       organization = Fixtures.organization_fixture()
       flow_id = 3

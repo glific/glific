@@ -307,8 +307,36 @@ defmodule Glific.Partners do
         organization.newcontact_flow_id,
         updated_organization
       )
+
+      pin_out_of_office_flow(
+        updated_organization.out_of_office.default_flow_id,
+        organization.out_of_office.default_flow_id,
+        updated_organization
+      )
     end
   end
+
+  @spec pin_out_of_office_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
+          {:ok, Organization.t()}
+  defp pin_out_of_office_flow(nil, old_newcontact_flow_id, organization) do
+    unpin_old_newcontact_flow(old_newcontact_flow_id)
+    {:ok, organization}
+  end
+
+  defp pin_out_of_office_flow(newcontact_flow_id, nil, organization) do
+    pin_new_newcontact_flow(newcontact_flow_id)
+    {:ok, organization}
+  end
+
+  defp pin_out_of_office_flow(newcontact_flow_id, old_newcontact_flow_id, organization)
+       when newcontact_flow_id != old_newcontact_flow_id do
+    unpin_old_newcontact_flow(old_newcontact_flow_id)
+    pin_new_newcontact_flow(newcontact_flow_id)
+    {:ok, organization}
+  end
+
+  defp pin_out_of_office_flow(_newcontact_flow_id, _old_newcontact_flow_id, organization),
+    do: {:ok, organization}
 
   @spec maybe_pin_newcontact_flow(non_neg_integer(), non_neg_integer(), Organization.t()) ::
           {:ok, Organization.t()}
