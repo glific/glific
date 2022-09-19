@@ -126,7 +126,7 @@ defmodule GlificWeb.Schema.MessageTest do
 
     assert String.to_integer(flow_message["id"]) == message.id
 
-    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"flowId" => 99999}})
+    result = auth_query_gql_by(:list, user, variables: %{"filter" => %{"flowId" => 99_999}})
 
     assert {:ok, query_data} = result
     messages = get_in(query_data, [:data, "messages"])
