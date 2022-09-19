@@ -233,10 +233,10 @@ defmodule Glific.MessagesTest do
       message = Messages.get_message!(message.id)
 
       assert [message] ==
-      Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: flow.id})})
+               Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: flow.id})})
 
       assert [] ==
-      Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: 99})})
+               Messages.list_messages(%{filter: Map.merge(attrs, %{flow_id: 99})})
     end
 
     test "list_messages/1 with tags included filters",
