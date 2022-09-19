@@ -235,8 +235,8 @@ defmodule GlificWeb.Schema.TriggerTest do
       )
 
     assert {:ok, query_data} = result
-    message = get_in(query_data, [:errors, Access.at(0), :message])
-    assert message =~ "Cannot create Trigger with invalid days or hours"
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid days"
 
     ## Creating a monthly trigger with invalid days should raise an error
     result =
@@ -257,8 +257,8 @@ defmodule GlificWeb.Schema.TriggerTest do
       )
 
     assert {:ok, query_data} = result
-    message = get_in(query_data, [:errors, Access.at(0), :message])
-    assert message =~ "Cannot create Trigger with invalid days"
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid days"
 
     ## Creating a hourly trigger with invalid hours should raise an error
     result =
@@ -279,8 +279,8 @@ defmodule GlificWeb.Schema.TriggerTest do
       )
 
     assert {:ok, query_data} = result
-    message = get_in(query_data, [:errors, Access.at(0), :message])
-    assert message =~ "Cannot create Trigger with invalid hours"
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid hours"
 
     ## Creating a weekly trigger with invalid hours should raise an error
     result =
@@ -301,8 +301,8 @@ defmodule GlificWeb.Schema.TriggerTest do
       )
 
     assert {:ok, query_data} = result
-    message = get_in(query_data, [:errors, Access.at(0), :message])
-    assert message =~ "Cannot create Trigger with invalid days"
+    message = get_in(query_data, [:data, "createTrigger", "errors", Access.at(0), "message"])
+    assert message =~ "Frequency: Cannot create Trigger with invalid days"
   end
 
   test "create a trigger with time prior to current timestamp should raise an error",

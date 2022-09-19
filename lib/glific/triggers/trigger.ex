@@ -136,36 +136,41 @@ defmodule Glific.Triggers.Trigger do
     {:ok, Map.merge(attrs, %{days: [], hours: []})}
   end
 
-  defp do_validate_frequency(%{frequency: ["hourly"], hours: hours} = attrs) when hours != [] do
+  defp do_validate_frequency(%{frequency: ["hourly"]} = attrs) do
     valid_hours = Enum.reduce(0..23, [], fn hour, acc -> acc ++ [hour] end)
 
-    Enum.all?(hours, fn hour -> hour in valid_hours end)
-    |> case do
-      true -> {:ok, Map.put(attrs, :days, [])}
-      false -> {:error, "Cannot create Trigger with invalid hours"}
+    with hours <- Map.get(attrs, :hours, []),
+         false <- length(hours) == 0,
+         true <- Enum.all?(hours, fn hour -> hour in valid_hours end) do
+      {:ok, Map.put(attrs, :days, [])}
+    else
+      _ -> {:error, "Cannot create Trigger with invalid hours"}
     end
   end
 
-  defp do_validate_frequency(%{frequency: ["weekly"], days: days} = attrs) when days != [] do
+  defp do_validate_frequency(%{frequency: ["weekly"]} = attrs) do
     valid_days = Enum.reduce(1..7, [], fn day, acc -> acc ++ [day] end)
 
-    Enum.all?(days, fn day -> day in valid_days end)
-    |> case do
-      true -> {:ok, Map.put(attrs, :hours, [])}
-      false -> {:error, "Cannot create Trigger with invalid days"}
+    with days <- Map.get(attrs, :days, []),
+         false <- length(days) == 0,
+         true <- Enum.all?(days, fn day -> day in valid_days end) do
+      {:ok, Map.put(attrs, :hours, [])}
+    else
+      _ -> {:error, "Cannot create Trigger with invalid days"}
     end
   end
 
-  defp do_validate_frequency(%{frequency: ["monthly"], days: days} = attrs) when days != [] do
+  defp do_validate_frequency(%{frequency: ["monthly"]} = attrs) do
     valid_days = Enum.reduce(1..31, [], fn day, acc -> acc ++ [day] end)
 
-    Enum.all?(days, fn day -> day in valid_days end)
-    |> case do
-      true -> {:ok, Map.put(attrs, :hours, [])}
-      false -> {:error, "Cannot create Trigger with invalid days"}
+    with days <- Map.get(attrs, :days, []),
+         false <- length(days) == 0,
+         true <- Enum.all?(days, fn day -> day in valid_days end) do
+      {:ok, Map.put(attrs, :hours, [])}
+    else
+      _ -> {:error, "Cannot create Trigger with invalid days"}
     end
   end
 
-  defp do_validate_frequency(attrs),
-    do: {:ok, attrs}
+  defp do_validate_frequency(attrs), do: {:ok, attrs}
 end
