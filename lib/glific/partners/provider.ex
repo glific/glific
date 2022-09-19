@@ -75,7 +75,6 @@ defmodule Glific.Partners.Provider do
     end
   end
 
-  @spec bsp_module(binary | non_neg_integer, any) :: any()
   def bsp_module(org_id, :contact) do
     organization = Glific.Partners.organization(org_id)
 
