@@ -20,16 +20,15 @@ defmodule Glific.Contacts do
     Groups.ContactGroup,
     Groups.UserGroup,
     Partners,
+    Partners.Provider,
     Profiles,
-    Providers.GupshupContacts,
-    Providers.GupshupEnterpriseContacts,
     Repo,
     Tags.ContactTag,
     Users.User
   }
 
   @doc """
-  Add permissioning specific to groups, in this case we want to restrict the visibility of
+  Add permission specific to groups, in this case we want to restrict the visibility of
   groups that the user can see
   """
   @spec add_permission(Ecto.Query.t(), User.t()) :: Ecto.Query.t()
@@ -727,13 +726,8 @@ defmodule Glific.Contacts do
   @spec optin_contact(map()) ::
           {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def optin_contact(%{organization_id: organization_id} = attrs) do
-    organization = Partners.organization(organization_id)
-
-    case organization.bsp.shortcode do
-      "gupshup" -> GupshupContacts.optin_contact(attrs)
-      "gupshup_enterprise" -> GupshupEnterpriseContacts.optin_contact(attrs)
-      _ -> {:error, dgettext("errors", "Invalid BSP provider")}
-    end
+    bsp_module = Provider.bsp_module(organization_id, :contact)
+    bsp_module.optin_contact(attrs)
   end
 
   @doc """

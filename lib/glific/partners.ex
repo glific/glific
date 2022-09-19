@@ -416,7 +416,7 @@ defmodule Glific.Partners do
       {:error, dgettext("errors", "No active BSP available")}
     else
       case organization.bsp.shortcode do
-        "gupshup" -> PartnerAPI.get_quality_rating(organization_id, organization.contact.phone)
+        "gupshup" -> PartnerAPI.get_quality_rating(organization_id)
         _ -> {:error, dgettext("errors", "Invalid BSP provider")}
       end
     end
@@ -844,22 +844,13 @@ defmodule Glific.Partners do
 
   # Ensures we have all the keys required in the credential to call Gupshup
   @spec valid_bsp?(Credential.t()) :: boolean()
-  defp valid_bsp?(credential)
-       when credential.provider.shortcode in ["gupshup_enterprise", "gupshup"] do
-    case credential.provider.shortcode do
-      "gupshup" ->
-        credential.provider.group == "bsp" &&
-          non_nil_string(credential.keys["api_end_point"]) &&
-          validate_secrets?(credential.secrets, "gupshup")
+  defp valid_bsp?(credential) do
+    bsp = credential.provider.shortcode
 
-      "gupshup_enterprise" ->
-        credential.provider.group == "bsp" &&
-          non_nil_string(credential.keys["api_end_point"]) &&
-          validate_secrets?(credential.secrets, "gupshup_enterprise")
-    end
+    credential.provider.group == "bsp" &&
+      non_nil_string(credential.keys["api_end_point"]) &&
+      validate_secrets?(credential.secrets, bsp)
   end
-
-  defp valid_bsp?(_credential), do: false
 
   @spec validate_secrets?(map(), String.t()) :: boolean()
   defp validate_secrets?(secrets, "gupshup"),

@@ -39,7 +39,8 @@ defmodule Glific.Appsignal do
     Elixir.Oban.Plugins.Stager,
     Elixir.Oban.Pro.Plugins.DynamicLifeline,
     Elixir.Oban.Plugins.Pruner,
-    Elixir.Oban.Plugins.Gossip
+    Elixir.Oban.Plugins.Gossip,
+    Elixir.Oban.Plugins.Reindexer
   ]
 
   # ignore some internal Oban plugins which execute quite often
