@@ -4,6 +4,7 @@ defmodule Glific.Profiles do
   """
 
   import Ecto.Query, warn: false
+  require Logger
 
   alias Glific.{
     Contacts,
@@ -131,6 +132,10 @@ defmodule Glific.Profiles do
   def switch_profile(contact, profile_index) do
     contact = Repo.preload(contact, [:active_profile])
 
+    Logger.info(
+      "Switching Profile for org_id: #{contact.organization_id} contact_id: #{contact.id} with profile_index: #{profile_index}"
+    )
+
     with {:ok, index} <- Glific.parse_maybe_integer(profile_index),
          {profile, _index} <- fetch_indexed_profile(contact, index),
          {:ok, _updated_contact} <-
@@ -182,6 +187,7 @@ defmodule Glific.Profiles do
     with {:ok, contact} <- switch_profile(context.contact, value),
          context <- Map.put(context, :contact, contact) do
       contact = Repo.preload(contact, [:active_profile])
+
       Contacts.capture_history(context.contact.id, :profile_switched, %{
         event_label: "Switched profile to #{contact.active_profile.name}",
         event_meta: %{
