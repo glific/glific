@@ -60,6 +60,20 @@ defmodule Glific.Enums.Constants do
         :sticker
       ]
 
+      @message_media_type_const [
+        :audio,
+        :contact,
+        :document,
+        :hsm,
+        :image,
+        :location,
+        :list,
+        :quick_reply,
+        :text,
+        :video,
+        :sticker
+      ]
+
       # the different possible types of interactive message
       @interactive_message_type_const [:list, :quick_reply]
 

@@ -70,6 +70,12 @@ defenum(
 )
 
 defenum(
+  Glific.Enums.MediaMessageType,
+  :media_message_type_enum,
+  Glific.Enums.media_message_type_const()
+)
+
+defenum(
   Glific.Enums.QuestionType,
   :question_type_enum,
   Glific.Enums.question_type_const()

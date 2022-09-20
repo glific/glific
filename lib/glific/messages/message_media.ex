@@ -27,6 +27,7 @@ defmodule Glific.Messages.MessageMedia do
           __meta__: Ecto.Schema.Metadata.t(),
           id: non_neg_integer | nil,
           url: String.t() | nil,
+          media_type: String.t() | atom() | nil,
           source_url: String.t() | nil,
           caption: String.t() | nil,
           thumbnail: String.t() | nil,
@@ -42,6 +43,7 @@ defmodule Glific.Messages.MessageMedia do
     field :url, :string
     field :source_url, :string
     field :thumbnail, :string
+    field :media_type, :string
     field :caption, :string
     field :provider_media_id, :string
     field :gcs_url, :string
