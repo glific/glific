@@ -414,7 +414,6 @@ defmodule Glific.PartnersTest do
       assert {:ok, %Organization{} = organization} =
                Partners.update_organization(organization, update_org_attrs)
 
-      # organization with newcontact flow same as newly created flow
       assert organization.out_of_office.default_flow_id == flow.id
 
       update_org_attrs =
@@ -430,7 +429,6 @@ defmodule Glific.PartnersTest do
     assert {:ok, %Organization{} = organization} =
              Partners.update_organization(organization, update_org_attrs)
 
-    # organization with newcontact flow same as nil
     assert organization.out_of_office.default_flow_id == nil
     end
 
