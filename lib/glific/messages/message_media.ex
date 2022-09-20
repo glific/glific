@@ -8,6 +8,7 @@ defmodule Glific.Messages.MessageMedia do
   alias __MODULE__
   alias Glific.Partners.Organization
 
+  alias Glific.Enums.MediaMessageType
   # define all the required fields for message media
   @required_fields [
     :url,
@@ -43,7 +44,7 @@ defmodule Glific.Messages.MessageMedia do
     field :url, :string
     field :source_url, :string
     field :thumbnail, :string
-    field :media_type, :string
+    field :media_type, MediaMessageType
     field :caption, :string
     field :provider_media_id, :string
     field :gcs_url, :string

@@ -60,7 +60,7 @@ defmodule Glific.Enums.Constants do
         :sticker
       ]
 
-      @message_media_type_const [
+      @media_message_type_const [
         :audio,
         :contact,
         :document,
