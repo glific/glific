@@ -227,6 +227,7 @@ defmodule Glific.Providers.Gupshup.Message do
     ## We might remove this in the future when gupshup will start sending the option id.
 
     interactive_content = message_payload |> Map.merge(%{"id" => message_payload["postbackText"]})
+    IO.inspect(interactive_content)
 
     %{
       bsp_message_id: payload["id"],
