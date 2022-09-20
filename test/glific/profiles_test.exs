@@ -114,15 +114,15 @@ defmodule Glific.ProfilesTest do
 
       assert is_nil(contact.active_profile_id) == true
 
-      {:error, updated_contact} = Profiles.switch_profile(contact, "some index")
+      {:ok, updated_contact} = Profiles.switch_profile(contact, "1")
       contact = Repo.preload(updated_contact, [:active_profile])
-
-      assert is_nil(contact.active_profile_id) == true
+      current_active_profile_id = contact.active_profile_id
+      assert is_nil(current_active_profile_id) == false
 
       # updating with wrong index
-      {:ok, updated_contact} = Profiles.switch_profile(contact, "some index")
+      {:error, updated_contact} = Profiles.switch_profile(contact, "some index")
 
-      assert is_nil(updated_contact.active_profile_id) == true
+      assert updated_contact.active_profile_id == current_active_profile_id
     end
 
     test "switch_profile/2 switches contact's active and sync contact fields", attrs do
