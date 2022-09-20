@@ -482,6 +482,13 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
+        description:
+          "Type of the message; options are - audio, document, image, video, sticker",
+        name: "media_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
         description: "caption we received with the message",
         name: "caption",
         type: "STRING",

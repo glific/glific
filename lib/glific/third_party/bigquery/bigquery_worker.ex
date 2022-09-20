@@ -494,7 +494,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             source_url: row.source_url,
             gcs_url: row.gcs_url,
             inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_milisecond(row.updated_at, organization_id)
+            updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+            media_type: row.media_type
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})

@@ -70,9 +70,9 @@ defenum(
 )
 
 defenum(
-  Glific.Enums.MediaMessageType,
-  :media_message_type_enum,
-  Glific.Enums.media_message_type_const()
+  Glific.Enums.MediaType,
+  :media_type_enum,
+  Glific.Enums.media_type_const()
 )
 
 defenum(

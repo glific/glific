@@ -30,6 +30,9 @@ defmodule GlificWeb.Schema.EnumTypes do
   @desc "The Flow Router enum"
   enum(:flow_router_enum, values: Glific.Enums.flow_router_const())
 
+  @desc "The Media message enum"
+  enum(:media_type_enum, values: Glific.Enums.media_type_const())
+
   @desc "The Flow action Type enum"
   enum(:flow_action_type_enum, values: Glific.Enums.flow_action_type_const())
 

@@ -137,8 +137,8 @@ defmodule Glific.Enums do
   defmacro message_status_const,
     do: Macro.expand(@message_status_const, __CALLER__)
 
-  defmacro media_message_type_const,
-    do: Macro.expand(@media_message_type_const, __CALLER__)
+  defmacro media_type_const,
+    do: Macro.expand(@media_type_const, __CALLER__)
 
   defmacro message_type_const,
     do: Macro.expand(@message_type_const, __CALLER__)

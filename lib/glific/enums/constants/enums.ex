@@ -45,34 +45,23 @@ defmodule Glific.Enums.Constants do
         :contact_opt_out
       ]
 
-      # the different possible types of message
-      @message_type_const [
+      @media_type_const [
         :audio,
-        :contact,
         :document,
-        :hsm,
         :image,
-        :location,
-        :list,
-        :quick_reply,
-        :text,
         :video,
         :sticker
       ]
 
-      @media_message_type_const [
-        :audio,
+      # the different possible types of message
+      @message_type_const [
         :contact,
-        :document,
         :hsm,
-        :image,
         :location,
         :list,
         :quick_reply,
-        :text,
-        :video,
-        :sticker
-      ]
+        :text
+      ] ++ @media_type_const
 
       # the different possible types of interactive message
       @interactive_message_type_const [:list, :quick_reply]

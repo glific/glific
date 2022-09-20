@@ -16,6 +16,7 @@ defmodule GlificWeb.Schema.MessageMediaTypes do
     field :id, :id
     field :url, :string
     field :source_url, :string
+    field :media_type, :media_type_enum
     field :thumbnail, :string
     field :caption, :string
     field :provider_media_id, :string
