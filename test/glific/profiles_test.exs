@@ -114,16 +114,13 @@ defmodule Glific.ProfilesTest do
 
       assert is_nil(contact.active_profile_id) == true
 
-      updated_contact =
-        Profiles.switch_profile(contact, "1")
-        |> Repo.preload([:active_profile])
+      {:error, updated_contact} = Profiles.switch_profile(contact, "some index")
+      contact = Repo.preload(updated_contact, [:active_profile])
 
-      assert is_nil(updated_contact.active_profile_id) == false
+      assert is_nil(contact.active_profile_id) == true
 
       # updating with wrong index
-      updated_contact =
-        Profiles.switch_profile(contact, "some index")
-        |> Repo.preload([:active_profile])
+      {:ok, updated_contact} = Profiles.switch_profile(contact, "some index")
 
       assert is_nil(updated_contact.active_profile_id) == true
     end
@@ -141,11 +138,16 @@ defmodule Glific.ProfilesTest do
 
       new_profile = Fixtures.profile_fixture(params)
 
-      updated_contact =
+      # Switched to profile 2
+      {:ok, contact_with_profile_2} =
         Contacts.get_contact!(contact.id)
         |> Profiles.switch_profile("2")
+
+      {:ok, contact_with_profile_1} =
+        contact_with_profile_2
         |> Profiles.switch_profile("1")
-        |> Repo.preload([:active_profile])
+
+      updated_contact = Repo.preload(contact_with_profile_1, [:active_profile])
 
       assert updated_contact.active_profile_id == new_profile.id
       assert updated_contact.active_profile.name == "Profile 2"

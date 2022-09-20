@@ -127,7 +127,7 @@ defmodule Glific.Profiles do
       {:ok, %Profile{}}
 
   """
-  @spec switch_profile(Contact.t(), String.t()) :: Contact.t()
+  @spec switch_profile(Contact.t(), String.t()) :: {:ok, Contact.t()} | {:error, Contact.t()}
   def switch_profile(contact, profile_index) do
     contact = Repo.preload(contact, [:active_profile])
 
@@ -139,9 +139,9 @@ defmodule Glific.Profiles do
              language_id: profile.language_id,
              fields: profile.fields
            }) do
-      Contacts.get_contact!(contact.id)
+      {:ok, Contacts.get_contact!(contact.id)}
     else
-      _ -> contact
+      _ -> {:error, contact}
     end
   end
 
@@ -179,14 +179,13 @@ defmodule Glific.Profiles do
   def handle_flow_action(:switch_profile, context, action) do
     value = ContactField.parse_contact_field_value(context, action.value)
 
-    with contact <- switch_profile(context.contact, value),
+    with {:ok, contact} <- switch_profile(context.contact, value),
          context <- Map.put(context, :contact, contact) do
       contact = Repo.preload(contact, [:active_profile])
-
       Contacts.capture_history(context.contact.id, :profile_switched, %{
         event_label: "Switched profile to #{contact.active_profile.name}",
         event_meta: %{
-          method: "switched profile via flow: #{context.flow.name}"
+          method: "Switched profile via flow: #{context.flow.name}"
         }
       })
 
