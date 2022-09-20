@@ -144,6 +144,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   defp fetch_partner_token do
     url = @partner_url <> "/login"
     credentials = Saas.isv_credentials()
+
     request_params = %{"email" => credentials["email"], "password" => credentials["password"]}
 
     post(url, request_params, headers: [])
@@ -196,8 +197,17 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   defp headers(:partner_token, _opts) do
-    {:ok, %{partner_token: partner_token}} = get_partner_token()
-    [{"token", partner_token}, {"Authorization", partner_token}]
+    get_partner_token()
+    |> case do
+      {:ok, %{partner_token: partner_token}} ->
+        [
+          {"token", partner_token},
+          {"Authorization", partner_token}
+        ]
+
+      _ ->
+        []
+    end
   end
 
   @spec post_request(String.t(), map(), Keyword.t()) :: tuple()
