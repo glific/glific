@@ -375,6 +375,7 @@ defmodule Glific.Flows.Flow do
         &Node.validate(&1, &2, flow)
       )
       |> dangling_nodes(flow)
+      |> check_wait_for_response_categories(flow)
       |> missing_flow_context_nodes(flow)
     end
   end
@@ -409,6 +410,41 @@ defmodule Glific.Flows.Flow do
     if MapSet.size(dangling) == 0,
       do: errors,
       else: [dangling: "Your flow has dangling nodes"] ++ errors
+  end
+
+  @spec check_wait_for_response_categories(Keyword.t(), map()) :: Keyword.t()
+  defp check_wait_for_response_categories(errors, flow) do
+    all_nodes = flow_objects(flow, :node)
+
+    wait_for_response_words =
+      all_nodes
+      |> Enum.reduce(
+        [],
+        fn e, acc ->
+          {:node, node} = flow.uuid_map[e]
+
+          if is_nil(node.router) do
+            acc
+          else
+            arguments =
+              node.router.cases
+              |> Enum.reduce([], &(&2 ++ String.split(List.first(&1.arguments), ", ")))
+
+            acc ++ arguments
+          end
+        end
+      )
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
+      |> MapSet.delete(nil)
+
+    flow_keywords =
+      Flows.flow_keywords_map(flow.organization_id)["published"]
+      |> Map.keys()
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
+
+    if MapSet.disjoint?(flow_keywords, wait_for_response_words),
+      do: errors,
+      else: [wait_for_response: "Current flow has Flow keywords in wait for response"] ++ errors
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
