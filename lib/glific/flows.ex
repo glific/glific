@@ -405,7 +405,11 @@ defmodule Glific.Flows do
 
     if result == [],
       do: true,
-      else: raise(ArgumentError, message: "Missing required fields: #{result}")
+      else:
+        raise(ArgumentError,
+          message:
+            "Missing required fields: #{result} with node uuid: #{json["uuid"]} and type: #{json["type"]}"
+        )
   end
 
   @doc """

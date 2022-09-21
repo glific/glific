@@ -235,7 +235,7 @@ defmodule Glific.Flows.Action do
 
   def process(%{"type" => "add_input_labels"} = json, uuid_map, node) do
     Flows.check_required_fields(json, @required_fields_label)
-    process(json, uuid_map, node, %{labels: process_lebels(json["labels"])})
+    process(json, uuid_map, node, %{labels: process_labels(json["labels"])})
   end
 
   def process(%{"type" => "add_contact_groups"} = json, uuid_map, node) do
@@ -316,7 +316,7 @@ defmodule Glific.Flows.Action do
     attrs = %{
       name: json["name"],
       text: json["text"],
-      labels: process_lebels(json["labels"]),
+      labels: process_labels(json["labels"]),
       quick_replies: json["quick_replies"],
       attachments: process_attachments(json["attachments"])
     }
@@ -429,8 +429,8 @@ defmodule Glific.Flows.Action do
   end
 
   ## Label formatter so that we can apply the dynamic label to the message
-  @spec process_lebels(list() | nil) :: list() | nil
-  defp process_lebels(labels) when is_list(labels) do
+  @spec process_labels(list() | nil) :: list() | nil
+  defp process_labels(labels) when is_list(labels) do
     Enum.map(
       labels,
       fn label ->
@@ -441,7 +441,7 @@ defmodule Glific.Flows.Action do
     )
   end
 
-  defp process_lebels(labels), do: labels
+  defp process_labels(labels), do: labels
 
   @doc """
   Execute a action, given a message stream.
