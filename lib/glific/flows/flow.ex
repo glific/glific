@@ -444,7 +444,7 @@ defmodule Glific.Flows.Flow do
 
     if MapSet.disjoint?(flow_keywords, wait_for_response_words),
       do: errors,
-      else: [wait_for_response: "Current flow has Flow keywords in wait for response"] ++ errors
+      else: [flow_keywords: "Current flow has Flow keywords in wait for response"] ++ errors
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
