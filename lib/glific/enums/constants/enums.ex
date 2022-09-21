@@ -55,13 +55,13 @@ defmodule Glific.Enums.Constants do
 
       # the different possible types of message
       @message_type_const [
-        :contact,
-        :hsm,
-        :location,
-        :list,
-        :quick_reply,
-        :text
-      ] ++ @media_type_const
+                            :contact,
+                            :hsm,
+                            :location,
+                            :list,
+                            :quick_reply,
+                            :text
+                          ] ++ @media_type_const
 
       # the different possible types of interactive message
       @interactive_message_type_const [:list, :quick_reply]

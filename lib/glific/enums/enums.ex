@@ -44,6 +44,9 @@ defmodule Glific.Enums do
   iex> Glific.Enums.message_type_const()
   [:contact, :hsm, :location, :list, :quick_reply, :text, :audio, :document, :image, :video, :sticker]
 
+  iex> Glific.Enums.media_type_const()
+  [ :audio, :document, :image, :video, :sticker]
+
   iex> Glific.Enums.question_type_const()
   [:text, :numeric, :date]
 
