@@ -375,7 +375,7 @@ defmodule Glific.Flows.Flow do
         &Node.validate(&1, &2, flow)
       )
       |> dangling_nodes(flow)
-      |> check_wait_for_response_categories(flow)
+      |> check_flow_keywords(flow)
       |> missing_flow_context_nodes(flow)
     end
   end
@@ -412,8 +412,8 @@ defmodule Glific.Flows.Flow do
       else: [dangling: "Your flow has dangling nodes"] ++ errors
   end
 
-  @spec check_wait_for_response_categories(Keyword.t(), map()) :: Keyword.t()
-  defp check_wait_for_response_categories(errors, flow) do
+  @spec check_flow_keywords(Keyword.t(), map()) :: Keyword.t()
+  defp check_flow_keywords(errors, flow) do
     all_nodes = flow_objects(flow, :node)
 
     wait_for_response_words =
