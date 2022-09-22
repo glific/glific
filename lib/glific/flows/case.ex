@@ -106,7 +106,7 @@ defmodule Glific.Flows.Case do
         used_flow_keywords,
         errors,
         &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
-      ) ++ errors
+      )
     end
   end
 
