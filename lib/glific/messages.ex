@@ -8,7 +8,6 @@ defmodule Glific.Messages do
   require Logger
 
   alias Glific.{
-    BigQuery.BigQueryWorker,
     Caches,
     Communications,
     Contacts,
