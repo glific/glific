@@ -89,7 +89,7 @@ defmodule Glific.Flows.Case do
       case.arguments
       |> List.first()
       |> String.split(", ")
-      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, Glific.string_clean(&1)))
       |> MapSet.delete(nil)
 
     flow_keywords =
