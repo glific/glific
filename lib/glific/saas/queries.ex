@@ -154,10 +154,8 @@ defmodule Glific.Saas.Queries do
   defp credentials(%{is_valid: false} = result, _params), do: result
 
   defp credentials(result, params) do
-    provider = "gupshup"
-
     attrs = %{
-      shortcode: provider,
+      shortcode: @default_provider,
       keys: %{
         "url" => "https://gupshup.io/",
         "worker" => "Glific.Providers.Gupshup.Worker",
@@ -176,7 +174,7 @@ defmodule Glific.Saas.Queries do
 
     case Partners.create_credential(attrs) do
       {:ok, credential} ->
-        Partners.set_bsp_app_id(result.organization, provider)
+        Partners.set_bsp_app_id(result.organization, @default_provider)
         Map.put(result, :credential, credential)
 
       {:error, errors} ->
