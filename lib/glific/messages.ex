@@ -1071,9 +1071,6 @@ defmodule Glific.Messages do
   """
   @spec clear_messages(Contact.t()) :: :ok
   def clear_messages(%Contact{} = contact) do
-    # add messages to bigquery oban jobs worker
-    BigQueryWorker.perform_periodic(contact.organization_id)
-
     # get and delete all messages media
     messages_media_ids =
       Message
@@ -1086,14 +1083,15 @@ defmodule Glific.Messages do
     |> where([m], m.id in ^messages_media_ids)
     |> Repo.delete_all(timeout: 900_000)
 
-    FlowContext.mark_flows_complete(contact.id, false)
-
     Message
     |> where([m], m.contact_id == ^contact.id)
     |> where([m], m.organization_id == ^contact.organization_id)
     |> Repo.delete_all()
 
     reset_contact_fields(contact)
+
+    FlowContext.mark_flows_complete(contact.id, false, source: "clear_messages")
+
     Communications.publish_data(contact, :cleared_messages, contact.organization_id)
 
     :ok
