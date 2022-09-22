@@ -13,6 +13,7 @@ defmodule Glific.Saas.Queries do
     Messages.Message,
     Partners,
     Partners.Organization,
+    Partners.Provider,
     Providers.Gupshup.ApiClient,
     Providers.GupshupContacts,
     Repo,
@@ -22,6 +23,8 @@ defmodule Glific.Saas.Queries do
   }
 
   alias Pow.Ecto.Schema.Changeset
+
+  @default_provider "gupshup"
 
   @doc """
   Main function to setup the organization entity in Glific
@@ -77,11 +80,16 @@ defmodule Glific.Saas.Queries do
   defp organization(%{is_valid: false} = result, _params), do: result
 
   defp organization(result, params) do
+    {:ok, provider} =
+      Repo.fetch_by(Provider, %{shortcode: @default_provider, group: "bsp"},
+        skip_organization_id: true
+      )
+
     attrs = %{
       name: params["name"],
       shortcode: params["shortcode"],
       email: params["email"],
-      bsp_id: 1,
+      bsp_id: provider.id,
       default_language_id: 1,
       active_language_ids: [1],
       timezone: "Asia/Kolkata",
