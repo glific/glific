@@ -477,7 +477,7 @@ defmodule Glific.FLowsTest do
       "The next message after a long wait for time should be an HSM template",
       "Could not find Sub Flow:",
       "Could not parse",
-      "Current flow has Flow keywords in wait for response"
+      "\"newcontact\" has already been used as a keyword for a flow"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))

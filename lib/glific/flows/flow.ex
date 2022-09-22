@@ -442,9 +442,18 @@ defmodule Glific.Flows.Flow do
       |> Map.keys()
       |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
 
-    if MapSet.disjoint?(flow_keywords, wait_for_response_words),
-      do: errors,
-      else: [flow_keywords: "Current flow has Flow keywords in wait for response"] ++ errors
+    if MapSet.disjoint?(flow_keywords, wait_for_response_words) do
+      errors
+    else
+      error_keywords = MapSet.intersection(flow_keywords, wait_for_response_words)
+
+      Enum.reduce(
+        error_keywords,
+        errors,
+        &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
+      ) ++
+        errors
+    end
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
