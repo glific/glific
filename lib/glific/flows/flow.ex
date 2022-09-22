@@ -445,10 +445,10 @@ defmodule Glific.Flows.Flow do
     if MapSet.disjoint?(flow_keywords, wait_for_response_words) do
       errors
     else
-      error_keywords = MapSet.intersection(flow_keywords, wait_for_response_words)
+      used_flow_keywords = MapSet.intersection(flow_keywords, wait_for_response_words)
 
       Enum.reduce(
-        error_keywords,
+        used_flow_keywords,
         errors,
         &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
       ) ++
