@@ -377,7 +377,6 @@ defmodule Glific.Flows.Flow do
         &Node.validate(&1, &2, flow)
       )
       |> dangling_nodes(flow, all_nodes)
-      |> check_flow_keywords(flow, all_nodes)
       |> missing_flow_context_nodes(flow, all_nodes)
     end
   end
@@ -411,51 +410,6 @@ defmodule Glific.Flows.Flow do
     if MapSet.size(dangling) == 0,
       do: errors,
       else: [dangling: "Your flow has dangling nodes"] ++ errors
-  end
-
-  @spec check_flow_keywords(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
-  defp check_flow_keywords(errors, flow, all_nodes) do
-    wait_for_response_words =
-      all_nodes
-      |> Enum.reduce(
-        [],
-        fn e, acc ->
-          {:node, node} = flow.uuid_map[e]
-
-          if is_nil(node.router) do
-            acc
-          else
-            cleaned_arguments =
-              node.router.cases
-              |> Enum.reduce([], fn node_case, acc ->
-                arguments = node_case.arguments |> List.first() |> String.split(", ")
-                acc ++ arguments
-              end)
-
-            acc ++ cleaned_arguments
-          end
-        end
-      )
-      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
-      |> MapSet.delete(nil)
-
-    flow_keywords =
-      Flows.flow_keywords_map(flow.organization_id)["published"]
-      |> Map.keys()
-      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
-
-    if MapSet.disjoint?(flow_keywords, wait_for_response_words) do
-      errors
-    else
-      used_flow_keywords = MapSet.intersection(flow_keywords, wait_for_response_words)
-
-      Enum.reduce(
-        used_flow_keywords,
-        errors,
-        &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
-      ) ++
-        errors
-    end
   end
 
   @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
