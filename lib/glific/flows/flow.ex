@@ -366,11 +366,11 @@ defmodule Glific.Flows.Flow do
 
   @spec validate_flow(map()) :: Keyword.t()
   defp validate_flow(flow) do
-    all_nodes = flow_objects(flow, :node)
-
     if flow.definition["nodes"] == [] do
       [Flow: "Flow is empty"]
     else
+      all_nodes = flow_objects(flow, :node)
+
       flow.nodes
       |> Enum.reduce(
         [],

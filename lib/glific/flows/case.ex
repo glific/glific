@@ -84,9 +84,9 @@ defmodule Glific.Flows.Case do
   Validate a case
   """
   @spec validate(Case.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(cases, errors, flow) do
+  def validate(case, errors, flow) do
     wait_for_response_words =
-      cases.arguments
+      case.arguments
       |> List.first()
       |> String.split(", ")
       |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
