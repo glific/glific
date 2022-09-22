@@ -214,11 +214,15 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
-        Import.import_contacts(999, "foo", file_path: "file_path", url: "")
+        Import.import_contacts(999, %{group_label: "foo", user: "admin"}, file_path: "file_path", url: "")
       end
     end
 
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
+      # user = Map.put(user, :roles, [:Glific_admin])
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -235,7 +239,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user}, file_path: get_tmp_path())
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1

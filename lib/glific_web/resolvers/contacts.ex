@@ -68,7 +68,7 @@ defmodule GlificWeb.Resolvers.Contacts do
   @spec import_contacts(
           Absinthe.Resolution.t(),
           %{
-            group_label: String.t(),
+            group_label: map(),
             data: String.t(),
             id: integer,
             type: :data | :file_path | :url
@@ -78,10 +78,11 @@ defmodule GlificWeb.Resolvers.Contacts do
           }
         ) ::
           {:ok, any} | {:error, any}
-  def import_contacts(_, %{id: id, type: type, group_label: group_label, data: data}, _) do
-    Glific.parse_maybe_integer(id)
+  def import_contacts(_, %{id: organization_id, type: type, group_label: group_label, data: data},  %{context: %{current_user: user}}) do
+    IO.inspect(user)
+    Glific.parse_maybe_integer(organization_id)
     |> elem(1)
-    |> Import.import_contacts(group_label, [{type, data}])
+    |> Import.import_contacts(%{group_label: group_label, user: user.roles}, [{type, data}])
   end
 
   @doc false
