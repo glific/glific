@@ -9,6 +9,7 @@ defmodule Glific.Flows.Broadcast do
   require Logger
 
   alias Glific.{
+    Contacts,
     Contacts.Contact,
     Flows,
     Flows.Flow,
@@ -204,11 +205,9 @@ defmodule Glific.Flows.Broadcast do
     |> Repo.preload([:flow])
   end
 
-  @unprocessed_contact_limit 100
-
   defp unprocessed_contacts(message_broadcast) do
     broadcast_contacts_query(message_broadcast)
-    |> limit(@unprocessed_contact_limit)
+    |> limit(^Contacts.minutely_process_limit())
     |> order_by([c, _fbc], asc: c.id)
     |> Repo.all()
   end
