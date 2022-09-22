@@ -45,6 +45,52 @@ defmodule GlificWeb.Providers.Gupshup.Controllers.MessageControllerTest do
     end
   end
 
+  describe "interactive" do
+    setup do
+      message_params = %{
+        "payload" => %{
+          "context" => %{"gsId" => nil, "id" => ""},
+          "id" => "9f149409-1afa-4aed-b44a-2e4595ef4239",
+          "payload" => %{"id" => "postbackText", "reply" => "👍 1", "title" => "👍"},
+          "sender" => %{"name" => "Glific Simulator One", "phone" => "9876543210_1"},
+          "type" => "button_reply"
+        },
+        "type" => "message"
+      }
+
+      %{message_params: message_params}
+    end
+
+    test "Incoming interactive message should be stored in the database",
+         %{conn: conn, message_params: message_params} do
+      conn = post(conn, "/gupshup", message_params)
+      assert conn.halted
+      bsp_message_id = get_in(message_params, ["payload", "id"])
+
+      {:ok, message} =
+        Repo.fetch_by(Message, %{
+          bsp_message_id: bsp_message_id,
+          organization_id: conn.assigns[:organization_id]
+        })
+
+      message = Repo.preload(message, [:receiver, :sender, :media])
+
+      # Provider message id should be updated
+      assert message.bsp_status == :delivered
+      assert message.flow == :inbound
+
+      # ensure the message has been received by the mock
+      assert_receive :received_message_to_process
+
+      assert message.sender.last_message_at != nil
+      assert true == Glific.in_past_time(message.sender.last_message_at, :seconds, 10)
+
+      # Sender should be stored into the db
+      assert message.sender.phone ==
+               get_in(message_params, ["payload", "sender", "phone"])
+    end
+  end
+
   describe "text" do
     setup do
       message_payload = %{
