@@ -730,7 +730,8 @@ defmodule Glific.Flows.FlowContext do
       source: "wakeup_one",
       event_meta: %{
         context_id: context.id,
-        message: message
+        message_id: message.id,
+        message: "#{inspect(message)}"
       }
     )
 
