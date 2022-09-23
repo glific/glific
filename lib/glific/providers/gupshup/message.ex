@@ -193,18 +193,21 @@ defmodule Glific.Providers.Gupshup.Message do
     deductions = get_in(params, ["payload", "deductions"])
     bsp_message_id = references["gsId"] || references["id"]
 
-    message =
-      Message
-      |> where([m], m.bsp_message_id == ^bsp_message_id)
-      |> select([m], %{id: m.id})
-      |> Repo.all(skip_organization_id: true)
+    message_id =
+      Repo.fetch_by(Message, %{
+        bsp_message_id: bsp_message_id
+      })
+      |> case do
+        {:ok, message} -> message.id
+        {:error, _error} -> nil
+      end
 
     message_conversation = %{
       deduction_type: deductions["type"],
       is_billable: deductions["billable"],
       conversation_id: references["conversationId"],
       payload: params,
-      message_id: get_in(message, [Access.at(0), :id])
+      message_id: message_id
     }
 
     {:ok, message_conversation}
