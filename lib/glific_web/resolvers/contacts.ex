@@ -78,11 +78,14 @@ defmodule GlificWeb.Resolvers.Contacts do
           }
         ) ::
           {:ok, any} | {:error, any}
-  def import_contacts(_, %{id: organization_id, type: type, group_label: group_label, data: data},  %{context: %{current_user: user}}) do
-    IO.inspect(user)
+  def import_contacts(
+        _,
+        %{id: organization_id, type: type, group_label: group_label, data: data},
+        %{context: %{current_user: user}}
+      ) do
     Glific.parse_maybe_integer(organization_id)
     |> elem(1)
-    |> Import.import_contacts(%{group_label: group_label, user: user.roles}, [{type, data}])
+    |> Import.import_contacts(%{group_label: group_label, user: user}, [{type, data}])
   end
 
   @doc false

@@ -214,14 +214,15 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
-        Import.import_contacts(999, %{group_label: "foo", user: "admin"}, file_path: "file_path", url: "")
+        Import.import_contacts(999, %{group_label: "foo", user: "admin"},
+          file_path: "file_path",
+          url: ""
+        )
       end
     end
 
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-
-      # user = Map.put(user, :roles, [:Glific_admin])
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -239,13 +240,18 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user}, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
     end
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -258,13 +264,15 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, data: data)
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user}, data: data)
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 1
     end
 
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       Tesla.Mock.mock(fn
         %{method: :post} ->
           %Tesla.Env{
@@ -281,7 +289,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        url: "http://www.bar.com/foo.csv"
+      )
+
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
       assert count == 1
@@ -296,6 +307,8 @@ defmodule Glific.ContactsTest do
           }
       end)
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
@@ -306,7 +319,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -321,13 +337,15 @@ defmodule Glific.ContactsTest do
           }
       end)
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       data = "name,phone,Language,opt_in\nupdated,#{contact.phone},english,2021-03-09_12:34:25\n"
 
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, data: data)
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user}, data: data)
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -351,10 +369,15 @@ defmodule Glific.ContactsTest do
           }
       end)
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, url: "http://www.bar.com/foo.csv")
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        url: "http://www.bar.com/foo.csv"
+      )
+
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -370,6 +393,7 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       [
         ~w(name phone Language opt_in delete),
@@ -381,7 +405,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
@@ -397,6 +424,7 @@ defmodule Glific.ContactsTest do
 
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
       Contacts.delete_contact(contact)
 
       [
@@ -409,7 +437,10 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        file_path: get_tmp_path()
+      )
+
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
@@ -439,8 +470,12 @@ defmodule Glific.ContactsTest do
 
         [organization | _] = Partners.list_organizations()
         [group | _] = Groups.list_groups(%{filter: %{}})
+        {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-        Import.import_contacts(organization.id, group.label, file_path: get_tmp_path())
+        Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+          file_path: get_tmp_path()
+        )
+
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
         [contact | _tail] = Contacts.list_contacts(%{filter: %{phone: 9_989_329_297}})
@@ -466,9 +501,14 @@ defmodule Glific.ContactsTest do
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       [group | _] = Groups.list_groups(%{filter: %{}})
 
-      assert {:error, _} = Import.import_contacts(999, group.label, file_path: get_tmp_path())
+      assert {:error, _} =
+               Import.import_contacts(999, %{group_label: group.label, user: user},
+                 file_path: get_tmp_path()
+               )
     end
 
     test "insert_or_update_contact_data/3 returns an error if insertion fails" do
@@ -487,8 +527,12 @@ defmodule Glific.ContactsTest do
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))
 
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
       {:error, %{message: message, details: _}} =
-        Import.import_contacts(1, group.label, file_path: get_tmp_path())
+        Import.import_contacts(1, %{group_label: group.label, user: user},
+          file_path: get_tmp_path()
+        )
 
       assert "All contacts could not be opted in due to some errors" == message
     end
