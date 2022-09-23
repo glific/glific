@@ -64,12 +64,12 @@ DO NOT run mix deps.get until the next steps are completed.
 
 You will need to do the following:
 
-- a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
-- b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
-- c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
-- d. Edit `glific_backend/config/dev.secret.exs`
-- e. Find your API Key, check top left corner or inside the curl sample message
-- f. Enter your APP name
+ a. Create a [Gupshup Account](https://www.gupshup.io/developer/home)
+ b. Create an app and select [Access API](https://www.gupshup.io/whatsapp/create-app/access-api)
+ c. You can name it `NewNameHere` "GlificTest <-- Bot Name is already in use, then use anotherone"
+ d. Edit `glific_backend/config/dev.secret.exs`
+ e. Find your API Key, check top left corner or inside the curl sample message
+ f. Enter your APP name
 
 ### 5. External service - Oban Pro
 
@@ -142,24 +142,24 @@ Go to glific_backend folder in the terminal console.
 
 ```bash
       ❯ ls -1
-      glific.test+6-key.pem
-      glific.test+6.pem
-      glific.test+7-key.pem
-      glific.test+7.pem
-      ❯ cp glific.test+6-key.pem glific.test+1-key.pem
-      ❯ cp glific.test+6.pem glific.test+1.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      ❯ cp glific.test+*-key.pem glific.test+1-key.pem
+      ❯ cp glific.test+*.pem glific.test+1.pem
 ```
 
       And check again
 
 ```bash
       ❯ ls -1
-      glific.test+1-key.pem
-      glific.test+1.pem
-      glific.test+6-key.pem
-      glific.test+6.pem
-      glific.test+7-key.pem
-      glific.test+7.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
+      glific.test+*-key.pem
+      glific.test+*.pem
 ```
 
 - h. Check port 4001 `sudo lsof -n -i:4001 | grep LISTEN` should return nothing.
