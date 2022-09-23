@@ -355,7 +355,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             is_billable: row.is_billable,
-            message_id: row.message.id
+            message_id: row.message.id,
+            payload: BigQuery.format_json(row.payload),
+            phone: row.message.contact.phone
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -784,7 +786,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> apply_action_clause(attrs)
       |> order_by([m], [m.inserted_at, m.id])
       |> preload([
-        :message
+        :message, message: [:contact]
       ])
 
   defp get_query("contacts", organization_id, attrs),

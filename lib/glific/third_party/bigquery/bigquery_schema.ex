@@ -888,7 +888,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "JSON object for storing the recenet messages",
+        description: "JSON object for storing the recent messages",
         name: "recent_messages",
         type: "STRING",
         mode: "NULLABLE"
@@ -1281,7 +1281,7 @@ defmodule Glific.BigQuery.Schema do
       %{
         description: "Message conversation payload received from Gupshup",
         name: "payload",
-        type: "JSON",
+        type: "STRING",
         mode: "NULLABLE"
       },
       %{
