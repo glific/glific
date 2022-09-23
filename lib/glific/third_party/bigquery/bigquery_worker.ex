@@ -355,9 +355,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id),
             is_billable: row.is_billable,
-            message_id: row.message.id,
+            message_id: row.message_id,
             payload: BigQuery.format_json(row.payload),
-            phone: row.message.contact.phone
+            phone: row.phone
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -782,12 +782,22 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp get_query("message_conversations", organization_id, attrs),
     do:
       MessageConversation
-      |> where([m], m.organization_id == ^organization_id)
+      |> join(:left, [mc], m in Message, as: :m, on: mc.message_id == m.id)
+      |> join(:left, [m: m], c in Contact, as: :c, on: m.contact_id == c.id)
+      |> select([mc, m, c], %{
+        conversation_id: mc.conversation_id,
+        deduction_type: mc.deduction_type,
+        inserted_at: mc.inserted_at,
+        updated_at: mc.updated_at,
+        is_billable: mc.is_billable,
+        payload: mc.payload,
+        phone: c.phone,
+        message_id: m.id,
+        id: mc.id
+      })
+      |> where([mc], mc.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
-      |> order_by([m], [m.inserted_at, m.id])
-      |> preload([
-        :message, message: [:contact]
-      ])
+      |> order_by([mc], [mc.inserted_at, mc.id])
 
   defp get_query("contacts", organization_id, attrs),
     do:
