@@ -146,12 +146,6 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  def read_csv_file() do
-    File.stream!("/Users/arun/Documents/sample_contacts.csv")
-    |> CSV.decode(headers: true, strip_fields: true)
-    |> Enum.map(fn {_, data} -> data end)
-  end
-
   @doc """
   This method allows importing of contacts to a particular organization and group
 
