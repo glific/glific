@@ -207,15 +207,23 @@ defmodule Glific.Flows.FlowContext do
         )
 
     # lets reset the current context and return the resetted context
-    reset_one_context(context, true)
+    reset_one_context(context,
+      is_killed: true,
+      source: "reset_all_contexts",
+      event_meta: %{
+        message: message
+      }
+    )
   end
 
   @doc """
-  Reset this context, but dont follow parent context tail. This is used
+  Reset this context, but don't follow parent context tail. This is used
   for tail call optimization
   """
-  @spec reset_one_context(FlowContext.t(), boolean) :: FlowContext.t()
-  def reset_one_context(context, is_killed \\ false) do
+  @spec reset_one_context(FlowContext.t(), Keyword.t()) :: FlowContext.t()
+  def reset_one_context(context, opts \\ []) do
+    is_killed = Keyword.get(opts, :is_killed, false)
+
     {:ok, context} =
       FlowContext.update_flow_context(
         context,
@@ -241,14 +249,17 @@ defmodule Glific.Flows.FlowContext do
     {:ok, _} =
       Contacts.capture_history(context.contact, :contact_flow_ended, %{
         event_label: "Flow Ended",
-        event_meta: %{
-          context_id: context.id,
-          flow: %{
-            id: context.flow.id,
-            name: context.flow.name,
-            uuid: context.flow.uuid
+        event_meta:
+          %{
+            "context_id" => context.id,
+            "source" => Keyword.get(opts, :source, ""),
+            "flow" => %{
+              "id" => context.flow.id,
+              "name" => context.flow.name,
+              "uuid" => context.flow.uuid
+            }
           }
-        }
+          |> Map.merge(Keyword.get(opts, :event_meta, %{}))
       })
 
     context
@@ -265,7 +276,13 @@ defmodule Glific.Flows.FlowContext do
     Logger.info("Ending Flow: id: '#{context.flow_id}', contact_id: '#{context.contact_id}'")
 
     # we first update this entry with the completed at time
-    context = reset_one_context(context)
+    context =
+      reset_one_context(context,
+        source: "reset_context",
+        event_meta: %{
+          "parent_id" => context.parent_id
+        }
+      )
 
     # check if context has a parent_id, if so, we need to
     # load that context and keep going
@@ -274,7 +291,7 @@ defmodule Glific.Flows.FlowContext do
       parent = active_context(context.contact_id, context.parent_id)
 
       # ensure the parent is still active. If the parent completed (or was terminated)
-      # we dont get back a valid parent
+      # we don't get back a valid parent
       if parent do
         Logger.info(
           "Resuming Parent Flow: id: '#{parent.flow_id}', contact_id: '#{context.contact_id}'"
@@ -292,7 +309,7 @@ defmodule Glific.Flows.FlowContext do
       end
     end
 
-    # return the orginal context, which is now completed
+    # return the original context, which is now completed
     context
   end
 
