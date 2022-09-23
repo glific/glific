@@ -93,6 +93,7 @@
           "uuid": "31fe1720-cf5b-4862-a98b-8096d1f01469",
           "destination_uuid": "6bf22f36-a365-4fc8-ad95-87084989fbdd"
         },
+        { "uuid": "fd8ce994-2c42-49d4-ab4b-07bedb111bcb" },
         {
           "uuid": "754a48fe-47c2-482e-b6a2-b1c65d5321a4",
           "destination_uuid": null
@@ -119,6 +120,12 @@
             "uuid": "fc05a8cf-f9eb-4b41-816a-647a9de7e4ad",
             "arguments": ["newcontact"],
             "category_uuid": "0b8c1825-0dd7-45d8-ab50-df1be11534f7"
+          },
+          {
+            "type": "has_number",
+            "uuid": "ff80e5f4-955a-4786-a07a-9ab9040bfa91",
+            "arguments": [],
+            "category_uuid": "f19db8df-8d37-440d-9096-a7b422f9511b"
           }
         ],
         "operand": "@input.text",
@@ -137,6 +144,11 @@
             "name": "3",
             "uuid": "0b8c1825-0dd7-45d8-ab50-df1be11534f7",
             "exit_uuid": "31fe1720-cf5b-4862-a98b-8096d1f01469"
+          },
+          {
+            "name": "Has Number",
+            "uuid": "f19db8df-8d37-440d-9096-a7b422f9511b",
+            "exit_uuid": "fd8ce994-2c42-49d4-ab4b-07bedb111bcb"
           },
           {
             "name": "Other",
