@@ -532,7 +532,15 @@ defmodule Glific.Flows.Action do
 
       {context, parent_id} =
         if node.is_terminal == true,
-          do: {FlowContext.reset_one_context(context), context.parent_id},
+          do:
+            {FlowContext.reset_one_context(context,
+               source: "enter_flow",
+               event_meta: %{
+                 "action" => "#{inspect(action)}",
+                 "current_flow_uuid" => context.flow_uuid,
+                 "new_flow" => flow_uuid
+               }
+             ), context.parent_id},
           else: {context, context.id}
 
       # we start off a new context here and don't really modify the current context
