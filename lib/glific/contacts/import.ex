@@ -13,7 +13,8 @@ defmodule Glific.Contacts.Import do
     Groups.GroupContacts,
     Partners,
     Repo,
-    Settings
+    Settings,
+    Users.User
   }
 
   @spec cleanup_contact_data(map(), non_neg_integer, String.t()) :: map()
