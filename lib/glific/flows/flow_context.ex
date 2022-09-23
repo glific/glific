@@ -693,6 +693,8 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @wake_up_flow_limit 500
+
   @spec wakeup_flows(non_neg_integer) :: any
   @doc """
   Find all the contexts which need to be woken up and processed
@@ -702,7 +704,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
-    |> limit(500)
+    |> limit(@wake_up_flow_limit)
     |> preload(:flow)
     |> Repo.all()
     |> Enum.each(&wakeup_one(&1))

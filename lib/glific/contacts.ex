@@ -945,13 +945,4 @@ defmodule Glific.Contacts do
         query
     end)
   end
-
-  @doc """
-  The limit of contact which can be proceed in out minute cron cycle.
-  We will use this method in broadcast, wake_flows, import flows etc
-  """
-  @spec minutely_process_limit() :: integer
-  def minutely_process_limit do
-    100
-  end
 end
