@@ -369,13 +369,15 @@ defmodule Glific.Flows.Flow do
     if flow.definition["nodes"] == [] do
       [Flow: "Flow is empty"]
     else
+      all_nodes = flow_objects(flow, :node)
+
       flow.nodes
       |> Enum.reduce(
         [],
         &Node.validate(&1, &2, flow)
       )
-      |> dangling_nodes(flow)
-      |> missing_flow_context_nodes(flow)
+      |> dangling_nodes(flow, all_nodes)
+      |> missing_flow_context_nodes(flow, all_nodes)
     end
   end
 
@@ -387,9 +389,8 @@ defmodule Glific.Flows.Flow do
     |> MapSet.new()
   end
 
-  @spec dangling_nodes(Keyword.t(), map()) :: Keyword.t()
-  defp dangling_nodes(errors, flow) do
-    all_nodes = flow_objects(flow, :node)
+  @spec dangling_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
+  defp dangling_nodes(errors, flow, all_nodes) do
     all_exits = flow_objects(flow, :exit)
 
     # the first node is always reachable
@@ -411,10 +412,8 @@ defmodule Glific.Flows.Flow do
       else: [dangling: "Your flow has dangling nodes"] ++ errors
   end
 
-  @spec missing_flow_context_nodes(Keyword.t(), map()) :: Keyword.t()
-  defp missing_flow_context_nodes(errors, flow) do
-    all_nodes = flow_objects(flow, :node)
-
+  @spec missing_flow_context_nodes(Keyword.t(), map(), MapSet.t()) :: Keyword.t()
+  defp missing_flow_context_nodes(errors, flow, all_nodes) do
     flow_context_nodes =
       FlowContext
       |> where([fc], fc.flow_id == ^flow.id and is_nil(fc.completed_at))

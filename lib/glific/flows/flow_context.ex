@@ -197,7 +197,14 @@ defmodule Glific.Flows.FlowContext do
 
     # lets reset the entire flow tree complete if this context is a child
     if context.parent_id,
-      do: mark_flows_complete(context.contact_id, false)
+      do:
+        mark_flows_complete(context.contact_id, false,
+          source: "reset_all_contexts",
+          event_meta: %{
+            context_id: context.id,
+            message: message
+          }
+        )
 
     # lets reset the current context and return the resetted context
     reset_one_context(context, true)
@@ -462,11 +469,13 @@ defmodule Glific.Flows.FlowContext do
   @doc """
   Set all the flows for a specific context to be completed
   """
-  @spec mark_flows_complete(non_neg_integer, boolean(), DateTime.t() | nil) :: nil
-  def mark_flows_complete(_contact_id, _is_background_flow, after_insert_date \\ nil)
-  def mark_flows_complete(_contact_id, true, _after_insert_date), do: nil
+  @spec mark_flows_complete(non_neg_integer, boolean(), Keyword.t()) :: nil
+  def mark_flows_complete(_contact_id, _is_background_flow, opts \\ [])
+  def mark_flows_complete(_contact_id, true, _opts), do: nil
 
-  def mark_flows_complete(contact_id, false, after_insert_date) do
+  def mark_flows_complete(contact_id, false, opts) do
+    after_insert_date = Keyword.get(opts, :after_insert_date, nil)
+
     now = DateTime.utc_now()
 
     FlowContext
@@ -479,7 +488,13 @@ defmodule Glific.Flows.FlowContext do
 
     {:ok, _} =
       Contacts.capture_history(contact_id, :contact_flow_ended_all, %{
-        event_label: "All contact flows are ended"
+        event_label: "Mark all the flow as completed.",
+        event_meta:
+          %{
+            "after_insert_date" => after_insert_date,
+            "source" => Keyword.get(opts, :source, "")
+          }
+          |> Map.merge(Keyword.get(opts, :event_meta, %{}))
       })
 
     :telemetry.execute(
@@ -552,7 +567,14 @@ defmodule Glific.Flows.FlowContext do
     parent_id = Keyword.get(opts, :parent_id)
     # set all previous context to be completed if we are not starting a sub flow
     if is_nil(parent_id) do
-      mark_flows_complete(contact.id, flow.is_background)
+      mark_flows_complete(contact.id, flow.is_background,
+        source: "init_context",
+        event_meta: %{
+          flow_id: flow.id,
+          parent_id: parent_id,
+          status: status
+        }
+      )
     end
 
     {:ok, context} = seed_context(flow, contact, status, opts)
@@ -671,14 +693,18 @@ defmodule Glific.Flows.FlowContext do
     end
   end
 
+  @wake_up_flow_limit 500
+
   @spec wakeup_flows(non_neg_integer) :: any
   @doc """
   Find all the contexts which need to be woken up and processed
   """
   def wakeup_flows(_organization_id) do
     FlowContext
+    |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
+    |> limit(@wake_up_flow_limit)
     |> preload(:flow)
     |> Repo.all()
     |> Enum.each(&wakeup_one(&1))
@@ -703,7 +729,14 @@ defmodule Glific.Flows.FlowContext do
       )
 
     # also mark all newer contexts as completed
-    mark_flows_complete(context.contact_id, context.flow.is_background, context.inserted_at)
+    mark_flows_complete(context.contact_id, context.flow.is_background,
+      after_insert_date: context.inserted_at,
+      source: "wakeup_one",
+      event_meta: %{
+        context_id: context.id,
+        message: "#{inspect(message)}"
+      }
+    )
 
     {:ok, flow} =
       Flows.get_cached_flow(

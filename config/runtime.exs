@@ -43,7 +43,8 @@ config :appsignal, :config,
   hostname: env!("APPSIGNAL_HOSTNAME", :string),
   active: env!("APPSIGNAL_ACTIVE", :boolean, false),
   revision: Application.spec(:glific, :vsn) |> to_string(),
-  push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!)
+  push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
+  ecto_repos: []
 
 config :glific, Glific.Vault,
   ciphers: [
