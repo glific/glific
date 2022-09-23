@@ -680,7 +680,7 @@ defmodule Glific.Flows.FlowContext do
     |> where([fc], not is_nil(fc.wakeup_at))
     |> where([fc], fc.wakeup_at < ^DateTime.utc_now())
     |> where([fc], is_nil(fc.completed_at))
-    |> limit(^Contacts.minutely_process_limit())
+    |> limit(500)
     |> preload(:flow)
     |> Repo.all()
     |> Enum.each(&wakeup_one(&1))
