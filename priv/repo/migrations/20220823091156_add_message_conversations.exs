@@ -12,7 +12,7 @@ defmodule Glific.Repo.Migrations.AddMessageConversations do
       add :is_billable, :boolean, default: false
 
       add :message_id, references(:messages, on_delete: :delete_all),
-        null: false,
+        null: true,
         comment: "reference for the message"
 
       add :organization_id, references(:organizations, on_delete: :delete_all),
