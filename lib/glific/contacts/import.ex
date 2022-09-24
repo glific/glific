@@ -17,6 +17,8 @@ defmodule Glific.Contacts.Import do
     Users.User
   }
 
+  @max_concurrency System.schedulers_online() * 2
+
   @spec cleanup_contact_data(map(), non_neg_integer, String.t()) :: map()
   defp cleanup_contact_data(data, organization_id, date_format) do
     %{
@@ -171,6 +173,8 @@ defmodule Glific.Contacts.Import do
         |> CSV.decode(headers: true, strip_fields: true)
         |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
         |> Enum.map(fn contact -> process_data(user, contact, group.id) end)
+        |> Task.async_stream(Mod, :expensive_fun, [], max_concurrency: @max_concurrency)
+        |> Enum.to_list()
 
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
