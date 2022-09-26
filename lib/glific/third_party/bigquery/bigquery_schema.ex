@@ -407,13 +407,13 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "refrence ID for an HSM",
+        description: "reference ID for an HSM",
         name: "template_uuid",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "refrence ID for an interactive template",
+        description: "reference ID for an interactive template",
         name: "interactive_template_id",
         type: "INTEGER",
         mode: "NULLABLE"
@@ -730,7 +730,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "REQUIRED"
       },
       %{
-        description: "ID of the profile table refrence to the profile table",
+        description: "ID of the profile table reference to the profile table",
         name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
@@ -818,7 +818,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "ID of the profile table refrence to the profile table",
+        description: "ID of the profile table reference to the profile table",
         name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
@@ -1204,7 +1204,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "ID of the profile table refrence to the profile table",
+        description: "ID of the profile table reference to the profile table",
         name: "profile_id",
         type: "INTEGER",
         mode: "NULLABLE"
@@ -1294,6 +1294,114 @@ defmodule Glific.BigQuery.Schema do
   end
 
   @doc """
+  Schema for message broadcast contacts table
+  """
+  @spec message_broadcast_contacts_schema :: list()
+  def message_broadcast_contacts_schema do
+    [
+      %{
+        description: "Unique ID for the message broadcast contacts",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Reference for the message broadcast",
+        name: "message_broadcast_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of Broadcast",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
+  Schema for message broadcast table
+  """
+  @spec message_broadcast_schema :: list()
+  def message_broadcast_schema do
+    [
+      %{
+        description: "Unique ID for the message broadcast contacts",
+        name: "id",
+        type: "INTEGER",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Reference for the flow",
+        name: "flow_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the Flow",
+        name: "flow_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the collection",
+        name: "collection_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the collection",
+        name: "collection_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Status of Broadcast",
+        name: "status",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the message",
+        name: "message_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Reference for the user",
+        name: "user_id",
+        type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Name of the user",
+        name: "user_name",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Type of broadcast",
+        name: "broadcast_type",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Message Params",
+        name: "message_params",
+        type: "STRING",
+        mode: "NULLABLE"
+      }
+    ]
+  end
+
+  @doc """
   Procedure for flat fields
   """
   @spec flat_fields_procedure(String.t(), String.t()) :: String.t()
@@ -1307,7 +1415,7 @@ defmodule Glific.BigQuery.Schema do
       || (
         SELECT STRING_AGG(DISTINCT "(SELECT value FROM UNNEST(fields) WHERE label = '" || label || "') AS " || REPLACE(label, ' ', '_')
         )
-        FROM `#{project_id}.#{dataset_id}.contacts`, unnest(fields)
+        FROM `#{project_id}.#{dataset_id}.contacts`, UNNEST(fields)
       ) || '''
       ,(SELECT MIN(inserted_at) FROM UNNEST(fields)) AS inserted_at,
       (SELECT MAX(inserted_at) FROM UNNEST(fields)) AS last_updated_at
