@@ -1,6 +1,6 @@
 defmodule Glific.Sheets.ApiClient do
   @moduledoc """
-  Http API client to intract with Gupshup
+  Http API client to interact with Gupshup
   """
 
   # @gupshup_url "https://ecc1b36b412e0e08549aefec29aa4bf7.m.pipedream.net"
