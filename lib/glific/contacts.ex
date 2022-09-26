@@ -243,7 +243,7 @@ defmodule Glific.Contacts do
   @doc """
   Updates a contact.
 
-  ## Examplescp
+  ## Examples
 
       iex> update_contact(contact, %{field: new_value})
       {:ok, %Contact{}}

@@ -17,7 +17,7 @@ defmodule Glific.Contacts.Import do
     Users.User
   }
 
-  @max_concurrency System.schedulers_online() * 2
+  @max_concurrency System.schedulers_online()
 
   @spec cleanup_contact_data(map(), non_neg_integer, String.t()) :: map()
   defp cleanup_contact_data(data, organization_id, date_format) do
@@ -133,9 +133,8 @@ defmodule Glific.Contacts.Import do
   end
 
 
-
   @spec process_data(User.t(), map(), non_neg_integer) :: Contact.t() | map()
-  def process_data(_user, %{delete: "1"} = contact, _contact_attrs) do
+  defp process_data(_user, %{delete: "1"} = contact, _contact_attrs) do
     Repo.put_process_state(contact.organization_id)
     case Repo.get_by(Contact, %{phone: contact.phone}) do
       nil ->
@@ -147,7 +146,7 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  def process_data(user, contact_attrs, group_id) do
+  defp process_data(user, contact_attrs, group_id) do
     Repo.put_process_state(contact_attrs.organization_id)
     {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
