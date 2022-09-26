@@ -353,7 +353,7 @@ defmodule Glific.FLowsTest do
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
     end
 
-    test "start_contact_flow/2 if flow is not avialable", attrs do
+    test "start_contact_flow/2 if flow is not available", attrs do
       contact = Fixtures.contact_fixture(attrs)
 
       {:error, error} = Flows.start_contact_flow(9999, contact)

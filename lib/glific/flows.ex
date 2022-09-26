@@ -381,7 +381,7 @@ defmodule Glific.Flows do
       |> Repo.insert()
 
     # Now also delete the caches for the draft status, so we can reload
-    # note that we dont bother reloading the cache, since we dont expect
+    # note that we don't bother reloading the cache, since we don't expect
     # draft simulator to run often, and drafts are being saved quite often
     Caches.remove(flow.organization_id, keys_to_cache_flow(flow, "draft"))
 
@@ -545,7 +545,7 @@ defmodule Glific.Flows do
   @spec do_publish_flow(Flow.t()) :: {:ok, Flow.t()} | {:error, any()}
   defp do_publish_flow(%Flow{} = flow) do
     last_version = get_last_version_and_update_old_revisions(flow)
-    ## if invalid flow then return the {:error, array} otherwise move forword
+    ## if invalid flow then return the {:error, array} otherwise move forward
     {:ok, latest_revision} = Repo.fetch_by(FlowRevision, %{flow_id: flow.id, revision_number: 0})
 
     result =
@@ -687,7 +687,7 @@ defmodule Glific.Flows do
 
   @doc """
   Create a map of keywords that map to flow ids for each
-  active organization. Also cache this value including the outoffice
+  active organization. Also cache this value including the outofoffice
   shortcode
   """
   @spec flow_keywords_map(non_neg_integer) :: map()
@@ -991,7 +991,7 @@ defmodule Glific.Flows do
       end)
 
   ## Get latest flow definition to export. There is one more function with the same name in
-  ## Glific.Flows.flow but that gives us the definition without UI placesments.
+  ## Glific.Flows.flow but that gives us the definition without UI placements.
   @spec get_latest_definition(String.t()) :: map() | nil
   defp get_latest_definition(flow_uuid) do
     FlowRevision
