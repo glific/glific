@@ -638,19 +638,19 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "contact id refrences to the contact table",
+        description: "contact id references to the contact table",
         name: "contact_id",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "contact phone refrences to the contact table",
+        description: "contact phone references to the contact table",
         name: "contact_phone",
         type: "STRING",
         mode: "NULLABLE"
       },
       %{
-        description: "local result of a perticular flow context",
+        description: "local result of a particular flow context",
         name: "results",
         type: "STRING",
         mode: "NULLABLE"
@@ -894,7 +894,7 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "JSON object for storing the recenet messages",
+        description: "JSON object for storing the recent messages",
         name: "recent_messages",
         type: "STRING",
         mode: "NULLABLE"
@@ -1225,7 +1225,7 @@ defmodule Glific.BigQuery.Schema do
   def message_conversation_schema do
     [
       %{
-        description: "Unique ID for the profile",
+        description: "Unique ID for the message conversation",
         name: "id",
         type: "INTEGER",
         mode: "REQUIRED"
@@ -1243,25 +1243,25 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "deduction_type for the message conversation",
+        description: "Deduction type for the message conversation",
         name: "deduction_type",
         type: "STRING",
         mode: "REQUIRED"
       },
       %{
-        description: "is_billable for the message conversation",
+        description: "Status if the message conversation was billed",
         name: "is_billable",
         type: "BOOLEAN",
         mode: "NULLABLE"
       },
       %{
-        description: "Time when the stats entry was first created for a user",
+        description: "Time when the message conversation was first created",
         name: "inserted_at",
         type: "DATETIME",
         mode: "REQUIRED"
       },
       %{
-        description: "Time when the stats results entry was last updated for a user",
+        description: "Time when the message conversation was last updated",
         name: "updated_at",
         type: "DATETIME",
         mode: "REQUIRED"
@@ -1279,9 +1279,21 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Linked message id",
+        description: "Reference for the message",
         name: "message_id",
         type: "INTEGER",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Message conversation payload received from Gupshup",
+        name: "payload",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Phone number of the contact",
+        name: "phone",
+        type: "STRING",
         mode: "NULLABLE"
       }
     ]

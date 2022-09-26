@@ -15,11 +15,10 @@ defmodule Glific.Messages.MessageConversation do
     :conversation_id,
     :deduction_type,
     :payload,
-    :message_id,
     :organization_id
   ]
 
-  @optional_fields [:is_billable]
+  @optional_fields [:is_billable, :message_id]
 
   @type t() :: %__MODULE__{
           __meta__: Ecto.Schema.Metadata.t(),
@@ -54,7 +53,6 @@ defmodule Glific.Messages.MessageConversation do
     message_conversation
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
-    |> foreign_key_constraint(:message_id)
     |> foreign_key_constraint(:organization_id)
   end
 end
