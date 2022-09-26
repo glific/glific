@@ -138,7 +138,7 @@ defmodule GlificWeb.Schema.FlowTest do
     assert message == "Resource not found"
   end
 
-  test "definiton field returns one flow definition or nil", %{staff: user} do
+  test "definition field returns one flow definition or nil", %{staff: user} do
     [flow | _] = Flows.list_flows(%{filter: %{name: "activity"}})
 
     name = flow.name
@@ -241,7 +241,7 @@ defmodule GlificWeb.Schema.FlowTest do
     flow_name = get_in(query_data, [:data, "createFlow", "flow", "name"])
     assert flow_name == name
 
-    # create message without required atributes
+    # create message without required attributes
     result = auth_query_gql_by(:create, user, variables: %{"input" => %{}})
 
     assert {:ok, query_data} = result
@@ -268,7 +268,7 @@ defmodule GlificWeb.Schema.FlowTest do
              "The keyword `testkeyword` was already used in the `Flow Test Name` Flow."
   end
 
-  test "update a flow and test possible scenarios and errorss", %{manager: user} do
+  test "update a flow and test possible scenarios and errors", %{manager: user} do
     {:ok, flow} =
       Repo.fetch_by(Flow, %{name: "Test Workflow", organization_id: user.organization_id})
 
@@ -333,7 +333,7 @@ defmodule GlificWeb.Schema.FlowTest do
 
     assert {:ok, query_data} = result
 
-    # flows dont care about the contact state, we allow each flow node to check
+    # flows don't care about the contact state, we allow each flow node to check
     # and figure out if the operation is permitted
     assert get_in(query_data, [:data, "startContactFlow", "success"]) == true
 
