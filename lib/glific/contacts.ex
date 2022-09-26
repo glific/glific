@@ -108,7 +108,7 @@ defmodule Glific.Contacts do
 
       # We need distinct query expression with join,
       # in case if filter requires contacts added to multiple groups
-      # Using subquery instead of join, so that distict query expression can be avoided
+      # Using subquery instead of join, so that distinct query expression can be avoided
       # We can come back and decide, which one is more expensive in this scenario.
       {:include_groups, group_ids}, query ->
         sub_query =
@@ -189,7 +189,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Gets a single contact by phone nunmber.
+  Gets a single contact by phone number.
 
   Raises `Ecto.NoResultsError` if the Contact does not exist.
 
@@ -257,7 +257,7 @@ defmodule Glific.Contacts do
     if has_permission?(contact.id) do
       if is_simulator_block?(contact, attrs) do
         # just treat it as if we blocked the simulator
-        # but in reality, we dont block the simulator
+        # but in reality, we don't block the simulator
         {:ok, contact}
       else
         contact
@@ -392,7 +392,7 @@ defmodule Glific.Contacts do
 
   @doc """
   Check if this contact id is a new contact.
-  In general, we should always retrive as little as possible from the DB
+  In general, we should always retrieve as little as possible from the DB
   """
   @spec is_new_contact(integer()) :: boolean()
   def is_new_contact(contact_id) do
@@ -519,7 +519,7 @@ defmodule Glific.Contacts do
 
   @doc """
   Opt out a contact if the provider returns an error code about Number not
-  exisiting or not on whatsapp
+  existing or not on whatsapp
   """
   @spec number_does_not_exist(non_neg_integer(), String.t()) :: any()
   def number_does_not_exist(contact_id, method \\ "Number does not exist") do
@@ -591,7 +591,7 @@ defmodule Glific.Contacts do
   end
 
   @doc """
-  Check if we can send a session message to the contact with some extra perameters
+  Check if we can send a session message to the contact with some extra parameters
   Specifically designed for when we are trying to optin an opted out contact
   """
   @spec can_send_message_to?(Contact.t(), boolean(), map()) :: {:ok | :error, String.t() | nil}
@@ -870,7 +870,7 @@ defmodule Glific.Contacts do
   def is_simulator_contact?(phone), do: String.starts_with?(phone, @simulator_phone_prefix)
 
   @doc """
-  create new contact histroy record.
+  create new contact history record.
   """
   @spec capture_history(Contact.t() | non_neg_integer(), atom(), map()) ::
           {:ok, ContactHistory.t()} | {:error, Ecto.Changeset.t()}
@@ -881,7 +881,7 @@ defmodule Glific.Contacts do
       |> capture_history(event_type, attrs)
 
   def capture_history(%Contact{} = contact, event_type, attrs) do
-    ## I will add the telemetery evenets here.
+    ## I will add the telemetry events here.
     attrs =
       Map.merge(
         %{
@@ -926,7 +926,7 @@ defmodule Glific.Contacts do
   @spec filter_history_with(Ecto.Queryable.t(), %{optional(atom()) => any}) :: Ecto.Queryable.t()
   defp filter_history_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to webhook logs only.
+    # these filters are specific to webhook logs only.
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:contact_id, contact_id}, query ->

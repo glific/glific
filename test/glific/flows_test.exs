@@ -342,9 +342,8 @@ defmodule Glific.FLowsTest do
       assert loaded_flow.definition == new_definition
     end
 
-    test "start_cotntact_flow/2 will setup the flow for a contact", attrs do
+    test "start_contact_flow/2 will setup the flow for a contact", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
-
       contact = Fixtures.contact_fixture(attrs)
 
       {:ok, flow} = Flows.start_contact_flow(flow, contact)
@@ -354,11 +353,23 @@ defmodule Glific.FLowsTest do
                Repo.fetch_by(Message, %{uuid: first_action.uuid, contact_id: contact.id})
     end
 
-    test "start_contact_flow/2 if flow is not avialable", attrs do
+    test "start_contact_flow/2 if flow is not available", attrs do
       contact = Fixtures.contact_fixture(attrs)
 
       {:error, error} = Flows.start_contact_flow(9999, contact)
-      assert error == "Flow not found"
+
+      assert get_in(error, [Access.at(1)]) == "Flow not found"
+    end
+
+    test "start_contact_flow/2 if flow is not active", attrs do
+      [flow | _tail] = Flows.list_flows(%{filter: attrs})
+
+      contact = Fixtures.contact_fixture(attrs)
+
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: false})
+
+      {:error, error} = Flows.start_contact_flow(flow.id, contact)
+      assert get_in(error, [Access.at(1)]) == "Flow is not active"
     end
 
     test "start_contact_flow/2 will setup the template flow for a contact", attrs do
@@ -476,7 +487,8 @@ defmodule Glific.FLowsTest do
       "Could not find Group:",
       "The next message after a long wait for time should be an HSM template",
       "Could not find Sub Flow:",
-      "Could not parse"
+      "Could not parse",
+      "\"newcontact\" has already been used as a keyword for a flow"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))
