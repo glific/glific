@@ -376,7 +376,7 @@ defmodule Glific.Communications.Message do
   defp process_errors(message, _errors, 1002) do
     # Issue #2047 - Number does not exist in WhatsApp
     # Lets disable this contact and make it inactive
-    # This is relatively common, so we dont send an email or log this error
+    # This is relatively common, so we don't send an email or log this error
     Contacts.number_does_not_exist(message.contact_id)
   end
 

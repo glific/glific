@@ -49,7 +49,7 @@ defmodule Glific.Partners do
   def list_providers(args \\ %{}) do
     Repo.list_filter(args, Provider, &Repo.opts_with_name/2, &filter_provider_with/2)
     |> Enum.reject(fn provider ->
-      Enum.member?(["goth", "chatbase"], provider.shortcode)
+      Enum.member?(["goth"], provider.shortcode)
     end)
   end
 
@@ -579,7 +579,7 @@ defmodule Glific.Partners do
       FunWithFlags.enabled?(:flow_uuid_display, for: %{organization_id: id}) ->
         true
 
-      # the below 2 conds are just for testing and prototyping purposes
+      # the below 2 conditions are just for testing and prototyping purposes
       # we'll get rid of them when we start using this actively
       Application.get_env(:glific, :environment) == :prod && id == 2 ->
         true
@@ -743,7 +743,7 @@ defmodule Glific.Partners do
   The handler is expected to take the organization id as its first argument. The second argument
   is expected to be a map of arguments passed in by the cron job, and can be ignored if not used
 
-  The list is a restricted list of organizations, so we dont repeatedly do work. The convention is as
+  The list is a restricted list of organizations, so we don't repeatedly do work. The convention is as
   follows:
 
   list == nil - the action should not be performed for any organization
@@ -1249,7 +1249,7 @@ defmodule Glific.Partners do
           Ecto.Queryable.t()
   defp filter_organization_data_with(query, filter) do
     query = Repo.filter_with(query, filter)
-    # these filters are specfic to webhook logs only.
+    # these filters are specific to webhook logs only.
     # We might want to move them in the repo in the future.
     Enum.reduce(filter, query, fn
       {:key, key}, query ->

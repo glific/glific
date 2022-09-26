@@ -909,7 +909,7 @@ defmodule Glific.Messages do
 
   # for all input contact ids that do not have messages attached to them
   # return a conversation data type with empty messages
-  # we dont add empty conversations when we have either include tags or include users set
+  # we don't add empty conversations when we have either include tags or include users set
   @spec add_empty_conversations([Conversation.t()], map()) :: [Conversation.t()]
   defp add_empty_conversations(results, %{filter: %{include_tags: _tags}}),
     do: results
@@ -942,7 +942,7 @@ defmodule Glific.Messages do
     # the difference is the empty contacts id list
     empty_contact_ids = contact_ids -- present_contact_ids
 
-    # lets load all contacts ids in one query, rather than multiople single queries
+    # lets load all contacts ids in one query, rather than multiple single queries
     empty_results =
       Contact
       |> where([c], c.id in ^empty_contact_ids)

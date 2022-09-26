@@ -462,7 +462,7 @@ defmodule Glific.Flows do
     Caches.set(organization_id, keys_to_cache_flow(flow, status), flow)
 
     # We are setting the cache in the above statement with multiple keys
-    # hence we are asking cachex to just ignore this aspect. All the other
+    # hence we are asking Cachex to just ignore this aspect. All the other
     # requests will get the cache value sent above
     {:ignore, flow}
   end
@@ -498,7 +498,7 @@ defmodule Glific.Flows do
 
   @doc """
   Check if a flow has been activated since the time sent as a parameter
-  e.g. outofoffice will check if that flow was activated in the last 24 hours
+  e.g. outOfOffice will check if that flow was activated in the last 24 hours
   daily/weekly will check since start of day/week, etc
   """
   @spec flow_activated(non_neg_integer, non_neg_integer, DateTime.t()) :: boolean
@@ -630,8 +630,6 @@ defmodule Glific.Flows do
     end
   end
 
-  @status "published"
-
   @doc """
   Start flow for contacts of a group
   """
@@ -687,7 +685,7 @@ defmodule Glific.Flows do
 
   @doc """
   Create a map of keywords that map to flow ids for each
-  active organization. Also cache this value including the outofoffice
+  active organization. Also cache this value including the outOfOffice
   shortcode
   """
   @spec flow_keywords_map(non_neg_integer) :: map()
@@ -811,7 +809,7 @@ defmodule Glific.Flows do
                create_flow(%{
                  name: flow_revision["definition"]["name"],
                  # we are reusing existing UUIDs against the spirit of UUIDs
-                 # however this allows us to support subflows
+                 # however this allows us to support sub flows
                  uuid: flow_revision["definition"]["uuid"],
                  keywords: flow_revision["keywords"],
                  organization_id: organization_id
@@ -902,7 +900,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-  Process subflows and check if there is more subflows in it.
+  Process sub flows and check if there is more sub flows in it.
   """
   @spec export_flow_details(String.t(), map()) :: map()
   def export_flow_details(flow_uuid, results) do
@@ -975,7 +973,7 @@ defmodule Glific.Flows do
   end
 
   @doc """
-    Extract all the subflows form the parent flow definition.
+    Extract all the sub flows form the parent flow definition.
   """
   @spec get_sub_flows(list()) :: list()
   def get_sub_flows(nodes),
