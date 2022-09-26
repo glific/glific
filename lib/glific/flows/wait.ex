@@ -30,7 +30,7 @@ defmodule Glific.Flows.Wait do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Router.t()) :: {Wait.t(), map()}
   def process(json, uuid_map, _router) do

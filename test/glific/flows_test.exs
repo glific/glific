@@ -476,7 +476,8 @@ defmodule Glific.FLowsTest do
       "Could not find Group:",
       "The next message after a long wait for time should be an HSM template",
       "Could not find Sub Flow:",
-      "Could not parse"
+      "Could not parse",
+      "\"newcontact\" has already been used as a keyword for a flow"
     ]
 
     Enum.any?(errors, &String.contains?(str, &1))

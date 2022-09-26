@@ -84,9 +84,33 @@ defmodule Glific.Flows.Case do
   Validate a case
   """
   @spec validate(Case.t(), Keyword.t(), map()) :: Keyword.t()
-  def validate(_case, errors, _flow) do
-    errors
+  def validate(%{arguments: arguments} = _case, errors, flow) when arguments != [] do
+    wait_for_response_words =
+      arguments
+      |> List.first()
+      |> String.split(", ")
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, Glific.string_clean(&1)))
+      |> MapSet.delete(nil)
+
+    flow_keywords =
+      Glific.Flows.flow_keywords_map(flow.organization_id)["published"]
+      |> Map.keys()
+      |> Enum.reduce(MapSet.new(), &MapSet.put(&2, &1))
+
+    if MapSet.disjoint?(flow_keywords, wait_for_response_words) do
+      errors
+    else
+      used_flow_keywords = MapSet.intersection(flow_keywords, wait_for_response_words)
+
+      Enum.reduce(
+        used_flow_keywords,
+        errors,
+        &(&2 ++ [flowContext: "\"#{&1}\" has already been used as a keyword for a flow"])
+      )
+    end
   end
+
+  def validate(_case, errors, _flow), do: errors
 
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
