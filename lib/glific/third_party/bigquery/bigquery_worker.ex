@@ -833,11 +833,12 @@ defmodule Glific.BigQuery.BigQueryWorker do
         user_phone: u.phone,
         group_id: g.id,
         group_name: g.label,
+        broadcast_type: mb.type,
+        message_params: mb.message_params,
         inserted_at: mb.inserted_at,
         updated_at: mb.updated_at
       })
       |> where([mb], mb.organization_id == ^organization_id)
-      |> Repo.all()
       |> apply_action_clause(attrs)
       |> order_by([mb], [mb.inserted_at, mb.id])
 

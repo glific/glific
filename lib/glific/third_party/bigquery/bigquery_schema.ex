@@ -770,7 +770,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description:
-          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+          "Unique ID of the flow; we store flows with both id and uuid, since flow editor always refers to a flow by its uuid ",
         name: "uuid",
         type: "STRING",
         mode: "REQUIRED"
@@ -870,7 +870,7 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description:
-          "Unique ID of the flow; we store flows with both id and uuid, since floweditor always refers to a flow by its uuid ",
+          "Unique ID of the flow; we store flows with both id and uuid, since flow editor always refers to a flow by its uuid ",
         name: "flow_uuid",
         type: "STRING",
         mode: "REQUIRED"
