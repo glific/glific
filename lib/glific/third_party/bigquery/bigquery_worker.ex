@@ -82,6 +82,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
       make_job_to_remove_duplicate("messages_media", organization_id)
       make_job_to_remove_duplicate("flow_contexts", organization_id)
       make_job_to_remove_duplicate("profiles", organization_id)
+      make_job_to_remove_duplicate("message_broadcasts", organization_id)
+      make_job_to_remove_duplicate("message_broadcast_contacts", organization_id)
     end
 
     :ok
@@ -223,8 +225,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             message_broadcast_id: row.id,
             phone: row.phone,
             status: row.status,
-            inserted_at: row.inserted_at,
-            updated_at: row.updated_at
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -259,8 +261,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             group_name: row.label,
             broadcast_type: row.type,
             message_params: BigQuery.format_json(row.message_params),
-            inserted_at: row.inserted_at,
-            updated_at: row.updated_at
+            inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
+            updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
