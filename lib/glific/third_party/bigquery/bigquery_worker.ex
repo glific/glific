@@ -31,6 +31,9 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
+    Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
+    Groups.Group,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -38,7 +41,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Partners,
     Profiles.Profile,
     Repo,
-    Stats.Stat
+    Stats.Stat,
+    Users.User
   }
 
   @per_min_limit 500
@@ -83,8 +87,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
-  @spec format_date_with_milisecond(DateTime.t(), non_neg_integer()) :: String.t()
-  defp format_date_with_milisecond(date, organization_id) do
+  @spec format_date_with_millisecond(DateTime.t(), non_neg_integer()) :: String.t()
+  defp format_date_with_millisecond(date, organization_id) do
     timezone = Partners.organization(organization_id).timezone
 
     date
@@ -228,8 +232,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
               optout_time: BigQuery.format_date(row.optout_time, organization_id),
               contact_optin_method: row.optin_method,
               last_message_at: BigQuery.format_date(row.last_message_at, organization_id),
-              inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-              updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+              inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_millisecond(row.updated_at, organization_id),
               fields:
                 Enum.map(row.fields, fn {_key, field} ->
                   %{
@@ -386,8 +390,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             id: row.id,
             name: row.flow.name,
             uuid: row.flow.uuid,
-            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id),
             keywords: BigQuery.format_json(row.flow.keywords),
             status: row.status,
             revision: BigQuery.format_json(row.definition)
@@ -421,8 +425,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
               id: row.id,
               name: row.flow.name,
               uuid: row.flow.uuid,
-              inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-              updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+              inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+              updated_at: format_date_with_millisecond(row.updated_at, organization_id),
               results: BigQuery.format_json(row.results),
               contact_phone: row.contact.phone,
               contact_name: row.contact.name,
@@ -462,8 +466,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             type: row.type,
             count: row.count,
             recent_messages: BigQuery.format_json(row.recent_messages),
-            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_milisecond(row.updated_at, organization_id)
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -495,8 +499,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             url: row.url,
             source_url: row.source_url,
             gcs_url: row.gcs_url,
-            inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-            updated_at: format_date_with_milisecond(row.updated_at, organization_id)
+            inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+            updated_at: format_date_with_millisecond(row.updated_at, organization_id)
           }
           |> Map.merge(bq_fields(organization_id))
           |> then(&%{json: &1})
@@ -619,7 +623,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
   defp bq_fields(org_id) do
     %{
       bq_uuid: Ecto.UUID.generate(),
-      bq_inserted_at: format_date_with_milisecond(DateTime.utc_now(), org_id)
+      bq_inserted_at: format_date_with_millisecond(DateTime.utc_now(), org_id)
     }
   end
 
@@ -631,8 +635,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         body: row.body,
         type: row.type,
         flow: row.flow,
-        inserted_at: format_date_with_milisecond(row.inserted_at, organization_id),
-        updated_at: format_date_with_milisecond(row.updated_at, organization_id),
+        inserted_at: format_date_with_millisecond(row.inserted_at, organization_id),
+        updated_at: format_date_with_millisecond(row.updated_at, organization_id),
         sent_at: BigQuery.format_date(row.sent_at, organization_id),
         uuid: row.uuid,
         status: row.status,
@@ -798,6 +802,44 @@ defmodule Glific.BigQuery.BigQueryWorker do
       |> where([mc], mc.organization_id == ^organization_id)
       |> apply_action_clause(attrs)
       |> order_by([mc], [mc.inserted_at, mc.id])
+
+  defp get_query("message_broadcast_contacts", organization_id, attrs),
+    do:
+      MessageBroadcastContact
+      |> join(:left, [mbc], c in Contact, as: :c, on: mbc.contact_id == c.id)
+      |> select([mbc, c], %{
+        id: mbc.id,
+        message_broadcast_id: mbc.id,
+        phone: c.phone,
+        status: mbc.status,
+        inserted_at: mbc.inserted_at,
+        updated_at: mbc.updated_at
+      })
+      |> where([mbc], mbc.organization_id == ^organization_id)
+      |> apply_action_clause(attrs)
+      |> order_by([mbc], [mbc.inserted_at, mbc.id])
+
+  defp get_query("message_broadcasts", organization_id, attrs),
+    do:
+      MessageBroadcast
+      |> join(:left, [mb], f in Flow, as: :m, on: mb.flow_id == f.id)
+      |> join(:left, [mb], u in User, as: :u, on: mb.user_id == u.id)
+      |> join(:left, [mb], g in Group, as: :g, on: mb.group_id == g.id)
+      |> select([mb, f, u, g], %{
+        id: mb.id,
+        flow_id: f.id,
+        flow_name: f.name,
+        user_id: u.id,
+        user_phone: u.phone,
+        group_id: g.id,
+        group_name: g.label,
+        inserted_at: mb.inserted_at,
+        updated_at: mb.updated_at
+      })
+      |> where([mb], mb.organization_id == ^organization_id)
+      |> Repo.all()
+      |> apply_action_clause(attrs)
+      |> order_by([mb], [mb.inserted_at, mb.id])
 
   defp get_query("contacts", organization_id, attrs),
     do:

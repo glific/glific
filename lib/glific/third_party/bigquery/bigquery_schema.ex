@@ -1322,15 +1322,39 @@ defmodule Glific.BigQuery.Schema do
         name: "status",
         type: "STRING",
         mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast contact was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the message broadcast contact was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
+        mode: "NULLABLE"
       }
     ]
   end
 
   @doc """
-  Schema for message broadcast table
+  Schema for message broadcasts table
   """
-  @spec message_broadcast_schema :: list()
-  def message_broadcast_schema do
+  @spec message_broadcasts_schema :: list()
+  def message_broadcasts_schema do
     [
       %{
         description: "Unique ID for the message broadcast contacts",
@@ -1381,8 +1405,8 @@ defmodule Glific.BigQuery.Schema do
         mode: "NULLABLE"
       },
       %{
-        description: "Name of the user",
-        name: "user_name",
+        description: "Phone number of the user",
+        name: "user_phone",
         type: "STRING",
         mode: "NULLABLE"
       },
@@ -1396,6 +1420,30 @@ defmodule Glific.BigQuery.Schema do
         description: "Message Params",
         name: "message_params",
         type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the message broadcast was first created",
+        name: "inserted_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Time when the message broadcast was last updated",
+        name: "updated_at",
+        type: "DATETIME",
+        mode: "REQUIRED"
+      },
+      %{
+        description: "Unique UUID for the row (allows us to delete duplicates)",
+        name: "bq_uuid",
+        type: "STRING",
+        mode: "NULLABLE"
+      },
+      %{
+        description: "Time when the record entry was made on bigquery",
+        name: "bq_inserted_at",
+        type: "DATETIME",
         mode: "NULLABLE"
       }
     ]
