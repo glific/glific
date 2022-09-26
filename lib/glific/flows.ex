@@ -4,6 +4,8 @@ defmodule Glific.Flows do
   """
 
   import Ecto.Query, warn: false
+  import GlificWeb.Gettext
+
   require Logger
 
   alias Glific.{
@@ -607,8 +609,11 @@ defmodule Glific.Flows do
           {:ok, Flow.t()} | {:error, String.t()}
   def start_contact_flow(flow_id, %Contact{} = contact) when is_integer(flow_id) do
     case get_cached_flow(contact.organization_id, {:flow_id, flow_id, @status}) do
-      {:ok, flow} -> process_contact_flow([contact], flow, @status)
-      {:error, _error} -> {:error, "Flow not found"}
+      {:ok, flow} ->
+        process_contact_flow([contact], flow, @status)
+
+      {:error, _error} ->
+        {:error, ["Flow", dgettext("errors", "Flow not found")]}
     end
   end
 
@@ -617,8 +622,12 @@ defmodule Glific.Flows do
 
   @spec process_contact_flow(list(), Flow.t(), String.t()) :: {:ok, Flow.t()}
   defp process_contact_flow(contacts, flow, _status) do
-    Broadcast.broadcast_contacts(flow, contacts)
-    {:ok, flow}
+    if flow.is_active do
+      Broadcast.broadcast_contacts(flow, contacts)
+      {:ok, flow}
+    else
+      {:error, ["Flow", dgettext("errors", "Flow is not active")]}
+    end
   end
 
   @status "published"
