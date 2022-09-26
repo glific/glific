@@ -48,10 +48,11 @@ defmodule Glific.BigQuery do
     "profiles" => :profile_schema,
     "contact_histories" => :contact_history_schema,
     "message_conversations" => :message_conversation_schema,
-    "message_broadcasts" => :message_broadcasts,
-    "message_broadcast_contacts" => :message_broadcast_contacts
+    "message_broadcasts" => :message_broadcasts_schema,
+    "message_broadcast_contacts" => :message_broadcast_contacts_schema
   }
 
+  @spec bigquery_tables(any) :: %{optional(<<_::40, _::_*8>>) => atom}
   defp bigquery_tables(organization_id) do
     if organization_id == Saas.organization_id(),
       do: Map.put(@bigquery_tables, "stats_all", :stats_all_schema),
