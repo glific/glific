@@ -344,6 +344,7 @@ defmodule Glific.FLowsTest do
 
     test "start_contact_flow/2 will setup the flow for a contact", attrs do
       [flow | _tail] = Flows.list_flows(%{filter: attrs})
+      assert {:ok, %Flow{} = flow} = Flows.update_flow(flow, %{is_active: true})
       contact = Fixtures.contact_fixture(attrs)
 
       {:ok, flow} = Flows.start_contact_flow(flow, contact)
