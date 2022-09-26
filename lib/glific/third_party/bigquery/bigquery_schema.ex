@@ -1376,13 +1376,13 @@ defmodule Glific.BigQuery.Schema do
       },
       %{
         description: "Reference for the collection",
-        name: "collection_id",
+        name: "group_id",
         type: "INTEGER",
         mode: "NULLABLE"
       },
       %{
         description: "Name of the collection",
-        name: "collection_name",
+        name: "group_name",
         type: "STRING",
         mode: "NULLABLE"
       },
