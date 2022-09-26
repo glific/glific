@@ -13,6 +13,7 @@ defmodule Glific.Providers.Gupshup.Message do
     Repo
   }
 
+  import Ecto.Query, warn: false
   require Logger
 
   @doc false
@@ -191,27 +192,25 @@ defmodule Glific.Providers.Gupshup.Message do
     references = get_in(params, ["payload", "references"])
     deductions = get_in(params, ["payload", "deductions"])
     bsp_message_id = references["gsId"] || references["id"]
-    phone = references["destination"]
 
-    Repo.fetch_by(Message, %{
-      bsp_message_id: bsp_message_id
-    })
-    |> case do
-      {:ok, message} ->
-        message_conversation = %{
-          deduction_type: deductions["type"],
-          is_billable: deductions["billable"],
-          conversation_id: references["conversationId"],
-          payload: params,
-          message_id: message.id
-        }
+    message_id =
+      Repo.fetch_by(Message, %{
+        bsp_message_id: bsp_message_id
+      })
+      |> case do
+        {:ok, message} -> message.id
+        {:error, _error} -> nil
+      end
 
-        {:ok, message_conversation}
+    message_conversation = %{
+      deduction_type: deductions["type"],
+      is_billable: deductions["billable"],
+      conversation_id: references["conversationId"],
+      payload: params,
+      message_id: message_id
+    }
 
-      _ ->
-        error = "Could not find message with id: #{bsp_message_id} and phone #{phone}"
-        Glific.log_error(error, false)
-    end
+    {:ok, message_conversation}
   end
 
   @doc false

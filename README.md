@@ -319,7 +319,7 @@ For v0.x releases, we will be resetting the DB and not saving existing state. Ru
 to update your codebase from the glific repository.
 
 - Ensure you are in the top level directory of the glific api code.
-- Get the latest code from master: `git switch master; git pull`
+- Get the latest code from master: `git switch master && git pull`
 - Ensure you have not modified any files in this directory, by running: `git status`
 - Run the setup command: `mix setup`
 
