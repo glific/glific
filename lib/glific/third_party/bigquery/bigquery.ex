@@ -15,6 +15,8 @@ defmodule Glific.BigQuery do
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
+    Flows.MessageBroadcast,
+    Flows.MessageBroadcastContact,
     Jobs,
     Messages.Message,
     Messages.MessageConversation,
@@ -45,7 +47,9 @@ defmodule Glific.BigQuery do
     "flow_contexts" => :flow_context_schema,
     "profiles" => :profile_schema,
     "contact_histories" => :contact_history_schema,
-    "message_conversations" => :message_conversation_schema
+    "message_conversations" => :message_conversation_schema,
+    "message_broadcasts" => :message_broadcasts,
+    "message_broadcast_contacts" => :message_broadcast_contacts
   }
 
   defp bigquery_tables(organization_id) do
@@ -140,7 +144,9 @@ defmodule Glific.BigQuery do
     "flow_contexts" => Flows.FlowContext,
     "profiles" => Profile,
     "contact_histories" => ContactHistory,
-    "message_conversations" => MessageConversation
+    "message_conversations" => MessageConversation,
+    "message_broadcasts" => MessageBroadcast,
+    "message_broadcast_contacts" => MessageBroadcastContact
   }
 
   # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()

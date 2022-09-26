@@ -207,6 +207,73 @@ defmodule Glific.BigQuery.BigQueryWorker do
     :ok
   end
 
+  defp queue_table_data("message_broadcast_contacts", organization_id, attrs) do
+    Logger.info(
+      "fetching data for message_broadcast_contacts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("message_broadcast_contacts", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            message_broadcast_id: row.id,
+            phone: row.phone,
+            status: row.status,
+            inserted_at: row.inserted_at,
+            updated_at: row.updated_at
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :message_broadcast_contacts, organization_id, attrs))
+
+    :ok
+  end
+
+  defp queue_table_data("message_broadcasts", organization_id, attrs) do
+    Logger.info(
+      "fetching data for message_broadcasts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
+    )
+
+    get_query("message_broadcasts", organization_id, attrs)
+    |> Repo.all()
+    |> Enum.reduce(
+      [],
+      fn row, acc ->
+        [
+          %{
+            id: row.id,
+            flow_id: row.id,
+            flow_name: row.name,
+            user_id: row.id,
+            user_phone: row.phone,
+            group_id: row.id,
+            group_name: row.label,
+            broadcast_type: row.type,
+            message_params: BigQuery.format_json(row.message_params),
+            inserted_at: row.inserted_at,
+            updated_at: row.updated_at
+          }
+          |> Map.merge(bq_fields(organization_id))
+          |> then(&%{json: &1})
+          | acc
+        ]
+      end
+    )
+    |> Enum.chunk_every(100)
+    |> Enum.each(&make_job(&1, :message_broadcasts, organization_id, attrs))
+
+    :ok
+  end
+
   defp queue_table_data("contacts", organization_id, attrs) do
     Logger.info(
       "fetching data for contacts to send on bigquery attrs: #{inspect(attrs)} , org_id: #{organization_id}"
