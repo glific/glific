@@ -5,7 +5,7 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
 
   alias Plug.Conn
 
-  alias Glific.{Partners, Partners.Organization, Repo}
+  alias Glific.{Appsignal, Partners, Partners.Organization, Repo}
   alias GlificWeb.Providers.Gupshup.Enterprise.Router
 
   @doc false
@@ -63,6 +63,8 @@ defmodule GlificWeb.Providers.Gupshup.Enterprise.Plugs.Shunt do
 
   @doc false
   @spec change_path_info(Plug.Conn.t(), list()) :: Plug.Conn.t()
-  def change_path_info(conn, new_path),
-    do: put_in(conn.path_info, new_path)
+  def change_path_info(conn, new_path) do
+    Appsignal.set_namespace("gupshup_enterprise_webhooks")
+    put_in(conn.path_info, new_path)
+  end
 end

@@ -246,8 +246,11 @@ defmodule Glific.AccessControlTest do
         organization_id: attrs.organization_id
       })
 
-      [_g1, g2 | _] = Groups.list_groups(%{})
-      assert g2.label == label
+      label_list =
+        Groups.list_groups(%{})
+        |> Enum.map(fn group -> group.label end)
+
+      assert label in label_list
     end
 
     test "list_triggers/1 returns list of triggers assigned to user", attrs do

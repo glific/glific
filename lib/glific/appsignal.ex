@@ -58,4 +58,12 @@ defmodule Glific.Appsignal do
   end
 
   defp record_event(_, _measurement, _meta, _time), do: nil
+
+  @doc """
+  Use to set namespace to current appsignal process from anywhere.
+  """
+  @spec set_namespace(String.t()) :: any()
+  def set_namespace(namespace) do
+    Appsignal.Span.set_namespace(Appsignal.Tracer.root_span(), namespace)
+  end
 end
