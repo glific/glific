@@ -62,7 +62,6 @@ defmodule Glific.Contacts.Import do
     end)
   end
 
-
   @spec fetch_contact_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
   defp fetch_contact_data_as_string(opts) do
     file_path = Keyword.get(opts, :file_path, nil)
@@ -103,13 +102,20 @@ defmodule Glific.Contacts.Import do
     # this ensures the  org_id exists and is valid
     with %{} <- Partners.organization(organization_id),
          {:ok, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
-
-        result =
+      result =
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
         |> Stream.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
-        |> Task.async_stream(fn contact -> process_data(user, contact, group.id) end, max_concurrency: @max_concurrency)
-        |> Enum.map(fn({:ok, result}) -> result end)
+        |> Task.async_stream(
+          fn contact ->
+            process_data(user, contact, %{
+              group_id: group.id,
+              organization_id: Repo.put_process_state(organization_id)
+            })
+          end,
+          max_concurrency: @max_concurrency
+        )
+        |> Enum.map(fn {:ok, result} -> result end)
 
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
@@ -132,24 +138,20 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-
-  @spec process_data(User.t(), map(), non_neg_integer) :: Contact.t() | map()
+  @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
   defp process_data(_user, %{delete: "1"} = contact, _contact_attrs) do
-    Repo.put_process_state(contact.organization_id)
     case Repo.get_by(Contact, %{phone: contact.phone}) do
       nil ->
         %{ok: "Contact does not exist"}
 
       contact ->
-       {:ok, contact} = Contacts.delete_contact(contact)
-       contact
+        {:ok, contact} = Contacts.delete_contact(contact)
+        contact
     end
   end
 
-  defp process_data(user, contact_attrs, group_id) do
-    Repo.put_process_state(contact_attrs.organization_id)
+  defp process_data(user, contact_attrs, %{group_id: group_id}) do
     {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
-
 
     if group_id do
       add_contact_to_group(contact, group_id)
@@ -161,7 +163,6 @@ defmodule Glific.Contacts.Import do
 
     optin_contact(user, contact, contact_attrs)
   end
-
 
   @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
   defp optin_contact(user, contact, contact_attrs) do
@@ -177,7 +178,7 @@ defmodule Glific.Contacts.Import do
           %{phone: contact.phone, error: error}
       end
     else
-    %{
+      %{
         phone: contact.phone,
         error:
           "Not able to optin the contact. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
