@@ -13,8 +13,11 @@ defmodule Glific.Contacts.Import do
     Groups.GroupContacts,
     Partners,
     Repo,
-    Settings
+    Settings,
+    Users.User
   }
+
+  @max_concurrency System.schedulers_online()
 
   @spec cleanup_contact_data(map(), non_neg_integer, String.t()) :: map()
   defp cleanup_contact_data(data, organization_id, date_format) do
@@ -59,49 +62,6 @@ defmodule Glific.Contacts.Import do
     end)
   end
 
-  @spec process_data(map(), non_neg_integer) :: Contact.t()
-  defp process_data(%{delete: "1"} = contact, _) do
-    case Repo.get_by(Contact, %{phone: contact.phone}) do
-      nil ->
-        %{ok: "Contact does not exist"}
-
-      contact ->
-        Contacts.delete_contact(contact)
-        contact
-    end
-  end
-
-  defp process_data(contact_attrs, group_id) do
-    {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
-
-    if group_id do
-      add_contact_to_group(contact, group_id)
-    end
-
-    if contact_attrs[:contact_fields] not in [%{}] do
-      add_contact_fields(contact, contact_attrs[:contact_fields])
-    end
-
-    if should_optin_contact?(contact, contact_attrs) do
-      contact_attrs
-      |> Map.put(:method, "Import")
-      |> Contacts.optin_contact()
-      |> case do
-        {:ok, contact} ->
-          contact
-
-        {:error, error} ->
-          %{phone: contact.phone, error: error}
-      end
-    else
-      %{
-        phone: contact.phone,
-        error:
-          "Not able to optin the contact. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
-      }
-    end
-  end
-
   @spec fetch_contact_data_as_string(Keyword.t()) :: File.Stream.t() | IO.Stream.t()
   defp fetch_contact_data_as_string(opts) do
     file_path = Keyword.get(opts, :file_path, nil)
@@ -123,29 +83,14 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  ## later we can have one more column to say that force optin
-  @spec should_optin_contact?(Contact.t(), map()) :: boolean()
-  defp should_optin_contact?(contact, attrs) do
-    cond do
-      attrs.optin_time == nil ->
-        false
-
-      contact.optout_time != nil ->
-        false
-
-      true ->
-        true
-    end
-  end
-
   @doc """
   This method allows importing of contacts to a particular organization and group
 
   The method takes in a csv file path and adds the contacts to the particular organization
   and group.
   """
-  @spec import_contacts(integer, String.t(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, group_label, opts \\ []) do
+  @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
+  def import_contacts(organization_id, %{group_label: group_label, user: user}, opts \\ []) do
     {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
 
     if length(opts) > 1 do
@@ -160,8 +105,17 @@ defmodule Glific.Contacts.Import do
       result =
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
-        |> Enum.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
-        |> Enum.map(fn contact -> process_data(contact, group.id) end)
+        |> Stream.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
+        |> Task.async_stream(
+          fn contact ->
+            process_data(user, contact, %{
+              group_id: group.id,
+              organization_id: Repo.put_process_state(organization_id)
+            })
+          end,
+          max_concurrency: @max_concurrency
+        )
+        |> Enum.map(fn {:ok, result} -> result end)
 
       errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
 
@@ -181,6 +135,72 @@ defmodule Glific.Contacts.Import do
            details:
              "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
          }}
+    end
+  end
+
+  @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
+  defp process_data(_user, %{delete: "1"} = contact, _contact_attrs) do
+    case Repo.get_by(Contact, %{phone: contact.phone}) do
+      nil ->
+        %{ok: "Contact does not exist"}
+
+      contact ->
+        {:ok, contact} = Contacts.delete_contact(contact)
+        contact
+    end
+  end
+
+  defp process_data(user, contact_attrs, %{group_id: group_id}) do
+    {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+
+    if group_id do
+      add_contact_to_group(contact, group_id)
+    end
+
+    if contact_attrs[:contact_fields] not in [%{}] do
+      add_contact_fields(contact, contact_attrs[:contact_fields])
+    end
+
+    optin_contact(user, contact, contact_attrs)
+  end
+
+  @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
+  defp optin_contact(user, contact, contact_attrs) do
+    if should_optin_contact?(user, contact, contact_attrs) do
+      contact_attrs
+      |> Map.put(:method, "Import")
+      |> Contacts.optin_contact()
+      |> case do
+        {:ok, contact} ->
+          contact
+
+        {:error, error} ->
+          %{phone: contact.phone, error: error}
+      end
+    else
+      %{
+        phone: contact.phone,
+        error:
+          "Not able to optin the contact. Either the contact is opted out, invalid or the opted-in time present in sheet is not in the correct format"
+      }
+    end
+  end
+
+  ## later we can have one more column to say that force optin
+  @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
+  defp should_optin_contact?(user, contact, attrs) do
+    cond do
+      user.roles != [:Glific_admin] ->
+        false
+
+      attrs.optin_time == nil ->
+        false
+
+      contact.optout_time != nil ->
+        false
+
+      true ->
+        true
     end
   end
 
