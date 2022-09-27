@@ -43,7 +43,7 @@ defmodule Glific.Flows.Case do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), any) :: {Case.t(), map()}
   def process(json, uuid_map, _object \\ nil) do
@@ -84,8 +84,6 @@ defmodule Glific.Flows.Case do
   Validate a case
   """
   @spec validate(Case.t(), Keyword.t(), map(), boolean()) :: Keyword.t()
-  def validate(_case, errors, _flow, true), do: errors
-
   def validate(%{arguments: arguments} = _case, errors, flow, false) when arguments != [] do
     wait_for_response_words =
       arguments
@@ -112,6 +110,8 @@ defmodule Glific.Flows.Case do
     end
   end
 
+  def validate(_case, errors, _flow, false), do: errors
+  def validate(_case, errors, _flow, true), do: errors
   def validate(_case, errors, _flow), do: errors
 
   defp strip(msgs) when is_list(msgs),

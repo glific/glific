@@ -91,7 +91,7 @@ defmodule Glific.Flows.Flow do
     field :respond_other, :boolean, default: false
     field :respond_no_response, :boolean, default: false
 
-    # we use this to store the latest definition and versionfrom flow_revisions for this flow
+    # we use this to store the latest definition and version from flow_revisions for this flow
     field :definition, :map, virtual: true
 
     # this is the version of the flow revision
@@ -192,7 +192,7 @@ defmodule Glific.Flows.Flow do
       end)
 
   @doc """
-  Process a json structure from floweditor to the Glific data types. While we are doing
+  Process a json structure from flow editor to the Glific data types. While we are doing
   this we also fix the map, if the variables to resolve Other/No Response is true
   """
   @spec process(map(), Flow.t(), Ecto.UUID.t()) :: Flow.t()
@@ -232,7 +232,7 @@ defmodule Glific.Flows.Flow do
     )
   end
 
-  # in some cases floweditor wraps the json under a "definition" key
+  # in some cases flow editor wraps the json under a "definition" key
   @spec clean_definition(map()) :: map()
   defp clean_definition(json),
     do:
@@ -252,13 +252,13 @@ defmodule Glific.Flows.Flow do
         select: fr.definition
 
     Repo.one(query)
-    # lets get rid of stuff we don't use, specfically the definition and
+    # lets get rid of stuff we don't use, specifically the definition and
     # UI layout of the flow
     |> clean_definition()
   end
 
   @doc """
-  Create a subflow of an existing flow
+  Create a sub flow of an existing flow
   """
   @spec start_sub_flow(FlowContext.t(), Ecto.UUID.t(), non_neg_integer) ::
           {:ok, FlowContext.t(), [String.t()]} | {:error, String.t()}

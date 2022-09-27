@@ -64,7 +64,7 @@ defmodule Glific.Flows.Router do
   end
 
   @doc """
-  Process a json structure from floweditor to the Glific data types
+  Process a json structure from flow editor to the Glific data types
   """
   @spec process(map(), map(), Node.t()) :: {Router.t(), map()}
   def process(json, uuid_map, node) do
@@ -238,7 +238,7 @@ defmodule Glific.Flows.Router do
     Category.execute(category, context, rest)
   end
 
-  ## We are using this operand for split contats by groups
+  ## We are using this operand for splitting contacts by groups
   @spec split_by_expression(Router.t(), FlowContext.t()) :: {Message.t(), []}
   defp split_by_expression(%{operand: "@contact.groups"} = _router, context) do
     contact = Contacts.get_contact_field_map(context.contact_id)
