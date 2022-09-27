@@ -110,10 +110,9 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def validate(_case, errors, _flow, false), do: errors
-  def validate(_case, errors, _flow, true), do: errors
-  def validate(_case, errors, _flow), do: errors
+  def validate(_case, errors, _flow, _has_wait), do: errors
 
+  @spec strip(any()) :: String.t()
   defp strip(msgs) when is_list(msgs),
     do: msgs |> hd() |> strip()
 
@@ -125,9 +124,9 @@ defmodule Glific.Flows.Case do
 
   defp strip(_msg), do: ""
 
-  defp translated_arguments(context, flow_case) do
-    Localization.get_translated_case_arguments(context, flow_case)
-  end
+  @spec translated_arguments(FlowContext.t(), Case.t()) :: any()
+  defp translated_arguments(context, flow_case),
+    do: Localization.get_translated_case_arguments(context, flow_case)
 
   @text_types [:text, :quick_reply, :list]
 
@@ -155,7 +154,7 @@ defmodule Glific.Flows.Case do
   it just consumes one message at a time and executes it against a predefined function
   It also returns a boolean, rather than a tuple
   """
-  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
+  @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean()
   def execute(flow_case, context, msg) do
     translated_arguments = translated_arguments(context, flow_case)
 
@@ -164,7 +163,7 @@ defmodule Glific.Flows.Case do
     |> do_execute(context, msg)
   end
 
-  @spec do_execute(Case.t(), FlowContext.t(), Message.t()) :: boolean
+  @spec do_execute(Case.t(), FlowContext.t(), Message.t()) :: boolean()
   defp do_execute(%{type: "has_number_eq"} = c, _context, %{type: type} = msg)
        when type in @text_types,
        do: strip(c.arguments) == strip(msg)
