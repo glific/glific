@@ -124,10 +124,6 @@ defmodule Glific.Flows.Case do
 
   defp strip(_msg), do: ""
 
-  @spec translated_arguments(FlowContext.t(), Case.t()) :: any()
-  defp translated_arguments(context, flow_case),
-    do: Localization.get_translated_case_arguments(context, flow_case)
-
   @text_types [:text, :quick_reply, :list]
 
   @text_fns [
@@ -156,7 +152,7 @@ defmodule Glific.Flows.Case do
   """
   @spec execute(Case.t(), FlowContext.t(), Message.t()) :: boolean()
   def execute(flow_case, context, msg) do
-    translated_arguments = translated_arguments(context, flow_case)
+    translated_arguments = Localization.get_translated_case_arguments(context, flow_case)
 
     Map.put(flow_case, :arguments, translated_arguments)
     |> update_parsed_arguments(translated_arguments)
