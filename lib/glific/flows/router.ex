@@ -156,7 +156,7 @@ defmodule Glific.Flows.Router do
       router.cases
       |> Enum.reduce(
         errors,
-        &Case.validate(&1, &2, flow)
+        &Case.validate(&1, &2, flow, is_nil(router.wait))
       )
 
     if router.wait,
