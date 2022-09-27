@@ -1,6 +1,6 @@
 defmodule Glific.CSV.File do
   @moduledoc """
-  First implemenetation to convert sheets to flows using a menu structure and UUID
+  First implementation to convert sheets to flows using a menu structure and UUID
   """
   use Ecto.Schema
 
