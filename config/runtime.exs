@@ -44,7 +44,8 @@ config :appsignal, :config,
   active: env!("APPSIGNAL_ACTIVE", :boolean, false),
   revision: Application.spec(:glific, :vsn) |> to_string(),
   push_api_key: env!("APPSIGNAL_PUSH_API_KEY", :string!),
-  ecto_repos: []
+  ecto_repos: [],
+  ignore_namespaces: ["gupshup_webhooks", "gupshup_enterprise_webhooks"]
 
 config :glific, Glific.Vault,
   ciphers: [
