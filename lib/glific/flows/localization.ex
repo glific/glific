@@ -154,7 +154,7 @@ defmodule Glific.Flows.Localization do
   Given a language id and an case uuid, return the translation if
   one exists, else return the original text
   """
-  @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: list() | nil
+  @spec get_translated_case_arguments(FlowContext.t(), Case.t()) :: any()
   def get_translated_case_arguments(context, flow_case) do
     language_id = context.contact.language_id
 
