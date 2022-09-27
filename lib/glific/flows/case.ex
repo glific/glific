@@ -84,7 +84,9 @@ defmodule Glific.Flows.Case do
   Validate a case
   """
   @spec validate(Case.t(), Keyword.t(), map(), boolean()) :: Keyword.t()
-  def validate(%{arguments: arguments} = _case, errors, flow, false) when arguments != [] do
+  def validate(_case, errors, _flow, wait) when is_nil(wait), do: errors
+
+  def validate(%{arguments: arguments} = _case, errors, flow, _wait) when arguments != [] do
     wait_for_response_words =
       arguments
       |> List.first()
@@ -110,7 +112,7 @@ defmodule Glific.Flows.Case do
     end
   end
 
-  def validate(_case, errors, _flow, _has_wait), do: errors
+  def validate(_case, errors, _flow, _wait), do: errors
 
   @spec strip(any()) :: String.t()
   defp strip(msgs) when is_list(msgs),
