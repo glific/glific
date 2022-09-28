@@ -225,6 +225,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
             message_broadcast_id: row.id,
             phone: row.phone,
             status: row.status,
+            processed_at: BigQuery.format_date(row.processed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
@@ -261,6 +262,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
             group_name: row.label,
             broadcast_type: row.type,
             message_params: BigQuery.format_json(row.message_params),
+            started_at: BigQuery.format_date(row.started_at, organization_id),
+            completed_at: BigQuery.format_date(row.completed_at, organization_id),
             inserted_at: BigQuery.format_date(row.inserted_at, organization_id),
             updated_at: BigQuery.format_date(row.updated_at, organization_id)
           }
@@ -881,6 +884,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
         message_broadcast_id: mbc.id,
         phone: c.phone,
         status: mbc.status,
+        processed_at: mbc.processed_at,
         inserted_at: mbc.inserted_at,
         updated_at: mbc.updated_at
       })
@@ -904,6 +908,8 @@ defmodule Glific.BigQuery.BigQueryWorker do
         group_name: g.label,
         broadcast_type: mb.type,
         message_params: mb.message_params,
+        started_at: mb.started_at,
+        completed_at: mb.completed_at,
         inserted_at: mb.inserted_at,
         updated_at: mb.updated_at
       })
