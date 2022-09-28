@@ -1327,7 +1327,7 @@ defmodule Glific.BigQuery.Schema do
         description: "Time when the message broadcast contact was processed",
         name: "processed_at",
         type: "DATETIME",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Time when the message broadcast contact was first created",
@@ -1432,13 +1432,13 @@ defmodule Glific.BigQuery.Schema do
         description: "Time when the message broadcast was started",
         name: "started_at",
         type: "DATETIME",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Time when the message broadcast was completed",
         name: "completed_at",
         type: "DATETIME",
-        mode: "REQUIRED"
+        mode: "NULLABLE"
       },
       %{
         description: "Time when the message broadcast was first created",
