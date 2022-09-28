@@ -71,6 +71,24 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   @spec check_for_button_template(map(), String.t()) :: String.t()
   defp check_for_button_template(template, "NONE"), do: template["BODY"]
 
+  defp check_for_button_template(template, "CALL_TO_ACTION") do
+    button_list = [template["BUTTON1"]] ++ [template["BUTTON2"]] ++ [template["BUTTON3"]]
+
+    button_text =
+      Enum.reduce(button_list, "", fn button, acc ->
+        if button == "" do
+          acc <> ""
+        else
+          parsed_button = Jason.decode!(button)
+          type = parsed_button["type"]
+          value = if type == "URL", do: parsed_button["url"], else: parsed_button["phone_number"]
+          acc <> " | " <> "[#{parsed_button["text"]},#{value}]"
+        end
+      end)
+
+    template["BODY"] <> button_text
+  end
+
   defp check_for_button_template(template, "QUICK_REPLY") do
     button_list = [template["BUTTON1"]] ++ [template["BUTTON2"]] ++ [template["BUTTON3"]]
 
