@@ -549,6 +549,10 @@ defmodule Glific.Messages do
     contact_vars = %{"contact" => Contacts.get_contact_field_map(attrs.receiver_id)}
     parsed_params = Enum.map(parameters, &MessageVarParser.parse(&1, contact_vars))
 
+    ## As per the WhatsApp policy the params in an HSM can not have more then two
+    ## consecutive spaces and a new line.
+    parsed_params = Enum.map(parsed_params, &Enum.join(String.split(&1), " "))
+
     attrs = Map.put(attrs, :parameters, parsed_params)
 
     Repo.fetch(SessionTemplate, template_id)
