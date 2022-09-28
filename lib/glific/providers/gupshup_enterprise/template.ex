@@ -14,6 +14,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     "ENABLED" => "APPROVED",
     "REJECTED" => "REJECTED"
   }
+
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
   """
@@ -52,17 +53,38 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
 
   @spec import_approved_templates(map()) :: map()
   defp import_approved_templates(template) do
+    updated_body = check_for_button_template(template, template["BUTTONTYPE"])
+
     %{
       "id" => Ecto.UUID.generate(),
-      "data" => template["BODY"],
+      "data" => updated_body,
       "meta" => get_example_body(template["BODY"]),
       "category" => "TRANSACTIONAL",
       "elementName" => template["NAME"],
       "languageCode" => get_language(template["LANGUAGE"]),
       "templateType" => template["TYPE"],
       "status" => Map.get(@template_status, template["STATUS"], "PENDING"),
-      "bsp_id" => template["TEMPLATEID"],
+      "bsp_id" => template["TEMPLATEID"]
     }
+  end
+
+  @spec check_for_button_template(map(), String.t()) :: String.t()
+  def check_for_button_template(template, "NONE"), do: template["BODY"]
+
+  def check_for_button_template(template, "QUICK_REPLY") do
+    button_list = [template["BUTTON1"]] ++ [template["BUTTON2"]] ++ [template["BUTTON3"]]
+
+    button_text =
+      Enum.reduce(button_list, "", fn button, acc ->
+        if button == "" do
+          acc <> ""
+        else
+          parsed_button = Jason.decode!(button)
+          acc <> " | " <> "[#{parsed_button["text"]}]"
+        end
+      end)
+
+    template["BODY"] <> button_text
   end
 
   @spec get_language(String.t()) :: String.t()
