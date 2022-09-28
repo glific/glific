@@ -1011,7 +1011,7 @@ defmodule Glific.TemplatesTest do
 
     test "import_templates/1 should import templates", attrs do
       data =
-        "TEMPLATEID,NAME,BODY,TYPE,QUALITYRATING,BUTTONTYPE,LANGUAGE,STATUS,CREATEDON\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,NONE,English,ENABLED,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,NONE,English,REJECTED,2021-07-16"
+        "\"TEMPLATEID\",\"NAME\",\"CATEGORY\",\"LANGUAGE\",\"TYPE\",\"HEADER\",\"BODY\",\"FOOTER\",\"BUTTONTYPE\",\"NOOFBUTTONS\",\"BUTTON1\",\"BUTTON2\",\"BUTTON3\",\"QUALITYRATING\",\"REJECTIONREASON\",\"STATUS\",\"CREATEDON\"\n\"6379777\",\"Gender\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Please share your gender\",\"\",\"QUICK_REPLY\",\"3\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Male\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Female\"\"}\",\"{\"\"type\"\":\"\"QUICK_REPLY\"\",\"\"text\"\":\"\"Other\"\"}\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-22\"\n\"6122571\",\"2meq_payment_link\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"Your OTP for {{1}} is {{2}}. This is valid for {{3}}.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"ENABLED\",\"2022-03-10\"\n\"6122572\",\"meq_payment_link2\",\"ACCOUNT_UPDATE\",\"en\",\"TEXT\",\"\",\"You are one step away! Please click the link below to make your payment for the Future Perfect program.\",\"\",\"NONE\",\"0\",\"\",\"\",\"\",\"UNKNOWN\",\"NONE\",\"REJECTED\",\"2022-04-05\""
 
       Template.import_templates(attrs.organization_id, data)
 
@@ -1034,6 +1034,21 @@ defmodule Glific.TemplatesTest do
 
       assert imported_template2.example ==
                "You are one step away! Please click the link below to make your payment for the Future Perfect program."
+
+      assert {:ok, %SessionTemplate{} = imported_template3} =
+               Repo.fetch_by(SessionTemplate, %{bsp_id: "6379777"})
+
+      assert imported_template3.status == "APPROVED"
+      assert imported_template3.shortcode == "Gender"
+      assert imported_template3.has_buttons == true
+      assert imported_template3.button_type == :quick_reply
+      assert imported_template3.body == "Please share your gender "
+
+      assert imported_template3.buttons == [
+               %{"text" => "Male ", "type" => "QUICK_REPLY"},
+               %{"text" => "Female ", "type" => "QUICK_REPLY"},
+               %{"text" => "Other", "type" => "QUICK_REPLY"}
+             ]
     end
 
     test "update_hsms/1 should update multiple templates same shortcode as translation", attrs do

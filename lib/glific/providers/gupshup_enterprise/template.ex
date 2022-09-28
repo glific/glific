@@ -58,7 +58,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     %{
       "id" => Ecto.UUID.generate(),
       "data" => updated_body,
-      "meta" => get_example_body(template["BODY"]),
+      "meta" => get_example_body(updated_body),
       "category" => "TRANSACTIONAL",
       "elementName" => template["NAME"],
       "languageCode" => get_language(template["LANGUAGE"]),
