@@ -192,7 +192,7 @@ defmodule Glific.Seeds.SeedsMigration do
   @doc false
   @spec seed_simulators([Organization.t()], Language.t()) :: [Organization.t()]
   def seed_simulators(organizations \\ [], language) do
-    # for the insert's, lets precompute some values
+    # for the insert's, lets pre-compute some values
 
     for org <- organizations do
       create_simulators(org, language)
@@ -377,8 +377,15 @@ defmodule Glific.Seeds.SeedsMigration do
   Sync bigquery schema with local db changes.
   """
   @spec sync_schema_with_bigquery(list) :: :ok
-  def sync_schema_with_bigquery(org_id_list),
-    do: Enum.each(org_id_list, &BigQuery.sync_schema_with_bigquery(&1))
+  def sync_schema_with_bigquery(org_id_list) do
+    org_id_list
+    |> Enum.each(fn org_id ->
+      Task.async(fn ->
+        Repo.put_process_state(org_id)
+        BigQuery.sync_schema_with_bigquery(org_id)
+      end)
+    end)
+  end
 
   @doc """
   Reset message number for a list of organizations or for a org_id
