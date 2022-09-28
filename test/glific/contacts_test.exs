@@ -501,9 +501,7 @@ defmodule Glific.ContactsTest do
 
         [~w(name phone Language opt_in)]
         |> Enum.concat([["updated", "9989329297", "english", ""]])
-        |> IO.inspect()
         |> CSV.encode()
-        |> IO.inspect()
         |> Enum.each(&IO.write(file, &1))
 
         [organization | _] = Partners.list_organizations()

@@ -43,7 +43,7 @@ defmodule Glific.Contacts.Import do
         group: data["group"],
         organization_id: organization_id,
         delete: data["delete"],
-        contact_fields: Map.drop(data, ["phone", "name", "group"])
+        contact_fields: Map.drop(data, ["phone", "group"])
       }
     end
   end
@@ -174,7 +174,7 @@ defmodule Glific.Contacts.Import do
   defp process_data(user, contact_attrs, %{group_id: group_id}) do
     {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
-    if String.trim("\n") !=  contact_attrs.group do
+    if String.trim("\n") != contact_attrs.group do
       group = String.split(",")
 
       add_multiple_group(group, contact_attrs.organization_id)
@@ -191,7 +191,6 @@ defmodule Glific.Contacts.Import do
 
     optin_contact(user, contact, contact_attrs)
   end
-
 
   defp add_contact_to_groups(group, contact) do
     group

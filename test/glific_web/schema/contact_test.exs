@@ -351,7 +351,7 @@ defmodule GlificWeb.Schema.ContactTest do
   test "Test success for uploading contact through filepath", %{manager: user} do
     group_label = "Test Label"
 
-     Tesla.Mock.mock(fn
+    Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
           status: 200
@@ -366,9 +366,8 @@ defmodule GlificWeb.Schema.ContactTest do
     [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
-    |> IO.inspect()
 
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv") |> IO.inspect
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -381,7 +380,6 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
-    IO.inspect(result)
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
     assert count == 1
   end
