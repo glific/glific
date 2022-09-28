@@ -1011,7 +1011,7 @@ defmodule Glific.TemplatesTest do
 
     test "import_templates/1 should import templates", attrs do
       data =
-        "Template Id,Template Name,Body,Type,Quality Rating,Language,Status,Created On\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,English,Enabled,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,English,Rejected,2021-07-16"
+        "TEMPLATEID,NAME,BODY,TYPE,QUALITYRATING,BUTTONTYPE,LANGUAGE,STATUS,CREATEDON\r\n6122571,2meq_payment_link,	Your OTP for {{1}} is {{2}}. This is valid for {{3}}.,TEXT,Unknown,NONE,English,ENABLED,2021-07-16\n6122572,meq_payment_link2,You are one step away! Please click the link below to make your payment for the Future Perfect program.,TEXT,Unknown,NONE,English,REJECTED,2021-07-16"
 
       Template.import_templates(attrs.organization_id, data)
 
