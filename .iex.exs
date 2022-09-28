@@ -7,6 +7,7 @@ alias Glific.{
   Flows.Flow,
   Flows.FlowContext,
   Contacts,
+  Groups,
   Contacts.Contact,
   Profiles.Profile,
   Providers.Gupshup.PartnerAPI

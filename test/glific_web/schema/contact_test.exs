@@ -219,6 +219,30 @@ defmodule GlificWeb.Schema.ContactTest do
     assert message =~ "has already been taken"
   end
 
+  test "User delete", %{manager: user} do
+    user = Map.put(user, :roles, [:Glific_admin])
+    test_name = "test"
+    test_phone = "test phone"
+    group_label = "Test Label"
+    # Test success for deleting a created contact
+    data = "name,phone,language,opt_in,delete\n#{test_name},#{test_phone},english,,1"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "DATA",
+          "group_label" => group_label,
+          "data" => data
+        }
+      )
+
+    assert {:ok, _} = result
+
+    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
+    assert count == 0
+  end
+
   test "import contacts and test possible scenarios and errors", %{manager: user} do
     test_name = "test"
     test_phone = "test phone"
@@ -294,23 +318,6 @@ defmodule GlificWeb.Schema.ContactTest do
     count = Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}})
     assert count == 1
 
-    # Test success for deleting a created contact
-    data = "name,phone,language,opt_in,delete\n#{test_name},#{test_phone},english,,1"
-
-    result =
-      auth_query_gql_by(:import_contacts, user,
-        variables: %{
-          "id" => user.organization_id,
-          "type" => "DATA",
-          "group_label" => group_label,
-          "data" => data
-        }
-      )
-
-    assert {:ok, _} = result
-    count = Contacts.count_contacts(%{filter: %{phone: test_phone}})
-    assert count == 0
-
     # Test success for uploading contact through url
     Tesla.Mock.mock(fn
       %{method: :post} ->
@@ -339,9 +346,12 @@ defmodule GlificWeb.Schema.ContactTest do
     assert {:ok, _} = result
     count = Contacts.count_contacts(%{filter: %{name: "uploaded_contact"}})
     assert count == 1
+  end
 
-    # Test success for uploading contact through filepath
-    Tesla.Mock.mock(fn
+  test "Test success for uploading contact through filepath", %{manager: user} do
+    group_label = "Test Label"
+
+     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
           status: 200
@@ -356,8 +366,9 @@ defmodule GlificWeb.Schema.ContactTest do
     [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
+    |> IO.inspect()
 
-    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv") |> IO.inspect
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -370,8 +381,9 @@ defmodule GlificWeb.Schema.ContactTest do
       )
 
     assert {:ok, _} = result
+    IO.inspect(result)
     count = Contacts.count_contacts(%{filter: %{name: "test"}})
-    assert count == 3
+    assert count == 1
   end
 
   test "update a contact and test possible scenarios and errors", %{staff: user, manager: manager} do

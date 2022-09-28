@@ -19,21 +19,33 @@ defmodule Glific.Contacts.Import do
 
   @max_concurrency System.schedulers_online()
 
-  @spec cleanup_contact_data(map(), non_neg_integer, String.t()) :: map()
-  defp cleanup_contact_data(data, organization_id, date_format) do
-    %{
-      name: data["name"],
-      phone: data["phone"],
-      organization_id: organization_id,
-      language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
-      optin_time:
-        if(data["opt_in"] != "",
-          do: elem(Timex.parse(data["opt_in"], date_format), 1),
-          else: nil
-        ),
-      delete: data["delete"],
-      contact_fields: Map.drop(data, ["phone", "language", "opt_in", "delete"])
-    }
+  @spec cleanup_contact_data(map(), map(), String.t()) :: map()
+  defp cleanup_contact_data(data, %{user: user, organization_id: organization_id}, date_format) do
+    if user.roles == [:Glific_admin] do
+      %{
+        name: data["name"],
+        phone: data["phone"],
+        organization_id: organization_id,
+        group: data["group"],
+        language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
+        optin_time:
+          if(data["opt_in"] != "",
+            do: elem(Timex.parse(data["opt_in"], date_format), 1),
+            else: nil
+          ),
+        delete: data["delete"],
+        contact_fields: Map.drop(data, ["phone", "language", "opt_in", "delete", "group"])
+      }
+    else
+      %{
+        name: data["name"],
+        phone: data["phone"],
+        group: data["group"],
+        organization_id: organization_id,
+        delete: data["delete"],
+        contact_fields: Map.drop(data, ["phone", "name", "group"])
+      }
+    end
   end
 
   @spec add_contact_to_group(Contact.t(), non_neg_integer) :: {:ok, ContactGroup.t()}
@@ -90,7 +102,8 @@ defmodule Glific.Contacts.Import do
   and group.
   """
   @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, %{group_label: group_label, user: user}, opts \\ []) do
+  def import_contacts(organization_id, %{user: user} = params, opts \\ []) do
+    group_label = params.group_label
     {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
 
     if length(opts) > 1 do
@@ -105,7 +118,9 @@ defmodule Glific.Contacts.Import do
       result =
         contact_data_as_stream
         |> CSV.decode(headers: true, strip_fields: true)
-        |> Stream.map(fn {_, data} -> cleanup_contact_data(data, organization_id, date_format) end)
+        |> Stream.map(fn {_, data} ->
+          cleanup_contact_data(data, %{user: user, organization_id: organization_id}, date_format)
+        end)
         |> Task.async_stream(
           fn contact ->
             process_data(user, contact, %{
@@ -139,19 +154,32 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
-  defp process_data(_user, %{delete: "1"} = contact, _contact_attrs) do
-    case Repo.get_by(Contact, %{phone: contact.phone}) do
-      nil ->
-        %{ok: "Contact does not exist"}
+  defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
+    if should_delete_contact?(user) do
+      case Repo.get_by(Contact, %{phone: contact.phone}) do
+        nil ->
+          %{ok: "Contact does not exist"}
 
-      contact ->
-        {:ok, contact} = Contacts.delete_contact(contact)
-        contact
+        contact ->
+          {:ok, contact} = Contacts.delete_contact(contact)
+          contact
+      end
+    else
+      %{
+        error: "This user doesn't have enough permission"
+      }
     end
   end
 
   defp process_data(user, contact_attrs, %{group_id: group_id}) do
     {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+
+    if String.trim("\n") !=  contact_attrs.group do
+      group = String.split(",")
+
+      add_multiple_group(group, contact_attrs.organization_id)
+      add_contact_to_groups(group, contact)
+    end
 
     if group_id do
       add_contact_to_group(contact, group_id)
@@ -162,6 +190,24 @@ defmodule Glific.Contacts.Import do
     end
 
     optin_contact(user, contact, contact_attrs)
+  end
+
+
+  defp add_contact_to_groups(group, contact) do
+    group
+    |> Groups.load_group_by_label()
+    |> Enum.each(fn group_id ->
+      Groups.create_contact_group(%{
+        contact_id: contact.id,
+        group_id: group_id,
+        organization_id: contact.organization_id
+      })
+    end)
+  end
+
+  defp add_multiple_group(group, organization_id) do
+    group
+    |> Enum.each(fn label -> Groups.get_or_create_group_by_label(label, organization_id) end)
   end
 
   @spec optin_contact(User.t(), Contact.t(), map()) :: Contact.t()
@@ -197,6 +243,18 @@ defmodule Glific.Contacts.Import do
         false
 
       contact.optout_time != nil ->
+        false
+
+      true ->
+        true
+    end
+  end
+
+  ## Only glific admin will be able to delete the contacts
+  @spec should_delete_contact?(User.t()) :: boolean()
+  defp should_delete_contact?(user) do
+    cond do
+      user.roles != [:Glific_admin] ->
         false
 
       true ->

@@ -394,6 +394,7 @@ defmodule Glific.ContactsTest do
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:Glific_admin])
 
       [
         ~w(name phone Language opt_in delete),
@@ -412,6 +413,41 @@ defmodule Glific.ContactsTest do
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
       assert count == 0
+    end
+
+    test "import_contact/3 deletes contacts when delete=1 column is present and if permission is not given",
+         attrs do
+      Tesla.Mock.mock(fn
+        %{method: :post} ->
+          %Tesla.Env{
+            status: 200
+          }
+      end)
+
+      file = get_tmp_file()
+      {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+
+      [
+        ~w(name phone Language opt_in delete),
+        ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1)
+      ]
+      |> CSV.encode()
+      |> Enum.each(&IO.write(file, &1))
+
+      [organization | _] = Partners.list_organizations()
+      [group | _] = Groups.list_groups(%{filter: %{}})
+
+      {:error, message} =
+        Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+          file_path: get_tmp_path()
+        )
+
+      assert message.details == [%{error: "This user doesn't have enough permission"}]
+
+      count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
+
+      assert count == 1
     end
 
     test "import_contact/3 ignores delete if the contact allready deleted", attrs do
@@ -465,11 +501,14 @@ defmodule Glific.ContactsTest do
 
         [~w(name phone Language opt_in)]
         |> Enum.concat([["updated", "9989329297", "english", ""]])
+        |> IO.inspect()
         |> CSV.encode()
+        |> IO.inspect()
         |> Enum.each(&IO.write(file, &1))
 
         [organization | _] = Partners.list_organizations()
         [group | _] = Groups.list_groups(%{filter: %{}})
+
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
         Import.import_contacts(organization.id, %{group_label: group.label, user: user},
