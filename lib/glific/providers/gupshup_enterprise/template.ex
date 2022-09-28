@@ -11,8 +11,8 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   }
 
   @template_status %{
-    "Enabled" => "APPROVED",
-    "Rejected" => "REJECTED"
+    "ENABLED" => "APPROVED",
+    "REJECTED" => "REJECTED"
   }
   @doc """
   Import pre approved templates when BSP is GupshupEnterprise
@@ -51,18 +51,19 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   end
 
   @spec import_approved_templates(map()) :: map()
-  defp import_approved_templates(template),
-    do: %{
+  defp import_approved_templates(template) do
+    %{
       "id" => Ecto.UUID.generate(),
-      "data" => template["Body"],
-      "meta" => get_example_body(template["Body"]),
+      "data" => template["BODY"],
+      "meta" => get_example_body(template["BODY"]),
       "category" => "TRANSACTIONAL",
-      "elementName" => template["Template Name"],
-      "languageCode" => get_language(template["Language"]),
-      "templateType" => template["Type"],
-      "status" => Map.get(@template_status, template["Status"], "PENDING"),
-      "bsp_id" => template["Template Id"]
+      "elementName" => template["NAME"],
+      "languageCode" => get_language(template["LANGUAGE"]),
+      "templateType" => template["TYPE"],
+      "status" => Map.get(@template_status, template["STATUS"], "PENDING"),
+      "bsp_id" => template["TEMPLATEID"],
     }
+  end
 
   @spec get_language(String.t()) :: String.t()
   defp get_language(label_locale) do
