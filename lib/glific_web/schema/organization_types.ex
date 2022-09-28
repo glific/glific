@@ -154,6 +154,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field(:default_language_id, :id)
 
     field(:out_of_office, :out_of_office_input)
+
     field(:newcontact_flow_id, :id)
 
     field(:is_active, :boolean)
@@ -185,14 +186,14 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :organizations, list_of(:organization) do
       arg(:filter, :organization_filter)
       arg(:opts, :opts)
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.organizations/3)
     end
 
     @desc "Get a count of all organizations filtered by various criteria"
     field :count_organizations, :integer do
       arg(:filter, :organization_filter)
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.count_organizations/3)
     end
 
@@ -252,7 +253,7 @@ defmodule GlificWeb.Schema.OrganizationTypes do
     field :update_organization_status, :organization_result do
       arg(:update_organization_id, non_null(:id))
       arg(:status, :organization_status_enum)
-      middleware(Authorize, :admin)
+      middleware(Authorize, :glific_admin)
       resolve(&Resolvers.Partners.update_organization_status/3)
     end
 
