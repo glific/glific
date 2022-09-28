@@ -28,6 +28,7 @@ defmodule Glific.BigQuery.BigQueryWorker do
     Contacts.Contact,
     Contacts.ContactHistory,
     Flows,
+    Flows.Flow,
     Flows.FlowCount,
     Flows.FlowResult,
     Flows.FlowRevision,
