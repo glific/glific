@@ -69,9 +69,9 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
   end
 
   @spec check_for_button_template(map(), String.t()) :: String.t()
-  def check_for_button_template(template, "NONE"), do: template["BODY"]
+  defp check_for_button_template(template, "NONE"), do: template["BODY"]
 
-  def check_for_button_template(template, "QUICK_REPLY") do
+  defp check_for_button_template(template, "QUICK_REPLY") do
     button_list = [template["BUTTON1"]] ++ [template["BUTTON2"]] ++ [template["BUTTON3"]]
 
     button_text =
