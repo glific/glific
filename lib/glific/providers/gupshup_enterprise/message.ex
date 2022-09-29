@@ -157,7 +157,12 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
         do: Map.put(attrs, :caption, ""),
         else: attrs
 
-    %{"send_to" => message.receiver.phone, "message" => Jason.encode!(payload)}
+    encode_message =
+      payload
+      |> Map.put(:msg, attrs.original_body)
+      |> Jason.encode!()
+
+    %{"send_to" => message.receiver.phone, "message" => encode_message}
     |> then(&create_oban_job(message, &1, attrs))
   end
 

@@ -517,6 +517,7 @@ defmodule Glific.Messages do
       |> parse_template_vars(parameters)
 
     %{
+      original_body: session_template.body,
       body: updated_template.body,
       type: updated_template.type,
       is_hsm: updated_template.is_hsm,

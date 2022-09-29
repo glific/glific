@@ -58,7 +58,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
     %{
       "id" => Ecto.UUID.generate(),
       "data" => updated_body,
-      "meta" => get_example_body(updated_body),
+      "meta" => get_example_body(template["BODY"]),
       "category" => "TRANSACTIONAL",
       "elementName" => template["NAME"],
       "languageCode" => get_language(template["LANGUAGE"]),
@@ -82,7 +82,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
           parsed_button = Jason.decode!(button)
           type = parsed_button["type"]
           value = if type == "URL", do: parsed_button["url"], else: parsed_button["phone_number"]
-          acc <> " | " <> "[#{parsed_button["text"]},#{value}]"
+          acc <> "| " <> "[#{parsed_button["text"]},#{value}] "
         end
       end)
 
@@ -98,7 +98,7 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
           acc <> ""
         else
           parsed_button = Jason.decode!(button)
-          acc <> " | " <> "[#{parsed_button["text"]}]"
+          acc <> "| " <> "[#{parsed_button["text"]}] "
         end
       end)
 
