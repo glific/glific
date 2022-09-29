@@ -426,7 +426,7 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   @doc """
-    get template for IEX
+   Send template from expression
   """
   @spec send_template(String.t(), list()) :: binary
   def send_template(uuid, variables) do
@@ -438,6 +438,10 @@ defmodule Glific.Clients.DigitalGreen do
     |> Jason.encode!()
   end
 
+  @doc """
+    Send media template from expression
+  """
+  @spec send_media_template(String.t(), String.t(), non_neg_integer()) :: String.t()
   def send_media_template(uuid, day, organization_id) do
     {:ok, organization_data} =
       Repo.fetch_by(OrganizationData, %{
