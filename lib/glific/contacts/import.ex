@@ -21,7 +21,7 @@ defmodule Glific.Contacts.Import do
 
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(data, %{user: user, organization_id: organization_id}, date_format) do
-    if user.roles == [:Glific_admin] do
+    if user == [:Glific_admin]  do
       %{
         name: data["name"],
         phone: data["phone"],
@@ -41,20 +41,11 @@ defmodule Glific.Contacts.Import do
         name: data["name"],
         phone: data["phone"],
         group: data["group"],
-        organization_id: organization_id,
         delete: data["delete"],
-        contact_fields: Map.drop(data, ["phone", "group"])
+        organization_id: organization_id,
+        contact_fields: Map.drop(data, ["phone", "group", "delete"])
       }
     end
-  end
-
-  @spec add_contact_to_group(Contact.t(), non_neg_integer) :: {:ok, ContactGroup.t()}
-  defp add_contact_to_group(contact, group_id) do
-    Groups.create_contact_group(%{
-      contact_id: contact.id,
-      group_id: group_id,
-      organization_id: contact.organization_id
-    })
   end
 
   @spec add_contact_fields(Contact.t(), map()) :: {:ok, ContactGroup.t()}
@@ -102,10 +93,7 @@ defmodule Glific.Contacts.Import do
   and group.
   """
   @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, %{user: user} = params, opts \\ []) do
-    group_label = params.group_label
-    {date_format, opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
-
+  def import_contacts(organization_id, %{user: user}, opts \\ []) do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
@@ -113,35 +101,9 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     # this ensures the  org_id exists and is valid
-    with %{} <- Partners.organization(organization_id),
-         {:ok, group} <- Groups.get_or_create_group_by_label(group_label, organization_id) do
-      result =
-        contact_data_as_stream
-        |> CSV.decode(headers: true, strip_fields: true)
-        |> Stream.map(fn {_, data} ->
-          cleanup_contact_data(data, %{user: user, organization_id: organization_id}, date_format)
-        end)
-        |> Task.async_stream(
-          fn contact ->
-            process_data(user, contact, %{
-              group_id: group.id,
-              organization_id: Repo.put_process_state(organization_id)
-            })
-          end,
-          max_concurrency: @max_concurrency
-        )
-        |> Enum.map(fn {:ok, result} -> result end)
-
-      errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
-
-      case errors do
-        [] ->
-          {:ok, %{message: "All contacts added"}}
-
-        _ ->
-          {:error,
-           %{message: "All contacts could not be opted in due to some errors", details: errors}}
-      end
+    with %{} <- Partners.organization(organization_id) do
+      params = %{organization_id: organization_id, user: user}
+      decode_csv_data(params, contact_data_as_stream, opts)
     else
       {:error, error} ->
         {:error,
@@ -150,6 +112,39 @@ defmodule Glific.Contacts.Import do
            details:
              "Could not fetch the organization with id #{organization_id}. Error -> #{error}"
          }}
+    end
+  end
+
+  @spec decode_csv_data(map(), map(), [{atom(), String.t()}]) :: tuple()
+  defp decode_csv_data(params, data, opts) do
+    %{organization_id: organization_id, user: user} = params
+    {date_format, _opts} = Keyword.pop(opts, :date_format, "{YYYY}-{M}-{D}_{h24}:{m}:{s}")
+
+    result =
+      data
+      |> CSV.decode(headers: true, strip_fields: true)
+      |> Stream.map(fn {_, data} ->
+        cleanup_contact_data(data, params, date_format)
+      end)
+      |> Task.async_stream(
+        fn contact ->
+          process_data(user, contact, %{
+            organization_id: Repo.put_process_state(organization_id)
+          })
+        end,
+        max_concurrency: @max_concurrency
+      )
+      |> Enum.map(fn {:ok, result} -> result end)
+
+    errors = result |> Enum.filter(fn contact -> Map.has_key?(contact, :error) end)
+
+    case errors do
+      [] ->
+        {:ok, %{message: "All contacts added"}}
+
+      _ ->
+        {:error,
+         %{message: "All contacts could not be opted in due to some errors", details: errors}}
     end
   end
 
@@ -171,19 +166,10 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  defp process_data(user, contact_attrs, %{group_id: group_id}) do
+  defp process_data(user, contact_attrs, _attrs) do
     {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
-    if String.trim("\n") != contact_attrs.group do
-      group = String.split(",")
-
-      add_multiple_group(group, contact_attrs.organization_id)
-      add_contact_to_groups(group, contact)
-    end
-
-    if group_id do
-      add_contact_to_group(contact, group_id)
-    end
+    collection_label_check(contact, contact_attrs.group)
 
     if contact_attrs[:contact_fields] not in [%{}] do
       add_contact_fields(contact, contact_attrs[:contact_fields])
@@ -192,6 +178,19 @@ defmodule Glific.Contacts.Import do
     optin_contact(user, contact, contact_attrs)
   end
 
+  @spec collection_label_check(Contact.t(), String.t()) :: boolean() | :ok
+  defp collection_label_check(_contact, nil), do: false
+
+  defp collection_label_check(contact, group) when is_binary(group) do
+    if String.length(group) != 0 do
+      group = String.split(group, ",")
+
+      add_multiple_group(group, contact.organization_id)
+      add_contact_to_groups(group, contact)
+    end
+  end
+
+  @spec add_contact_to_groups(list(), Contact.t()) :: :ok
   defp add_contact_to_groups(group, contact) do
     group
     |> Groups.load_group_by_label()
@@ -204,7 +203,8 @@ defmodule Glific.Contacts.Import do
     end)
   end
 
-  defp add_multiple_group(group, organization_id) do
+  @spec add_multiple_group(list(), non_neg_integer()) :: :ok
+  def add_multiple_group(group, organization_id) do
     group
     |> Enum.each(fn label -> Groups.get_or_create_group_by_label(label, organization_id) end)
   end
@@ -235,7 +235,7 @@ defmodule Glific.Contacts.Import do
   @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
   defp should_optin_contact?(user, contact, attrs) do
     cond do
-      user.roles != [:Glific_admin] ->
+      user != [:Glific_admin] ->
         false
 
       attrs.optin_time == nil ->
@@ -253,7 +253,7 @@ defmodule Glific.Contacts.Import do
   @spec should_delete_contact?(User.t()) :: boolean()
   defp should_delete_contact?(user) do
     cond do
-      user.roles != [:Glific_admin] ->
+      user != [:Glific_admin] ->
         false
 
       true ->

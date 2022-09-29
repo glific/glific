@@ -247,7 +247,9 @@ defmodule GlificWeb.Schema.ContactTest do
     test_name = "test"
     test_phone = "test phone"
     group_label = "Test Label"
-    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,"
+
+    data =
+      "name,phone,language,opt_in,delete,group\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     # Test success for creating a contact without opt-in
     result =
@@ -255,8 +257,8 @@ defmodule GlificWeb.Schema.ContactTest do
         variables: %{
           "id" => user.organization_id,
           "type" => "DATA",
-          "group_label" => group_label,
-          "data" => data
+          "data" => data,
+          "group_label" => ""
         }
       )
 
@@ -274,7 +276,9 @@ defmodule GlificWeb.Schema.ContactTest do
 
     test_name = "test2"
     test_phone = "919917443992"
-    data = "name,phone,language,opt_in\n#{test_name},#{test_phone},english,2021-03-09_12:34:25"
+
+    data =
+      "name,phone,language,opt_in,group\n#{test_name},#{test_phone},english,2021-03-09_12:34:25,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -302,7 +306,7 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "test phone2"
 
     data =
-      "name,phone,language,opt_in,delete\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0"
+      "name,phone,language,opt_in,delete,group\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -318,7 +322,7 @@ defmodule GlificWeb.Schema.ContactTest do
     count = Contacts.count_contacts(%{filter: %{name: "#{test_name} updated"}})
     assert count == 1
 
-    # Test success for uploading contact through url
+    # # Test success for uploading contact through url
     Tesla.Mock.mock(fn
       %{method: :post} ->
         %Tesla.Env{
@@ -328,7 +332,7 @@ defmodule GlificWeb.Schema.ContactTest do
       %{method: :get} ->
         %Tesla.Env{
           body:
-            "name,phone,Language,opt_in,delete\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,",
+            "name,phone,Language,opt_in,delete,group\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,,collection",
           status: 200
         }
     end)
@@ -363,7 +367,10 @@ defmodule GlificWeb.Schema.ContactTest do
       |> Path.join("fixture.csv")
       |> File.open!([:write, :utf8])
 
-    [~w(name phone Language opt_in), ~w(test 9989329297 english 2021-03-09_12:34:25)]
+    [
+      ~w(name phone Language opt_in group),
+      ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
+    ]
     |> CSV.encode()
     |> Enum.each(&IO.write(file, &1))
 
@@ -376,6 +383,69 @@ defmodule GlificWeb.Schema.ContactTest do
           "type" => "FILE_PATH",
           "group_label" => group_label,
           "data" => file_name
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
+  end
+
+  test "test success for uploading contact for different csv", %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    file =
+      System.tmp_dir!()
+      |> Path.join("fixture.csv")
+      |> File.open!([:write, :utf8])
+
+    [~w(name phone group), ~w(test 9989329297 collection)]
+    |> CSV.encode()
+    |> Enum.each(&IO.write(file, &1))
+
+    file_name = System.tmp_dir!() |> Path.join("fixture.csv")
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "FILE_PATH",
+          "data" => file_name,
+          "group_label" => ""
+        }
+      )
+
+    assert {:ok, _} = result
+    count = Contacts.count_contacts(%{filter: %{name: "test"}})
+    assert count == 1
+  end
+
+  test "test success for uploading contact for glific admin", %{manager: user} do
+    Tesla.Mock.mock(fn
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    test_name = "test2"
+    test_phone = "test phone2"
+
+    data =
+      "name,phone,language,opt_in,delete,group\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+
+    result =
+      auth_query_gql_by(:import_contacts, user,
+        variables: %{
+          "id" => user.organization_id,
+          "type" => "DATA",
+          "data" => data,
+          "group_label" => ""
         }
       )
 
