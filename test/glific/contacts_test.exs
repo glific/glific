@@ -8,7 +8,6 @@ defmodule Glific.ContactsTest do
     Contacts,
     Contacts.Contact,
     Contacts.Import,
-    Groups,
     Partners,
     Partners.Organization,
     Partners.Saas,
@@ -214,7 +213,7 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 raises an exception if more than one keyword argument provided" do
       assert_raise RuntimeError, fn ->
-        Import.import_contacts(999, %{group_label: "foo", user: "admin"},
+        Import.import_contacts(999, "admin",
           file_path: "file_path",
           url: ""
         )
@@ -241,9 +240,8 @@ defmodule Glific.ContactsTest do
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+      Import.import_contacts(organization.id, user.roles,
         file_path: get_tmp_path()
       )
 
@@ -266,9 +264,8 @@ defmodule Glific.ContactsTest do
         "name,phone,Language,opt_in,group\ncontact_test,9989329297,english,2021-03-09_12:34:25,collection\n"
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user}, data: data)
+      Import.import_contacts(organization.id, user.roles, data: data)
       count = Contacts.count_contacts(%{filter: %{phone: "9989329297"}})
 
       assert count == 1
@@ -292,9 +289,8 @@ defmodule Glific.ContactsTest do
       end)
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+      Import.import_contacts(organization.id, user.roles,
         url: "http://www.bar.com/foo.csv"
       )
 
@@ -325,9 +321,8 @@ defmodule Glific.ContactsTest do
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+      Import.import_contacts(organization.id, user.roles,
         file_path: get_tmp_path()
       )
 
@@ -353,9 +348,8 @@ defmodule Glific.ContactsTest do
         "name,phone,Language,opt_in,group\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user}, data: data)
+      Import.import_contacts(organization.id, user.roles, data: data)
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
       assert count == 1
@@ -382,9 +376,8 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       [organization | _] = Partners.list_organizations()
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
-      Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+      Import.import_contacts(organization.id, user.roles,
         url: "http://www.bar.com/foo.csv"
       )
 
@@ -415,7 +408,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user.roles},
+      Import.import_contacts(organization.id, user.roles,
         file_path: get_tmp_path()
       )
 
@@ -447,7 +440,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       {:error, message} =
-        Import.import_contacts(organization.id, %{user: user.roles},
+        Import.import_contacts(organization.id, user.roles,
           file_path: get_tmp_path()
         )
 
@@ -513,11 +506,11 @@ defmodule Glific.ContactsTest do
         |> Enum.each(&IO.write(file, &1))
 
         [organization | _] = Partners.list_organizations()
-        [group | _] = Groups.list_groups(%{filter: %{}})
+
 
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-        Import.import_contacts(organization.id, %{group_label: group.label, user: user},
+        Import.import_contacts(organization.id, user.roles,
           file_path: get_tmp_path()
         )
 
@@ -548,10 +541,8 @@ defmodule Glific.ContactsTest do
 
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      [group | _] = Groups.list_groups(%{filter: %{}})
-
       assert {:error, _} =
-               Import.import_contacts(999, %{group_label: group.label, user: user},
+               Import.import_contacts(999, user.roles,
                  file_path: get_tmp_path()
                )
     end
@@ -563,8 +554,6 @@ defmodule Glific.ContactsTest do
             status: 404
           }
       end)
-
-      [group | _] = Groups.list_groups(%{filter: %{}})
 
       file = get_tmp_file()
 
@@ -578,7 +567,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       {:error, %{message: message, details: _}} =
-        Import.import_contacts(1, %{group_label: group.label, user: user},
+        Import.import_contacts(1, user.roles,
           file_path: get_tmp_path()
         )
 

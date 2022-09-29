@@ -93,7 +93,7 @@ defmodule Glific.Contacts.Import do
   and group.
   """
   @spec import_contacts(integer, map(), [{atom(), String.t()}]) :: tuple()
-  def import_contacts(organization_id, %{user: user}, opts \\ []) do
+  def import_contacts(organization_id, user, opts \\ []) do
     if length(opts) > 1 do
       raise "Please specify only one of keyword arguments: file_path, url or data"
     end
@@ -150,7 +150,7 @@ defmodule Glific.Contacts.Import do
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
   defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if should_delete_contact?(user) do
+    if user == [:Glific_admin] do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           %{ok: "Contact does not exist"}
@@ -242,18 +242,6 @@ defmodule Glific.Contacts.Import do
         false
 
       contact.optout_time != nil ->
-        false
-
-      true ->
-        true
-    end
-  end
-
-  ## Only glific admin will be able to delete the contacts
-  @spec should_delete_contact?(User.t()) :: boolean()
-  defp should_delete_contact?(user) do
-    cond do
-      user != [:Glific_admin] ->
         false
 
       true ->
