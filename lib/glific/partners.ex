@@ -898,8 +898,8 @@ defmodule Glific.Partners do
       {:ok, _callback} ->
         {:ok, credential}
 
-      {:error, _error} ->
-        {:error, "Invalid Credentials"}
+      {:error, error} ->
+        {:error, error}
     end
   end
 

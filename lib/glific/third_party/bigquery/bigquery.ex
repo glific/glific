@@ -64,30 +64,23 @@ defmodule Glific.BigQuery do
   """
   @spec sync_schema_with_bigquery(non_neg_integer) :: {:ok, any} | {:error, any}
   def sync_schema_with_bigquery(organization_id) do
-    fetch_bigquery_credentials(organization_id)
-    |> case do
-      {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} ->
-        case create_dataset(conn, project_id, dataset_id) do
-          {:ok, _} ->
-            do_refresh_the_schema(organization_id, %{
-              conn: conn,
-              dataset_id: dataset_id,
-              project_id: project_id
-            })
+    with {:ok, %{conn: conn, project_id: project_id, dataset_id: dataset_id}} <-
+           fetch_bigquery_credentials(organization_id) do
+      case create_dataset(conn, project_id, dataset_id) do
+        {:ok, _} ->
+          do_refresh_the_schema(organization_id, %{
+            conn: conn,
+            dataset_id: dataset_id,
+            project_id: project_id
+          })
 
-          {:error, response} ->
-            handle_sync_errors(response, organization_id, %{
-              conn: conn,
-              dataset_id: dataset_id,
-              project_id: project_id
-            })
-        end
-
-      {:error, error} ->
-        {:error, error}
-
-      _ ->
-        {:ok, "bigquery is not active"}
+        {:error, response} ->
+          handle_sync_errors(response, organization_id, %{
+            conn: conn,
+            dataset_id: dataset_id,
+            project_id: project_id
+          })
+      end
     end
   end
 
@@ -100,7 +93,7 @@ defmodule Glific.BigQuery do
     organization.services["bigquery"]
     |> case do
       nil ->
-        nil
+        {:ok, "BigQuery is not active"}
 
       credentials ->
         decode_bigquery_credential(credentials, org_contact, organization_id)
@@ -122,14 +115,14 @@ defmodule Glific.BigQuery do
         token = Partners.get_goth_token(organization_id, "bigquery")
 
         if is_nil(token) do
-          token
+          {:error, "Error fetching token with Service Account JSON"}
         else
           conn = Connection.new(token.token)
           {:ok, %{conn: conn, project_id: project_id, dataset_id: org_contact.phone}}
         end
 
-      {:error, error} ->
-        {:error, error}
+      {:error, _error} ->
+        {:error, "Invalid Service Account JSON"}
     end
   end
 
