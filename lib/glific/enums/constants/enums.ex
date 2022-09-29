@@ -90,7 +90,7 @@ defmodule Glific.Enums.Constants do
         :inactive,
         # Admin approves the organization and it's ready to setup.
         :approved,
-        # Organization is fully funcational and activated
+        # Organization is fully functional and activated
         :active,
         # organization is suspended and no activity can be performed on that
         :suspended,

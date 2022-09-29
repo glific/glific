@@ -11,7 +11,7 @@ defmodule Glific.ASR.GoogleASR do
 
   @doc """
   This function will take organization_id and the url for audio.
-     * encoding: We have a list of endoing which is supported with these google api for more information check here
+     * encoding: We have a list of encoding which is supported with these google api for more information check here
        https://cloud.google.com/speech-to-text/docs/encoding
 
      * Sample rate in Hertz of the audio data sent in all RecognitionAudio messages. Valid values are: 8000-48000. 16000 is optimal.
