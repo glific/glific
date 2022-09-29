@@ -241,9 +241,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user.roles,
-        file_path: get_tmp_path()
-      )
+      Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -290,9 +288,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user.roles,
-        url: "http://www.bar.com/foo.csv"
-      )
+      Import.import_contacts(organization.id, user.roles, url: "http://www.bar.com/foo.csv")
 
       count = Contacts.count_contacts(%{filter: %{name: "test"}})
 
@@ -322,9 +318,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user.roles,
-        file_path: get_tmp_path()
-      )
+      Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -377,9 +371,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user.roles,
-        url: "http://www.bar.com/foo.csv"
-      )
+      Import.import_contacts(organization.id, user.roles, url: "http://www.bar.com/foo.csv")
 
       count = Contacts.count_contacts(%{filter: %{name: "updated", phone: contact.phone}})
 
@@ -408,9 +400,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, user.roles,
-        file_path: get_tmp_path()
-      )
+      Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -440,9 +430,7 @@ defmodule Glific.ContactsTest do
       [organization | _] = Partners.list_organizations()
 
       {:error, message} =
-        Import.import_contacts(organization.id, user.roles,
-          file_path: get_tmp_path()
-        )
+        Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
       assert message.details == [%{error: "This user doesn't have enough permission"}]
 
@@ -474,9 +462,7 @@ defmodule Glific.ContactsTest do
 
       [organization | _] = Partners.list_organizations()
 
-      Import.import_contacts(organization.id, %{user: user.roles},
-        file_path: get_tmp_path()
-      )
+      Import.import_contacts(organization.id, %{user: user.roles}, file_path: get_tmp_path())
 
       count = Contacts.count_contacts(%{filter: %{phone: contact.phone}})
 
@@ -507,12 +493,9 @@ defmodule Glific.ContactsTest do
 
         [organization | _] = Partners.list_organizations()
 
-
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-        Import.import_contacts(organization.id, user.roles,
-          file_path: get_tmp_path()
-        )
+        Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
         count = Contacts.count_contacts(%{filter: %{phone: 9_989_329_297}})
 
@@ -541,10 +524,7 @@ defmodule Glific.ContactsTest do
 
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
-      assert {:error, _} =
-               Import.import_contacts(999, user.roles,
-                 file_path: get_tmp_path()
-               )
+      assert {:error, _} = Import.import_contacts(999, user.roles, file_path: get_tmp_path())
     end
 
     test "insert_or_update_contact_data/3 returns an error if insertion fails" do
@@ -567,9 +547,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       {:error, %{message: message, details: _}} =
-        Import.import_contacts(1, user.roles,
-          file_path: get_tmp_path()
-        )
+        Import.import_contacts(1, user.roles, file_path: get_tmp_path())
 
       assert "All contacts could not be opted in due to some errors" == message
     end

@@ -21,7 +21,7 @@ defmodule Glific.Contacts.Import do
 
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
   defp cleanup_contact_data(data, %{user: user, organization_id: organization_id}, date_format) do
-    if user == [:Glific_admin]  do
+    if user == [:Glific_admin] do
       %{
         name: data["name"],
         phone: data["phone"],
