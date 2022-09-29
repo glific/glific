@@ -159,7 +159,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
 
     encode_message =
       payload
-      |> Map.put(:msg, attrs.original_body)
+      |> Map.put(:msg, attrs.parsed_body)
       |> Jason.encode!()
 
     %{"send_to" => message.receiver.phone, "message" => encode_message}
