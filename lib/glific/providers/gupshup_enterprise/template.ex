@@ -53,6 +53,8 @@ defmodule Glific.Providers.GupshupEnterprise.Template do
 
   @spec import_approved_templates(map()) :: map()
   defp import_approved_templates(template) do
+    cleaned_body = String.replace(template["BODY"], "\n\r\n", "\r\n")
+    template = Map.put(template, "BODY", cleaned_body)
     updated_body = check_for_button_template(template, template["BUTTONTYPE"])
 
     %{
