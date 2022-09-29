@@ -115,9 +115,7 @@ defmodule Glific.Repo.Migrations.AddProfileIdToFlowTables do
 
       BEGIN
       CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-        IF (TG_OP = 'INSERT') THEN
           UPDATE messages set profile_id = (SELECT active_profile_id FROM contacts WHERE id = New.contact_id) where id = New.id;
-        END IF;
         RETURN NULL;
       END;
     $$ LANGUAGE plpgsql;

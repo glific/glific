@@ -25,6 +25,8 @@ defmodule Glific.GCS.GcsWorker do
     Repo
   }
 
+  @provider_shortcode "google_cloud_storage"
+
   @doc """
   This is called from the cron job on a regular schedule. we sweep the message media url  table
   and queue them up for delivery to gcs
@@ -32,12 +34,13 @@ defmodule Glific.GCS.GcsWorker do
   @spec perform_periodic(non_neg_integer) :: :ok
   def perform_periodic(organization_id) do
     organization = Partners.organization(organization_id)
-    credential = organization.services["google_cloud_storage"]
+    credential = organization.services[@provider_shortcode]
+    goth_token = Partners.get_goth_token(organization_id, @provider_shortcode)
 
-    if credential do
-      jobs(organization_id)
+    if is_nil(credential) || is_nil(goth_token) do
       :ok
     else
+      jobs(organization_id)
       :ok
     end
   end
@@ -135,7 +138,7 @@ defmodule Glific.GCS.GcsWorker do
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, String.t()} | {:discard, String.t()}
   def perform(%Oban.Job{args: %{"media" => media}}) do
-    Repo.put_organization_id(media["organization_id"])
+    Repo.put_process_state(media["organization_id"])
 
     # We will download the file from internet and then upload it to gsc and then remove it.
     extension = get_media_extension(media["type"])
