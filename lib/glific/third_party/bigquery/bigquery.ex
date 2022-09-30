@@ -74,6 +74,8 @@ defmodule Glific.BigQuery do
             project_id: project_id
           })
 
+          {:ok, "Refreshing Bigquery Schema"}
+
         {:error, response} ->
           handle_sync_errors(response, organization_id, %{
             conn: conn,
@@ -143,7 +145,6 @@ defmodule Glific.BigQuery do
     "message_broadcast_contacts" => MessageBroadcastContact
   }
 
-  # @spec get_table_struct(String.t()) :: Message.t() | Contact.t() | FlowResult.t() | FlowRevision.t()
   @doc false
   @spec get_table_struct(String.t()) :: atom()
   def get_table_struct(table_name),
@@ -206,19 +207,15 @@ defmodule Glific.BigQuery do
       {:ok, data} ->
         error = data["error"]
 
-        if error["status"] == "ALREADY_EXISTS" do
-          do_refresh_the_schema(organization_id, attrs)
+        cond do
+          error["status"] == "ALREADY_EXISTS" ->
+            do_refresh_the_schema(organization_id, attrs)
+            {:ok, "Refreshing Bigquery Schema"}
+
+          error["status"] == "PERMISSION_DENIED" ->
+            {:error,
+             "Account does not have sufficient permissions to create data set to BigQuery."}
         end
-
-        if error["status"] == "PERMISSION_DENIED",
-          do:
-            Partners.disable_credential(
-              organization_id,
-              "bigquery",
-              "Account does not have sufficient permissions to create data set to BigQuery."
-            )
-
-        {:ok, data}
 
       _ ->
         raise("Error while sync data with bigquery. #{inspect(response)}")

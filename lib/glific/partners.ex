@@ -894,11 +894,19 @@ defmodule Glific.Partners do
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
   defp credential_update_callback(organization, credential, "bigquery") do
+    Caches.remove(organization.id, [{:provider_shortcode, "bigquery"}])
+
     case BigQuery.sync_schema_with_bigquery(organization.id) do
       {:ok, _callback} ->
         {:ok, credential}
 
       {:error, error} ->
+        Partners.disable_credential(
+          organization.id,
+          "bigquery",
+          error
+        )
+
         {:error, error}
     end
   end

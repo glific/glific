@@ -319,7 +319,8 @@ defmodule Glific.BigQueryTest do
       }
     ]) do
       Glific.Caches.remove(attrs.organization_id, [{:provider_shortcode, "bigquery"}])
-      assert true = is_nil(BigQuery.fetch_bigquery_credentials(attrs.organization_id))
+      assert {:error, error} = BigQuery.fetch_bigquery_credentials(attrs.organization_id)
+      assert error == "Error fetching token with Service Account JSON"
 
       {:ok, cred} =
         Partners.get_credential(%{organization_id: attrs.organization_id, shortcode: "bigquery"})
@@ -397,13 +398,13 @@ defmodule Glific.BigQueryTest do
   end
 
   @unix_time 1_464_096_368
-  @formated_time "2016-05-24 18:56:08"
+  @formatted_time "2016-05-24 18:56:08"
   test "format_date/2 should create job for contacts", attrs do
     {:ok, datetime} = DateTime.from_unix(@unix_time)
     assert nil == BigQuery.format_date(nil, attrs.organization_id)
-    assert @formated_time == BigQuery.format_date(datetime, attrs.organization_id)
+    assert @formatted_time == BigQuery.format_date(datetime, attrs.organization_id)
 
-    assert @formated_time ==
+    assert @formatted_time ==
              BigQuery.format_date(DateTime.to_string(datetime), attrs.organization_id)
   end
 end
