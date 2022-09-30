@@ -173,6 +173,35 @@ defmodule Glific.Clients.DigitalGreen do
       else: %{is_valid: false}
   end
 
+  def webhook("push_crop_calendar_message", fields) do
+    crop_age = fields["crop_age"]
+
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: fields["organization_id"],
+        key: fields["crop"]
+      })
+
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
+    media_url = get_in(organization_data.json, [crop_age, "media_url"])
+    crop_stage_eng = get_in(organization_data.json, [crop_age, "crop_stage_eng"])
+
+    if template_uuid,
+      do: %{
+        is_valid: true,
+        template_uuid: template_uuid,
+        crop_stage: crop_stage,
+        variables: Jason.encode!(variables),
+        media_url: media_url,
+        crop_age: crop_age,
+        crop_stage_eng: crop_stage_eng,
+        organization_id: fields["organization_id"]
+      },
+      else: %{is_valid: false}
+  end
+
   def webhook("set_reminders", fields) do
     {:ok, contact_id} = Glific.parse_maybe_integer(fields["contact"]["id"])
 
@@ -397,13 +426,32 @@ defmodule Glific.Clients.DigitalGreen do
   end
 
   @doc """
-    get template for IEX
+   Send template from expression
   """
   @spec send_template(String.t(), list()) :: binary
   def send_template(uuid, variables) do
     %{
       uuid: uuid,
       variables: variables,
+      expression: nil
+    }
+    |> Jason.encode!()
+  end
+
+  @doc """
+    Send media template from expression
+  """
+  @spec send_media_template(String.t(), String.t(), non_neg_integer()) :: String.t()
+  def send_media_template(uuid, day, organization_id) do
+    {:ok, organization_data} =
+      Repo.fetch_by(OrganizationData, %{
+        organization_id: organization_id,
+        key: "dg_tel_crop_calendar"
+      })
+
+    %{
+      uuid: uuid,
+      variables: get_in(organization_data.json, [day, "variables"]),
       expression: nil
     }
     |> Jason.encode!()
