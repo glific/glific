@@ -150,6 +150,16 @@ defmodule Glific.Providers.Gupshup.Enterprise.Message do
           {:ok, Oban.Job.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   defp send_message(%{error: error} = _payload, _message, _attrs), do: {:error, error}
 
+  defp send_message(payload, message, %{has_buttons: true, parsed_body: parsed_body} = attrs) do
+    encoded_message =
+      payload
+      |> Map.put(:msg, parsed_body)
+      |> Jason.encode!()
+
+    %{"send_to" => message.receiver.phone, "message" => encoded_message}
+    |> then(&create_oban_job(message, &1, attrs))
+  end
+
   defp send_message(payload, message, attrs) do
     ## gupshup does not allow null in the caption.
     attrs =
