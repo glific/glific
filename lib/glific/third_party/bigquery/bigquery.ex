@@ -207,14 +207,18 @@ defmodule Glific.BigQuery do
       {:ok, data} ->
         error = data["error"]
 
-        cond do
-          error["status"] == "ALREADY_EXISTS" ->
+        case error["status"] do
+          "ALREADY_EXISTS" ->
             do_refresh_the_schema(organization_id, attrs)
             {:ok, "Refreshing Bigquery Schema"}
 
-          error["status"] == "PERMISSION_DENIED" ->
+          "PERMISSION_DENIED" ->
             {:error,
-             "Account does not have sufficient permissions to create data set to BigQuery."}
+             "Account does not have sufficient permissions to create dataset to BigQuery."}
+
+          _ ->
+            {:error,
+             "Account deactivated with error code #{error["code"]} status #{error["status"]}"}
         end
 
       _ ->

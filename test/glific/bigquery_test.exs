@@ -272,14 +272,21 @@ defmodule Glific.BigQueryTest do
   end
 
   test "handle_sync_errors/2 return ok atom when status is not ALREADY_EXISTS", attrs do
-    error = %{"error" => %{"code" => 404, "status" => "NOT_FOUND"}}
+    error = %{
+      "error" => %{
+        "code" => 404,
+        "status" => "NOT_FOUND"
+      }
+    }
 
-    assert {:ok, error} ==
+    assert {:error, error} =
              BigQuery.handle_sync_errors(
                %{body: Jason.encode!(error)},
                attrs.organization_id,
                attrs
              )
+
+    assert error == "Account deactivated with error code 404 status NOT_FOUND"
   end
 
   test "handle_sync_errors/2 should raise error when status is not ALREADY_EXISTS", attrs do
