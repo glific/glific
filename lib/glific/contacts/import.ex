@@ -105,10 +105,11 @@ defmodule Glific.Contacts.Import do
     contact_data_as_stream = fetch_contact_data_as_string(opts)
 
     # this ensures the  org_id exists and is valid
-    with %{} <- Partners.organization(organization_id) do
-      params = %{organization_id: organization_id, user: user}
-      decode_csv_data(params, contact_data_as_stream, opts)
-    else
+    case Partners.organization(organization_id) do
+      %{} ->
+        params = %{organization_id: organization_id, user: user}
+        decode_csv_data(params, contact_data_as_stream, opts)
+
       {:error, error} ->
         {:error,
          %{
