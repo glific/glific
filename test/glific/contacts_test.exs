@@ -260,10 +260,10 @@ defmodule Glific.ContactsTest do
     end
 
     test "mabe_update_contact/1 with invalid phone number which is not in DB",
-    %{organization_id: _organization_id} = attrs do
+         %{organization_id: _organization_id} = attrs do
       contact_fixture(attrs)
 
-      {:error, error}  = Contacts.maybe_update_contact(@update_attrs)
+      {:error, error} = Contacts.maybe_update_contact(@update_attrs)
       assert error == "New contacts were found in this file. Sorry those could not be added"
     end
 

@@ -224,7 +224,7 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec add_multiple_group(list(), non_neg_integer()) :: :ok
-  def add_multiple_group(collection, organization_id) do
+  defp add_multiple_group(collection, organization_id) do
     collection
     |> Enum.each(fn label -> Groups.get_or_create_group_by_label(label, organization_id) end)
   end
