@@ -19,7 +19,7 @@ defmodule Glific.Providers.Gupshup.ResponseHandler do
         Communications.Message.handle_success_response(response, message)
         :ok
 
-      # Not authorized, Job succeeded, we should return an ok, so we dont retry
+      # Not authorized, Job succeeded, we should return an ok, so we don't retry
       %Tesla.Env{status: status} when status in 400..499 ->
         Communications.Message.handle_error_response(response, message)
         :ok

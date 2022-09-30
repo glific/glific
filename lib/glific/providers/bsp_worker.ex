@@ -53,7 +53,7 @@ defmodule Glific.Providers.Worker do
         Communications.Message.handle_success_response(response, message)
         :ok
 
-      # Not authorized, Job succeeded, we should return an ok, so we dont retry
+      # Not authorized, Job succeeded, we should return an ok, so we don't retry
       %Tesla.Env{status: status} when status in 400..499 ->
         Communications.Message.handle_error_response(response, message)
         :ok
@@ -68,7 +68,7 @@ defmodule Glific.Providers.Worker do
   def default_send_rate_handler do
     # lets sleep real briefly, so that we are not firing off many
     # jobs to the BSP after exceeding the rate limit for this second
-    # so we are artifically slowing down the send rate
+    # so we are artificially slowing down the send rate
     Process.sleep(50)
     # we also want this job scheduled as soon as possible
     {:snooze, 1}

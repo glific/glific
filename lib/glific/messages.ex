@@ -516,7 +516,13 @@ defmodule Glific.Messages do
       |> Templates.parse_buttons(is_translated, session_template.has_buttons)
       |> parse_template_vars(parameters)
 
+    parsed_body =
+      session_template
+      |> parse_template_vars(parameters)
+      |> Map.get(:body)
+
     %{
+      parsed_body: parsed_body,
       body: updated_template.body,
       type: updated_template.type,
       is_hsm: updated_template.is_hsm,
