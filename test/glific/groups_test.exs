@@ -126,6 +126,16 @@ defmodule Glific.GroupsTest do
       assert (h == group1 && t == group2) || (h == group2 && t == group1)
     end
 
+    test "load_group_by_label", attrs do
+      group_fixture(attrs)
+
+      group_fixture(Map.merge(attrs, @valid_other_attrs))
+
+      result = Groups.load_group_by_label(["some group", "some other group"])
+
+      assert Enum.empty?(result) == false
+    end
+
     test "list_groups/1 with multiple items sorted", attrs do
       group1 = group_fixture(attrs)
       group2 = group_fixture(Map.merge(attrs, @valid_other_attrs))
