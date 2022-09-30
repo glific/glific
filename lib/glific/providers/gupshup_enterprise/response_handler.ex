@@ -28,7 +28,7 @@ defmodule Glific.Providers.Gupshup.Enterprise.ResponseHandler do
 
         :ok
 
-      # Not authorized, Job succeeded, we should return an ok, so we dont retry
+      # Not authorized, Job succeeded, we should return an ok, so we don't retry
       %Tesla.Env{status: status} when status in 400..499 ->
         response
         |> add_error_payload
