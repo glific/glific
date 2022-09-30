@@ -991,6 +991,10 @@ defmodule Glific.Partners do
           res
 
         _ ->
+          Logger.error(
+            "Could not fetch token for service #{provider_shortcode} for org id: #{organization_id}"
+          )
+
           nil
       end
     end
