@@ -325,7 +325,7 @@ defmodule Glific.BigQueryTest do
         ]
       }
     ]) do
-      Glific.Caches.remove(attrs.organization_id, [{:provider_shortcode, "bigquery"}])
+      Glific.Caches.remove(attrs.organization_id, [{:provider_token, "bigquery"}])
       assert {:error, error} = BigQuery.fetch_bigquery_credentials(attrs.organization_id)
       assert error == "Error fetching token with Service Account JSON"
 

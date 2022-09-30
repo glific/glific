@@ -894,7 +894,7 @@ defmodule Glific.Partners do
   @spec credential_update_callback(Organization.t(), Credential.t(), String.t()) ::
           {:ok, any} | {:error, any}
   defp credential_update_callback(organization, credential, "bigquery") do
-    Caches.remove(organization.id, [{:provider_shortcode, "bigquery"}])
+    Caches.remove(organization.id, [{:provider_token, "bigquery"}])
 
     case BigQuery.sync_schema_with_bigquery(organization.id) do
       {:ok, _callback} ->
@@ -979,7 +979,7 @@ defmodule Glific.Partners do
   """
   @spec get_goth_token(non_neg_integer, String.t()) :: nil | Goth.Token.t()
   def get_goth_token(organization_id, provider_shortcode) do
-    key = {:provider_shortcode, provider_shortcode}
+    key = {:provider_token, provider_shortcode}
     organization = organization(organization_id)
 
     if is_nil(organization.services[provider_shortcode]) do
@@ -1002,7 +1002,7 @@ defmodule Glific.Partners do
 
   @spec load_goth_token(tuple()) :: tuple()
   defp load_goth_token(cache_key) do
-    {organization_id, {:provider_shortcode, provider_shortcode}} = cache_key
+    {organization_id, {:provider_token, provider_shortcode}} = cache_key
 
     organization = organization(organization_id)
     credentials = organization.services[provider_shortcode] |> config()
@@ -1014,7 +1014,7 @@ defmodule Glific.Partners do
       |> case do
         {:ok, token} ->
           opts = [ttl: :timer.seconds(token.expires - System.system_time(:second) - 60)]
-          Caches.set(organization_id, {:provider_shortcode, provider_shortcode}, token, opts)
+          Caches.set(organization_id, {:provider_token, provider_shortcode}, token, opts)
           {:ignore, token}
 
         {:error, error} ->
