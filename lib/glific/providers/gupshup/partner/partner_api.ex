@@ -92,7 +92,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Remove hsm template from the waba.
+  Remove hsm template from the WABA.
   """
   @spec delete_hsm_template(non_neg_integer, binary) :: tuple()
   def delete_hsm_template(org_id, element_name) do
@@ -108,7 +108,7 @@ defmodule Glific.Providers.Gupshup.PartnerAPI do
   end
 
   @doc """
-  Remove hsm template from the waba.
+  Remove hsm template from the WABA.
   """
   @spec apply_for_template(non_neg_integer(), map) :: tuple()
   def apply_for_template(org_id, payload) do
