@@ -236,11 +236,42 @@ defmodule Glific.ContactsTest do
       end
     end
 
+    test "maybe_update_contact/1  with valid data updates the contact",
+         %{organization_id: _organization_id} = attrs do
+      contact = contact_fixture(attrs)
+
+      update_attrs = %{
+        name: "some updated name",
+        optin_time: ~U[2011-05-18 15:01:01Z],
+        optin_status: true,
+        optout_time: nil,
+        phone: contact.phone,
+        status: :invalid,
+        bsp_status: :hsm,
+        fields: %{}
+      }
+
+      assert {:ok, %Contact{} = contact} = Contacts.maybe_update_contact(update_attrs)
+      assert contact.name == "some updated name"
+      assert contact.optin_time == ~U[2011-05-18 15:01:01Z]
+      assert contact.optout_time == nil
+      assert contact.status == :invalid
+      assert contact.bsp_status == :hsm
+    end
+
+    test "mabe_update_contact/1 with invalid phone number which is not in DB",
+    %{organization_id: _organization_id} = attrs do
+      contact_fixture(attrs)
+
+      {:error, error}  = Contacts.maybe_update_contact(@update_attrs)
+      assert error == "New contacts were found in this file. Sorry those could not be added"
+    end
+
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
       file = get_tmp_file()
 
       [
-        ~w(name phone Language opt_in group),
+        ~w(name phone Language opt_in collection),
         ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
       ]
       |> CSV.encode()
@@ -262,7 +293,7 @@ defmodule Glific.ContactsTest do
       user = Map.put(user, :roles, [:glific_admin])
 
       data =
-        "name,phone,Language,opt_in,group\ncontact_test,9989329297,english,2021-03-09_12:34:25,collection\n"
+        "name,phone,Language,opt_in,collection\ncontact_test,9989329297,english,2021-03-09_12:34:25,collection\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -286,7 +317,7 @@ defmodule Glific.ContactsTest do
           %Tesla.Env{
             status: 200,
             body:
-              "name,phone,Language,opt_in,group\ntest,9989329297,english,2021-03-09_12:34:25,collection\n"
+              "name,phone,Language,opt_in,collection\ntest,9989329297,english,2021-03-09_12:34:25,collection\n"
           }
       end)
 
@@ -314,7 +345,7 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
       [
-        ~w(name phone Language opt_in group),
+        ~w(name phone Language opt_in collection),
         ~w(updated #{contact.phone} english 2021-03-09_12:34:25 collection)
       ]
       |> CSV.encode()
@@ -343,7 +374,7 @@ defmodule Glific.ContactsTest do
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
 
       data =
-        "name,phone,Language,opt_in,group\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
+        "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
 
       [organization | _] = Partners.list_organizations()
 
@@ -367,7 +398,7 @@ defmodule Glific.ContactsTest do
           %Tesla.Env{
             status: 200,
             body:
-              "name,phone,Language,opt_in,group\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
+              "name,phone,Language,opt_in,collection\nupdated,#{contact.phone},english,2021-03-09_12:34:25,collection\n"
           }
       end)
 
@@ -396,7 +427,7 @@ defmodule Glific.ContactsTest do
       user = Map.put(user, :roles, [:glific_admin])
 
       [
-        ~w(name phone Language opt_in delete group),
+        ~w(name phone Language opt_in delete collection),
         ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1 collection)
       ]
       |> CSV.encode()
@@ -425,7 +456,7 @@ defmodule Glific.ContactsTest do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
 
       [
-        ~w(name phone Language opt_in delete group),
+        ~w(name phone Language opt_in delete collection),
         ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1 collection)
       ]
       |> CSV.encode()
@@ -458,7 +489,7 @@ defmodule Glific.ContactsTest do
       Contacts.delete_contact(contact)
 
       [
-        ~w(name phone Language opt_in delete group),
+        ~w(name phone Language opt_in delete collection),
         ~w(updated #{contact.phone} english 2021-03-09_12:34:25 1 collection)
       ]
       |> CSV.encode()
@@ -490,7 +521,7 @@ defmodule Glific.ContactsTest do
       ]) do
         file = get_tmp_file()
 
-        [~w(name phone Language opt_in group)]
+        [~w(name phone Language opt_in collection)]
         |> Enum.concat([["updated", "9989329297", "english", "", "collection"]])
         |> CSV.encode()
         |> Enum.each(&IO.write(file, &1))

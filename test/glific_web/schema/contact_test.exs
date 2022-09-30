@@ -262,7 +262,7 @@ defmodule GlificWeb.Schema.ContactTest do
     user = Map.put(user, :roles, [:glific_admin])
 
     data =
-      "name,phone,language,opt_in,delete,group\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     # Test success for creating a contact without opt-in
     result =
@@ -289,7 +289,7 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "919917443992"
 
     data =
-      "name,phone,language,opt_in,group\n#{test_name},#{test_phone},english,2021-03-09_12:34:25,collection"
+      "name,phone,language,opt_in,collection\n#{test_name},#{test_phone},english,2021-03-09_12:34:25,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -315,7 +315,7 @@ defmodule GlificWeb.Schema.ContactTest do
     test_phone = "test phone2"
 
     data =
-      "name,phone,language,opt_in,delete,group\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,
@@ -339,7 +339,7 @@ defmodule GlificWeb.Schema.ContactTest do
       %{method: :get} ->
         %Tesla.Env{
           body:
-            "name,phone,Language,opt_in,delete,group\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,,collection",
+            "name,phone,Language,opt_in,delete,collection\r\nuploaded_contact,9876543311,english,2021-03-09_12:34:25,,collection",
           status: 200
         }
     end)
@@ -366,7 +366,7 @@ defmodule GlificWeb.Schema.ContactTest do
       |> File.open!([:write, :utf8])
 
     [
-      ~w(name phone Language opt_in group),
+      ~w(name phone Language opt_in collection),
       ~w(test 9989329297 english 2021-03-09_12:34:25 collection)
     ]
     |> CSV.encode()
@@ -396,7 +396,7 @@ defmodule GlificWeb.Schema.ContactTest do
       |> File.open!([:write, :utf8])
 
     [
-      ~w(name phone language opt_in delete group),
+      ~w(name phone language opt_in delete collection),
       ~w(test 9989329297 english 2021-03-09_12:34:25 0 collection)
     ]
     |> CSV.encode()
@@ -424,7 +424,7 @@ defmodule GlificWeb.Schema.ContactTest do
       |> File.open!([:write, :utf8])
 
     [
-      ~w(name phone language opt_in delete group),
+      ~w(name phone language opt_in delete collection),
       ~w(test 9989329297 english 2021-03-09_12:34:25 0 collection)
     ]
     |> CSV.encode()
@@ -451,9 +451,8 @@ defmodule GlificWeb.Schema.ContactTest do
     test_name = "test2"
     test_phone = "test phone2"
 
-    # user = Map.put(user, :roles, [:Glific_admin])
     data =
-      "name,phone,language,opt_in,delete,group\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
+      "name,phone,language,opt_in,delete,collection\n#{test_name} updated,#{test_phone},english,2021-03-09_12:34:25,0,collection"
 
     result =
       auth_query_gql_by(:import_contacts, user,

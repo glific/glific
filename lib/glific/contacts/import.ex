@@ -30,7 +30,7 @@ defmodule Glific.Contacts.Import do
         name: data["name"],
         phone: data["phone"],
         organization_id: organization_id,
-        group: data["group"],
+        collection: data["collection"],
         language_id: Enum.at(Settings.get_language_by_label_or_locale(data["language"]), 0).id,
         optin_time:
           if(data["opt_in"] != "",
@@ -44,7 +44,7 @@ defmodule Glific.Contacts.Import do
       %{
         name: data["name"],
         phone: data["phone"],
-        group: data["group"],
+        collection: data["collection"],
         delete: data["delete"],
         organization_id: organization_id,
         contact_fields: Map.drop(data, ["phone", "group", "delete"])
@@ -191,7 +191,7 @@ defmodule Glific.Contacts.Import do
 
   @spec create_group_and_contact_fields(map(), Contact.t()) :: :ok | {:ok, ContactGroup.t()}
   defp create_group_and_contact_fields(contact_attrs, contact) do
-    collection_label_check(contact, contact_attrs.group)
+    collection_label_check(contact, contact_attrs.collection)
 
     if contact_attrs[:contact_fields] not in [%{}] do
       add_contact_fields(contact, contact_attrs[:contact_fields])
@@ -201,18 +201,18 @@ defmodule Glific.Contacts.Import do
   @spec collection_label_check(Contact.t(), String.t()) :: boolean() | :ok
   defp collection_label_check(_contact, nil), do: false
 
-  defp collection_label_check(contact, group) when is_binary(group) do
-    if String.length(group) != 0 do
-      group = String.split(group, ",")
+  defp collection_label_check(contact, collection) when is_binary(collection) do
+    if String.length(collection) != 0 do
+      collection = String.split(collection, ",")
 
-      add_multiple_group(group, contact.organization_id)
-      add_contact_to_groups(group, contact)
+      add_multiple_group(collection, contact.organization_id)
+      add_contact_to_groups(collection, contact)
     end
   end
 
   @spec add_contact_to_groups(list(), Contact.t()) :: :ok
-  defp add_contact_to_groups(group, contact) do
-    group
+  defp add_contact_to_groups(collection, contact) do
+    collection
     |> Groups.load_group_by_label()
     |> Enum.each(fn group_id ->
       Groups.create_contact_group(%{
@@ -224,8 +224,8 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec add_multiple_group(list(), non_neg_integer()) :: :ok
-  def add_multiple_group(group, organization_id) do
-    group
+  def add_multiple_group(collection, organization_id) do
+    collection
     |> Enum.each(fn label -> Groups.get_or_create_group_by_label(label, organization_id) end)
   end
 
