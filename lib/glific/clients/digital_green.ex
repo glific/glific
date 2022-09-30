@@ -35,7 +35,7 @@ defmodule Glific.Clients.DigitalGreen do
   }
 
   @doc """
-  Returns time in second till next defined Time slot
+  Returns time in second till next defined Timeslot
   """
   @spec time_till_next_slot(DateTime.t()) :: non_neg_integer()
   def time_till_next_slot(time \\ DateTime.utc_now()) do
@@ -159,9 +159,9 @@ defmodule Glific.Clients.DigitalGreen do
         key: fields["crop"]
       })
 
-    template_uuid = get_in(organization_data, [:json, crop_age, "template_uuid"])
-    variables = get_in(organization_data, [:json, crop_age, "variables"])
-    crop_stage = get_in(organization_data, [:json, crop_age, "crop_stage"])
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
 
     if template_uuid,
       do: %{
@@ -182,11 +182,11 @@ defmodule Glific.Clients.DigitalGreen do
         key: fields["crop"]
       })
 
-    template_uuid = get_in(organization_data, [:json, crop_age, "template_uuid"])
-    variables = get_in(organization_data, [:json, crop_age, "variables"])
-    crop_stage = get_in(organization_data, [:json, crop_age, "crop_stage"])
-    media_url = get_in(organization_data, [:json, crop_age, "media_url"])
-    crop_stage_eng = get_in(organization_data, [:json, crop_age, "crop_stage_eng"])
+    template_uuid = get_in(organization_data.json, [crop_age, "template_uuid"])
+    variables = get_in(organization_data.json, [crop_age, "variables"])
+    crop_stage = get_in(organization_data.json, [crop_age, "crop_stage"])
+    media_url = get_in(organization_data.json, [crop_age, "media_url"])
+    crop_stage_eng = get_in(organization_data.json, [crop_age, "crop_stage_eng"])
 
     if template_uuid,
       do: %{
@@ -355,7 +355,7 @@ defmodule Glific.Clients.DigitalGreen do
       Partners.maybe_insert_organization_data(@crp_id_key, crp_data, org_id)
     end)
 
-    %{status: "successful"}
+    %{status: "successfull"}
   end
 
   defp validate_crp_id(org_id, crp_id) do
