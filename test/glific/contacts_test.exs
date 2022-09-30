@@ -18,6 +18,22 @@ defmodule Glific.ContactsTest do
   }
 
   setup do
+    Tesla.Mock.mock_global(fn
+      %{method: :get} ->
+        %Tesla.Env{
+          status: 200
+        }
+
+      %{method: :post} ->
+        %Tesla.Env{
+          status: 200
+        }
+    end)
+
+    :ok
+  end
+
+  setup do
     default_provider = SeedsDev.seed_providers()
     SeedsDev.seed_organizations(default_provider)
     SeedsDev.seed_groups()
@@ -221,15 +237,6 @@ defmodule Glific.ContactsTest do
     end
 
     test "import_contact/3 with valid data from file inserts new contacts in the database" do
-      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200
-          }
-      end)
-
       file = get_tmp_file()
 
       [
@@ -240,6 +247,8 @@ defmodule Glific.ContactsTest do
       |> Enum.each(&IO.write(file, &1))
 
       [organization | _] = Partners.list_organizations()
+      {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
 
       Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
@@ -250,13 +259,7 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 with valid data from string inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 200
-          }
-      end)
+      user = Map.put(user, :roles, [:glific_admin])
 
       data =
         "name,phone,Language,opt_in,group\ncontact_test,9989329297,english,2021-03-09_12:34:25,collection\n"
@@ -271,6 +274,7 @@ defmodule Glific.ContactsTest do
 
     test "import_contact/3 with valid data from URL inserts new contacts in the database" do
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+      user = Map.put(user, :roles, [:glific_admin])
 
       Tesla.Mock.mock(fn
         %{method: :post} ->
@@ -389,7 +393,7 @@ defmodule Glific.ContactsTest do
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-      user = Map.put(user, :roles, [:Glific_admin])
+      user = Map.put(user, :roles, [:glific_admin])
 
       [
         ~w(name phone Language opt_in delete group),
@@ -450,7 +454,7 @@ defmodule Glific.ContactsTest do
       file = get_tmp_file()
       {:ok, contact} = Contacts.create_contact(Map.merge(attrs, @valid_attrs_4))
       {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
-      user = Map.put(user, :roles, [:Glific_admin])
+      user = Map.put(user, :roles, [:glific_admin])
       Contacts.delete_contact(contact)
 
       [
@@ -494,6 +498,7 @@ defmodule Glific.ContactsTest do
         [organization | _] = Partners.list_organizations()
 
         {:ok, user} = Repo.fetch_by(Users.User, %{name: "NGO Staff"})
+        user = Map.put(user, :roles, [:glific_admin])
 
         Import.import_contacts(organization.id, user.roles, file_path: get_tmp_path())
 
@@ -528,18 +533,11 @@ defmodule Glific.ContactsTest do
     end
 
     test "insert_or_update_contact_data/3 returns an error if insertion fails" do
-      Tesla.Mock.mock(fn
-        %{method: :post} ->
-          %Tesla.Env{
-            status: 404
-          }
-      end)
-
       file = get_tmp_file()
 
       [
-        ~w(name phone Language opt_in group),
-        ~w(test phone english 2021-03-09_12:34:25 collection)
+        ~w(name phone Language opt_in),
+        ~w(test phone english 2021-03-09_12:34:25)
       ]
       |> CSV.encode()
       |> Enum.each(&IO.write(file, &1))

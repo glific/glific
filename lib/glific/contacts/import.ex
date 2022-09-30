@@ -20,8 +20,12 @@ defmodule Glific.Contacts.Import do
   @max_concurrency System.schedulers_online()
 
   @spec cleanup_contact_data(map(), map(), String.t()) :: map()
-  defp cleanup_contact_data(data, %{user: user, organization_id: organization_id}, date_format) do
-    if user == [:Glific_admin] do
+  defp cleanup_contact_data(
+         data,
+         %{user: user_role, organization_id: organization_id},
+         date_format
+       ) do
+    if user_role == [:glific_admin] do
       %{
         name: data["name"],
         phone: data["phone"],
@@ -149,8 +153,8 @@ defmodule Glific.Contacts.Import do
   end
 
   @spec process_data(User.t(), map(), map()) :: Contact.t() | map()
-  defp process_data(user, %{delete: "1"} = contact, _contact_attrs) do
-    if user == [:Glific_admin] do
+  defp process_data(user_role, %{delete: "1"} = contact, _contact_attrs) do
+    if user_role == [:glific_admin] do
       case Repo.get_by(Contact, %{phone: contact.phone}) do
         nil ->
           %{ok: "Contact does not exist"}
@@ -166,16 +170,32 @@ defmodule Glific.Contacts.Import do
     end
   end
 
-  defp process_data(user, contact_attrs, _attrs) do
-    {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
+  defp process_data(user_role, contact_attrs, _attrs) do
+    if user_role == [:glific_admin] do
+      {:ok, contact} = Contacts.maybe_create_contact(contact_attrs)
 
+      create_group_and_contact_fields(contact_attrs, contact)
+      optin_contact(user_role, contact, contact_attrs)
+    else
+      may_update_contact(contact_attrs)
+    end
+  end
+
+  @spec may_update_contact(map()) :: {:ok, any} | {:error, any}
+  defp may_update_contact(contact_attrs) do
+    case Contacts.maybe_update_contact(contact_attrs) do
+      {:ok, contact} -> create_group_and_contact_fields(contact_attrs, contact)
+      {:error, error} -> %{error: error}
+    end
+  end
+
+  @spec create_group_and_contact_fields(map(), Contact.t()) :: :ok | {:ok, ContactGroup.t()}
+  defp create_group_and_contact_fields(contact_attrs, contact) do
     collection_label_check(contact, contact_attrs.group)
 
     if contact_attrs[:contact_fields] not in [%{}] do
       add_contact_fields(contact, contact_attrs[:contact_fields])
     end
-
-    optin_contact(user, contact, contact_attrs)
   end
 
   @spec collection_label_check(Contact.t(), String.t()) :: boolean() | :ok
@@ -233,9 +253,9 @@ defmodule Glific.Contacts.Import do
 
   ## later we can have one more column to say that force optin
   @spec should_optin_contact?(User.t(), Contact.t(), map()) :: boolean()
-  defp should_optin_contact?(user, contact, attrs) do
+  defp should_optin_contact?(user_role, contact, attrs) do
     cond do
-      user != [:Glific_admin] ->
+      user_role != [:glific_admin] ->
         false
 
       attrs.optin_time == nil ->

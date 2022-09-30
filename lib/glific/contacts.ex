@@ -390,6 +390,18 @@ defmodule Glific.Contacts do
     end
   end
 
+  @spec maybe_update_contact(map()) ::
+          {:ok, Contact.t()} | {:error, Ecto.Changeset.t()} | {:error, any}
+  def maybe_update_contact(sender) do
+    case Repo.get_by(Contact, %{phone: sender.phone}) do
+      nil ->
+        {:error, "Not enough permission to create the data"}
+
+      contact ->
+        update_contact(contact, sender)
+    end
+  end
+
   @doc """
   Check if this contact id is a new contact.
   In general, we should always retrieve as little as possible from the DB
